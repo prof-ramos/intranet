@@ -17,7 +17,7 @@ Seu trabalho: pedir código certo, na ordem certa, validar o que chega.
 
 ### Ordem Recomendada
 
-```
+```text
 1. Database (Migrations)
 2. Models (com Enums)
 3. Repositories
@@ -27,7 +27,7 @@ Seu trabalho: pedir código certo, na ordem certa, validar o que chega.
 7. Views (Blade)
 8. Frontend (Alpine)
 9. Testes
-```
+```text
 
 **Por quê?** Cada passo depende do anterior. A IA mantém contexto se você gerar em sequência.
 
@@ -37,7 +37,7 @@ Seu trabalho: pedir código certo, na ordem certa, validar o que chega.
 
 ### Prompt Template
 
-```
+```text
 /claude "Crie migration para [ENTIDADE].
 
 Requisitos:
@@ -51,7 +51,7 @@ Use a última sintaxe do Laravel 11."
 
 ### Exemplo Prático
 
-```
+```text
 /claude "Crie as migrations na seguinte ordem:
 
 1. users (estendida com role, active)
@@ -69,9 +69,9 @@ Para cada migration:
 - Inclua comentários inline explicando foreign keys
 
 Execute php artisan migrate:fresh após criar."
-```
+```text
 
-### Validação
+### Validação das Migrations
 
 ```bash
 # Testar migrations
@@ -90,7 +90,7 @@ php artisan db:table tasks
 
 ### Prompt para Enums
 
-```
+```text
 /claude "Crie PHP 8.1 enums para:
 
 1. TaskStatus (todo, progress, review, done, blocked)
@@ -101,9 +101,9 @@ Requisitos:
 - Backed enums (string)
 - Namespace: App\Enums
 - Method labels() para exibição em pt_BR"
-```
+```text
 
-### Exemplo Gerado
+### Exemplo de Enum Gerado
 
 ```php
 // app/Enums/TaskStatus.php
@@ -143,7 +143,7 @@ enum TaskStatus: string
 
 ### Prompt para Models
 
-```
+```text
 /claude "Crie model [NOME] com:
 
 1. Propriedades: fillable, casts (com enum casting)
@@ -153,9 +153,9 @@ enum TaskStatus: string
 5. Método de busca com filter()
 
 Use type hints, return types, e PHP 8.2 features."
-```
+```text
 
-### Validação
+### Validação dos Models
 
 ```php
 // Testar rapidamente
@@ -171,7 +171,7 @@ dd($t->status); // Deve mostrar enum
 
 ### Prompt Padrão
 
-```
+```text
 /claude "Crie [Nome]Repository:
 
 1. Implemente [Nome]RepositoryInterface
@@ -180,9 +180,9 @@ dd($t->status); // Deve mostrar enum
 4. Adicione métodos de busca com filtros dinâmicos
 
 Use Eloquent, não Query Builder direto."
-```
+```text
 
-### Validação
+### Validação do Repository
 
 ```php
 // Teste rápido
@@ -197,7 +197,7 @@ dd($tasks);
 
 ### Prompt para Services
 
-```
+```text
 /claude "Crie [Nome]Service:
 
 1. Injete RepositoryInterface no construtor
@@ -210,7 +210,7 @@ Exemplo: createTask() deve:
 - criar via repository
 - dispatch TaskCreated
 - retornar TaskResource"
-```
+```text
 
 ---
 
@@ -218,7 +218,7 @@ Exemplo: createTask() deve:
 
 ### Prompt para Controllers
 
-```
+```text
 /claude "Crie [Nome]Controller:
 
 1. Type hint de Service no construtor
@@ -230,7 +230,7 @@ Exemplo: createTask() deve:
 Siga convenções Laravel 11."
 ```
 
-### Exemplo Gerado
+### Exemplo de Controller Gerado
 
 ```php
 class TaskController extends Controller
@@ -255,7 +255,7 @@ class TaskController extends Controller
             ->additional(['message' => 'Tarefa criada']);
     }
 }
-```
+```text
 
 ---
 
@@ -263,7 +263,7 @@ class TaskController extends Controller
 
 ### Prompt para Layout
 
-```
+```text
 /claude "Crie layout base:
 
 1. Extends app.blade.php
@@ -276,7 +276,7 @@ Use Tailwind para estilização."
 
 ### Prompt para Componentes
 
-```
+```text
 /claude "Crie componentes Blade:
 
 1. components/task/card.blade.php
@@ -287,7 +287,7 @@ Cada componente:
 - Recebe props ($task, $status, etc.)
 - Renderiza HTML + Alpine data
 - Emite eventos Alpine $dispatch"
-```
+```text
 
 ---
 
@@ -295,7 +295,7 @@ Cada componente:
 
 ### Prompt para Alpine
 
-```
+```text
 /claude "Crie componente Alpine para [FEATURE]:
 
 1. data() com estado inicial
@@ -312,31 +312,31 @@ Use sintaxe moderna Alpine 3.x."
 ```javascript
 // resources/js/kanban.js
 document.addEventListener('alpine:init', () => {
-    Alpine.data('kanban', () => ({
-        tasks: [],
-        columns: ['todo', 'progress', 'review', 'done'],
+  Alpine.data('kanban', () => ({
+    tasks: [],
+    columns: ['todo', 'progress', 'review', 'done'],
 
-        async init() {
-            const response = await fetch('/api/tasks');
-            this.tasks = await response.json();
-        },
+    async init() {
+      const response = await fetch('/api/tasks')
+      this.tasks = await response.json()
+    },
 
-        get tasksByStatus() {
-            return this.columns.map(status => ({
-                status,
-                tasks: this.tasks.filter(t => t.status === status)
-            }));
-        },
+    get tasksByStatus() {
+      return this.columns.map((status) => ({
+        status,
+        tasks: this.tasks.filter((t) => t.status === status),
+      }))
+    },
 
-        async onDrop(taskId, newStatus) {
-            await fetch(`/api/tasks/${taskId}/status`, {
-                method: 'PATCH',
-                body: JSON.stringify({ status: newStatus })
-            });
-        }
-    }));
-});
-```
+    async onDrop(taskId, newStatus) {
+      await fetch(`/api/tasks/${taskId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus }),
+      })
+    },
+  }))
+})
+```text
 
 ---
 
@@ -344,7 +344,7 @@ document.addEventListener('alpine:init', () => {
 
 ### Prompt para Factories
 
-```
+```text
 /claude "Crie factory para [MODEL]:
 
 1. Definition com dados realistas em pt_BR
@@ -355,14 +355,14 @@ document.addEventListener('alpine:init', () => {
 Use afterMaking() para lógica pós-criação."
 ```
 
-### Validação
+### Validação das Factories
 
 ```bash
 php artisan db:seed --class=TaskSeeder
 php artisan tinker
 >>> Task::count();
 >>> Task::factory()->count(10)->create();
-```
+```text
 
 ---
 
@@ -399,7 +399,7 @@ php artisan tinker
 
 ### Batch Operations
 
-```
+```text
 /claude "Crie tudo para ENTIDADE [nome]:
 
 1. Migration + Model + Factory
@@ -409,11 +409,11 @@ php artisan tinker
 5. Routes
 
 Gere arquivo por arquivo. Espere eu validar antes do próximo."
-```
+```text
 
 ### Iteração Rápida
 
-```
+```text
 /claude "O erro foi: [COLAR ERRO]
 
 Corrija:

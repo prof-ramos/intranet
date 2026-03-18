@@ -17,7 +17,7 @@ Documentação vibe coded = **gerada por IA, revisada por você**.
 
 ### Prompt para README
 
-```
+```text
 /claude "Gere README.md completo:
 
 1. Título e descrição curta
@@ -35,7 +35,7 @@ Use badges para status, versão, etc."
 
 ### Template Gerado
 
-```markdown
+````markdown
 # Intranet ASOF
 
 [![Tests](https://github.com/.../actions/workflows/tests.yml/badge.svg)](https://github.com/.../actions)
@@ -104,7 +104,7 @@ GOOGLE_DRIVE_FOLDER_ID=pasta_id
 
 ## 📁 Estrutura
 
-```
+```text
 app/
 ├── Actions/         # Ações single-purpose
 ├── Enums/           # Enums de domínio
@@ -129,7 +129,7 @@ pest --parallel
 ## 📝 Licença
 
 MIT
-```
+````
 
 ---
 
@@ -137,7 +137,7 @@ MIT
 
 ### Prompt para API Docs
 
-```
+```text
 /claude "Gere documentação de API OpenAPI 3.0:
 
 1. Endpoint /api/tasks
@@ -251,7 +251,7 @@ components:
 
 ### Prompt para Deploy Guide
 
-```
+```text
 /claude "Gere guia de deploy:
 
 1. Pré-produção (backup, testes)
@@ -264,7 +264,7 @@ components:
 8. Rollback manual"
 ```
 
-### Exemplo
+### Exemplo de Guia de Deploy
 
 ```markdown
 # Deploy Guide
@@ -299,7 +299,9 @@ npm run build
 ### 3. Configurações
 
 \`\`\`bash
+
 # Verificar .env
+
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
@@ -314,10 +316,13 @@ php artisan migrate --force
 ### 5. Otimizações
 
 \`\`\`bash
+
 # Clear caches
+
 php artisan cache:clear
 
 # Rebuild cache
+
 php artisan config:cache
 php artisan route:cache
 \`\`\`
@@ -325,10 +330,13 @@ php artisan route:cache
 ### 6. Serviços
 
 \`\`\`bash
+
 # Restart queues
-sudo supervisorctl restart intranet-queue:*
+
+sudo supervisorctl restart intranet-queue:\*
 
 # Restart PHP-FPM
+
 sudo systemctl restart php8.2-fpm
 \`\`\`
 
@@ -349,7 +357,7 @@ php artisan config:cache
 
 ### Prompt para Changelog
 
-```
+```text
 /claude "Gere CHANGELOG.md baseado nos commits:
 
 1. Versões com datas
@@ -360,7 +368,7 @@ php artisan config:cache
 Use commits do git como fonte."
 ```
 
-### Exemplo
+### Exemplo Prático 1
 
 ```markdown
 # Changelog
@@ -368,19 +376,23 @@ Use commits do git como fonte."
 ## [1.2.0] - 2025-03-15
 
 ### Added
+
 - Filtro de tarefas por responsável (#123)
 - Exportação de CSV em /api/tasks/export (#125)
 - Notificação por email ao completar tarefa (#127)
 
 ### Changed
+
 - Melhor performance em listagem de tarefas
 - Atualizado para Laravel 11.2
 
 ### Fixed
+
 - Bug ao atualizar status de tarefa concluída (#130)
 - Validação de deadline aceitando datas passadas (#132)
 
 ## [1.1.0] - 2025-02-20
+
 ...
 ```
 
@@ -390,7 +402,7 @@ Use commits do git como fonte."
 
 ### Prompt para Contributing
 
-```
+```text
 /claude "Gere CONTRIBUTING.md:
 
 1. Como configurar ambiente dev
@@ -400,7 +412,7 @@ Use commits do git como fonte."
 5. Como rodar testes localmente"
 ```
 
-### Exemplo
+### Exemplo do CONTRIBUTING.md
 
 ```markdown
 # Contribuindo
@@ -441,7 +453,7 @@ Use commits do git como fonte."
 
 ### Arquitetura
 
-```
+```text
 /claude "Gere diagrama Mermaid para arquitetura:
 
 - Frontend (Blade/Alpine)
@@ -452,9 +464,9 @@ Use commits do git como fonte."
 Use C4 simplificado."
 ```
 
-### Exemplo
+### Exemplo Prático 2
 
-```mermaid
+````mermaid
 graph TB
     subgraph Frontend
         A[Blade Views]
@@ -481,7 +493,7 @@ graph TB
     D --> F
     F --> G
     G --> H
-```
+```text
 
 ---
 
@@ -504,7 +516,7 @@ php artisan route:list --json > docs/routes.json
 
 # OpenAPI
 php artisan openapi:generate > docs/openapi.yaml
-```
+````
 
 ---
 

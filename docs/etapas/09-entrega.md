@@ -17,7 +17,7 @@ O projeto não termina no deploy. É quando o time assume.
 
 ### Checklist
 
-```bash
+````bash
 # 1. Branch limpa
 git checkout main
 git pull
@@ -33,7 +33,7 @@ gh release create v1.0.0 --notes "MVP funcional com:
 - Kanban interativo
 - Calendário de prazos
 - CRM básico"
-```
+```text
 
 ---
 
@@ -83,7 +83,7 @@ sudo supervisorctl restart intranet-queue:*
 sudo systemctl reload php8.2-fpm
 
 echo "✅ Deploy completo!"
-```
+````
 
 ---
 
@@ -91,7 +91,7 @@ echo "✅ Deploy completo!"
 
 ### Smoke Tests
 
-```bash
+````bash
 #!/bin/bash
 # smoke-test.sh
 
@@ -110,7 +110,7 @@ curl -f http://localhost/login || exit 1
 php artisan db:show || exit 1
 
 echo "✅ Smoke tests pass!"
-```
+```text
 
 ---
 
@@ -172,7 +172,7 @@ sudo supervisorctl status intranet-*
 1. Treinar equipe (30 min)
 2. Coletar feedback (2 semanas)
 3. Priorizar V2 baseado em uso real
-```
+````
 
 ---
 
@@ -180,7 +180,7 @@ sudo supervisorctl status intranet-*
 
 ### Roteiro (30 min)
 
-```
+```text
 1. Visão Geral (5 min)
    - O que é o projeto
    - Arquitetura alta
@@ -202,29 +202,34 @@ sudo supervisorctl status intranet-*
 
 ### Slides Key
 
-```markdown
+````markdown
 # Slides — Handoff
 
 ## Slide 1: Visão
+
 - Painel administrativo para gestão diária
 - Laravel 11 + Alpine.js
 - Foco em simplicidade e usabilidade
 
 ## Slide 2: Arquitetura
-```
+
+```text
 ┌─────────┐      ┌──────────┐      ┌──────────┐
 │ Frontend│ ───→ │  API     │ ───→ │ Database │
 │ Blade   │      │ Services │      │  MySQL   │
 └─────────┘      └──────────┘      └──────────┘
 ```
+````
 
 ## Slide 3: Como Contribuir
+
 1. Fork e branch
 2. Código + testes
 3. Pull request
 4. Code review
 5. Merge
-```
+
+````text
 
 ---
 
@@ -243,11 +248,11 @@ Route::get('/health', function () {
         'queue' => Queue::size(),
     ]);
 });
-```
+````
 
 ### Monitoring Setup
 
-```yaml
+````yaml
 # docs/monitoring.md
 ## Uptime Monitoring
 
@@ -263,7 +268,7 @@ Configure em seu provedor:
 - Application: storage/logs/laravel.log
 - Queue: storage/logs/queue-worker.log
 - Nginx: /var/log/nginx/intranet.log
-```
+```text
 
 ---
 
@@ -290,7 +295,7 @@ Configure em seu provedor:
 - [ ] Backup pré-deploy
 - [ ] Smoke tests
 - [ ] Anúncio para time
-```
+````
 
 ---
 
@@ -298,24 +303,28 @@ Configure em seu provedor:
 
 ### Perguntas para Time
 
-```markdown
+`````markdown
 # Retrospetiva v1.0
 
 ## O Que Funcionou
+
 - Qual feature você mais usa?
 - O que facilitou seu trabalho?
 - O que você melhorou manualmente?
 
 ## O Que Pode Melhorar
+
 - Qualidades: o que falta?
 - Performance: algo lento?
 - UX: onde você trava?
 
 ## Próxima Versão
+
 - Qual feature te ajudaria mais?
 - O que é must-have para V2?
 - O que pode esperar?
-```
+
+````text
 
 ---
 
@@ -341,6 +350,9 @@ Configure em seu provedor:
 ## Agradecimentos
 Obrigado a toda equipe pela dedicação!
 ```
+
+````
+`````
 
 ---
 
@@ -372,7 +384,7 @@ Projeto entregue. Agora começa a verdadeira jornada: **evolução baseada em us
 
 ---
 
-**Fim do Guia Vibe Coded**
+## Fim do Guia Vibe Coded
 
 Parabéns! Você completou um projeto 100% vibe coded.
 

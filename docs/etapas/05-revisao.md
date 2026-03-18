@@ -17,7 +17,7 @@ Código gerado por IA é 80-90% correto. Os 10-20% restantes são bugs sutis, se
 
 ### Prompt de Revisão Global
 
-```
+````text
 /claude "Faça uma revisão completa do codebase.
 
 Foque em:
@@ -32,13 +32,13 @@ Para cada issue:
 - Severidade (crítico/alto/médio/baixo)
 - Descrição clara
 - Sugestão de correção"
-```
+```text
 
 ### Revisão por Camada
 
 #### Models
 
-```
+```text
 /claude "Revise Models:
 
 1. Falta de casts apropriados
@@ -46,11 +46,11 @@ Para cada issue:
 3. Scopes que poderiam ser queries compostas
 4. Atributos em fillable que deveriam ser guarded
 5. Falta de eager loading antecipado"
-```
+````
 
 #### Controllers
 
-```
+````text
 /claude "Revise Controllers:
 
 1. Lógica de negócio no controller (deveria estar em Service)
@@ -58,11 +58,11 @@ Para cada issue:
 3. Retornos inconsistentes
 4. Exceções não tratadas
 5. Responsabilidade única violada"
-```
+```text
 
 #### Migrations
 
-```
+```text
 /claude "Revise Migrations:
 
 1. Foreign keys sem onDelete
@@ -70,7 +70,7 @@ Para cada issue:
 3. Tipos inadequados (string ao invés de enum, etc)
 4. Tabelas sem timestamps
 5. Ordem incorreta (dependências)"
-```
+````
 
 ---
 
@@ -78,7 +78,7 @@ Para cada issue:
 
 ### Laravel Security
 
-```php
+````php
 // ✅ CORRETO
 class TaskController extends Controller
 {
@@ -95,7 +95,7 @@ public function store(Request $request)
     $task = Task::create($request->all());  // Mass assignment vulnerability!
     return $task;
 }
-```
+```text
 
 ### Checklist
 
@@ -114,7 +114,7 @@ public function store(Request $request)
 
 ### N+1 Query Detector
 
-```
+```text
 /claude "Identifique possíveis N+1 queries:
 
 1. Relacionamentos acessados em loops
@@ -122,11 +122,11 @@ public function store(Request $request)
 3. Queries dentro de foreach
 
 Sugira correções com eager loading."
-```
+````
 
 ### Exemplo
 
-```php
+````php
 // ❅ N+1 Problem
 $tasks = Task::all();
 foreach ($tasks as $task) {
@@ -138,7 +138,7 @@ $tasks = Task::with('assignedTo')->get();
 foreach ($tasks as $task) {
     echo $task->assignedTo->name;  // Já carregado!
 }
-```
+```text
 
 ### Ferramentas
 
@@ -151,7 +151,7 @@ composer require itsgoingd/clockwork --dev
 
 # Telescope (production-ready em local)
 composer require laravel/telescope --dev
-```
+````
 
 ---
 
@@ -159,18 +159,18 @@ composer require laravel/telescope --dev
 
 ### O Que Procurar
 
-| Categoria | O Que Verificar |
-|-----------|-----------------|
-| **Nomenclatura** | Nomes significativos, consistentes em pt_BR ou en_US |
-| **Tipos** | Type hints em todos os métodos, return types |
-| **Complexidade** | Métodos < 20 linhas, classes < 300 linhas |
-| **DRY** | Sem duplicação, usar traits/services se preciso |
-| **SLA** | Single Level of Abstraction — misturar baixo e alto nível |
-| **Magia** | Evitar @, métodos mágicos, eval |
+| Categoria        | O Que Verificar                                           |
+| ---------------- | --------------------------------------------------------- |
+| **Nomenclatura** | Nomes significativos, consistentes em pt_BR ou en_US      |
+| **Tipos**        | Type hints em todos os métodos, return types              |
+| **Complexidade** | Métodos < 20 linhas, classes < 300 linhas                 |
+| **DRY**          | Sem duplicação, usar traits/services se preciso           |
+| **SLA**          | Single Level of Abstraction — misturar baixo e alto nível |
+| **Magia**        | Evitar @, métodos mágicos, eval                           |
 
 ### Exemplo: Refatoração Necessária
 
-```php
+````php
 // ❅ Muitas responsabilidades
 public function store(Request $request)
 {
@@ -190,7 +190,7 @@ public function store(StoreTaskRequest $request)
 }
 
 // Service cuida do resto
-```
+```text
 
 ---
 
@@ -216,18 +216,18 @@ curl -X PATCH http://localhost/api/tasks/1 \
 
 # 5. Deletar
 curl -X DELETE http://localhost/api/tasks/1
-```
+````
 
 ### Teste de Carga (Básico)
 
-```bash
+`````bash
 # Instalar ab (Apache Bench)
 ab -n 100 -c 10 http://localhost/api/tasks
 
 # Saída esperada:
 # - 0 failed requests
 # - Time per request < 500ms (para API simples)
-```
+```text
 
 ---
 
@@ -235,39 +235,49 @@ ab -n 100 -c 10 http://localhost/api/tasks
 
 ### Template
 
-```markdown
+````markdown
 # Issues Encontrados — Revisão [Data]
 
 ## Críticos (bloqueiam lançamento)
+
 - [ ] #1 [AUTH] TasksController sem authorization
 - [ ] #2 [SQL] UserInputController com SQL injection
 
 ## Altos (devem ser corrigidos)
+
 - [ ] #3 [PERF] TaskController N+1 em index()
 - [ ] #4 [CODE] TaskService com 200 linhas
 
 ## Médios (melhorias)
+
 - [ ] #5 [STYLE] Nomes inconsistentes (pt_BR/en_US misto)
 - [ ] #6 [DOCS] Falta docblock em TaskRepository
 
 ## Baixos (nice to have)
+
 - [ ] #7 [CLEAN] Comentários obsoletos
-```
+
+```text
 
 ### Prompt para Gerar Lista
+`````
 
-```
+````text
+
 /claude "Após a revisão, liste TODOS os issues encontrados.
 
 Formato:
+
 ## [SEVERIDADE] #X [TIPO] Título
+
 **Arquivo**: caminho/arquivo.php:linha
 **Problema**: Descrição
 **Correção**: Sugestão
 
 Severidades: CRÍTICO, ALTO, MÉDIO, BAIXO
 Tipos: AUTH, SQL, PERF, CODE, STYLE, DOCS"
-```
+
+```text
 
 ---
 
@@ -276,25 +286,30 @@ Tipos: AUTH, SQL, PERF, CODE, STYLE, DOCS"
 ### Processo
 
 ```
+
 1. IA identifica issue
 2. Você confirma: "Sim, corrija"
 3. IA gera correção
 4. Você aplica e testa
 5. Commit: "fix: resolve #X - descrição"
-```
+
+```text
 
 ### Prompt de Correção
 
-```
+```text
+
 /claude "Corrija o issue #X:
 
 [COPIAR ISSUE DA LISTA]
 
 Gere:
+
 1. Código corrigido (completo)
 2. Explicação do que mudou
 3. Como validar que funciona"
-```
+
+````
 
 ---
 
@@ -326,11 +341,11 @@ composer require --dev laravel/pint
 
 ### Larastan
 
-```bash
+````bash
 # Larastan (wrapper PHPStan para Laravel)
 composer require --dev nunomaduro/larastan
 ./vendor/bin/phpstan analyse
-```
+```text
 
 ---
 
@@ -338,7 +353,7 @@ composer require --dev nunomaduro/larastan
 
 ### Alpine.js
 
-```
+```text
 /claude "Revise código Alpine:
 
 1. Variáveis não reativas que deveriam ser
@@ -346,11 +361,11 @@ composer require --dev nunomaduro/larastan
 3. Event emitters sem listener correspondente
 4. Memória leaks (listeners não removidos)
 5. SEO/Accessibility (x-data sem x-cloak)"
-```
+````
 
 ### Blade
 
-```
+````text
 /claude "Revise views Blade:
 
 1. {{ }} escapando quando deveria ser {!! !!}
@@ -358,7 +373,7 @@ composer require --dev nunomaduro/larastan
 3. Directives repetidas (pode ser component)
 4. CSS inline (deveria estar em classe)
 5. IDs duplicados em loops"
-```
+```text
 
 ---
 
@@ -389,3 +404,4 @@ composer require --dev nunomaduro/larastan
 **Data**: 2025-03-18
 
 **Próxima**: [06-refino.md](./06-refino.md)
+````

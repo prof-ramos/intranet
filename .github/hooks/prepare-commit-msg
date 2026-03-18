@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Hook de Git para validar mensagens de commit
+# Verifica se a mensagem de commit tem pelo menos 10 caracteres
+
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Mínimo de 10 caracteres para a mensagem de commit
+MIN_LENGTH=10
+
+# Remove comentários e linhas em branco da mensagem
+CLEAN_MSG=$(echo "$COMMIT_MSG" | sed '/^#/d' | sed '/^$/d')
+
+# Verifica se há mensagem após limpar
+if [ -z "$CLEAN_MSG" ]; then
+    echo "❌ Erro: Mensagem de commit está vazia."
+    echo "❌ Por favor, forneça uma mensagem descritiva para o commit."
+    exit 1
+fi
+
+# Verifica tamanho da mensagem
+if [ ${#CLEAN_MSG} -lt $MIN_LENGTH ]; then
+    echo "❌ Erro: Mensagem de commit muito curta."
+    echo "❌ A mensagem deve ter pelo menos $MIN_LENGTH caracteres."
+    echo "❌ Tamanho atual: ${#CLEAN_MSG} caracteres"
+    echo ""
+    echo "💡 Dicas para uma boa mensagem de commit:"
+    echo "   - Use o formato conventional commits: <tipo>(<escopo>): <descrição>"
+    echo "   - Tipos comuns: feat, fix, docs, style, refactor, test, chore"
+    echo "   - Exemplo: feat(task): adicionar campo de prioridade"
+    echo "   - Exemplo: fix(auth): corrigir validação de email"
+    echo "   - Exemplo: docs: atualizar README com novas instruções"
+    echo ""
+    exit 1
+fi
+
+# Verifica se segue padrão conventional commits (opcional, mas recomendado)
+if ! echo "$CLEAN_MSG" | grep -qE '^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: '; then
+    echo "⚠️  Aviso: A mensagem não segue o formato conventional commits."
+    echo "⚠️  Formato recomendado: <tipo>(<escopo>): <descrição>"
+    echo "⚠️  Tipos: feat, fix, docs, style, refactor, test, chore, etc."
+    echo "⚠️  A mensagem será aceita, mas considere seguir o padrão."
+    echo ""
+fi
+
+exit 0

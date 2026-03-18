@@ -17,10 +17,11 @@ Especificação vibe coded ≠ documento tradicional. É **contexto estruturado*
 
 ### Template `docs/prd.md`
 
-```markdown
+````markdown
 # [Nome do Projeto] — PRD
 
 ## 1. Visão Geral
+
 - **Objetivo**: [Uma frase clara]
 - **Usuários**: [Quem vai usar]
 - **Valor**: [O problema que resolve]
@@ -28,47 +29,55 @@ Especificação vibe coded ≠ documento tradicional. É **contexto estruturado*
 ## 2. Funcionalidades (Backlog)
 
 ### Prioridade ALTA
+
 - [ ] [Feature 1] — Descrição em 1 linha
 - [ ] [Feature 2] — Descrição em 1 linha
 
 ### Prioridade MÉDIA
+
 - [ ] [Feature 3] — Descrição em 1 linha
 
 ### Prioridade BAIXA
+
 - [ ] [Feature 4] — Nice to have
 
 ## 3. Tech Stack
+
 ```toml
 backend = "Laravel 11"
 frontend = "Blade + Alpine.js"
 database = "MySQL 8"
 auth = "Laravel Breeze"
-```
+```text
 
 ## 4. Modelagem de Dados
 
 ### Entidades Principais
-```
+
+```text
 User { id, name, email, role }
 Task { id, title, status, assigned_to }
 ```
 
 ## 5. Regras de Negócio
+
 1. Tarefa só pode ser atribuída a usuário ativo
 2. Status só pode progredir: todo → progress → review → done
 3. ...
 
 ## 6. APIs Principais
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | /api/tasks | Lista tarefas |
-| POST | /api/tasks | Cria tarefa |
+
+| Método | Endpoint   | Descrição     |
+| ------ | ---------- | ------------- |
+| GET    | /api/tasks | Lista tarefas |
+| POST   | /api/tasks | Cria tarefa   |
 
 ## 7. Não-Requisitos (O que NÃO fazer)
+
 - [ ] Autenticação social
 - [ ] Upload de arquivos (V1)
 - [ ] Notificações em tempo real
-```
+````
 
 ---
 
@@ -76,7 +85,7 @@ Task { id, title, status, assigned_to }
 
 ### Prompt Base para Gerar PRD
 
-```
+```text
 Você é um Product Expert especializado em [domínio].
 
 Baseado na seguinte ideia informal:
@@ -95,7 +104,7 @@ Crie um PRD estruturado seguindo este formato:
 8. Critérios de Sucesso (quando está pronto?)
 
 Seja ESPECÍFICO e CONCRETO. Evite generalidades.
-```
+```text
 
 ---
 
@@ -103,23 +112,23 @@ Seja ESPECÍFICO e CONCRETO. Evite generalidades.
 
 ### Iteração 1 — Draft
 
-```
+```text
 /claude "Baseado no PRD draft, pergunte-me 5 perguntas críticas
 para clarificar requisitos ambiguos."
 ```
 
 ### Iteração 2 — Detalhamento
 
-```
+```text
 /claude "Para cada feature do PRD, liste:
 - Casos de borda
 - Validações necessárias
-- Possíveis erros
-```
+- Possíveis erros"
+```text
 
 ### Iteração 3 — Priorização
 
-```
+```text
 /claude "Reorganize as features em must-have, should-have e nice-to-have.
 Justifique cada categorização."
 ```
@@ -134,31 +143,36 @@ Justifique cada categorização."
 # ADR 001 — Por que Laravel?
 
 ## Contexto
+
 Precisamos de um framework PHP para backend administrativo.
 
 ## Decisão
+
 Usar Laravel 11 como framework principal.
 
 ## Justificativa
+
 - Ecossistema maduro
 - Breeze para auth rápida
 - Eloquent ORM poderoso
 - Fácil integração com Google APIs
 
 ## Consequências
+
 - Positivo: Desenvolvimento rápido
 - Positivo: Grande comunidade
 - Negativo: Curva de aprendizado para团队
 - Negativo: "Opiniated" pode limitar flexibilidade
 
 ## Alternativas Consideradas
+
 - Symfony — Mais flexível, mais complexo
 - Slim — Leve, menos recursos
-```
+```text
 
 ### Prompt para ADR
 
-```
+```text
 /claude "Crie um ADR para a decisão de usar [TECNOLOGIA].
 Siga o template em docs/decisions/TEMPLATE.md.
 Inclua pelo menos 3 alternativas consideradas."
@@ -170,7 +184,7 @@ Inclua pelo menos 3 alternativas consideradas."
 
 ### Mermaid para Arquitetura
 
-```
+```text
 /claude "Crie um diagrama Mermaid mostrando:
 - Frontend (Blade/Alpine)
 - Backend (Laravel/Controllers)
@@ -179,11 +193,11 @@ Inclua pelo menos 3 alternativas consideradas."
 - Database (MySQL)
 
 Use o diagrama de fluxo C4 simplificado."
-```
+```text
 
 ### Mermaid para Dados
 
-```
+```text
 /claude "Crie um diagrama ER (Entity Relationship) em Mermaid
 com as entidades do PRD. Inclua:
 - Cardinalidades (1:N, N:N)
@@ -210,7 +224,7 @@ com as entidades do PRD. Inclua:
 
 ## Prompt de Revisão Final
 
-```
+```text
 /claude "Revise este PRD e aponte:
 1. Contradições ou ambiguidades
 2. Features faltando (óbvias)
@@ -218,7 +232,7 @@ com as entidades do PRD. Inclua:
 4. Dependências externas não citadas
 
 Seja crítico e construtivo."
-```
+```text
 
 ---
 

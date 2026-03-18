@@ -1,0 +1,7 @@
+# Período de carência para commitlint
+# Durante este período, commits que não seguirem o padrão
+# Conventional Commits serão permitidos sem bloqueio.
+
+# Desative após o período de adaptação da equipe
+GRACE_PERIOD_ACTIVE=true
+GRACE_PERIOD_END_DATE=2025-04-18

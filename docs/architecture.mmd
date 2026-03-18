@@ -1,0 +1,210 @@
+# Arquitetura Intranet ASOF — Diagrama C4 Simplificado
+
+```mermaid
+graph TB
+    subgraph "Cliente - Browser"
+        UI[Blade Templates + Alpine.js]
+        Sortable[SortableJS - Drag & Drop]
+        Calendar[FullCalendar 6]
+    end
+
+    subgraph "Laravel 11 - Backend"
+        Router[routes/web.php, routes/api.php]
+
+        subgraph "HTTP Layer"
+            Controllers[Controllers]
+            Requests[Form Requests]
+            Resources[API Resources]
+        end
+
+        subgraph "Domain Layer"
+            Models[Models: Task, User, Contact]
+            Enums[Enums: TaskStatus, TaskPriority]
+            Actions[Actions: CreateTask, UpdateStatus]
+            Services[Services: GoogleDriveService, TaskMetricsService]
+        end
+
+        subgraph "Data Layer"
+            Repositories[Repositories: TaskRepository]
+            Observers[Observers: TaskObserver]
+        end
+    end
+
+    subgraph "Database"
+        MySQL[(MySQL 8.0 / PostgreSQL 13)]
+        Tables[tables: users, tasks, contacts, task_history, notices, quick_links]
+    end
+
+    subgraph "External Services"
+        Google[Google Workspace - Drive/Docs/Sheets]
+    end
+
+    %% Fluxos principais
+    UI -->|HTTP Request| Router
+    UI -->|Drag Events| Sortable
+    UI -->|Calendar Render| Calendar
+
+    Router --> Controllers
+
+    Controllers -->|Validate| Requests
+    Controllers -->|Transform| Resources
+
+    Controllers --> Actions
+    Controllers --> Services
+    Controllers --> Repositories
+
+    Models --> Enums
+    Models --> Observers
+
+    Repositories --> MySQL
+    Observers --> MySQL
+
+    Services -->|OAuth 2.0 (V2+)| Google
+    UI -->|Direct Links| Google
+
+    %% Estilos
+    classDef frontend fill:#e1f5fe
+    classDef backend fill:#fff3e0
+    classDef database fill:#f3e5f5
+    classDef external fill:#e8f5e9
+
+    class UI,Sortable,Calendar frontend
+    class Router,Controllers,Requests,Resources,Models,Enums,Actions,Services,Repositories,Observers backend
+    class MySQL,Tables database
+    class Google external
+```
+
+---
+
+## Camadas em Detalhe
+
+### 1. Frontend (Browser)
+
+| Componente | Responsabilidade |
+|------------|-----------------|
+| **Blade** | Server-side rendering, herança de templates |
+| **Alpine.js** | Interatividade (modais, toggles, tabs) |
+| **SortableJS** | Drag-and-drop do Kanban |
+| **FullCalendar** | Visualização de prazos |
+
+### 2. Backend (Laravel)
+
+#### HTTP Layer
+- **Controllers**: Orquestram requests, retornam responses
+- **Form Requests**: Validação de entrada
+- **API Resources**: Transformação de modelos para JSON
+
+#### Domain Layer
+- **Models**: Eloquent ORM com relacionamentos
+- **Enums**: PHP 8.1 backed enums (TaskStatus, TaskPriority)
+- **Actions**: Single-purpose classes (CreateTask, CompleteTask)
+- **Services**: Lógica de negócio complexa (Metrics, Google)
+
+#### Data Layer
+- **Repositories**: Abstração de queries complexas
+- **Observers**: Side effects (TaskHistory em mudanças de status)
+
+### 3. Database
+
+Tabelas principais com índices otimizados:
+- `users` (id, name, email, role, active)
+- `tasks` (id, title, status, priority, deadline, assigned_to, created_by)
+- `contacts` (id, name, email, phone, category, institution)
+- `task_history` (task_id, user_id, from_status, to_status, created_at)
+- `notices` (id, title, content, expires_at, active)
+- `quick_links` (id, title, url, category, icon)
+
+### 4. External Services
+
+- **Google Workspace** (V1: links diretos, V2: Drive API)
+
+---
+
+## Fluxo de Dados: Criação de Tarefa
+
+```mermaid
+sequenceDiagram
+    actor U as Usuário
+    participant F as Frontend (Alpine)
+    participant C as TaskController
+    participant V as CreateTaskRequest
+    participant A as CreateTask Action
+    participant M as Task Model
+    participant O as TaskObserver
+    participant DB as Database
+
+    U->>F: Preenche formulário
+    F->>C: POST /api/tasks
+    C->>V: validate()
+    V-->>C: OK (or 422)
+    C->>A: execute(validated)
+    A->>M: Task::create()
+    M->>DB: INSERT tasks
+    DB-->>M: task created
+    M-->>A: $task
+    A-->>C: $task
+    C->>O: created($task)
+    O->>DB: INSERT task_history (initial state)
+    C-->>F: 201 JSON {task}
+    F-->>U: Atualiza UI
+```
+
+---
+
+## Fluxo de Dados: Kanban Drag-and-Drop
+
+```mermaid
+sequenceDiagram
+    actor U as Usuário
+    participant K as Kanban (Alpine + Sortable)
+    participant A as API /tasks/{id}/status
+    participant C as TaskController
+    participant M as Task Model
+    participant O as TaskObserver
+    participant H as TaskHistory
+
+    U->>K: Arrasta card para "Concluído"
+    K->>K: @dragend = novoStatus
+    K->>A: PATCH /tasks/{id}/status {status: done}
+    A->>C: __invoke(request, task)
+    C->>M: task->update(['status' => 'done'])
+    M->>O: updated(task)
+    O->>H: TaskHistory::create(from, to, user_id)
+    C-->>K: 200 JSON {task}
+    K->>K: Atualiza card localmente
+```
+
+---
+
+## Stack Completo
+
+```mermaid
+mindmap
+    root((Intranet ASOF))
+        Frontend
+            Blade Templates
+            Alpine.js 3.x
+            Tailwind CSS
+            SortableJS
+            FullCalendar 6
+        Backend
+            Laravel 11.x
+            PHP 8.2+
+            Eloquent ORM
+            Laravel Breeze
+            Laravel Sanctum
+        Database
+            MySQL 8.0+
+            PostgreSQL 13+
+            Migrations
+            Seeders
+        Testing
+            Pest
+            Factories
+            Faker
+        DevOps
+            GitHub Actions
+            Composer scripts
+            NPM scripts
+            commitlint
+```

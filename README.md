@@ -171,8 +171,20 @@ Acesse `http://localhost:8000`
 ## 📚 Documentação
 
 - **[Planejamento Completo](Plan.md)** — Documento técnico detalhado
+- **[Setup de Workflow de IA](docs/setup-ai-workflow.md)** — Configuração completa do ambiente de desenvolvimento com IA
 - **[Guia Vibe Coded](docs/etapas/README.md)** — Processo de desenvolvimento com IA
 - **[API Documentation](docs/api/)** — Endpoints e contratos (quando disponível)
+
+### Workflow de IA
+
+O projeto está configurado com **prompts reutilizáveis**, **hooks de automação** e **templates de documentação** para otimizar o desenvolvimento com IA:
+
+- 📝 **Prompts Reutilizáveis**: `.claude/prompts/` para Models, Controllers e Testes
+- 🔧 **Hooks de Automação**: Validação automática de commits (conventional commits)
+- 📋 **Templates de Documentação**: PRD e API em `docs/`
+- ⚡ **Scripts Úteis**: `composer test`, `composer code:check`, `composer qa`
+
+Consulte [docs/setup-ai-workflow.md](docs/setup-ai-workflow.md) para detalhes completos.
 
 ---
 
@@ -245,6 +257,31 @@ Este projeto segue o fluxo **[Vibe Coded](docs/etapas/README.md)** — desenvolv
 3. Commit suas mudanças (`git commit -m 'feat: add nova funcionalidade'`)
 4. Push para branch (`git push origin feature/nova-funcionalidade`)
 5. Abra Pull Request
+
+---
+
+## 🛡️ Branch Protection
+
+O branch `main` é protegido com as seguintes regras:
+
+### Requisitos antes do Merge
+
+- ✅ Status checks devem passar:
+  - `commitlint` (validação de formato)
+  - `tests` (testes Pest)
+  - `code:check` (formatação Pint)
+
+- ✅ Pull Request review obrigatório:
+  - 1 aprovação necessária
+
+- ✅ Branch deve estar atualizado:
+  - Requer que branches estejam up-to-date antes do merge
+
+### Como Configurar
+
+1. Vá em **Settings > Branches**
+2. Clique em **Add rule** para `main`
+3. Configure conforme tabela acima
 
 ---
 

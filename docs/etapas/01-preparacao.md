@@ -9,7 +9,7 @@
 
 ### 1. Escolha da IDE/Orquestrador
 
-```
+```text
 Claude Code (Recomendado)
 ├── Integração nativa Claude Opus
 ├── Comandos /commit, /review, /test
@@ -26,7 +26,7 @@ VS Code + Extensões
 ├── Cline / Continue / Roo Code
 ├── Copilot / Copilot Chat
 └── Configuração manual
-```
+```text
 
 ### 2. Configuração do Repositório
 
@@ -36,17 +36,20 @@ VS Code + Extensões
 # Contexto do Projeto
 
 ## Tech Stack
+
 - Laravel 11 + PHP 8.2
 - Alpine.js + Tailwind
 - MySQL 8
 
 ## Convenções
+
 - Models em `app/Models/`
 - Usar PHP Enums para status/prioridade
 - Sempre criar migration + model + factory juntos
 - Commits em português (pt_BR)
 
 ## O que EVITAR
+
 - Não usar `DB::raw()` sem necessidade
 - Não misturar lógica de negócio em controllers
 - Não criar APIs sem validação (FormRequest)
@@ -54,12 +57,12 @@ VS Code + Extensões
 
 #### `.cursorrules` (se usar Cursor)
 
-```
+```text
 Sempre escrever código em português (pt_BR) para comentários e nomes quando fizer sentido.
 Usar PHP 8.2+ features: enums, readonly, constructor property promotion.
 Seguir padrões PSR-12.
 Preferir Eloquent sobre Query Builder.
-```
+```text
 
 ### 3. Hooks de Automatização
 
@@ -88,11 +91,11 @@ if [ ${#msg} -lt 10 ]; then
     echo "Commit message muito curta. Mínimo 10 caracteres."
     exit 1
 fi
-```
+```text
 
 ### 4. Estrutura de Diretórios
 
-```
+```text
 project/
 ├── .claude/
 │   ├── CLAUDE.md           # Instruções globais
@@ -119,12 +122,14 @@ project/
 # Gerar Model Laravel
 
 ## Contexto
+
 - Nome do Model: {{name}}
 - Tabela: {{table}}
 - Campos: {{fields}}
 - Relacionamentos: {{relationships}}
 
 ## Requisitos
+
 1. Migration com foreign keys e indexes
 2. Model com PHP Enums para status
 3. Factory com dados realistas
@@ -132,10 +137,11 @@ project/
 5. Scopes úteis
 
 ## Convenções
+
 - Usar atributos promovidos no construtor
 - Type hints em tudo
 - Docblocks apenas em métodos públicos complexos
-```
+```text
 
 ---
 

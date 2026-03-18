@@ -6,7 +6,7 @@
 
 ## Filosofia
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │  TRADICIONAL                    VIBE CODED                  │
 ├─────────────────────────────────────────────────────────────┤
@@ -15,7 +15,7 @@
 │  Documentação posterior         Documentação integrada      │
 │  Semanas → Meses                Horas → Dias                │
 └─────────────────────────────────────────────────────────────┘
-```
+```text
 
 ## Princípios
 
@@ -29,17 +29,17 @@
 
 ## Etapas do Fluxo
 
-| Etapa | Duração | Saída | Responsabilidade |
-|-------|---------|-------|------------------|
-| **0. Setup** | 1-2h | Ambiente pronto | Dev |
-| **1. Especificação** | 2-4h | PRD + Contexto | Dev + IA |
-| **2. Arquitetura** | 1-2h | Estrutura técnica | Dev + IA |
-| **3. Geração** | 4-8h | Código base | IA (Dev orquestra) |
-| **4. Revisão** | 2-4h | Código validado | Dev |
-| **5. Refino** | 2-4h | Código polido | Dev + IA |
-| **6. Testes** | 2-3h | Suíte testando | IA + Dev |
-| **7. Documentação** | 1-2h | Docs completos | IA |
-| **8. Entrega** | 1h | Deploy + checklist | Dev |
+| Etapa                | Duração | Saída              | Responsabilidade   |
+| -------------------- | ------- | ------------------ | ------------------ |
+| **0. Setup**         | 1-2h    | Ambiente pronto    | Dev                |
+| **1. Especificação** | 2-4h    | PRD + Contexto     | Dev + IA           |
+| **2. Arquitetura**   | 1-2h    | Estrutura técnica  | Dev + IA           |
+| **3. Geração**       | 4-8h    | Código base        | IA (Dev orquestra) |
+| **4. Revisão**       | 2-4h    | Código validado    | Dev                |
+| **5. Refino**        | 2-4h    | Código polido      | Dev + IA           |
+| **6. Testes**        | 2-3h    | Suíte testando     | IA + Dev           |
+| **7. Documentação**  | 1-2h    | Docs completos     | IA                 |
+| **8. Entrega**       | 1h      | Deploy + checklist | Dev                |
 
 **Total**: 15-30 horas de trabalho humano (vs 80-160h tradicional)
 
@@ -65,15 +65,15 @@
 
 ## Ferramentas Recomendadas
 
-| Categoria | Ferramenta | Uso |
-|-----------|-----------|-----|
-| **Orquestração** | Claude Code / Cursor | IDE nativo com IA |
-| **Geração** | Claude Opus 4 | Código complexo |
-| **Revisão** | Claude Sonnet 4 | Análise sistemática |
-| **Refino** | Cursor Copilot | Autocompletar rápido |
-| **Testes** | Claude + Dev | Gerar + validar |
-| **Documentação** | Claude Haiku 4 | Docs consistentes |
-| **Versionar** | Git convencional | Controle de mudanças |
+| Categoria        | Ferramenta           | Uso                  |
+| ---------------- | -------------------- | -------------------- |
+| **Orquestração** | Claude Code / Cursor | IDE nativo com IA    |
+| **Geração**      | Claude Opus 4        | Código complexo      |
+| **Revisão**      | Claude Sonnet 4      | Análise sistemática  |
+| **Refino**       | Cursor Copilot       | Autocompletar rápido |
+| **Testes**       | Claude + Dev         | Gerar + validar      |
+| **Documentação** | Claude Haiku 4       | Docs consistentes    |
+| **Versionar**    | Git convencional     | Controle de mudanças |
 
 ---
 

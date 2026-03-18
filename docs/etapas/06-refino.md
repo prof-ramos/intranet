@@ -15,7 +15,7 @@ Transformar código funcional em **código de qualidade** que você tem orgulho 
 
 ### Prompt para Refatoração
 
-```
+```text
 /claude "Refatore este código:
 
 [COLAR CÓDIGO]
@@ -34,7 +34,7 @@ Mantenha funcionalidade idêntica."
 
 #### Early Return
 
-```php
+````php
 // ❅ Aninhado
 public function update(Request $request, $id)
 {
@@ -62,7 +62,7 @@ public function update(Request $request, $id)
     $task = Task::findOrFail($id);
     // update...
 }
-```
+```text
 
 #### Value Objects
 
@@ -78,7 +78,7 @@ public function createTask(CreateTaskData $data)
 {
     // 1 parâmetro com tudo
 }
-```
+````
 
 ---
 
@@ -86,7 +86,7 @@ public function createTask(CreateTaskData $data)
 
 ### Prompt para Performance
 
-```
+```text
 /claude "Otimize as queries do projeto:
 
 1. Substituir N+1 com eager loading
@@ -100,7 +100,7 @@ Gere migrations para indexes quando necessário."
 
 ### Exemplos
 
-```php
+````php
 // ❅ N+1
 $tasks = Task::all();
 foreach ($tasks as $task) {
@@ -132,7 +132,7 @@ public function getMetrics()
         return DB::table('tasks')->selectRaw('...')->get();
     });
 }
-```
+```text
 
 ---
 
@@ -140,7 +140,8 @@ public function getMetrics()
 
 ### Feedback Visual
 
-```
+````
+
 /claude "Adicione feedback visual em:
 
 1. Loading states durante requisições
@@ -150,7 +151,8 @@ public function getMetrics()
 5. Mensagens de erro claras e acionáveis
 
 Use Alpine + Tailwind."
-```
+
+````text
 
 ### Exemplo Alpine
 
@@ -180,7 +182,7 @@ Use Alpine + Tailwind."
 }">
     <!-- Form aqui -->
 </div>
-```
+````
 
 ---
 
@@ -188,7 +190,7 @@ Use Alpine + Tailwind."
 
 ### Prompt para a11y
 
-```
+```text
 /claude "Audite acessibilidade:
 
 1. Atributos ARIA em componentes interativos
@@ -202,36 +204,26 @@ Use recursos do Alpine e Tailwind."
 
 ### Checklist
 
-```html
+````html
 <!-- ✅ Acessível -->
-<button
-    type="button"
-    aria-label="Fechar modal"
-    @click="close"
-    class="p-2 hover:bg-gray-100"
->
-    <span aria-hidden="true">&times;</span>
+<button type="button" aria-label="Fechar modal" @click="close" class="p-2 hover:bg-gray-100">
+  <span aria-hidden="true">&times;</span>
 </button>
 
 <!-- ❅ Inacessível -->
 <div @click="close" class="close-x">&times;</div>
-```
+```text --- ## 5. Internacionalização (i18n) ### Preparação
+````
 
----
-
-## 5. Internacionalização (i18n)
-
-### Preparação
-
-```
 /claude "Prepare o projeto para i18n:
 
 1. Extrair strings para lang/
-2. Usar __('key') ou @lang('key')
+2. Usar \_\_('key') ou @lang('key')
 3. Criar pt_BR como default
 4. Preparar estrutura para en_US
 5. Datas com formatos locais"
-```
+
+````text
 
 ### Exemplo
 
@@ -243,16 +235,16 @@ return response()->json(['message' => 'Tarefa criada com sucesso']);
 return response()->json([
     'message' => __('tasks.created_success')
 ]);
-```
+````
 
-```php
+````php
 // lang/pt_BR/tasks.php
 return [
     'created_success' => 'Tarefa criada com sucesso',
     'updated_success' => 'Tarefa atualizada',
     'deleted' => 'Tarefa removida',
 ];
-```
+```text
 
 ---
 
@@ -260,7 +252,8 @@ return [
 
 ### Prompt para Docblocks
 
-```
+````
+
 /claude "Adicione docblocks PHPDoc:
 
 1. Apenas em métodos públicos complexos
@@ -270,7 +263,8 @@ return [
 5. Não documente o óbvio
 
 Siga PSR-5."
-```
+
+````text
 
 ### Exemplo
 
@@ -294,7 +288,7 @@ public function updateStatus(int $taskId, string $newStatus): TaskResource
 
     return new TaskResource($task);
 }
-```
+````
 
 ---
 
@@ -302,7 +296,7 @@ public function updateStatus(int $taskId, string $newStatus): TaskResource
 
 ### Environment-Specific
 
-```
+```text
 /claude "Crie configurações:
 
 1. config/project.php com settings customizados
@@ -315,7 +309,7 @@ Exemplo: limite de tarefas por página, timeout de cache, etc."
 
 ### Exemplo
 
-```php
+````php
 // config/project.php
 return [
     'tasks' => [
@@ -327,7 +321,7 @@ return [
         'metrics_ttl' => env('METRICS_CACHE_TTL', 3600),
     ],
 ];
-```
+```text
 
 ---
 
@@ -335,7 +329,8 @@ return [
 
 ### Custom Exceptions
 
-```
+````
+
 /claude "Crie exceptions customizadas:
 
 1. Domain exceptions (TaskAlreadyCompletedException)
@@ -344,7 +339,8 @@ return [
 4. Log de debug em background
 
 Renderize JSON para API, views para web."
-```
+
+````text
 
 ### Exemplo
 
@@ -370,7 +366,7 @@ class TaskAlreadyCompletedException extends \Exception
             : back()->with('error', 'Tarefa já concluída');
     }
 }
-```
+````
 
 ---
 
@@ -378,7 +374,7 @@ class TaskAlreadyCompletedException extends \Exception
 
 ### Estrutura de Logs
 
-```
+```text
 /claude "Adicione logging estratégico:
 
 1. Events de domínio (TaskCreated, TaskCompleted)
@@ -389,9 +385,9 @@ class TaskAlreadyCompletedException extends \Exception
 Use channels apropriados (daily, stack)."
 ```
 
-### Exemplo
+### Exemplo Prático
 
-```php
+````php
 // App\Logging\TasksLogger
 class TasksLogger
 {
@@ -405,7 +401,7 @@ class TasksLogger
         ]);
     }
 }
-```
+```text
 
 ---
 
@@ -432,7 +428,7 @@ php artisan test --parallel
 
 # 5. Build assets (se Vite)
 npm run build
-```
+````
 
 ---
 

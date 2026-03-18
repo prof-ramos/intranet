@@ -15,7 +15,7 @@ Transformar o PRD em **estrutura técnica concreta** que a IA possa seguir ao ge
 
 ### Prompt para Gerar Estrutura
 
-```
+```text
 /claude "Baseado no PRD, gere a estrutura de diretórios Laravel.
 
 Requisitos:
@@ -28,7 +28,7 @@ Saída formatada como árvore."
 
 ### Estrutura Recomendada (Laravel 11)
 
-```
+```text
 app/
 ├── Actions/              # Single-purpose actions
 ├── Contracts/            # Interfaces
@@ -55,7 +55,7 @@ app/
 
 ### Prompt para Definir Interfaces
 
-```
+```text
 /claude "Para cada entidade do PRD, defina:
 
 1. Interface Repository com métodos CRUD
@@ -89,7 +89,7 @@ interface TaskRepositoryInterface
     public function getByStatus(string $status): Collection;
     public function getByAssignee(int $userId): Collection;
 }
-```
+```text
 
 ---
 
@@ -98,19 +98,23 @@ interface TaskRepositoryInterface
 ### Prompt para Services
 
 ```
+
 /claude "Crie services para lógica de negócio.
 
 Requisitos:
+
 - Um service por contexto (TaskService, CalendarService)
 - Métodos que ORCHESTRAM, não implementam
 - Delegar para repositories
 - Retornar DTOs ou Resources
 
 Exemplo de método:
+
 - createTask(array) → TaskResource
 - assignTask(int $taskId, int $userId) → TaskResource
 - completeTask(int $taskId) → TaskResource"
-```
+
+```text
 
 ### Exemplo: `app/Services/TaskService.php`
 
@@ -156,7 +160,7 @@ class TaskService
 
 ### Prompt para Eventos
 
-```
+```text
 /claude "Liste eventos de domínio baseados no PRD.
 
 Formato:
@@ -181,7 +185,7 @@ protected $listen = [
         NotifyAssigneeListener::class,
     ],
 ];
-```
+```text
 
 ---
 
@@ -226,7 +230,7 @@ return [
         'task_priority' => \App\Enums\TaskPriority::class,
     ],
 ];
-```
+```text
 
 ---
 
@@ -235,6 +239,7 @@ return [
 ### Prompt para Definir Rotas
 
 ```
+
 /claude "Baseado no PRD, defina:
 
 1. Rotas web (para Blade views)
@@ -243,7 +248,8 @@ return [
 4. Namespacing correto
 
 Use resource controllers onde aplicar."
-```
+
+```text
 
 ### `routes/web.php`
 
@@ -267,7 +273,7 @@ Route::middleware(['auth:sanctum'])
         Route::get('/metrics', [MetricsController::class, 'index']);
         Route::get('/calendar-events', [CalendarController::class, 'events']);
     });
-```
+```text
 
 ---
 
@@ -276,16 +282,19 @@ Route::middleware(['auth:sanctum'])
 ### Prompt para Requests
 
 ```
+
 /claude "Para cada entidade, crie FormRequest:
 
 - StoreRequest (criação)
 - UpdateRequest (edição)
 
 Inclua:
+
 - Rules em array
 - Custom messages em pt_BR
 - Attributes aliases em pt_BR"
-```
+
+```text
 
 ### Exemplo: `app/Http/Requests/StoreTaskRequest.php`
 
@@ -334,7 +343,7 @@ class StoreTaskRequest extends FormRequest
 
 ### Prompt para Resources
 
-```
+```text
 /claude "Crie API Resources para:
 
 1. Collection (listagem)
@@ -376,7 +385,7 @@ class TaskResource extends JsonResource
         ];
     }
 }
-```
+```text
 
 ---
 

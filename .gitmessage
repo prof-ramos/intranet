@@ -1,0 +1,14 @@
+# Template de mensagem de commit seguindo Conventional Commits
+# Formato: <type>(<scope>): <subject>
+
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+
+# type: feat | fix | docs | style | refactor | test | chore | perf | ci | revert
+# scope: (opcional) módulo ou contexto
+# subject: imperativo, mínimo, sem ponto final
+# body: o quê e por quê
+# footer: breaking changes, issue refs

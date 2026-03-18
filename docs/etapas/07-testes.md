@@ -15,7 +15,7 @@ Em vibe coding, IA gera testes, você valida cobertura.
 
 ## 1. Estrutura de Testes
 
-```
+```text
 tests/
 ├── Unit/              # Testes de classe isolada
 │   ├── Models/
@@ -37,7 +37,7 @@ tests/
 
 ### `phpunit.xml` → `pest.php`
 
-```php
+````php
 // pest.php
 use Pest\Plugintest;
 
@@ -50,7 +50,7 @@ Plugintest::setPath([
 
 // Plugins
 Plugintest::use()->subset();
-```
+```text
 
 ---
 
@@ -58,7 +58,8 @@ Plugintest::use()->subset();
 
 ### Prompt para Models
 
-```
+````
+
 /claude "Gere testes unitários para Model [NOME]:
 
 1. Teste de factory (criação)
@@ -68,7 +69,8 @@ Plugintest::use()->subset();
 5. Teste de casts (enums)
 
 Use Pest, arrange-act-assert."
-```
+
+````text
 
 ### Exemplo Gerado
 
@@ -108,11 +110,11 @@ test('status cast to enum', function () {
     expect($task->status)->toBeInstanceOf(TaskStatus::class);
     expect($task->status->value)->toBe('progress');
 });
-```
+````
 
 ### Prompt para Services
 
-```
+```text
 /claude "Gere testes para Service [NOME]:
 
 1. Mock de repository
@@ -125,7 +127,7 @@ Use Pest + Mockery."
 
 ### Exemplo
 
-```php
+````php
 // tests/Unit/Services/TaskServiceTest.php
 use App\Services\TaskService;
 use App\Repositories\Contracts\TaskRepositoryInterface;
@@ -152,7 +154,7 @@ test('creates task and dispatches event', function () {
 
     Event::assertDispatched(TaskCreated::class);
 });
-```
+```text
 
 ---
 
@@ -160,7 +162,8 @@ test('creates task and dispatches event', function () {
 
 ### Prompt para CRUD
 
-```
+````
+
 /claude "Gere feature tests para CRUD de [RECURSO]:
 
 1. GET index — lista com paginação
@@ -171,7 +174,8 @@ test('creates task and dispatches event', function () {
 6. DELETE destroy — remove (soft delete)
 
 Use actingAs para auth, JSON para API."
-```
+
+````text
 
 ### Exemplo
 
@@ -239,7 +243,7 @@ test('can delete task', function () {
     $response->assertStatus(204);
     $this->assertSoftDeleted('tasks', ['id' => $task->id]);
 });
-```
+````
 
 ---
 
@@ -247,7 +251,7 @@ test('can delete task', function () {
 
 ### Prompt para API Tests
 
-```
+```text
 /claude "Gere testes de API para endpoints:
 
 1. Response structure (Resource)
@@ -260,9 +264,9 @@ test('can delete task', function () {
 Use assertJsonStructure."
 ```
 
-### Exemplo
+### Exemplo Prático
 
-```php
+````php
 test('api returns correct structure', function () {
     Task::factory()->count(15)->create();
 
@@ -287,7 +291,7 @@ test('can filter by status', function () {
     $response->assertJsonCount(1, 'data');
     $response->assertJsonPath('data.0.status', 'done');
 });
-```
+```text
 
 ---
 
@@ -295,7 +299,8 @@ test('can filter by status', function () {
 
 ### Prompt para Dusk
 
-```
+````
+
 /claude "Gere teste Dusk para [FEATURE]:
 
 1. Login na aplicação
@@ -305,7 +310,8 @@ test('can filter by status', function () {
 5. Logout
 
 Use data selectors (data-testid)."
-```
+
+````text
 
 ### Exemplo
 
@@ -331,7 +337,7 @@ class KanbanTest extends DuskTestCase
         });
     }
 }
-```
+````
 
 ---
 
@@ -339,7 +345,7 @@ class KanbanTest extends DuskTestCase
 
 ### Medir Cobertura
 
-```bash
+````bash
 # Instalar
 composer require --dev phpunit/php-code-coverage
 
@@ -348,22 +354,25 @@ pest --coverage --min=80
 
 # Gerar HTML
 pest --coverage-html=coverage
-```
+```text
 
 ### Prompt para Cobertura Faltando
 
-```
+````
+
 /claude "Analise cobertura de testes:
 
 Cobertura atual: [X]%
 
 Identifique:
+
 1. Métodos sem teste
 2. Branch conditions não cobertas
 3. Exceptions não testadas
 
 Gere testes para atingir 80%+ cobertura."
-```
+
+```text
 
 ---
 
@@ -372,6 +381,7 @@ Gere testes para atingir 80%+ cobertura."
 ### Load Testing Básico
 
 ```
+
 /claude "Crie teste de performance:
 
 1. 100 requests em /api/tasks
@@ -380,7 +390,8 @@ Gere testes para atingir 80%+ cobertura."
 4. Sem memory leaks
 
 Use Laravel benchmarks."
-```
+
+````text
 
 ### Exemplo
 
@@ -400,7 +411,7 @@ test('api responds under 500ms', function () {
 
     expect($avg)->toBeLessThan(500);
 });
-```
+````
 
 ---
 
@@ -408,7 +419,7 @@ test('api responds under 500ms', function () {
 
 ### GitHub Actions
 
-```yaml
+````yaml
 # .github/workflows/tests.yml
 name: Tests
 
@@ -435,7 +446,7 @@ jobs:
 
       - name: Upload Coverage
         uses: codecov/codecov-action@v3
-```
+```text
 
 ---
 
@@ -467,3 +478,4 @@ jobs:
 **Data**: 2025-03-18
 
 **Próxima**: [08-documentacao.md](./08-documentacao.md)
+````

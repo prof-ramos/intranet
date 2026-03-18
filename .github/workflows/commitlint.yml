@@ -1,0 +1,20 @@
+# CI workflow para validar commits com commitlint
+# Valida mensagens de commit seguindo o padrão Conventional Commits
+
+name: Commitlint
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate commits with commitlint
+        uses: wagoid/commitlint-github-action@v6

@@ -2,7 +2,7 @@
 
 > **Desenvolvimento de software comprimido por IA**
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │  TEMPO TOTAL: 15-30 horas (vs 80-160h)      │
 │  EFICIÊNCIA: 5-6x mais rápido              │
@@ -14,24 +14,24 @@
 
 ## Etapas
 
-| # | Etapa | Tempo | Saída |
-|---|-------|-------|-------|
-| 0 | [Sumário](./00-sumario.md) | 5min | Visão geral |
-| 1 | [Preparação](./01-preparacao.md) | 1-2h | Ambiente pronto |
-| 2 | [Especificação](./02-especificacao.md) | 2-4h | PRD + contexto |
-| 3 | [Arquitetura](./03-arquitetura.md) | 1-2h | Estrutura técnica |
-| 4 | [Geração](./04-geracao.md) | 4-8h | Código base |
-| 5 | [Revisão](./05-revisao.md) | 2-4h | Código validado |
-| 6 | [Refino](./06-refino.md) | 2-4h | Código polido |
-| 7 | [Testes](./07-testes.md) | 2-3h | Suíte testando |
-| 8 | [Documentação](./08-documentacao.md) | 1-2h | Docs completos |
-| 9 | [Entrega](./09-entrega.md) | 1h | Deploy + handoff |
+| #   | Etapa                                  | Tempo | Saída             |
+| --- | -------------------------------------- | ----- | ----------------- |
+| 0   | [Sumário](./00-sumario.md)             | 5min  | Visão geral       |
+| 1   | [Preparação](./01-preparacao.md)       | 1-2h  | Ambiente pronto   |
+| 2   | [Especificação](./02-especificacao.md) | 2-4h  | PRD + contexto    |
+| 3   | [Arquitetura](./03-arquitetura.md)     | 1-2h  | Estrutura técnica |
+| 4   | [Geração](./04-geracao.md)             | 4-8h  | Código base       |
+| 5   | [Revisão](./05-revisao.md)             | 2-4h  | Código validado   |
+| 6   | [Refino](./06-refino.md)               | 2-4h  | Código polido     |
+| 7   | [Testes](./07-testes.md)               | 2-3h  | Suíte testando    |
+| 8   | [Documentação](./08-documentacao.md)   | 1-2h  | Docs completos    |
+| 9   | [Entrega](./09-entrega.md)             | 1h    | Deploy + handoff  |
 
 ---
 
 ## Mentalidade
 
-```
+```text
 VIBE CODED                   TRADICIONAL
 ─────────────────────────────────────────
 Orquestrar      vs    Escrever cada linha
@@ -48,14 +48,14 @@ nova linguagem
 
 ## Stack Recomendado
 
-| Categoria | Ferramenta |
-|-----------|-----------|
-| **Orquestração** | Claude Code / Cursor |
-| **Geração** | Claude Opus 4 |
-| **Revisão** | Claude Sonnet 4 |
-| **Autocompletar** | Copilot / Cursor |
-| **Testes** | Pest + IA |
-| **Documentação** | Claude Haiku 4 |
+| Categoria         | Ferramenta           |
+| ----------------- | -------------------- |
+| **Orquestração**  | Claude Code / Cursor |
+| **Geração**       | Claude Opus 4        |
+| **Revisão**       | Claude Sonnet 4      |
+| **Autocompletar** | Copilot / Cursor     |
+| **Testes**        | Pest + IA            |
+| **Documentação**  | Claude Haiku 4       |
 
 ---
 

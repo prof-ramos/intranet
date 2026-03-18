@@ -1,0 +1,413 @@
+# Modelo de Dados — Diagrama Entidade-Relacionamento
+
+```mermaid
+erDiagram
+    %% Entidades principais
+    User ||--o{ Task : "creates (created_by)"
+    User ||--o{ Task : "assigned to (assigned_to)"
+    User ||--o{ TaskHistory : "performs change"
+    Contact ||--o{ Task : "related to"
+
+    Task ||--o{ TaskHistory : "tracks changes"
+    Task }|--|| TaskStatus : "has status"
+    Task }|--|| TaskPriority : "has priority"
+
+    %% Entidades de suporte
+    User ||--o{ Notice : "creates (admin only)"
+    User ||--o{ QuickLink : "creates (admin only)"
+
+    %% Definições das entidades
+    User {
+        int id PK
+        string name
+        string email UK
+        string password
+        string role "admin|user"
+        boolean active
+        timestamp email_verified_at
+        timestamps
+        softDeletes
+    }
+
+    Task {
+        int id PK
+        string title
+        text description
+        int assigned_to FK "User.id nullable"
+        int created_by FK "User.id"
+        int related_contact_id FK "Contact.id nullable"
+        datetime deadline
+        datetime completed_at nullable
+        string status "TaskStatus enum"
+        string priority "TaskPriority enum"
+        timestamps
+        softDeletes
+    }
+
+    Contact {
+        int id PK
+        string name
+        string email nullable
+        string phone nullable
+        string category "Interno|Externo|Governo|Outro"
+        string institution nullable
+        text notes nullable
+        timestamps
+        softDeletes
+    }
+
+    TaskHistory {
+        int id PK
+        int task_id FK
+        int user_id FK
+        string from_status nullable
+        string to_status
+        text note nullable
+        timestamps
+    }
+
+    Notice {
+        int id PK
+        string title
+        text content
+        datetime expires_at
+        boolean active "default true"
+        timestamps
+    }
+
+    QuickLink {
+        int id PK
+        string title
+        string url
+        string category "Drive|Docs|Sheets|Other"
+        string icon nullable
+        int order "default 0"
+        timestamps
+    }
+
+    MeetingRecord {
+        int id PK
+        string title
+        date meeting_date
+        text attendees
+        text content
+        date follow_up_date nullable
+        timestamps
+    }
+```
+
+---
+
+## Índices e Performance
+
+### Tabela: `tasks`
+
+```sql
+-- Índices compostos para queries comuns
+CREATE INDEX idx_status_deadline ON tasks(status, deadline);
+CREATE INDEX idx_assigned_status ON tasks(assigned_to, status);
+CREATE INDEX idx_deadline ON tasks(deadline);
+
+-- Índice para full text search ( futuro)
+-- CREATE FULLTEXT INDEX idx_task_title ON tasks(title, description);
+```
+
+### Tabela: `task_history`
+
+```sql
+-- Índice para queries de histórico por tarefa
+CREATE INDEX idx_task_created ON task_history(task_id, created_at DESC);
+
+-- Índice para auditoria por usuário
+CREATE INDEX idx_user_history ON task_history(user_id, created_at DESC);
+```
+
+### Tabela: `contacts`
+
+```sql
+-- Índice para busca por categoria
+CREATE INDEX idx_contact_category ON contacts(category);
+
+-- Índice para autocomplete de nome
+CREATE INDEX idx_contact_name ON contacts(name);
+```
+
+---
+
+## Enums PHP 8.1+
+
+### TaskStatus
+
+```php
+<?php
+namespace App\Enums;
+
+enum TaskStatus: string
+{
+    case Todo = 'todo';
+    case InProgress = 'progress';
+    case Review = 'review';
+    case Done = 'done';
+    case Blocked = 'blocked';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Todo => 'A Fazer',
+            self::InProgress => 'Em Progresso',
+            self::Review => 'Em Revisão',
+            self::Done => 'Concluído',
+            self::Blocked => 'Bloqueado',
+        };
+    }
+
+    public function color(): string
+    {
+        return match ($this) {
+            self::Todo => 'gray',
+            self::InProgress => 'blue',
+            self::Review => 'yellow',
+            self::Done => 'green',
+            self::Blocked => 'red',
+        };
+    }
+
+    public function canTransitionTo(TaskStatus $status): bool
+    {
+        return match ($this) {
+            self::Todo => in_array($status, [self::InProgress, self::Blocked]),
+            self::InProgress => in_array($status, [self::Review, self::Todo, self::Blocked]),
+            self::Review => in_array($status, [self::Done, self::InProgress]),
+            self::Done => in_array($status, [self::InProgress]),
+            self::Blocked => in_array($status, [self::Todo, self::InProgress]),
+        };
+    }
+}
+```
+
+### TaskPriority
+
+```php
+<?php
+namespace App\Enums;
+
+enum TaskPriority: string
+{
+    case Low = 'low';
+    case Normal = 'normal';
+    case High = 'high';
+    case Urgent = 'urgent';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Low => 'Baixa',
+            self::Normal => 'Normal',
+            self::High => 'Alta',
+            self::Urgent => 'Urgente',
+        };
+    }
+
+    public function weight(): int
+    {
+        return match ($this) {
+            self::Low => 1,
+            self::Normal => 2,
+            self::High => 3,
+            self::Urgent => 4,
+        };
+    }
+
+    public function color(): string
+    {
+        return match ($this) {
+            self::Low => 'gray',
+            self::Normal => 'blue',
+            self::High => 'orange',
+            self::Urgent => 'red',
+        };
+    }
+}
+```
+
+---
+
+## Relacionamentos Eloquent
+
+### Task Model
+
+```php
+<?php
+namespace App\Models;
+
+use App\Enums\TaskStatus;
+use App\Enums\TaskPriority;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+#[ObservedBy([TaskObserver::class])]
+class Task extends Model
+{
+    use SoftDeletes;
+
+    protected $fillable = [
+        'title',
+        'description',
+        'assigned_to',
+        'created_by',
+        'related_contact_id',
+        'deadline',
+        'completed_at',
+        'status',
+        'priority',
+    ];
+
+    protected $casts = [
+        'deadline' => 'datetime',
+        'completed_at' => 'datetime',
+        'status' => TaskStatus::class,
+        'priority' => TaskPriority::class,
+    ];
+
+    // Relacionamentos
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function relatedContact(): BelongsTo
+    {
+        return $this->belongsTo(Contact::class);
+    }
+
+    public function history()
+    {
+        return $this->hasMany(TaskHistory::class)->latest();
+    }
+
+    // Scopes úteis
+    public function scopeOverdue($query)
+    {
+        return $query->where('deadline', '<', now())
+            ->where('status', '!=', TaskStatus::Done);
+    }
+
+    public function scopeDueThisWeek($query)
+    {
+        return $query->whereBetween('deadline', [
+            now()->startOfWeek(),
+            now()->endOfWeek()
+        ]);
+    }
+
+    public function scopeByStatus($query, TaskStatus $status)
+    {
+        return $query->where('status', $status->value);
+    }
+
+    public function scopeByPriority($query, TaskPriority $priority)
+    {
+        return $query->where('priority', $priority->value);
+    }
+}
+```
+
+---
+
+## Diagrama de Estados da Tarefa
+
+```mermaid
+stateDiagram-v2
+    [*] --> Todo: Criar
+    Todo --> InProgress: "Iniciar"
+    Todo --> Blocked: "Bloquear"
+    InProgress --> Review: "Para revisão"
+    InProgress --> Blocked: "Bloquear"
+    InProgress --> Todo: "Retornar"
+    Review --> Done: "Aprovar"
+    Review --> InProgress: "Pedir mudanças"
+    Blocked --> Todo: "Desbloquear"
+    Blocked --> InProgress: "Desbloquear e iniciar"
+    Done --> InProgress: "Reabrir"
+    Done --> [*]
+```
+
+---
+
+## Migrations (Exemplo)
+
+```php
+// database/migrations/2025_03_18_000001_create_users_table.php
+Schema::create('users', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->string('email')->unique();
+    $table->timestamp('email_verified_at')->nullable();
+    $table->string('password');
+    $table->string('role')->default('user');
+    $table->boolean('active')->default(true);
+    $table->rememberToken();
+    $table->timestamps();
+    $table->softDeletes();
+});
+
+// database/migrations/2025_03_18_000002_create_tasks_table.php
+Schema::create('tasks', function (Blueprint $table) {
+    $table->id();
+    $table->string('title');
+    $table->text('description')->nullable();
+
+    $table->foreignId('assigned_to')
+        ->nullable()
+        ->constrained('users')
+        ->nullOnDelete();
+
+    $table->foreignId('created_by')
+        ->constrained('users')
+        ->cascadeOnDelete();
+
+    $table->foreignId('related_contact_id')
+        ->nullable()
+        ->constrained('contacts')
+        ->nullOnDelete();
+
+    $table->dateTime('deadline');
+    $table->dateTime('completed_at')->nullable();
+
+    $table->string('status')->default('todo'); // TaskStatus enum
+    $table->string('priority')->default('normal'); // TaskPriority enum
+
+    $table->timestamps();
+    $table->softDeletes();
+
+    // Índices
+    $table->index(['status', 'deadline']);
+    $table->index('assigned_to');
+    $table->index('deadline');
+});
+
+// database/migrations/2025_03_18_000003_create_task_history_table.php
+Schema::create('task_history', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('task_id')
+        ->constrained()
+        ->cascadeOnDelete();
+    $table->foreignId('user_id')
+        ->constrained()
+        ->restrictOnDelete();
+    $table->string('from_status')->nullable();
+    $table->string('to_status');
+    $table->text('note')->nullable();
+    $table->timestamps();
+
+    $table->index(['task_id', 'created_at']);
+    $table->index('user_id');
+});
+```
