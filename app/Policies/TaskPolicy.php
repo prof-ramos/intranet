@@ -15,9 +15,8 @@ class TaskPolicy
      */
     public function view(User $user, Task $task): bool
     {
-        return $task->team?->members->contains($user)
-            || $task->assignedTo === $user->id
-            || $task->createdBy === $user->id;
+        return $task->assigned_to === $user->id
+            || $task->created_by === $user->id;
     }
 
     /**
@@ -34,7 +33,7 @@ class TaskPolicy
     public function update(User $user, Task $task): bool
     {
         return $task->created_by === $user->id
-            || $task->assignedTo === $user->id;
+            || $task->assigned_to === $user->id;
     }
 
     /**
@@ -50,7 +49,7 @@ class TaskPolicy
      */
     public function complete(User $user, Task $task): bool
     {
-        return $task->assignedTo === $user->id;
+        return $task->assigned_to === $user->id;
     }
 
     /**

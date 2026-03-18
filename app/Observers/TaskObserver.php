@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Enums\TaskStatus;
 use App\Models\Task;
 use App\Models\TaskHistory;
+use App\Services\MetricsService;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -37,6 +38,30 @@ class TaskObserver
         if ($task->isDirty('status') && $task->status === TaskStatus::Done) {
             $task->completed_at = now();
         }
+    }
+
+    /**
+     * Escuta quando a tarefa é criada no banco.
+     */
+    public function created(Task $task): void
+    {
+        app(MetricsService::class)->clearCache();
+    }
+
+    /**
+     * Escuta quando a tarefa é atualizada no banco.
+     */
+    public function updated(Task $task): void
+    {
+        app(MetricsService::class)->clearCache();
+    }
+
+    /**
+     * Escuta quando a tarefa é deletada.
+     */
+    public function deleted(Task $task): void
+    {
+        app(MetricsService::class)->clearCache();
     }
 
     /**

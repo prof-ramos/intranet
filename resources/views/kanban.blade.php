@@ -1,87 +1,120 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Kanban de Tarefas') }}
-        </h2>
-    </x-slot>
+@extends('layouts.app')
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    <p class="mb-4 text-sm text-gray-600">Arraste os cards (dados simulados) entre as colunas.</p>
+@section('title', 'Kanban - Intranet ASOF')
 
-                    <div class="flex gap-4 overflow-x-auto pb-4" x-data="kanbanBoard()">
-                        <!-- TODO Column -->
-                        <div class="w-80 flex-shrink-0 bg-gray-50 rounded-lg p-3">
-                            <h3 class="font-bold mb-3 text-gray-700">A Fazer</h3>
-                            <div class="space-y-3 sortable-list min-h-[50px]" data-status="todo">
-                                <div class="bg-white p-3 rounded shadow-sm border border-gray-200 cursor-move">
-                                    <div class="text-xs font-bold text-red-600 mb-1">[URGENTE] Atualizar Contratos</div>
-                                    <div class="text-sm">Responsável: João</div>
-                                    <div class="text-xs text-gray-500 mt-2">Prazo: Amanhã</div>
-                                </div>
-                            </div>
-                        </div>
+@section('breadcrumb')
+    <li class="breadcrumb-item active" aria-current="page">Kanban</li>
+@endsection
 
-                        <!-- Progress Column -->
-                        <div class="w-80 flex-shrink-0 bg-gray-50 rounded-lg p-3">
-                            <h3 class="font-bold mb-3 text-gray-700">Em Progresso</h3>
-                            <div class="space-y-3 sortable-list min-h-[50px]" data-status="progress">
-                                <div class="bg-white p-3 rounded shadow-sm border border-gray-200 cursor-move">
-                                    <div class="text-xs font-bold text-blue-600 mb-1">[ALTA] Revisar Política</div>
-                                    <div class="text-sm">Responsável: Maria</div>
-                                    <div class="text-xs text-gray-500 mt-2">Prazo: 20/03</div>
-                                </div>
-                            </div>
-                        </div>
+@section('content')
+<div x-data="kanbanBoard()">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">Kanban de Tarefas</h4>
+            <p class="text-muted mb-0">Arraste os cards entre as colunas para alterar o status</p>
+        </div>
+        <button type="button" class="btn btn-primary" @click="openCreateModal()">
+            <svg class="me-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Nova Tarefa
+        </button>
+    </div>
 
-                        <!-- Review Column -->
-                        <div class="w-80 flex-shrink-0 bg-gray-50 rounded-lg p-3">
-                            <h3 class="font-bold mb-3 text-gray-700">Em Revisão</h3>
-                            <div class="space-y-3 sortable-list min-h-[50px]" data-status="review">
-                                <!-- empty -->
-                            </div>
-                        </div>
-
-                        <!-- Done Column -->
-                        <div class="w-80 flex-shrink-0 bg-gray-50 rounded-lg p-3">
-                            <h3 class="font-bold mb-3 text-gray-700">Concluído</h3>
-                            <div class="space-y-3 sortable-list min-h-[50px]" data-status="done">
-                                <div class="bg-white p-3 rounded shadow-sm border border-gray-200 opacity-75 cursor-move">
-                                    <div class="text-xs font-bold text-green-600 mb-1">[NORMAL] Reunião Diretoria</div>
-                                    <div class="text-sm">Responsável: Todos</div>
-                                    <div class="text-xs text-gray-500 mt-2">Finalizado ontem</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Loading state -->
+    <div x-show="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Carregando...</span>
         </div>
     </div>
 
-    <!-- CDN do SortableJS -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('kanbanBoard', () => ({
-                init() {
-                    const lists = document.querySelectorAll('.sortable-list');
-                    lists.forEach(list => {
-                        new Sortable(list, {
-                            group: 'shared',
-                            animation: 150,
-                            ghostClass: 'bg-indigo-50',
-                            onEnd: function (evt) {
-                                // Exemplo de como interceptar mudanças no futuro (Fase 2):
-                                const newStatus = evt.to.dataset.status;
-                                console.log('Item movido para:', newStatus);
-                            },
-                        });
-                    });
-                }
-            }))
-        })
-    </script>
-</x-app-layout>
+    <!-- Kanban Board -->
+    <div x-show="!loading" class="kanban-board custom-scrollbar">
+        <template x-for="column in tasksByStatus" :key="column.status">
+            <div class="kanban-column">
+                <!-- Column Header -->
+                <div class="kanban-column-header">
+                    <h5 class="kanban-column-title" x-text="columnLabel[column.status]"></h5>
+                    <span class="kanban-column-count" x-text="column.tasks.length"></span>
+                </div>
+
+                <!-- Column Body -->
+                <div :id="'kanban-column-' + column.status" class="kanban-tasks">
+                    <template x-for="task in column.tasks" :key="task.id">
+                        <div class="kanban-card position-relative"
+                             :data-task-id="task.id"
+                             :class="priorityClass(task.priority)">
+                            <!-- Priority Indicator -->
+                            <div class="priority-indicator"
+                                 :class="'priority-' + task.priority"></div>
+
+                            <!-- Card Content -->
+                            <div class="ps-2">
+                                <h6 class="mb-1 fw-semibold text-truncate" x-text="task.title"></h6>
+
+                                <p class="small text-muted mb-2 text-truncate-2" x-show="task.description"
+                                   x-text="task.description"></p>
+
+                                <!-- Meta info -->
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <!-- Assignee avatar -->
+                                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                                             style="width: 28px; height: 28px; font-size: 0.75rem;"
+                                             x-show="task.assigned_to"
+                                             x-text="task.assigned_to?.name?.charAt(0) || '?'"></div>
+
+                                        <!-- Deadline -->
+                                        <small class="text-muted" x-show="task.deadline">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <polyline points="12 6 12 12 16 14"/>
+                                            </svg>
+                                            <span x-text="task.deadline"></span>
+                                        </small>
+                                    </div>
+
+                                    <!-- Priority badge -->
+                                    <span class="badge"
+                                          :class="{
+                                              'bg-success': task.priority === 'low',
+                                              'bg-info': task.priority === 'normal',
+                                              'bg-warning text-dark': task.priority === 'high',
+                                              'bg-danger': task.priority === 'urgent'
+                                          }"
+                                          x-text="task.priority"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Empty state -->
+                    <div x-show="column.tasks.length === 0"
+                         class="text-center py-4 text-muted">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-2">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                        <p class="small mb-0">Nenhuma tarefa</p>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</div>
+
+<!-- Helper method for priority class (inline) -->
+<script>
+function priorityClass(priority) {
+    const classes = {
+        'low': 'border-start border-4 border-success',
+        'normal': 'border-start border-4 border-info',
+        'high': 'border-start border-4 border-warning',
+        'urgent': 'border-start border-4 border-danger',
+    };
+    return classes[priority] || '';
+}
+</script>
+@endsection

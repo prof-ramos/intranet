@@ -12,8 +12,6 @@ class MetricsResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
-     *
-     * @param  array  $resource  Array associativo com métricas
      */
     public function toArray(Request $request): array
     {

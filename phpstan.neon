@@ -11,3 +11,4 @@ parameters:
 
     excludePaths:
         - app/Providers/
+

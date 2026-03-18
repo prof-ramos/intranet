@@ -2,10 +2,15 @@
 
 namespace App\Models;
 
+use App\Observers\ContactObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -16,15 +21,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $institution
  * @property string|null $notes
  * @property bool $active
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
- *
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Task> $tasks
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property Carbon|null $deleted_at
+ * @property int|null $created_by
+ * @property-read User|null $createdBy
+ * @property-read Collection<int, Task> $tasks
  */
+#[ObservedBy([ContactObserver::class])]
 class Contact extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -34,6 +41,7 @@ class Contact extends Model
         'institution',
         'notes',
         'active',
+        'created_by',
     ];
 
     protected $casts = [
@@ -46,6 +54,14 @@ class Contact extends Model
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class, 'related_contact_id');
+    }
+
+    /**
+     * Usuário que criou o contato.
+     */
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**

@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TaskStatus;
 use App\Http\Requests\TaskRequest;
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
-use App\Enums\TaskStatus;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
 {
@@ -37,7 +40,7 @@ class TaskController extends Controller
         }
 
         // Apenas tarefas do usuário ou não atribuídas
-        if (!$request->user()->isAdmin()) {
+        if (! $request->user()->isAdmin()) {
             $query->where(function ($q) {
                 $q->where('assigned_to', Auth::id())
                     ->orWhere('created_by', Auth::id())
@@ -55,7 +58,7 @@ class TaskController extends Controller
      */
     public function show(Task $task): TaskResource
     {
-        $this->authorize('view', $task);
+        Gate::authorize('view', $task);
 
         return new TaskResource($task->load(['assignedTo', 'createdBy', 'relatedContact', 'history.user']));
     }
@@ -65,7 +68,7 @@ class TaskController extends Controller
      */
     public function store(TaskRequest $request): TaskResource
     {
-        $this->authorize('create', Task::class);
+        Gate::authorize('create', Task::class);
 
         $task = Task::create($request->validated() + [
             'created_by' => Auth::id(),
@@ -80,7 +83,7 @@ class TaskController extends Controller
      */
     public function update(TaskRequest $request, Task $task): TaskResource
     {
-        $this->authorize('update', $task);
+        Gate::authorize('update', $task);
 
         $task->update($request->validated());
 
@@ -88,11 +91,30 @@ class TaskController extends Controller
     }
 
     /**
+     * Atualiza o status de uma tarefa.
+     */
+    public function updateStatus(Request $request, Task $task): JsonResponse
+    {
+        Gate::authorize('update', $task);
+
+        $validated = $request->validate([
+            'status' => ['required', Rule::enum(TaskStatus::class)],
+        ]);
+
+        $task->update($validated);
+
+        return response()->json([
+            'message' => 'Status atualizado com sucesso.',
+            'task' => new TaskResource($task->load(['assignedTo', 'createdBy', 'relatedContact'])),
+        ]);
+    }
+
+    /**
      * Marca uma tarefa como concluída.
      */
     public function complete(Task $task): JsonResponse
     {
-        $this->authorize('complete', $task);
+        Gate::authorize('complete', $task);
 
         $task->update(['status' => TaskStatus::Done]);
 
@@ -104,7 +126,7 @@ class TaskController extends Controller
      */
     public function destroy(Task $task): JsonResponse
     {
-        $this->authorize('delete', $task);
+        Gate::authorize('delete', $task);
 
         $task->delete();
 

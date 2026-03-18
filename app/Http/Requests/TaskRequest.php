@@ -2,9 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TaskPriority;
+use App\Enums\TaskStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Enums\TaskPriority;
 
 /**
  * Request de validação para criação/edição de tarefas.
@@ -29,7 +30,7 @@ class TaskRequest extends FormRequest
 
         // Na edição, status pode ser alterado
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
-            $rules['status'] = ['nullable', Rule::enum(\App\Enums\TaskStatus::class)];
+            $rules['status'] = ['nullable', Rule::enum(TaskStatus::class)];
             $rules['deadline'] = ['nullable', 'date', 'after:now'];
         }
 

@@ -1,7 +1,347 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   Bootstrap 5 + Custom Styles
+   Intranet ASOF
+   ============================================ */
+
+/* ============================================
+   Tema Customizado (Inspirado: Sneat/Materio)
+   ============================================ */
+
+/* Variáveis de cor */
+:root {
+  --bs-primary: #696cff;
+  --bs-primary-rgb: 105, 108, 255;
+  --bs-secondary: #8592a3;
+  --bs-success: #71dd37;
+  --bs-info: #03c3ec;
+  --bs-warning: #ffab00;
+  --bs-danger: #ff3e1d;
+
+  /* Cores da sidebar */
+  --sidebar-bg: #2f3349;
+  --sidebar-color: #a5a3ae;
+  --sidebar-active-bg: #616161;
+  --sidebar-active-color: #fff;
+
+  /* Background */
+  --bs-body-bg: #f8f7fa;
+  --bs-body-color: #5d596c;
+
+  /* Cards */
+  --card-bg: #fff;
+  --card-shadow: 0 0.125rem 0.25rem rgba(165, 163, 174, 0.3);
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bs-body-bg: #25293c;
+    --bs-body-color: #a5a3ae;
+    --card-bg: #2f3349;
+  }
+}
+
+/* ============================================
+   Layout Principal
+   ============================================ */
+
+body {
+  font-family:
+    'Public Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'Oxygen',
+    'Ubuntu',
+    'Cantarell',
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+
+/* Container do layout */
+.layout-wrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.layout-sidebar {
+  width: 260px;
+  background-color: var(--sidebar-bg);
+  color: var(--sidebar-color);
+  transition: all 0.3s ease;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-menu {
+  padding: 1rem 0;
+  list-style: none;
+  margin: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.layout-menu-item {
+  margin: 0.125rem 1rem;
+}
+
+.layout-menu-link {
+  display: flex;
+  align-items: center;
+  padding: 0.625rem 1rem;
+  color: var(--sidebar-color);
+  text-decoration: none;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.layout-menu-link:hover {
+  background-color: var(--sidebar-active-bg);
+  color: var(--sidebar-active-color);
+}
+
+.layout-menu-link.active {
+  background-color: var(--bs-primary);
+  color: #fff;
+}
+
+.layout-menu-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Conteúdo principal */
+.layout-content {
+  flex: 1;
+  margin-left: 260px;
+  padding: 1.5rem;
+  transition: margin-left 0.3s ease;
+}
+
+/* Navbar superior */
+.layout-navbar {
+  background-color: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  padding: 0.75rem 1.5rem;
+  margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+  border-radius: 0.375rem;
+}
+
+/* Cards personalizados */
+.card {
+  border: none;
+  box-shadow: var(--card-shadow);
+  border-radius: 0.375rem;
+}
+
+.card-header {
+  background-color: transparent;
+  border-bottom: 1px solid rgba(165, 163, 174, 0.2);
+  font-weight: 600;
+}
+
+/* ============================================
+   Componentes Kanban
+   ============================================ */
+
+.kanban-board {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+}
+
+.kanban-column {
+  min-width: 300px;
+  max-width: 300px;
+  background-color: var(--card-bg);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: var(--card-shadow);
+}
+
+.kanban-column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(165, 163, 174, 0.2);
+}
+
+.kanban-column-title {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.kanban-column-count {
+  background-color: var(--bs-secondary);
+  color: #fff;
+  padding: 0.125rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.kanban-card {
+  background-color: var(--card-bg);
+  border: 1px solid rgba(165, 163, 174, 0.2);
+  border-radius: 0.375rem;
+  padding: 0.875rem;
+  margin-bottom: 0.75rem;
+  cursor: grab;
+  transition: all 0.2s ease;
+}
+
+.kanban-card:hover {
+  box-shadow: var(--card-shadow);
+  transform: translateY(-2px);
+}
+
+.kanban-card:active {
+  cursor: grabbing;
+}
+
+.kanban-card.sortable-ghost {
+  opacity: 0.5;
+}
+
+/* Indicador de prioridade */
+.priority-indicator {
+  width: 4px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 0.375rem 0 0 0.375rem;
+}
+
+.priority-low {
+  background-color: var(--bs-success);
+}
+.priority-normal {
+  background-color: var(--bs-info);
+}
+.priority-high {
+  background-color: var(--bs-warning);
+}
+.priority-urgent {
+  background-color: var(--bs-danger);
+}
+
+/* ============================================
+   Badges de Status
+   ============================================ */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-todo {
+  background-color: rgba(165, 163, 174, 0.12);
+  color: #8592a3;
+}
+
+.status-progress {
+  background-color: rgba(3, 195, 236, 0.12);
+  color: #03c3ec;
+}
+
+.status-review {
+  background-color: rgba(255, 171, 0, 0.12);
+  color: #ffab00;
+}
+
+.status-done {
+  background-color: rgba(113, 221, 55, 0.12);
+  color: #71dd37;
+}
+
+.status-blocked {
+  background-color: rgba(255, 62, 29, 0.12);
+  color: #ff3e1d;
+}
+
+/* ============================================
+   Alpine.js x-cloak
+   ============================================ */
+
 [x-cloak] {
   display: none !important;
+}
+
+/* ============================================
+   Utilitários
+   ============================================ */
+
+/* Texto truncado */
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Scrollbar customizada */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(165, 163, 174, 0.4);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(165, 163, 174, 0.6);
+}
+
+/* Responsividade */
+@media (max-width: 991.98px) {
+  .layout-sidebar {
+    transform: translateX(-100%);
+  }
+
+  .layout-sidebar.show {
+    transform: translateX(0);
+  }
+
+  .layout-content {
+    margin-left: 0;
+  }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -12,10 +13,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $from_status
  * @property string $to_status
  * @property string|null $note
- * @property \Illuminate\Support\Carbon $created_at
- *
- * @property-read \App\Models\Task $task
- * @property-read \App\Models\User $user
+ * @property Carbon $created_at
+ * @property-read Task $task
+ * @property-read User $user
  */
 class TaskHistory extends Model
 {
