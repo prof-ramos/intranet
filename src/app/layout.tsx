@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
-import './globals.css';
+import '@/app/globals.css';
 
 const googleSans = localFont({
   variable: '--font-google-sans',

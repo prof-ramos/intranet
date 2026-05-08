@@ -172,8 +172,9 @@ Must work well on merchandise.
 ## SVG to PNG Export
 
 ### Option 1: Using Inkscape (Free)
+
 ```bash
-inkscape logo.svg --export-png=logo.png --export-width=1000
+inkscape logo.svg --export-filename=logo.png --export-type=png --export-width=1000
 ```
 
 ### Option 2: Using ImageMagick

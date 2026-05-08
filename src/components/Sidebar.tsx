@@ -1,12 +1,13 @@
 import Image from 'next/image';
 import { LayoutDashboard, Users, Kanban, Shield, ShieldCheck, Settings } from 'lucide-react';
-import { NavLink } from './NavLink';
-import { LogoutButton } from './LogoutButton';
+import { NavLink } from '@/components/NavLink';
+import { LogoutButton } from '@/components/LogoutButton';
+import { type AuthRole } from '@/lib/auth/config';
 
 interface SidebarProps {
   user: {
     name: string;
-    role: string;
+    role: AuthRole;
   };
 }
 

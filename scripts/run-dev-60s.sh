@@ -102,4 +102,4 @@ wait "$dev_pid" 2>/dev/null || true
 dev_pid=""
 
 echo "== Remaining matching processes =="
-ps aux | grep -E "(next dev|npm run dev|node .*next)" | grep -v grep || echo "none"
+pgrep -af "next dev|npm run dev|node .*next" || echo "none"

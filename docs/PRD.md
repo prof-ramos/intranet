@@ -20,8 +20,8 @@ O sistema deve gerenciar um banco de dados robusto de **Oficiais de Chancelaria*
 - **Estilização**: [Tailwind CSS](https://tailwindcss.com/).
 - **Componentes de UI**: [daisyUI](https://daisyui.com/) (v5) para estilos rápidos e [Radix UI](https://www.radix-ui.com/) para comportamentos de acessibilidade complexos.
 - **Ícones**: [Lucide React](https://lucide.dev/).
-- **Banco de Dados**: SQLite via `better-sqlite3`.
-- **Deploy**: [Vercel](https://vercel.com/).
+- **Banco de Dados**: SQLite/libSQL via Drizzle ORM e `@libsql/client`; SQLite local é apenas para desenvolvimento.
+- **Deploy**: [Vercel](https://vercel.com/) com banco libSQL/Turso externo em produção.
 - **Padronização**: ESLint e Prettier (com plugin de ordenação de classes Tailwind).
 
 ## 4. Identidade Visual e Design System

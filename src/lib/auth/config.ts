@@ -32,7 +32,7 @@ export function isAuthRole(value: string | undefined): value is AuthRole {
 }
 
 export function isSkipAuthEnabled(env: AuthEnv = process.env): boolean {
-  return env.SKIP_AUTH === 'true';
+  return env.SKIP_AUTH === 'true' && env.NODE_ENV !== 'production';
 }
 
 function parseDevUserId(value: string | undefined): number {

@@ -21,7 +21,7 @@ function parseSession(payload: Record<string, unknown>) {
 }
 
 export async function proxy(request: NextRequest) {
-  if (isSkipAuthEnabled() && process.env.NODE_ENV !== 'production') {
+  if (isSkipAuthEnabled()) {
     return NextResponse.next();
   }
 
@@ -32,7 +32,10 @@ export async function proxy(request: NextRequest) {
   }
 
   try {
-    const { payload } = await jwtVerify(token, getEncodedSecret(), { clockTolerance: 60 });
+      const { payload } = await jwtVerify(token, getEncodedSecret(), {
+        algorithms: ['HS256'],
+        clockTolerance: 60,
+      });
     const session = parseSession(payload as Record<string, unknown>);
 
     if (!session.isLoggedIn) {

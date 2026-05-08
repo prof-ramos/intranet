@@ -9,7 +9,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="drawer lg:drawer-open min-h-screen">
       <input id="app-drawer" type="checkbox" className="drawer-toggle" />
 
-      <div className="drawer-content flex flex-col">
+      <div id="main-content" className="drawer-content flex flex-col">
         <header className="navbar border-b border-base-300 bg-base-100 lg:hidden">
           <label
             htmlFor="app-drawer"

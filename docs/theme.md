@@ -34,6 +34,8 @@
   --noise: 0;
 }
 
+> Tema aplicado no app em `src/app/globals.css` via Tailwind CSS 4 e DaisyUI 5.
+
 # Diretrizes para redes sociais e e-mail
 - Identidade e tom
   - Tom: institucional, claro, direto; evitar jargões; voz ativa.

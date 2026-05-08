@@ -9,8 +9,8 @@ export const admins = sqliteTable('admins', {
   role: text('role', { enum: ['admin', 'diretoria', 'secretaria'] }).notNull(),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   mustChangePassword: integer('must_change_password', { mode: 'boolean' }).notNull().default(false),
-  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => sql`CURRENT_TIMESTAMP`),
 });
 
 export type Admin = typeof admins.$inferSelect;

@@ -1,7 +1,7 @@
-import { sqliteTable, integer, text, real } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, integer, text, real, index } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
-import { admins } from './admins';
-import { associates } from './associates';
+import { admins } from '@/lib/db/schema/admins';
+import { associates } from '@/lib/db/schema/associates';
 
 export const activities = sqliteTable('activities', {
   id: integer('id', { mode: 'number' }).primaryKey({ autoIncrement: true }),
@@ -14,11 +14,15 @@ export const activities = sqliteTable('activities', {
   associateId: integer('associate_id', { mode: 'number' }).references(() => associates.id),
   tags: text('tags', { mode: 'json' }).$type<string[]>().default(sql`'[]'`),
   createdBy: integer('created_by', { mode: 'number' }).notNull().references(() => admins.id),
-  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => sql`CURRENT_TIMESTAMP`),
   completedAt: text('completed_at'),
   position: real('position').notNull().default(1000),
-});
+}, (table) => [
+  index('idx_activities_status').on(table.status),
+  index('idx_activities_due_date').on(table.dueDate),
+  index('idx_activities_status_due_date').on(table.status, table.dueDate),
+]);
 
 export type Activity = typeof activities.$inferSelect;
 export type NewActivity = typeof activities.$inferInsert;

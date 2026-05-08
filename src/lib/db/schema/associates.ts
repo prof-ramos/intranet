@@ -25,12 +25,15 @@ export const associates = sqliteTable('associates', {
   birthDate: text('birth_date'),
   classPattern: text('class_pattern'),
   sourcePayload: text('source_payload'),
-  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => sql`CURRENT_TIMESTAMP`),
 }, (table) => [
   index('idx_associates_cpf').on(table.cpf),
   index('idx_associates_siape').on(table.siape),
   index('idx_associates_name').on(table.fullName),
+  index('idx_associates_association_status').on(table.associationStatus),
+  index('idx_associates_contribution_status').on(table.contributionStatus),
+  index('idx_associates_status_name').on(table.associationStatus, table.fullName),
 ]);
 
 export type Associate = typeof associates.$inferSelect;

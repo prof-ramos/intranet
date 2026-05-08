@@ -23,8 +23,11 @@ export default async function LoginPage({
 
           <form action={login} className="flex flex-col gap-4">
             <fieldset className="fieldset">
-              <legend className="fieldset-legend">Email</legend>
+              <legend className="fieldset-legend">
+                <label htmlFor="email">Email</label>
+              </legend>
               <input
+                id="email"
                 name="email"
                 type="email"
                 required
@@ -35,8 +38,11 @@ export default async function LoginPage({
             </fieldset>
 
             <fieldset className="fieldset">
-              <legend className="fieldset-legend">Senha</legend>
+              <legend className="fieldset-legend">
+                <label htmlFor="password">Senha</label>
+              </legend>
               <input
+                id="password"
                 name="password"
                 type="password"
                 required

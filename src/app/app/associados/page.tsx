@@ -1,8 +1,12 @@
 import { requireAuth } from '@/lib/auth/require-auth';
 import { db } from '@/lib/db';
 import { associates } from '@/lib/db/schema';
-import { eq, like, and, count } from 'drizzle-orm';
+import { eq, and, count, asc, sql } from 'drizzle-orm';
 import { getRoleLabel } from '@/lib/auth/roles';
+import {
+  buildAssociateNameSearchPattern,
+  parseAssociatesSearchParams,
+} from '@/lib/associates/search-params';
 import {
   Bell, ChevronLeft, ChevronRight, Download, Search,
 } from 'lucide-react';
@@ -16,13 +20,13 @@ export default async function AssociadosPage({
   searchParams: Promise<{ q?: string; page?: string }>;
 }) {
   const user = await requireAuth();
-  const { q = '', page: pageParam = '1' } = await searchParams;
-  const page = Math.max(1, Number(pageParam));
+  const { q, page } = parseAssociatesSearchParams(await searchParams);
 
-  const escapedQ = q.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
   const baseWhere = and(
     eq(associates.associationStatus, 'ativo'),
-    q ? like(associates.fullName, `%${escapedQ}%`) : undefined,
+    q
+      ? sql`${associates.fullName} like ${buildAssociateNameSearchPattern(q)} escape '\\'`
+      : undefined,
   );
 
   const [rows, [{ total }]] = await Promise.all([
@@ -36,6 +40,7 @@ export default async function AssociadosPage({
     })
       .from(associates)
       .where(baseWhere)
+      .orderBy(asc(associates.fullName), asc(associates.id))
       .limit(PAGE_SIZE)
       .offset((page - 1) * PAGE_SIZE),
     db.select({ total: count() }).from(associates).where(baseWhere),
@@ -93,7 +98,7 @@ export default async function AssociadosPage({
       </div>
 
       {/* Conteúdo */}
-      <main id="main-content" className="flex-1 px-5 py-8 sm:px-8 lg:px-10">
+      <main className="flex-1 px-5 py-8 sm:px-8 lg:px-10">
         <section className="mb-10 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <h1 className="font-serif text-5xl font-bold leading-none md:text-6xl">

@@ -5,7 +5,7 @@ import {
   SESSION_COOKIE_NAME,
   getSessionSecret,
   type SessionData,
-} from './config';
+} from '@/lib/auth/config';
 
 let cachedSecret: Uint8Array | null = null;
 
@@ -37,7 +37,10 @@ export async function getSession(): Promise<SessionData | null> {
   if (!token) return null;
 
   try {
-    const { payload } = await jwtVerify(token, getSecret(), { clockTolerance: 60 });
+    const { payload } = await jwtVerify(token, getSecret(), {
+      algorithms: ['HS256'],
+      clockTolerance: 60,
+    });
     return payload as unknown as SessionData;
   } catch {
     return null;

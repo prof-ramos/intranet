@@ -29,6 +29,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+next-dev*.log
+repomix-output.xml
 
 # env files (can opt-in for committing if needed)
 .env*
@@ -44,7 +46,6 @@ next-env.d.ts
 # database
 sqlite.db
 sqlite.db-*
-drizzle/
 
 # visual brainstorming sessions
 .superpowers/

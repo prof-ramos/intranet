@@ -60,9 +60,15 @@ DEV_USER_MUST_CHANGE_PASSWORD=false
 
 Accepted roles are `admin`, `diretoria` and `secretaria`.
 
+`SKIP_AUTH` is ignored when `NODE_ENV=production`; the bypass is only valid for
+local development and tests.
+
 ### Data Layer
 
-The database client is created in `src/lib/db/index.ts`. `DATABASE_URL` is used when present, otherwise the application falls back to `file:sqlite.db`.
+The database client is created in `src/lib/db/index.ts`. `DATABASE_URL` is used
+when present; the `file:sqlite.db` fallback is intended only for local
+development. Production deploys must set `DATABASE_URL` explicitly, preferably
+to a libSQL/Turso database rather than ephemeral filesystem storage.
 
 Drizzle schemas are split by table:
 

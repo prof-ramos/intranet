@@ -6,12 +6,16 @@ import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { loginRateLimiter } from '@/lib/auth/login-rate-limit';
 
 export async function login(formData: FormData) {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
+  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const password = String(formData.get('password') ?? '');
 
   if (!email || !password) redirect('/login?error=1');
+
+  const rateLimit = loginRateLimiter.consume(email);
+  if (!rateLimit.allowed) redirect('/login?error=rate-limit');
 
   const user = await db.select().from(admins)
     .where(eq(admins.email, email)).get();
@@ -21,6 +25,8 @@ export async function login(formData: FormData) {
   const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
 
   if (!user || !user.isActive || !valid) redirect('/login?error=1');
+
+  loginRateLimiter.reset(email);
 
   await createSession({
     userId: user.id,

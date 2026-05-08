@@ -4,7 +4,7 @@ From "A Philosophy of Software Design":
 
 **Deep module** = small interface + lots of implementation
 
-```
+```text
 ┌─────────────────────┐
 │   Small Interface   │  ← Few methods, simple params
 ├─────────────────────┤
@@ -14,7 +14,7 @@ From "A Philosophy of Software Design":
 │                     │
 │                     │
 └─────────────────────┘
-```
+```text
 
 **Shallow module** = large interface + little implementation (avoid)
 

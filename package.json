@@ -1,5 +1,5 @@
 {
-  "name": "tmp_app",
+  "name": "asof-intranet",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,6 +9,10 @@
     "build:turbo": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "audit": "npm audit",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
@@ -44,5 +48,9 @@
     "tsx": "^4.21.0",
     "typescript": "^6",
     "vitest": "^4.1.5"
+  },
+  "overrides": {
+    "esbuild": "0.28.0",
+    "postcss": "8.5.14"
   }
 }

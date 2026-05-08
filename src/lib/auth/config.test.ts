@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getDevAuthUser, isSkipAuthEnabled } from './config';
 
-describe('auth config', () => {
+  describe('auth config', () => {
   it('reads the development user from env when skip auth is enabled', () => {
     const env = {
       SKIP_AUTH: 'true',
@@ -32,9 +32,13 @@ describe('auth config', () => {
     });
   });
 
-  it('rejects invalid development roles with a clear error', () => {
-    expect(() => getDevAuthUser({ SKIP_AUTH: 'true', DEV_USER_ROLE: 'root' })).toThrow(
-      'DEV_USER_ROLE must be one of: admin, diretoria, secretaria.',
-    );
+    it('rejects invalid development roles with a clear error', () => {
+      expect(() => getDevAuthUser({ SKIP_AUTH: 'true', DEV_USER_ROLE: 'root' })).toThrow(
+        'DEV_USER_ROLE must be one of: admin, diretoria, secretaria.',
+      );
+    });
+
+    it('ignores auth bypass in production', () => {
+      expect(isSkipAuthEnabled({ SKIP_AUTH: 'true', NODE_ENV: 'production' })).toBe(false);
+    });
   });
-});

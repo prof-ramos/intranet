@@ -1,9 +1,9 @@
 import { cache } from 'react';
 import { redirect } from 'next/navigation';
-import { getSession } from './session';
-import { getDevAuthUser, isSkipAuthEnabled, type AuthUser } from './config';
-import { db } from '../db';
-import { admins } from '../db/schema';
+import { getSession } from '@/lib/auth/session';
+import { getDevAuthUser, isSkipAuthEnabled, type AuthUser } from '@/lib/auth/config';
+import { db } from '@/lib/db';
+import { admins } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 export const requireAuth = cache(async (): Promise<AuthUser> => {

@@ -1,7 +1,7 @@
 # Diagnostico do travamento ao rodar `npm run dev`
 
 Data: 2026-05-08
-Projeto: `/Users/gabrielramos/projetos/ASOF/intranet`
+Projeto: `ASOF/intranet`
 
 ## Resumo
 
@@ -23,7 +23,7 @@ Com Webpack, o app rodou por 60 segundos com encerramento controlado, respondeu 
 - O erro principal repetido foi:
 
 ```text
-Error: Can't resolve 'tailwindcss' in '/Users/gabrielramos/projetos/ASOF'
+Error: Can't resolve 'tailwindcss' in '<workspace>/ASOF'
 ```
 
 O detalhe importante e que o resolvedor procurou `tailwindcss` fora do projeto real:

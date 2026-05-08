@@ -52,7 +52,7 @@ Acesse [http://localhost:3000](http://localhost:3000).
 | Variável | Padrão | Descrição |
 |---|---|---|
 | `INITIAL_ADMIN_EMAIL` | `gabriel@asof.org.br` | Email do primeiro admin |
-| `INITIAL_ADMIN_PASSWORD` | `admin123` | Senha temporária — troque no primeiro login |
+| `INITIAL_ADMIN_PASSWORD` | — | Obrigatória. Deve ter pelo menos 12 caracteres e combinar maiúsculas, minúsculas, números e símbolos |
 
 ### Bypass de autenticação (apenas desenvolvimento)
 
@@ -92,7 +92,10 @@ npm run dev:turbo     # servidor de desenvolvimento (Turbopack — diagnóstico)
 npm run build         # build de produção (Webpack)
 npm run build:turbo   # build de produção (Turbopack — diagnóstico)
 npm run lint          # ESLint
+npm run typecheck     # TypeScript sem emitir arquivos
+npm run format:check  # valida formatação
 npm run test          # Vitest (testes unitários/integração)
+npm run audit         # npm audit
 ```
 
 > `npm run dev` usa Webpack por padrão. O projeto reproduziu um problema de resolução do Tailwind no Turbopack em máquinas com 8 GB RAM — Turbopack está disponível mas é tratado como modo de diagnóstico explícito.

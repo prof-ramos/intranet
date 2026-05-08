@@ -97,5 +97,6 @@ npm run db:studio
 ## Gotchas
 
 - This project is on Next.js `16.2.6`; check `node_modules/next/dist/docs/` before changing Next APIs, routing conventions, config, or build behavior.
+- Do not downgrade Next.js below the pinned 16.2.6 line; keep RSC security fixes current when updating framework versions.
 - `next.config.ts` pins `turbopack.root` to this directory for explicit Turbopack checks. This was added because a prior real-project dev test resolved Tailwind from `/Users/gabrielramos/projetos/ASOF` instead of this app directory.
 - The machine previously showed heavy memory pressure from `next dev` PostCSS/Tailwind workers on an 8 GB MacBook Air. Prefer controlled dev-server tests with `scripts/run-dev-60s.sh` when diagnosing freezes.

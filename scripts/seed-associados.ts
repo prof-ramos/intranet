@@ -6,8 +6,10 @@ import path from 'path';
 
 const rawPath = process.env.SEED_SOURCE_DB || '../prd-intranet/data/associados_mvp.sqlite';
 const SOURCE_DB_PATH = path.resolve(rawPath);
-if (!SOURCE_DB_PATH.startsWith(path.resolve('..'))) {
-  throw new Error('Invalid source path: must be within project directory');
+const sourceBaseDir = path.resolve('..');
+const sourceRelativePath = path.relative(sourceBaseDir, SOURCE_DB_PATH);
+if (sourceRelativePath.startsWith('..') || path.isAbsolute(sourceRelativePath)) {
+  throw new Error(`Invalid source path: ${SOURCE_DB_PATH} must be within ${sourceBaseDir}`);
 }
 const BATCH_SIZE = 100;
 
@@ -51,4 +53,7 @@ async function main() {
   console.log('Done seeding associates.');
 }
 
-main().catch(console.error);
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

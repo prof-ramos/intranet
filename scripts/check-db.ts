@@ -6,4 +6,7 @@ async function main() {
   const [{ total }] = await db.select({ total: count() }).from(admins);
   console.log(`Admins in DB: ${total}`);
 }
-main().catch(console.error);
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
