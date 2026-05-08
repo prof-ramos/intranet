@@ -19,9 +19,10 @@ export default async function AssociadosPage({
   const { q = '', page: pageParam = '1' } = await searchParams;
   const page = Math.max(1, Number(pageParam));
 
+  const escapedQ = q.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
   const baseWhere = and(
     eq(associates.associationStatus, 'ativo'),
-    q ? like(associates.fullName, `%${q}%`) : undefined,
+    q ? like(associates.fullName, `%${escapedQ}%`) : undefined,
   );
 
   const [rows, [{ total }]] = await Promise.all([
@@ -128,7 +129,7 @@ export default async function AssociadosPage({
                     className="join-item btn btn-square btn-sm"
                     aria-label="Página anterior"
                   >
-                    <ChevronLeft size={16} />
+                    <ChevronLeft size={16} aria-hidden="true" />
                   </Link>
                 ) : (
                   <button
@@ -136,7 +137,7 @@ export default async function AssociadosPage({
                     aria-label="Página anterior"
                     disabled
                   >
-                    <ChevronLeft size={16} />
+                    <ChevronLeft size={16} aria-hidden="true" />
                   </button>
                 )}
                 {page < totalPages ? (
@@ -145,7 +146,7 @@ export default async function AssociadosPage({
                     className="join-item btn btn-square btn-sm"
                     aria-label="Próxima página"
                   >
-                    <ChevronRight size={16} />
+                    <ChevronRight size={16} aria-hidden="true" />
                   </Link>
                 ) : (
                   <button
@@ -153,7 +154,7 @@ export default async function AssociadosPage({
                     aria-label="Próxima página"
                     disabled
                   >
-                    <ChevronRight size={16} />
+                    <ChevronRight size={16} aria-hidden="true" />
                   </button>
                 )}
               </div>
@@ -165,7 +166,7 @@ export default async function AssociadosPage({
               <thead className="bg-primary text-primary-content">
                 <tr>
                   <th scope="col">Nome</th>
-                  <th scope="col">Cargo</th>
+                  <th scope="col">Lotação</th>
                   <th scope="col">Posto</th>
                   <th scope="col">Email</th>
                   <th scope="col">Situação</th>

@@ -1,64 +1,122 @@
 # ASOF Intranet
 
-Intranet administrativa da ASOF, construída com Next.js App Router, TypeScript, DaisyUI, Drizzle ORM e SQLite/libSQL.
+Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia associados, atividades administrativas e comunicações internas da diretoria.
 
-## Getting Started
+**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · SQLite/libSQL · JWT (jose)
+
+---
+
+## Pré-requisitos
+
+- Node.js 20+
+- npm (não pnpm, não yarn — o lockfile é `package-lock.json`)
+
+---
+
+## Início rápido
 
 ```bash
+# 1. Instalar dependências
 npm install
+
+# 2. Configurar variáveis de ambiente
+cp .env.example .env.local
+# edite .env.local conforme a seção abaixo
+
+# 3. Criar e migrar o banco
+npm run db:migrate
+
+# 4. Popular com dados iniciais
+npm run db:seed
+
+# 5. Subir o servidor de desenvolvimento
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Acesse [http://localhost:3000](http://localhost:3000).
 
-`npm run dev` uses Webpack by default because this project previously reproduced a Next 16/Turbopack/Tailwind resolution issue on the local machine. Turbopack remains available only when explicitly requested:
+---
 
-```bash
-npm run dev:turbo
-npm run build:turbo
-```
+## Variáveis de ambiente
 
-## Auth For Local Development
+### Obrigatórias em produção
 
-`.env.local` controls the development auth bypass:
+| Variável | Descrição |
+|---|---|
+| `SESSION_SECRET` | Segredo JWT — mínimo 32 caracteres. Gere com: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| `DATABASE_URL` | URL do banco. SQLite local: `file:sqlite.db`. Turso Cloud: `libsql://<host>` |
+| `DATABASE_AUTH_TOKEN` | Token de autenticação Turso (obrigatório quando `DATABASE_URL` usa `libsql://`) |
 
-```bash
-SKIP_AUTH=true
-DEV_USER_ID=1
-DEV_USER_NAME="ASOF Dev User"
-DEV_USER_EMAIL=dev@asof.local
-DEV_USER_ROLE=admin
-DEV_USER_MUST_CHANGE_PASSWORD=false
-```
+### Seed do admin inicial
 
-Valid roles are `admin`, `diretoria`, and `secretaria`.
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `INITIAL_ADMIN_EMAIL` | `gabriel@asof.org.br` | Email do primeiro admin |
+| `INITIAL_ADMIN_PASSWORD` | `admin123` | Senha temporária — troque no primeiro login |
 
-## Common Commands
+### Bypass de autenticação (apenas desenvolvimento)
 
-```bash
-npm run lint
-npm run test
-npm run build
-npm run db:generate
-npm run db:migrate
-npm run db:seed
-npm run db:studio
-```
+| Variável | Valor | Descrição |
+|---|---|---|
+| `SKIP_AUTH` | `true` | Desativa JWT e usa o usuário de dev abaixo |
+| `DEV_USER_ID` | `1` | ID do usuário simulado |
+| `DEV_USER_NAME` | `ASOF Dev User` | Nome exibido na sidebar |
+| `DEV_USER_EMAIL` | `dev@asof.local` | — |
+| `DEV_USER_ROLE` | `admin` | `admin` \| `diretoria` \| `secretaria` |
+| `DEV_USER_MUST_CHANGE_PASSWORD` | `false` | Simula fluxo de troca de senha |
 
-## Architecture
+> `SKIP_AUTH=true` é **ignorado em `NODE_ENV=production`** — o proxy rejeita a flag mesmo que esteja definida.
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for the current project structure, data flow, known debts, and scaling notes.
+---
 
-## Diagnostics
+## Banco de dados
 
-Use the controlled wrapper when validating dev-server runtime behavior:
+O projeto usa SQLite local por padrão (`sqlite.db` na raiz). Para produção, use [Turso](https://turso.tech) (libSQL compatível).
 
 ```bash
-DURATION_SECONDS=60 PORT=3010 LOG_FILE=next-dev-webpack-60s.log scripts/run-dev-60s.sh
+npm run db:generate   # gera migrações a partir do schema
+npm run db:migrate    # aplica migrações pendentes
+npm run db:seed       # insere admin inicial + associados de exemplo
+npm run db:studio     # abre Drizzle Studio no browser
 ```
 
-It starts `npm run dev`, samples process state, curls the app, and shuts down the process tree.
+As migrações ficam em `drizzle/`. O schema está em `src/lib/db/schema/`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Comandos
+
+```bash
+npm run dev           # servidor de desenvolvimento (Webpack)
+npm run dev:turbo     # servidor de desenvolvimento (Turbopack — diagnóstico)
+npm run build         # build de produção (Webpack)
+npm run build:turbo   # build de produção (Turbopack — diagnóstico)
+npm run lint          # ESLint
+npm run test          # Vitest (testes unitários/integração)
+```
+
+> `npm run dev` usa Webpack por padrão. O projeto reproduziu um problema de resolução do Tailwind no Turbopack em máquinas com 8 GB RAM — Turbopack está disponível mas é tratado como modo de diagnóstico explícito.
+
+---
+
+## Estrutura
+
+```
+src/
+  app/
+    app/          # área autenticada (/app/*)
+    login/        # página e actions de autenticação
+    layout.tsx    # layout raiz (fontes, tema)
+  components/     # componentes compartilhados (Sidebar, NavLink…)
+  lib/
+    auth/         # session JWT, requireAuth, config
+    db/           # cliente Drizzle + schema
+
+proxy.ts          # proxy de autenticação (Next.js 16 — substitui middleware.ts)
+drizzle/          # migrações SQL geradas
+scripts/          # seed-admin.ts, seed-associados.ts, check-db.ts
+```
+
+Detalhes de arquitetura, fluxo de dados e decisões técnicas: [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+Design system, tokens de cor e tipografia: [`DESIGN.md`](./DESIGN.md).
+Contexto institucional e vocabulário do domínio: [`AGENTS.md`](./AGENTS.md).

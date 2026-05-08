@@ -40,6 +40,19 @@ colors:
   badge-active-bg: "#bfe6bd"  # associate status: Ativo
   badge-pending-bg: "#e7c16b" # associate status: Em análise
 
+  # Dashboard — KPI stripe & kanban accents
+  hair: "rgba(4, 9, 32, 0.10)"       # hairline divider / card border (same as header-border)
+  kanban-a-fazer: "#94a3b8"           # slate — column "A fazer"
+  kanban-andamento: "#76AEEA"         # sky — column "Em andamento"
+  kanban-aguardando: "#e7c16b"        # amber — column "Aguardando terceiros"
+  kanban-concluido: "#86efac"         # green — column "Concluído"
+
+  # Priority tones (text color on kanban cards)
+  priority-urgente: "#b91c1c"         # red-700
+  priority-alta: "#a16207"            # amber-700
+  priority-normal: "rgba(13,31,60,0.7)"
+  priority-baixa: "rgba(13,31,60,0.5)"
+
 typography:
   display:
     fontFamily: Playfair Display
@@ -192,6 +205,60 @@ components:
     ring: "2px solid rgba(4, 9, 32, 0.15)"
     fontSize: 14px
     fontWeight: "700"
+
+  # Dashboard — Sala de Operações
+  kpi-stripe:
+    layout: flex (5 equal columns, `flex-1` each)
+    backgroundColor: "{colors.surface-card}"
+    border: "1px solid {colors.hair}"
+    rounded: "{rounded.box}"
+    divider: "1px solid {colors.hair}" # between columns, left border on cols 2–5
+    paddingX: 20px
+    paddingY: 16px
+    valueSize: 30px
+    valueFontFamily: Playfair Display
+    valueFontWeight: "700"
+    labelSize: 12px (lowercase)
+    neg-tone: "{colors.priority-urgente}"   # atrasadas
+    pos-tone: "#15803d"                     # contribuições em dia
+  kanban-column:
+    backgroundColor: "var(--color-base-200)"
+    rounded: 1rem       # rounded-2xl
+    padding: 12px
+    minHeight: 380px
+    headerAccent: 8x8px rounded-sm dot, color per status (see kanban-* tokens)
+    headerText: 10px uppercase tracking-wider font-bold
+    countText: 11px text-base-content/55
+  kanban-card:
+    backgroundColor: "{colors.surface-card}"
+    border: "1px solid {colors.hair}"
+    shadow: "0 1px 0 rgba(4,9,32,0.04)"
+    rounded: 0.75rem    # rounded-xl
+    padding: 12px
+    titleSize: 14px font-semibold leading-snug
+    tagStyle: rounded-full px-2 py-0.5 text-[10px] bg-base-200 border hair
+    priorityStyle: 10px uppercase tracking-wider, color per priority tone
+    assigneeAvatar: 20x20px rounded-full bg-primary text-[9px] font-bold
+  right-rail:
+    width: 320px        # fixed at xl breakpoint
+    gap: 20px between panels
+  alert-panel:
+    backgroundColor: "{colors.surface-card}"
+    border: "1px solid {colors.hair}"
+    rounded: "{rounded.box}"
+    iconSize: 20px
+    iconColor: per tone (neg=priority-urgente, warn=priority-alta, info=primary)
+    divider: "1px solid {colors.hair}" between items (not after last)
+    titleSize: 14px font-semibold
+    bodySize: 12px text-base-content/60 leading-relaxed
+  region-bars:
+    backgroundColor: "{colors.surface-card}"
+    border: "1px solid {colors.hair}"
+    rounded: "{rounded.box}"
+    trackHeight: 4px rounded-full bg-base-200
+    fillColor: "{colors.primary}"
+    labelSize: 14px font-medium
+    valueSize: 14px font-serif font-bold
 ---
 
 ## Identidade Visual
@@ -264,6 +331,26 @@ O projeto usa DaisyUI 5 como base de componentes. Todos os elementos de interfac
 | Avatar com iniciais | `avatar` + `div` com iniciais e `rounded-full` |
 | Grupo de botões (paginação) | `join` / `join-item` |
 | Dropdown de filtro | `dropdown` / `dropdown-content` / `menu` |
+| KPI stripe | `rounded-box bg-base-100` com `flex` e `flex-1` por célula |
+| Coluna kanban | `rounded-2xl bg-base-200` — sem classe DaisyUI específica |
+| Card kanban | `rounded-xl bg-base-100` com border e shadow inline |
+| Barras de região | `rounded-full bg-base-200` (track) + `bg-primary` (fill) |
+
+## Dashboard — Sala de Operações
+
+O dashboard usa um layout de três zonas verticais dentro da área de conteúdo já enquadrada pela Sidebar + Header:
+
+1. **Cabeçalho de página** — eyebrow `text-[11px] uppercase tracking-[0.18em]` com contexto ("Sala de operações · data"), `h1` em Playfair 40–48px, e botões de ação alinhados à direita.
+
+2. **KPI stripe** — faixa horizontal `rounded-box` com 5 células `flex-1`, separadas por hairlines verticais `1px solid rgba(4,9,32,0.10)`. Valores em Playfair 30px bold; label 12px lowercase `text-base-content/65`. Valores negativos (atrasadas) em `#b91c1c`; positivos (contribuições) em `#15803d`.
+
+3. **Grid principal** (`xl:grid-cols-[minmax(0,1fr)_320px]`) — painel kanban à esquerda (largura fluida) e rail lateral fixo de 320px à direita. Em viewports menores que `xl` (1280px) as zonas empilham verticalmente.
+
+**Painel kanban** — `rounded-box bg-base-100` com `grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4`. Cada coluna tem um ponto colorido (8×8px `rounded-sm`) que mapeia para o status: slate → a_fazer, sky → em_andamento, amber → aguardando_terceiros, green → concluido. Os cards mostram título, tag de área, prioridade colorida, data e avatar de 2 letras do responsável.
+
+**Rail lateral** — dois painéis `rounded-box bg-base-100` empilhados com `gap-5`:
+- *Avisos*: lista de alertas com ícone Lucide de 20px colorido por tom (neg/warn/info), separados por hairlines (exceto o último item).
+- *Associados por região*: barras horizontais de 4px de altura, track `bg-base-200`, fill `bg-primary`, label à esquerda e contagem à direita em Playfair 14px bold.
 
 ## Voz Visual
 

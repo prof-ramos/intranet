@@ -16,10 +16,11 @@ export async function login(formData: FormData) {
   const user = await db.select().from(admins)
     .where(eq(admins.email, email)).get();
 
-  if (!user || !user.isActive) redirect('/login?error=1');
+  // Always run bcrypt.compare to prevent timing-based user enumeration.
+  const DUMMY_HASH = '$2a$12$aaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
 
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) redirect('/login?error=1');
+  if (!user || !user.isActive || !valid) redirect('/login?error=1');
 
   await createSession({
     userId: user.id,

@@ -14,8 +14,14 @@ function getEncodedSecret(): Uint8Array {
   return encodedSecret;
 }
 
-export async function middleware(request: NextRequest) {
-  if (isSkipAuthEnabled()) {
+function parseSession(payload: Record<string, unknown>) {
+  const isLoggedIn = payload.isLoggedIn === true;
+  const mustChangePassword = payload.mustChangePassword === true;
+  return { isLoggedIn, mustChangePassword };
+}
+
+export async function proxy(request: NextRequest) {
+  if (isSkipAuthEnabled() && process.env.NODE_ENV !== 'production') {
     return NextResponse.next();
   }
 
@@ -27,7 +33,7 @@ export async function middleware(request: NextRequest) {
 
   try {
     const { payload } = await jwtVerify(token, getEncodedSecret(), { clockTolerance: 60 });
-    const session = payload as unknown as { isLoggedIn?: boolean; mustChangePassword?: boolean };
+    const session = parseSession(payload as Record<string, unknown>);
 
     if (!session.isLoggedIn) {
       return NextResponse.redirect(new URL('/login', request.url));

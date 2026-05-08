@@ -18,9 +18,9 @@ export function LogoutButton() {
         Sair
       </button>
 
-      <dialog id="logout-modal" className="modal">
+      <dialog id="logout-modal" className="modal" aria-labelledby="logout-modal-title">
         <div className="modal-box">
-          <h3 className="font-serif text-lg font-bold">Encerrar sessão</h3>
+          <h3 id="logout-modal-title" className="font-serif text-lg font-bold">Encerrar sessão</h3>
           <p className="py-4">Deseja realmente sair do sistema?</p>
           <div className="modal-action">
             <form method="dialog">
