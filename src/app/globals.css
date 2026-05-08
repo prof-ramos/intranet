@@ -5,11 +5,11 @@
   name: "ASOF";
   default: true;
   prefersdark: false;
-  color-scheme: "light";
-  --color-base-100: #ffffff;
-  --color-base-200: #f8fafc;
-  --color-base-300: #e7edf4;
-  --color-base-content: #040920;
+  color-scheme: "dark";
+  --color-base-100: oklch(14.076% 0.004 285.822);
+  --color-base-200: oklch(20.219% 0.004 308.229);
+  --color-base-300: oklch(23.219% 0.004 308.229);
+  --color-base-content: oklch(75.687% 0.123 76.89);
   --color-primary: #040920;
   --color-primary-content: #ffffff;
   --color-secondary: oklch(27.581% 0.064 261.069);
@@ -39,9 +39,4 @@
 @theme inline {
   --font-sans: var(--font-google-sans);
   --font-serif: var(--font-playfair);
-}
-
-body {
-  background-color: #f8fafc;
-  color: var(--color-base-content);
 }
