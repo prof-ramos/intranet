@@ -25,7 +25,7 @@ description: Create new agent skills with proper structure, progressive disclosu
 
 ## Skill Structure
 
-```
+```text
 skill-name/
 ├── SKILL.md           # Main instructions (required)
 ├── REFERENCE.md       # Detailed docs (if needed)
@@ -75,13 +75,13 @@ The description is **the only thing your agent sees** when deciding which skill 
 
 **Good example**:
 
-```
+```md
 Extract text and tables from PDF files, fill forms, merge documents. Use when working with PDF files or when user mentions PDFs, forms, or document extraction.
 ```
 
 **Bad example**:
 
-```
+```md
 Helps with documents.
 ```
 
@@ -101,7 +101,7 @@ Scripts save tokens and improve reliability vs generated code.
 
 Split into separate files when:
 
-- SKILL.md exceeds 100 lines
+- SKILL.md is over 100 lines
 - Content has distinct domains (finance vs sales schemas)
 - Advanced features are rarely needed
 
@@ -110,7 +110,7 @@ Split into separate files when:
 After drafting, verify:
 
 - [ ] Description includes triggers ("Use when...")
-- [ ] SKILL.md under 100 lines
+- [ ] SKILL.md is at most 100 lines
 - [ ] No time-sensitive info
 - [ ] Consistent terminology
 - [ ] Concrete examples included

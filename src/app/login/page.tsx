@@ -1,4 +1,4 @@
-import { login } from './actions';
+import { login } from '@/app/login/actions';
 
 export default async function LoginPage({
   searchParams,
@@ -23,9 +23,8 @@ export default async function LoginPage({
 
           <form action={login} className="flex flex-col gap-4">
             <fieldset className="fieldset">
-              <legend className="fieldset-legend">
-                <label htmlFor="email">Email</label>
-              </legend>
+              <legend className="fieldset-legend">Email</legend>
+              <label htmlFor="email" className="sr-only">Email</label>
               <input
                 id="email"
                 name="email"
@@ -38,9 +37,8 @@ export default async function LoginPage({
             </fieldset>
 
             <fieldset className="fieldset">
-              <legend className="fieldset-legend">
-                <label htmlFor="password">Senha</label>
-              </legend>
+              <legend className="fieldset-legend">Senha</legend>
+              <label htmlFor="password" className="sr-only">Senha</label>
               <input
                 id="password"
                 name="password"

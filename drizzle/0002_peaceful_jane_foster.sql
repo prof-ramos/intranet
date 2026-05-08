@@ -14,7 +14,6 @@ CREATE TABLE `__new_admins` (
 INSERT INTO `__new_admins`("id", "name", "email", "password_hash", "role", "is_active", "must_change_password", "created_at", "updated_at") SELECT "id", "name", "email", "password_hash", "role", "is_active", "must_change_password", "created_at", "updated_at" FROM `admins`;--> statement-breakpoint
 DROP TABLE `admins`;--> statement-breakpoint
 ALTER TABLE `__new_admins` RENAME TO `admins`;--> statement-breakpoint
-PRAGMA foreign_keys=ON;--> statement-breakpoint
 CREATE UNIQUE INDEX `admins_email_unique` ON `admins` (`email`);--> statement-breakpoint
 CREATE TABLE `__new_associates` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -79,6 +78,9 @@ ALTER TABLE `__new_activities` RENAME TO `activities`;--> statement-breakpoint
 CREATE INDEX `idx_activities_status` ON `activities` (`status`);--> statement-breakpoint
 CREATE INDEX `idx_activities_due_date` ON `activities` (`due_date`);--> statement-breakpoint
 CREATE INDEX `idx_activities_status_due_date` ON `activities` (`status`,`due_date`);--> statement-breakpoint
+CREATE INDEX `idx_activities_assignee_id` ON `activities` (`assignee_id`);--> statement-breakpoint
+CREATE INDEX `idx_activities_associate_id` ON `activities` (`associate_id`);--> statement-breakpoint
+CREATE INDEX `idx_activities_created_by` ON `activities` (`created_by`);--> statement-breakpoint
 CREATE TABLE `__new_audit_logs` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`action` text NOT NULL,
@@ -93,4 +95,8 @@ CREATE TABLE `__new_audit_logs` (
 --> statement-breakpoint
 INSERT INTO `__new_audit_logs`("id", "action", "entity_type", "entity_id", "performed_by", "changes", "metadata", "created_at") SELECT "id", "action", "entity_type", "entity_id", "performed_by", "changes", "metadata", "created_at" FROM `audit_logs`;--> statement-breakpoint
 DROP TABLE `audit_logs`;--> statement-breakpoint
-ALTER TABLE `__new_audit_logs` RENAME TO `audit_logs`;
+ALTER TABLE `__new_audit_logs` RENAME TO `audit_logs`;--> statement-breakpoint
+CREATE INDEX `idx_audit_entity` ON `audit_logs` (`entity_type`,`entity_id`);--> statement-breakpoint
+CREATE INDEX `idx_audit_performed_by` ON `audit_logs` (`performed_by`);--> statement-breakpoint
+CREATE INDEX `idx_audit_created_at` ON `audit_logs` (`created_at`);--> statement-breakpoint
+PRAGMA foreign_keys=ON;

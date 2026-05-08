@@ -8,6 +8,8 @@ description: >
   Do not trigger on generic brevity requests unless the user confirms caveman style.
 ---
 
+# Caveman
+
 Respond terse like smart caveman. All technical substance stay. Only fluff die.
 
 ## Persistence

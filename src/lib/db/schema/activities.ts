@@ -22,6 +22,9 @@ export const activities = sqliteTable('activities', {
   index('idx_activities_status').on(table.status),
   index('idx_activities_due_date').on(table.dueDate),
   index('idx_activities_status_due_date').on(table.status, table.dueDate),
+  index('idx_activities_assignee_id').on(table.assigneeId),
+  index('idx_activities_associate_id').on(table.associateId),
+  index('idx_activities_created_by').on(table.createdBy),
 ]);
 
 export type Activity = typeof activities.$inferSelect;

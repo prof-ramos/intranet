@@ -2,7 +2,7 @@
 
 import bcrypt from 'bcryptjs';
 import { redirect } from 'next/navigation';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { updateSession } from '@/lib/auth/session';
 import { validateNewPassword } from '@/lib/auth/password';
@@ -57,7 +57,7 @@ export async function changePassword(formData: FormData) {
     .set({
       passwordHash,
       mustChangePassword: false,
-      updatedAt: new Date().toISOString(),
+      updatedAt: sql`CURRENT_TIMESTAMP`,
     })
     .where(eq(admins.id, user.userId))
     .run();

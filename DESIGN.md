@@ -261,6 +261,8 @@ components:
     valueSize: 14px font-serif font-bold
 ---
 
+# Design System
+
 ## Identidade Visual
 
 A ASOF Intranet carrega a identidade institucional da Associação de Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. O design comunica autoridade diplomática e precisão administrativa — sem abrir mão de clareza e modernidade operacional.

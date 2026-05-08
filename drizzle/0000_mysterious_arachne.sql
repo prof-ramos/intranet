@@ -62,6 +62,9 @@ CREATE TABLE `activities` (
 	FOREIGN KEY (`created_by`) REFERENCES `admins`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
+CREATE INDEX `idx_activities_assignee_id` ON `activities` (`assignee_id`);--> statement-breakpoint
+CREATE INDEX `idx_activities_associate_id` ON `activities` (`associate_id`);--> statement-breakpoint
+CREATE INDEX `idx_activities_created_by` ON `activities` (`created_by`);--> statement-breakpoint
 CREATE TABLE `audit_logs` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`action` text NOT NULL,
@@ -73,3 +76,7 @@ CREATE TABLE `audit_logs` (
 	`created_at` text DEFAULT CURRENT_TIMESTAMP,
 	FOREIGN KEY (`performed_by`) REFERENCES `admins`(`id`) ON UPDATE no action ON DELETE no action
 );
+--> statement-breakpoint
+CREATE INDEX `idx_audit_entity` ON `audit_logs` (`entity_type`,`entity_id`);--> statement-breakpoint
+CREATE INDEX `idx_audit_performed_by` ON `audit_logs` (`performed_by`);--> statement-breakpoint
+CREATE INDEX `idx_audit_created_at` ON `audit_logs` (`created_at`);

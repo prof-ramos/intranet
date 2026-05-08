@@ -51,7 +51,10 @@ async function getDashboardData() {
     db
       .select({ contributionsOk: count() })
       .from(associates)
-      .where(eq(associates.contributionStatus, 'em_dia')),
+      .where(and(
+        eq(associates.associationStatus, 'ativo'),
+        eq(associates.contributionStatus, 'em_dia'),
+      )),
     db
       .select({ openActivities: count() })
       .from(activities)
@@ -59,7 +62,7 @@ async function getDashboardData() {
     db
       .select({ overdueActivities: count() })
       .from(activities)
-      .where(and(ne(activities.status, 'concluido'), sql`${activities.dueDate} < datetime('now')`)),
+      .where(and(ne(activities.status, 'concluido'), sql`date(${activities.dueDate}) < date('now')`)),
     db
       .select({ status: activities.status, total: count() })
       .from(activities)
@@ -82,7 +85,7 @@ async function getDashboardData() {
       .where(
         and(
           ne(activities.status, 'concluido'),
-          sql`${activities.dueDate} < datetime('now')`,
+          sql`date(${activities.dueDate}) < date('now')`,
         ),
       )
       .orderBy(activities.dueDate)

@@ -47,8 +47,8 @@ export default async function AssociadosPage({
   ]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
-  const from = (page - 1) * PAGE_SIZE + 1;
-  const to = Math.min(page * PAGE_SIZE, total);
+  const from = total === 0 ? 0 : Math.min((page - 1) * PAGE_SIZE + 1, total);
+  const to = total === 0 ? 0 : Math.min(page * PAGE_SIZE, total);
 
   const today = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -116,7 +116,7 @@ export default async function AssociadosPage({
             </p>
             <div className="flex items-center gap-4">
               <Link
-                href={`/app/associados?q=${encodeURIComponent(q)}&page=1`}
+                href="/app/associados?page=1"
                 className="text-sm font-semibold"
               >
                 Ver todos ({total})

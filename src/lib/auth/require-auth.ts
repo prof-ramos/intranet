@@ -17,7 +17,14 @@ export const requireAuth = cache(async (): Promise<AuthUser> => {
   }
 
   const user = await db
-    .select()
+    .select({
+      id: admins.id,
+      name: admins.name,
+      email: admins.email,
+      role: admins.role,
+      isActive: admins.isActive,
+      mustChangePassword: admins.mustChangePassword,
+    })
     .from(admins)
     .where(eq(admins.id, session.userId))
     .get();

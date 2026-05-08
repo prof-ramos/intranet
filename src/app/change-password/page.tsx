@@ -1,10 +1,12 @@
-import { changePassword } from './actions';
+import { changePassword } from '@/app/change-password/actions';
+import { requireAuth } from '@/lib/auth/require-auth';
 
 export default async function ChangePasswordPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAuth();
   const { error } = await searchParams;
 
   return (

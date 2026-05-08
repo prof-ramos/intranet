@@ -21,7 +21,7 @@ export async function login(formData: FormData) {
     .where(eq(admins.email, email)).get();
 
   // Always run bcrypt.compare to prevent timing-based user enumeration.
-  const DUMMY_HASH = '$2a$12$aaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  const DUMMY_HASH = '$2b$12$..AtteJQVcIwONDECxQ3cue37ZA4VVeOy9MIxxuWQ4i6h4bjKJ3NK';
   const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
 
   if (!user || !user.isActive || !valid) redirect('/login?error=1');

@@ -17,6 +17,17 @@ export interface LoginRateLimitResult {
 export function createLoginRateLimiter(options: LoginRateLimitOptions) {
   const attempts = new Map<string, LoginRateLimitEntry>();
 
+  function cleanupExpiredEntries(now = Date.now()): void {
+    for (const [key, entry] of attempts.entries()) {
+      if (entry.expiresAt <= now) {
+        attempts.delete(key);
+      }
+    }
+  }
+
+  const cleanupInterval = setInterval(cleanupExpiredEntries, options.windowMs);
+  cleanupInterval.unref?.();
+
   function getEntry(key: string, now: number): LoginRateLimitEntry {
     const current = attempts.get(key);
     if (current && current.expiresAt > now) return current;
@@ -49,6 +60,14 @@ export function createLoginRateLimiter(options: LoginRateLimitOptions) {
 
     reset(key: string): void {
       attempts.delete(key.trim().toLowerCase());
+    },
+
+    cleanup(now = Date.now()): void {
+      cleanupExpiredEntries(now);
+    },
+
+    dispose(): void {
+      clearInterval(cleanupInterval);
     },
   };
 }

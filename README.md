@@ -51,7 +51,7 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 | Variável | Padrão | Descrição |
 |---|---|---|
-| `INITIAL_ADMIN_EMAIL` | `gabriel@asof.org.br` | Email do primeiro admin |
+| `INITIAL_ADMIN_EMAIL` | — | Obrigatória. Email do primeiro admin |
 | `INITIAL_ADMIN_PASSWORD` | — | Obrigatória. Deve ter pelo menos 12 caracteres e combinar maiúsculas, minúsculas, números e símbolos |
 
 ### Bypass de autenticação (apenas desenvolvimento)
@@ -104,7 +104,7 @@ npm run audit         # npm audit
 
 ## Estrutura
 
-```
+```text
 src/
   app/
     app/          # área autenticada (/app/*)

@@ -14,11 +14,11 @@ From "A Philosophy of Software Design":
 │                     │
 │                     │
 └─────────────────────┘
-```text
+```
 
 **Shallow module** = large interface + little implementation (avoid)
 
-```
+```text
 ┌─────────────────────────────────┐
 │       Large Interface           │  ← Many methods, complex params
 ├─────────────────────────────────┤

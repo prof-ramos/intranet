@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateNewPassword } from './password';
+import { validateNewPassword } from '@/lib/auth/password';
 
 describe('password validation', () => {
   it('rejects short or incomplete passwords', () => {
@@ -16,5 +16,9 @@ describe('password validation', () => {
 
   it('accepts strong passwords', () => {
     expect(validateNewPassword('Senha-Forte-2026!')).toEqual({ valid: true });
+  });
+
+  it('accepts a strong password with exactly 12 characters', () => {
+    expect(validateNewPassword('Abcdef123!@#')).toEqual({ valid: true });
   });
 });

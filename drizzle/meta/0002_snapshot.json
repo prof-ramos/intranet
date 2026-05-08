@@ -452,6 +452,27 @@
             "due_date"
           ],
           "isUnique": false
+        },
+        "idx_activities_assignee_id": {
+          "name": "idx_activities_assignee_id",
+          "columns": [
+            "assignee_id"
+          ],
+          "isUnique": false
+        },
+        "idx_activities_associate_id": {
+          "name": "idx_activities_associate_id",
+          "columns": [
+            "associate_id"
+          ],
+          "isUnique": false
+        },
+        "idx_activities_created_by": {
+          "name": "idx_activities_created_by",
+          "columns": [
+            "created_by"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -560,7 +581,30 @@
           "default": "CURRENT_TIMESTAMP"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_audit_entity": {
+          "name": "idx_audit_entity",
+          "columns": [
+            "entity_type",
+            "entity_id"
+          ],
+          "isUnique": false
+        },
+        "idx_audit_performed_by": {
+          "name": "idx_audit_performed_by",
+          "columns": [
+            "performed_by"
+          ],
+          "isUnique": false
+        },
+        "idx_audit_created_at": {
+          "name": "idx_audit_created_at",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "audit_logs_performed_by_admins_id_fk": {
           "name": "audit_logs_performed_by_admins_id_fk",
