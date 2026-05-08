@@ -1,0 +1,17 @@
+import { requireAuth } from '@/lib/auth/require-auth';
+
+export default async function AtividadesPage() {
+  await requireAuth();
+
+  return (
+    <main className="px-5 py-8 sm:px-8 lg:px-10">
+      <h1 className="font-serif text-4xl font-bold leading-none md:text-5xl">
+        Atividades
+      </h1>
+      <p className="mt-4 max-w-2xl text-base-content/65">
+        Gestão detalhada de atividades em preparação. O painel já usa dados reais
+        cadastrados no banco.
+      </p>
+    </main>
+  );
+}
