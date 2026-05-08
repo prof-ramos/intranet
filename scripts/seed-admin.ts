@@ -2,12 +2,12 @@ import { db } from '../src/lib/db';
 import { admins } from '../src/lib/db/schema';
 import bcrypt from 'bcryptjs';
 
-function main() {
+async function main() {
   const email = process.env.INITIAL_ADMIN_EMAIL || 'gabriel@asof.org.br';
   const password = process.env.INITIAL_ADMIN_PASSWORD || 'admin123';
   const hash = bcrypt.hashSync(password, 12);
 
-  db.insert(admins)
+  await db.insert(admins)
     .values({
       name: 'Administrador',
       email,
@@ -21,4 +21,4 @@ function main() {
   console.log('You MUST change the default password on first login.');
 }
 
-main();
+main().catch(console.error);

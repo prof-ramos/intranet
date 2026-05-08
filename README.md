@@ -1,35 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ASOF Intranet
+
+Intranet administrativa da ASOF, construída com Next.js App Router, TypeScript, DaisyUI, Drizzle ORM e SQLite/libSQL.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`npm run dev` uses Webpack by default because this project previously reproduced a Next 16/Turbopack/Tailwind resolution issue on the local machine. Turbopack remains available only when explicitly requested:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev:turbo
+npm run build:turbo
+```
 
-## Learn More
+## Auth For Local Development
 
-To learn more about Next.js, take a look at the following resources:
+`.env.local` controls the development auth bypass:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+SKIP_AUTH=true
+DEV_USER_ID=1
+DEV_USER_NAME="ASOF Dev User"
+DEV_USER_EMAIL=dev@asof.local
+DEV_USER_ROLE=admin
+DEV_USER_MUST_CHANGE_PASSWORD=false
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Valid roles are `admin`, `diretoria`, and `secretaria`.
 
-## Deploy on Vercel
+## Common Commands
+
+```bash
+npm run lint
+npm run test
+npm run build
+npm run db:generate
+npm run db:migrate
+npm run db:seed
+npm run db:studio
+```
+
+## Architecture
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for the current project structure, data flow, known debts, and scaling notes.
+
+## Diagnostics
+
+Use the controlled wrapper when validating dev-server runtime behavior:
+
+```bash
+DURATION_SECONDS=60 PORT=3010 LOG_FILE=next-dev-webpack-60s.log scripts/run-dev-60s.sh
+```
+
+It starts `npm run dev`, samples process state, curls the app, and shuts down the process tree.
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 

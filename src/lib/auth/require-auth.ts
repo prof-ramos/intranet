@@ -1,24 +1,22 @@
+import { cache } from 'react';
 import { redirect } from 'next/navigation';
 import { getSession } from './session';
+import { getDevAuthUser, isSkipAuthEnabled, type AuthUser } from './config';
 import { db } from '../db';
 import { admins } from '../db/schema';
 import { eq } from 'drizzle-orm';
 
-export interface AuthUser {
-  userId: number;
-  name: string;
-  email: string;
-  role: 'admin' | 'diretoria' | 'secretaria';
-  mustChangePassword: boolean;
-}
+export const requireAuth = cache(async (): Promise<AuthUser> => {
+  if (isSkipAuthEnabled()) {
+    return getDevAuthUser();
+  }
 
-export async function requireAuth(): Promise<AuthUser> {
   const session = await getSession();
   if (!session?.isLoggedIn) {
     redirect('/login');
   }
 
-  const user = db
+  const user = await db
     .select()
     .from(admins)
     .where(eq(admins.id, session.userId))
@@ -35,4 +33,4 @@ export async function requireAuth(): Promise<AuthUser> {
     role: user.role,
     mustChangePassword: user.mustChangePassword,
   };
-}
+});

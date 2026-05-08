@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { createClient } from '@libsql/client';
 import { db } from '../src/lib/db';
 import { associates } from '../src/lib/db/schema';
 
@@ -11,9 +11,10 @@ if (!SOURCE_DB_PATH.startsWith(path.resolve('..'))) {
 }
 const BATCH_SIZE = 100;
 
-function main() {
-  const sourceDb = new Database(SOURCE_DB_PATH);
-  const rows = sourceDb.prepare('SELECT * FROM associates').all() as Record<string, unknown>[];
+async function main() {
+  const sourceClient = createClient({ url: `file:${SOURCE_DB_PATH}` });
+  const result = await sourceClient.execute('SELECT * FROM associates');
+  const rows = result.rows as Record<string, unknown>[];
 
   console.log(`Found ${rows.length} rows to seed.`);
 
@@ -43,11 +44,11 @@ function main() {
       sourcePayload: row.source_payload as string | null,
     }));
 
-    db.insert(associates).values(batch).run();
+    await db.insert(associates).values(batch).run();
     console.log(`Inserted batch ${i / BATCH_SIZE + 1}/${Math.ceil(rows.length / BATCH_SIZE)}`);
   }
 
   console.log('Done seeding associates.');
 }
 
-main();
+main().catch(console.error);

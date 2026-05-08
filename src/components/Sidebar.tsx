@@ -1,4 +1,5 @@
-import { LayoutDashboard, Users, Kanban, Shield, Settings } from 'lucide-react';
+import Image from 'next/image';
+import { LayoutDashboard, Users, Kanban, Shield, ShieldCheck, Settings } from 'lucide-react';
 import { NavLink } from './NavLink';
 import { LogoutButton } from './LogoutButton';
 
@@ -11,13 +12,23 @@ interface SidebarProps {
 
 export function Sidebar({ user }: SidebarProps) {
   return (
-    <aside className="w-64 bg-base-200 border-r border-base-300 flex flex-col shrink-0">
-      <div className="p-4">
-        <h1 className="font-serif text-xl font-bold text-primary-content">
-          ASOF Intranet
-        </h1>
+    <aside className="w-72 min-h-full flex flex-col shrink-0" style={{ backgroundColor: '#06284f' }}>
+      {/* Logo — fundo branco para preservar as cores originais da marca */}
+      <div className="bg-white px-6 py-6 flex flex-col items-center">
+        <Image
+          src="/images/logo-asof.svg"
+          alt="ASOF — Associação de Oficiais de Chancelaria"
+          width={200}
+          height={60}
+          priority
+        />
+        <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-[#06284f]/40 font-sans">
+          Intranet
+        </p>
       </div>
-      <nav className="flex-1 px-2 space-y-1">
+
+      {/* Nav */}
+      <nav className="flex-1 flex flex-col pt-2">
         <NavLink href="/app" icon={<LayoutDashboard size={20} />}>
           Dashboard
         </NavLink>
@@ -33,7 +44,7 @@ export function Sidebar({ user }: SidebarProps) {
           </NavLink>
         )}
         {user.role !== 'secretaria' && (
-          <NavLink href="/app/auditoria" icon={<Shield size={20} />}>
+          <NavLink href="/app/auditoria" icon={<ShieldCheck size={20} />}>
             Auditoria
           </NavLink>
         )}
@@ -41,10 +52,12 @@ export function Sidebar({ user }: SidebarProps) {
           Configurações
         </NavLink>
       </nav>
-      <div className="p-4 border-t border-base-300 space-y-3">
-        <div>
-          <p className="text-sm font-medium">{user.name}</p>
-          <p className="text-xs opacity-60 capitalize">{user.role}</p>
+
+      {/* Footer */}
+      <div className="px-9 py-6" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
+        <div className="mb-3">
+          <p className="text-sm font-semibold text-white leading-tight">{user.name}</p>
+          <p className="text-xs text-white/50 mt-0.5 capitalize">{user.role}</p>
         </div>
         <LogoutButton />
       </div>

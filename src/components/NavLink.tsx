@@ -14,16 +14,20 @@ export function NavLink({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const isActive = pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = pathname === href ||
+    (href !== '/app' && pathname.startsWith(`${href}/`));
 
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-        isActive ? 'bg-primary text-primary-content' : 'hover:bg-base-300'
-      }`}
+      className={`flex h-[58px] items-center gap-3 pr-9 text-base transition-colors duration-150
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#76AEEA]
+        ${isActive
+          ? 'border-l-[6px] border-[#76AEEA] bg-[#123d73] pl-[30px] text-white'
+          : 'border-l-[6px] border-transparent pl-9 text-white/70 hover:bg-[#0d3260] hover:text-white'
+        }`}
     >
-      {icon}
+      <span className="shrink-0">{icon}</span>
       <span>{children}</span>
     </Link>
   );

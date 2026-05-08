@@ -1,8 +1,9 @@
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { createClient } from '@libsql/client';
+import { drizzle } from 'drizzle-orm/libsql';
 import * as schema from './schema';
 
-const sqlite = new Database('sqlite.db');
-sqlite.pragma('journal_mode = WAL');
+const url = process.env.DATABASE_URL || 'file:sqlite.db';
 
-export const db = drizzle(sqlite, { schema });
+const client = createClient({ url });
+
+export const db = drizzle(client, { schema });
