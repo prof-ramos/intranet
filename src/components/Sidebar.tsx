@@ -1,5 +1,13 @@
 import Image from 'next/image';
-import { LayoutDashboard, Users, Kanban, Shield, ShieldCheck, Settings } from 'lucide-react';
+import {
+  Kanban,
+  LayoutDashboard,
+  Scale,
+  Settings,
+  Shield,
+  ShieldCheck,
+  Users,
+} from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { LogoutButton } from '@/components/LogoutButton';
 import { type AuthRole } from '@/lib/auth/config';
@@ -38,6 +46,9 @@ export function Sidebar({ user }: SidebarProps) {
         </NavLink>
         <NavLink href="/app/atividades" icon={<Kanban size={20} />}>
           Atividades
+        </NavLink>
+        <NavLink href="/app/juridico" icon={<Scale size={20} />}>
+          Jurídico
         </NavLink>
         {user.role !== 'secretaria' && (
           <NavLink href="/app/usuarios" icon={<Shield size={20} />}>

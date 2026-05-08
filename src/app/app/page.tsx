@@ -1,13 +1,13 @@
 import { requireAuth } from '@/lib/auth/require-auth';
 import { db } from '@/lib/db';
 import { activities, associates } from '@/lib/db/schema';
-import { and, count, desc, eq, ne, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ne, sql } from 'drizzle-orm';
 import {
   AlertTriangle,
   ArrowRight,
-  CheckCircle2,
-  Clock,
+  Calendar,
   Globe,
+  Mail,
   Megaphone,
   Plus,
 } from 'lucide-react';
@@ -29,6 +29,28 @@ const priorityLabels: Record<string, string> = {
   urgente: 'Urgente',
 };
 
+const statusAccents: Record<string, string> = {
+  a_fazer: '#94a3b8',
+  em_andamento: '#76AEEA',
+  aguardando_terceiros: '#e7c16b',
+  concluido: '#86efac',
+};
+
+const priorityTone: Record<string, string> = {
+  urgente: '#b91c1c',
+  alta: '#a16207',
+  normal: 'rgba(13,31,60,0.70)',
+  baixa: 'rgba(13,31,60,0.50)',
+};
+
+function formatDueDate(value: string | null) {
+  if (!value) return null;
+  const [date] = value.split(' ');
+  const parts = date.split('-');
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}`;
+  return value;
+}
+
 async function getDashboardData() {
   const [
     [{ activeAssociates }],
@@ -39,6 +61,7 @@ async function getDashboardData() {
     activitiesByStatus,
     topRegions,
     urgentActivities,
+    kanbanCards,
   ] = await Promise.all([
     db
       .select({ activeAssociates: count() })
@@ -78,6 +101,7 @@ async function getDashboardData() {
       .select({
         id: activities.id,
         title: activities.title,
+        status: activities.status,
         priority: activities.priority,
         dueDate: activities.dueDate,
       })
@@ -90,6 +114,28 @@ async function getDashboardData() {
       )
       .orderBy(activities.dueDate)
       .limit(4),
+    db
+      .select({
+        id: activities.id,
+        title: activities.title,
+        status: activities.status,
+        priority: activities.priority,
+        dueDate: activities.dueDate,
+        associateName: associates.fullName,
+      })
+      .from(activities)
+      .leftJoin(associates, eq(activities.associateId, associates.id))
+      .orderBy(
+        asc(activities.status),
+        desc(sql`case ${activities.priority}
+          when 'urgente' then 4
+          when 'alta' then 3
+          when 'normal' then 2
+          else 1
+        end`),
+        asc(activities.dueDate),
+      )
+      .limit(20),
   ]);
 
   const contributionRate = activeAssociates === 0
@@ -107,6 +153,7 @@ async function getDashboardData() {
     activitiesByStatus,
     topRegions,
     urgentActivities,
+    kanbanCards,
   };
 }
 
@@ -132,9 +179,14 @@ export default async function DashboardPage() {
             Painel da diretoria
           </h1>
         </div>
-        <Link href="/app/atividades/nova" className="btn btn-primary btn-sm h-10">
-          <Plus size={16} aria-hidden="true" /> Nova atividade
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/app/atividades" className="btn btn-outline btn-sm h-10 border-base-300 bg-white">
+            <Calendar size={16} aria-hidden="true" /> Esta semana
+          </Link>
+          <Link href="/app/atividades/nova" className="btn btn-primary btn-sm h-10">
+            <Plus size={16} aria-hidden="true" /> Nova atividade
+          </Link>
+        </div>
       </div>
 
       <section
@@ -159,39 +211,85 @@ export default async function DashboardPage() {
         ))}
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="rounded-box bg-base-100 p-5" style={{ border: `1px solid ${HAIR}` }}>
+      <section className="flex flex-col items-start gap-6 xl:flex-row">
+        <div className="min-w-0 flex-1 rounded-box bg-base-100 p-5" style={{ border: `1px solid ${HAIR}` }}>
           <div className="mb-4 flex items-baseline justify-between">
-            <h2 className="font-serif text-xl font-bold">Atividades por status</h2>
+            <h2 className="font-serif text-xl font-bold">Atividades em curso</h2>
             <Link href="/app/atividades" className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
-              Abrir atividades <ArrowRight size={14} aria-hidden="true" />
+              Abrir kanban <ArrowRight size={14} aria-hidden="true" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-4">
             {Object.entries(activityStatusLabels).map(([status, label]) => {
               const row = data.activitiesByStatus.find((item) => item.status === status);
               const total = row?.total ?? 0;
+              const cards = data.kanbanCards
+                .filter((activity) => activity.status === status)
+                .slice(0, status === 'concluido' ? 2 : 3);
 
               return (
-                <article key={status} className="rounded-box bg-base-200 p-4">
-                  <div className="mb-6 flex items-center justify-between gap-3">
-                    <p className="text-xs font-bold uppercase tracking-wider">{label}</p>
-                    {status === 'concluido'
-                      ? <CheckCircle2 size={18} className="text-success" aria-hidden="true" />
-                      : <Clock size={18} className="text-primary" aria-hidden="true" />}
+                <article key={status} className="min-w-0 rounded-box bg-base-200 p-3">
+                  <div className="mb-3 flex items-center justify-between gap-3 px-1">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-[2px]"
+                        style={{ backgroundColor: statusAccents[status] }}
+                        aria-hidden="true"
+                      />
+                      <p className="truncate text-[11px] font-bold uppercase tracking-[0.06em]">
+                        {label}
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold text-base-content/55">{total}</span>
                   </div>
-                  <p className="font-serif text-4xl font-bold leading-none">{total}</p>
-                  <p className="mt-2 text-sm text-base-content/60">
-                    {total === 1 ? 'registro' : 'registros'}
-                  </p>
+
+                  <div className="flex flex-col gap-2">
+                    {cards.length === 0 ? (
+                      <div
+                        className="rounded-[10px] border border-dashed border-base-300 bg-base-100 px-3 py-5 text-center text-xs text-base-content/45"
+                      >
+                        Sem cards
+                      </div>
+                    ) : cards.map((card) => (
+                      <div
+                        key={card.id}
+                        className="rounded-[10px] bg-base-100 p-3 shadow-[0_1px_0_rgba(4,9,32,0.04)]"
+                        style={{ border: `1px solid ${HAIR}` }}
+                      >
+                        <p className="[overflow-wrap:anywhere] text-sm font-semibold leading-snug">
+                          {card.title}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <span
+                            className="text-[10px] font-bold uppercase tracking-[0.08em]"
+                            style={{ color: priorityTone[card.priority] ?? priorityTone.normal }}
+                          >
+                            {priorityLabels[card.priority] ?? card.priority}
+                          </span>
+                          {formatDueDate(card.dueDate) && (
+                            <span className="text-[10px] text-base-content/55">
+                              · vence {formatDueDate(card.dueDate)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          <span
+                            className="max-w-full truncate rounded-full border border-base-300 bg-base-200 px-2 py-1 text-[10px] font-semibold text-base-content/70"
+                          >
+                            {card.associateName ?? 'Sem associado'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </article>
               );
             })}
           </div>
         </div>
 
-        <aside className="flex flex-col gap-5">
+        <aside className="flex w-full shrink-0 flex-col gap-5 xl:w-[300px]">
           <div className="rounded-box bg-base-100 p-5" style={{ border: `1px solid ${HAIR}` }}>
             <div className="mb-3 flex items-center gap-2">
               <Megaphone size={20} className="text-primary" aria-hidden="true" />
@@ -226,18 +324,42 @@ export default async function DashboardPage() {
 
           <div className="rounded-box bg-base-100 p-5" style={{ border: `1px solid ${HAIR}` }}>
             <div className="mb-3 flex items-center gap-2">
+              <Mail size={20} className="text-primary" aria-hidden="true" />
+              <h2 className="font-serif text-lg font-bold">Comunicação</h2>
+            </div>
+            <p className="text-sm font-semibold leading-snug">
+              12 e-mails de associados sem resposta
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-base-content/60">
+              SLA interno: 48h — média de 36h esta semana.
+            </p>
+          </div>
+
+          <div className="rounded-box bg-base-100 p-5" style={{ border: `1px solid ${HAIR}` }}>
+            <div className="mb-3 flex items-center gap-2">
               <Globe size={20} className="text-primary" aria-hidden="true" />
               <h2 className="font-serif text-lg font-bold">Associados por país</h2>
             </div>
             <ul className="flex flex-col gap-3">
-              {data.topRegions.map((region) => (
+              {data.topRegions.map((region) => {
+                const max = Math.max(...data.topRegions.map((item) => item.total), 1);
+                const pct = Math.round((region.total / max) * 100);
+
+                return (
                 <li key={region.country ?? 'sem-pais'}>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="text-sm font-medium">{region.country ?? 'Não informado'}</p>
+                  <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                    <p className="truncate text-sm font-medium">{region.country ?? 'Não informado'}</p>
                     <p className="font-serif text-sm font-bold">{region.total}</p>
                   </div>
+                  <div className="h-1 overflow-hidden rounded-full bg-base-200">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
                 </li>
-              ))}
+              );
+              })}
             </ul>
           </div>
 
