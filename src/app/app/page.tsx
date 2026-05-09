@@ -2,15 +2,7 @@ import { requireAuth } from '@/lib/auth/require-auth';
 import { db } from '@/lib/db';
 import { activities, associates } from '@/lib/db/schema';
 import { and, asc, count, desc, eq, ne, sql } from 'drizzle-orm';
-import {
-  AlertTriangle,
-  ArrowRight,
-  Calendar,
-  Globe,
-  Mail,
-  Megaphone,
-  Plus,
-} from 'lucide-react';
+import { AlertTriangle, ArrowRight, Calendar, Globe, Mail, Megaphone, Plus } from 'lucide-react';
 import Link from 'next/link';
 
 const HAIR = 'rgba(4, 9, 32, 0.10)';
@@ -43,12 +35,13 @@ const priorityTone: Record<string, string> = {
   baixa: 'rgba(13,31,60,0.50)',
 };
 
-function formatDueDate(value: string | null) {
+function formatDueDate(value: string | Date | null) {
   if (!value) return null;
-  const [date] = value.split(' ');
+  const normalized = value instanceof Date ? value.toISOString() : value;
+  const [date] = normalized.split(/[ T]/);
   const parts = date.split('-');
   if (parts.length === 3) return `${parts[2]}/${parts[1]}`;
-  return value;
+  return normalized;
 }
 
 async function getDashboardData() {
@@ -74,10 +67,9 @@ async function getDashboardData() {
     db
       .select({ contributionsOk: count() })
       .from(associates)
-      .where(and(
-        eq(associates.associationStatus, 'ativo'),
-        eq(associates.contributionStatus, 'em_dia'),
-      )),
+      .where(
+        and(eq(associates.associationStatus, 'ativo'), eq(associates.contributionStatus, 'em_dia')),
+      ),
     db
       .select({ openActivities: count() })
       .from(activities)
@@ -85,7 +77,7 @@ async function getDashboardData() {
     db
       .select({ overdueActivities: count() })
       .from(activities)
-      .where(and(ne(activities.status, 'concluido'), sql`date(${activities.dueDate}) < date('now')`)),
+      .where(and(ne(activities.status, 'concluido'), sql`${activities.dueDate} < now()`)),
     db
       .select({ status: activities.status, total: count() })
       .from(activities)
@@ -106,12 +98,7 @@ async function getDashboardData() {
         dueDate: activities.dueDate,
       })
       .from(activities)
-      .where(
-        and(
-          ne(activities.status, 'concluido'),
-          sql`date(${activities.dueDate}) < date('now')`,
-        ),
-      )
+      .where(and(ne(activities.status, 'concluido'), sql`${activities.dueDate} < now()`))
       .orderBy(activities.dueDate)
       .limit(4),
     db
@@ -138,9 +125,8 @@ async function getDashboardData() {
       .limit(20),
   ]);
 
-  const contributionRate = activeAssociates === 0
-    ? 0
-    : Math.round((contributionsOk / activeAssociates) * 100);
+  const contributionRate =
+    activeAssociates === 0 ? 0 : Math.round((contributionsOk / activeAssociates) * 100);
 
   return {
     stripe: [
@@ -172,15 +158,18 @@ export default async function DashboardPage() {
     <main className="px-5 py-8 sm:px-8 lg:px-10">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.18em] text-base-content/55">
+          <p className="text-base-content/55 text-[11px] tracking-[0.18em] uppercase">
             Sala de operações · {today}
           </p>
-          <h1 className="mt-2 font-serif text-4xl font-bold leading-none md:text-5xl">
+          <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-5xl">
             Painel da diretoria
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/app/atividades" className="btn btn-outline btn-sm h-10 border-base-300 bg-white">
+          <Link
+            href="/app/atividades"
+            className="btn btn-outline btn-sm border-base-300 h-10 bg-white"
+          >
             <Calendar size={16} aria-hidden="true" /> Esta semana
           </Link>
           <Link href="/app/atividades/nova" className="btn btn-primary btn-sm h-10">
@@ -190,7 +179,7 @@ export default async function DashboardPage() {
       </div>
 
       <section
-        className="mb-7 grid overflow-hidden rounded-box bg-base-100 sm:grid-cols-2 xl:grid-cols-5"
+        className="rounded-box bg-base-100 mb-7 grid overflow-hidden sm:grid-cols-2 xl:grid-cols-5"
         style={{ border: `1px solid ${HAIR}` }}
         aria-label="Indicadores"
       >
@@ -201,21 +190,29 @@ export default async function DashboardPage() {
             style={{ borderLeft: i === 0 ? 'none' : `1px solid ${HAIR}` }}
           >
             <span
-              className="font-serif text-3xl font-bold leading-none"
-              style={{ color: s.tone === 'neg' ? '#b91c1c' : s.tone === 'pos' ? '#15803d' : undefined }}
+              className="font-serif text-3xl leading-none font-bold"
+              style={{
+                color: s.tone === 'neg' ? '#b91c1c' : s.tone === 'pos' ? '#15803d' : undefined,
+              }}
             >
               {s.value}
             </span>
-            <span className="text-xs lowercase text-base-content/65">{s.label}</span>
+            <span className="text-base-content/65 text-xs lowercase">{s.label}</span>
           </div>
         ))}
       </section>
 
       <section className="flex flex-col items-start gap-6 xl:flex-row">
-        <div className="min-w-0 flex-1 rounded-box bg-base-100 p-5" style={{ border: `1px solid ${HAIR}` }}>
+        <div
+          className="rounded-box bg-base-100 min-w-0 flex-1 p-5"
+          style={{ border: `1px solid ${HAIR}` }}
+        >
           <div className="mb-4 flex items-baseline justify-between">
             <h2 className="font-serif text-xl font-bold">Atividades em curso</h2>
-            <Link href="/app/atividades" className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
+            <Link
+              href="/app/atividades"
+              className="text-primary inline-flex items-center gap-1 text-sm font-semibold"
+            >
               Abrir kanban <ArrowRight size={14} aria-hidden="true" />
             </Link>
           </div>
@@ -229,7 +226,7 @@ export default async function DashboardPage() {
                 .slice(0, status === 'concluido' ? 2 : 3);
 
               return (
-                <article key={status} className="min-w-0 rounded-box bg-base-200 p-3">
+                <article key={status} className="rounded-box bg-base-200 min-w-0 p-3">
                   <div className="mb-3 flex items-center justify-between gap-3 px-1">
                     <div className="flex min-w-0 items-center gap-2">
                       <span
@@ -237,51 +234,49 @@ export default async function DashboardPage() {
                         style={{ backgroundColor: statusAccents[status] }}
                         aria-hidden="true"
                       />
-                      <p className="truncate text-[11px] font-bold uppercase tracking-[0.06em]">
+                      <p className="truncate text-[11px] font-bold tracking-[0.06em] uppercase">
                         {label}
                       </p>
                     </div>
-                    <span className="text-xs font-semibold text-base-content/55">{total}</span>
+                    <span className="text-base-content/55 text-xs font-semibold">{total}</span>
                   </div>
 
                   <div className="flex flex-col gap-2">
                     {cards.length === 0 ? (
-                      <div
-                        className="rounded-[10px] border border-dashed border-base-300 bg-base-100 px-3 py-5 text-center text-xs text-base-content/45"
-                      >
+                      <div className="border-base-300 bg-base-100 text-base-content/45 rounded-[10px] border border-dashed px-3 py-5 text-center text-xs">
                         Sem cards
                       </div>
-                    ) : cards.map((card) => (
-                      <div
-                        key={card.id}
-                        className="rounded-[10px] bg-base-100 p-3 shadow-[0_1px_0_rgba(4,9,32,0.04)]"
-                        style={{ border: `1px solid ${HAIR}` }}
-                      >
-                        <p className="[overflow-wrap:anywhere] text-sm font-semibold leading-snug">
-                          {card.title}
-                        </p>
-                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <span
-                            className="text-[10px] font-bold uppercase tracking-[0.08em]"
-                            style={{ color: priorityTone[card.priority] ?? priorityTone.normal }}
-                          >
-                            {priorityLabels[card.priority] ?? card.priority}
-                          </span>
-                          {formatDueDate(card.dueDate) && (
-                            <span className="text-[10px] text-base-content/55">
-                              · vence {formatDueDate(card.dueDate)}
+                    ) : (
+                      cards.map((card) => (
+                        <div
+                          key={card.id}
+                          className="bg-base-100 rounded-[10px] p-3 shadow-[0_1px_0_rgba(4,9,32,0.04)]"
+                          style={{ border: `1px solid ${HAIR}` }}
+                        >
+                          <p className="text-sm leading-snug font-semibold [overflow-wrap:anywhere]">
+                            {card.title}
+                          </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            <span
+                              className="text-[10px] font-bold tracking-[0.08em] uppercase"
+                              style={{ color: priorityTone[card.priority] ?? priorityTone.normal }}
+                            >
+                              {priorityLabels[card.priority] ?? card.priority}
                             </span>
-                          )}
+                            {formatDueDate(card.dueDate) && (
+                              <span className="text-base-content/55 text-[10px]">
+                                · vence {formatDueDate(card.dueDate)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-2 flex items-center justify-between gap-2">
+                            <span className="border-base-300 bg-base-200 text-base-content/70 max-w-full truncate rounded-full border px-2 py-1 text-[10px] font-semibold">
+                              {card.associateName ?? 'Sem associado'}
+                            </span>
+                          </div>
                         </div>
-                        <div className="mt-2 flex items-center justify-between gap-2">
-                          <span
-                            className="max-w-full truncate rounded-full border border-base-300 bg-base-200 px-2 py-1 text-[10px] font-semibold text-base-content/70"
-                          >
-                            {card.associateName ?? 'Sem associado'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </article>
               );
@@ -297,7 +292,7 @@ export default async function DashboardPage() {
             </div>
 
             {data.urgentActivities.length === 0 ? (
-              <p className="text-sm text-base-content/60">Nenhuma atividade atrasada.</p>
+              <p className="text-base-content/60 text-sm">Nenhuma atividade atrasada.</p>
             ) : (
               <ul className="flex flex-col gap-3.5">
                 {data.urgentActivities.map((activity, index) => (
@@ -305,15 +300,18 @@ export default async function DashboardPage() {
                     key={activity.id}
                     className="grid grid-cols-[24px_1fr] gap-3 pb-3.5"
                     style={{
-                      borderBottom: index === data.urgentActivities.length - 1 ? 'none' : `1px solid ${HAIR}`,
+                      borderBottom:
+                        index === data.urgentActivities.length - 1 ? 'none' : `1px solid ${HAIR}`,
                     }}
                   >
-                    <AlertTriangle size={20} aria-hidden="true" className="mt-0.5 text-error" />
+                    <AlertTriangle size={20} aria-hidden="true" className="text-error mt-0.5" />
                     <div>
-                      <p className="text-sm font-semibold leading-snug">{activity.title}</p>
-                      <p className="mt-1 text-xs leading-relaxed text-base-content/60">
+                      <p className="text-sm leading-snug font-semibold">{activity.title}</p>
+                      <p className="text-base-content/60 mt-1 text-xs leading-relaxed">
                         {priorityLabels[activity.priority] ?? activity.priority}
-                        {activity.dueDate ? ` · vencimento ${activity.dueDate}` : ''}
+                        {formatDueDate(activity.dueDate)
+                          ? ` · vencimento ${formatDueDate(activity.dueDate)}`
+                          : ''}
                       </p>
                     </div>
                   </li>
@@ -327,10 +325,10 @@ export default async function DashboardPage() {
               <Mail size={20} className="text-primary" aria-hidden="true" />
               <h2 className="font-serif text-lg font-bold">Comunicação</h2>
             </div>
-            <p className="text-sm font-semibold leading-snug">
+            <p className="text-sm leading-snug font-semibold">
               12 e-mails de associados sem resposta
             </p>
-            <p className="mt-1 text-xs leading-relaxed text-base-content/60">
+            <p className="text-base-content/60 mt-1 text-xs leading-relaxed">
               SLA interno: 48h — média de 36h esta semana.
             </p>
           </div>
@@ -346,24 +344,26 @@ export default async function DashboardPage() {
                 const pct = Math.round((region.total / max) * 100);
 
                 return (
-                <li key={region.country ?? 'sem-pais'}>
-                  <div className="mb-1.5 flex items-baseline justify-between gap-3">
-                    <p className="truncate text-sm font-medium">{region.country ?? 'Não informado'}</p>
-                    <p className="font-serif text-sm font-bold">{region.total}</p>
-                  </div>
-                  <div className="h-1 overflow-hidden rounded-full bg-base-200">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </li>
-              );
+                  <li key={region.country ?? 'sem-pais'}>
+                    <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                      <p className="truncate text-sm font-medium">
+                        {region.country ?? 'Não informado'}
+                      </p>
+                      <p className="font-serif text-sm font-bold">{region.total}</p>
+                    </div>
+                    <div className="bg-base-200 h-1 overflow-hidden rounded-full">
+                      <div
+                        className="bg-primary h-full rounded-full"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </li>
+                );
               })}
             </ul>
           </div>
 
-          <p className="text-[11px] text-base-content/55">
+          <p className="text-base-content/55 text-[11px]">
             Olá, {user.name.split(' ')[0]}. Logado como{' '}
             <span className="capitalize">{user.role}</span>.
           </p>

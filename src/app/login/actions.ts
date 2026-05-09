@@ -9,7 +9,9 @@ import bcrypt from 'bcryptjs';
 import { loginRateLimiter } from '@/lib/auth/login-rate-limit';
 
 export async function login(formData: FormData) {
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
   const password = String(formData.get('password') ?? '');
 
   if (!email || !password) redirect('/login?error=1');
@@ -17,8 +19,7 @@ export async function login(formData: FormData) {
   const rateLimit = loginRateLimiter.consume(email);
   if (!rateLimit.allowed) redirect('/login?error=rate-limit');
 
-  const user = await db.select().from(admins)
-    .where(eq(admins.email, email)).get();
+  const [user] = await db.select().from(admins).where(eq(admins.email, email)).limit(1);
 
   // Always run bcrypt.compare to prevent timing-based user enumeration.
   const DUMMY_HASH = '$2b$12$..AtteJQVcIwONDECxQ3cue37ZA4VVeOy9MIxxuWQ4i6h4bjKJ3NK';

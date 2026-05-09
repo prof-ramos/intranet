@@ -7,6 +7,10 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   test: {
     environment: 'node',
+    env: {
+      DATABASE_URL:
+        process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/postgres',
+    },
     include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],
   },
   resolve: {

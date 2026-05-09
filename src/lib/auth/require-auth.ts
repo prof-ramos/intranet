@@ -16,7 +16,11 @@ export const requireAuth = cache(async (): Promise<AuthUser> => {
     redirect('/login');
   }
 
-  const user = await db
+  if (!session.userId) {
+    redirect('/login');
+  }
+
+  const [user] = await db
     .select({
       id: admins.id,
       name: admins.name,
@@ -27,7 +31,7 @@ export const requireAuth = cache(async (): Promise<AuthUser> => {
     })
     .from(admins)
     .where(eq(admins.id, session.userId))
-    .get();
+    .limit(1);
 
   if (!user || !user.isActive) {
     redirect('/login');

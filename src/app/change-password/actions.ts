@@ -32,14 +32,14 @@ export async function changePassword(formData: FormData) {
     changePasswordError(validation.message);
   }
 
-  const admin = await db
+  const [admin] = await db
     .select({
       id: admins.id,
       passwordHash: admins.passwordHash,
     })
     .from(admins)
     .where(eq(admins.id, user.userId))
-    .get();
+    .limit(1);
 
   if (!admin) {
     changePasswordError('Sessão inválida.');
@@ -57,10 +57,9 @@ export async function changePassword(formData: FormData) {
     .set({
       passwordHash,
       mustChangePassword: false,
-      updatedAt: sql`CURRENT_TIMESTAMP`,
+      updatedAt: sql`now()`,
     })
-    .where(eq(admins.id, user.userId))
-    .run();
+    .where(eq(admins.id, user.userId));
 
   await updateSession({ mustChangePassword: false });
   redirect('/app');

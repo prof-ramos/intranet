@@ -29,14 +29,14 @@ Error: Can't resolve 'tailwindcss' in '<workspace>/ASOF'
 O detalhe importante e que o resolvedor procurou `tailwindcss` fora do projeto real:
 
 ```text
-resolve 'tailwindcss' in '/Users/gabrielramos/projetos/ASOF'
-using description file: /Users/gabrielramos/package.json
-/Users/gabrielramos/projetos/ASOF/node_modules doesn't exist
-/Users/gabrielramos/projetos/node_modules doesn't exist
-/Users/gabrielramos/node_modules/tailwindcss doesn't exist
+resolve 'tailwindcss' in '<workspace>/ASOF'
+using description file: <home>/package.json
+<workspace>/ASOF/node_modules doesn't exist
+<workspace-parent>/node_modules doesn't exist
+<home>/node_modules/tailwindcss doesn't exist
 ```
 
-Isso indica um problema de resolucao/root no pipeline de CSS, nao apenas uma dependencia ausente dentro de `/Users/gabrielramos/projetos/ASOF/intranet`.
+Isso indica um problema de resolucao/root no pipeline de CSS, nao apenas uma dependencia ausente dentro de `<workspace>/ASOF/intranet`.
 
 ## Logs do macOS
 
@@ -54,7 +54,7 @@ Esses sinais batem com travamento por pressao/estouro de trabalho no ambiente gr
 Foi testado tambem o projeto:
 
 ```text
-/Users/gabrielramos/projetos/proframos/ai-wiki-br
+<workspace>/proframos/ai-wiki-br
 ```
 
 Resultado:

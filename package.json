@@ -18,18 +18,22 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx scripts/seed-associados.ts && tsx scripts/seed-admin.ts",
+    "db:supabase:status": "tsx scripts/supabase-status.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@libsql/client": "^0.15.11",
+    "@supabase/supabase-js": "^2.105.4",
     "bcryptjs": "^3.0.3",
     "daisyui": "^5.5.19",
     "drizzle-orm": "^0.45.2",
     "jose": "^6.2.3",
     "lucide-react": "^1.14.0",
     "next": "16.2.6",
+    "postgres": "^3.4.9",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "server-only": "^0.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
