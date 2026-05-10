@@ -1,361 +1,445 @@
 ---
+version: alpha
 name: ASOF Intranet
+description: Institutional operations interface for ASOF, combining diplomatic formality with dense administrative workflows.
 colors:
-  # Base surfaces (dark scheme, OKLCh space — hex approximations provided)
-  base-100: "oklch(14.076% 0.004 285.822)"   # ~#0d0d12 — page background (dark)
-  base-200: "oklch(20.219% 0.004 308.229)"   # ~#131318 — sidebar background
-  base-300: "oklch(23.219% 0.004 308.229)"   # ~#16161c — dividers, hover states
-  base-content: "oklch(75.687% 0.123 76.89)" # ~#c9a85c — warm amber body text
-
-  # Brand navy (Itamaraty identity)
-  primary: "#040920"          # deep navy — almost black
-  primary-content: "#ffffff"
-  primary-dark: "#06284f"     # sidebar background, stat card borders
-
-  # Secondary & accent
-  secondary: "oklch(27.581% 0.064 261.069)"  # ~#192440 — dark blue-purple
-  secondary-content: "oklch(85.516% 0.012 261.069)"
-  accent: "oklch(36.674% 0.051 338.825)"     # ~#3d1530 — dark magenta
-  accent-content: "oklch(87.334% 0.01 338.825)"
-
-  # Neutral (light context — used on the public/admin page white surface)
-  neutral: "#e7edf4"          # soft blue-grey — table alternates, chip fills
-  neutral-content: "#040920"
-
-  # Semantic
-  success: "oklch(78.119% 0.192 132.154)"    # ~#4ade80 — active badge fill
-  success-content: "oklch(15.623% 0.038 132.154)"
-  warning: "oklch(86.127% 0.136 102.891)"    # ~#eab308 — pending badge fill
-  warning-content: "oklch(17.225% 0.027 102.891)"
-  error: "oklch(71.753% 0.176 22.568)"
-  error-content: "oklch(14.35% 0.035 22.568)"
-  info: "oklch(79.061% 0.121 237.133)"
-  info-content: "oklch(15.812% 0.024 237.133)"
-
-  # Hardcoded UI tokens used in the current build
-  surface-white: "#f8fafc"    # main content area background
-  surface-card: "#ffffff"     # cards, table container
-  active-nav-indicator: "#76AEEA"   # left-border on active sidebar item
-  active-nav-bg: "#123d73"    # background of active sidebar item
-  badge-active-bg: "#bfe6bd"  # associate status: Ativo
-  badge-pending-bg: "#e7c16b" # associate status: Em análise
-
-  # Dashboard — KPI stripe & kanban accents
-  hair: "rgba(4, 9, 32, 0.10)"       # hairline divider / card border (same as header-border)
-  kanban-a-fazer: "#94a3b8"           # slate — column "A fazer"
-  kanban-andamento: "#76AEEA"         # sky — column "Em andamento"
-  kanban-aguardando: "#e7c16b"        # amber — column "Aguardando terceiros"
-  kanban-concluido: "#86efac"         # green — column "Concluído"
-
-  # Priority tones (text color on kanban cards)
-  priority-urgente: "#b91c1c"         # red-700
-  priority-alta: "#a16207"            # amber-700
-  priority-normal: "rgba(13,31,60,0.7)"
-  priority-baixa: "rgba(13,31,60,0.5)"
-
+  primary: "#040920"
+  on-primary: "#ffffff"
+  primary-container: "#06284f"
+  primary-container-hover: "#0d3260"
+  primary-container-active: "#123d73"
+  secondary: "#76aeea"
+  on-secondary: "#040920"
+  tertiary: "#e7c16b"
+  on-tertiary: "#4f3308"
+  background: "#f8fafc"
+  on-background: "#0d1f3c"
+  surface: "#ffffff"
+  surface-container-low: "#f8fafc"
+  surface-container: "#eef1f6"
+  surface-container-high: "#e7edf4"
+  surface-container-highest: "#dde3ec"
+  on-surface: "#0d1f3c"
+  on-surface-variant: "#59677a"
+  outline: "#c9d2df"
+  outline-variant: "#dde3ec"
+  inverse-surface: "#0d1f3c"
+  inverse-on-surface: "#ffffff"
+  success: "#15803d"
+  on-success: "#ffffff"
+  success-container: "#dcfce7"
+  success-accent: "#86efac"
+  warning: "#a16207"
+  on-warning: "#ffffff"
+  warning-container: "#f4ddb1"
+  warning-accent: "#e7c16b"
+  error: "#b91c1c"
+  on-error: "#ffffff"
+  error-container: "#fee2e2"
+  information: "#76aeea"
+  status-todo: "#94a3b8"
+  status-progress: "#76aeea"
+  status-waiting: "#e7c16b"
+  status-done: "#86efac"
+  priority-low: "#7c8796"
+  priority-normal: "#4e5b70"
+  priority-high: "#a16207"
+  priority-urgent: "#b91c1c"
 typography:
   display:
     fontFamily: Playfair Display
-    fontSize: 64px
-    fontWeight: "700"
-    lineHeight: 1
-    letterSpacing: "-0.02em"
-  heading-xl:
-    fontFamily: Playfair Display
     fontSize: 56px
-    fontWeight: "700"
+    fontWeight: 700
     lineHeight: 1
-    letterSpacing: "0"
-  heading-lg:
+    letterSpacing: 0em
+  headline-lg:
     fontFamily: Playfair Display
     fontSize: 48px
-    fontWeight: "700"
-    lineHeight: "1.1"
-  heading-md:
+    fontWeight: 700
+    lineHeight: 1.05
+    letterSpacing: 0em
+  headline-md:
     fontFamily: Playfair Display
-    fontSize: 40px
-    fontWeight: "700"
-    lineHeight: "1.2"
-  nav-item:
-    fontFamily: Google Sans
+    fontSize: 36px
+    fontWeight: 700
+    lineHeight: 1.08
+    letterSpacing: 0em
+  title-lg:
+    fontFamily: Playfair Display
     fontSize: 22px
-    fontWeight: "400"
-    lineHeight: "58px"
+    fontWeight: 700
+    lineHeight: 1.2
+    letterSpacing: 0em
+  title-md:
+    fontFamily: Playfair Display
+    fontSize: 20px
+    fontWeight: 700
+    lineHeight: 1.25
+    letterSpacing: 0em
+  metric-lg:
+    fontFamily: Playfair Display
+    fontSize: 30px
+    fontWeight: 700
+    lineHeight: 1
+    letterSpacing: 0em
   body-lg:
     fontFamily: Google Sans
-    fontSize: 20px
-    fontWeight: "400"
-    lineHeight: "1.5"
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.55
+    letterSpacing: 0em
   body-md:
     fontFamily: Google Sans
-    fontSize: 18px
-    fontWeight: "400"
-    lineHeight: "1.5"
+    fontSize: 14px
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: 0em
   body-sm:
     fontFamily: Google Sans
-    fontSize: 16px
-    fontWeight: "400"
-    lineHeight: "1.5"
-  label:
+    fontSize: 12px
+    fontWeight: 400
+    lineHeight: 1.45
+    letterSpacing: 0em
+  label-md:
     fontFamily: Google Sans
-    fontSize: 14px
-    fontWeight: "400"
-    lineHeight: "1.4"
-  caption:
+    fontSize: 13px
+    fontWeight: 600
+    lineHeight: 1.2
+    letterSpacing: 0em
+  label-sm:
     fontFamily: Google Sans
     fontSize: 11px
-    fontWeight: "400"
-    lineHeight: "1.4"
-    letterSpacing: "0.08em"
-
+    fontWeight: 700
+    lineHeight: 1.2
+    letterSpacing: 0.1em
+  eyebrow:
+    fontFamily: Google Sans
+    fontSize: 11px
+    fontWeight: 400
+    lineHeight: 1.2
+    letterSpacing: 0.18em
+rounded:
+  none: 0px
+  xs: 2px
+  sm: 4px
+  md: 8px
+  lg: 10px
+  xl: 12px
+  box: 16px
+  full: 9999px
 spacing:
   unit: 4px
-  content-padding-mobile: 20px
-  content-padding-tablet: 32px
-  content-padding-desktop: 40px
-  card-padding: 28px
-  sidebar-padding-x: 36px
-  sidebar-padding-y: 40px
-  section-gap: 40px
-  card-gap: 20px
+  xs: 4px
+  sm: 8px
+  md: 12px
+  lg: 16px
+  xl: 20px
+  2xl: 24px
+  3xl: 28px
+  4xl: 32px
+  5xl: 40px
+  page-x-mobile: 20px
+  page-x-tablet: 32px
+  page-x-desktop: 40px
+  section-gap: 28px
+  card-padding: 20px
+  form-card-padding: 28px
+  sidebar-width: 288px
   nav-item-height: 58px
-
-rounded:
-  field: 0.5rem    # inputs, small buttons
-  selector: 1rem   # dropdowns, chips
-  box: 1rem        # cards, table container
-  nav-item: 0      # sidebar nav items are flush (rounded-none)
-
 elevation:
-  stat-card: "0 4px 0 rgba(4, 9, 32, 0.12)"       # hard bottom drop — official/seal feel
-  data-panel: "0 12px 30px rgba(4, 9, 32, 0.08)"  # soft lift for table container
-  header-border: "0 1px 0 rgba(4, 9, 32, 0.10)"   # header bottom divider
-
+  flat: "0 0 0 #00000000"
+  hairline: "0 1px 0 #0409200d"
+  popover: "0 8px 20px #04092014"
+  card: "0 12px 30px #04092014"
+  button: "0 4px 0 #0409201f"
+  drawer: "-12px 0 30px #0409201f"
+  modal: "0 24px 60px #04092040"
 motion:
-  default: "150ms ease"
-  hover-opacity: "opacity 150ms ease"
-
-border:
-  width: 1px
-  stat-card-width: 3px
-  active-nav-indicator-width: 6px
-
+  duration-fast: 120ms
+  duration-base: 150ms
+  duration-slow: 220ms
+  easing-standard: ease
+  easing-emphasized: cubic-bezier(0.2, 0, 0, 1)
 components:
+  app-background:
+    backgroundColor: "{colors.background}"
+    textColor: "{colors.on-background}"
+  divider:
+    backgroundColor: "{colors.outline-variant}"
+    size: 1px
+  border-strong:
+    backgroundColor: "{colors.outline}"
+    size: 1px
+  focus-ring:
+    backgroundColor: "{colors.secondary}"
+    textColor: "{colors.on-secondary}"
+    size: 2px
+  tooltip:
+    backgroundColor: "{colors.inverse-surface}"
+    textColor: "{colors.inverse-on-surface}"
+    typography: "{typography.body-sm}"
+    rounded: "{rounded.md}"
+    padding: "8px 10px"
   sidebar:
-    backgroundColor: "{colors.primary-dark}"
-    textColor: "#ffffff"
-    width: 320px
-    paddingX: "{spacing.sidebar-padding-x}"
-    paddingY: "{spacing.sidebar-padding-y}"
-  sidebar-brand:
-    fontFamily: Playfair Display
-    fontSize: 64px
-    fontWeight: "700"
-  sidebar-nav-item:
+    backgroundColor: "{colors.primary-container}"
+    textColor: "{colors.on-primary}"
+    width: "{spacing.sidebar-width}"
+  sidebar-item:
+    textColor: "{colors.on-primary}"
+    typography: "{typography.body-md}"
     height: "{spacing.nav-item-height}"
-    fontSize: 22px
-    paddingX: "{spacing.sidebar-padding-x}"
-    rounded: "{rounded.nav-item}"
-    hoverBg: "{colors.active-nav-bg}"
-  sidebar-nav-item-active:
-    backgroundColor: "{colors.active-nav-bg}"
-    borderLeft: "6px solid {colors.active-nav-indicator}"
-  header:
-    backgroundColor: "{colors.surface-card}"
-    height: 80px
-    borderBottom: "1px solid rgba(4, 9, 32, 0.10)"
-    position: sticky
-    zIndex: 20
-  stat-card:
-    backgroundColor: "{colors.surface-card}"
-    border: "3px solid {colors.primary-dark}"
-    shadow: "{elevation.stat-card}"
+    padding: "0 36px"
+    rounded: "{rounded.none}"
+  sidebar-item-hover:
+    backgroundColor: "{colors.primary-container-hover}"
+    textColor: "{colors.on-primary}"
+  sidebar-item-active:
+    backgroundColor: "{colors.primary-container-active}"
+    textColor: "{colors.on-primary}"
+    size: 6px
+  page-eyebrow:
+    textColor: "{colors.on-surface-variant}"
+    typography: "{typography.eyebrow}"
+  page-title:
+    textColor: "{colors.primary}"
+    typography: "{typography.headline-lg}"
+  empty-state:
+    backgroundColor: "{colors.surface-container-low}"
+    textColor: "{colors.on-surface-variant}"
+    rounded: "{rounded.lg}"
+    padding: "{spacing.xl}"
+  card:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.on-surface}"
+    rounded: "{rounded.box}"
     padding: "{spacing.card-padding}"
+  card-hover:
+    backgroundColor: "{colors.surface-container-high}"
+    textColor: "{colors.on-surface}"
+  card-emphasis:
+    backgroundColor: "{colors.surface-container-highest}"
+    textColor: "{colors.on-surface}"
     rounded: "{rounded.box}"
-    titleSize: 20px
-    valueSize: 60px
-    valueFontWeight: "700"
-  data-panel:
-    backgroundColor: "{colors.surface-card}"
-    shadow: "{elevation.data-panel}"
-    padding: 24px
+    padding: "{spacing.card-padding}"
+  form-card:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.on-surface}"
     rounded: "{rounded.box}"
-  table-header:
-    backgroundColor: "{colors.primary}"
-    textColor: "#ffffff"
-    fontSize: 18px
-    paddingY: 20px
-  badge-active:
-    backgroundColor: "{colors.badge-active-bg}"
-    textColor: "{colors.neutral-content}"
-    rounded: 9999px
-    paddingX: 16px
-    paddingY: 8px
-  badge-pending:
-    backgroundColor: "{colors.badge-pending-bg}"
-    textColor: "{colors.neutral-content}"
-    rounded: 9999px
-    paddingX: 16px
-    paddingY: 8px
-  avatar-initials:
-    backgroundColor: "{colors.primary}"
-    textColor: "#ffffff"
-    size: 48px
-    rounded: 9999px
-    ring: "2px solid rgba(4, 9, 32, 0.15)"
-    fontSize: 14px
-    fontWeight: "700"
-
-  # Dashboard — Sala de Operações
-  kpi-stripe:
-    layout: flex (5 equal columns, `flex-1` each)
-    backgroundColor: "{colors.surface-card}"
-    border: "1px solid {colors.hair}"
-    rounded: "{rounded.box}"
-    divider: "1px solid {colors.hair}" # between columns, left border on cols 2–5
-    paddingX: 20px
-    paddingY: 16px
-    valueSize: 30px
-    valueFontFamily: Playfair Display
-    valueFontWeight: "700"
-    labelSize: 12px (lowercase)
-    neg-tone: "{colors.priority-urgente}"   # atrasadas
-    pos-tone: "#15803d"                     # contribuições em dia
+    padding: "{spacing.form-card-padding}"
   kanban-column:
-    backgroundColor: "var(--color-base-200)"
-    rounded: 1rem       # rounded-2xl
-    padding: 12px
-    minHeight: 380px
-    headerAccent: 8x8px rounded-sm dot, color per status (see kanban-* tokens)
-    headerText: 10px uppercase tracking-wider font-bold
-    countText: 11px text-base-content/55
+    backgroundColor: "{colors.surface-container}"
+    textColor: "{colors.on-surface}"
+    rounded: "{rounded.box}"
+    padding: "{spacing.md}"
   kanban-card:
-    backgroundColor: "{colors.surface-card}"
-    border: "1px solid {colors.hair}"
-    shadow: "0 1px 0 rgba(4,9,32,0.04)"
-    rounded: 0.75rem    # rounded-xl
-    padding: 12px
-    titleSize: 14px font-semibold leading-snug
-    tagStyle: rounded-full px-2 py-0.5 text-[10px] bg-base-200 border hair
-    priorityStyle: 10px uppercase tracking-wider, color per priority tone
-    assigneeAvatar: 20x20px rounded-full bg-primary text-[9px] font-bold
-  right-rail:
-    width: 320px        # fixed at xl breakpoint
-    gap: 20px between panels
-  alert-panel:
-    backgroundColor: "{colors.surface-card}"
-    border: "1px solid {colors.hair}"
-    rounded: "{rounded.box}"
-    iconSize: 20px
-    iconColor: per tone (neg=priority-urgente, warn=priority-alta, info=primary)
-    divider: "1px solid {colors.hair}" between items (not after last)
-    titleSize: 14px font-semibold
-    bodySize: 12px text-base-content/60 leading-relaxed
-  region-bars:
-    backgroundColor: "{colors.surface-card}"
-    border: "1px solid {colors.hair}"
-    rounded: "{rounded.box}"
-    trackHeight: 4px rounded-full bg-base-200
-    fillColor: "{colors.primary}"
-    labelSize: 14px font-medium
-    valueSize: 14px font-serif font-bold
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.on-surface}"
+    rounded: "{rounded.md}"
+    padding: "{spacing.md}"
+  button-primary:
+    backgroundColor: "{colors.primary}"
+    textColor: "{colors.on-primary}"
+    typography: "{typography.label-md}"
+    rounded: "{rounded.md}"
+    height: 40px
+    padding: "0 20px"
+  button-secondary:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.primary}"
+    typography: "{typography.label-md}"
+    rounded: "{rounded.md}"
+    height: 40px
+    padding: "0 16px"
+  input-field:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.on-surface}"
+    typography: "{typography.body-md}"
+    rounded: "{rounded.md}"
+    height: 48px
+    padding: "0 12px"
+  textarea:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.on-surface}"
+    typography: "{typography.body-md}"
+    rounded: "{rounded.md}"
+    padding: "{spacing.md}"
+  badge:
+    typography: "{typography.label-sm}"
+    rounded: "{rounded.full}"
+    padding: "4px 10px"
+  badge-success:
+    backgroundColor: "{colors.success-container}"
+    textColor: "{colors.success}"
+    typography: "{typography.label-sm}"
+    rounded: "{rounded.full}"
+    padding: "4px 10px"
+  badge-warning:
+    backgroundColor: "{colors.warning-container}"
+    textColor: "{colors.on-tertiary}"
+    typography: "{typography.label-sm}"
+    rounded: "{rounded.full}"
+    padding: "4px 10px"
+  badge-error:
+    backgroundColor: "{colors.error-container}"
+    textColor: "{colors.error}"
+    typography: "{typography.label-sm}"
+    rounded: "{rounded.full}"
+    padding: "4px 10px"
+  alert-success:
+    backgroundColor: "{colors.success-container}"
+    textColor: "{colors.success}"
+    rounded: "{rounded.lg}"
+    padding: "{spacing.lg}"
+  alert-warning:
+    backgroundColor: "{colors.warning-container}"
+    textColor: "{colors.on-tertiary}"
+    rounded: "{rounded.lg}"
+    padding: "{spacing.lg}"
+  alert-error:
+    backgroundColor: "{colors.error-container}"
+    textColor: "{colors.error}"
+    rounded: "{rounded.lg}"
+    padding: "{spacing.lg}"
+  action-success:
+    backgroundColor: "{colors.success}"
+    textColor: "{colors.on-success}"
+    typography: "{typography.label-md}"
+    rounded: "{rounded.md}"
+    height: 36px
+    padding: "0 14px"
+  action-warning:
+    backgroundColor: "{colors.warning}"
+    textColor: "{colors.on-warning}"
+    typography: "{typography.label-md}"
+    rounded: "{rounded.md}"
+    height: 36px
+    padding: "0 14px"
+  action-error:
+    backgroundColor: "{colors.error}"
+    textColor: "{colors.on-error}"
+    typography: "{typography.label-md}"
+    rounded: "{rounded.md}"
+    height: 36px
+    padding: "0 14px"
+  status-dot:
+    rounded: "{rounded.xs}"
+    size: 8px
+  status-dot-todo:
+    backgroundColor: "{colors.status-todo}"
+    rounded: "{rounded.xs}"
+    size: 8px
+  status-dot-progress:
+    backgroundColor: "{colors.status-progress}"
+    rounded: "{rounded.xs}"
+    size: 8px
+  status-dot-waiting:
+    backgroundColor: "{colors.status-waiting}"
+    rounded: "{rounded.xs}"
+    size: 8px
+  status-dot-done:
+    backgroundColor: "{colors.status-done}"
+    rounded: "{rounded.xs}"
+    size: 8px
+  success-dot:
+    backgroundColor: "{colors.success-accent}"
+    rounded: "{rounded.xs}"
+    size: 8px
+  warning-dot:
+    backgroundColor: "{colors.warning-accent}"
+    rounded: "{rounded.xs}"
+    size: 8px
+  priority-low:
+    textColor: "{colors.priority-low}"
+    typography: "{typography.label-sm}"
+  priority-normal:
+    textColor: "{colors.priority-normal}"
+    typography: "{typography.label-sm}"
+  priority-high:
+    textColor: "{colors.priority-high}"
+    typography: "{typography.label-sm}"
+  priority-urgent:
+    textColor: "{colors.priority-urgent}"
+    typography: "{typography.label-sm}"
+  legal-tag:
+    backgroundColor: "{colors.tertiary}"
+    textColor: "{colors.on-tertiary}"
+    typography: "{typography.label-sm}"
+    rounded: "{rounded.sm}"
+    padding: "2px 6px"
+  info-tag:
+    backgroundColor: "{colors.information}"
+    textColor: "{colors.on-secondary}"
+    typography: "{typography.label-sm}"
+    rounded: "{rounded.sm}"
+    padding: "2px 6px"
 ---
 
-# Design System
+# ASOF Intranet Design System
 
-## Identidade Visual
+## Overview
 
-A ASOF Intranet carrega a identidade institucional da Associação de Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. O design comunica autoridade diplomática e precisão administrativa — sem abrir mão de clareza e modernidade operacional.
+The interface is an institutional operations room for a professional association. It should feel formal, composed, and trustworthy, but not ceremonial to the point of slowing work down. The visual identity blends diplomatic restraint with a quiet editorial quality: large serif headings, compact administrative controls, navy actions, and light blue-gray work surfaces.
 
-A metáfora central é a do **papel timbrado digital**: fundo branco limpo, tipografia serif de peso em posições de destaque, e uma paleta de marinho-naval que remete às cores do Itamaraty. Cada elemento sinaliza confiabilidade institucional.
+The product is primarily a dense back-office tool. Screens should prioritize scanning, comparison, and repeated administrative action. Use restrained visual hierarchy instead of decorative effects. A page should feel like a well-organized briefing: clear title, short context line, decisive primary action, then structured operational panels.
 
-## Estratégia de Cores
+## Colors
 
-O sistema opera em dois contextos de superfície:
+The palette is light and cool. The main canvas is a very pale blue-gray, content surfaces are white, and the primary interaction color is an almost-black navy. This creates high contrast without making the app feel consumer-like or loud.
 
-**Contexto claro (área de conteúdo):** Fundo `#f8fafc` (off-white frio) com cards brancos `#ffffff`. O texto e os elementos estruturais usam `#040920` (marinho quase-preto) com opacidades variáveis — `0.10` para bordas sutis, `0.15` para anéis de avatar, `0.55` para ícones de suporte. Esse gradiente de opacidade cria hierarquia sem introduzir cores adicionais.
+- **Primary navy (#040920):** Use for page titles, main actions, avatars, progress fills, and the strongest text emphasis.
+- **Sidebar navy (#06284f):** Use for persistent navigation and any deep institutional panels.
+- **Sky blue (#76aeea):** Use sparingly for active navigation accents, progress status, focus indication, and operational highlights.
+- **Amber (#e7c16b / #a16207):** Use for waiting states, legal or cautionary context, and medium-risk priority.
+- **Green (#15803d / #86efac):** Use for completion, contribution health, and successful confirmations.
+- **Red (#b91c1c):** Use only for overdue, urgent, destructive, or blocked states.
 
-**Contexto escuro (sidebar):** Fundo `#06284f` (marinho profundo) com o item ativo em `#123d73` e indicador lateral de `6px` em `#76AEEA` (azul-celeste diplomático). A sidebar é o único elemento com alta saturação — ela ancora visualmente a identidade ASOF em todas as páginas.
+Avoid large saturated color blocks in the main work area. Most screens should be white panels and pale blue-gray containers with small color markers carrying status.
 
-**Badges de status** usam verde-pastel (`#bfe6bd`) para "Ativo" e âmbar-pastel (`#e7c16b`) para "Em análise" — ambos com texto preto para garantir contraste WCAG AA. A baixa saturação desses tons evita alarme visual em tabelas densas.
+## Typography
 
-## Tipografia
+Typography carries most of the brand personality. Page titles and section titles use **Playfair Display** to create an editorial, official tone. Body text, labels, tables, buttons, and controls use **Google Sans** for clarity and administrative efficiency.
 
-Dois typefaces, dois papéis distintos:
+Headlines should be large, dark navy, and tight. They should not be all caps. Eyebrows and field labels may be uppercase with generous letter spacing, giving screens the rhythm of a formal dossier. Metrics use the serif family to make numbers feel important without adding color or ornament.
 
-**Playfair Display** (serif, 600–700) assume os momentos de autoridade: logotipo "ASOF" na sidebar, títulos de página (`h1`), cabeçalhos de seção (`h2`). Seu contraste dramático entre traços finos e grossos evoca documentos oficiais e chancelas. Usado exclusivamente em peso bold — nunca em texto corrido.
+Body copy should stay compact. The interface works best at 12px to 16px for operational text, with only page titles and major metrics breaking that density.
 
-**Google Sans** (sans-serif, 400–700) governa toda a interface funcional: navegação, tabelas, labels, inputs, body text. Sua geometria limpa equilibra o exibicionismo do serif sem competir com ele.
+## Layout
 
-A hierarquia funciona por escalonamento radical: o `h1` da página (56–64px) contrasta visualmente com o body text (16–18px), criando uma leitura imediata de "título de relatório" — formato familiar ao público de oficiais de chancelaria.
+The layout is a fixed institutional shell with a 288px navy navigation rail on wide screens and a compact top bar on smaller screens. Page content sits on a pale blue-gray canvas with 20px to 40px outer padding depending on viewport size.
 
-## Layout e Espaçamento
+Use a 4px base rhythm. Most operational clusters should use 12px, 16px, 20px, or 28px gaps. Cards should not float dramatically; they should align cleanly in grids, rows, and kanban columns. Dense dashboards can use stripe-like KPI bands where each metric occupies a quiet cell separated by hairline borders.
 
-O layout é bicoluna com sidebar fixa (320px) + área de conteúdo fluida. Em mobile, a sidebar é um drawer sobreposto acionado por hamburger — o padrão DaisyUI `drawer lg:drawer-open`.
+Forms should keep labels close to fields, group related choices into bordered panels, and reserve the strongest button for the final submit action. Side panels and modals should appear as task surfaces, not marketing cards.
 
-O ritmo base é de **4px** (DaisyUI `--size-field`). O padding do conteúdo escala com o viewport: 20px mobile → 32px tablet → 40px desktop. Cards de estatística usam `28px` de padding interno, suficiente para respirar sem desperdiçar espaço em telas de 1024px.
+## Elevation & Depth
 
-A grid de stat cards usa 4 colunas em `xl`, 2 em `md`, e 1 em mobile — seguindo o padrão DaisyUI stat com `grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4`.
+Depth is restrained. Hierarchy comes primarily from tonal layers, borders, and spacing. Shadows are soft and navy-tinted when used, but most cards should rely on a 1px blue-gray border rather than obvious elevation.
 
-## Elevação e Profundidade
+Use stronger shadows only for temporary layers such as popovers, drawers, and modals. Buttons may use a small hard bottom shadow to make the navy primary action feel tactile, but this should remain subtle.
 
-A profundidade é comunicada por dois padrões distintos:
+## Shapes
 
-**Hard drop (stat cards):** `box-shadow: 0 4px 0 rgba(4,9,32,0.12)` — sombra com deslocamento fixo sem blur. Cria a sensação de um cartão "preso" à superfície, como um carimbo ou lacre. Reforçada pela borda de `3px` em marinho.
+The shape language is moderately soft and administrative. Standard cards use 16px corners, while controls, inputs, kanban cards, and buttons generally use 8px to 10px. Status dots are small squared marks with slight rounding, reinforcing the operational dashboard feel.
 
-**Soft lift (painel de dados):** `box-shadow: 0 12px 30px rgba(4,9,32,0.08)` — sombra difusa de baixa opacidade. A tabela de associados flutua levemente acima do fundo sem chamar atenção para si.
+Use pills only for badges, compact tags, avatars, and segmented controls. Avoid overly rounded cards or playful shapes; the product should stay crisp and official.
 
-O header usa apenas uma borda inferior `1px` — sem sombra — para manter a superfície plana e discreta.
+## Components
 
-## Formas e Bordas
+Primary buttons are navy with white text and a compact 40px height. Secondary buttons are white or outline treatments with navy text and a thin blue-gray border. Button text should be short, action-oriented, and semibold.
 
-O sistema usa `border-radius: 1rem` (16px) para caixas e cards — arredondado o suficiente para ser moderno, contido o suficiente para ser formal. Inputs usam `0.5rem` (8px). Items de navegação na sidebar são **sem arredondamento** (`rounded-none`) e ocupam a largura total — reforçam a leitura de lista de auditoria, não de menu de app consumer.
+Inputs are white with blue-gray borders, 8px corners, and compact labels above them. Placeholder text should be muted and practical. Error and helper text should stay close to the field and use semantic color only when needed.
 
-A borda de `3px` nos stat cards é incomum e intencional: ela equipara visualmente o card ao frame de um documento timbrado.
+Cards are white, bordered, and lightly padded. Dashboard cards may use pale blue-gray inner containers to group kanban columns or empty states. Kanban cards should be compact, with status indicated by dots, priority indicated by small uppercase labels, and metadata kept visually secondary.
 
-## Componentes DaisyUI Utilizados
+Navigation is dark navy, full-height, and utilitarian. Active items use a sky-blue left indicator and a slightly brighter navy fill. Inactive items stay low-contrast white until hover or focus.
 
-O projeto usa DaisyUI 5 como base de componentes. Todos os elementos de interface devem preferir as classes semânticas do DaisyUI antes de criar CSS customizado.
+## Do's and Don'ts
 
-| Elemento | Classe DaisyUI |
-|---|---|
-| Sidebar mobile | `drawer` / `drawer-side` / `drawer-overlay` / `lg:drawer-open` |
-| Navegação lateral | `menu` / `menu-active` (item ativo) |
-| Botões | `btn` / `btn-ghost` / `btn-circle` / `btn-square` |
-| Inputs de busca | `input` / `input-bordered` |
-| Badge de status | `badge badge-success` / `badge badge-warning` |
-| Indicador de notificação | `indicator` / `indicator-item` / `badge` |
-| Cards de estatística | `stat` / `stat-title` / `stat-value` / `stat-figure` |
-| Tabela | `table` (com `scope="col"` nos `th`) |
-| Loading skeleton | `skeleton` (com `h-*` e `w-*`) |
-| Toast de feedback | `toast` / `alert alert-success` / `alert alert-error` |
-| Modal de confirmação | `modal` / `modal-box` / `modal-action` (elemento `<dialog>`) |
-| Avatar com iniciais | `avatar` + `div` com iniciais e `rounded-full` |
-| Grupo de botões (paginação) | `join` / `join-item` |
-| Dropdown de filtro | `dropdown` / `dropdown-content` / `menu` |
-| KPI stripe | `rounded-box bg-base-100` com `flex` e `flex-1` por célula |
-| Coluna kanban | `rounded-2xl bg-base-200` — sem classe DaisyUI específica |
-| Card kanban | `rounded-xl bg-base-100` com border e shadow inline |
-| Barras de região | `rounded-full bg-base-200` (track) + `bg-primary` (fill) |
-
-## Dashboard — Sala de Operações
-
-O dashboard usa um layout de três zonas verticais dentro da área de conteúdo já enquadrada pela Sidebar + Header:
-
-1. **Cabeçalho de página** — eyebrow `text-[11px] uppercase tracking-[0.18em]` com contexto ("Sala de operações · data"), `h1` em Playfair 40–48px, e botões de ação alinhados à direita.
-
-2. **KPI stripe** — faixa horizontal `rounded-box` com 5 células `flex-1`, separadas por hairlines verticais `1px solid rgba(4,9,32,0.10)`. Valores em Playfair 30px bold; label 12px lowercase `text-base-content/65`. Valores negativos (atrasadas) em `#b91c1c`; positivos (contribuições) em `#15803d`.
-
-3. **Grid principal** (`xl:grid-cols-[minmax(0,1fr)_320px]`) — painel kanban à esquerda (largura fluida) e rail lateral fixo de 320px à direita. Em viewports menores que `xl` (1280px) as zonas empilham verticalmente.
-
-**Painel kanban** — `rounded-box bg-base-100` com `grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4`. Cada coluna tem um ponto colorido (8×8px `rounded-sm`) que mapeia para o status: slate → a_fazer, sky → em_andamento, amber → aguardando_terceiros, green → concluido. Os cards mostram título, tag de área, prioridade colorida, data e avatar de 2 letras do responsável.
-
-**Rail lateral** — dois painéis `rounded-box bg-base-100` empilhados com `gap-5`:
-- *Avisos*: lista de alertas com ícone Lucide de 20px colorido por tom (neg/warn/info), separados por hairlines (exceto o último item).
-- *Associados por região*: barras horizontais de 4px de altura, track `bg-base-200`, fill `bg-primary`, label à esquerda e contagem à direita em Playfair 14px bold.
-
-## Voz Visual
-
-Se este sistema fosse um documento físico, seria uma **pasta de protocolo do Itamaraty**: capa azul-marinho, papel branco de alta gramatura, tipografia em Garamond (ou similar serif de prestígio), números em destaque, tabelas com linhas limpas. Digital, mas com a gravidade de quem assina tratados.
-
-O usuário-alvo são oficiais de chancelaria — acostumados a documentos formais, dashboards de governo, e sistemas legados. A intranet deve parecer **mais moderna que o que eles conhecem**, mas nunca frívola. Cada pixel justifica sua presença com clareza funcional ou identidade institucional.
+- Do keep the main canvas pale, quiet, and spacious enough for scanning.
+- Do use Playfair Display for titles and important metrics, not for dense body text.
+- Do communicate status with small dots, badges, and text color rather than large colored blocks.
+- Do keep administrative controls compact and predictable.
+- Don't introduce gradients, decorative blobs, glass effects, or marketing-style hero sections.
+- Don't make cards overly rounded or heavily shadowed.
+- Don't use bright accent colors unless they represent a meaningful operational state.
+- Don't reference implementation variables, framework classes, or source-file names when extending this design language.

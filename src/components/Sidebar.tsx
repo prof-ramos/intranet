@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import {
   Kanban,
   LayoutDashboard,
@@ -24,13 +25,19 @@ export function Sidebar({ user }: SidebarProps) {
     <aside className="w-72 min-h-full flex flex-col shrink-0" style={{ backgroundColor: '#06284f' }}>
       {/* Logo — fundo branco para preservar as cores originais da marca */}
       <div className="bg-white px-6 py-6 flex flex-col items-center">
-        <Image
-          src="/images/logo-asof.svg"
-          alt="ASOF — Associação de Oficiais de Chancelaria"
-          width={200}
-          height={60}
-          priority
-        />
+        <Link
+          href="/app"
+          aria-label="Ir para a página inicial"
+          className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2"
+        >
+          <Image
+            src="/images/logo-asof.svg"
+            alt="ASOF — Associação de Oficiais de Chancelaria"
+            width={200}
+            height={60}
+            priority
+          />
+        </Link>
         <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-[#06284f]/40 font-sans">
           Intranet
         </p>

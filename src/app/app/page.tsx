@@ -168,11 +168,14 @@ export default async function DashboardPage() {
         <div className="flex flex-wrap gap-2">
           <Link
             href="/app/atividades"
-            className="btn btn-outline btn-sm border-base-300 h-10 bg-white"
+            className="btn btn-outline border-base-300 min-h-11 bg-white lg:btn-sm lg:h-10 lg:min-h-10"
           >
             <Calendar size={16} aria-hidden="true" /> Esta semana
           </Link>
-          <Link href="/app/atividades/nova" className="btn btn-primary btn-sm h-10">
+          <Link
+            href="/app/atividades/nova"
+            className="btn btn-primary min-h-11 lg:btn-sm lg:h-10 lg:min-h-10"
+          >
             <Plus size={16} aria-hidden="true" /> Nova atividade
           </Link>
         </div>
