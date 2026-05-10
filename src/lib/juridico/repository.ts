@@ -228,7 +228,7 @@ export async function getConsultationById(id: number): Promise<ConsultationDetai
     answeredBy: row.answeredById ? { id: row.answeredById, name: row.answeredByName! } : null,
     createdBy: row.createdByAdminId
       ? { id: row.createdByAdminId, name: row.createdByAdminName! }
-      : { id: row.createdById, name: 'Desconhecido' },
+      : { id: row.createdById ?? 0, name: 'Desconhecido' },
   };
 }
 

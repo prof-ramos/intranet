@@ -23,7 +23,8 @@ interface ReassignModalProps {
 
 export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignModalProps) {
   const candidates = people.filter((person) => person.id !== activity.assigneeId);
-  const [toUserId, setToUserId] = useState(candidates[0]?.id ?? people[0]?.id ?? 0);
+  // Apenas o primeiro candidato válido, ou null
+  const [toUserId, setToUserId] = useState<number | null>(candidates[0]?.id ?? null);
   const [message, setMessage] = useState('');
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
@@ -35,12 +36,14 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
     <>
       <button
         aria-label="Fechar modal"
-        className="fixed inset-0 z-[60] cursor-default bg-[rgba(4,9,32,0.45)]"
+        className="fixed inset-0 z-[60] cursor-default"
+        style={{ backgroundColor: 'rgba(4,9,32,0.45)' }}
         type="button"
         onClick={onClose}
       />
       <div
-        className="rounded-box fixed top-1/2 left-1/2 z-[61] w-[min(440px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 bg-white shadow-[0_24px_60px_rgba(4,9,32,0.25)]"
+        className="rounded-box fixed top-1/2 left-1/2 z-[61] w-[min(440px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2"
+        style={{ background: '#ffffff', boxShadow: '0 24px 60px #04092040' }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="reassign-modal-title"
@@ -57,8 +60,8 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
           <label className="flex flex-col gap-1.5 text-[13px] font-medium">
             Atribuir a
             <select
-              value={toUserId}
-              onChange={(event) => setToUserId(Number(event.target.value))}
+              value={toUserId?.toString() ?? ''}
+              onChange={(event) => setToUserId(event.target.value ? Number(event.target.value) : null)}
               className="select select-bordered select-sm bg-white"
             >
               {candidates.map((person) => (
@@ -94,9 +97,9 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
           </button>
           <button
             type="button"
-            onClick={() => onSubmit(toUserId, message)}
+            onClick={() => toUserId !== null && onSubmit(toUserId, message)}
             className="btn btn-primary min-h-11 lg:btn-sm"
-            disabled={!toUserId}
+            disabled={toUserId === null || !candidates.some((c) => c.id === toUserId)}
           >
             Solicitar
           </button>
