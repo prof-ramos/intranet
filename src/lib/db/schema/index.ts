@@ -2,3 +2,8 @@ export * from './admins';
 export * from './associates';
 export * from './activities';
 export * from './audit';
+export * from './login-attempts';
+export * from './legal-consultations';
+export * from './legal-processes';
+export * from './legal-notes';
+export * from './legal-opinions';

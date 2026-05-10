@@ -5,8 +5,7 @@ import { asc, eq } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { db } from '@/lib/db';
 import { activities, associates } from '@/lib/db/schema';
-
-const HAIR = 'rgba(4, 9, 32, 0.05)';
+import { hairline } from '@/lib/ui/tokens';
 
 function dateOnly(value: string | Date | null) {
   if (!value) return null;
@@ -89,7 +88,7 @@ function Row({ label, value, mono }: { label: string; value: React.ReactNode; mo
   return (
     <div
       className="border-base-300 grid gap-2 border-b py-2.5 sm:grid-cols-[180px_1fr]"
-      style={{ borderColor: HAIR }}
+      style={{ borderColor: hairline }}
     >
       <dt className="text-base-content/55 text-[12px] font-semibold tracking-[0.06em] uppercase">
         {label}
@@ -281,7 +280,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
                 <div
                   key={item.label}
                   className="min-w-0 px-5 py-4"
-                  style={{ borderLeft: index === 0 ? 'none' : `1px solid ${HAIR}` }}
+                  style={{ borderLeft: index === 0 ? 'none' : `1px solid ${hairline}` }}
                 >
                   <p className="text-base-content/55 m-0 text-[11px] font-semibold tracking-[0.08em] uppercase">
                     {item.label}
@@ -399,7 +398,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
                     <span className="flex flex-col items-center self-stretch">
                       <span
                         className="w-px flex-1"
-                        style={{ background: index === 0 ? 'transparent' : HAIR }}
+                        style={{ background: index === 0 ? 'transparent' : hairline }}
                       />
                       <span
                         className="my-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-white"
@@ -407,7 +406,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
                       />
                       <span
                         className="w-px flex-1"
-                        style={{ background: index === arr.length - 1 ? 'transparent' : HAIR }}
+                        style={{ background: index === arr.length - 1 ? 'transparent' : hairline }}
                       />
                     </span>
                     <span className="py-3">

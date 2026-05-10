@@ -24,10 +24,13 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 │   │   └── page.tsx                 # Root redirect entrypoint
 │   ├── components/                  # Shared UI shell components
 │   └── lib/
-│       ├── associates/              # Search parameter parsing/helpers
+│       ├── associates/              # Search parameter parsing + repository queries
 │       ├── auth/                    # Auth config, sessions, guards, password logic
 │       ├── db/                      # Drizzle client and schema exports
-│       │   └── schema/              # admins, associates, activities, audit_logs
+│       │   └── schema/              # admins, associates, activities, audit_logs, login_attempts
+│       ├── dashboard/               # Dashboard aggregation queries
+│       ├── env.ts                   # Zod-validated environment variables
+│       ├── reports/                 # Report queries and CSV serialization
 │       ├── supabase/                # Supabase SDK factories for script/server use
 │       └── ui/                      # Shared UI tokens/helpers
 ├── drizzle/
@@ -35,7 +38,7 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 ├── docs/                            # Product, design, diagnostics, and analysis docs
 ├── scripts/                         # Seed, diagnostics, and Supabase status scripts
 ├── public/                          # Static public assets
-├── proxy.ts                         # Next.js proxy route guard for protected routes
+├── proxy.ts                         # Next.js 16 proxy (replaces middleware.ts) — JWT cookie validation for /app/*
 ├── drizzle.config.ts                # Drizzle migration config for PostgreSQL
 ├── next.config.ts                   # Next.js config
 ├── package.json                     # npm scripts and dependencies
@@ -58,10 +61,16 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
                  |
                  +--> [Auth helpers in src/lib/auth]
                  |
+                 +--> [src/lib/env.ts — Zod env validation]
+                 |
                  +--> [Drizzle ORM client]
-                          |
-                          v
-                    [PostgreSQL database]
+                 |        |
+                 |        +--> [Repository layer — dashboard, associates, reports queries]
+                 |        |
+                 |        v
+                 |  [PostgreSQL database]
+                 |
+                 +--> [src/lib/ui/tokens.ts — design tokens]
 
 [Admin scripts]
         |
@@ -126,7 +135,7 @@ Name: ASOF Intranet PostgreSQL Database
 
 Type: PostgreSQL, currently backed by Supabase in the known remote environment.
 
-Purpose: Stores administrative users, ASOF associates, activity workflow records, and audit logs.
+Purpose: Stores administrative users, ASOF associates, activity workflow records, audit logs, and login attempt tracking for rate limiting.
 
 Key Schemas/Tables:
 
@@ -134,6 +143,7 @@ Key Schemas/Tables:
 - `associates`
 - `activities`
 - `audit_logs`
+- `login_attempts` — rate limiting data
 
 ### 4.2. Legacy/Local Migration Artifacts
 
@@ -192,6 +202,8 @@ Key Security Tools/Practices:
 - Service-role Supabase keys are server/script-only.
 - Sensitive ASOF data such as CPF, SIAPE, email, address, and functional data must not be logged or exposed in public responses.
 - Database migrations reject pooled PostgreSQL URLs to avoid unsafe migration behavior.
+- Login rate limiting is backed by PostgreSQL (`login_attempts` table) for multi-instance consistency.
+- All environment variables are validated via Zod in `src/lib/env.ts` at startup.
 
 ## 8. Development & Testing Environment
 
@@ -235,13 +247,13 @@ Runtime Notes:
 
 ## 9. Future Considerations / Roadmap
 
-- Extract data access from route files that still mix query parsing, Drizzle calls, and UI rendering.
-- Continue replacing placeholder dashboard/static metrics with real persisted data.
+- Continue extracting data access from route files into repository modules (`src/lib/*/queries.ts`).
+- Replace remaining placeholder dashboard/static metrics with real persisted data.
 - Expand explicit role guards for administrative routes and actions.
 - Keep PostgreSQL/Supabase documentation aligned with code; remove or archive stale SQLite/libSQL references.
 - Add integration tests for login/session cookies, protected routes, and high-risk server actions.
 - Decide and document production hosting, observability, backup, and incident-response practices.
-- Keep `README.md`, `AGENTS.md`, `DESIGN.md`, and this file synchronized when runtime or architecture decisions change.
+- Keep `README.md`, `AGENTS.md`, `DESIGN.md`, `CLAUDE.md`, and this file synchronized when runtime or architecture decisions change.
 
 ## 10. Project Identification
 

@@ -1,3 +1,5 @@
+import { env } from '@/lib/env';
+
 export const AUTH_ROLES = ['admin', 'diretoria', 'secretaria'] as const;
 
 export type AuthRole = (typeof AUTH_ROLES)[number];
@@ -63,14 +65,6 @@ export function getDevAuthUser(env: AuthEnv = process.env): AuthUser {
   };
 }
 
-export function getSessionSecret(env: AuthEnv = process.env): string {
-  const sessionSecret = env.SESSION_SECRET;
-  if (!sessionSecret || sessionSecret.length < 32) {
-    throw new Error(
-      'SESSION_SECRET must be set and at least 32 characters long. ' +
-        'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
-    );
-  }
-
-  return sessionSecret;
+export function getSessionSecret(): string {
+  return env.SESSION_SECRET;
 }

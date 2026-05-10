@@ -1,7 +1,13 @@
 import { bigint, index, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { admins } from '@/lib/db/schema/admins';
 
-export const auditEntityType = pgEnum('audit_entity_type', ['associate', 'admin', 'activity']);
+export const auditEntityType = pgEnum('audit_entity_type', [
+  'associate',
+  'admin',
+  'activity',
+  'legal_consultation',
+  'legal_process',
+]);
 
 export const auditLogs = pgTable(
   'audit_logs',

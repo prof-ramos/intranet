@@ -16,7 +16,7 @@ export async function login(formData: FormData) {
 
   if (!email || !password) redirect('/login?error=1');
 
-  const rateLimit = loginRateLimiter.consume(email);
+  const rateLimit = await loginRateLimiter.consume(email);
   if (!rateLimit.allowed) redirect('/login?error=rate-limit');
 
   const [user] = await db.select().from(admins).where(eq(admins.email, email)).limit(1);
@@ -27,7 +27,7 @@ export async function login(formData: FormData) {
 
   if (!user || !user.isActive || !valid) redirect('/login?error=1');
 
-  loginRateLimiter.reset(email);
+  await loginRateLimiter.reset(email);
 
   await createSession({
     userId: user.id,

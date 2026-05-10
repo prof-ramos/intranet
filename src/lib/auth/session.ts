@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
+import { env } from '@/lib/env';
 import {
   SESSION_COOKIE_MAX_AGE,
   SESSION_COOKIE_NAME,
@@ -24,7 +25,7 @@ export async function createSession(payload: SessionData): Promise<void> {
 
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: env.NODE_ENV === 'production',
     sameSite: 'strict',
     maxAge: SESSION_COOKIE_MAX_AGE,
     path: '/',

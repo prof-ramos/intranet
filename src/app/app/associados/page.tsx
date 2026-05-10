@@ -1,12 +1,7 @@
 import { requireAuth } from '@/lib/auth/require-auth';
-import { db } from '@/lib/db';
-import { associates } from '@/lib/db/schema';
-import { eq, and, count, asc, sql } from 'drizzle-orm';
+import { getAssociatesPaginated } from '@/lib/associates/queries';
 import { getRoleLabel } from '@/lib/auth/roles';
-import {
-  buildAssociateNameSearchPattern,
-  parseAssociatesSearchParams,
-} from '@/lib/associates/search-params';
+import { parseAssociatesSearchParams } from '@/lib/associates/search-params';
 import { Bell, ChevronLeft, ChevronRight, Download, Search } from 'lucide-react';
 import Link from 'next/link';
 
@@ -20,30 +15,7 @@ export default async function AssociadosPage({
   const user = await requireAuth();
   const { q, page } = parseAssociatesSearchParams(await searchParams);
 
-  const baseWhere = and(
-    eq(associates.associationStatus, 'ativo'),
-    q
-      ? sql`${associates.fullName} like ${buildAssociateNameSearchPattern(q)} escape '\\'`
-      : undefined,
-  );
-
-  const [rows, [{ total }]] = await Promise.all([
-    db
-      .select({
-        id: associates.id,
-        fullName: associates.fullName,
-        assignment: associates.assignment,
-        classPattern: associates.classPattern,
-        primaryEmail: associates.primaryEmail,
-        functionalStatus: associates.functionalStatus,
-      })
-      .from(associates)
-      .where(baseWhere)
-      .orderBy(asc(associates.fullName), asc(associates.id))
-      .limit(PAGE_SIZE)
-      .offset((page - 1) * PAGE_SIZE),
-    db.select({ total: count() }).from(associates).where(baseWhere),
-  ]);
+  const { rows, total } = await getAssociatesPaginated(page, PAGE_SIZE, q);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const from = total === 0 ? 0 : Math.min((page - 1) * PAGE_SIZE + 1, total);
@@ -143,13 +115,13 @@ export default async function AssociadosPage({
               <Link href="/app/associados?page=1" className="text-sm font-semibold">
                 Ver todos ({total})
               </Link>
-              <button
-                type="button"
+              <Link
+                href="/app/associados/relatorio"
                 aria-label="Exportar associados"
                 className="btn btn-square btn-outline min-h-11 min-w-11 lg:btn-sm"
               >
                 <Download size={18} aria-hidden="true" />
-              </button>
+              </Link>
               <div className="join">
                 {page > 1 ? (
                   <Link

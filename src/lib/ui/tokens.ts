@@ -17,16 +17,22 @@ export const primaryContainerActive = '#123d73';
 export const skyBlue = '#76AEEA';
 export const surface = '#f8fafc';
 
-export const statusStyles = {
+export const statusStyles: Record<
+  string,
+  { label: string; accent: string }
+> = {
   a_fazer: { label: 'A fazer', accent: '#94a3b8' },
   em_andamento: { label: 'Em andamento', accent: '#76AEEA' },
   aguardando_terceiros: { label: 'Aguardando terceiros', accent: '#e7c16b' },
   concluido: { label: 'Concluído', accent: '#86efac' },
-} as const;
+};
 
-export const priorityStyles = {
+export const priorityStyles: Record<
+  string,
+  { label: string; fg: string; bg: string }
+> = {
   urgente: { label: 'Urgente', fg: '#b91c1c', bg: '#fee2e2' },
   alta: { label: 'Alta', fg: '#a16207', bg: '#f4ddb1' },
   normal: { label: 'Normal', fg: 'rgba(13,31,60,0.70)', bg: surface },
   baixa: { label: 'Baixa', fg: 'rgba(13,31,60,0.50)', bg: surface },
-} as const;
+};

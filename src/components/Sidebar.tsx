@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import {
   FileSpreadsheet,
@@ -32,12 +31,12 @@ export function Sidebar({ user }: SidebarProps) {
           aria-label="Ir para a página inicial"
           className={['rounded', focusRingClass].join(' ')}
         >
-          <Image
-            src="/images/logo-asof.svg"
+          <img
+            src="https://asof.org.br/img/asof-dark.svg"
             alt="ASOF — Associação de Oficiais de Chancelaria"
             width={200}
             height={60}
-            priority
+            className="h-[60px] w-[200px]"
           />
         </Link>
         <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-[#06284f]/40 font-sans">
@@ -60,7 +59,7 @@ export function Sidebar({ user }: SidebarProps) {
           Jurídico
         </NavLink>
         {user.role !== 'secretaria' && (
-          <NavLink href="/app/relatorio" icon={<FileSpreadsheet size={20} />}>
+          <NavLink href="/app/associados/relatorio" icon={<FileSpreadsheet size={20} />}>
             Relatórios
           </NavLink>
         )}

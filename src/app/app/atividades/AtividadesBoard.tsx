@@ -2,7 +2,10 @@
 
 import Link from 'next/link';
 import { ArrowRight, Calendar, Check, ChevronDown, Clock, Plus, Search, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import { Kanban } from 'react-kanban-kit';
+import type { BoardData } from 'react-kanban-kit';
 import {
   compactActionClass,
   desktopDenseControlClass,
@@ -135,41 +138,33 @@ function normalizeActivity(activity: BoardActivity): BoardActivity {
 }
 
 function Avatar({ person, compact = false }: { person?: BoardPerson; compact?: boolean }) {
-  if (!person) return <span className="bg-base-300 h-5 w-5 rounded-full" aria-hidden="true" />;
+  if (!person)
+    return <span className="h-5 w-5 shrink-0 rounded-full" style={{ background: '#c9d2df' }} aria-hidden="true" />;
 
   return (
     <span
       title={person.name}
       className={[
-        'bg-primary grid shrink-0 place-items-center rounded-full text-white',
+        'grid shrink-0 place-items-center rounded-full text-white',
         compact ? 'h-5 w-5 text-[8px]' : 'h-6 w-6 text-[9px]',
       ].join(' ')}
+      style={{ background: '#040920' }}
     >
       {initials(person.name)}
     </span>
   );
 }
 
-function ActivityCard({
+function ActivityCardContent({
   activity,
   peopleById,
   compact,
-  isDragging,
   hasPending,
-  onClick,
-  onMove,
-  onDragStart,
-  onDragEnd,
 }: {
   activity: BoardActivity;
   peopleById: Map<number, BoardPerson>;
   compact: boolean;
-  isDragging: boolean;
   hasPending: boolean;
-  onClick: () => void;
-  onMove: (id: number, status: Status) => void;
-  onDragStart: (event: DragEvent<HTMLElement>, id: number) => void;
-  onDragEnd: () => void;
 }) {
   const dueOffset = daysFromToday(activity.dueDate);
   const isLate = dueOffset !== null && dueOffset < 0 && activity.status !== 'concluido';
@@ -178,14 +173,10 @@ function ActivityCard({
   const priority = priorityTone[activity.priority];
 
   return (
-    <article
-      draggable
-      onDragStart={(event) => onDragStart(event, activity.id)}
-      onDragEnd={onDragEnd}
+    <div
       className={[
-        'relative flex cursor-grab flex-col rounded-[8px] bg-white shadow-[0_1px_0_rgba(4,9,32,0.05)] transition',
+        'relative flex flex-col rounded-[8px] bg-white transition',
         compact ? 'gap-2 p-3' : 'gap-2.5 p-3.5',
-        isDragging ? 'opacity-60 shadow-[0_12px_28px_rgba(4,9,32,0.18)]' : 'hover:-translate-y-0.5',
       ].join(' ')}
       style={{ border: `1px solid ${hairline}`, borderLeft: `3px solid ${priority.fg}` }}
     >
@@ -198,21 +189,20 @@ function ActivityCard({
         </span>
       )}
 
-      <button
-        type="button"
-        onClick={onClick}
+      <p
         className={[
-          'm-0 rounded-[6px] text-left leading-snug font-semibold [overflow-wrap:anywhere]',
-          focusRingClass,
+          'm-0 text-left leading-snug font-semibold [overflow-wrap:anywhere]',
           compact ? 'text-[13px]' : 'text-sm',
         ].join(' ')}
-        aria-label={`Abrir detalhes da atividade: ${activity.title}`}
+        style={{ color: '#0d1f3c' }}
       >
         {activity.title}
-      </button>
+      </p>
 
       {!compact && activity.associateName && (
-        <p className="text-base-content/60 m-0 text-[11px]">↳ {activity.associateName}</p>
+        <p className="m-0 text-[11px]" style={{ color: '#59677a' }}>
+          &#x21B3; {activity.associateName}
+        </p>
       )}
 
       {!compact && activity.tags.length > 0 && (
@@ -220,7 +210,8 @@ function ActivityCard({
           {activity.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="border-base-300 bg-base-100 text-base-content/70 rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+              className="rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+              style={{ color: '#59677a', borderColor: '#dde3ec', background: '#f8fafc' }}
             >
               #{tag}
             </span>
@@ -228,7 +219,10 @@ function ActivityCard({
         </div>
       )}
 
-      <div className="border-base-300/80 mt-1 flex items-center justify-between gap-2 border-t pt-2">
+      <div
+        className="mt-1 flex items-center justify-between gap-2 border-t pt-2"
+        style={{ borderColor: 'rgba(4,9,32,0.05)' }}
+      >
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           {activity.priority !== 'normal' && (
             <span
@@ -241,14 +235,14 @@ function ActivityCard({
           {activity.dueDate && !activity.completedAt && (
             <span
               className="inline-flex items-center gap-1 text-[11px] font-medium"
-              style={{ color: isLate ? '#b91c1c' : isSoon ? '#a16207' : 'rgba(13,31,60,0.60)' }}
+              style={{ color: isLate ? '#b91c1c' : isSoon ? '#a16207' : '#59677a' }}
             >
               <Calendar size={12} aria-hidden="true" />
               {formatDueDate(activity.dueDate)}
             </span>
           )}
           {activity.completedAt && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#15803d]">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold" style={{ color: '#15803d' }}>
               <Check size={12} aria-hidden="true" />
               {formatDueDate(activity.completedAt)}
             </span>
@@ -259,24 +253,7 @@ function ActivityCard({
           compact={compact}
         />
       </div>
-      <div className="border-base-300/80 flex flex-wrap gap-1 border-t pt-2">
-        {columns
-          .filter((column) => column.key !== activity.status)
-          .map((column) => (
-            <button
-              key={column.key}
-              type="button"
-              onClick={() => onMove(activity.id, column.key)}
-              className={[
-                'rounded-full border border-base-300 px-2 py-1 text-[11px] font-semibold text-base-content/70 hover:bg-base-100',
-                focusRingClass,
-              ].join(' ')}
-            >
-              Mover para {column.title}
-            </button>
-          ))}
-      </div>
-    </article>
+    </div>
   );
 }
 
@@ -309,10 +286,11 @@ function QuickAdd({
         type="button"
         onClick={() => setOpen(true)}
         className={[
-          'border-base-300 text-base-content/55 mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-dashed text-xs font-medium hover:bg-white',
+          'mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-[8px] border border-dashed text-xs font-medium',
           mobileTouchTargetClass,
           focusRingClass,
         ].join(' ')}
+        style={{ color: '#59677a', borderColor: '#c9d2df' }}
       >
         <Plus size={14} aria-hidden="true" />
         Adicionar
@@ -321,7 +299,7 @@ function QuickAdd({
   }
 
   return (
-    <div className="border-base-300 mt-2 rounded-[8px] border bg-white p-2">
+    <div className="mt-2 rounded-[8px] border bg-white p-2" style={{ borderColor: '#c9d2df' }}>
       <textarea
         ref={inputRef}
         value={title}
@@ -342,9 +320,15 @@ function QuickAdd({
           'min-h-14 w-full resize-none rounded-[6px] bg-transparent text-[13px]',
           focusRingClass,
         ].join(' ')}
+        style={{ color: '#0d1f3c' }}
       />
       <div className="mt-1 flex gap-1.5">
-        <button type="button" onClick={submit} className="btn btn-primary min-h-10 flex-1 lg:btn-sm">
+        <button
+          type="button"
+          onClick={submit}
+          className="min-h-10 flex-1 rounded-[8px] px-4 text-[13px] font-semibold text-white"
+          style={{ background: '#040920' }}
+        >
           Adicionar
         </button>
         <button
@@ -353,7 +337,8 @@ function QuickAdd({
             setOpen(false);
             setTitle('');
           }}
-          className="btn btn-outline min-h-10 lg:btn-sm"
+          className="min-h-10 rounded-[8px] border px-4 text-[13px] font-semibold"
+          style={{ color: '#0d1f3c', borderColor: '#c9d2df', background: '#fff' }}
         >
           Cancelar
         </button>
@@ -362,121 +347,55 @@ function QuickAdd({
   );
 }
 
-function BoardColumn({
-  column,
-  items,
-  compact,
-  dragId,
-  hoverColumn,
-  pendingByActivity,
-  peopleById,
-  collapsed,
-  onToggleCollapsed,
-  onCardClick,
-  onMove,
-  onAdd,
-  onDragStart,
-  onDragEnd,
-  onDragOver,
-  onDrop,
-}: {
-  column: (typeof columns)[number];
-  items: BoardActivity[];
-  compact: boolean;
-  dragId: number | null;
-  hoverColumn: Status | null;
-  pendingByActivity: Map<number, PendingReassignment>;
-  peopleById: Map<number, BoardPerson>;
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
-  onCardClick: (activity: BoardActivity) => void;
-  onMove: (id: number, status: Status) => void;
-  onAdd: (title: string, status: Status) => void;
-  onDragStart: (event: DragEvent<HTMLElement>, id: number) => void;
-  onDragEnd: () => void;
-  onDragOver: (status: Status) => void;
-  onDrop: (status: Status) => void;
-}) {
-  const isHover = hoverColumn === column.key;
+function buildBoardData(
+  grouped: Record<Status, BoardActivity[]>,
+  collapsedDone: boolean,
+): BoardData {
+  const rootChildren: string[] = [];
+  const data: BoardData = {
+    root: {
+      id: 'root',
+      title: 'root',
+      parentId: null,
+      children: rootChildren,
+      totalChildrenCount: columns.length,
+    },
+  };
 
-  return (
-    <section
-      onDragOver={(event) => {
-        event.preventDefault();
-        onDragOver(column.key);
-      }}
-      onDrop={(event) => {
-        event.preventDefault();
-        onDrop(column.key);
-      }}
-      className="rounded-box bg-base-200 flex min-w-0 flex-col p-3"
-      style={{
-        outline: isHover ? `2px dashed ${column.accent}` : '2px dashed transparent',
-        outlineOffset: -2,
-      }}
-    >
-      <header className="flex items-center justify-between gap-2 px-1 pt-1 pb-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span
-            className="h-2 w-2 shrink-0 rounded-[2px]"
-            style={{ background: column.accent }}
-            aria-hidden="true"
-          />
-          <h2 className="truncate text-[11px] font-bold tracking-[0.06em] uppercase">
-            {column.title}
-          </h2>
-          <span className="bg-base-content/10 text-base-content/55 shrink-0 rounded-full px-1.5 text-[11px] font-semibold">
-            {items.length}
-          </span>
-        </div>
-        {column.key === 'concluido' && (
-          <button
-            type="button"
-            onClick={onToggleCollapsed}
-            className={[
-              'grid place-items-center rounded hover:bg-white',
-              compactActionClass,
-              focusRingClass,
-            ].join(' ')}
-            aria-label={collapsed ? 'Expandir concluídas' : 'Recolher concluídas'}
-          >
-            <ChevronDown
-              size={14}
-              aria-hidden="true"
-              className={collapsed ? '-rotate-90 transition-transform' : 'transition-transform'}
-            />
-          </button>
-        )}
-      </header>
+  for (const column of columns) {
+    const columnId = column.key;
+    const items = grouped[columnId];
+    rootChildren.push(columnId);
 
-      {!collapsed && (
-        <>
-          <div className="flex min-h-8 flex-col gap-2">
-            {items.map((activity) => (
-            <ActivityCard
-                key={activity.id}
-                activity={activity}
-                peopleById={peopleById}
-                compact={compact}
-                isDragging={dragId === activity.id}
-                hasPending={pendingByActivity.has(activity.id)}
-                onClick={() => onCardClick(activity)}
-                onMove={onMove}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-              />
-            ))}
-            {items.length === 0 && (
-              <p className="text-base-content/40 m-0 px-1 py-3 text-center text-xs">
-                Solte aqui ou adicione abaixo.
-              </p>
-            )}
-          </div>
-          {column.key !== 'concluido' && <QuickAdd columnKey={column.key} onAdd={onAdd} />}
-        </>
-      )}
-    </section>
-  );
+    const cardIds: string[] = [];
+    const isCollapsed = columnId === 'concluido' && collapsedDone;
+    if (!isCollapsed) {
+      for (const activity of items) {
+        const cardId = String(activity.id);
+        cardIds.push(cardId);
+        data[cardId] = {
+          id: cardId,
+          title: activity.title,
+          parentId: columnId,
+          children: [],
+          totalChildrenCount: 0,
+          type: 'activity',
+          content: activity,
+        };
+      }
+    }
+
+    data[columnId] = {
+      id: columnId,
+      title: column.title,
+      parentId: 'root',
+      children: cardIds,
+      totalChildrenCount: cardIds.length,
+      type: 'column',
+    };
+  }
+
+  return data;
 }
 
 function SummaryStrip({
@@ -1096,8 +1015,6 @@ export function AtividadesBoard({
   const [compact, setCompact] = useState(false);
   const [collapsedDone, setCollapsedDone] = useState(false);
   const [drawerId, setDrawerId] = useState<number | null>(null);
-  const [dragId, setDragId] = useState<number | null>(null);
-  const [hoverColumn, setHoverColumn] = useState<Status | null>(null);
   const [reassignActivity, setReassignActivity] = useState<BoardActivity | null>(null);
   const [pendings, setPendings] = useState<PendingReassignment[]>([]);
 
@@ -1205,24 +1122,6 @@ export function AtividadesBoard({
     ]);
   }
 
-  function handleDragStart(event: DragEvent<HTMLElement>, id: number) {
-    setDragId(id);
-    event.dataTransfer.effectAllowed = 'move';
-  }
-
-  function handleDrop(status: Status) {
-    if (dragId === null) return;
-    const current = items.find((activity) => activity.id === dragId);
-    if (current && current.status !== status) {
-      updateActivity(dragId, {
-        status,
-        completedAt: status === 'concluido' ? new Date().toISOString().slice(0, 10) : null,
-      });
-    }
-    setDragId(null);
-    setHoverColumn(null);
-  }
-
   return (
     <main className="mx-auto w-full max-w-[1180px] min-w-0 px-5 py-7 sm:px-8 lg:px-10">
       <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
@@ -1264,42 +1163,111 @@ export function AtividadesBoard({
         </div>
       )}
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2 2xl:grid-cols-4">
-        {columns.map((column) => (
-          <BoardColumn
-            key={column.key}
-            column={column}
-            items={grouped[column.key]}
-            compact={compact}
-            dragId={dragId}
-            hoverColumn={hoverColumn}
-            pendingByActivity={pendingByActivity}
-            peopleById={peopleById}
-            collapsed={column.key === 'concluido' && collapsedDone}
-            onToggleCollapsed={() => setCollapsedDone((current) => !current)}
-            onCardClick={(activity) => setDrawerId(activity.id)}
-            onMove={(id, status) => {
-              const current = items.find((activity) => activity.id === id);
-              updateActivity(id, {
-                status,
-                completedAt:
-                  status === 'concluido'
-                    ? new Date().toISOString().slice(0, 10)
-                    : current?.status === 'concluido'
-                      ? null
-                      : current?.completedAt ?? null,
-              });
-            }}
-            onAdd={handleAdd}
-            onDragStart={handleDragStart}
-            onDragEnd={() => {
-              setDragId(null);
-              setHoverColumn(null);
-            }}
-            onDragOver={setHoverColumn}
-            onDrop={handleDrop}
-          />
-        ))}
+      <div className="relative">
+        <Kanban
+          dataSource={useMemo(() => buildBoardData(grouped, collapsedDone), [grouped, collapsedDone])}
+          configMap={{
+            activity: {
+              render: ({ data }) => {
+                const activity = data.content as BoardActivity;
+                return (
+                  <ActivityCardContent
+                    activity={activity}
+                    peopleById={peopleById}
+                    compact={compact}
+                    hasPending={pendingByActivity.has(activity.id)}
+                  />
+                );
+              },
+              isDraggable: true,
+            },
+          }}
+          rootClassName="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 md:grid md:grid-cols-2 md:overflow-visible lg:grid-cols-3 xl:grid-cols-4"
+          rootStyle={{ scrollbarWidth: 'thin' }}
+          columnWrapperClassName={() => 'snap-start min-w-[280px] md:min-w-0'}
+          columnWrapperStyle={() => ({
+            background: '#eef1f6',
+            borderRadius: 16,
+            padding: 12,
+            display: 'flex',
+            flexDirection: 'column',
+            minWidth: 0,
+          })}
+          columnClassName={() => 'flex min-w-0 flex-col'}
+          cardWrapperStyle={() => ({ marginBottom: 8 })}
+          cardsGap={8}
+          virtualization={false}
+          allowColumnAdder={false}
+          allowListFooter={(column) => column.id !== 'concluido'}
+          renderListFooter={(column) => (
+            <QuickAdd columnKey={column.id as Status} onAdd={handleAdd} />
+          )}
+          renderColumnHeader={(column) => {
+            const col = columns.find((c) => c.key === column.id);
+            if (!col) return null;
+            return (
+              <header className="flex items-center justify-between gap-2 px-1 pt-1 pb-3">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <span
+                    className="shrink-0 rounded-[2px]"
+                    style={{ width: 8, height: 8, background: col.accent }}
+                    aria-hidden="true"
+                  />
+                  <h2
+                    className="truncate text-[11px] font-bold tracking-[0.1em] uppercase"
+                    style={{ color: '#0d1f3c', fontFamily: "'Google Sans', system-ui, sans-serif" }}
+                  >
+                    {col.title}
+                  </h2>
+                  <span
+                    className="shrink-0 rounded-full px-1.5 text-[11px] font-semibold"
+                    style={{ color: '#59677a', background: 'rgba(4,9,32,0.06)' }}
+                  >
+                    {column.totalChildrenCount ?? 0}
+                  </span>
+                </div>
+                {col.key === 'concluido' && (
+                  <button
+                    type="button"
+                    onClick={() => setCollapsedDone((current) => !current)}
+                    className={[
+                      'grid place-items-center rounded hover:bg-white',
+                      compactActionClass,
+                      focusRingClass,
+                    ].join(' ')}
+                    aria-label={collapsedDone ? 'Expandir concluídas' : 'Recolher concluídas'}
+                  >
+                    <ChevronDown
+                      size={14}
+                      aria-hidden="true"
+                      className={collapsedDone ? '-rotate-90 transition-transform' : 'transition-transform'}
+                      style={{ color: '#59677a' }}
+                    />
+                  </button>
+                )}
+              </header>
+            );
+          }}
+          onCardClick={(_, card) => {
+            const activity = card.content as BoardActivity;
+            setDrawerId(activity.id);
+          }}
+          onCardMove={({ cardId, toColumnId }) => {
+            const id = Number(cardId);
+            const newStatus = toColumnId as Status;
+            const current = items.find((a) => a.id === id);
+            updateActivity(id, {
+              status: newStatus,
+              completedAt:
+                newStatus === 'concluido'
+                  ? new Date().toISOString().slice(0, 10)
+                  : current?.status === 'concluido'
+                    ? null
+                    : current?.completedAt ?? null,
+            });
+          }}
+        />
+        <div className="pointer-events-none absolute top-0 right-0 bottom-4 w-10 bg-gradient-to-l from-base-100 to-transparent md:hidden" />
       </div>
 
       <div className="text-base-content/55 mt-5 flex items-center gap-2 text-xs">

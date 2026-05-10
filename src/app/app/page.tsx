@@ -1,39 +1,19 @@
 import { requireAuth } from '@/lib/auth/require-auth';
-import { db } from '@/lib/db';
-import { activities, associates } from '@/lib/db/schema';
-import { and, asc, count, desc, eq, ne, sql } from 'drizzle-orm';
+import {
+  countActiveAssociates,
+  countPendingMigrationAssociates,
+  countContributionsOkAssociates,
+  countOpenActivities,
+  countOverdueActivities,
+  getActivitiesByStatus,
+  getTopRegions,
+  getUrgentActivities,
+  getKanbanCards,
+} from '@/lib/dashboard/queries';
 import { AlertTriangle, ArrowRight, Calendar, Globe, Mail, Megaphone, Plus } from 'lucide-react';
 import Link from 'next/link';
 
-const HAIR = 'rgba(4, 9, 32, 0.05)';
-
-const activityStatusLabels: Record<string, string> = {
-  a_fazer: 'A fazer',
-  em_andamento: 'Em andamento',
-  aguardando_terceiros: 'Aguardando terceiros',
-  concluido: 'Concluído',
-};
-
-const priorityLabels: Record<string, string> = {
-  baixa: 'Baixa',
-  normal: 'Normal',
-  alta: 'Alta',
-  urgente: 'Urgente',
-};
-
-const statusAccents: Record<string, string> = {
-  a_fazer: '#94a3b8',
-  em_andamento: '#76AEEA',
-  aguardando_terceiros: '#e7c16b',
-  concluido: '#86efac',
-};
-
-const priorityTone: Record<string, string> = {
-  urgente: '#b91c1c',
-  alta: '#a16207',
-  normal: 'rgba(13,31,60,0.70)',
-  baixa: 'rgba(13,31,60,0.50)',
-};
+import { hairline, statusStyles, priorityStyles } from '@/lib/ui/tokens';
 
 function formatDueDate(value: string | Date | null) {
   if (!value) return null;
@@ -46,83 +26,25 @@ function formatDueDate(value: string | Date | null) {
 
 async function getDashboardData() {
   const [
-    [{ activeAssociates }],
-    [{ pendingMigration }],
-    [{ contributionsOk }],
-    [{ openActivities }],
-    [{ overdueActivities }],
+    activeAssociates,
+    pendingMigration,
+    contributionsOk,
+    openActivities,
+    overdueActivities,
     activitiesByStatus,
     topRegions,
     urgentActivities,
     kanbanCards,
   ] = await Promise.all([
-    db
-      .select({ activeAssociates: count() })
-      .from(associates)
-      .where(eq(associates.associationStatus, 'ativo')),
-    db
-      .select({ pendingMigration: count() })
-      .from(associates)
-      .where(eq(associates.contributionStatus, 'pendente_migracao')),
-    db
-      .select({ contributionsOk: count() })
-      .from(associates)
-      .where(
-        and(eq(associates.associationStatus, 'ativo'), eq(associates.contributionStatus, 'em_dia')),
-      ),
-    db
-      .select({ openActivities: count() })
-      .from(activities)
-      .where(ne(activities.status, 'concluido')),
-    db
-      .select({ overdueActivities: count() })
-      .from(activities)
-      .where(and(ne(activities.status, 'concluido'), sql`${activities.dueDate} < now()`)),
-    db
-      .select({ status: activities.status, total: count() })
-      .from(activities)
-      .groupBy(activities.status),
-    db
-      .select({ country: associates.locationCountry, total: count() })
-      .from(associates)
-      .where(eq(associates.associationStatus, 'ativo'))
-      .groupBy(associates.locationCountry)
-      .orderBy(desc(count()))
-      .limit(6),
-    db
-      .select({
-        id: activities.id,
-        title: activities.title,
-        status: activities.status,
-        priority: activities.priority,
-        dueDate: activities.dueDate,
-      })
-      .from(activities)
-      .where(and(ne(activities.status, 'concluido'), sql`${activities.dueDate} < now()`))
-      .orderBy(activities.dueDate)
-      .limit(4),
-    db
-      .select({
-        id: activities.id,
-        title: activities.title,
-        status: activities.status,
-        priority: activities.priority,
-        dueDate: activities.dueDate,
-        associateName: associates.fullName,
-      })
-      .from(activities)
-      .leftJoin(associates, eq(activities.associateId, associates.id))
-      .orderBy(
-        asc(activities.status),
-        desc(sql`case ${activities.priority}
-          when 'urgente' then 4
-          when 'alta' then 3
-          when 'normal' then 2
-          else 1
-        end`),
-        asc(activities.dueDate),
-      )
-      .limit(20),
+    countActiveAssociates(),
+    countPendingMigrationAssociates(),
+    countContributionsOkAssociates(),
+    countOpenActivities(),
+    countOverdueActivities(),
+    getActivitiesByStatus(),
+    getTopRegions(),
+    getUrgentActivities(),
+    getKanbanCards(),
   ]);
 
   const contributionRate =
@@ -189,7 +111,7 @@ export default async function DashboardPage() {
           <div
             key={s.label}
             className="stat rounded-box bg-base-100 min-h-[104px] px-4 py-3 shadow-none"
-            style={{ border: `1px solid ${HAIR}` }}
+            style={{ border: `1px solid ${hairline}` }}
           >
             <div className="stat-title text-base-content/55 text-[10px] font-bold tracking-[0.08em] uppercase">
               {s.label}
@@ -204,7 +126,7 @@ export default async function DashboardPage() {
       <section className="grid items-start gap-7 xl:grid-cols-[minmax(0,1fr)_280px]">
         <div
           className="rounded-box bg-base-100 min-w-0 p-4 sm:p-5"
-          style={{ border: `1px solid ${HAIR}` }}
+          style={{ border: `1px solid ${hairline}` }}
         >
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
             <h2 className="font-serif text-xl font-bold">Atividades em curso</h2>
@@ -217,7 +139,7 @@ export default async function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {Object.entries(activityStatusLabels).map(([status, label]) => {
+            {Object.entries(statusStyles).map(([status, style]) => {
               const row = data.activitiesByStatus.find((item) => item.status === status);
               const total = row?.total ?? 0;
               const cards = data.kanbanCards
@@ -230,11 +152,11 @@ export default async function DashboardPage() {
                     <div className="flex min-w-0 items-center gap-2">
                       <span
                         className="h-2 w-2 shrink-0 rounded-[2px]"
-                        style={{ backgroundColor: statusAccents[status] }}
+                        style={{ backgroundColor: statusStyles[status].accent }}
                         aria-hidden="true"
                       />
                       <p className="truncate text-[11px] font-bold tracking-[0.06em] uppercase">
-                        {label}
+                        {style.label}
                       </p>
                     </div>
                     <span className="text-base-content/55 text-xs font-semibold">{total}</span>
@@ -250,7 +172,7 @@ export default async function DashboardPage() {
                         <div
                           key={card.id}
                           className="bg-base-100 rounded-[8px] p-3 shadow-[0_1px_0_rgba(4,9,32,0.04)]"
-                          style={{ border: `1px solid ${HAIR}` }}
+                          style={{ border: `1px solid ${hairline}` }}
                         >
                           <p className="text-sm leading-snug font-semibold [overflow-wrap:anywhere]">
                             {card.title}
@@ -258,9 +180,9 @@ export default async function DashboardPage() {
                           <div className="mt-2 flex flex-wrap items-center gap-1.5">
                             <span
                               className="text-[10px] font-bold tracking-[0.08em] uppercase"
-                              style={{ color: priorityTone[card.priority] ?? priorityTone.normal }}
+                              style={{ color: priorityStyles[card.priority].fg ?? priorityStyles.normal.fg }}
                             >
-                              {priorityLabels[card.priority] ?? card.priority}
+                              {priorityStyles[card.priority].label ?? card.priority}
                             </span>
                             {formatDueDate(card.dueDate) && (
                               <span className="text-base-content/55 text-[10px]">
@@ -284,7 +206,7 @@ export default async function DashboardPage() {
         </div>
 
         <aside className="flex w-full min-w-0 flex-col gap-7">
-          <div className="rounded-box bg-base-100 p-4" style={{ border: `1px solid ${HAIR}` }}>
+          <div className="rounded-box bg-base-100 p-4" style={{ border: `1px solid ${hairline}` }}>
             <div className="mb-3 flex items-center gap-2">
               <Megaphone size={20} className="text-primary" aria-hidden="true" />
               <h2 className="font-serif text-lg font-bold">Pendências</h2>
@@ -300,14 +222,14 @@ export default async function DashboardPage() {
                     className="grid grid-cols-[24px_1fr] gap-3 pb-3.5"
                     style={{
                       borderBottom:
-                        index === data.urgentActivities.length - 1 ? 'none' : `1px solid ${HAIR}`,
+                        index === data.urgentActivities.length - 1 ? 'none' : `1px solid ${hairline}`,
                     }}
                   >
                     <AlertTriangle size={20} aria-hidden="true" className="text-error mt-0.5" />
                     <div>
                       <p className="text-sm leading-snug font-semibold">{activity.title}</p>
                       <p className="text-base-content/60 mt-1 text-xs leading-relaxed">
-                        {priorityLabels[activity.priority] ?? activity.priority}
+                        {priorityStyles[activity.priority].label ?? activity.priority}
                         {formatDueDate(activity.dueDate)
                           ? ` · vencimento ${formatDueDate(activity.dueDate)}`
                           : ''}
@@ -319,7 +241,7 @@ export default async function DashboardPage() {
             )}
           </div>
 
-          <div className="rounded-box bg-base-100 p-4" style={{ border: `1px solid ${HAIR}` }}>
+          <div className="rounded-box bg-base-100 p-4" style={{ border: `1px solid ${hairline}` }}>
             <div className="mb-3 flex items-center gap-2">
               <Mail size={20} className="text-primary" aria-hidden="true" />
               <h2 className="font-serif text-lg font-bold">Comunicação</h2>
@@ -332,7 +254,7 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          <div className="rounded-box bg-base-100 p-4" style={{ border: `1px solid ${HAIR}` }}>
+          <div className="rounded-box bg-base-100 p-4" style={{ border: `1px solid ${hairline}` }}>
             <div className="mb-3 flex items-center gap-2">
               <Globe size={20} className="text-primary" aria-hidden="true" />
               <h2 className="font-serif text-lg font-bold">Associados por país</h2>

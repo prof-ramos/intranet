@@ -77,7 +77,7 @@ export default async function RelatorioPage() {
           </p>
         </section>
 
-        <form method="GET" action="/app/relatorio/download">
+        <form method="GET" action="/app/associados/relatorio/download">
           {/* Field groups */}
           <div className="grid gap-6 lg:grid-cols-3">
             {FIELD_GROUPS.map((group) => (
