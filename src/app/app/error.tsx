@@ -20,7 +20,7 @@ export default function AppError({
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
           <AlertTriangle className="h-8 w-8 text-red-600" />
         </div>
-        <h1 className="text-2xl font-bold text-[#0d1f3c]">Algo deu errado</h1>
+        <h1 className="text-2xl font-bold text-[#040920]">Algo deu errado</h1>
         <p className="max-w-md text-[#59677a]">
           Ocorreu um erro inesperado ao carregar esta página. Tente novamente ou entre em contato com o suporte se o problema persistir.
         </p>

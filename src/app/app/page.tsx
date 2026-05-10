@@ -13,7 +13,7 @@ import {
 import { AlertTriangle, ArrowRight, Calendar, Globe, Mail, Megaphone, Plus } from 'lucide-react';
 import Link from 'next/link';
 
-import { hairline, statusStyles, priorityStyles } from '@/lib/ui/tokens';
+import { hairline, statusStyles, priorityStyles, skyBlue, textMuted, textPrimary, textSecondary } from '@/lib/ui/tokens';
 
 function formatDueDate(value: string | Date | null) {
   if (!value) return null;
@@ -80,7 +80,7 @@ export default async function DashboardPage() {
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
       <div className="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div>
-          <p className="text-base-content/55 text-[11px] tracking-[0.18em] uppercase">
+          <p className="text-[rgba(13,31,60,0.55)] text-[11px] tracking-[0.18em] uppercase">
             Sala de operações · {today}
           </p>
           <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
@@ -90,13 +90,13 @@ export default async function DashboardPage() {
         <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
           <Link
             href="/app/atividades"
-            className="btn btn-outline border-base-300 min-h-11 bg-white px-4 lg:btn-sm lg:h-10 lg:min-h-10"
+            className="inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-10 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)]"
           >
             <Calendar size={16} aria-hidden="true" /> Esta semana
           </Link>
           <Link
             href="/app/atividades/nova"
-            className="btn btn-primary min-h-11 px-4 lg:btn-sm lg:h-10 lg:min-h-10"
+            className="inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-4 h-10 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260]"
           >
             <Plus size={16} aria-hidden="true" /> Nova atividade
           </Link>
@@ -110,13 +110,13 @@ export default async function DashboardPage() {
         {data.stripe.map((s) => (
           <div
             key={s.label}
-            className="stat rounded-box bg-base-100 min-h-[104px] px-4 py-3 shadow-none"
+            className="rounded-[10px] bg-white min-h-[104px] px-4 py-3 shadow-none"
             style={{ border: `1px solid ${hairline}` }}
           >
-            <div className="stat-title text-base-content/55 text-[10px] font-bold tracking-[0.08em] uppercase">
+            <div className="text-[rgba(13,31,60,0.55)] text-[10px] font-bold tracking-[0.08em] uppercase">
               {s.label}
             </div>
-            <div className="stat-value text-base-content mt-2 font-serif text-2xl leading-none">
+            <div className="mt-2 font-serif text-2xl leading-none font-bold text-[#040920]">
               {s.value}
             </div>
           </div>
@@ -125,14 +125,15 @@ export default async function DashboardPage() {
 
       <section className="grid items-start gap-7 xl:grid-cols-[minmax(0,1fr)_280px]">
         <div
-          className="rounded-box bg-base-100 min-w-0 p-4 sm:p-5"
+          className="rounded-[10px] bg-white min-w-0 p-4 sm:p-5"
           style={{ border: `1px solid ${hairline}` }}
         >
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
             <h2 className="font-serif text-xl font-bold">Atividades em curso</h2>
             <Link
               href="/app/atividades"
-              className="text-primary inline-flex items-center gap-1 text-sm font-semibold"
+              className="inline-flex items-center gap-1 text-sm font-semibold"
+              style={{ color: skyBlue }}
             >
               Abrir kanban <ArrowRight size={14} aria-hidden="true" />
             </Link>
@@ -147,7 +148,7 @@ export default async function DashboardPage() {
                 .slice(0, status === 'concluido' ? 2 : 3);
 
               return (
-                <article key={status} className="rounded-box bg-base-200 min-w-0 p-3">
+                <article key={status} className="rounded-[10px] bg-[#f8fafc] min-w-0 p-3">
                   <div className="mb-3 flex items-center justify-between gap-3 px-1">
                     <div className="flex min-w-0 items-center gap-2">
                       <span
@@ -159,19 +160,19 @@ export default async function DashboardPage() {
                         {style.label}
                       </p>
                     </div>
-                    <span className="text-base-content/55 text-xs font-semibold">{total}</span>
+                    <span className="text-[rgba(13,31,60,0.55)] text-xs font-semibold">{total}</span>
                   </div>
 
                   <div className="flex flex-col gap-2">
                     {cards.length === 0 ? (
-                      <div className="border-base-300 bg-base-100 text-base-content/45 rounded-[8px] border border-dashed px-3 py-4 text-center text-xs">
+                      <div className="bg-white text-[rgba(13,31,60,0.45)] rounded-[8px] border border-dashed border-[rgba(4,9,32,0.15)] px-3 py-4 text-center text-xs">
                         Sem cards
                       </div>
                     ) : (
                       cards.map((card) => (
                         <div
                           key={card.id}
-                          className="bg-base-100 rounded-[8px] p-3 shadow-[0_1px_0_rgba(4,9,32,0.04)]"
+                          className="bg-white rounded-[8px] p-3 shadow-[0_1px_0_rgba(4,9,32,0.04)]"
                           style={{ border: `1px solid ${hairline}` }}
                         >
                           <p className="text-sm leading-snug font-semibold [overflow-wrap:anywhere]">
@@ -185,13 +186,13 @@ export default async function DashboardPage() {
                               {priorityStyles[card.priority].label ?? card.priority}
                             </span>
                             {formatDueDate(card.dueDate) && (
-                              <span className="text-base-content/55 text-[10px]">
+                              <span className="text-[rgba(13,31,60,0.55)] text-[10px]">
                                 · vence {formatDueDate(card.dueDate)}
                               </span>
                             )}
                           </div>
                           <div className="mt-2 flex items-center justify-between gap-2">
-                            <span className="border-base-300 bg-base-200 text-base-content/70 max-w-full truncate rounded-full border px-2 py-1 text-[10px] font-semibold">
+                            <span className="bg-[#f8fafc] text-[rgba(13,31,60,0.70)] max-w-full truncate rounded-full border border-[rgba(4,9,32,0.05)] px-2 py-1 text-[10px] font-semibold">
                               {card.associateName ?? 'Sem associado'}
                             </span>
                           </div>
@@ -206,14 +207,14 @@ export default async function DashboardPage() {
         </div>
 
         <aside className="flex w-full min-w-0 flex-col gap-7">
-          <div className="rounded-box bg-base-100 p-4" style={{ border: `1px solid ${hairline}` }}>
+          <div className="rounded-[10px] bg-white p-4" style={{ border: `1px solid ${hairline}` }}>
             <div className="mb-3 flex items-center gap-2">
-              <Megaphone size={20} className="text-primary" aria-hidden="true" />
+              <Megaphone size={20} className="text-[#76aeea]" aria-hidden="true" />
               <h2 className="font-serif text-lg font-bold">Pendências</h2>
             </div>
 
             {data.urgentActivities.length === 0 ? (
-              <p className="text-base-content/60 text-sm">Nenhuma atividade atrasada.</p>
+              <p className="text-[rgba(13,31,60,0.60)] text-sm">Nenhuma atividade atrasada.</p>
             ) : (
               <ul className="flex flex-col gap-3">
                 {data.urgentActivities.map((activity, index) => (
@@ -225,10 +226,10 @@ export default async function DashboardPage() {
                         index === data.urgentActivities.length - 1 ? 'none' : `1px solid ${hairline}`,
                     }}
                   >
-                    <AlertTriangle size={20} aria-hidden="true" className="text-error mt-0.5" />
+                    <AlertTriangle size={20} aria-hidden="true" className="text-[#b91c1c] mt-0.5" />
                     <div>
                       <p className="text-sm leading-snug font-semibold">{activity.title}</p>
-                      <p className="text-base-content/60 mt-1 text-xs leading-relaxed">
+                      <p className="text-[rgba(13,31,60,0.60)] mt-1 text-xs leading-relaxed">
                         {priorityStyles[activity.priority].label ?? activity.priority}
                         {formatDueDate(activity.dueDate)
                           ? ` · vencimento ${formatDueDate(activity.dueDate)}`
@@ -241,22 +242,22 @@ export default async function DashboardPage() {
             )}
           </div>
 
-          <div className="rounded-box bg-base-100 p-4" style={{ border: `1px solid ${hairline}` }}>
+          <div className="rounded-[10px] bg-white p-4" style={{ border: `1px solid ${hairline}` }}>
             <div className="mb-3 flex items-center gap-2">
-              <Mail size={20} className="text-primary" aria-hidden="true" />
+              <Mail size={20} className="text-[#76aeea]" aria-hidden="true" />
               <h2 className="font-serif text-lg font-bold">Comunicação</h2>
             </div>
             <p className="text-sm leading-snug font-semibold">
               Módulo de comunicação em desenvolvimento
             </p>
-            <p className="text-base-content/60 mt-1 text-xs leading-relaxed">
+            <p className="text-[rgba(13,31,60,0.60)] mt-1 text-xs leading-relaxed">
               Aguarde atualizações para métricas de e-mail e SLA.
             </p>
           </div>
 
-          <div className="rounded-box bg-base-100 p-4" style={{ border: `1px solid ${hairline}` }}>
+          <div className="rounded-[10px] bg-white p-4" style={{ border: `1px solid ${hairline}` }}>
             <div className="mb-3 flex items-center gap-2">
-              <Globe size={20} className="text-primary" aria-hidden="true" />
+              <Globe size={20} className="text-[#76aeea]" aria-hidden="true" />
               <h2 className="font-serif text-lg font-bold">Associados por país</h2>
             </div>
             <ul className="flex flex-col gap-3">
@@ -272,9 +273,9 @@ export default async function DashboardPage() {
                       </p>
                       <p className="font-serif text-sm font-bold">{region.total}</p>
                     </div>
-                    <div className="bg-base-200 h-1 overflow-hidden rounded-full">
+                    <div className="bg-[#f8fafc] h-1 overflow-hidden rounded-full">
                       <div
-                        className="bg-primary h-full rounded-full"
+                        className="bg-[#040920] h-full rounded-full"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -284,7 +285,7 @@ export default async function DashboardPage() {
             </ul>
           </div>
 
-          <p className="text-base-content/55 text-[11px]">
+          <p className="text-[11px]" style={{ color: textMuted }}>
             Olá, {user.name.split(' ')[0]}. Logado como{' '}
             <span className="capitalize">{user.role}</span>.
           </p>

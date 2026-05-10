@@ -20,7 +20,7 @@ export default function JuridicoError({
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
           <Scale className="h-8 w-8 text-amber-600" />
         </div>
-        <h1 className="font-serif text-2xl font-bold text-[#0d1f3c]">Erro no módulo jurídico</h1>
+        <h1 className="font-serif text-2xl font-bold text-[#040920]">Erro no módulo jurídico</h1>
         <p className="max-w-md text-[#59677a]">
           Não foi possível carregar esta seção. Verifique sua conexão e tente novamente.
         </p>

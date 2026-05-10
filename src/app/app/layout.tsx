@@ -10,11 +10,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <input id="app-drawer" type="checkbox" className="drawer-toggle" aria-hidden="true" />
 
       <div id="main-content" className="drawer-content flex flex-col">
-        <header className="navbar border-b border-base-300 bg-base-100 md:hidden">
+        <header className="flex items-center justify-between border-b border-[rgba(4,9,32,0.05)] bg-white md:hidden">
           <label
             htmlFor="app-drawer"
             aria-label="Abrir menu de navegação"
-            className="btn btn-square btn-ghost"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-[rgba(4,9,32,0.04)]"
           >
             <Menu size={22} aria-hidden="true" />
           </label>

@@ -24,10 +24,10 @@ export function LogoutButton() {
           <p className="py-4">Deseja realmente sair do sistema?</p>
           <div className="modal-action">
             <form method="dialog">
-              <button className="btn btn-ghost">Cancelar</button>
+              <button className="inline-flex items-center justify-center rounded-[8px] text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2">Cancelar</button>
             </form>
             <form action={logout}>
-              <button type="submit" className="btn btn-error">Sair</button>
+              <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#b91c1c] px-5 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#991b1b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2">Sair</button>
             </form>
           </div>
         </div>

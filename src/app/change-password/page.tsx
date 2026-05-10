@@ -11,8 +11,8 @@ export default async function ChangePasswordPage({
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-primary px-4">
-      <div className="card w-full max-w-md bg-base-100 shadow-xl">
-        <div className="card-body gap-6">
+      <div className="w-full max-w-md rounded-[16px] bg-white shadow-xl">
+        <div className="flex flex-col gap-6 p-6">
           <div>
             <h1 className="font-serif text-3xl font-bold">Alterar senha</h1>
             <p className="text-sm text-base-content/60">
@@ -74,7 +74,7 @@ export default async function ChangePasswordPage({
               />
             </fieldset>
 
-            <button type="submit" className="btn btn-primary w-full">
+            <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 w-full">
               Salvar nova senha
             </button>
           </form>

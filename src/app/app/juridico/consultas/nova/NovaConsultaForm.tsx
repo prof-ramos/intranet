@@ -34,13 +34,13 @@ export function NovaConsultaForm({ associates }: Props) {
       <div className="mb-5 flex items-center gap-3">
         <Link
           href="/app/juridico/consultas"
-          className="btn btn-ghost btn-circle btn-sm"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-[rgba(4,9,32,0.04)]"
           aria-label="Voltar"
         >
           <ArrowLeft size={18} />
         </Link>
         <div>
-          <p className="text-[11px] uppercase tracking-[0.18em] text-base-content/55">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[rgba(13,31,60,0.55)]">
             Jurídico / Consultas
           </p>
           <h1 className="mt-1 font-serif text-3xl font-bold">Nova consulta</h1>
@@ -49,8 +49,8 @@ export function NovaConsultaForm({ associates }: Props) {
 
       <form action={handleSubmit} className="max-w-2xl">
         <div className="mb-5">
-          <label htmlFor="title" className="label">
-            <span className="label-text font-semibold">Título da consulta *</span>
+          <label htmlFor="title" className="mb-1 block text-sm font-semibold text-[#0d1f3c]">
+            Título da consulta *
           </label>
           <input
             id="title"
@@ -60,13 +60,13 @@ export function NovaConsultaForm({ associates }: Props) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Ex: Devolução de valores pagos pelo MRE"
-            className="input input-bordered w-full"
+            className="h-10 w-full rounded-[8px] border border-[#e2e8f0] bg-white px-3 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] focus:border-[#76aeea] focus:outline-none"
           />
         </div>
 
         <div className="mb-5">
-          <label htmlFor="questionSummary" className="label">
-            <span className="label-text font-semibold">Resumo da pergunta *</span>
+          <label htmlFor="questionSummary" className="mb-1 block text-sm font-semibold text-[#0d1f3c]">
+            Resumo da pergunta *
           </label>
           <input
             id="questionSummary"
@@ -76,13 +76,13 @@ export function NovaConsultaForm({ associates }: Props) {
             value={questionSummary}
             onChange={(e) => setQuestionSummary(e.target.value)}
             placeholder="Resumo em uma linha"
-            className="input input-bordered w-full"
+            className="h-10 w-full rounded-[8px] border border-[#e2e8f0] bg-white px-3 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] focus:border-[#76aeea] focus:outline-none"
           />
         </div>
 
         <div className="mb-5">
-          <label htmlFor="questionFullText" className="label">
-            <span className="label-text font-semibold">Descrição completa</span>
+          <label htmlFor="questionFullText" className="mb-1 block text-sm font-semibold text-[#0d1f3c]">
+            Descrição completa
           </label>
           <textarea
             id="questionFullText"
@@ -91,21 +91,21 @@ export function NovaConsultaForm({ associates }: Props) {
             value={questionFullText}
             onChange={(e) => setQuestionFullText(e.target.value)}
             placeholder="Texto completo da consulta do associado..."
-            className="textarea textarea-bordered w-full"
+            className="w-full rounded-[8px] border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] focus:border-[#76aeea] focus:outline-none"
           />
         </div>
 
         <div className="mb-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div>
-            <label htmlFor="associateId" className="label">
-              <span className="label-text font-semibold">Associado</span>
+            <label htmlFor="associateId" className="mb-1 block text-sm font-semibold text-[#0d1f3c]">
+              Associado
             </label>
             <select
               id="associateId"
               name="associateId"
               value={associateId}
               onChange={(e) => setAssociateId(e.target.value)}
-              className="select select-bordered w-full"
+              className="h-10 w-full rounded-[8px] border border-[#e2e8f0] bg-white px-3 text-sm text-[#0d1f3c] focus:border-[#76aeea] focus:outline-none"
             >
               <option value="">Selecione...</option>
               {associates.map((a) => (
@@ -117,8 +117,8 @@ export function NovaConsultaForm({ associates }: Props) {
           </div>
 
           <div>
-            <label htmlFor="slaDays" className="label">
-              <span className="label-text font-semibold">Prazo de resposta (dias)</span>
+            <label htmlFor="slaDays" className="mb-1 block text-sm font-semibold text-[#0d1f3c]">
+              Prazo de resposta (dias)
             </label>
             <input
               id="slaDays"
@@ -128,13 +128,13 @@ export function NovaConsultaForm({ associates }: Props) {
               max={90}
               value={slaDays}
               onChange={(e) => setSlaDays(e.target.value)}
-              className="input input-bordered w-full"
+              className="h-10 w-full rounded-[8px] border border-[#e2e8f0] bg-white px-3 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] focus:border-[#76aeea] focus:outline-none"
             />
           </div>
         </div>
 
         {error && (
-          <div className="alert alert-error mb-5">
+          <div className="mb-5 rounded-[10px] bg-[#fee2e2] px-4 py-3 text-[#b91c1c]">
             <span className="text-sm">{error}</span>
           </div>
         )}
@@ -143,14 +143,14 @@ export function NovaConsultaForm({ associates }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className="btn btn-primary min-h-11 px-4"
+            className="inline-flex items-center gap-2 bg-[#040920] text-white rounded-[8px] h-10 px-5 text-sm font-semibold hover:bg-[#0d3260] disabled:opacity-60"
           >
             <Save size={16} aria-hidden="true" />
             {saving ? 'Salvando...' : 'Salvar consulta'}
           </button>
           <Link
             href="/app/juridico/consultas"
-            className="btn btn-outline border-base-300 min-h-11 px-4"
+            className="inline-flex items-center gap-2 bg-white text-[#040920] rounded-[8px] h-10 px-4 text-sm font-semibold border border-[rgba(4,9,32,0.15)] hover:bg-[rgba(4,9,32,0.04)]"
           >
             Cancelar
           </Link>

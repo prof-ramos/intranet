@@ -244,13 +244,13 @@ function ActivityCardContent({
               className="inline-flex items-center gap-1 text-[11px] font-medium"
               style={{ color: isLate ? '#b91c1c' : isSoon ? '#a16207' : '#59677a' }}
             >
-              <Calendar size={12} aria-hidden="true" />
+              <Calendar size={14} aria-hidden="true" />
               {formatDueDate(activity.dueDate)}
             </span>
           )}
           {activity.completedAt && (
             <span className="inline-flex items-center gap-1 text-[11px] font-semibold" style={{ color: '#15803d' }}>
-              <Check size={12} aria-hidden="true" />
+              <Check size={14} aria-hidden="true" />
               {formatDueDate(activity.completedAt)}
             </span>
           )}
@@ -391,7 +391,7 @@ function SummaryStrip({
 
   return (
     <section
-      className="rounded-box mb-4 grid overflow-hidden bg-white sm:grid-cols-3 xl:grid-cols-6"
+      className="rounded-[16px] mb-4 grid overflow-hidden bg-white sm:grid-cols-3 xl:grid-cols-6"
       style={{ border: `1px solid ${hairline}` }}
       aria-label="Resumo de atividades"
     >
@@ -404,7 +404,7 @@ function SummaryStrip({
             >
               {item.value}
             </span>
-            <span className="text-base-content/60 mt-1 text-[11px] font-semibold tracking-[0.08em] uppercase">
+            <span className="text-[rgba(13,31,60,0.60)] mt-1 text-[11px] font-semibold tracking-[0.08em] uppercase">
               {item.label}
             </span>
           </>
@@ -416,7 +416,7 @@ function SummaryStrip({
               type="button"
               key={item.label}
               onClick={item.action}
-              className="hover:bg-base-100 flex flex-col px-5 py-4 text-left"
+              className="hover:bg-[#f8fafc] flex flex-col px-5 py-4 text-left"
               style={{ borderLeft: index === 0 ? 'none' : `1px solid ${hairline}` }}
             >
               {content}
@@ -470,7 +470,7 @@ function FilterBar({
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">
-      <div className="border-base-300 inline-flex min-h-11 overflow-hidden rounded-[8px] border bg-white lg:min-h-8">
+      <div className="border-[rgba(4,9,32,0.05)] inline-flex min-h-11 overflow-hidden rounded-[8px] border bg-white lg:min-h-8">
         {(['todas', 'minhas'] as const).map((scope) => (
           <button
             key={scope}
@@ -479,7 +479,7 @@ function FilterBar({
             className={[
               'px-3 text-xs font-semibold capitalize',
               focusRingClass,
-              filters.scope === scope ? 'bg-primary text-white' : 'text-base-content bg-white',
+              filters.scope === scope ? 'bg-[#040920] text-white' : 'text-[rgba(13,31,60,0.70)] bg-white',
             ].join(' ')}
           >
             {scope === 'todas' ? 'Todas' : 'Minhas'}
@@ -489,12 +489,12 @@ function FilterBar({
 
       <label
         className={[
-          'border-base-300 inline-flex min-h-11 min-w-[220px] items-center gap-2 rounded-[8px] border bg-white px-3 lg:min-h-8',
+          'border-[rgba(4,9,32,0.05)] inline-flex min-h-11 min-w-[220px] items-center gap-2 rounded-[8px] border bg-white px-3 lg:min-h-8',
           focusWithinClass,
         ].join(' ')}
       >
         <span className="sr-only">Buscar atividade por título</span>
-        <Search size={14} className="text-base-content/45" aria-hidden="true" />
+        <Search size={14} className="text-[rgba(13,31,60,0.45)]" aria-hidden="true" />
         <input
           value={filters.query}
           onChange={(event) => setFilters({ ...filters, query: event.target.value })}
@@ -508,7 +508,7 @@ function FilterBar({
         value={filters.assignee}
         onChange={(event) => setFilters({ ...filters, assignee: event.target.value })}
         className={[
-          'border-base-300 rounded-[8px] border bg-white px-2 text-xs',
+          'border-[rgba(4,9,32,0.05)] rounded-[8px] border bg-white px-2 text-xs',
           desktopDenseControlClass,
           focusRingClass,
         ].join(' ')}
@@ -528,7 +528,7 @@ function FilterBar({
           setFilters({ ...filters, priority: event.target.value as Filters['priority'] })
         }
         className={[
-          'border-base-300 rounded-[8px] border bg-white px-2 text-xs',
+          'border-[rgba(4,9,32,0.05)] rounded-[8px] border bg-white px-2 text-xs',
           desktopDenseControlClass,
           focusRingClass,
         ].join(' ')}
@@ -546,7 +546,7 @@ function FilterBar({
         value={filters.associate}
         onChange={(event) => setFilters({ ...filters, associate: event.target.value })}
         className={[
-          'border-base-300 rounded-[8px] border bg-white px-2 text-xs',
+          'border-[rgba(4,9,32,0.05)] rounded-[8px] border bg-white px-2 text-xs',
           desktopDenseControlClass,
           focusRingClass,
         ].join(' ')}
@@ -586,7 +586,7 @@ function FilterBar({
         Atrasadas
       </button>
 
-      <div className="border-base-300 inline-flex min-h-11 overflow-hidden rounded-[8px] border bg-white lg:min-h-8">
+      <div className="border-[rgba(4,9,32,0.05)] inline-flex min-h-11 overflow-hidden rounded-[8px] border bg-white lg:min-h-8">
         {[
           { value: false, label: 'Confortável' },
           { value: true, label: 'Compacto' },
@@ -598,7 +598,7 @@ function FilterBar({
             className={[
               'px-3 text-xs font-semibold',
               focusRingClass,
-              compact === option.value ? 'bg-primary text-white' : 'text-base-content bg-white',
+              compact === option.value ? 'bg-[#040920] text-white' : 'text-[rgba(13,31,60,0.70)] bg-white',
             ].join(' ')}
           >
             {option.label}
@@ -621,7 +621,7 @@ function FilterBar({
             })
           }
           className={[
-            'text-base-content/60 px-2 text-xs underline',
+            'text-[rgba(13,31,60,0.60)] px-2 text-xs underline',
             desktopDenseControlClass,
             focusRingClass,
           ].join(' ')}
@@ -676,9 +676,9 @@ function Drawer({
         aria-modal="true"
         aria-labelledby="activity-details-title"
       >
-        <header className="border-base-300 flex items-start justify-between gap-4 border-b px-7 py-5">
+        <header className="border-[rgba(4,9,32,0.05)] flex items-start justify-between gap-4 border-b px-7 py-5">
           <div className="min-w-0">
-            <p className="text-base-content/55 m-0 text-[11px] tracking-[0.16em] uppercase">
+            <p className="text-[rgba(13,31,60,0.55)] m-0 text-[11px] tracking-[0.16em] uppercase">
               Atividade #{activity.id}
             </p>
             <h2 id="activity-details-title" className="mt-1.5 font-serif text-[26px] leading-tight font-bold">
@@ -689,7 +689,7 @@ function Drawer({
             type="button"
             ref={closeRef}
             onClick={onClose}
-            className="btn btn-square btn-ghost min-h-11 min-w-11 bg-base-100 shrink-0 lg:btn-sm"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f8fafc] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-8 lg:w-8"
             aria-label="Fechar"
           >
             <X size={16} aria-hidden="true" />
@@ -714,14 +714,14 @@ function Drawer({
               <button
                 type="button"
                 onClick={() => onChange({ acceptReassign: pending.id })}
-                className="btn min-h-11 flex-1 border-0 bg-[#15803d] text-white lg:btn-sm"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-[8px] bg-[#15803d] px-4 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#166534] lg:h-8"
               >
                 Aceitar
               </button>
               <button
                 type="button"
                 onClick={() => onChange({ rejectReassign: pending.id })}
-                className="btn btn-outline btn-error min-h-11 flex-1 lg:btn-sm"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-11 text-sm font-semibold text-[#b91c1c] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-8"
               >
                 Recusar
               </button>
@@ -731,7 +731,7 @@ function Drawer({
 
         <div className="flex-1 overflow-y-auto px-7 py-5">
           <dl className="grid grid-cols-[112px_1fr] gap-x-3 gap-y-3.5 text-[13px]">
-            <dt className="text-base-content/55">Status</dt>
+            <dt className="text-[rgba(13,31,60,0.55)]">Status</dt>
             <dd className="m-0">
               <select
                 aria-label="Alterar status da atividade"
@@ -747,7 +747,7 @@ function Drawer({
               </select>
             </dd>
 
-            <dt className="text-base-content/55">Prioridade</dt>
+            <dt className="text-[rgba(13,31,60,0.55)]">Prioridade</dt>
             <dd className="m-0 flex items-center gap-2">
               <span
                 className="inline-flex h-6 items-center rounded px-2 text-[10px] font-bold tracking-[0.08em] uppercase"
@@ -769,7 +769,7 @@ function Drawer({
               </select>
             </dd>
 
-            <dt className="text-base-content/55">Vencimento</dt>
+            <dt className="text-[rgba(13,31,60,0.55)]">Vencimento</dt>
             <dd className="m-0">
               <input
                 aria-label="Alterar vencimento da atividade"
@@ -780,7 +780,7 @@ function Drawer({
               />
             </dd>
 
-            <dt className="text-base-content/55">Responsável</dt>
+            <dt className="text-[rgba(13,31,60,0.55)]">Responsável</dt>
             <dd className="m-0 flex items-center gap-2">
               <Avatar
                 person={activity.assigneeId ? peopleById.get(activity.assigneeId) : undefined}
@@ -793,42 +793,42 @@ function Drawer({
               <button
                 type="button"
                 onClick={onRequestReassign}
-                className="btn btn-outline min-h-10 ml-auto lg:btn-sm"
+                className="inline-flex ml-auto items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-10 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-8"
                 disabled={people.length < 2}
               >
                 Reatribuir...
               </button>
             </dd>
 
-            <dt className="text-base-content/55">Associado</dt>
+            <dt className="text-[rgba(13,31,60,0.55)]">Associado</dt>
             <dd className="m-0">
-              {activity.associateName ?? <span className="text-base-content/40">-</span>}
+              {activity.associateName ?? <span className="text-[rgba(13,31,60,0.40)]">-</span>}
             </dd>
 
-            <dt className="text-base-content/55">Tags</dt>
+            <dt className="text-[rgba(13,31,60,0.55)]">Tags</dt>
             <dd className="m-0 flex flex-wrap gap-1.5">
               {activity.tags.length > 0 ? (
                 activity.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="border-base-300 bg-base-100 text-base-content/70 rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+                    className="border-[rgba(4,9,32,0.05)] bg-[#f8fafc] text-[rgba(13,31,60,0.70)] rounded-full border px-2 py-0.5 text-[10px] font-semibold"
                   >
                     #{tag}
                   </span>
                 ))
               ) : (
-                <span className="text-base-content/40">-</span>
+                <span className="text-[rgba(13,31,60,0.40)]">-</span>
               )}
             </dd>
           </dl>
 
           <section className="mt-6">
-            <p className="text-base-content/55 m-0 text-[11px] font-bold tracking-[0.16em] uppercase">
+            <p className="text-[rgba(13,31,60,0.55)] m-0 text-[11px] font-bold tracking-[0.16em] uppercase">
               Descrição
             </p>
             <p className="text-base-content/80 mt-2 text-sm leading-relaxed">
               {activity.description || (
-                <span className="text-base-content/40">
+                <span className="text-[rgba(13,31,60,0.40)]">
                   Sem descrição. Edite a atividade para detalhar.
                 </span>
               )}
@@ -836,18 +836,18 @@ function Drawer({
           </section>
 
           <section className="mt-7">
-            <p className="text-base-content/55 m-0 text-[11px] font-bold tracking-[0.16em] uppercase">
+            <p className="text-[rgba(13,31,60,0.55)] m-0 text-[11px] font-bold tracking-[0.16em] uppercase">
               Histórico
             </p>
             <ul className="mt-3 flex flex-col gap-3 text-xs">
-              <li className="text-base-content/70 grid grid-cols-[92px_1fr] gap-2">
-                <span className="text-base-content/45">Hoje</span>
+              <li className="text-[rgba(13,31,60,0.70)] grid grid-cols-[92px_1fr] gap-2">
+                <span className="text-[rgba(13,31,60,0.45)]">Hoje</span>
                 <span>
                   <strong>ASOF</strong> sincronizou dados do quadro.
                 </span>
               </li>
-              <li className="text-base-content/70 grid grid-cols-[92px_1fr] gap-2">
-                <span className="text-base-content/45">Criação</span>
+              <li className="text-[rgba(13,31,60,0.70)] grid grid-cols-[92px_1fr] gap-2">
+                <span className="text-[rgba(13,31,60,0.45)]">Criação</span>
                 <span>Atividade registrada no painel operacional.</span>
               </li>
             </ul>
@@ -1014,7 +1014,7 @@ export function AtividadesBoard({
     <main className="mx-auto w-full max-w-[1180px] min-w-0 px-5 py-7 sm:px-8 lg:px-10">
       <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-base-content/55 m-0 text-[11px] tracking-[0.18em] whitespace-nowrap uppercase">
+          <p className="text-[rgba(13,31,60,0.55)] m-0 text-[11px] tracking-[0.18em] whitespace-nowrap uppercase">
             Operação · Quadro de atividades
           </p>
           <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-5xl">
@@ -1023,7 +1023,7 @@ export function AtividadesBoard({
         </div>
         <Link
           href="/app/atividades/nova"
-          className="btn btn-primary min-h-11 rounded-[8px] px-5 text-sm lg:h-10 lg:min-h-10"
+          className="inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-10 lg:min-h-10"
         >
           <Plus size={16} aria-hidden="true" />
           Nova atividade
@@ -1045,7 +1045,7 @@ export function AtividadesBoard({
       />
 
       {items.length === 0 && (
-        <div className="rounded-box border-base-300 text-base-content/60 mb-5 border border-dashed bg-white px-5 py-4 text-sm">
+        <div className="rounded-[16px] border-[rgba(4,9,32,0.05)] text-[rgba(13,31,60,0.60)] mb-5 border border-dashed bg-white px-5 py-4 text-sm">
           Nenhuma atividade cadastrada ainda. Use o botão <strong>Nova atividade</strong> ou o
           quick-add das colunas para montar o quadro.
         </div>
@@ -1160,7 +1160,7 @@ export function AtividadesBoard({
         <div className="pointer-events-none absolute top-0 right-0 bottom-4 w-10 bg-gradient-to-l from-base-100 to-transparent md:hidden" />
       </div>
 
-      <div className="text-base-content/55 mt-5 flex items-center gap-2 text-xs">
+      <div className="text-[rgba(13,31,60,0.55)] mt-5 flex items-center gap-2 text-xs">
         <Clock size={14} aria-hidden="true" />
         Reatribuições aparecem como pendentes até o destinatário aceitar.
         <ArrowRight size={14} aria-hidden="true" />

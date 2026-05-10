@@ -20,16 +20,16 @@ export default function ConsultaDetalheError({
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
           <MessageSquare className="h-8 w-8 text-amber-600" />
         </div>
-        <h1 className="font-serif text-2xl font-bold text-gray-900">Erro ao carregar consulta</h1>
-        <p className="max-w-md text-gray-600">
+        <h1 className="font-serif text-2xl font-bold text-[#040920]">Erro ao carregar consulta</h1>
+        <p className="max-w-md text-[rgba(13,31,60,0.60)]">
           Não foi possível carregar os detalhes desta consulta. Verifique sua conexão e tente novamente.
         </p>
         {error.digest && (
-          <p className="text-sm text-gray-400">Código: {error.digest}</p>
+          <p className="text-sm text-[rgba(13,31,60,0.40)]">Código: {error.digest}</p>
         )}
         <button
           onClick={reset}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+          className="inline-flex items-center gap-2 rounded-lg bg-[#040920] px-4 py-2 text-white transition hover:bg-[#0d3260]"
         >
           <RotateCcw className="h-4 w-4" />
           Tentar novamente

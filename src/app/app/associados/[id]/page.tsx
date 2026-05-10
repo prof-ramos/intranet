@@ -88,7 +88,7 @@ function Pill({
 function Row({ label, value, mono }: { label: string; value: React.ReactNode; mono?: boolean }) {
   return (
     <div
-      className="border-base-300 grid gap-2 border-b py-2.5 sm:grid-cols-[180px_1fr]"
+      className="grid gap-2 border-b border-[rgba(4,9,32,0.05)] py-2.5 sm:grid-cols-[180px_1fr]"
       style={{ borderColor: hairline }}
     >
       <dt className="text-base-content/55 text-[12px] font-semibold tracking-[0.06em] uppercase">
@@ -115,7 +115,7 @@ function SectionCard({
   return (
     <section
       id={id}
-      className="rounded-box border-base-300 scroll-mt-8 border bg-white p-5 sm:p-7"
+      className="scroll-mt-8 rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-5 sm:p-7"
     >
       <header className="mb-3 flex items-center justify-between gap-4">
         <h2 className="font-serif text-[22px] leading-tight font-bold">{title}</h2>
@@ -128,7 +128,7 @@ function SectionCard({
 
 function EditButton({ children = 'Editar' }: { children?: React.ReactNode }) {
   return (
-    <button type="button" className="btn btn-outline min-h-10 lg:btn-sm">
+    <button type="button" className="inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-10 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-8">
       {children}
     </button>
   );
@@ -205,7 +205,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
               <a
                 key={anchor}
                 href={`#${anchor}`}
-                className="text-base-content/65 hover:border-primary hover:bg-primary/5 hover:text-primary rounded-md border-l-2 border-transparent px-2.5 py-1.5 text-[13px] font-medium"
+                className="rounded-md border-l-2 border-transparent px-2.5 py-1.5 text-[13px] font-medium text-[rgba(13,31,60,0.65)] transition-colors hover:border-[#040920] hover:bg-[rgba(4,9,32,0.05)] hover:text-[#040920]"
               >
                 {label}
               </a>
@@ -216,10 +216,10 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
         <div className="flex min-w-0 flex-col gap-7">
           <header
             id="visao-geral"
-            className="rounded-box border-base-300 scroll-mt-8 border bg-white p-5 sm:p-7"
+            className="scroll-mt-8 rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-5 sm:p-7"
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
-              <div className="bg-primary grid h-20 w-20 shrink-0 place-items-center rounded-full font-serif text-3xl font-bold text-white">
+              <div className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-[#040920] font-serif text-3xl font-bold text-white">
                 {initials(associate.fullName)}
               </div>
               <div className="min-w-0 flex-1">
@@ -244,20 +244,20 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
               <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
                 <button
                   type="button"
-                  className="btn btn-outline min-h-11 rounded-[8px] lg:h-10 lg:min-h-10"
+                  className="inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-11 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-10 lg:min-h-10"
                 >
                   Imprimir ficha
                 </button>
                 <Link
                   href={`/app/associados/${id}/editar`}
-                  className="btn btn-primary min-h-11 rounded-[8px] lg:h-10 lg:min-h-10"
+                  className="inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-10 lg:min-h-10"
                 >
                   Editar dados
                 </Link>
               </div>
             </div>
 
-            <div className="border-base-300 mt-6 grid border-t pt-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-6 grid border-t border-[rgba(4,9,32,0.05)] pt-4 sm:grid-cols-2 xl:grid-cols-4">
               {[
                 {
                   label: 'Lotação atual',
@@ -365,7 +365,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
               <Row label="Contribuição" value={statusLabel(associate.contributionStatus)} />
               <Row label="Início da lotação" value={formatDate(associate.assignmentStartDate)} />
             </dl>
-            <div className="border-base-300 bg-base-100 mt-4 rounded-[10px] border p-4">
+            <div className="mt-4 rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-[#f8fafc] p-4">
               <p className="text-base-content/55 m-0 text-[11px] font-bold tracking-[0.10em] uppercase">
                 Lotação atual
               </p>
@@ -463,7 +463,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
                 {linkedActivities.map((activity) => (
                   <li
                     key={activity.id}
-                    className="border-base-300 flex items-center gap-3 rounded-[8px] border bg-white px-3.5 py-3"
+                    className="flex items-center gap-3 rounded-[8px] border border-[rgba(4,9,32,0.05)] bg-white px-3.5 py-3"
                   >
                     <span
                       className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
@@ -486,9 +486,9 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
                     </span>
                     <Link
                       href="/app/atividades"
-                      className="text-primary inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap"
+                      className="inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap text-[#040920]"
                     >
-                      Abrir <ExternalLink size={12} aria-hidden="true" />
+                      Abrir <ExternalLink size={14} aria-hidden="true" />
                     </Link>
                   </li>
                 ))}

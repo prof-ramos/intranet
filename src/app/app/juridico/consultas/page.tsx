@@ -39,13 +39,13 @@ export default async function ConsultasPage({
         <div className="flex items-center gap-3">
           <Link
             href="/app/juridico"
-            className="btn btn-ghost btn-circle btn-sm"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-[rgba(4,9,32,0.04)]"
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-base-content/55">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[rgba(13,31,60,0.55)]">
               Jurídico
             </p>
             <h1 className="mt-1 font-serif text-3xl font-bold">Consultas</h1>
@@ -53,7 +53,7 @@ export default async function ConsultasPage({
         </div>
         <Link
           href="/app/juridico/consultas/nova"
-          className="btn btn-primary min-h-11 px-4 lg:btn-sm lg:h-10 lg:min-h-10"
+          className="inline-flex items-center gap-2 bg-[#040920] text-white rounded-[8px] h-10 px-5 text-sm font-semibold hover:bg-[#0d3260]"
         >
           <Plus size={16} aria-hidden="true" /> Nova consulta
         </Link>
@@ -63,7 +63,7 @@ export default async function ConsultasPage({
         <form className="relative flex-1" method="get">
           <Search
             size={16}
-            className="text-base-content/40 absolute top-1/2 left-3 -translate-y-1/2"
+            className="absolute top-1/2 left-3 -translate-y-1/2 text-[rgba(13,31,60,0.40)]"
             aria-hidden="true"
           />
           <input
@@ -71,7 +71,7 @@ export default async function ConsultasPage({
             name="q"
             defaultValue={q ?? ''}
             placeholder="Buscar por título ou número..."
-            className="input input-bordered w-full max-w-md pl-9"
+            className="h-10 w-full max-w-md rounded-[8px] border border-[#e2e8f0] bg-white pl-9 pr-3 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] focus:border-[#76aeea] focus:outline-none"
           />
           {status && <input type="hidden" name="status" value={status} />}
         </form>
@@ -88,11 +88,11 @@ export default async function ConsultasPage({
         </form>
       </div>
 
-      <div className="rounded-box bg-base-100 overflow-hidden" style={{ border: `1px solid ${hairline}` }}>
+      <div className="overflow-hidden rounded-[16px] bg-white" style={{ border: `1px solid ${hairline}` }}>
         <div className="overflow-x-auto">
-          <table className="table w-full">
+          <table className="w-full">
             <thead>
-              <tr className="border-b border-base-200 text-[11px] font-bold uppercase tracking-[0.08em] text-base-content/55">
+              <tr className="border-b border-[rgba(4,9,32,0.05)] text-[11px] font-bold uppercase tracking-[0.08em] text-[rgba(13,31,60,0.55)]">
                 <th className="px-4 py-3">Número</th>
                 <th className="px-4 py-3">Título</th>
                 <th className="px-4 py-3">Associado</th>
@@ -104,7 +104,7 @@ export default async function ConsultasPage({
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-base-content/60">
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-[rgba(13,31,60,0.60)]">
                     Nenhuma consulta encontrada.
                   </td>
                 </tr>
@@ -116,12 +116,12 @@ export default async function ConsultasPage({
                   return (
                     <tr
                       key={row.id}
-                      className="border-b border-base-200 hover:bg-base-200/50 transition-colors"
+                      className="border-b border-[rgba(4,9,32,0.05)] transition-colors hover:bg-[rgba(4,9,32,0.02)]"
                     >
                       <td className="px-4 py-3">
                         <Link
                           href={`/app/juridico/consultas/${row.id}`}
-                          className="text-primary text-sm font-semibold hover:underline"
+                          className="text-sm font-semibold text-[#040920] hover:underline"
                         >
                           {row.internalNumber}
                         </Link>
@@ -134,29 +134,29 @@ export default async function ConsultasPage({
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className={`badge badge-sm ${
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                             row.status === 'aberta'
-                              ? 'badge-ghost'
+                              ? 'bg-[#f8fafc] text-[#59677a] border border-[rgba(4,9,32,0.05)]'
                               : row.status === 'aguardando_escritorio'
-                                ? 'badge-warning'
+                                ? 'bg-[#fef3c7] text-[#a16207]'
                                 : row.status === 'respondida'
-                                  ? 'badge-success'
-                                  : 'badge-neutral'
+                                  ? 'bg-[#dcfce7] text-[#15803d]'
+                                  : 'bg-[#f8fafc] text-[#59677a] border border-[rgba(4,9,32,0.05)]'
                           }`}
                         >
                           {statusOptions.find((s) => s.value === row.status)?.label ?? row.status}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        <span className={slaOverdue ? 'text-error font-semibold' : ''}>
+                        <span className={slaOverdue ? 'font-semibold text-[#b91c1c]' : ''}>
                           {formatDate(row.slaDueDate)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm">
                         {stale !== null && stale > 7 ? (
-                          <span className="text-warning font-semibold">{stale} dias</span>
+                          <span className="font-semibold text-[#a16207]">{stale} dias</span>
                         ) : (
-                          <span className="text-base-content/60">
+                          <span className="text-[rgba(13,31,60,0.60)]">
                             {stale !== null ? `${stale} dias` : '—'}
                           </span>
                         )}
@@ -170,15 +170,15 @@ export default async function ConsultasPage({
         </div>
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-base-200 px-4 py-3">
-            <p className="text-sm text-base-content/60">
+          <div className="flex items-center justify-between border-t border-[rgba(4,9,32,0.05)] px-4 py-3">
+            <p className="text-sm text-[rgba(13,31,60,0.60)]">
               Página {page} de {totalPages} · {total} resultados
             </p>
             <div className="flex gap-2">
               {page > 1 && (
                 <Link
                   href={`/app/juridico/consultas?page=${page - 1}${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${status}` : ''}`}
-                  className="btn btn-outline btn-sm"
+                  className="inline-flex items-center gap-2 bg-white text-[#040920] rounded-[8px] h-10 px-4 text-sm font-semibold border border-[rgba(4,9,32,0.15)] hover:bg-[rgba(4,9,32,0.04)]"
                 >
                   Anterior
                 </Link>
@@ -186,7 +186,7 @@ export default async function ConsultasPage({
               {page < totalPages && (
                 <Link
                   href={`/app/juridico/consultas?page=${page + 1}${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${status}` : ''}`}
-                  className="btn btn-outline btn-sm"
+                  className="inline-flex items-center gap-2 bg-white text-[#040920] rounded-[8px] h-10 px-4 text-sm font-semibold border border-[rgba(4,9,32,0.15)] hover:bg-[rgba(4,9,32,0.04)]"
                 >
                   Próxima
                 </Link>

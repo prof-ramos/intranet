@@ -37,9 +37,45 @@ export const priorityStyles: Record<
   baixa: { label: 'Baixa', fg: 'rgba(13,31,60,0.50)', bg: canvas },
 };
 
+// Feedback colors
+export const error = '#ef4444';
+export const errorBg = '#fee2e2';
+export const warning = '#eab308';
+export const warningBg = '#fef3c7';
+export const success = '#22c55e';
+export const successBg = '#dcfce7';
+export const info = '#2563eb';
+export const infoBg = '#eff6ff';
+
+// Shadows
+export const cardShadow =
+  '0 1px 3px rgba(4, 9, 32, 0.08), 0 1px 2px rgba(4, 9, 32, 0.04)';
+export const elevatedShadow =
+  '0 10px 15px -3px rgba(4, 9, 32, 0.08), 0 4px 6px -4px rgba(4, 9, 32, 0.04)';
+
+// Borders
+export const cardBorder = `1px solid ${hairline}`;
+
+// Button tokens
+export const buttonPrimaryBg = navy;
+export const buttonPrimaryHover = primaryContainerHover;
+export const buttonPrimaryText = '#ffffff';
+export const buttonOutlineBorder = 'rgba(4, 9, 32, 0.15)';
+export const buttonOutlineHoverBg = 'rgba(4, 9, 32, 0.04)';
+
+// Input tokens
+export const inputBorder = '#e2e8f0';
+export const inputFocusBorder = skyBlue;
+export const inputBg = '#ffffff';
+
+// Text colors
+export const textMuted = 'rgba(13, 31, 60, 0.55)';
+export const textPrimary = '#040920';
+export const textSecondary = 'rgba(13, 31, 60, 0.70)';
+
 export const infoNotice = {
   border: '#93c5fd',
-  bg: '#eff6ff',
-  iconBg: '#2563eb',
+  bg: infoBg,
+  iconBg: info,
   text: '#1e40af',
 };

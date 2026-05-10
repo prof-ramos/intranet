@@ -4,6 +4,7 @@ import { getRoleLabel } from '@/lib/auth/roles';
 import { parseAssociatesSearchParams } from '@/lib/associates/search-params';
 import { Bell, ChevronLeft, ChevronRight, Download, Pencil, Search } from 'lucide-react';
 import Link from 'next/link';
+import { hairline, textMuted, navy, skyBlue, error, success, successBg, canvas } from '@/lib/ui/tokens';
 
 const PAGE_SIZE = 20;
 
@@ -33,18 +34,18 @@ export default async function AssociadosPage({
   return (
     <div>
       {/* Header */}
-      <div className="border-base-300 bg-base-100 sticky top-0 z-20 border-b px-5 py-3 sm:px-8 lg:px-10">
+      <div className="sticky top-0 z-20 border-b px-5 py-3 sm:px-8 lg:px-10 bg-white" style={{ borderColor: hairline }}>
         <div className="mx-auto grid w-full max-w-[1180px] gap-3 sm:grid-cols-[minmax(240px,420px)_auto] sm:items-center sm:justify-between">
           <div className="min-w-0">
             <form method="GET" action="/app/associados">
-              <label className="input border-base-300 flex h-11 min-h-11 w-full items-center gap-3 rounded-md bg-white">
+              <label className="flex h-11 min-h-11 w-full items-center gap-3 rounded-[8px] border bg-white px-3" style={{ borderColor: hairline }}>
                 <span className="sr-only">Buscar associado por nome</span>
-                <Search size={18} className="text-base-content/50" aria-hidden="true" />
+                <Search size={18} style={{ color: textMuted }} aria-hidden="true" />
                 <input
                   name="q"
                   type="search"
                   defaultValue={q}
-                  className="grow text-sm"
+                  className="grow bg-transparent text-sm outline-none placeholder:text-[rgba(13,31,60,0.55)]"
                   placeholder="Buscar por nome..."
                 />
               </label>
@@ -54,27 +55,28 @@ export default async function AssociadosPage({
           <div className="flex min-w-0 items-center justify-between gap-4 sm:justify-end">
             <div className="relative flex h-11 w-11 shrink-0 items-center justify-center">
               {unreadNotifications !== null && unreadNotifications > 0 && (
-                <span className="badge badge-error badge-sm absolute -top-1 -right-1 z-10">
+                <span className="absolute -top-1 -right-1 z-10 grid h-5 min-w-[20px] place-items-center rounded-full px-1.5 text-[10px] font-bold text-white" style={{ backgroundColor: error }}>
                   {unreadNotifications}
                 </span>
               )}
               <button
                 type="button"
-                className="btn btn-ghost btn-circle h-11 min-h-11 w-11 min-w-11"
+                className="grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-[rgba(4,9,32,0.04)]"
                 aria-label={
                   unreadNotifications !== null && unreadNotifications > 0
                     ? `Notificações — ${unreadNotifications} não lidas`
                     : 'Notificações'
                 }
               >
-                <Bell size={21} aria-hidden="true" />
+                <Bell size={20} aria-hidden="true" />
               </button>
             </div>
 
-            <div className="hidden min-h-11 min-w-0 items-center gap-3 border-l border-base-300 pl-4 sm:flex">
+            <div className="hidden min-h-11 min-w-0 items-center gap-3 border-l pl-4 sm:flex" style={{ borderColor: hairline }}>
               <div
                 aria-label={`Avatar de ${user.name}`}
-                className="bg-primary text-primary-content ring-primary/15 grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold ring-2"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
+                style={{ backgroundColor: navy, boxShadow: `0 0 0 2px ${skyBlue}26` }}
               >
                 {user.name
                   .split(' ')
@@ -85,7 +87,7 @@ export default async function AssociadosPage({
               </div>
               <div className="min-w-0 leading-tight">
                 <p className="max-w-[190px] truncate text-sm font-semibold">{user.name}</p>
-                <p className="text-base-content/60 text-xs">{getRoleLabel(user.role)}</p>
+                <p className="text-xs" style={{ color: textMuted }}>{getRoleLabel(user.role)}</p>
               </div>
             </div>
           </div>
@@ -96,7 +98,7 @@ export default async function AssociadosPage({
       <main className="mx-auto w-full max-w-[1180px] flex-1 px-5 py-7 sm:px-8 lg:px-10">
         <section className="mb-7 flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <p className="text-base-content/55 text-[11px] tracking-[0.18em] uppercase">
+            <p className="text-[11px] tracking-[0.18em] uppercase" style={{ color: textMuted }}>
               Quadro associativo · {todayLabel}
             </p>
             <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
@@ -106,9 +108,9 @@ export default async function AssociadosPage({
         </section>
 
         {/* Tabela */}
-        <section className="rounded-box border-base-300 bg-base-100 overflow-hidden border shadow-sm">
+        <section className="rounded-[10px] overflow-hidden border bg-white shadow-sm" style={{ borderColor: hairline }}>
           <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-            <p className="text-base-content/60">
+            <p style={{ color: textMuted }}>
               {total === 0 ? 'Nenhum resultado' : `${from}–${to} de ${total}`}
             </p>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
@@ -118,15 +120,15 @@ export default async function AssociadosPage({
               <Link
                 href="/app/associados/relatorio"
                 aria-label="Exportar associados"
-                className="btn btn-square btn-outline min-h-11 min-w-11 lg:btn-sm"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)]"
               >
                 <Download size={18} aria-hidden="true" />
               </Link>
-              <div className="join">
+              <div className="flex overflow-hidden rounded-[8px] border" style={{ borderColor: hairline }}>
                 {page > 1 ? (
                   <Link
                     href={`/app/associados?q=${encodeURIComponent(q)}&page=${page - 1}`}
-                    className="join-item btn btn-square min-h-11 min-w-11 lg:btn-sm"
+                    className="inline-flex h-11 w-11 items-center justify-center bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)]"
                     aria-label="Página anterior"
                   >
                     <ChevronLeft size={16} aria-hidden="true" />
@@ -134,7 +136,7 @@ export default async function AssociadosPage({
                 ) : (
                   <button
                     type="button"
-                    className="join-item btn btn-square min-h-11 min-w-11 lg:btn-sm"
+                    className="inline-flex h-11 w-11 cursor-not-allowed items-center justify-center" style={{ backgroundColor: canvas, color: textMuted }}
                     aria-label="Página anterior"
                     disabled
                   >
@@ -144,7 +146,7 @@ export default async function AssociadosPage({
                 {page < totalPages ? (
                   <Link
                     href={`/app/associados?q=${encodeURIComponent(q)}&page=${page + 1}`}
-                    className="join-item btn btn-square min-h-11 min-w-11 lg:btn-sm"
+                    className="inline-flex h-11 w-11 items-center justify-center border-l bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)]" style={{ borderColor: hairline }}
                     aria-label="Próxima página"
                   >
                     <ChevronRight size={16} aria-hidden="true" />
@@ -152,7 +154,7 @@ export default async function AssociadosPage({
                 ) : (
                   <button
                     type="button"
-                    className="join-item btn btn-square min-h-11 min-w-11 lg:btn-sm"
+                    className="inline-flex h-11 w-11 cursor-not-allowed items-center justify-center border-l" style={{ borderColor: hairline, backgroundColor: canvas, color: textMuted }}
                     aria-label="Próxima página"
                     disabled
                   >
@@ -163,49 +165,54 @@ export default async function AssociadosPage({
             </div>
           </div>
 
-          <div className="border-base-300 overflow-x-auto border-t">
-            <table className="table table-sm w-full" aria-label="Lista de associados">
-              <thead className="bg-primary text-primary-content">
-                <tr>
-                  <th scope="col">Nome</th>
-                  <th scope="col">Lotação</th>
-                  <th scope="col">Posto</th>
-                  <th scope="col">Email</th>
-                  <th scope="col">Situação</th>
-                  <th scope="col" className="w-10 text-center" aria-label="Ações" />
+          <div className="overflow-x-auto border-t" style={{ borderColor: hairline }}>
+            <table className="w-full text-sm" aria-label="Lista de associados">
+              <thead className="bg-[#040920] text-white">
+                <tr className="text-left">
+                  <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Nome</th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Lotação</th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Posto</th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Email</th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Situação</th>
+                  <th scope="col" className="w-10 px-4 py-3 text-center" aria-label="Ações" />
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-base-content/50 py-16 text-center">
+                    <td colSpan={6} className="py-16 text-center" style={{ color: textMuted }}>
                       Nenhum associado encontrado.
                     </td>
                   </tr>
                 ) : (
                   rows.map((row) => (
-                    <tr key={row.id} className="border-base-300 hover:bg-base-200 group border-b">
-                      <td className="font-medium">
+                    <tr key={row.id} className="group border-b transition-colors hover:bg-[#f8fafc]" style={{ borderColor: hairline }}>
+                      <td className="px-4 py-3 font-medium">
                         <Link href={`/app/associados/${row.id}`} className="hover:underline">
                           {row.fullName}
                         </Link>
                       </td>
-                      <td>{row.assignment ?? '—'}</td>
-                      <td>{row.classPattern ?? '—'}</td>
-                      <td>{row.primaryEmail ?? '—'}</td>
-                      <td>
+                      <td className="px-4 py-3">{row.assignment ?? '—'}</td>
+                      <td className="px-4 py-3">{row.classPattern ?? '—'}</td>
+                      <td className="px-4 py-3">{row.primaryEmail ?? '—'}</td>
+                      <td className="px-4 py-3">
                         <span
-                          className={`badge badge-sm ${
-                            row.functionalStatus === 'ativo' ? 'badge-success' : 'badge-ghost'
+                          className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold tracking-[0.06em] uppercase ${
+                            row.functionalStatus === 'ativo' ? '' : 'border'
                           }`}
+                          style={
+                            row.functionalStatus === 'ativo'
+                              ? { backgroundColor: successBg, color: success }
+                              : { backgroundColor: canvas, color: textMuted, borderColor: hairline }
+                          }
                         >
                           {row.functionalStatus ?? '—'}
                         </span>
                       </td>
-                      <td className="text-center">
+                      <td className="px-4 py-3 text-center">
                         <Link
                           href={`/app/associados/${row.id}/editar`}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-base-content/40 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-base-200 hover:text-primary"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[rgba(13,31,60,0.55)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-[#f8fafc] hover:text-[#76aeea]"
                           aria-label={`Editar ${row.fullName}`}
                         >
                           <Pencil size={14} aria-hidden="true" />
