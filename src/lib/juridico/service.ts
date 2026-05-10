@@ -45,7 +45,7 @@ export async function generateInternalNumber(): Promise<string> {
   throw new Error('Falha ao gerar número interno após múltiplas tentativas.');
 }
 
-export interface CreateConsultationInput {
+interface CreateConsultationInput {
   title: string;
   questionSummary: string;
   questionFullText: string | null;

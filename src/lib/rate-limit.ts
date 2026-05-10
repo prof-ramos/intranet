@@ -73,10 +73,3 @@ export async function consumeIpRateLimit(
     remaining: Math.max(0, options.maxRequests - (row.attempts + 1)),
   };
 }
-
-export async function resetIpRateLimit(ip: string, scope: string): Promise<void> {
-  const key = normalizeKey(ip, scope);
-  await db
-    .delete(rateLimits)
-    .where(and(eq(rateLimits.key, key), eq(rateLimits.scope, scope)));
-}

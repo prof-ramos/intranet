@@ -10,23 +10,6 @@ export function formatDate(value: string | Date | null): string {
 }
 
 /**
- * Formata uma data com hora para exibição no padrão brasileiro.
- * @param value - Data como string ISO, Date ou null
- * @returns String formatada ou '—' se nulo
- */
-export function formatDateTime(value: string | Date | null): string {
-  if (!value) return '—';
-  const d = value instanceof Date ? value : new Date(value);
-  return d.toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-/**
  * Calcula quantos dias se passaram desde uma data.
  * @param value - Data como string ISO, Date ou null
  * @returns Número de dias ou null se a data for nula

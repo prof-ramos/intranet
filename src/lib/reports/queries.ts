@@ -26,7 +26,7 @@ export type ReportAssociate = Pick<Associate,
   | 'associationCategory'
 >;
 
-export interface ReportFilters {
+interface ReportFilters {
   functionalStatus?: string;
   associationStatus?: string;
   contributionStatus?: string;
