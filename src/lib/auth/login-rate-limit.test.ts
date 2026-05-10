@@ -85,4 +85,24 @@ describe('login rate limiter', () => {
     });
     limiter.dispose();
   });
+
+  it('allows all attempts when store returns null', async () => {
+    const nullStore: RateLimitStore = {
+      async getEntry() {
+        return null;
+      },
+      async incrementAttempts() {},
+      async reset() {},
+      async cleanup() {},
+    };
+
+    const limiter = createLoginRateLimiter(
+      { maxAttempts: 3, windowMs: 60_000 },
+      nullStore,
+    );
+
+    const result = await limiter.consume('user@example.com');
+    expect(result).toEqual({ allowed: true, remaining: 3 });
+    limiter.dispose();
+  });
 });

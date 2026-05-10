@@ -72,7 +72,6 @@ describe('juridico service', () => {
   describe('internal number format', () => {
     it('produces JUR-YYYY-NNN format with zero padding', () => {
       const year = new Date().getFullYear();
-      // Testa a lógica de formatação isolada
       const nextNum = 1;
       const formatted = `JUR-${year}-${String(nextNum).padStart(3, '0')}`;
       expect(formatted).toBe(`JUR-${year}-001`);
