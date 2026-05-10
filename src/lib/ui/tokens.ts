@@ -15,7 +15,7 @@ export const navy = '#040920';
 export const primaryContainerHover = '#0d3260';
 export const primaryContainerActive = '#123d73';
 export const skyBlue = '#76AEEA';
-export const surface = '#f8fafc';
+export const canvas = '#f8fafc';
 
 export const statusStyles: Record<
   string,
@@ -33,6 +33,6 @@ export const priorityStyles: Record<
 > = {
   urgente: { label: 'Urgente', fg: '#b91c1c', bg: '#fee2e2' },
   alta: { label: 'Alta', fg: '#a16207', bg: '#f4ddb1' },
-  normal: { label: 'Normal', fg: 'rgba(13,31,60,0.70)', bg: surface },
-  baixa: { label: 'Baixa', fg: 'rgba(13,31,60,0.50)', bg: surface },
+  normal: { label: 'Normal', fg: 'rgba(13,31,60,0.70)', bg: canvas },
+  baixa: { label: 'Baixa', fg: 'rgba(13,31,60,0.50)', bg: canvas },
 };

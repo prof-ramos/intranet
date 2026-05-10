@@ -41,8 +41,8 @@ colors:
   status-progress: "#76aeea"
   status-waiting: "#e7c16b"
   status-done: "#86efac"
-  priority-low: "#7c8796"
-  priority-normal: "#4e5b70"
+  priority-low: "rgba(13,31,60,0.50)"
+  priority-normal: "rgba(13,31,60,0.70)"
   priority-high: "#a16207"
   priority-urgent: "#b91c1c"
 typography:
@@ -372,6 +372,13 @@ components:
     typography: "{typography.label-sm}"
     rounded: "{rounded.sm}"
     padding: "2px 6px"
+  tag-neutral:
+    backgroundColor: "{colors.surface-container-low}"
+    textColor: "{colors.on-surface-variant}"
+    borderColor: "{colors.outline-variant}"
+    typography: "10px semibold"
+    rounded: "{rounded.full}"
+    padding: "2px 8px"
 ---
 
 # ASOF Intranet Design System
@@ -432,6 +439,16 @@ Inputs are white with blue-gray borders, 8px corners, and compact labels above t
 Cards are white, bordered, and lightly padded. Dashboard cards may use pale blue-gray inner containers to group kanban columns or empty states. Kanban cards should be compact, with status indicated by dots, priority indicated by small uppercase labels, and metadata kept visually secondary.
 
 Navigation is dark navy, full-height, and utilitarian. Active items use a sky-blue left indicator and a slightly brighter navy fill. Inactive items stay low-contrast white until hover or focus.
+
+## Responsive Sizing
+
+Touch targets and control density adapt between mobile and desktop. Three utility patterns govern this:
+
+- **Mobile touch target** (`mobileTouchTargetClass`): minimum 44×44px on all viewports — required for any interactive control.
+- **Desktop dense control** (`desktopDenseControlClass`): full 44px height on mobile, 32px on `lg+` — use for secondary controls that benefit from compactness on wide screens.
+- **Compact action** (`compactActionClass`): 40×40px on mobile, 32×32px on `lg+` — use for icon-only buttons in toolbars and card headers.
+
+These are implemented as Tailwind class strings in `src/lib/ui/tokens.ts` and should be imported from there rather than repeated inline.
 
 ## Do's and Don'ts
 

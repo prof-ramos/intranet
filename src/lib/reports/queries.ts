@@ -3,6 +3,30 @@ import { associates } from '@/lib/db/schema';
 import { eq, and, asc, sql } from 'drizzle-orm';
 import type { Associate } from '@/lib/db/schema/associates';
 
+export type ReportAssociate = Pick<
+  Associate,
+  | 'id'
+  | 'fullName'
+  | 'primaryEmail'
+  | 'secondaryEmail'
+  | 'birthDate'
+  | 'cpf'
+  | 'address'
+  | 'locationCity'
+  | 'locationCountry'
+  | 'phone'
+  | 'whatsapp'
+  | 'siape'
+  | 'assignment'
+  | 'assignmentStartDate'
+  | 'classPattern'
+  | 'functionalStatus'
+  | 'associationStatus'
+  | 'contributionStatus'
+  | 'joinedAt'
+  | 'associationCategory'
+>;
+
 export interface ReportFilters {
   functionalStatus?: string;
   associationStatus?: string;
@@ -12,7 +36,7 @@ export interface ReportFilters {
 
 export async function getAssociatesForReport(
   filters: ReportFilters = {},
-): Promise<Associate[]> {
+): Promise<ReportAssociate[]> {
   const conditions = [];
 
   if (filters.functionalStatus) {
@@ -34,7 +58,28 @@ export async function getAssociatesForReport(
   }
 
   return db
-    .select()
+    .select({
+      id: associates.id,
+      fullName: associates.fullName,
+      primaryEmail: associates.primaryEmail,
+      secondaryEmail: associates.secondaryEmail,
+      birthDate: associates.birthDate,
+      cpf: associates.cpf,
+      address: associates.address,
+      locationCity: associates.locationCity,
+      locationCountry: associates.locationCountry,
+      phone: associates.phone,
+      whatsapp: associates.whatsapp,
+      siape: associates.siape,
+      assignment: associates.assignment,
+      assignmentStartDate: associates.assignmentStartDate,
+      classPattern: associates.classPattern,
+      functionalStatus: associates.functionalStatus,
+      associationStatus: associates.associationStatus,
+      contributionStatus: associates.contributionStatus,
+      joinedAt: associates.joinedAt,
+      associationCategory: associates.associationCategory,
+    })
     .from(associates)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(asc(associates.fullName));

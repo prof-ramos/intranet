@@ -20,16 +20,16 @@ export default function JuridicoError({
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
           <Scale className="h-8 w-8 text-amber-600" />
         </div>
-        <h1 className="font-serif text-2xl font-bold text-gray-900">Erro no módulo jurídico</h1>
-        <p className="max-w-md text-gray-600">
+        <h1 className="font-serif text-2xl font-bold text-[#0d1f3c]">Erro no módulo jurídico</h1>
+        <p className="max-w-md text-[#59677a]">
           Não foi possível carregar esta seção. Verifique sua conexão e tente novamente.
         </p>
         {error.digest && (
-          <p className="text-sm text-gray-400">Código: {error.digest}</p>
+          <p className="text-sm text-[#59677a]/60">Código: {error.digest}</p>
         )}
         <button
           onClick={reset}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+          className="inline-flex items-center gap-2 rounded-lg bg-[#040920] px-4 py-2 text-white transition hover:bg-[#06284f]"
         >
           <RotateCcw className="h-4 w-4" />
           Tentar novamente

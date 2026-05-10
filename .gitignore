@@ -50,3 +50,8 @@ sqlite.db-*
 
 # visual brainstorming sessions
 .superpowers/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/

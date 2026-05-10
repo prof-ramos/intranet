@@ -18,10 +18,18 @@ npm run dev:turbo        # next dev --turbopack (diagnostics only)
 # Build & quality
 npm run build            # next build --webpack
 npm run build:turbo      # next build --turbopack (diagnostics only)
+npm run format           # prettier --write .
+npm run format:check     # prettier --check .
+npm run audit            # security audit
 npm run lint             # ESLint
 npm run typecheck        # tsc --noEmit
 npm run test             # vitest run
 npm run test:watch       # vitest
+
+# E2E tests (Playwright)
+npm run test:e2e         # playwright test
+npm run test:e2e:ui      # playwright test --ui
+npm run test:e2e:debug   # playwright test --debug
 
 # Database
 npm run db:generate      # drizzle-kit generate
@@ -34,7 +42,7 @@ npm run db:supabase:status
 Run a single test file: `npx vitest run src/lib/auth/password.test.ts`
 Run a single test: `npx vitest run -t "test name"`
 
-**Post-change validation:** After dependency or Next/Tailwind changes, run at minimum `npm run lint`, `npm run test`, and `npm run build`.
+**Post-change validation:** After dependency or Next/Tailwind changes, run at minimum `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build`.
 
 ## Architecture
 
@@ -48,17 +56,17 @@ Run a single test: `npx vitest run -t "test name"`
 ### Database Layer
 
 - `src/lib/db/index.ts` — Drizzle client. Prefers `DATABASE_URL`, falls back to `DATABASE_POSTGRES_URL`. Auto-detects transaction pooler (pgbouncer/port 6543) and sets `prepare: false` accordingly.
-- `src/lib/db/schema/` — Drizzle schemas: `admins`, `associates`, `activities`, `audit_logs`, `login_attempts`, `legal_consultations`, `legal_notes`, `legal_processes`, `legal_opinions`.
+- `src/lib/db/schema/` — Drizzle schemas: `admins`, `associates`, `activities`, `audit_logs`, `login_attempts`, `rate_limits`, `legal_consultations`, `legal_notes`, `legal_processes`, `legal_opinions`.
 - `drizzle.config.ts` — Targets PostgreSQL, writes migrations to `drizzle/postgres/`. **Rejects pooled URLs** — migrations require direct/non-pooling connection.
 - **Migrations:** Use `DATABASE_MIGRATION_URL` or `DATABASE_POSTGRES_URL_NON_POOLING`.
 
 ### Data Access Pattern
 
-Server Components fetch data directly from the database. The project is moving toward a repository pattern:
+Server Components fetch data directly from the database. The juridico module has a full repository/service layer; others are query-only:
 - `src/lib/dashboard/queries.ts` — Dashboard aggregations
 - `src/lib/associates/queries.ts` — Associate list/pagination
 - `src/lib/reports/queries.ts` + `src/lib/reports/csv.ts` — Report generation
-- `src/lib/juridico/queries.ts` — Legal consultations and notes
+- `src/lib/juridico/repository.ts` + `service.ts` + `queries.ts` — Legal consultations (full service layer)
 
 ### Auth & Authorization
 

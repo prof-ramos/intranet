@@ -8,7 +8,7 @@ import {
   focusRingClass,
   focusWithinClass,
   navy,
-  surface,
+  canvas,
 } from '@/lib/ui/tokens';
 
 const statuses = [
@@ -18,8 +18,8 @@ const statuses = [
 ] as const;
 
 const priorities = [
-  { key: 'baixa', label: 'Baixa', fg: 'rgba(13,31,60,0.5)', bg: surface },
-  { key: 'normal', label: 'Normal', fg: 'rgba(13,31,60,0.75)', bg: surface },
+  { key: 'baixa', label: 'Baixa', fg: 'rgba(13,31,60,0.5)', bg: canvas },
+  { key: 'normal', label: 'Normal', fg: 'rgba(13,31,60,0.75)', bg: canvas },
   { key: 'alta', label: 'Alta', fg: '#a16207', bg: '#f4ddb1' },
   { key: 'urgente', label: 'Urgente', fg: '#b91c1c', bg: '#fee2e2' },
 ] as const;

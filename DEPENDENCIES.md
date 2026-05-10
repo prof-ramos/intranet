@@ -1,0 +1,296 @@
+# Análise de Dependências — ASOF Intranet
+
+> Relatório de análise de dependências, vulnerabilidades e recomendações.
+> Última atualização: 2026-05-10
+
+---
+
+## Índice
+
+1. [Resumo Executivo](#resumo-executivo)
+2. [Vulnerabilidades de Segurança](#vulnerabilidades-de-segurança)
+3. [Pacotes Desatualizados](#pacotes-desatualizados)
+4. [Dependências Problemáticas](#dependências-problemáticas)
+5. [Alternativas Recomendadas](#alternativas-recomendadas)
+6. [Padrões de Uso](#padrões-de-uso)
+7. [Plano de Ação](#plano-de-ação)
+
+---
+
+## Resumo Executivo
+
+| Métrica | Valor |
+|---|---|
+| **Dependências diretas** | 15 |
+| **DevDependencies** | 16 |
+| **Vulnerabilidades** | 10 (4 high, 6 moderate) |
+| **Origem das vulnerabilidades** | `react-kanban-kit` → `vite-plugin-dts` (transitivas) |
+| **Pacotes desatualizados** | 4 |
+| **Pacotes candidatos à remoção** | 2 (`@libsql/client`, `daisyui`) |
+
+**Conclusão**: As vulnerabilidades são **100% transitivas** e vêm de `react-kanban-kit`, que traz `vite-plugin-dts` como dependência de produção (deveria ser devDependency). A solução mais limpa é substituir `react-kanban-kit` ou forçar overrides nas dependências transitivas.
+
+---
+
+## Vulnerabilidades de Segurança
+
+### Origem da Cadeia
+
+```
+react-kanban-kit@0.0.2-beta.7
+└── vite-plugin-dts@3.9.1 (❌ deveria ser devDependency)
+    ├── @microsoft/api-extractor@7.43.0
+    │   ├── lodash@4.17.23        ← HIGH
+    │   └── minimatch@3.0.4       ← HIGH
+    │   └── @microsoft/tsdoc-config@0.16.2
+    │       └── ajv@6.12.6        ← MODERATE
+    └── vue-tsc@1.8.27
+        └── @vue/language-core@1.8.27
+            └── vue-template-compiler@2.7.16  ← MODERATE
+```
+
+### Detalhes
+
+| Severidade | Pacote | CVE/Advisory | Descrição | Fix via |
+|---|---|---|---|---|
+| **HIGH** | `lodash` | [GHSA-r5fr-rjxr-66jc](https://github.com/advisories/GHSA-r5fr-rjxr-66jc) | Code Injection via `_.template` | `npm audit fix` (não resolve — transitiva) |
+| **HIGH** | `lodash` | [GHSA-f23m-r3pf-42rh](https://github.com/advisories/GHSA-f23m-r3pf-42rh) | Prototype Pollution via `_.unset` / `_.omit` | override para lodash@4.17.21 |
+| **HIGH** | `minimatch` | [GHSA-3ppc-4f35-3m26](https://github.com/advisories/GHSA-3ppc-4f35-3m26) | ReDoS via wildcards | override para minimatch@9.0.0+ |
+| **HIGH** | `minimatch` | [GHSA-7r86-cg39-jmmj](https://github.com/advisories/GHSA-7r86-cg39-jmmj) | ReDoS via GLOBSTAR | override para minimatch@9.0.0+ |
+| **MODERATE** | `ajv` | [GHSA-2g4f-4pwh-qvx6](https://github.com/advisories/GHSA-2g4f-4pwh-qvx6) | ReDoS via `$data` | override para ajv@8.0.0+ |
+| **MODERATE** | `vue-template-compiler` | [GHSA-g3ch-rx76-35fx](https://github.com/advisories/GHSA-g3ch-rx76-35fx) | XSS no compilador de template Vue | substituir react-kanban-kit |
+
+> ⚠️ **Nota**: `npm audit fix` não resolve estas vulnerabilidades porque elas estão em dependências transitivas de `react-kanban-kit` e o `audit fix` não consegue atualizar dependências de pacotes que não têm versões mais novas disponíveis.
+
+---
+
+## Pacotes Desatualizados
+
+| Pacote | Atual | Última | Tipo | Risco de Update |
+|---|---|---|---|---|
+| `@libsql/client` | 0.15.15 | 0.17.3 | Major (0.x) | Baixo (não usado diretamente) |
+| `@tailwindcss/postcss` | 4.2.4 | 4.3.0 | Minor | Muito baixo |
+| `tailwindcss` | 4.2.4 | 4.3.0 | Minor | Muito baixo |
+| `eslint` | 9.39.4 | 10.3.0 | Major | **Médio** — ESLint 10 tem breaking changes |
+
+### Análise
+
+- **Tailwind CSS 4.2.4 → 4.3.0**: Atualização segura. A 4.3.0 inclui melhorias de performance e novos utilitários. Recomendado.
+- **ESLint 9 → 10**: Breaking changes no formato de configuração. Requer revisão do `eslint.config.ts`. Não prioritário.
+- **@libsql/client**: Atualização irrelevante — o pacote deve ser removido, não atualizado.
+
+---
+
+## Dependências Problemáticas
+
+### 1. `react-kanban-kit` — Risco: ALTO
+
+**Problemas**:
+- Versão beta (`0.0.2-beta.7`) sem garantia de estabilidade
+- Traz `vite-plugin-dts` como **dependency** (deveria ser devDependency ou peerDependency)
+- `vite-plugin-dts` traz `vue-tsc` e `@microsoft/api-extractor` com vulnerabilidades
+- Dependências de build no bundle de produção = bundle maior e mais lento
+- Não há atividade recente no repositório
+
+**Uso atual**: `src/app/app/atividades/AtividadesBoard.tsx`
+
+**Alternativas**: Ver seção [Alternativas Recomendadas](#alternativas-recomendadas)
+
+---
+
+### 2. `@libsql/client` — Risco: BAIXO
+
+**Problemas**:
+- É uma **dependência legada do SQLite/libSQL**
+- O projeto usa **PostgreSQL** via `postgres` + Drizzle ORM
+- Não há importação direta de `@libsql/client` no código fonte
+- Fica no bundle de produção desnecessariamente
+- É uma **dependência peer de `drizzle-orm`** — se removermos do `package.json`, o npm ainda pode instalá-la como peer dep
+
+**Recomendação**: Remover do `dependencies` do `package.json`. Se `drizzle-orm` exigir como peer, configure como `optional`.
+
+---
+
+### 3. `daisyui` — Risco: BAIXO
+
+**Problemas**:
+- O projeto está **fazendo transição para tokens de design próprios** (`src/lib/ui/tokens.ts`)
+- DaisyUI está sendo gradualmente removido (vide `CLAUDE.md`)
+- Classes como `btn btn-primary` estão sendo substituídas por utilitários Tailwind + tokens
+- Adiciona ~60KB ao CSS bundle
+
+**Recomendação**: Remover gradualmente conforme as telas são refatoradas. Não remover de uma só vez para evitar regressões visuais.
+
+---
+
+### 4. `overrides` no `package.json` — Risco: MÉDIO
+
+```json
+"overrides": {
+  "esbuild": "0.28.0",
+  "postcss": "8.5.14"
+}
+```
+
+**Problemas**:
+- **esbuild 0.28.0**: Versão pinada. Esbuild é uma dependência transitiva de Next.js e Vite. Fixar uma versão específica pode causar incompatibilidades com novas versões do Next.js.
+- **postcss 8.5.14**: Versão pinada. Tailwind CSS 4 já inclui PostCSS internamente. Este override pode ser desnecessário.
+
+**Recomendação**: Avaliar se os overrides ainda são necessários após atualizar Tailwind CSS. Se o problema original foi resolvido, removê-los.
+
+---
+
+### 5. `server-only` — Risco: NENHUM (observação)
+
+**Status**: ✅ Boa prática. Marca módulos que não devem ser importados no cliente. Usado corretamente.
+
+---
+
+## Alternativas Recomendadas
+
+### Substituir `react-kanban-kit`
+
+| Alternativa | Prós | Contras | Nota |
+|---|---|---|---|
+| **@hello-pangea/dnd** | Estável, acessível, ativamente mantido (fork do react-beautiful-dnd) | Requer mais código boilerplate | ⭐ Recomendado |
+| **@dnd-kit/core** | Modular, muito flexível, tree-shakeable | Curva de aprendizado maior | Recomendado para casos complexos |
+| **Implementação própria** | Zero dependências externas, controle total | Mais trabalho inicial | Viável para o caso de uso atual (colunas fixas) |
+
+**Recomendação**: **@hello-pangea/dnd** é o drop-in replacement mais direto para `react-kanban-kit`. É o fork mantido do `react-beautiful-dnd`, que é a biblioteca subjacente do `react-kanban-kit`.
+
+---
+
+### Substituir `@libsql/client`
+
+**Ação**: Mover para `devDependencies` (não é usado em runtime):
+
+```bash
+npm uninstall @libsql/client
+npm install --save-dev @libsql/client
+```
+
+O `drizzle-orm` já suporta múltiplos drivers. O pacote `@libsql/client` é necessário apenas para o script `scripts/seed-associados.ts`, que lê de um banco SQLite legado e insere no PostgreSQL.
+
+---
+
+### Atualizar Tailwind CSS
+
+```bash
+npm update tailwindcss @tailwindcss/postcss
+```
+
+---
+
+## Padrões de Uso
+
+### Dependências de Produção (`dependencies`)
+
+| Pacote | Uso | Relevância |
+|---|---|---|
+| `next` | Framework | Essencial |
+| `react` / `react-dom` | UI | Essencial |
+| `drizzle-orm` | ORM | Essencial |
+| `postgres` | Driver PostgreSQL | Essencial |
+| `jose` | JWT | Essencial |
+| `bcryptjs` | Hash de senha | Essencial |
+| `zod` | Validação | Essencial |
+| `lucide-react` | Ícones | Essencial |
+| `@supabase/supabase-js` | SDK Supabase | Essencial (scripts/admin) |
+| `react-kanban-kit` | Kanban board | ❌ Substituir |
+| `@libsql/client` | Driver SQLite | ❌ Remover |
+| `daisyui` | Componentes UI | 🚫 Remover gradualmente |
+| `server-only` | Guarda de servidor | ✅ Manter |
+
+### DevDependencies
+
+| Pacote | Uso | Relevância |
+|---|---|---|
+| `typescript` | Type system | Essencial |
+| `tailwindcss` / `@tailwindcss/postcss` | CSS | Essencial |
+| `eslint` / `eslint-config-next` / `eslint-config-prettier` | Lint | Essencial |
+| `prettier` / `prettier-plugin-tailwindcss` | Formatação | Essencial |
+| `vitest` / `@vitejs/plugin-react` | Testes | Essencial |
+| `drizzle-kit` | Migrations | Essencial |
+| `tsx` | Runtime TS para scripts | Essencial |
+| `@types/*` | Tipos | Essencial |
+
+---
+
+## Plano de Ação
+
+### Prioridade 1: Segurança (HIGH)
+
+1. **Substituir `react-kanban-kit`**
+   ```bash
+   npm uninstall react-kanban-kit
+   npm install @hello-pangea/dnd
+   ```
+   - Refatorar `src/app/app/atividades/AtividadesBoard.tsx`
+   - Verificar funcionalidade de drag-and-drop
+
+2. **Verificar se vulnerabilidades foram eliminadas**
+   ```bash
+   npm audit
+   ```
+
+### Prioridade 2: Limpeza (MEDIUM)
+
+3. **Remover `@libsql/client`**
+   ```bash
+   npm uninstall @libsql/client
+   ```
+
+4. **Atualizar Tailwind CSS**
+   ```bash
+   npm update tailwindcss @tailwindcss/postcss
+   ```
+
+### Prioridade 3: Manutenção (LOW)
+
+5. **Revisar overrides de `esbuild` e `postcss`**
+   - Testar build sem overrides
+   - Se tudo funcionar, remover do `package.json`
+
+6. **Planejar remoção do `daisyui`**
+   - Identificar todas as classes DaisyUI em uso
+   - Substituir por tokens do design system ou utilitários Tailwind
+   - Remover quando todas as telas forem migradas
+
+### Comandos Resumidos
+
+```bash
+# 1. Substituir react-kanban-kit (PRIORIDADE ALTA)
+npm uninstall react-kanban-kit
+npm install @hello-pangea/dnd
+
+# 2. Remover libsql (limpeza)
+npm uninstall @libsql/client
+
+# 3. Atualizar Tailwind
+npm update tailwindcss @tailwindcss/postcss
+
+# 4. Verificar auditoria
+npm audit
+
+# 5. Testar
+npm run typecheck
+npm run test
+npm run build
+```
+
+---
+
+## Checklist de Validação
+
+Após executar o plano de ação:
+
+- [ ] `npm audit` retorna 0 vulnerabilidades
+- [ ] `npm run typecheck` passa sem erros
+- [ ] `npm run test` passa (25/25)
+- [ ] `npm run build` completa com sucesso
+- [ ] `npm run lint` passa sem warnings
+- [ ] Board de atividades funciona (drag-and-drop)
+- [ ] Dashboard funciona
+- [ ] Login funciona
+- [ ] Relatório CSV funciona
+- [ ] Módulo jurídico funciona
