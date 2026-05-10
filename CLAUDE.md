@@ -48,7 +48,7 @@ Run a single test: `npx vitest run -t "test name"`
 ### Database Layer
 
 - `src/lib/db/index.ts` — Drizzle client. Prefers `DATABASE_URL`, falls back to `DATABASE_POSTGRES_URL`. Auto-detects transaction pooler (pgbouncer/port 6543) and sets `prepare: false` accordingly.
-- `src/lib/db/schema/` — Drizzle schemas: `admins`, `associates`, `activities`, `audit_logs`, `login_attempts`.
+- `src/lib/db/schema/` — Drizzle schemas: `admins`, `associates`, `activities`, `audit_logs`, `login_attempts`, `legal_consultations`, `legal_notes`, `legal_processes`, `legal_opinions`.
 - `drizzle.config.ts` — Targets PostgreSQL, writes migrations to `drizzle/postgres/`. **Rejects pooled URLs** — migrations require direct/non-pooling connection.
 - **Migrations:** Use `DATABASE_MIGRATION_URL` or `DATABASE_POSTGRES_URL_NON_POOLING`.
 
@@ -58,11 +58,13 @@ Server Components fetch data directly from the database. The project is moving t
 - `src/lib/dashboard/queries.ts` — Dashboard aggregations
 - `src/lib/associates/queries.ts` — Associate list/pagination
 - `src/lib/reports/queries.ts` + `src/lib/reports/csv.ts` — Report generation
+- `src/lib/juridico/queries.ts` — Legal consultations and notes
 
 ### Auth & Authorization
 
 - `src/lib/auth/config.ts` — `AUTH_ROLES` = `['admin', 'diretoria', 'secretaria']`.
 - `src/lib/auth/require-auth.ts` — `requireAuth()` validates JWT session, queries DB for active user, caches with `React.cache()`.
+- `src/lib/auth/authorization.ts` — `requireRole(['admin', 'diretoria'])` throws if the current user's role isn't in the allowed list.
 - `src/lib/auth/session.ts` — JWT via `jose`, httpOnly + sameSite=strict + secure cookie.
 - `src/lib/auth/password.ts` — Strong password policy (12+ chars, mixed case, number, symbol).
 - `src/lib/auth/login-rate-limit.ts` — PostgreSQL-backed rate limiter (table `login_attempts`).
@@ -108,6 +110,7 @@ Set `SKIP_AUTH=true` in `.env.local` (ignored in production). Configures dev use
 ## Design System
 
 Formal, institutional interface. See `DESIGN.md` for full specification.
+- **DaisyUI being phased out.** New/refactored UI uses explicit `DESIGN.md` tokens (colors, borders, radii) instead of DaisyUI utility classes (`btn btn-primary`, `input input-bordered`). Prefer explicit inline `style={{}}` or Tailwind arbitrary values matching the design system.
 - **Primary:** Navy `#040920` · **Sidebar:** `#06284f` · **Accent:** Sky blue `#76aeea`
 - **Typography:** Playfair Display (headlines, metrics) + Google Sans (body, controls)
 - **Tokens:** `src/lib/ui/tokens.ts` — `statusStyles`, `priorityStyles`, `focusRingClass`, `hairline`, etc.
@@ -118,6 +121,7 @@ Formal, institutional interface. See `DESIGN.md` for full specification.
 - **No `middleware.ts`.** Next.js 16 renamed middleware to `proxy.ts`.
 - **No API routes for data fetching.** Server Components query Drizzle directly.
 - **No `error.tsx` in all routes.** Only `src/app/app/error.tsx` (generic) and `src/app/app/associados/error.tsx` (specific) exist.
+- **Server Component shell + Client Component form.** Pages that need client interactivity (forms, state) use a Server Component for data fetching that renders a `'use client'` subcomponent. Example: `relatorio/page.tsx` → `RelatorioForm.tsx`.
 
 ## Important Files
 

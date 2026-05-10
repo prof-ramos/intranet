@@ -247,10 +247,10 @@ export default async function DashboardPage() {
               <h2 className="font-serif text-lg font-bold">Comunicação</h2>
             </div>
             <p className="text-sm leading-snug font-semibold">
-              12 e-mails de associados sem resposta
+              Módulo de comunicação em desenvolvimento
             </p>
             <p className="text-base-content/60 mt-1 text-xs leading-relaxed">
-              SLA interno: 48h — média de 36h esta semana.
+              Aguarde atualizações para métricas de e-mail e SLA.
             </p>
           </div>
 

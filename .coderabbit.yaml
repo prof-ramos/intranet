@@ -1,0 +1,174 @@
+language: pt-BR
+tone_instructions: >
+  Revise em português brasileiro. Seja direto e técnico. Foque em:
+  segurança (LGPD), performance SQL, e consistência com o design system.
+  Evite sugerir docstrings genéricas ou refatorações cosméticas.
+
+reviews:
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: true
+  changed_files_summary: true
+  sequence_diagrams: false
+  estimate_code_review_effort: true
+  poem: false
+  in_progress_fortune: false
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+  path_filters:
+    - "!node_modules/**"
+    - "!.next/**"
+    - "!drizzle/**"
+    - "!*.lock"
+  path_instructions:
+    - path: "src/lib/db/schema/**/*.ts"
+      instructions: >
+        Verifique se novas tabelas possuem índices em FKs e colunas de filtro.
+        Verifique se enums usam valores em português quando representam domínio de negócio.
+        Confirme que timestamps usam withTimezone: true.
+    - path: "src/lib/**/queries.ts"
+      instructions: >
+        Prefira LEFT JOIN a subqueries quando possível.
+        Verifique se queries com filtros dinâmicos usam `and()` / `or()` do Drizzle corretamente.
+        SQL bruto deve usar template literals do Drizzle (`sql\`...\``), nunca concatenação de strings.
+    - path: "src/app/**/actions.ts"
+      instructions: >
+        Server Actions devem validar input antes de tocar no banco.
+        Verifique se `revalidatePath` é chamado após mutações.
+        Nunca exponha CPF, SIAPE, email ou dados pessoais em respostas ou logs.
+    - path: "src/app/**/*.tsx"
+      instructions: >
+        Server Components não devem ter event handlers (onChange, onClick, etc).
+        Verifique se cores usam tokens do `src/lib/ui/tokens.ts` em vez de classes DaisyUI quando possível.
+    - path: "src/**/*.test.ts"
+      instructions: >
+        Testes devem ser determinísticos. Não use timers reais; use fake timers quando necessário.
+
+  tools:
+    eslint:
+      enabled: true
+    biome:
+      enabled: false
+    shellcheck:
+      enabled: true
+    markdownlint:
+      enabled: true
+    hadolint:
+      enabled: false
+    swiftlint:
+      enabled: false
+    phpstan:
+      enabled: false
+    phpmd:
+      enabled: false
+    phpcs:
+      enabled: false
+    golangci-lint:
+      enabled: false
+    yamllint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    trufflehog:
+      enabled: true
+    checkov:
+      enabled: false
+    tflint:
+      enabled: false
+    detekt:
+      enabled: false
+    flake8:
+      enabled: false
+    pylint:
+      enabled: false
+    oxc:
+      enabled: false
+    rubocop:
+      enabled: false
+    buf:
+      enabled: false
+    regal:
+      enabled: false
+    actionlint:
+      enabled: true
+    pmd:
+      enabled: false
+    clang:
+      enabled: false
+    cppcheck:
+      enabled: false
+    opengrep:
+      enabled: true
+    semgrep:
+      enabled: true
+    circleci:
+      enabled: false
+    clippy:
+      enabled: false
+    sqlfluff:
+      enabled: true
+    trivy:
+      enabled: false
+    prismaLint:
+      enabled: false
+    shopifyThemeCheck:
+      enabled: false
+    luacheck:
+      enabled: false
+    brakeman:
+      enabled: false
+    dotenvLint:
+      enabled: true
+    htmlhint:
+      enabled: false
+    stylelint:
+      enabled: false
+    checkmake:
+      enabled: true
+    osvScanner:
+      enabled: true
+    presidio:
+      enabled: true
+    blinter:
+      enabled: false
+    smartyLint:
+      enabled: false
+    emberTemplateLint:
+      enabled: false
+    psscriptanalyzer:
+      enabled: false
+    ruff:
+      enabled: false
+    fortitudeLint:
+      enabled: false
+
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+
+  pre_merge_checks:
+    docstrings:
+      mode: off
+    title:
+      mode: warning
+      requirements: >
+        Título deve ser conciso (idealmente < 70 caracteres) e descrever a mudança em português.
+    description:
+      mode: off
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "CLAUDE.md"
+      - "AGENTS.md"
+      - "DESIGN.md"

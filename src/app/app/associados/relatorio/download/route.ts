@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       return new Response(null, { status: 302, headers: { Location: '/login' } });
     }
 
-    // Lazy import avoids DB initialization at Next.js build time.
+    // Importação tardia evita inicialização do DB durante o build do Next.js.
     const { db } = await import('@/lib/db');
     const [user] = await db
       .select({ role: admins.role, isActive: admins.isActive })

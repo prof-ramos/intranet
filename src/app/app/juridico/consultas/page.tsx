@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { getConsultationsPaginated } from '@/lib/juridico/queries';
+import { formatDate, daysSince } from '@/lib/juridico/formatters';
 import { ArrowLeft, Plus, Search } from 'lucide-react';
 import { hairline } from '@/lib/ui/tokens';
+import { StatusFilter } from './StatusFilter';
 
 const PAGE_SIZE = 20;
 
@@ -14,18 +16,6 @@ const statusOptions = [
   { value: 'arquivada', label: 'Arquivada' },
 ];
 
-function formatDate(value: string | Date | null) {
-  if (!value) return '—';
-  const d = value instanceof Date ? value : new Date(value);
-  return d.toLocaleDateString('pt-BR');
-}
-
-function daysSince(value: string | Date | null) {
-  if (!value) return null;
-  const d = value instanceof Date ? value : new Date(value);
-  const diff = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
-  return diff;
-}
 
 export default async function ConsultasPage({
   searchParams,
@@ -88,18 +78,13 @@ export default async function ConsultasPage({
 
         <form className="flex gap-2" method="get">
           {q && <input type="hidden" name="q" value={q} />}
-          <select
-            name="status"
-            defaultValue={status ?? ''}
-            className="select select-bordered"
-            onChange={(e) => e.currentTarget.form?.submit()}
-          >
+          <StatusFilter defaultValue={status ?? ''}>
             {statusOptions.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
             ))}
-          </select>
+          </StatusFilter>
         </form>
       </div>
 

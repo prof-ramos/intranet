@@ -1,0 +1,421 @@
+import { db } from '@/lib/db';
+import {
+  legalConsultations,
+  legalNotes,
+  legalConsultationStatus,
+  associates,
+  admins,
+} from '@/lib/db/schema';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  ne,
+  sql,
+} from 'drizzle-orm';
+
+export type Tx = typeof db;
+
+export interface ConsultationListItem {
+  id: number;
+  internalNumber: string;
+  title: string;
+  status: string;
+  slaDueDate: string | null;
+  lastInteractionAt: string | null;
+  associateName: string | null;
+  createdAt: string;
+}
+
+export interface GetConsultationsFilters {
+  status?: string;
+  search?: string;
+  staleDays?: number;
+}
+
+export async function countConsultationsByStatus(
+  status: (typeof legalConsultationStatus.enumValues)[number],
+): Promise<number> {
+  const rows = await db
+    .select({ count: count() })
+    .from(legalConsultations)
+    .where(eq(legalConsultations.status, status));
+  return rows[0].count;
+}
+
+export async function countConsultationsStale(days = 7): Promise<number> {
+  const rows = await db
+    .select({ count: count() })
+    .from(legalConsultations)
+    .where(
+      and(
+        ne(legalConsultations.status, 'arquivada'),
+        sql`${legalConsultations.lastInteractionAt} < now() - interval '1 day' * ${days}`,
+      ),
+    );
+  return rows[0].count;
+}
+
+export async function countConsultationsSlaOverdue(): Promise<number> {
+  const rows = await db
+    .select({ count: count() })
+    .from(legalConsultations)
+    .where(
+      and(
+        ne(legalConsultations.status, 'arquivada'),
+        sql`${legalConsultations.slaDueDate} < now()`,
+      ),
+    );
+  return rows[0].count;
+}
+
+export async function countConsultationsRespondedThisMonth(): Promise<number> {
+  const rows = await db
+    .select({ count: count() })
+    .from(legalConsultations)
+    .where(
+      and(
+        eq(legalConsultations.status, 'respondida'),
+        sql`date_trunc('month', ${legalConsultations.updatedAt}) = date_trunc('month', now())`,
+      ),
+    );
+  return rows[0].count;
+}
+
+export async function getConsultationsPaginated(
+  page: number,
+  pageSize: number,
+  filters: GetConsultationsFilters = {},
+): Promise<{ rows: ConsultationListItem[]; total: number }> {
+  const conditions = [];
+
+  if (filters.status) {
+    conditions.push(
+      eq(
+        legalConsultations.status,
+        filters.status as (typeof legalConsultationStatus.enumValues)[number],
+      ),
+    );
+  }
+
+  if (filters.search) {
+    const pattern = `%${filters.search}%`;
+    conditions.push(
+      sql`${legalConsultations.title} like ${pattern} escape '\\' or ${legalConsultations.internalNumber} like ${pattern} escape '\\'`,
+    );
+  }
+
+  if (filters.staleDays) {
+    conditions.push(
+      and(
+        ne(legalConsultations.status, 'arquivada'),
+        sql`${legalConsultations.lastInteractionAt} < now() - interval '1 day' * ${filters.staleDays}`,
+      ),
+    );
+  }
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const [rows, [{ total }]] = await Promise.all([
+    db
+      .select({
+        id: legalConsultations.id,
+        internalNumber: legalConsultations.internalNumber,
+        title: legalConsultations.title,
+        status: legalConsultations.status,
+        slaDueDate: legalConsultations.slaDueDate,
+        lastInteractionAt: legalConsultations.lastInteractionAt,
+        associateName: associates.fullName,
+        createdAt: legalConsultations.createdAt,
+      })
+      .from(legalConsultations)
+      .leftJoin(associates, eq(legalConsultations.associateId, associates.id))
+      .where(where)
+      .orderBy(desc(legalConsultations.createdAt))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db.select({ total: count() }).from(legalConsultations).where(where),
+  ]);
+
+  return {
+    rows: rows.map((r) => ({
+      ...r,
+      slaDueDate: r.slaDueDate ? r.slaDueDate.toISOString() : null,
+      lastInteractionAt: r.lastInteractionAt ? r.lastInteractionAt.toISOString() : null,
+      createdAt: r.createdAt.toISOString(),
+    })),
+    total,
+  };
+}
+
+export interface ConsultationDetail {
+  id: number;
+  internalNumber: string;
+  title: string;
+  questionSummary: string;
+  questionFullText: string | null;
+  status: string;
+  satisfaction: string | null;
+  slaDueDate: string | null;
+  lastInteractionAt: string | null;
+  finalAnswer: string | null;
+  attachments: string[];
+  createdAt: string;
+  updatedAt: string;
+  associate: { id: number; name: string } | null;
+  answeredBy: { id: number; name: string } | null;
+  createdBy: { id: number; name: string };
+}
+
+export async function getConsultationById(id: number): Promise<ConsultationDetail | null> {
+  const [row] = await db
+    .select({
+      id: legalConsultations.id,
+      internalNumber: legalConsultations.internalNumber,
+      title: legalConsultations.title,
+      questionSummary: legalConsultations.questionSummary,
+      questionFullText: legalConsultations.questionFullText,
+      status: legalConsultations.status,
+      satisfaction: legalConsultations.satisfaction,
+      slaDueDate: legalConsultations.slaDueDate,
+      lastInteractionAt: legalConsultations.lastInteractionAt,
+      finalAnswer: legalConsultations.finalAnswer,
+      attachments: legalConsultations.attachments,
+      createdAt: legalConsultations.createdAt,
+      updatedAt: legalConsultations.updatedAt,
+      associateId: associates.id,
+      associateName: associates.fullName,
+      answeredById: admins.id,
+      answeredByName: admins.name,
+      createdById: legalConsultations.createdBy,
+    })
+    .from(legalConsultations)
+    .leftJoin(associates, eq(legalConsultations.associateId, associates.id))
+    .leftJoin(admins, eq(legalConsultations.answeredBy, admins.id))
+    .where(eq(legalConsultations.id, id))
+    .limit(1);
+
+  if (!row) return null;
+
+  const [createdBy] = await db
+    .select({ id: admins.id, name: admins.name })
+    .from(admins)
+    .where(eq(admins.id, row.createdById))
+    .limit(1);
+
+  return {
+    id: row.id,
+    internalNumber: row.internalNumber,
+    title: row.title,
+    questionSummary: row.questionSummary,
+    questionFullText: row.questionFullText,
+    status: row.status,
+    satisfaction: row.satisfaction,
+    slaDueDate: row.slaDueDate ? row.slaDueDate.toISOString() : null,
+    lastInteractionAt: row.lastInteractionAt ? row.lastInteractionAt.toISOString() : null,
+    finalAnswer: row.finalAnswer,
+    attachments: (row.attachments as string[]) ?? [],
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    associate: row.associateId ? { id: row.associateId, name: row.associateName! } : null,
+    answeredBy: row.answeredById ? { id: row.answeredById, name: row.answeredByName! } : null,
+    createdBy: createdBy ?? { id: row.createdById, name: 'Desconhecido' },
+  };
+}
+
+export interface NoteItem {
+  id: number;
+  content: string;
+  createdBy: { id: number; name: string };
+  isEscritorioResponse: boolean;
+  createdAt: string;
+}
+
+export async function getNotesByEntity(entityType: string, entityId: number): Promise<NoteItem[]> {
+  const rows = await db
+    .select({
+      id: legalNotes.id,
+      content: legalNotes.content,
+      createdByName: admins.name,
+      createdById: legalNotes.createdBy,
+      isEscritorioResponse: legalNotes.isEscritorioResponse,
+      createdAt: legalNotes.createdAt,
+    })
+    .from(legalNotes)
+    .leftJoin(admins, eq(legalNotes.createdBy, admins.id))
+    .where(and(eq(legalNotes.entityType, entityType), eq(legalNotes.entityId, entityId)))
+    .orderBy(asc(legalNotes.createdAt));
+
+  return rows.map((r) => ({
+    id: r.id,
+    content: r.content,
+    createdBy: { id: r.createdById, name: r.createdByName ?? 'Desconhecido' },
+    isEscritorioResponse: r.isEscritorioResponse,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+export interface PendingAction {
+  id: number;
+  internalNumber: string;
+  title: string;
+  type: 'sla_vencendo' | 'sem_atualizacao' | 'aguardando_escritorio';
+  days: number;
+}
+
+export async function getPendingActions(): Promise<PendingAction[]> {
+  const slaRows = await db
+    .select({
+      id: legalConsultations.id,
+      internalNumber: legalConsultations.internalNumber,
+      title: legalConsultations.title,
+      slaDueDate: legalConsultations.slaDueDate,
+    })
+    .from(legalConsultations)
+    .where(
+      and(
+        ne(legalConsultations.status, 'arquivada'),
+        sql`${legalConsultations.slaDueDate} < now() + interval '2 days'`,
+        sql`${legalConsultations.slaDueDate} >= now()`,
+      ),
+    )
+    .orderBy(asc(legalConsultations.slaDueDate))
+    .limit(5);
+
+  const staleRows = await db
+    .select({
+      id: legalConsultations.id,
+      internalNumber: legalConsultations.internalNumber,
+      title: legalConsultations.title,
+      lastInteractionAt: legalConsultations.lastInteractionAt,
+    })
+    .from(legalConsultations)
+    .where(
+      and(
+        ne(legalConsultations.status, 'arquivada'),
+        sql`${legalConsultations.lastInteractionAt} < now() - interval '7 days'`,
+      ),
+    )
+    .orderBy(asc(legalConsultations.lastInteractionAt))
+    .limit(5);
+
+  const escritorioRows = await db
+    .select({
+      id: legalConsultations.id,
+      internalNumber: legalConsultations.internalNumber,
+      title: legalConsultations.title,
+    })
+    .from(legalConsultations)
+    .where(eq(legalConsultations.status, 'aguardando_escritorio'))
+    .orderBy(asc(legalConsultations.updatedAt))
+    .limit(5);
+
+  const actions: PendingAction[] = [
+    ...slaRows.map((r) => ({
+      id: r.id,
+      internalNumber: r.internalNumber,
+      title: r.title,
+      type: 'sla_vencendo' as const,
+      days: 0,
+    })),
+    ...staleRows.map((r) => ({
+      id: r.id,
+      internalNumber: r.internalNumber,
+      title: r.title,
+      type: 'sem_atualizacao' as const,
+      days: Math.floor(
+        (Date.now() - new Date(r.lastInteractionAt!).getTime()) / (1000 * 60 * 60 * 24),
+      ),
+    })),
+    ...escritorioRows.map((r) => ({
+      id: r.id,
+      internalNumber: r.internalNumber,
+      title: r.title,
+      type: 'aguardando_escritorio' as const,
+      days: 0,
+    })),
+  ];
+
+  return actions.slice(0, 10);
+}
+
+export async function insertConsultation(
+  values: {
+    internalNumber: string;
+    title: string;
+    questionSummary: string;
+    questionFullText: string | null;
+    associateId: number | null;
+    slaDueDate: Date;
+    createdBy: number;
+    lastInteractionAt: Date;
+  },
+) {
+  const [inserted] = await db
+    .insert(legalConsultations)
+    .values({
+      internalNumber: values.internalNumber,
+      title: values.title,
+      questionSummary: values.questionSummary,
+      questionFullText: values.questionFullText,
+      associateId: values.associateId,
+      slaDueDate: values.slaDueDate,
+      createdBy: values.createdBy,
+      lastInteractionAt: values.lastInteractionAt,
+    })
+    .returning({ id: legalConsultations.id });
+
+  return inserted;
+}
+
+export async function updateConsultationStatus(
+  id: number,
+  status: (typeof legalConsultationStatus.enumValues)[number],
+  lastInteractionAt?: Date,
+) {
+  const set: Record<string, unknown> = {
+    status,
+    updatedAt: new Date(),
+  };
+  if (lastInteractionAt) {
+    set.lastInteractionAt = lastInteractionAt;
+  }
+
+  await db.update(legalConsultations).set(set).where(eq(legalConsultations.id, id));
+}
+
+export async function insertNote(values: {
+  entityType: string;
+  entityId: number;
+  content: string;
+  createdBy: number;
+  isEscritorioResponse: boolean;
+}) {
+  await db.insert(legalNotes).values({
+    entityType: values.entityType,
+    entityId: values.entityId,
+    content: values.content,
+    createdBy: values.createdBy,
+    isEscritorioResponse: values.isEscritorioResponse,
+  });
+}
+
+export async function touchConsultationInteraction(entityId: number) {
+  await db
+    .update(legalConsultations)
+    .set({ lastInteractionAt: new Date(), updatedAt: new Date() })
+    .where(eq(legalConsultations.id, entityId));
+}
+
+export async function findMaxInternalNumberForYear(year: number): Promise<number> {
+  const [result] = await db
+    .select({
+      max: sql<string>`max(substring(${legalConsultations.internalNumber} from 'JUR-${year}-([0-9]+)')::integer)`,
+    })
+    .from(legalConsultations)
+    .where(sql`${legalConsultations.internalNumber} like ${`JUR-${year}-%`}`);
+
+  return Number(result?.max) || 0;
+}

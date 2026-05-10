@@ -108,7 +108,7 @@ export function RelatorioForm() {
       event.preventDefault();
       return;
     }
-    // allow default form submission
+    // permite o envio padrão do formulário
   }
 
   const chipStyle =
@@ -123,7 +123,7 @@ export function RelatorioForm() {
       onSubmit={handleSubmit}
     >
       {/* Global actions */}
-      <div className="mb-6 flex flex-wrap items-center gap-2">
+      <div className="mb-6 flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={selectAll}
@@ -162,7 +162,7 @@ export function RelatorioForm() {
                 <button
                   type="button"
                   onClick={() => toggleGroup(groupIndex)}
-                  className="inline-flex h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold transition"
+                  className="inline-flex h-8 items-center rounded-full border px-3 text-[11px] font-semibold transition"
                   style={
                     fullySelected
                       ? { borderColor: '#040920', background: '#040920', color: '#fff' }
