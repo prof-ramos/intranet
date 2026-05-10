@@ -27,15 +27,15 @@ export function NavLink({
       onMouseLeave={() => setHovered(false)}
       className={[
         'flex h-[58px] items-center gap-3 pr-9 text-base transition-colors duration-150',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#76AEEA]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring-color)]',
         isActive ? 'border-l-[6px] pl-[30px] text-white' : 'border-l-[6px] border-transparent pl-9 text-white/70',
         !isActive && hovered ? 'text-white' : '',
       ].join(' ')}
       style={{
+        '--focus-ring-color': skyBlue,
         borderLeftColor: isActive ? skyBlue : 'transparent',
         backgroundColor: isActive ? primaryContainerActive : hovered ? primaryContainerHover : undefined,
-        outlineColor: skyBlue,
-      }}
+      } as React.CSSProperties}
     >
       <span className="shrink-0">{icon}</span>
       <span>{children}</span>
