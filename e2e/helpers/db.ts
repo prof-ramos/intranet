@@ -3,7 +3,7 @@ import postgres from 'postgres';
 import * as schema from '@/lib/db/schema';
 
 const TEST_DATABASE_URL =
-  process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/asof_test';
+  process.env.TEST_DATABASE_URL ?? 'postgres://gabrielramos@localhost:5432/asof_test';
 
 const client = postgres(TEST_DATABASE_URL, { prepare: false });
 export const db = drizzle(client, { schema });

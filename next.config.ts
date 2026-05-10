@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot,
   },
-  serverExternalPackages: ["@libsql/client"],
+  serverExternalPackages: [],
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },

@@ -166,14 +166,6 @@ Key Schemas/Tables:
 - `legal_opinion_tags` — opinion classification tags
 - `rate_limits` — IP-based rate limiting
 
-### 4.2. Legacy/Local Migration Artifacts
-
-Name: Historical SQLite migration artifacts
-
-Type: Drizzle SQL migration files under the older `drizzle/` root.
-
-Purpose: Preserved history from an earlier SQLite/libSQL phase. Current Drizzle configuration targets `drizzle/postgres/` and PostgreSQL.
-
 ## 5. External Integrations / APIs
 
 Service Name: Supabase
@@ -284,7 +276,7 @@ Runtime Notes:
 - ~~Continue extracting data access from route files into repository modules (`src/lib/*/queries.ts`).~~ ✅ Done for juridico module (`src/lib/juridico/repository.ts`, `service.ts`).
 - ~~Replace remaining placeholder dashboard/static metrics with real persisted data.~~ ✅ Dashboard jurídico agora usa queries reais.
 - ~~Expand explicit role guards for administrative routes and actions.~~ ✅ `requireRole()` ativo em `/app/juridico`.
-- Keep PostgreSQL/Supabase documentation aligned with code; remove or archive stale SQLite/libSQL references.
+- ~~Keep PostgreSQL/Supabase documentation aligned with code; remove or archive stale SQLite/libSQL references.~~ ✅ SQLite/libSQL references removidos.
 - Add integration tests for login/session cookies, protected routes, and high-risk server actions.
 - Decide and document production hosting, observability, backup, and incident-response practices.
 - Keep `README.md`, `AGENTS.md`, `DESIGN.md`, `CLAUDE.md`, `API.md`, `CONTRIBUTING.md`, and this file synchronized when runtime or architecture decisions change.

@@ -2,7 +2,7 @@ import { execSync, spawn } from 'child_process';
 import path from 'path';
 
 const TEST_DATABASE_URL =
-  process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/asof_test';
+  process.env.TEST_DATABASE_URL ?? 'postgres://gabrielramos@localhost:5432/asof_test';
 
 export default async function globalSetup() {
   // Ensure test DB exists

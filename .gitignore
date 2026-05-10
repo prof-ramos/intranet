@@ -55,3 +55,6 @@ sqlite.db-*
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Claude Code local settings (personal overrides, never share)
+.claude/settings.local.json

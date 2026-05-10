@@ -2,7 +2,7 @@ import { requireAuth } from '@/lib/auth/require-auth';
 import { getAssociatesPaginated } from '@/lib/associates/queries';
 import { getRoleLabel } from '@/lib/auth/roles';
 import { parseAssociatesSearchParams } from '@/lib/associates/search-params';
-import { Bell, ChevronLeft, ChevronRight, Download, Search } from 'lucide-react';
+import { Bell, ChevronLeft, ChevronRight, Download, Pencil, Search } from 'lucide-react';
 import Link from 'next/link';
 
 const PAGE_SIZE = 20;
@@ -172,18 +172,19 @@ export default async function AssociadosPage({
                   <th scope="col">Posto</th>
                   <th scope="col">Email</th>
                   <th scope="col">Situação</th>
+                  <th scope="col" className="w-10 text-center" aria-label="Ações" />
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-base-content/50 py-16 text-center">
+                    <td colSpan={6} className="text-base-content/50 py-16 text-center">
                       Nenhum associado encontrado.
                     </td>
                   </tr>
                 ) : (
                   rows.map((row) => (
-                    <tr key={row.id} className="border-base-300 hover:bg-base-200 border-b">
+                    <tr key={row.id} className="border-base-300 hover:bg-base-200 group border-b">
                       <td className="font-medium">
                         <Link href={`/app/associados/${row.id}`} className="hover:underline">
                           {row.fullName}
@@ -200,6 +201,15 @@ export default async function AssociadosPage({
                         >
                           {row.functionalStatus ?? '—'}
                         </span>
+                      </td>
+                      <td className="text-center">
+                        <Link
+                          href={`/app/associados/${row.id}/editar`}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-base-content/40 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-base-200 hover:text-primary"
+                          aria-label={`Editar ${row.fullName}`}
+                        >
+                          <Pencil size={14} aria-hidden="true" />
+                        </Link>
                       </td>
                     </tr>
                   ))

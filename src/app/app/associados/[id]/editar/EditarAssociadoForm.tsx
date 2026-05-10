@@ -1,0 +1,383 @@
+'use client';
+
+import Link from 'next/link';
+import { ArrowLeft, Save } from 'lucide-react';
+import { useState } from 'react';
+import { updateAssociate } from '@/app/app/associados/actions';
+
+interface Props {
+  associate: {
+    id: number;
+    fullName: string;
+    cpf: string | null;
+    siape: string | null;
+    primaryEmail: string | null;
+    secondaryEmail: string | null;
+    phone: string | null;
+    whatsapp: string | null;
+    birthDate: string | null;
+    address: string | null;
+    locationCity: string | null;
+    locationCountry: string | null;
+    assignment: string | null;
+    assignmentStartDate: string | null;
+    classPattern: string | null;
+    associationCategory: string | null;
+    functionalStatus: string | null;
+    associationStatus: string;
+    contributionStatus: string;
+    internalNotes?: string | null;
+  };
+  canEditInternalNotes: boolean;
+}
+
+export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) {
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(formData: FormData) {
+    setError('');
+    setSaving(true);
+    try {
+      await updateAssociate(formData);
+    } catch (e) {
+      console.error('[EditarAssociadoForm] update error:', e);
+      setError('Erro ao salvar. Verifique os dados e tente novamente.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
+      <div className="mb-5 flex items-center gap-3">
+        <Link
+          href={`/app/associados/${associate.id}`}
+          className="btn btn-ghost btn-circle btn-sm"
+          aria-label="Voltar"
+        >
+          <ArrowLeft size={18} />
+        </Link>
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-base-content/55">
+            Associados / Editar
+          </p>
+          <h1 className="mt-1 font-serif text-3xl font-bold">Editar associado</h1>
+        </div>
+      </div>
+
+      <form action={handleSubmit} className="max-w-3xl">
+        <input type="hidden" name="id" value={associate.id} />
+
+        {/* Identificação */}
+        <section className="rounded-box border-base-300 mb-6 border bg-white p-5 sm:p-7">
+          <h2 className="font-serif text-[22px] leading-tight font-bold mb-4">Identificação</h2>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label htmlFor="fullName" className="label">
+                <span className="label-text font-semibold">Nome completo *</span>
+              </label>
+              <input
+                id="fullName"
+                name="fullName"
+                type="text"
+                required
+                defaultValue={associate.fullName}
+                className="input input-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="cpf" className="label">
+                <span className="label-text font-semibold">CPF</span>
+              </label>
+              <input
+                id="cpf"
+                name="cpf"
+                type="text"
+                defaultValue={associate.cpf ?? ''}
+                className="input input-bordered w-full"
+                placeholder="000.000.000-00"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="siape" className="label">
+                <span className="label-text font-semibold">SIAPE</span>
+              </label>
+              <input
+                id="siape"
+                name="siape"
+                type="text"
+                defaultValue={associate.siape ?? ''}
+                className="input input-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="birthDate" className="label">
+                <span className="label-text font-semibold">Data de nascimento</span>
+              </label>
+              <input
+                id="birthDate"
+                name="birthDate"
+                type="date"
+                defaultValue={associate.birthDate ?? ''}
+                className="input input-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="primaryEmail" className="label">
+                <span className="label-text font-semibold">E-mail principal</span>
+              </label>
+              <input
+                id="primaryEmail"
+                name="primaryEmail"
+                type="email"
+                defaultValue={associate.primaryEmail ?? ''}
+                className="input input-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="secondaryEmail" className="label">
+                <span className="label-text font-semibold">E-mail alternativo</span>
+              </label>
+              <input
+                id="secondaryEmail"
+                name="secondaryEmail"
+                type="email"
+                defaultValue={associate.secondaryEmail ?? ''}
+                className="input input-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="label">
+                <span className="label-text font-semibold">Telefone</span>
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                defaultValue={associate.phone ?? ''}
+                className="input input-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="whatsapp" className="label">
+                <span className="label-text font-semibold">WhatsApp</span>
+              </label>
+              <input
+                id="whatsapp"
+                name="whatsapp"
+                type="tel"
+                defaultValue={associate.whatsapp ?? ''}
+                className="input input-bordered w-full"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Endereço */}
+        <section className="rounded-box border-base-300 mb-6 border bg-white p-5 sm:p-7">
+          <h2 className="font-serif text-[22px] leading-tight font-bold mb-4">Endereço</h2>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label htmlFor="address" className="label">
+                <span className="label-text font-semibold">Endereço</span>
+              </label>
+              <textarea
+                id="address"
+                name="address"
+                rows={3}
+                defaultValue={associate.address ?? ''}
+                className="textarea textarea-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="locationCity" className="label">
+                <span className="label-text font-semibold">Cidade</span>
+              </label>
+              <input
+                id="locationCity"
+                name="locationCity"
+                type="text"
+                defaultValue={associate.locationCity ?? ''}
+                className="input input-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="locationCountry" className="label">
+                <span className="label-text font-semibold">País</span>
+              </label>
+              <input
+                id="locationCountry"
+                name="locationCountry"
+                type="text"
+                defaultValue={associate.locationCountry ?? ''}
+                className="input input-bordered w-full"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Administrativo */}
+        <section className="rounded-box border-base-300 mb-6 border bg-white p-5 sm:p-7">
+          <h2 className="font-serif text-[22px] leading-tight font-bold mb-4">Administrativo</h2>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div>
+              <label htmlFor="assignment" className="label">
+                <span className="label-text font-semibold">Lotação atual</span>
+              </label>
+              <input
+                id="assignment"
+                name="assignment"
+                type="text"
+                defaultValue={associate.assignment ?? ''}
+                className="input input-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="assignmentStartDate" className="label">
+                <span className="label-text font-semibold">Início da lotação</span>
+              </label>
+              <input
+                id="assignmentStartDate"
+                name="assignmentStartDate"
+                type="date"
+                defaultValue={associate.assignmentStartDate ?? ''}
+                className="input input-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="classPattern" className="label">
+                <span className="label-text font-semibold">Classe / Padrão</span>
+              </label>
+              <input
+                id="classPattern"
+                name="classPattern"
+                type="text"
+                defaultValue={associate.classPattern ?? ''}
+                className="input input-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="associationCategory" className="label">
+                <span className="label-text font-semibold">Categoria</span>
+              </label>
+              <input
+                id="associationCategory"
+                name="associationCategory"
+                type="text"
+                defaultValue={associate.associationCategory ?? ''}
+                className="input input-bordered w-full"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="functionalStatus" className="label">
+                <span className="label-text font-semibold">Situação funcional</span>
+              </label>
+              <select
+                id="functionalStatus"
+                name="functionalStatus"
+                defaultValue={associate.functionalStatus ?? ''}
+                className="select select-bordered w-full"
+              >
+                <option value="">Selecione...</option>
+                <option value="ativo">Ativo</option>
+                <option value="aposentado">Aposentado</option>
+                <option value="cedido">Cedido</option>
+                <option value="em_licenca">Em licença</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="associationStatus" className="label">
+                <span className="label-text font-semibold">Situação associativa</span>
+              </label>
+              <select
+                id="associationStatus"
+                name="associationStatus"
+                defaultValue={associate.associationStatus}
+                className="select select-bordered w-full"
+              >
+                <option value="">Selecione...</option>
+                <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="contributionStatus" className="label">
+                <span className="label-text font-semibold">Contribuição</span>
+              </label>
+              <select
+                id="contributionStatus"
+                name="contributionStatus"
+                defaultValue={associate.contributionStatus}
+                className="select select-bordered w-full"
+              >
+                <option value="">Selecione...</option>
+                <option value="em_dia">Em dia</option>
+                <option value="inadimplente">Inadimplente</option>
+                <option value="pendente_migracao">Pendente migração</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        {canEditInternalNotes && (
+          /* Observações */
+          <section className="rounded-box border-base-300 mb-6 border bg-white p-5 sm:p-7">
+            <h2 className="font-serif text-[22px] leading-tight font-bold mb-4">Observações internas</h2>
+            <div>
+              <label htmlFor="internalNotes" className="label">
+                <span className="label-text font-semibold">Notas</span>
+              </label>
+              <textarea
+                id="internalNotes"
+                name="internalNotes"
+                rows={5}
+                defaultValue={associate.internalNotes ?? ''}
+                className="textarea textarea-bordered w-full"
+                placeholder="Notas internas sobre o associado..."
+              />
+            </div>
+          </section>
+        )}
+
+        {error && (
+          <div className="alert alert-error mb-5">
+            <span className="text-sm">{error}</span>
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={saving}
+            className="btn btn-primary min-h-11 px-4"
+          >
+            <Save size={16} aria-hidden="true" />
+            {saving ? 'Salvando...' : 'Salvar alterações'}
+          </button>
+          <Link
+            href={`/app/associados/${associate.id}`}
+            className="btn btn-outline border-base-300 min-h-11 px-4"
+          >
+            Cancelar
+          </Link>
+        </div>
+      </form>
+    </main>
+  );
+}

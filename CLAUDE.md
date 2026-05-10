@@ -34,7 +34,7 @@ npm run test:e2e:debug   # playwright test --debug
 # Database
 npm run db:generate      # drizzle-kit generate
 npm run db:migrate       # drizzle-kit migrate
-npm run db:seed          # seed admin + sample associates
+npm run db:seed          # seed admin user only (seed-associados.ts removed)
 npm run db:studio        # Drizzle Studio
 npm run db:supabase:status
 ```
@@ -50,6 +50,7 @@ Run a single test: `npx vitest run -t "test name"`
 
 - `src/proxy.ts` — Next.js 16 proxy (replaces `middleware.ts`). Coarse JWT cookie validation for `/app/:path*` routes. Redirects to `/login` if missing/invalid. No DB queries here; full user revalidation happens in `requireAuth()` inside `src/app/app/layout.tsx`.
 - `src/app/app/layout.tsx` — Authenticated shell. Calls `requireAuth()`, renders sidebar.
+- `src/app/app/auditoria/page.tsx`, `config/page.tsx`, `usuarios/page.tsx` — Thin single-page modules (read-only views, no sub-routes).
 - `src/app/login/actions.ts` — Server Action for login. Rate-limited (5 attempts / 15 min), bcrypt with dummy hash for timing attack protection.
 - `src/app/change-password/` — Required password-change flow for `mustChangePassword=true`.
 
@@ -65,8 +66,10 @@ Run a single test: `npx vitest run -t "test name"`
 Server Components fetch data directly from the database. The juridico module has a full repository/service layer; others are query-only:
 - `src/lib/dashboard/queries.ts` — Dashboard aggregations
 - `src/lib/associates/queries.ts` — Associate list/pagination
+- `src/lib/associates/search-params.ts` — URL search-params parsing for the associates list (filters, pagination)
 - `src/lib/reports/queries.ts` + `src/lib/reports/csv.ts` — Report generation
 - `src/lib/juridico/repository.ts` + `service.ts` + `queries.ts` — Legal consultations (full service layer). `queries.ts` wraps repository calls with module-level `unstable_cache`; Server Actions call `revalidateTag` on mutations.
+- `src/app/app/associados/actions.ts` — Server Actions for associate mutations (create/update). `[id]/editar/` is the edit route; `[id]/editar/EditarAssociadoForm.tsx` is the client form.
 
 ### Auth & Authorization
 
@@ -127,7 +130,7 @@ Formal, institutional interface. See `DESIGN.md` for full specification.
 
 - **Webpack is default.** Turbopack (`*:turbo` scripts) is for explicit diagnostics only due to prior Tailwind resolution issues on memory-constrained machines.
 - **No `middleware.ts`.** Next.js 16 renamed middleware to `proxy.ts`.
-- **No API routes for data fetching.** Server Components query Drizzle directly.
+- **No API routes for data fetching.** Server Components query Drizzle directly. Exception: `src/app/app/associados/relatorio/download/route.ts` is a Route Handler used for CSV file streaming — not a data-fetch endpoint.
 - **Error boundaries are not global.** Exist: `src/app/app/error.tsx` (generic app-level), `src/app/app/juridico/error.tsx` (juridico module), `src/app/app/juridico/consultas/error.tsx` (consultas sub-route). Not every route has one.
 - **Server Component shell + Client Component form.** Pages that need client interactivity (forms, state) use a Server Component for data fetching that renders a `'use client'` subcomponent. Example: `relatorio/page.tsx` → `RelatorioForm.tsx`.
 - **`next/dynamic` for heavy client components.** Use lazy loading for components not needed on initial render. Example: `ReassignModal` in `AtividadesBoard.tsx` is loaded via `dynamic(() => import('./ReassignModal'))`.
@@ -139,6 +142,7 @@ Formal, institutional interface. See `DESIGN.md` for full specification.
 - `src/lib/auth/require-auth.ts` — Auth guard for pages
 - `src/lib/db/index.ts` — Database client
 - `src/lib/ui/tokens.ts` — Design tokens
+- `src/lib/associates/search-params.ts` — Associates list filter/pagination URL params
 - `next.config.ts` — Next.js config (imports `env.ts`)
 - `drizzle.config.ts` — Migration config
 - `vitest.config.ts` — Test config

@@ -29,6 +29,13 @@
       "when": 1778394395631,
       "tag": "0003_opposite_sheva_callister",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778592000000,
+      "tag": "0004_database_optimization",
+      "breakpoints": true
     }
   ]
 }

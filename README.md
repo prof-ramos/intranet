@@ -10,6 +10,7 @@ Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de 
 
 - Node.js 20+
 - npm (não pnpm, não yarn — o lockfile é `package-lock.json`)
+- PostgreSQL local (recomendado via Homebrew) para desenvolvimento
 
 ---
 
@@ -22,14 +23,19 @@ npm install
 # 2. Configurar variáveis de ambiente
 cp .env.example .env.local
 # edite .env.local conforme a seção abaixo
+# Para desenvolvimento local, ajuste DATABASE_URL e DATABASE_MIGRATION_URL
+# para apontar para o seu PostgreSQL local (ex: postgres://<user>@localhost:5432/asof_intranet)
 
-# 3. Criar e migrar o banco
+# 3. Criar o banco local (se ainda não existir)
+createdb asof_intranet
+
+# 4. Aplicar migrações
 npm run db:migrate
 
-# 4. Popular com dados iniciais
+# 5. Popular com dados iniciais
 npm run db:seed
 
-# 5. Subir o servidor de desenvolvimento
+# 6. Subir o servidor de desenvolvimento
 npm run dev
 ```
 
@@ -73,7 +79,10 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 ## Banco de dados
 
-O projeto usa PostgreSQL via Drizzle. Em produção e desenvolvimento integrado, use uma URL Postgres/Supabase em `DATABASE_URL`; para migrations, use uma URL direta/non-pooling em `DATABASE_MIGRATION_URL`.
+O projeto usa PostgreSQL via Drizzle.
+
+- **Desenvolvimento local:** PostgreSQL via Homebrew. Use `DATABASE_URL=postgres://<user>@localhost:5432/asof_intranet` e a mesma URL para `DATABASE_MIGRATION_URL` (não há pooler local, então a URL direta serve para ambos).
+- **Produção / remoto:** Supabase. Use a URL do pooler de runtime em `DATABASE_URL` e a URL direta/non-pooling em `DATABASE_MIGRATION_URL`.
 
 ```bash
 npm run db:generate   # gera migrações a partir do schema

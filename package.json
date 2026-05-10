@@ -20,7 +20,7 @@
     "test:e2e:debug": "playwright test --debug",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx scripts/seed-associados.ts && tsx scripts/seed-admin.ts",
+    "db:seed": "tsx scripts/seed-admin.ts",
     "db:supabase:status": "tsx scripts/supabase-status.ts",
     "db:studio": "drizzle-kit studio"
   },
@@ -40,7 +40,6 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@libsql/client": "^0.17.3",
     "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^25",

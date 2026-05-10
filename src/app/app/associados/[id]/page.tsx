@@ -244,12 +244,12 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
                 >
                   Imprimir ficha
                 </button>
-                <button
-                  type="button"
+                <Link
+                  href={`/app/associados/${id}/editar`}
                   className="btn btn-primary min-h-11 rounded-[8px] lg:h-10 lg:min-h-10"
                 >
                   Editar dados
-                </button>
+                </Link>
               </div>
             </div>
 
