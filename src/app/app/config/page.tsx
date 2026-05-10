@@ -1,7 +1,9 @@
 import { requireAuth } from '@/lib/auth/require-auth';
+import { requireRole } from '@/lib/auth/authorization';
 
 export default async function ConfigPage() {
   await requireAuth();
+  await requireRole(['admin', 'diretoria']);
 
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">

@@ -138,3 +138,4 @@ scripts/          # seed, diagnóstico e status Supabase
 Detalhes de arquitetura, fluxo de dados e decisões técnicas: [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 Design system, tokens de cor e tipografia: [`DESIGN.md`](./DESIGN.md).
 Contexto institucional e vocabulário do domínio: [`AGENTS.md`](./AGENTS.md).
+Deploy target, env vars e checklist de release: seção 6 de [`ARCHITECTURE.md`](./ARCHITECTURE.md#6-deployment--infrastructure).

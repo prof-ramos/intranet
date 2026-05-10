@@ -36,3 +36,10 @@ export const priorityStyles: Record<
   normal: { label: 'Normal', fg: 'rgba(13,31,60,0.70)', bg: canvas },
   baixa: { label: 'Baixa', fg: 'rgba(13,31,60,0.50)', bg: canvas },
 };
+
+export const infoNotice = {
+  border: '#93c5fd',
+  bg: '#eff6ff',
+  iconBg: '#2563eb',
+  text: '#1e40af',
+};

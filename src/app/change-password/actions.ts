@@ -8,6 +8,7 @@ import { updateSession } from '@/lib/auth/session';
 import { validateNewPassword } from '@/lib/auth/password';
 import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
+import { changePasswordSchema } from '@/lib/validation/schemas';
 
 function changePasswordError(message: string): never {
   redirect(`/change-password?error=${encodeURIComponent(message)}`);
@@ -15,17 +16,19 @@ function changePasswordError(message: string): never {
 
 export async function changePassword(formData: FormData) {
   const user = await requireAuth();
-  const currentPassword = String(formData.get('currentPassword') ?? '');
-  const newPassword = String(formData.get('newPassword') ?? '');
-  const confirmPassword = String(formData.get('confirmPassword') ?? '');
 
-  if (!currentPassword || !newPassword || !confirmPassword) {
-    changePasswordError('Preencha todos os campos.');
+  const parsed = changePasswordSchema.safeParse({
+    currentPassword: formData.get('currentPassword'),
+    newPassword: formData.get('newPassword'),
+    confirmPassword: formData.get('confirmPassword'),
+  });
+
+  if (!parsed.success) {
+    const firstError = parsed.error.issues[0]?.message ?? 'Dados inválidos.';
+    changePasswordError(firstError);
   }
 
-  if (newPassword !== confirmPassword) {
-    changePasswordError('A confirmação não confere.');
-  }
+  const { currentPassword, newPassword } = parsed.data;
 
   const validation = validateNewPassword(newPassword);
   if (!validation.valid) {

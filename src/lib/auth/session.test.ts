@@ -8,7 +8,7 @@ let storedToken: string | null = null;
 
 const mockCookieStore = {
   get: vi.fn(() => (storedToken ? { value: storedToken } : undefined)),
-  set: vi.fn((_name: string, value: string, _opts: Record<string, unknown>) => {
+  set: vi.fn((...[, value]: [string, string, Record<string, unknown>]) => {
     storedToken = value;
   }),
   delete: vi.fn(() => {

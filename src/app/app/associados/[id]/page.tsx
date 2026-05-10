@@ -5,7 +5,8 @@ import { asc, eq } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { db } from '@/lib/db';
 import { activities, associates } from '@/lib/db/schema';
-import { hairline } from '@/lib/ui/tokens';
+import { hairline, infoNotice } from '@/lib/ui/tokens';
+import { toAssociateProfileDTO, canViewSensitiveFields } from '@/lib/lgpd/dtos';
 
 function dateOnly(value: string | Date | null) {
   if (!value) return null;
@@ -144,7 +145,7 @@ const tocItems = [
 ] as const;
 
 export default async function AssociadoPerfilPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireAuth();
+  const user = await requireAuth();
   const { id } = await params;
   const associateId = Number(id);
 
@@ -152,15 +153,17 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
     notFound();
   }
 
-  const [associate] = await db
+  const [rawAssociate] = await db
     .select()
     .from(associates)
     .where(eq(associates.id, associateId))
     .limit(1);
 
-  if (!associate) {
+  if (!rawAssociate) {
     notFound();
   }
+
+  const associate = toAssociateProfileDTO(rawAssociate, user.role);
 
   const linkedActivities = await db
     .select({
@@ -180,6 +183,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
   const careerYears = yearsSince(associate.assignmentStartDate);
   const location =
     [associate.locationCity, associate.locationCountry].filter(Boolean).join(' / ') || null;
+  const showSensitive = canViewSensitiveFields(user.role);
 
   return (
     <main className="mx-auto w-full max-w-[1180px] min-w-0 px-5 py-7 sm:px-8 lg:px-10">
@@ -302,6 +306,24 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
               ))}
             </div>
           </header>
+
+          {!showSensitive && (
+            <div
+              className="flex gap-3 rounded-[10px] border px-4 py-3"
+              style={{ borderColor: infoNotice.border, background: infoNotice.bg }}
+            >
+              <span
+                className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
+                style={{ background: infoNotice.iconBg }}
+              >
+                i
+              </span>
+              <p className="m-0 text-sm leading-relaxed" style={{ color: infoNotice.text }}>
+                <strong>Visualização limitada.</strong> Dados pessoais sensíveis estão
+                mascarados conforme política de privacidade (LGPD).
+              </p>
+            </div>
+          )}
 
           {!isAssociationActive && (
             <div className="flex gap-3 rounded-[10px] border border-[#fca5a5] bg-[#fee2e2] px-4 py-3">

@@ -44,6 +44,8 @@ export function Sidebar({ user }: SidebarProps) {
             width={200}
             height={60}
             className="h-[60px] w-[200px]"
+            loading="eager"
+            fetchPriority="high"
             unoptimized
           />
         </Link>

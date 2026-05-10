@@ -188,15 +188,70 @@ Integration Method: CLI workflow such as `git add . && coderabbit review --promp
 
 ## 6. Deployment & Infrastructure
 
-Cloud Provider: Not fully codified in repository infrastructure. The app is built as a Vercel-compatible Next.js application and uses Supabase-compatible PostgreSQL configuration.
+### 6.1 Deploy Target
 
-Key Services Used:
+| Camada | Serviço | Tipo |
+|---|---|---|
+| Frontend / Serverless Functions | **Vercel** | Hospedagem Next.js com Fluid Compute (Node.js 24) |
+| Banco de dados | **Supabase** | PostgreSQL 15+ gerenciado |
+| DNS / CDN | Vercel Edge Network | Incluído na plataforma |
+| Armazenamento de objetos (futuro) | Supabase Storage | Para anexos do módulo jurídico Fase 2 |
 
-- Next.js runtime
-- PostgreSQL database
-- Supabase project/API helpers
+O projeto é uma aplicação Next.js 16 App Router **full-stack**, não apenas frontend estático. Server Components, Server Actions e Route Handlers executam nativamente na plataforma Vercel sem configuração extra.
 
-CI/CD Pipeline: No `.github` workflow files are currently present in the repository.
+### 6.2 Variáveis de ambiente por ambiente
+
+#### Staging / Preview (Vercel)
+
+| Variável | Origem / Dono |
+|---|---|
+| `SESSION_SECRET` | Gerada pelo time de infra (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) |
+| `DATABASE_URL` | Pooler de conexões do Supabase (porta 6543) |
+| `DATABASE_MIGRATION_URL` | URL direta/non-pooling do Supabase |
+| `DATABASE_SUPABASE_URL` | Dashboard do projeto Supabase |
+| `DATABASE_SUPABASE_SERVICE_ROLE_KEY` | Dashboard → Project Settings → API → service_role key |
+
+#### Produção (Vercel)
+
+As mesmas variáveis do staging, apontando para o projeto Supabase de produção. `SESSION_SECRET` deve ser diferente do staging.
+
+> **Regra:** `DATABASE_MIGRATION_URL` nunca usa pooler (porta 6543). Migrations precisam de conexão direta.
+
+### 6.3 Fresh environment setup
+
+Ordem para provisionar um novo ambiente do zero:
+
+1. **Criar projeto Supabase** → anotar `DATABASE_URL` (pooler), `DATABASE_MIGRATION_URL` (direta)
+2. **Configurar env vars no Vercel** (Project Settings → Environment Variables)
+3. **Deploy inicial** (pode falhar se o banco estiver vazio — isso é esperado)
+4. **Aplicar migrações:** `DATABASE_MIGRATION_URL="..." npx drizzle-kit migrate`
+5. **Seed do admin:** `INITIAL_ADMIN_EMAIL="..." INITIAL_ADMIN_PASSWORD="..." npm run db:seed`
+6. **Smoke test:** login → dashboard → associados → jurídico
+
+### 6.4 Release checklist
+
+Antes de promover staging → produção:
+
+- [ ] `npm run lint` — passou
+- [ ] `npm run typecheck` — passou
+- [ ] `npm run test` — passou (Vitest)
+- [ ] `npm run test:e2e` — passou (Playwright)
+- [ ] `npm run build` — passou (gera build de produção localmente)
+- [ ] Verificar se há migrações pendentes (`npx drizzle-kit migrate --dry-run` se suportado, ou comparar schema)
+- [ ] Criar e validar backup/snapshot do banco de produção antes de aplicar migrações
+- [ ] Aplicar migrações na produção **antes** do deploy
+- [ ] Verificar env vars obrigatórias na produção
+- [ ] Smoke test pós-deploy: login, dashboard, associados, jurídico, CSV download
+
+### 6.5 CI/CD
+
+Não há `.github/workflows` no repositório atualmente. O processo é manual via Vercel Git Integration (auto-deploy em push para `main`) ou CLI (`vercel --prod`).
+
+**Recomendação futura:** adicionar GitHub Actions com:
+- Job `lint-test-build` em todo PR
+- Job `e2e` com Playwright + banco de testes
+- Job `migrate-staging` em merge para `main`
+- Job `migrate-prod` manual (triggered) antes de promote
 
 Monitoring & Logging: No dedicated monitoring stack is currently configured in code. Local diagnostics live in `scripts/run-dev-60s.sh`.
 

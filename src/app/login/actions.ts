@@ -7,14 +7,19 @@ import { admins } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { loginRateLimiter } from '@/lib/auth/login-rate-limit';
+import { loginSchema } from '@/lib/validation/schemas';
 
 export async function login(formData: FormData) {
-  const email = String(formData.get('email') ?? '')
-    .trim()
-    .toLowerCase();
-  const password = String(formData.get('password') ?? '');
+  const parsed = loginSchema.safeParse({
+    email: formData.get('email'),
+    password: formData.get('password'),
+  });
 
-  if (!email || !password) redirect('/login?error=1');
+  if (!parsed.success) {
+    redirect('/login?error=1');
+  }
+
+  const { email, password } = parsed.data;
 
   const rateLimit = await loginRateLimiter.consume(email);
   if (!rateLimit.allowed) redirect('/login?error=rate-limit');

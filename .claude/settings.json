@@ -13,20 +13,30 @@
       "Bash(eslint:*)",
       "Bash(prettier:*)",
       "Bash(tsc:*)",
-      "Bash(vitest:*)"
+      "Bash(vitest:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git log:*)"
     ],
     "deny": [
       "Bash(curl:*)",
       "Bash(wget:*)",
       "Bash(rm -rf:*)"
     ],
-    "defaultMode": "allowEdits"
+    "defaultMode": "acceptEdits"
   },
   "env": {
     "BASH_DEFAULT_TIMEOUT_MS": "60000",
     "BASH_MAX_OUTPUT_LENGTH": "20000",
     "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
-    "NODE_ENV": "development"
+    "NODE_ENV": "development",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "8000",
+    "DISABLE_NON_ESSENTIAL_MODEL_CALLS": "1",
+    "DISABLE_COST_WARNINGS": "1"
   },
   "includeCoAuthoredBy": true,
   "cleanupPeriodDays": 30,
@@ -125,5 +135,9 @@
         ]
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash -c 'input=$(cat); MODEL=$(echo \"$input\" | jq -r \".model.display_name\"); DIR=$(echo \"$input\" | jq -r \".workspace.current_dir\"); BRANCH=\"\"; if git rev-parse --git-dir >/dev/null 2>&1; then BRANCH=\" | 🌿 $(git branch --show-current 2>/dev/null)\"; fi; echo \"[$MODEL] 📁 ${DIR##*/}$BRANCH\"'"
   }
 }

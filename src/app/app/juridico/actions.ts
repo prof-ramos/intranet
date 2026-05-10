@@ -11,7 +11,13 @@ import {
 } from '@/lib/juridico/repository';
 import { createConsultationService } from '@/lib/juridico/service';
 import { requireAuth } from '@/lib/auth/require-auth';
+import { requireRole } from '@/lib/auth/authorization';
 import { consumeIpRateLimit } from '@/lib/rate-limit';
+import {
+  createConsultationSchema,
+  updateConsultationStatusSchema,
+  addNoteSchema,
+} from '@/lib/validation/schemas';
 
 async function checkJuridicoRateLimit() {
   const h = await headers();
@@ -35,20 +41,23 @@ async function checkJuridicoRateLimit() {
 export async function createConsultation(formData: FormData) {
   await checkJuridicoRateLimit();
   const user = await requireAuth();
-  const title = String(formData.get('title') ?? '').trim();
-  const questionSummary = String(formData.get('questionSummary') ?? '').trim();
-  const questionFullText = String(formData.get('questionFullText') ?? '').trim() || null;
-  const associateIdRaw = formData.get('associateId');
-  const associateId = associateIdRaw ? Number(associateIdRaw) : null;
-  const slaDaysRaw = formData.get('slaDays');
-  const slaDays = slaDaysRaw ? Number(slaDaysRaw) : 7;
+  await requireRole(['admin', 'diretoria']);
+
+  const raw: Record<string, unknown> = {};
+  formData.forEach((value, key) => {
+    raw[key] = value;
+  });
+
+  const parsed = createConsultationSchema.safeParse(raw);
+  if (!parsed.success) {
+    const firstError = parsed.error.issues[0]?.message ?? 'Dados inválidos.';
+    throw new Error(firstError);
+  }
 
   const inserted = await createConsultationService({
-    title,
-    questionSummary,
-    questionFullText,
-    associateId,
-    slaDays,
+    ...parsed.data,
+    questionFullText: parsed.data.questionFullText ?? null,
+    associateId: parsed.data.associateId ?? null,
     createdBy: user.userId,
   });
 
@@ -66,6 +75,7 @@ export async function createConsultation(formData: FormData) {
  */
 export async function updateConsultationStatus(id: number, status: string) {
   await checkJuridicoRateLimit();
+  await requireRole(['admin', 'diretoria']);
   const validStatus = legalConsultationStatus.enumValues.includes(status as typeof legalConsultationStatus.enumValues[number])
     ? (status as typeof legalConsultationStatus.enumValues[number])
     : 'aberta';
@@ -87,15 +97,18 @@ export async function updateConsultationStatus(id: number, status: string) {
  * @throws Error se ID ou status estiverem ausentes
  */
 export async function updateConsultationStatusFromForm(formData: FormData) {
-  const id = Number(formData.get('id'));
-  const status = String(formData.get('status') ?? '');
-  if (!id || Number.isNaN(id)) {
-    throw new Error('ID da consulta inválido.');
+  const raw: Record<string, unknown> = {};
+  formData.forEach((value, key) => {
+    raw[key] = value;
+  });
+
+  const parsed = updateConsultationStatusSchema.safeParse(raw);
+  if (!parsed.success) {
+    const firstError = parsed.error.issues[0]?.message ?? 'Dados inválidos.';
+    throw new Error(firstError);
   }
-  if (!status) {
-    throw new Error('O novo status é obrigatório.');
-  }
-  await updateConsultationStatus(id, status);
+
+  await updateConsultationStatus(parsed.data.id, parsed.data.status);
 }
 
 /**
@@ -106,36 +119,34 @@ export async function updateConsultationStatusFromForm(formData: FormData) {
 export async function addNote(formData: FormData) {
   await checkJuridicoRateLimit();
   const user = await requireAuth();
-  const entityType = String(formData.get('entityType') ?? '');
-  const entityId = Number(formData.get('entityId'));
-  const content = String(formData.get('content') ?? '').trim();
-  const isEscritorioResponse = formData.get('isEscritorioResponse') === 'true';
+  await requireRole(['admin', 'diretoria']);
 
-  if (!entityType) {
-    throw new Error('O tipo de entidade é obrigatório.');
-  }
-  if (!entityId || Number.isNaN(entityId)) {
-    throw new Error('ID da entidade inválido.');
-  }
-  if (!content) {
-    throw new Error('O conteúdo da nota é obrigatório.');
+  const raw: Record<string, unknown> = {};
+  formData.forEach((value, key) => {
+    raw[key] = value;
+  });
+
+  const parsed = addNoteSchema.safeParse({
+    ...raw,
+    isEscritorioResponse: raw.isEscritorioResponse === 'true',
+  });
+  if (!parsed.success) {
+    const firstError = parsed.error.issues[0]?.message ?? 'Dados inválidos.';
+    throw new Error(firstError);
   }
 
   await insertNote({
-    entityType,
-    entityId,
-    content,
+    ...parsed.data,
     createdBy: user.userId,
-    isEscritorioResponse,
   });
 
-  if (entityType === 'consultation') {
-    await touchConsultationInteraction(entityId);
+  if (parsed.data.entityType === 'consultation') {
+    await touchConsultationInteraction(parsed.data.entityId);
   }
 
   revalidatePath('/app/juridico');
   revalidatePath('/app/juridico/consultas');
-  revalidatePath(`/app/juridico/consultas/${entityId}`);
+  revalidatePath(`/app/juridico/consultas/${parsed.data.entityId}`);
   revalidateTag('legal-notes', {});
   revalidateTag('consultation-detail', {});
 }
