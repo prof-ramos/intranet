@@ -58,3 +58,4 @@ playwright/.cache/
 
 # Claude Code local settings (personal overrides, never share)
 .claude/settings.local.json
+.mcp.json

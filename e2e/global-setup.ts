@@ -1,8 +1,12 @@
 import { execSync, spawn } from 'child_process';
+import { mkdirSync, writeFileSync } from 'fs';
 import path from 'path';
 
 const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ?? 'postgres://gabrielramos@localhost:5432/asof_test';
+const DEV_SERVER_PID_FILE = path.resolve(process.cwd(), '.next/e2e-dev-server.pid');
+const NEXT_BIN = path.resolve(process.cwd(), 'node_modules/next/dist/bin/next');
+const E2E_SESSION_SECRET = 'e2e-session-secret-at-least-32-characters-long';
 
 export default async function globalSetup() {
   // Ensure test DB exists
@@ -24,27 +28,57 @@ export default async function globalSetup() {
   });
 
   // Start dev server
-  const devServer = spawn('npm', ['run', 'dev'], {
-    cwd: process.cwd(),
-    env: {
-      ...process.env,
-      DATABASE_URL: TEST_DATABASE_URL,
-      SESSION_SECRET: 'e2e-session-secret-at-least-32-characters-long',
-      PORT: '3001',
+  const devServer = spawn(
+    process.execPath,
+    [NEXT_BIN, 'dev', '--webpack', '-p', '3001', '-H', '127.0.0.1'],
+    {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        DATABASE_URL: TEST_DATABASE_URL,
+        // Fixed only for ephemeral E2E runs; tests do not persist signed sessions.
+        SESSION_SECRET: E2E_SESSION_SECRET,
+      },
+      stdio: 'pipe',
     },
-    stdio: 'pipe',
-    shell: true,
-  });
+  );
+  if (!devServer.pid) {
+    throw new Error('E2E dev server process did not expose a PID.');
+  }
+  mkdirSync(path.dirname(DEV_SERVER_PID_FILE), { recursive: true });
+  writeFileSync(DEV_SERVER_PID_FILE, String(devServer.pid));
 
   // Wait for server ready
   await new Promise<void>((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('Dev server failed to start')), 30000);
+    let ready = false;
+    let sawExpectedUrl = false;
+    const cleanup = () => {
+      clearTimeout(timeout);
+      devServer.stdout?.off('data', onData);
+      devServer.off('exit', exitHandler);
+    };
+    const rejectWithCleanup = (error: Error) => {
+      cleanup();
+      reject(error);
+    };
+    const timeout = setTimeout(
+      () => rejectWithCleanup(new Error('Dev server failed to start')),
+      30000,
+    );
     const onData = (data: Buffer) => {
       const text = data.toString();
-      if (text.includes('Ready in') || text.includes('localhost:3001')) {
-        clearTimeout(timeout);
-        devServer.stdout?.off('data', onData);
+      sawExpectedUrl ||= text.includes('127.0.0.1:3001') || text.includes('localhost:3001');
+      if (sawExpectedUrl && text.includes('Ready in')) {
+        ready = true;
+        cleanup();
         resolve();
+      }
+    };
+    const exitHandler = (code: number | null) => {
+      if (!ready) {
+        rejectWithCleanup(
+          new Error(`Dev server exited before ready with code ${code ?? 'unknown'}`),
+        );
       }
     };
     devServer.stdout?.on('data', onData);
@@ -53,6 +87,7 @@ export default async function globalSetup() {
         console.error(data.toString());
       }
     });
+    devServer.on('exit', exitHandler);
   });
 
   // Store server ref for teardown

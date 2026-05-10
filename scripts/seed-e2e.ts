@@ -1,4 +1,4 @@
-import { db, truncateAll } from '../e2e/helpers/db';
+import { closeDb, db, truncateAll } from '../e2e/helpers/db';
 import { admins, associates } from '@/lib/db/schema';
 import bcrypt from 'bcryptjs';
 
@@ -104,7 +104,11 @@ async function main() {
   console.log('E2E seed complete.');
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await closeDb();
+  });

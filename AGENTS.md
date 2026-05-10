@@ -44,7 +44,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 - Use `npm` for this project; it has `package-lock.json` and no `pnpm-lock.yaml` or `yarn.lock`.
 - For Python work in this repository, use `uv` by default: `uv run`, `uv add`, and `uv sync`.
-- Use Context7 for current library, framework, SDK, API, CLI, or cloud-service documentation before writing setup/configuration/code that depends on docs.
+- Use Context7 automatically for any query that references an external library, framework, API, SDK, CLI, cloud service, or tool. Do not rely on training knowledge for library/tool documentation.
+- Context7 triggers include code generation with any package, setup/installation steps, configuration files, API method signatures, migration/version-specific syntax, and debugging that depends on external library behavior. Never wait for the user to explicitly say "use Context7".
 
 ## Commands
 

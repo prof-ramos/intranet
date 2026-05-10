@@ -25,8 +25,14 @@ interface SidebarProps {
 export function Sidebar({ user }: SidebarProps) {
   return (
     <aside className="w-72 min-h-full flex flex-col shrink-0" style={{ backgroundColor: '#06284f' }}>
-      {/* Logo — fundo branco para preservar as cores originais da marca */}
-      <div className="bg-white px-6 py-6 flex flex-col items-center">
+      {/* Logo */}
+      <div
+        className="px-6 py-6 flex flex-col items-center"
+        style={{
+          background: 'linear-gradient(180deg, #031a35 0%, #06284f 100%)',
+          borderBottom: '1px solid rgba(142, 193, 232, 0.22)',
+        }}
+      >
         <Link
           href="/app"
           aria-label="Ir para a página inicial"
@@ -41,7 +47,7 @@ export function Sidebar({ user }: SidebarProps) {
             unoptimized
           />
         </Link>
-        <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-[#06284f]/40 font-sans">
+        <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-[#b3d2ea] font-sans">
           Intranet
         </p>
       </div>

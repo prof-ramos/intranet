@@ -1,3 +1,8 @@
+import { existsSync, readFileSync, unlinkSync } from 'fs';
+import path from 'path';
+
+const DEV_SERVER_PID_FILE = path.resolve(process.cwd(), '.next/e2e-dev-server.pid');
+
 export default async function globalTeardown() {
   const devServer = (globalThis as unknown as Record<string, unknown>).__DEV_SERVER__ as
     | import('child_process').ChildProcess
@@ -9,5 +14,21 @@ export default async function globalTeardown() {
     if (!devServer.killed) {
       devServer.kill('SIGKILL');
     }
+  }
+
+  try {
+    if (existsSync(DEV_SERVER_PID_FILE)) {
+      const pid = Number(readFileSync(DEV_SERVER_PID_FILE, 'utf8'));
+      if (Number.isInteger(pid) && pid > 0) {
+        try {
+          process.kill(pid, 'SIGTERM');
+        } catch {
+          // Process already exited.
+        }
+      }
+      unlinkSync(DEV_SERVER_PID_FILE);
+    }
+  } catch {
+    // Best-effort cleanup only; test failures should not be hidden by teardown.
   }
 }

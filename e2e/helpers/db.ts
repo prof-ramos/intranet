@@ -12,3 +12,7 @@ export async function truncateAll() {
   // Order matters due to foreign keys
   await client`TRUNCATE TABLE legal_notes, legal_consultations, legal_processes, legal_opinions, audit_logs, login_attempts, rate_limits, activities, associates, admins CASCADE`;
 }
+
+export async function closeDb() {
+  await client.end();
+}
