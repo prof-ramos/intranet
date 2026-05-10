@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import {
+  FileSpreadsheet,
   Kanban,
   LayoutDashboard,
   Scale,
@@ -58,6 +59,11 @@ export function Sidebar({ user }: SidebarProps) {
         <NavLink href="/app/juridico" icon={<Scale size={20} />}>
           Jurídico
         </NavLink>
+        {user.role !== 'secretaria' && (
+          <NavLink href="/app/relatorio" icon={<FileSpreadsheet size={20} />}>
+            Relatórios
+          </NavLink>
+        )}
         {user.role !== 'secretaria' && (
           <NavLink href="/app/usuarios" icon={<Shield size={20} />}>
             Usuários
