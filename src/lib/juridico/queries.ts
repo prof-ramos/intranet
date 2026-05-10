@@ -38,20 +38,18 @@ export const countConsultationsRespondedThisMonth = unstable_cache(
 export type { ConsultationListItem, GetConsultationsFilters } from './repository';
 export { getConsultationsPaginated } from './repository';
 export type { ConsultationDetail } from './repository';
-export const getConsultationById = (id: number) =>
-  unstable_cache(
-    () => repoGetById(id),
-    [`consultation-detail-${id}`],
-    { revalidate: 30, tags: ['legal', 'consultation-detail'] },
-  )();
+export const getConsultationById = unstable_cache(
+  (id: number) => repoGetById(id),
+  ['consultation-detail'],
+  { revalidate: 30, tags: ['legal', 'consultation-detail'] },
+);
 
 export type { NoteItem } from './repository';
-export const getNotesByEntity = (entityType: string, entityId: number) =>
-  unstable_cache(
-    () => repoGetNotes(entityType, entityId),
-    [`legal-notes-${entityType}-${entityId}`],
-    { revalidate: 15, tags: ['legal', 'legal-notes'] },
-  )();
+export const getNotesByEntity = unstable_cache(
+  (entityType: string, entityId: number) => repoGetNotes(entityType, entityId),
+  ['legal-notes'],
+  { revalidate: 15, tags: ['legal', 'legal-notes'] },
+);
 export type { PendingAction } from './repository';
 export { getPendingActions } from './repository';
 
