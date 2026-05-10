@@ -115,7 +115,7 @@ function SectionCard({
   return (
     <section
       id={id}
-      className="rounded-box border-base-300 scroll-mt-8 border bg-white px-5 py-5 sm:px-7"
+      className="rounded-box border-base-300 scroll-mt-8 border bg-white p-5 sm:p-7"
     >
       <header className="mb-3 flex items-center justify-between gap-4">
         <h2 className="font-serif text-[22px] leading-tight font-bold">{title}</h2>
@@ -210,10 +210,10 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
           </nav>
         </aside>
 
-        <div className="flex min-w-0 flex-col gap-5">
+        <div className="flex min-w-0 flex-col gap-7">
           <header
             id="visao-geral"
-            className="rounded-box border-base-300 scroll-mt-8 border bg-white px-5 py-6 sm:px-8"
+            className="rounded-box border-base-300 scroll-mt-8 border bg-white p-5 sm:p-7"
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
               <div className="bg-primary grid h-20 w-20 shrink-0 place-items-center rounded-full font-serif text-3xl font-bold text-white">
@@ -280,7 +280,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
               ].map((item, index) => (
                 <div
                   key={item.label}
-                  className="min-w-0 px-4 py-3"
+                  className="min-w-0 px-5 py-4"
                   style={{ borderLeft: index === 0 ? 'none' : `1px solid ${HAIR}` }}
                 >
                   <p className="text-base-content/55 m-0 text-[11px] font-semibold tracking-[0.08em] uppercase">

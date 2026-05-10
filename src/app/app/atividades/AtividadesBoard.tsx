@@ -515,7 +515,7 @@ function SummaryStrip({
 
   return (
     <section
-      className="rounded-box mb-5 grid overflow-hidden bg-white sm:grid-cols-3 xl:grid-cols-6"
+      className="rounded-box mb-4 grid overflow-hidden bg-white sm:grid-cols-3 xl:grid-cols-6"
       style={{ border: `1px solid ${hairline}` }}
       aria-label="Resumo de atividades"
     >
@@ -593,7 +593,7 @@ function FilterBar({
   ].join(' ');
 
   return (
-    <div className="mb-5 flex flex-wrap items-center gap-2">
+    <div className="mb-4 flex flex-wrap items-center gap-2">
       <div className="border-base-300 inline-flex min-h-11 overflow-hidden rounded-[8px] border bg-white lg:min-h-8">
         {(['todas', 'minhas'] as const).map((scope) => (
           <button
@@ -1225,7 +1225,7 @@ export function AtividadesBoard({
 
   return (
     <main className="min-w-0 px-5 py-8 sm:px-8 lg:px-10">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <p className="text-base-content/55 m-0 text-[11px] tracking-[0.18em] whitespace-nowrap uppercase">
             Operação · Quadro de atividades
@@ -1264,7 +1264,7 @@ export function AtividadesBoard({
         </div>
       )}
 
-      <div className="grid grid-cols-1 items-start gap-3.5 lg:grid-cols-2 2xl:grid-cols-4">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2 2xl:grid-cols-4">
         {columns.map((column) => (
           <BoardColumn
             key={column.key}

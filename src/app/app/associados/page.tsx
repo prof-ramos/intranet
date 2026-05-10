@@ -111,16 +111,18 @@ export default async function AssociadosPage({
 
       {/* Conteúdo */}
       <main className="flex-1 px-5 py-8 sm:px-8 lg:px-10">
-        <section className="mb-10 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+        <section className="mb-7 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <h1 className="font-serif text-5xl leading-none font-bold md:text-6xl">Associados</h1>
-            <p className="text-base-content/70 mt-4 text-xl">{todayLabel}</p>
+            <p className="text-base-content/55 text-[11px] tracking-[0.18em] uppercase">
+              Quadro associativo · {todayLabel}
+            </p>
+            <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-5xl">Associados</h1>
           </div>
         </section>
 
         {/* Tabela */}
-        <section className="rounded-box bg-base-100 p-6 shadow-md">
-          <div className="mb-6 flex items-center justify-between gap-4">
+        <section className="rounded-box border-base-300 bg-base-100 border">
+          <div className="mb-0 flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
             <p className="text-base-content/60">
               {total === 0 ? 'Nenhum resultado' : `${from}–${to} de ${total}`}
             </p>
@@ -176,7 +178,7 @@ export default async function AssociadosPage({
             </div>
           </div>
 
-          <div className="rounded-box border-base-300 overflow-x-auto border">
+          <div className="border-base-300 overflow-x-auto border-t">
             <table className="table w-full" aria-label="Lista de associados">
               <thead className="bg-primary text-primary-content">
                 <tr>

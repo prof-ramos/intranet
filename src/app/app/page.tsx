@@ -205,7 +205,7 @@ export default async function DashboardPage() {
         ))}
       </section>
 
-      <section className="flex flex-col items-start gap-6 xl:flex-row">
+      <section className="flex flex-col items-start gap-7 xl:flex-row">
         <div
           className="rounded-box bg-base-100 min-w-0 flex-1 p-5"
           style={{ border: `1px solid ${HAIR}` }}
@@ -246,14 +246,14 @@ export default async function DashboardPage() {
 
                   <div className="flex flex-col gap-2">
                     {cards.length === 0 ? (
-                      <div className="border-base-300 bg-base-100 text-base-content/45 rounded-[10px] border border-dashed px-3 py-5 text-center text-xs">
+                      <div className="border-base-300 bg-base-100 text-base-content/45 rounded-[8px] border border-dashed px-3 py-5 text-center text-xs">
                         Sem cards
                       </div>
                     ) : (
                       cards.map((card) => (
                         <div
                           key={card.id}
-                          className="bg-base-100 rounded-[10px] p-3 shadow-[0_1px_0_rgba(4,9,32,0.04)]"
+                          className="bg-base-100 rounded-[8px] p-3 shadow-[0_1px_0_rgba(4,9,32,0.05)]"
                           style={{ border: `1px solid ${HAIR}` }}
                         >
                           <p className="text-sm leading-snug font-semibold [overflow-wrap:anywhere]">
@@ -287,7 +287,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <aside className="flex w-full shrink-0 flex-col gap-5 xl:w-[300px]">
+        <aside className="flex w-full shrink-0 flex-col gap-7 xl:w-[300px]">
           <div className="rounded-box bg-base-100 p-5" style={{ border: `1px solid ${HAIR}` }}>
             <div className="mb-3 flex items-center gap-2">
               <Megaphone size={20} className="text-primary" aria-hidden="true" />
