@@ -88,7 +88,7 @@ const dbStore: RateLimitStore = {
   async cleanup(now) {
     await db
       .delete(loginAttempts)
-      .where(sql`${loginAttempts.expiresAt} <= ${new Date(now)}`);
+      .where(sql`${loginAttempts.expiresAt} <= ${new Date(now).toISOString()}`);
   },
 };
 

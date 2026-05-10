@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const envSchema = z
+export const envSchema = z
   .object({
     DATABASE_URL: z.string().url().optional(),
     DATABASE_POSTGRES_URL: z.string().url().optional(),
