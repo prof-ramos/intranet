@@ -7,3 +7,4 @@ export * from './legal-consultations';
 export * from './legal-processes';
 export * from './legal-notes';
 export * from './legal-opinions';
+export * from './rate-limits';

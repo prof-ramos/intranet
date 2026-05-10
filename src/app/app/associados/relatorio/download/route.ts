@@ -7,6 +7,7 @@ import { getAssociatesForReport } from '@/lib/reports/queries';
 import { generateCsv } from '@/lib/reports/csv';
 import { admins, auditLogs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { consumeIpRateLimit } from '@/lib/rate-limit';
 
 function isFunctionalStatus(v: string): v is 'ativo' | 'aposentado' | 'cedido' | 'em_licenca' {
   return ['ativo', 'aposentado', 'cedido', 'em_licenca'].includes(v);
@@ -27,6 +28,24 @@ function canGenerateReports(role: string) {
 }
 
 export async function GET(request: NextRequest) {
+  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    ?? request.headers.get('x-real-ip')
+    ?? 'unknown';
+
+  const rateLimit = await consumeIpRateLimit(clientIp, 'report_download', {
+    windowMs: 60 * 1000,
+    maxRequests: 10,
+  });
+
+  if (!rateLimit.allowed) {
+    return new Response('Too many requests.', {
+      status: 429,
+      headers: {
+        'Retry-After': String(Math.ceil((rateLimit.retryAfterMs ?? 60000) / 1000)),
+      },
+    });
+  }
+
   let session: Awaited<ReturnType<typeof getSession>> = null;
 
   if (isSkipAuthEnabled()) {

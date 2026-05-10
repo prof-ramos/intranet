@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { legalConsultationStatus } from '@/lib/db/schema';
 import {
   updateConsultationStatus as repoUpdateStatus,
@@ -10,6 +11,21 @@ import {
 } from '@/lib/juridico/repository';
 import { createConsultationService } from '@/lib/juridico/service';
 import { requireAuth } from '@/lib/auth/require-auth';
+import { consumeIpRateLimit } from '@/lib/rate-limit';
+
+async function checkJuridicoRateLimit() {
+  const h = await headers();
+  const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim()
+    ?? h.get('x-real-ip')
+    ?? 'unknown';
+  const result = await consumeIpRateLimit(ip, 'juridico_action', {
+    windowMs: 60 * 1000,
+    maxRequests: 30,
+  });
+  if (!result.allowed) {
+    throw new Error('Muitas requisições. Aguarde um momento.');
+  }
+}
 
 /**
  * Cria uma nova consulta jurídica com número interno sequencial.
@@ -17,6 +33,7 @@ import { requireAuth } from '@/lib/auth/require-auth';
  * @throws Error se campos obrigatórios estiverem ausentes
  */
 export async function createConsultation(formData: FormData) {
+  await checkJuridicoRateLimit();
   const user = await requireAuth();
   const title = String(formData.get('title') ?? '').trim();
   const questionSummary = String(formData.get('questionSummary') ?? '').trim();
@@ -47,6 +64,7 @@ export async function createConsultation(formData: FormData) {
  * @param status - Novo status
  */
 export async function updateConsultationStatus(id: number, status: string) {
+  await checkJuridicoRateLimit();
   const validStatus = legalConsultationStatus.enumValues.includes(status as typeof legalConsultationStatus.enumValues[number])
     ? (status as typeof legalConsultationStatus.enumValues[number])
     : 'aberta';
@@ -83,6 +101,7 @@ export async function updateConsultationStatusFromForm(formData: FormData) {
  * @throws Error se campos obrigatórios estiverem ausentes
  */
 export async function addNote(formData: FormData) {
+  await checkJuridicoRateLimit();
   const user = await requireAuth();
   const entityType = String(formData.get('entityType') ?? '');
   const entityId = Number(formData.get('entityId'));
