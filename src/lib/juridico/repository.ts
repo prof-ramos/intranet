@@ -15,6 +15,7 @@ import {
   ne,
   sql,
 } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 
 export type Tx = typeof db;
 
@@ -174,6 +175,9 @@ export interface ConsultationDetail {
 }
 
 export async function getConsultationById(id: number): Promise<ConsultationDetail | null> {
+  const answeredByAdmin = alias(admins, 'answered_by_admin');
+  const createdByAdmin = alias(admins, 'created_by_admin');
+
   const [row] = await db
     .select({
       id: legalConsultations.id,
@@ -191,23 +195,20 @@ export async function getConsultationById(id: number): Promise<ConsultationDetai
       updatedAt: legalConsultations.updatedAt,
       associateId: associates.id,
       associateName: associates.fullName,
-      answeredById: admins.id,
-      answeredByName: admins.name,
+      answeredById: answeredByAdmin.id,
+      answeredByName: answeredByAdmin.name,
+      createdByAdminId: createdByAdmin.id,
+      createdByAdminName: createdByAdmin.name,
       createdById: legalConsultations.createdBy,
     })
     .from(legalConsultations)
     .leftJoin(associates, eq(legalConsultations.associateId, associates.id))
-    .leftJoin(admins, eq(legalConsultations.answeredBy, admins.id))
+    .leftJoin(answeredByAdmin, eq(legalConsultations.answeredBy, answeredByAdmin.id))
+    .leftJoin(createdByAdmin, eq(legalConsultations.createdBy, createdByAdmin.id))
     .where(eq(legalConsultations.id, id))
     .limit(1);
 
   if (!row) return null;
-
-  const [createdBy] = await db
-    .select({ id: admins.id, name: admins.name })
-    .from(admins)
-    .where(eq(admins.id, row.createdById))
-    .limit(1);
 
   return {
     id: row.id,
@@ -225,7 +226,9 @@ export async function getConsultationById(id: number): Promise<ConsultationDetai
     updatedAt: row.updatedAt.toISOString(),
     associate: row.associateId ? { id: row.associateId, name: row.associateName! } : null,
     answeredBy: row.answeredById ? { id: row.answeredById, name: row.answeredByName! } : null,
-    createdBy: createdBy ?? { id: row.createdById, name: 'Desconhecido' },
+    createdBy: row.createdByAdminId
+      ? { id: row.createdByAdminId, name: row.createdByAdminName! }
+      : { id: row.createdById, name: 'Desconhecido' },
   };
 }
 
