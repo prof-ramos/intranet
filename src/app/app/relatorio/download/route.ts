@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { type NextRequest } from 'next/server';
-import { associates } from '@/lib/db/schema';
+import { admins, associates } from '@/lib/db/schema';
 import { eq, and, asc, sql } from 'drizzle-orm';
 import { getSession } from '@/lib/auth/session';
 import { getDevAuthUser, isSkipAuthEnabled } from '@/lib/auth/config';
@@ -54,17 +54,39 @@ function isContributionStatus(
   return ['em_dia', 'inadimplente', 'pendente_migracao'].includes(v);
 }
 
+function canGenerateReports(role: string) {
+  return role === 'admin' || role === 'diretoria';
+}
+
 export async function GET(request: NextRequest) {
   if (isSkipAuthEnabled()) {
-    getDevAuthUser();
+    const user = getDevAuthUser();
+    if (!canGenerateReports(user.role)) {
+      return new Response(null, { status: 403 });
+    }
   } else {
     const session = await getSession();
-    if (!session?.isLoggedIn) {
+    if (!session?.isLoggedIn || !session.userId) {
       return new Response(null, { status: 302, headers: { Location: '/login' } });
+    }
+
+    // Lazy import avoids DB initialization at Next.js build time.
+    const { db } = await import('@/lib/db');
+    const [user] = await db
+      .select({ role: admins.role, isActive: admins.isActive })
+      .from(admins)
+      .where(eq(admins.id, session.userId))
+      .limit(1);
+
+    if (!user?.isActive) {
+      return new Response(null, { status: 302, headers: { Location: '/login' } });
+    }
+
+    if (!canGenerateReports(user.role)) {
+      return new Response(null, { status: 403 });
     }
   }
 
-  // Lazy import avoids DB initialization at Next.js build time
   const { db } = await import('@/lib/db');
 
   const { searchParams } = new URL(request.url);

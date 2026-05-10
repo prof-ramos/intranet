@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/auth/require-auth';
+import { requireRole } from '@/lib/auth/authorization';
 import { getRoleLabel } from '@/lib/auth/roles';
 import { FileSpreadsheet } from 'lucide-react';
 
@@ -40,7 +40,7 @@ const FIELD_GROUPS = [
 ];
 
 export default async function RelatorioPage() {
-  const user = await requireAuth();
+  const user = await requireRole(['admin', 'diretoria']);
 
   return (
     <div>
