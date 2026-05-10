@@ -16,12 +16,14 @@ export async function generateInternalNumber(): Promise<string> {
     try {
       const next = await db.transaction(async (tx) => {
         // Consulta dentro da transação garante snapshot isolation
+        const likePattern = `JUR-${year}-%`;
+        const regexPattern = `JUR-${year}-([0-9]+)`;
         const [result] = await tx
           .select({
-            max: sql<string>`max(substring(${legalConsultations.internalNumber} from 'JUR-${year}-([0-9]+)')::integer)`,
+            max: sql<string>`max(substring(${legalConsultations.internalNumber} from ${sql.raw(`'${regexPattern}'`)})::integer)`,
           })
           .from(legalConsultations)
-          .where(sql`${legalConsultations.internalNumber} like ${`JUR-${year}-%`}`);
+          .where(sql`${legalConsultations.internalNumber} like ${likePattern}`);
 
         const nextNum = (Number(result?.max) || 0) + 1;
         return `JUR-${year}-${String(nextNum).padStart(3, '0')}`;

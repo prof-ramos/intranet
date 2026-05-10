@@ -13,8 +13,7 @@ export default defineConfig({
       SESSION_SECRET:
         process.env.SESSION_SECRET ?? 'a'.repeat(32),
     },
-    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],
-    exclude: ['src/**/*.integration.test.{ts,tsx}'],
+    include: ['src/**/*.integration.test.{ts,tsx}'],
   },
   resolve: {
     alias: {
