@@ -1,9 +1,9 @@
-import type { Associate } from '@/lib/db/schema/associates';
+import type { ReportAssociate } from './queries';
 
 export interface FieldDef {
   key: string;
   label: string;
-  get: (r: Associate) => string | null | undefined;
+  get: (r: ReportAssociate) => string | null | undefined;
 }
 
 export const ALL_FIELDS: FieldDef[] = [
@@ -38,7 +38,7 @@ export function toCsvCell(value: string | null | undefined): string {
   return `"${escaped}"`;
 }
 
-export function generateCsv(rows: Associate[], selectedKeys: string[]): string {
+export function generateCsv(rows: ReportAssociate[], selectedKeys: string[]): string {
   const selectedFields =
     selectedKeys.length > 0
       ? ALL_FIELDS.filter((f) => selectedKeys.includes(f.key))
