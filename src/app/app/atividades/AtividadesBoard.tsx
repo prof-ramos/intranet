@@ -968,6 +968,16 @@ export function AtividadesBoard({
   const [reassignActivity, setReassignActivity] = useState<BoardActivity | null>(null);
   const [pendings, setPendings] = useState<PendingReassignment[]>([]);
 
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') {
+        setItems((current) => current.map(normalizeActivity));
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
   const peopleById = useMemo(() => new Map(people.map((person) => [person.id, person])), [people]);
   const pendingByActivity = useMemo(
     () => new Map(pendings.map((pending) => [pending.activityId, pending])),
