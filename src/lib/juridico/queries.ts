@@ -4,6 +4,8 @@ import {
   countConsultationsStale as repoCountStale,
   countConsultationsSlaOverdue as repoCountSlaOverdue,
   countConsultationsRespondedThisMonth as repoCountResponded,
+  getConsultationById as repoGetById,
+  getNotesByEntity as repoGetNotes,
 } from './repository';
 import { legalConsultationStatus } from '@/lib/db/schema';
 
@@ -36,9 +38,18 @@ export const countConsultationsRespondedThisMonth = unstable_cache(
 export type { ConsultationListItem, GetConsultationsFilters } from './repository';
 export { getConsultationsPaginated } from './repository';
 export type { ConsultationDetail } from './repository';
-export { getConsultationById } from './repository';
+export const getConsultationById = unstable_cache(
+  (id: number) => repoGetById(id),
+  ['consultation-detail'],
+  { revalidate: 30, tags: ['legal', 'consultation-detail'] },
+);
+
 export type { NoteItem } from './repository';
-export { getNotesByEntity } from './repository';
+export const getNotesByEntity = unstable_cache(
+  (entityType: string, entityId: number) => repoGetNotes(entityType, entityId),
+  ['legal-notes'],
+  { revalidate: 15, tags: ['legal', 'legal-notes'] },
+);
 export type { PendingAction } from './repository';
 export { getPendingActions } from './repository';
 

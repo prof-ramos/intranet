@@ -84,6 +84,7 @@ export default async function AtividadesPage() {
     associateId: activity.associateId,
     associateName: activity.associateName,
     tags: activity.tags ?? [],
+    dueOffset: null,
   }));
 
   return (

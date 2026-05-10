@@ -3,8 +3,7 @@ import { associates } from '@/lib/db/schema';
 import { eq, and, asc, sql } from 'drizzle-orm';
 import type { Associate } from '@/lib/db/schema/associates';
 
-export type ReportAssociate = Pick<
-  Associate,
+export type ReportAssociate = Pick<Associate,
   | 'id'
   | 'fullName'
   | 'primaryEmail'
