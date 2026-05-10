@@ -9,6 +9,7 @@ import {
   touchConsultationInteraction,
 } from '@/lib/juridico/repository';
 import { createConsultationService } from '@/lib/juridico/service';
+import { requireAuth } from '@/lib/auth/require-auth';
 
 /**
  * Cria uma nova consulta jurídica com número interno sequencial.
@@ -16,6 +17,7 @@ import { createConsultationService } from '@/lib/juridico/service';
  * @throws Error se campos obrigatórios estiverem ausentes
  */
 export async function createConsultation(formData: FormData) {
+  const user = await requireAuth();
   const title = String(formData.get('title') ?? '').trim();
   const questionSummary = String(formData.get('questionSummary') ?? '').trim();
   const questionFullText = String(formData.get('questionFullText') ?? '').trim() || null;
@@ -23,7 +25,6 @@ export async function createConsultation(formData: FormData) {
   const associateId = associateIdRaw ? Number(associateIdRaw) : null;
   const slaDaysRaw = formData.get('slaDays');
   const slaDays = slaDaysRaw ? Number(slaDaysRaw) : 7;
-  const createdBy = Number(formData.get('createdBy'));
 
   const inserted = await createConsultationService({
     title,
@@ -31,7 +32,7 @@ export async function createConsultation(formData: FormData) {
     questionFullText,
     associateId,
     slaDays,
-    createdBy,
+    createdBy: user.userId,
   });
 
   revalidatePath('/app/juridico');
@@ -82,10 +83,10 @@ export async function updateConsultationStatusFromForm(formData: FormData) {
  * @throws Error se campos obrigatórios estiverem ausentes
  */
 export async function addNote(formData: FormData) {
+  const user = await requireAuth();
   const entityType = String(formData.get('entityType') ?? '');
   const entityId = Number(formData.get('entityId'));
   const content = String(formData.get('content') ?? '').trim();
-  const createdBy = Number(formData.get('createdBy'));
   const isEscritorioResponse = formData.get('isEscritorioResponse') === 'true';
 
   if (!entityType) {
@@ -97,15 +98,12 @@ export async function addNote(formData: FormData) {
   if (!content) {
     throw new Error('O conteúdo da nota é obrigatório.');
   }
-  if (!createdBy || Number.isNaN(createdBy)) {
-    throw new Error('Usuário criador inválido.');
-  }
 
   await insertNote({
     entityType,
     entityId,
     content,
-    createdBy,
+    createdBy: user.userId,
     isEscritorioResponse,
   });
 

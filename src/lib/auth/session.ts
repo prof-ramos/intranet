@@ -1,6 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
-import { env } from '@/lib/env';
 import {
   SESSION_COOKIE_MAX_AGE,
   SESSION_COOKIE_NAME,
@@ -25,10 +24,11 @@ export async function createSession(payload: SessionData): Promise<void> {
 
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: env.NODE_ENV === 'production',
+    secure: true,
     sameSite: 'strict',
     maxAge: SESSION_COOKIE_MAX_AGE,
     path: '/',
+    partitioned: true,
   });
 }
 
@@ -40,7 +40,7 @@ export async function getSession(): Promise<SessionData | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret(), {
       algorithms: ['HS256'],
-      clockTolerance: 60,
+      clockTolerance: 5,
     });
     return payload as unknown as SessionData;
   } catch {

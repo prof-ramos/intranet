@@ -101,7 +101,11 @@ export async function getConsultationsPaginated(
   }
 
   if (filters.search) {
-    const pattern = `%${filters.search}%`;
+    const escaped = filters.search
+      .replace(/\\/g, '\\\\')
+      .replace(/_/g, '\\_')
+      .replace(/%/g, '\\%');
+    const pattern = `%${escaped}%`;
     conditions.push(
       sql`${legalConsultations.title} like ${pattern} escape '\\' or ${legalConsultations.internalNumber} like ${pattern} escape '\\'`,
     );

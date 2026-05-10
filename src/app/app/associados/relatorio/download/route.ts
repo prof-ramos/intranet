@@ -5,7 +5,7 @@ import { getSession } from '@/lib/auth/session';
 import { getDevAuthUser, isSkipAuthEnabled } from '@/lib/auth/config';
 import { getAssociatesForReport } from '@/lib/reports/queries';
 import { generateCsv } from '@/lib/reports/csv';
-import { admins } from '@/lib/db/schema';
+import { admins, auditLogs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 function isFunctionalStatus(v: string): v is 'ativo' | 'aposentado' | 'cedido' | 'em_licenca' {
@@ -27,13 +27,15 @@ function canGenerateReports(role: string) {
 }
 
 export async function GET(request: NextRequest) {
+  let session: Awaited<ReturnType<typeof getSession>> = null;
+
   if (isSkipAuthEnabled()) {
     const user = getDevAuthUser();
     if (!canGenerateReports(user.role)) {
       return new Response(null, { status: 403 });
     }
   } else {
-    const session = await getSession();
+    session = await getSession();
     if (!session?.isLoggedIn || !session.userId) {
       return new Response(null, { status: 302, headers: { Location: '/login' } });
     }
@@ -85,6 +87,29 @@ export async function GET(request: NextRequest) {
 
   const rows = await getAssociatesForReport(filters);
   const csv = generateCsv(rows, selectedKeys);
+
+  // Audit trail for CSV download (LGPD accountability)
+  const auditUserId = isSkipAuthEnabled()
+    ? getDevAuthUser().userId
+    : session!.userId;
+
+  // Importação tardia evita inicialização do DB durante o build do Next.js.
+  const { db } = await import('@/lib/db');
+  await db.insert(auditLogs).values({
+    action: 'report_download',
+    entityType: 'associate',
+    entityId: 0,
+    performedBy: auditUserId,
+    changes: {
+      old: {},
+      new: {
+        filters: Object.keys(filters),
+        fields: selectedKeys,
+        rowCount: rows.length,
+      },
+    },
+    metadata: { format: 'csv' },
+  });
 
   const date = new Date().toISOString().slice(0, 10);
 

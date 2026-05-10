@@ -28,7 +28,7 @@ export default async function ConsultaDetalhePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await requireAuth();
+  await requireAuth();
   const { id } = await params;
   const consultationId = Number(id);
 
@@ -179,7 +179,6 @@ export default async function ConsultaDetalhePage({
             <form action={addNote} className="flex flex-col gap-3">
               <input type="hidden" name="entityType" value="consultation" />
               <input type="hidden" name="entityId" value={consultationId} />
-              <input type="hidden" name="createdBy" value={user.userId} />
 
               <textarea
                 name="content"
