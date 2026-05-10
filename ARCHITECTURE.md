@@ -9,11 +9,11 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 ├── src/
 │   ├── app/                         # Next.js App Router routes, layouts, global CSS, local fonts
 │   │   ├── app/                     # Authenticated intranet area (/app/*)
-│   │   │   ├── associados/          # Associates list and associate profile
+│   │   │   ├── associados/          # Associates list, profile, and CSV reports
 │   │   │   ├── atividades/          # Kanban board and new activity form
-│   │   │   ├── auditoria/           # Audit area placeholder
+│   │   │   ├── auditoria/           # Audit logs (LGPD accountability)
 │   │   │   ├── config/              # Configuration placeholder
-│   │   │   ├── juridico/            # Legal area placeholder
+│   │   │   ├── juridico/            # Legal consultations and notes (Fase 1)
 │   │   │   ├── usuarios/            # User-management placeholder
 │   │   │   ├── layout.tsx           # Authenticated app shell
 │   │   │   └── page.tsx             # Dashboard
@@ -25,11 +25,16 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 │   ├── components/                  # Shared UI shell components
 │   └── lib/
 │       ├── associates/              # Search parameter parsing + repository queries
-│       ├── auth/                    # Auth config, sessions, guards, password logic
+│       ├── auth/                    # Auth config, sessions, guards, password logic, rate limiting
 │       ├── db/                      # Drizzle client and schema exports
-│       │   └── schema/              # admins, associates, activities, audit_logs, login_attempts
+│       │   └── schema/              # admins, associates, activities, audit_logs, login_attempts,
+│       │                            # legal_consultations, legal_processes, legal_notes,
+│       │                            # legal_opinions, legal_opinion_tags, rate_limits
 │       ├── dashboard/               # Dashboard aggregation queries
 │       ├── env.ts                   # Zod-validated environment variables
+│       ├── ip.ts                    # Client IP extraction from headers
+│       ├── juridico/                # Repository, service, queries, formatters
+│       ├── rate-limit.ts            # IP-based rate limiting (PostgreSQL-backed)
 │       ├── reports/                 # Report queries and CSV serialization
 │       ├── supabase/                # Supabase SDK factories for script/server use
 │       └── ui/                      # Shared UI tokens/helpers
@@ -60,15 +65,25 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
         +--> [Server Components / Server Actions]
                  |
                  +--> [Auth helpers in src/lib/auth]
+                 |        +--> [requireAuth() — full session revalidation]
+                 |        +--> [requireRole() — role-based access control]
+                 |        +--> [loginRateLimiter — per-email rate limiting]
                  |
                  +--> [src/lib/env.ts — Zod env validation]
                  |
                  +--> [Drizzle ORM client]
                  |        |
-                 |        +--> [Repository layer — dashboard, associates, reports queries]
+                 |        +--> [Repository layer — dashboard, associates, reports, juridico]
+                 |        |        +--> [src/lib/juridico/repository.ts — SQL isolation]
+                 |        |        +--> [src/lib/juridico/service.ts — business rules]
+                 |        |
+                 |        +--> [Rate limiting — src/lib/rate-limit.ts (PostgreSQL)]
                  |        |
                  |        v
                  |  [PostgreSQL database]
+                 |        +--> [audit_logs — LGPD accountability]
+                 |        +--> [login_attempts — auth rate limiting]
+                 |        +--> [rate_limits — IP rate limiting]
                  |
                  +--> [src/lib/ui/tokens.ts — design tokens]
 
@@ -111,7 +126,7 @@ Deployment: Runs with the Next.js application. `npm run dev` and `npm run build`
 
 Name: Drizzle/PostgreSQL Data Layer
 
-Description: Centralizes database access through `src/lib/db/index.ts`, using schemas from `src/lib/db/schema/*`. Runtime connections prefer `DATABASE_URL`, then `DATABASE_POSTGRES_URL`.
+Description: Centralizes database access through `src/lib/db/index.ts`, using schemas from `src/lib/db/schema/*`. Runtime connections prefer `DATABASE_URL`, then `DATABASE_POSTGRES_URL`. The juridico module follows a repository pattern: `src/lib/juridico/repository.ts` isolates all SQL, `src/lib/juridico/service.ts` contains business rules, and `src/lib/juridico/queries.ts` wraps repository calls with `unstable_cache`.
 
 Technologies: Drizzle ORM, `postgres`, PostgreSQL.
 
@@ -139,11 +154,17 @@ Purpose: Stores administrative users, ASOF associates, activity workflow records
 
 Key Schemas/Tables:
 
-- `admins`
-- `associates`
-- `activities`
-- `audit_logs`
-- `login_attempts` — rate limiting data
+- `admins` — administrative users
+- `associates` — ASOF members
+- `activities` — administrative workflow records
+- `audit_logs` — LGPD accountability trail
+- `login_attempts` — per-email login rate limiting
+- `legal_consultations` — legal member consultations
+- `legal_processes` — legal cases (schema prepared, Fase 2)
+- `legal_notes` — interaction history for consultations/processes
+- `legal_opinions` — legal opinion library (schema prepared)
+- `legal_opinion_tags` — opinion classification tags
+- `rate_limits` — IP-based rate limiting
 
 ### 4.2. Legacy/Local Migration Artifacts
 
@@ -189,9 +210,9 @@ Monitoring & Logging: No dedicated monitoring stack is currently configured in c
 
 ## 7. Security Considerations
 
-Authentication: JWT session cookie named `asof-session`, signed/verified with `jose`. Login and password-change behavior live under `src/lib/auth` and `src/app/login` / `src/app/change-password`.
+Authentication: JWT session cookie named `__Host-asof-session` (prefixo `__Host-` requer HTTPS), signed/verified with `jose`. Cookie attributes: `Secure`, `HttpOnly`, `SameSite=Strict`, `Partitioned`. Login and password-change behavior live under `src/lib/auth` and `src/app/login` / `src/app/change-password`.
 
-Authorization: Roles are `admin`, `diretoria`, and `secretaria`. Some route-level restrictions exist through `requireRole`, but route authorization should continue to be made explicit as administrative screens grow.
+Authorization: Roles are `admin`, `diretoria`, and `secretaria`. Route-level restrictions exist through `requireRole()`; the juridico module blocks `secretaria` at layout level (`src/app/app/juridico/layout.tsx`).
 
 Data Encryption: TLS is expected for production HTTP and database transport. Runtime database SSL is required automatically in production or when `DB_SSL=true` / `sslmode=require` is present.
 
@@ -203,6 +224,12 @@ Key Security Tools/Practices:
 - Sensitive ASOF data such as CPF, SIAPE, email, address, and functional data must not be logged or exposed in public responses.
 - Database migrations reject pooled PostgreSQL URLs to avoid unsafe migration behavior.
 - Login rate limiting is backed by PostgreSQL (`login_attempts` table) for multi-instance consistency.
+- IP-based rate limiting (`rate_limits` table) protects report downloads (10 req/min) and juridico Server Actions (30 req/min).
+- Audit trail for CSV downloads: every `report_download` is logged in `audit_logs` with filters, fields, and row count (LGPD accountability).
+- CSV injection prevention: cells starting with `-`, `=`, `+`, `@`, or tab are prefixed with `\t` and quoted.
+- Dummy bcrypt hash is used when user is not found to prevent timing-based user enumeration.
+- `createdBy` is derived from the JWT session, never from client-provided FormData.
+- LIKE queries escape `%` and `_` to prevent wildcard injection.
 - All environment variables are validated via Zod in `src/lib/env.ts` at startup.
 
 ## 8. Development & Testing Environment
@@ -227,6 +254,7 @@ npm run build:turbo
 npm run lint
 npm run typecheck
 npm run test
+npm run test:watch
 npm run db:generate
 npm run db:migrate
 npm run db:seed
@@ -234,7 +262,7 @@ npm run db:supabase:status
 npm run db:studio
 ```
 
-Testing Frameworks: Vitest for unit tests. Existing tests cover auth config, password logic, authorization, login rate limiting, associate search params, seed config, and smoke-level behavior.
+Testing Frameworks: Vitest for unit tests. Existing tests cover auth config, password logic, authorization, login rate limiting, associate search params, juridico service (validation + number formatting), seed config, and smoke-level behavior.
 
 Code Quality Tools: ESLint, TypeScript `tsc --noEmit`, Prettier with Tailwind plugin, npm audit.
 
@@ -247,13 +275,16 @@ Runtime Notes:
 
 ## 9. Future Considerations / Roadmap
 
-- Continue extracting data access from route files into repository modules (`src/lib/*/queries.ts`).
-- Replace remaining placeholder dashboard/static metrics with real persisted data.
-- Expand explicit role guards for administrative routes and actions.
+- ~~Continue extracting data access from route files into repository modules (`src/lib/*/queries.ts`).~~ ✅ Done for juridico module (`src/lib/juridico/repository.ts`, `service.ts`).
+- ~~Replace remaining placeholder dashboard/static metrics with real persisted data.~~ ✅ Dashboard jurídico agora usa queries reais.
+- ~~Expand explicit role guards for administrative routes and actions.~~ ✅ `requireRole()` ativo em `/app/juridico`.
 - Keep PostgreSQL/Supabase documentation aligned with code; remove or archive stale SQLite/libSQL references.
 - Add integration tests for login/session cookies, protected routes, and high-risk server actions.
 - Decide and document production hosting, observability, backup, and incident-response practices.
-- Keep `README.md`, `AGENTS.md`, `DESIGN.md`, `CLAUDE.md`, and this file synchronized when runtime or architecture decisions change.
+- Keep `README.md`, `AGENTS.md`, `DESIGN.md`, `CLAUDE.md`, `API.md`, `CONTRIBUTING.md`, and this file synchronized when runtime or architecture decisions change.
+- Implement Fase 2 do módulo jurídico: processos, pareceres, biblioteca de pareceres, anexos.
+- Add IP-based rate limiting to login endpoint (currently per-email only).
+- Evaluate formal API documentation (OpenAPI/Swagger) if REST endpoints grow.
 
 ## 10. Project Identification
 
