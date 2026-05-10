@@ -62,6 +62,7 @@ export interface BoardActivity {
   associateId: number | null;
   associateName: string | null;
   tags: string[];
+  dueOffset: number | null;
 }
 
 interface PendingReassignment {
@@ -129,11 +130,13 @@ function initials(name: string) {
 }
 
 function normalizeActivity(activity: BoardActivity): BoardActivity {
+  const dueDate = dateOnly(activity.dueDate);
   return {
     ...activity,
-    dueDate: dateOnly(activity.dueDate),
+    dueDate,
     completedAt: dateOnly(activity.completedAt),
     tags: Array.isArray(activity.tags) ? activity.tags : [],
+    dueOffset: daysFromToday(dueDate),
   };
 }
 
@@ -166,7 +169,7 @@ function ActivityCardContent({
   compact: boolean;
   hasPending: boolean;
 }) {
-  const dueOffset = daysFromToday(activity.dueDate);
+  const dueOffset = activity.dueOffset;
   const isLate = dueOffset !== null && dueOffset < 0 && activity.status !== 'concluido';
   const isSoon =
     dueOffset !== null && dueOffset >= 0 && dueOffset <= 3 && activity.status !== 'concluido';
@@ -416,7 +419,7 @@ function SummaryStrip({
 
     for (const activity of activities) {
       byStatus[activity.status] += 1;
-      const offset = daysFromToday(activity.dueDate);
+      const offset = activity.dueOffset;
       if (offset !== null && offset < 0 && activity.status !== 'concluido') late += 1;
     }
 
@@ -1042,11 +1045,11 @@ export function AtividadesBoard({
           return false;
         }
         if (filters.dueWeek) {
-          const offset = daysFromToday(activity.dueDate);
+          const offset = activity.dueOffset;
           if (offset === null || offset < 0 || offset > 7) return false;
         }
         if (filters.dueLate) {
-          const offset = daysFromToday(activity.dueDate);
+          const offset = activity.dueOffset;
           if (offset === null || offset >= 0 || activity.status === 'concluido') return false;
         }
         return true;
@@ -1071,7 +1074,14 @@ export function AtividadesBoard({
 
   function updateActivity(id: number, patch: Partial<BoardActivity>) {
     setItems((activities) =>
-      activities.map((activity) => (activity.id === id ? { ...activity, ...patch } : activity)),
+      activities.map((activity) => {
+        if (activity.id !== id) return activity;
+        const updated = { ...activity, ...patch };
+        if ('dueDate' in patch) {
+          updated.dueOffset = daysFromToday(updated.dueDate);
+        }
+        return updated;
+      }),
     );
   }
 
@@ -1118,6 +1128,7 @@ export function AtividadesBoard({
         associateName: null,
         tags: [],
         description: null,
+        dueOffset: null,
       },
     ]);
   }
