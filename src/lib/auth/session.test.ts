@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { SignJWT, jwtVerify } from 'jose';
+import { SignJWT } from 'jose';
 import { createSession, getSession, destroySession, updateSession } from '@/lib/auth/session';
 import { SESSION_COOKIE_NAME } from '@/lib/auth/config';
 
@@ -8,7 +8,7 @@ let storedToken: string | null = null;
 
 const mockCookieStore = {
   get: vi.fn(() => (storedToken ? { value: storedToken } : undefined)),
-  set: vi.fn((_name: string, value: string) => {
+  set: vi.fn((_name: string, value: string, _opts: Record<string, unknown>) => {
     storedToken = value;
   }),
   delete: vi.fn(() => {

@@ -4,8 +4,8 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { ArrowRight, Calendar, Check, ChevronDown, Clock, Plus, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Kanban } from 'react-kanban-kit';
-import type { BoardData } from 'react-kanban-kit';
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
+import type { DropResult } from '@hello-pangea/dnd';
 import {
   compactActionClass,
   desktopDenseControlClass,
@@ -354,56 +354,6 @@ function QuickAdd({
   );
 }
 
-function buildBoardData(
-  grouped: Record<Status, BoardActivity[]>,
-  collapsedDone: boolean,
-): BoardData {
-  const rootChildren: string[] = [];
-  const data: BoardData = {
-    root: {
-      id: 'root',
-      title: 'root',
-      parentId: null,
-      children: rootChildren,
-      totalChildrenCount: columns.length,
-    },
-  };
-
-  for (const column of columns) {
-    const columnId = column.key;
-    const items = grouped[columnId];
-    rootChildren.push(columnId);
-
-    const cardIds: string[] = [];
-    const isCollapsed = columnId === 'concluido' && collapsedDone;
-    if (!isCollapsed) {
-      for (const activity of items) {
-        const cardId = String(activity.id);
-        cardIds.push(cardId);
-        data[cardId] = {
-          id: cardId,
-          title: activity.title,
-          parentId: columnId,
-          children: [],
-          totalChildrenCount: 0,
-          type: 'activity',
-          content: activity,
-        };
-      }
-    }
-
-    data[columnId] = {
-      id: columnId,
-      title: column.title,
-      parentId: 'root',
-      children: cardIds,
-      totalChildrenCount: cardIds.length,
-      type: 'column',
-    };
-  }
-
-  return data;
-}
 
 function SummaryStrip({
   activities,
@@ -1020,6 +970,24 @@ export function AtividadesBoard({
     updateActivity(drawerId, nextPatch);
   }
 
+  function handleDragEnd(result: DropResult) {
+    if (!result.destination) return;
+    const id = Number(result.draggableId);
+    const newStatus = result.destination.droppableId as Status;
+    if (result.source.droppableId === newStatus) return;
+    const current = items.find((a) => a.id === id);
+    if (!current) return;
+    updateActivity(id, {
+      status: newStatus,
+      completedAt:
+        newStatus === 'concluido'
+          ? new Date().toISOString().slice(0, 10)
+          : current?.status === 'concluido'
+            ? null
+            : current?.completedAt ?? null,
+    });
+  }
+
   function handleAdd(title: string, status: Status) {
     const id = Math.max(0, ...items.map((activity) => activity.id)) + 1;
     setItems((activities) => [
@@ -1084,109 +1052,111 @@ export function AtividadesBoard({
       )}
 
       <div className="relative">
-        <Kanban
-          dataSource={useMemo(() => buildBoardData(grouped, collapsedDone), [grouped, collapsedDone])}
-          configMap={{
-            activity: {
-              render: ({ data }) => {
-                const activity = data.content as BoardActivity;
-                return (
-                  <ActivityCardContent
-                    activity={activity}
-                    peopleById={peopleById}
-                    compact={compact}
-                    hasPending={pendingByActivity.has(activity.id)}
-                  />
-                );
-              },
-              isDraggable: true,
-            },
-          }}
-          rootClassName="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 md:grid md:grid-cols-2 md:overflow-visible lg:grid-cols-3 xl:grid-cols-4"
-          rootStyle={{ scrollbarWidth: 'thin' }}
-          columnWrapperClassName={() => 'snap-start min-w-[280px] md:min-w-0'}
-          columnWrapperStyle={() => ({
-            background: '#eef1f6',
-            borderRadius: 16,
-            padding: 12,
-            display: 'flex',
-            flexDirection: 'column',
-            minWidth: 0,
-          })}
-          columnClassName={() => 'flex min-w-0 flex-col'}
-          cardWrapperStyle={() => ({ marginBottom: 8 })}
-          cardsGap={8}
-          virtualization={false}
-          allowColumnAdder={false}
-          allowListFooter={(column) => column.id !== 'concluido'}
-          renderListFooter={(column) => (
-            <QuickAdd columnKey={column.id as Status} onAdd={handleAdd} />
-          )}
-          renderColumnHeader={(column) => {
-            const col = columns.find((c) => c.key === column.id);
-            if (!col) return null;
-            return (
-              <header className="flex items-center justify-between gap-2 px-1 pt-1 pb-3">
-                <div className="flex min-w-0 flex-1 items-center gap-2">
-                  <span
-                    className="shrink-0 rounded-[2px]"
-                    style={{ width: 8, height: 8, background: col.accent }}
-                    aria-hidden="true"
-                  />
-                  <h2
-                    className="truncate text-[11px] font-bold tracking-[0.1em] uppercase"
-                    style={{ color: '#0d1f3c', fontFamily: "'Google Sans', system-ui, sans-serif" }}
-                  >
-                    {col.title}
-                  </h2>
-                  <span
-                    className="shrink-0 rounded-full px-1.5 text-[11px] font-semibold"
-                    style={{ color: '#59677a', background: 'rgba(4,9,32,0.06)' }}
-                  >
-                    {column.totalChildrenCount ?? 0}
-                  </span>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div
+            className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 md:grid md:grid-cols-2 md:overflow-visible lg:grid-cols-3 xl:grid-cols-4"
+            style={{ scrollbarWidth: 'thin' as const }}
+          >
+            {columns.map((col) => {
+              const colItems = grouped[col.key];
+              const isCollapsed = col.key === 'concluido' && collapsedDone;
+              return (
+                <div
+                  key={col.key}
+                  className="snap-start min-w-[280px] md:min-w-0"
+                  style={{
+                    background: '#eef1f6',
+                    borderRadius: 16,
+                    padding: 12,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minWidth: 0,
+                  }}
+                >
+                  <header className="flex items-center justify-between gap-2 px-1 pt-1 pb-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                      <span
+                        className="shrink-0 rounded-[2px]"
+                        style={{ width: 8, height: 8, background: col.accent }}
+                        aria-hidden="true"
+                      />
+                      <h2
+                        className="truncate text-[11px] font-bold tracking-[0.1em] uppercase"
+                        style={{ color: '#0d1f3c', fontFamily: "'Google Sans', system-ui, sans-serif" }}
+                      >
+                        {col.title}
+                      </h2>
+                      <span
+                        className="shrink-0 rounded-full px-1.5 text-[11px] font-semibold"
+                        style={{ color: '#59677a', background: 'rgba(4,9,32,0.06)' }}
+                      >
+                        {colItems.length}
+                      </span>
+                    </div>
+                    {col.key === 'concluido' && (
+                      <button
+                        type="button"
+                        onClick={() => setCollapsedDone((current) => !current)}
+                        className={[
+                          'grid place-items-center rounded hover:bg-white',
+                          compactActionClass,
+                          focusRingClass,
+                        ].join(' ')}
+                        aria-label={collapsedDone ? 'Expandir concluídas' : 'Recolher concluídas'}
+                      >
+                        <ChevronDown
+                          size={14}
+                          aria-hidden="true"
+                          className={collapsedDone ? '-rotate-90 transition-transform' : 'transition-transform'}
+                          style={{ color: '#59677a' }}
+                        />
+                      </button>
+                    )}
+                  </header>
+                  <Droppable droppableId={col.key}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className="flex min-w-0 flex-col"
+                      >
+                        {!isCollapsed &&
+                          colItems.map((activity, index) => (
+                            <Draggable
+                              key={activity.id}
+                              draggableId={String(activity.id)}
+                              index={index}
+                            >
+                              {(dragProvided) => (
+                                <div
+                                  ref={dragProvided.innerRef}
+                                  {...dragProvided.draggableProps}
+                                  {...dragProvided.dragHandleProps}
+                                  style={{ marginBottom: 8, ...dragProvided.draggableProps.style }}
+                                  onClick={() => setDrawerId(activity.id)}
+                                >
+                                  <ActivityCardContent
+                                    activity={activity}
+                                    peopleById={peopleById}
+                                    compact={compact}
+                                    hasPending={pendingByActivity.has(activity.id)}
+                                  />
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                  {col.key !== 'concluido' && (
+                    <QuickAdd columnKey={col.key} onAdd={handleAdd} />
+                  )}
                 </div>
-                {col.key === 'concluido' && (
-                  <button
-                    type="button"
-                    onClick={() => setCollapsedDone((current) => !current)}
-                    className={[
-                      'grid place-items-center rounded hover:bg-white',
-                      compactActionClass,
-                      focusRingClass,
-                    ].join(' ')}
-                    aria-label={collapsedDone ? 'Expandir concluídas' : 'Recolher concluídas'}
-                  >
-                    <ChevronDown
-                      size={14}
-                      aria-hidden="true"
-                      className={collapsedDone ? '-rotate-90 transition-transform' : 'transition-transform'}
-                      style={{ color: '#59677a' }}
-                    />
-                  </button>
-                )}
-              </header>
-            );
-          }}
-          onCardClick={(_, card) => {
-            const activity = card.content as BoardActivity;
-            setDrawerId(activity.id);
-          }}
-          onCardMove={({ cardId, toColumnId }) => {
-            const id = Number(cardId);
-            const newStatus = toColumnId as Status;
-            const current = items.find((a) => a.id === id);
-            updateActivity(id, {
-              status: newStatus,
-              completedAt:
-                newStatus === 'concluido'
-                  ? new Date().toISOString().slice(0, 10)
-                  : current?.status === 'concluido'
-                    ? null
-                    : current?.completedAt ?? null,
-            });
-          }}
-        />
+              );
+            })}
+          </div>
+        </DragDropContext>
         <div className="pointer-events-none absolute top-0 right-0 bottom-4 w-10 bg-gradient-to-l from-base-100 to-transparent md:hidden" />
       </div>
 
