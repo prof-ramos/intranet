@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { legalConsultationStatus } from '@/lib/db/schema';
@@ -54,6 +54,7 @@ export async function createConsultation(formData: FormData) {
 
   revalidatePath('/app/juridico');
   revalidatePath('/app/juridico/consultas');
+  revalidateTag('legal', {});
 
   redirect(`/app/juridico/consultas/${inserted.id}`);
 }
@@ -76,6 +77,8 @@ export async function updateConsultationStatus(id: number, status: string) {
   revalidatePath('/app/juridico');
   revalidatePath('/app/juridico/consultas');
   revalidatePath(`/app/juridico/consultas/${id}`);
+  revalidateTag('consultation-detail', {});
+  revalidateTag('legal-notes', {});
 }
 
 /**
@@ -133,4 +136,6 @@ export async function addNote(formData: FormData) {
   revalidatePath('/app/juridico');
   revalidatePath('/app/juridico/consultas');
   revalidatePath(`/app/juridico/consultas/${entityId}`);
+  revalidateTag('legal-notes', {});
+  revalidateTag('consultation-detail', {});
 }
