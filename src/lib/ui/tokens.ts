@@ -10,9 +10,12 @@ export const desktopDenseControlClass = 'min-h-11 lg:min-h-8';
 
 export const compactActionClass = 'min-h-10 min-w-10 lg:min-h-8 lg:min-w-8';
 
-export const hairline = 'rgba(4, 9, 32, 0.10)';
+export const hairline = 'rgba(4, 9, 32, 0.05)';
 export const navy = '#040920';
 export const surface = '#f8fafc';
+export const primaryContainerHover = '#0d3260';
+export const primaryContainerActive = '#123d73';
+export const skyBlue = '#76AEEA';
 
 export const statusStyles = {
   a_fazer: { label: 'A fazer', accent: '#94a3b8' },

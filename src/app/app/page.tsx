@@ -5,7 +5,7 @@ import { and, asc, count, desc, eq, ne, sql } from 'drizzle-orm';
 import { AlertTriangle, ArrowRight, Calendar, Globe, Mail, Megaphone, Plus } from 'lucide-react';
 import Link from 'next/link';
 
-const HAIR = 'rgba(4, 9, 32, 0.10)';
+const HAIR = 'rgba(4, 9, 32, 0.05)';
 
 const activityStatusLabels: Record<string, string> = {
   a_fazer: 'A fazer',

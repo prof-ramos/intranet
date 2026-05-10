@@ -6,7 +6,7 @@ import { requireAuth } from '@/lib/auth/require-auth';
 import { db } from '@/lib/db';
 import { activities, associates } from '@/lib/db/schema';
 
-const HAIR = 'rgba(4, 9, 32, 0.10)';
+const HAIR = 'rgba(4, 9, 32, 0.05)';
 
 function dateOnly(value: string | Date | null) {
   if (!value) return null;

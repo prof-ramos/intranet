@@ -582,7 +582,7 @@ export function NovaAtividadeForm({
           </Field>
         </section>
 
-        <aside className="flex flex-col gap-5">
+        <aside className="flex flex-col gap-7">
           <section className="rounded-box border-base-300 flex flex-col gap-4 border bg-white p-5">
             <h2 className="font-serif text-xl font-bold">Detalhes</h2>
 
