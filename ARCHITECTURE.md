@@ -206,7 +206,7 @@ Key Services Used:
 
 CI/CD Pipeline: No `.github` workflow files are currently present in the repository.
 
-Monitoring & Logging: No dedicated monitoring stack is currently configured in code. Local diagnostics live in `scripts/run-dev-60s.sh` and `docs/diagnostico-travamento-next-dev.md`.
+Monitoring & Logging: No dedicated monitoring stack is currently configured in code. Local diagnostics live in `scripts/run-dev-60s.sh`.
 
 ## 7. Security Considerations
 

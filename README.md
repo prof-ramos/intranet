@@ -98,6 +98,8 @@ npm run lint          # ESLint
 npm run typecheck     # TypeScript sem emitir arquivos
 npm run format:check  # valida formatação
 npm run test          # Vitest (testes unitários/integração)
+npm run test:e2e      # Playwright (testes end-to-end)
+npm run test:e2e:ui   # Playwright modo interativo
 npm run audit         # npm audit
 ```
 

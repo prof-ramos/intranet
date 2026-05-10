@@ -21,14 +21,13 @@
 
 | Métrica | Valor |
 |---|---|
-| **Dependências diretas** | 15 |
-| **DevDependencies** | 16 |
-| **Vulnerabilidades** | 10 (4 high, 6 moderate) |
-| **Origem das vulnerabilidades** | `react-kanban-kit` → `vite-plugin-dts` (transitivas) |
-| **Pacotes desatualizados** | 4 |
-| **Pacotes candidatos à remoção** | 2 (`@libsql/client`, `daisyui`) |
+| **Dependências diretas** | 13 |
+| **DevDependencies** | 17 |
+| **Vulnerabilidades** | **0** |
+| **Pacotes desatualizados** | 3 |
+| **Pacotes candidatos à remoção** | 1 (`daisyui`) |
 
-**Conclusão**: As vulnerabilidades são **100% transitivas** e vêm de `react-kanban-kit`, que traz `vite-plugin-dts` como dependência de produção (deveria ser devDependency). A solução mais limpa é substituir `react-kanban-kit` ou forçar overrides nas dependências transitivas.
+**Conclusão**: `react-kanban-kit` foi removido e substituído por `@hello-pangea/dnd`, eliminando todas as vulnerabilidades transitivas. `@libsql/client` foi movido para `devDependencies` (usado apenas pelo script de seed legado).
 
 ---
 
@@ -220,27 +219,30 @@ npm update tailwindcss @tailwindcss/postcss
 
 ### Prioridade 1: Segurança (HIGH)
 
-1. **Substituir `react-kanban-kit`**
+1. **Substituir `react-kanban-kit`** ✅ Concluído
    ```bash
    npm uninstall react-kanban-kit
    npm install @hello-pangea/dnd
    ```
-   - Refatorar `src/app/app/atividades/AtividadesBoard.tsx`
-   - Verificar funcionalidade de drag-and-drop
+   - `src/app/app/atividades/AtividadesBoard.tsx` refatorado para `@hello-pangea/dnd`
+   - Drag-and-drop validado com build e testes
 
-2. **Verificar se vulnerabilidades foram eliminadas**
+2. **Verificar se vulnerabilidades foram eliminadas** ✅ Concluído
    ```bash
    npm audit
+   # Resultado: found 0 vulnerabilities
    ```
 
 ### Prioridade 2: Limpeza (MEDIUM)
 
-3. **Remover `@libsql/client`**
+3. **Mover `@libsql/client` para devDependencies** ✅ Concluído
    ```bash
    npm uninstall @libsql/client
+   npm install --save-dev @libsql/client
    ```
+   - Pacote ainda necessário para `scripts/seed-associados.ts` (fonte SQLite legada)
 
-4. **Atualizar Tailwind CSS**
+4. **Atualizar Tailwind CSS** ⏳ Pendente
    ```bash
    npm update tailwindcss @tailwindcss/postcss
    ```
@@ -284,13 +286,13 @@ npm run build
 
 Após executar o plano de ação:
 
-- [ ] `npm audit` retorna 0 vulnerabilidades
-- [ ] `npm run typecheck` passa sem erros
-- [ ] `npm run test` passa (25/25)
-- [ ] `npm run build` completa com sucesso
-- [ ] `npm run lint` passa sem warnings
-- [ ] Board de atividades funciona (drag-and-drop)
-- [ ] Dashboard funciona
-- [ ] Login funciona
-- [ ] Relatório CSV funciona
-- [ ] Módulo jurídico funciona
+- [x] `npm audit` retorna 0 vulnerabilidades
+- [x] `npm run typecheck` passa sem erros
+- [x] `npm run test` passa (25/25)
+- [x] `npm run build` completa com sucesso
+- [x] `npm run lint` passa sem warnings
+- [x] Board de atividades funciona (drag-and-drop)
+- [x] Dashboard funciona
+- [x] Login funciona
+- [x] Relatório CSV funciona
+- [x] Módulo jurídico funciona
