@@ -155,26 +155,26 @@ export default async function DashboardPage() {
   });
 
   return (
-    <main className="px-5 py-8 sm:px-8 lg:px-10">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
+      <div className="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div>
           <p className="text-base-content/55 text-[11px] tracking-[0.18em] uppercase">
             Sala de operações · {today}
           </p>
-          <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-5xl">
+          <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
             Painel da diretoria
           </h1>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
           <Link
             href="/app/atividades"
-            className="btn btn-outline border-base-300 min-h-11 bg-white lg:btn-sm lg:h-10 lg:min-h-10"
+            className="btn btn-outline border-base-300 min-h-11 bg-white px-4 lg:btn-sm lg:h-10 lg:min-h-10"
           >
             <Calendar size={16} aria-hidden="true" /> Esta semana
           </Link>
           <Link
             href="/app/atividades/nova"
-            className="btn btn-primary min-h-11 lg:btn-sm lg:h-10 lg:min-h-10"
+            className="btn btn-primary min-h-11 px-4 lg:btn-sm lg:h-10 lg:min-h-10"
           >
             <Plus size={16} aria-hidden="true" /> Nova atividade
           </Link>
@@ -182,35 +182,31 @@ export default async function DashboardPage() {
       </div>
 
       <section
-        className="rounded-box bg-base-100 mb-7 grid overflow-hidden sm:grid-cols-2 xl:grid-cols-5"
-        style={{ border: `1px solid ${HAIR}` }}
+        className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
         aria-label="Indicadores"
       >
-        {data.stripe.map((s, i) => (
+        {data.stripe.map((s) => (
           <div
             key={s.label}
-            className="flex items-baseline gap-3 px-5 py-4"
-            style={{ borderLeft: i === 0 ? 'none' : `1px solid ${HAIR}` }}
+            className="stat rounded-box bg-base-100 min-h-[104px] px-4 py-3 shadow-none"
+            style={{ border: `1px solid ${HAIR}` }}
           >
-            <span
-              className="font-serif text-3xl leading-none font-bold"
-              style={{
-                color: s.tone === 'neg' ? '#b91c1c' : s.tone === 'pos' ? '#15803d' : undefined,
-              }}
-            >
+            <div className="stat-title text-base-content/55 text-[10px] font-bold tracking-[0.08em] uppercase">
+              {s.label}
+            </div>
+            <div className="stat-value text-base-content mt-2 font-serif text-2xl leading-none">
               {s.value}
-            </span>
-            <span className="text-base-content/65 text-xs lowercase">{s.label}</span>
+            </div>
           </div>
         ))}
       </section>
 
-      <section className="flex flex-col items-start gap-7 xl:flex-row">
+      <section className="grid items-start gap-7 xl:grid-cols-[minmax(0,1fr)_280px]">
         <div
-          className="rounded-box bg-base-100 min-w-0 flex-1 p-5"
+          className="rounded-box bg-base-100 min-w-0 p-4 sm:p-5"
           style={{ border: `1px solid ${HAIR}` }}
         >
-          <div className="mb-4 flex items-baseline justify-between">
+          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
             <h2 className="font-serif text-xl font-bold">Atividades em curso</h2>
             <Link
               href="/app/atividades"
@@ -220,7 +216,7 @@ export default async function DashboardPage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {Object.entries(activityStatusLabels).map(([status, label]) => {
               const row = data.activitiesByStatus.find((item) => item.status === status);
               const total = row?.total ?? 0;
@@ -246,14 +242,14 @@ export default async function DashboardPage() {
 
                   <div className="flex flex-col gap-2">
                     {cards.length === 0 ? (
-                      <div className="border-base-300 bg-base-100 text-base-content/45 rounded-[8px] border border-dashed px-3 py-5 text-center text-xs">
+                      <div className="border-base-300 bg-base-100 text-base-content/45 rounded-[8px] border border-dashed px-3 py-4 text-center text-xs">
                         Sem cards
                       </div>
                     ) : (
                       cards.map((card) => (
                         <div
                           key={card.id}
-                          className="bg-base-100 rounded-[8px] p-3 shadow-[0_1px_0_rgba(4,9,32,0.05)]"
+                          className="bg-base-100 rounded-[8px] p-3 shadow-[0_1px_0_rgba(4,9,32,0.04)]"
                           style={{ border: `1px solid ${HAIR}` }}
                         >
                           <p className="text-sm leading-snug font-semibold [overflow-wrap:anywhere]">
@@ -287,8 +283,8 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <aside className="flex w-full shrink-0 flex-col gap-7 xl:w-[300px]">
-          <div className="rounded-box bg-base-100 p-5" style={{ border: `1px solid ${HAIR}` }}>
+        <aside className="flex w-full min-w-0 flex-col gap-7">
+          <div className="rounded-box bg-base-100 p-4" style={{ border: `1px solid ${HAIR}` }}>
             <div className="mb-3 flex items-center gap-2">
               <Megaphone size={20} className="text-primary" aria-hidden="true" />
               <h2 className="font-serif text-lg font-bold">Pendências</h2>
@@ -297,7 +293,7 @@ export default async function DashboardPage() {
             {data.urgentActivities.length === 0 ? (
               <p className="text-base-content/60 text-sm">Nenhuma atividade atrasada.</p>
             ) : (
-              <ul className="flex flex-col gap-3.5">
+              <ul className="flex flex-col gap-3">
                 {data.urgentActivities.map((activity, index) => (
                   <li
                     key={activity.id}
@@ -323,7 +319,7 @@ export default async function DashboardPage() {
             )}
           </div>
 
-          <div className="rounded-box bg-base-100 p-5" style={{ border: `1px solid ${HAIR}` }}>
+          <div className="rounded-box bg-base-100 p-4" style={{ border: `1px solid ${HAIR}` }}>
             <div className="mb-3 flex items-center gap-2">
               <Mail size={20} className="text-primary" aria-hidden="true" />
               <h2 className="font-serif text-lg font-bold">Comunicação</h2>
@@ -336,7 +332,7 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          <div className="rounded-box bg-base-100 p-5" style={{ border: `1px solid ${HAIR}` }}>
+          <div className="rounded-box bg-base-100 p-4" style={{ border: `1px solid ${HAIR}` }}>
             <div className="mb-3 flex items-center gap-2">
               <Globe size={20} className="text-primary" aria-hidden="true" />
               <h2 className="font-serif text-lg font-bold">Associados por país</h2>

@@ -2,7 +2,7 @@
 
 Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia associados, atividades administrativas e comunicações internas da diretoria.
 
-**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · SQLite/libSQL · JWT (jose)
+**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL/Supabase · JWT (jose)
 
 ---
 
@@ -44,8 +44,10 @@ Acesse [http://localhost:3000](http://localhost:3000).
 | Variável | Descrição |
 |---|---|
 | `SESSION_SECRET` | Segredo JWT — mínimo 32 caracteres. Gere com: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
-| `DATABASE_URL` | URL do banco. SQLite local: `file:sqlite.db`. Turso Cloud: `libsql://<host>` |
-| `DATABASE_AUTH_TOKEN` | Token de autenticação Turso (obrigatório quando `DATABASE_URL` usa `libsql://`) |
+| `DATABASE_URL` | URL PostgreSQL de runtime. Pode apontar para o pooler do Supabase, com `sslmode=require`. |
+| `DATABASE_MIGRATION_URL` | URL PostgreSQL direta/non-pooling para migrations do Drizzle. |
+| `DATABASE_SUPABASE_URL` | URL HTTP do projeto Supabase, usada pelos helpers SDK. |
+| `DATABASE_SUPABASE_SERVICE_ROLE_KEY` | Chave service-role para scripts/admin server-side. Nunca expor no cliente. |
 
 ### Seed do admin inicial
 
@@ -71,16 +73,17 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 ## Banco de dados
 
-O projeto usa SQLite local por padrão (`sqlite.db` na raiz). Para produção, use [Turso](https://turso.tech) (libSQL compatível).
+O projeto usa PostgreSQL via Drizzle. Em produção e desenvolvimento integrado, use uma URL Postgres/Supabase em `DATABASE_URL`; para migrations, use uma URL direta/non-pooling em `DATABASE_MIGRATION_URL`.
 
 ```bash
 npm run db:generate   # gera migrações a partir do schema
 npm run db:migrate    # aplica migrações pendentes
 npm run db:seed       # insere admin inicial + associados de exemplo
+npm run db:supabase:status # consulta status/totais via Supabase SDK
 npm run db:studio     # abre Drizzle Studio no browser
 ```
 
-As migrações ficam em `drizzle/`. O schema está em `src/lib/db/schema/`.
+As migrações PostgreSQL atuais ficam em `drizzle/postgres/`. O schema está em `src/lib/db/schema/`.
 
 ---
 
@@ -113,11 +116,12 @@ src/
   components/     # componentes compartilhados (Sidebar, NavLink…)
   lib/
     auth/         # session JWT, requireAuth, config
-    db/           # cliente Drizzle + schema
+    db/           # cliente Drizzle/PostgreSQL + schema
+    supabase/     # helpers Supabase SDK server/admin
 
 proxy.ts          # proxy de autenticação (Next.js 16 — substitui middleware.ts)
-drizzle/          # migrações SQL geradas
-scripts/          # seed-admin.ts, seed-associados.ts, check-db.ts
+drizzle/postgres/ # migrações PostgreSQL geradas
+scripts/          # seed, diagnóstico e status Supabase
 ```
 
 Detalhes de arquitetura, fluxo de dados e decisões técnicas: [`ARCHITECTURE.md`](./ARCHITECTURE.md).

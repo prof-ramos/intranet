@@ -56,77 +56,90 @@ export default async function AssociadosPage({
     year: 'numeric',
   });
   const todayLabel = today.charAt(0).toUpperCase() + today.slice(1);
+  const unreadNotifications: number | null = null;
 
   return (
     <div>
       {/* Header */}
-      <div className="navbar border-base-300 bg-base-100 sticky top-0 z-20 flex-col items-stretch gap-3 border-b px-5 py-3 sm:flex-row sm:items-center lg:px-10">
-        <div className="flex-1">
-          <form method="GET" action="/app/associados">
-            <label className="input flex h-12 max-w-2xl items-center gap-3 rounded-md">
-              <span className="sr-only">Buscar associado por nome</span>
-              <Search size={20} className="text-base-content/50" aria-hidden="true" />
-              <input
-                name="q"
-                type="search"
-                defaultValue={q}
-                className="grow"
-                placeholder="Buscar por nome..."
-              />
-            </label>
-          </form>
-        </div>
-
-        <div className="flex flex-none items-center gap-5 self-end sm:self-auto">
-          <div className="relative mr-1">
-            <span className="badge badge-error badge-sm absolute -top-1 -right-1 z-10">3</span>
-            <button
-              type="button"
-              className="btn btn-ghost btn-circle min-h-11 min-w-11"
-              aria-label="Notificações — 3 não lidas"
-            >
-              <Bell size={22} aria-hidden="true" />
-            </button>
+      <div className="border-base-300 bg-base-100 sticky top-0 z-20 border-b px-5 py-3 sm:px-8 lg:px-10">
+        <div className="mx-auto grid w-full max-w-[1180px] gap-3 sm:grid-cols-[minmax(240px,420px)_auto] sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <form method="GET" action="/app/associados">
+              <label className="input border-base-300 flex h-11 min-h-11 w-full items-center gap-3 rounded-md bg-white">
+                <span className="sr-only">Buscar associado por nome</span>
+                <Search size={18} className="text-base-content/50" aria-hidden="true" />
+                <input
+                  name="q"
+                  type="search"
+                  defaultValue={q}
+                  className="grow text-sm"
+                  placeholder="Buscar por nome..."
+                />
+              </label>
+            </form>
           </div>
 
-          <div className="hidden items-center gap-3 sm:flex">
-            <div
-              aria-label={`Avatar de ${user.name}`}
-              className="bg-primary text-primary-content ring-primary/15 grid h-10 w-10 place-items-center rounded-full text-sm font-bold ring-2"
-            >
-              {user.name
-                .split(' ')
-                .slice(0, 2)
-                .map((n: string) => n[0])
-                .join('')
-                .toUpperCase()}
+          <div className="flex min-w-0 items-center justify-between gap-4 sm:justify-end">
+            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center">
+              {unreadNotifications !== null && unreadNotifications > 0 && (
+                <span className="badge badge-error badge-sm absolute -top-1 -right-1 z-10">
+                  {unreadNotifications}
+                </span>
+              )}
+              <button
+                type="button"
+                className="btn btn-ghost btn-circle h-11 min-h-11 w-11 min-w-11"
+                aria-label={
+                  unreadNotifications !== null && unreadNotifications > 0
+                    ? `Notificações — ${unreadNotifications} não lidas`
+                    : 'Notificações'
+                }
+              >
+                <Bell size={21} aria-hidden="true" />
+              </button>
             </div>
-            <div className="leading-tight">
-              <p className="font-semibold">{user.name}</p>
-              <p className="text-base-content/60 text-sm">{getRoleLabel(user.role)}</p>
+
+            <div className="hidden min-h-11 min-w-0 items-center gap-3 border-l border-base-300 pl-4 sm:flex">
+              <div
+                aria-label={`Avatar de ${user.name}`}
+                className="bg-primary text-primary-content ring-primary/15 grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold ring-2"
+              >
+                {user.name
+                  .split(' ')
+                  .slice(0, 2)
+                  .map((n: string) => n[0])
+                  .join('')
+                  .toUpperCase()}
+              </div>
+              <div className="min-w-0 leading-tight">
+                <p className="max-w-[190px] truncate text-sm font-semibold">{user.name}</p>
+                <p className="text-base-content/60 text-xs">{getRoleLabel(user.role)}</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Conteúdo */}
-      <main className="flex-1 px-5 py-8 sm:px-8 lg:px-10">
-        <section className="mb-7 flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+      <main className="mx-auto w-full max-w-[1180px] flex-1 px-5 py-7 sm:px-8 lg:px-10">
+        <section className="mb-7 flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <p className="text-base-content/55 text-[11px] tracking-[0.18em] uppercase">
               Quadro associativo · {todayLabel}
             </p>
-            <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-5xl">Associados</h1>
+            <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
+              Associados
+            </h1>
           </div>
         </section>
 
         {/* Tabela */}
-        <section className="rounded-box border-base-300 bg-base-100 border">
-          <div className="mb-0 flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
+        <section className="rounded-box border-base-300 bg-base-100 overflow-hidden border shadow-sm">
+          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <p className="text-base-content/60">
               {total === 0 ? 'Nenhum resultado' : `${from}–${to} de ${total}`}
             </p>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
               <Link href="/app/associados?page=1" className="text-sm font-semibold">
                 Ver todos ({total})
               </Link>
@@ -179,7 +192,7 @@ export default async function AssociadosPage({
           </div>
 
           <div className="border-base-300 overflow-x-auto border-t">
-            <table className="table w-full" aria-label="Lista de associados">
+            <table className="table table-sm w-full" aria-label="Lista de associados">
               <thead className="bg-primary text-primary-content">
                 <tr>
                   <th scope="col">Nome</th>

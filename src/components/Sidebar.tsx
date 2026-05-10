@@ -12,6 +12,7 @@ import {
 import { NavLink } from '@/components/NavLink';
 import { LogoutButton } from '@/components/LogoutButton';
 import { type AuthRole } from '@/lib/auth/config';
+import { focusRingClass } from '@/lib/ui/tokens';
 
 interface SidebarProps {
   user: {
@@ -28,7 +29,7 @@ export function Sidebar({ user }: SidebarProps) {
         <Link
           href="/app"
           aria-label="Ir para a página inicial"
-          className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2"
+          className={['rounded', focusRingClass].join(' ')}
         >
           <Image
             src="/images/logo-asof.svg"

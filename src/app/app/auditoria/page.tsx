@@ -4,11 +4,11 @@ export default async function AuditoriaPage() {
   await requireRole(['admin', 'diretoria']);
 
   return (
-    <main className="px-5 py-8 sm:px-8 lg:px-10">
+    <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
       <p className="text-base-content/55 text-[11px] tracking-[0.18em] uppercase">
         Administração · Registro de eventos
       </p>
-      <h1 className="mt-2 font-serif text-4xl font-bold leading-none md:text-5xl">
+      <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
         Auditoria
       </h1>
       <p className="mt-4 max-w-2xl text-base-content/65">

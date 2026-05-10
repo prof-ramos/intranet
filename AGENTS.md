@@ -73,13 +73,14 @@ npm run db:studio
 - Shared UI components live in `src/components`.
 - Auth helpers live in `src/lib/auth`.
 - Database access lives in `src/lib/db`, with Drizzle schema files in `src/lib/db/schema`.
-- Drizzle migrations are in `drizzle`; the local SQLite file is `sqlite.db`.
+- Current Drizzle migrations are in `drizzle/postgres`.
 - The `@/*` import alias maps to `src/*`.
 
 ## Database
 
-- `drizzle.config.ts` targets SQLite and writes migrations to `drizzle`.
-- Runtime DB access uses `DATABASE_URL` when set, otherwise `file:sqlite.db`.
+- `drizzle.config.ts` targets PostgreSQL and writes migrations to `drizzle/postgres`.
+- Runtime DB access requires `DATABASE_URL` or `DATABASE_POSTGRES_URL`.
+- Drizzle migrations require a direct/non-pooling PostgreSQL URL via `DATABASE_MIGRATION_URL` or `DATABASE_POSTGRES_URL_NON_POOLING`.
 - Seed scripts are `scripts/seed-associados.ts` and `scripts/seed-admin.ts`, both run by `npm run db:seed`.
 
 ## Development Auth

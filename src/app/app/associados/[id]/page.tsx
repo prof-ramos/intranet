@@ -183,7 +183,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
     [associate.locationCity, associate.locationCountry].filter(Boolean).join(' / ') || null;
 
   return (
-    <main className="min-w-0 px-5 py-7 sm:px-8 lg:px-10">
+    <main className="mx-auto w-full max-w-[1180px] min-w-0 px-5 py-7 sm:px-8 lg:px-10">
       <Link
         href="/app/associados"
         className="text-base-content/60 mb-4 inline-flex items-center gap-1.5 text-xs font-medium"
@@ -192,7 +192,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
         Voltar para Associados
       </Link>
 
-      <div className="grid items-start gap-8 xl:grid-cols-[200px_minmax(0,1fr)]">
+      <div className="grid items-start gap-7 xl:grid-cols-[200px_minmax(0,1fr)]">
         <aside className="hidden xl:block">
           <nav className="sticky top-6 flex flex-col gap-1">
             <p className="text-base-content/50 mb-2 text-[11px] font-bold tracking-[0.12em] uppercase">

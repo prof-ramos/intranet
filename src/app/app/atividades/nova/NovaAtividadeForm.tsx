@@ -428,7 +428,7 @@ export function NovaAtividadeForm({
   }
 
   return (
-    <main className="max-w-[1280px] min-w-0 px-5 py-8 sm:px-8 lg:px-10">
+    <main className="mx-auto w-full max-w-[1180px] min-w-0 px-5 py-7 sm:px-8 lg:px-10">
       <Link
         href="/app/atividades"
         className="text-base-content/60 mb-4 inline-flex items-center gap-1.5 text-xs font-medium"
@@ -437,7 +437,7 @@ export function NovaAtividadeForm({
         Voltar para Atividades
       </Link>
 
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <p className="text-base-content/55 m-0 text-[11px] tracking-[0.18em] uppercase">
             Atividades · Nova
@@ -484,8 +484,8 @@ export function NovaAtividadeForm({
         </div>
       )}
 
-      <div className="grid items-start gap-7 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="rounded-box border-base-300 flex flex-col gap-5 border bg-white p-7">
+      <div className="grid items-start gap-7 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <section className="rounded-box border-base-300 flex flex-col gap-5 border bg-white p-5 sm:p-6">
           <Field
             controlId="activity-title"
             label="Título"
@@ -583,7 +583,7 @@ export function NovaAtividadeForm({
         </section>
 
         <aside className="flex flex-col gap-7">
-          <section className="rounded-box border-base-300 flex flex-col gap-4 border bg-white p-5">
+          <section className="rounded-box border-base-300 flex flex-col gap-4 border bg-white p-4 sm:p-5">
             <h2 className="font-serif text-xl font-bold">Detalhes</h2>
 
             <Field label="Status inicial">
@@ -655,7 +655,7 @@ export function NovaAtividadeForm({
             </Field>
           </section>
 
-          <section className="rounded-box border-base-300 flex flex-col gap-3.5 border bg-white p-5">
+          <section className="rounded-box border-base-300 flex flex-col gap-4 border bg-white p-4 sm:p-5">
             <h2 className="font-serif text-xl font-bold">Responsável</h2>
             <AssigneePicker
               people={people}

@@ -821,7 +821,7 @@ function Drawer({
         </header>
 
         {pending && (
-          <div className="mx-7 mt-4 rounded-[10px] border border-[#e7c16b] bg-[#f4ddb1] p-3.5">
+          <div className="mx-7 mt-4 rounded-[8px] border border-[#e7c16b] bg-[#f4ddb1] p-3">
             <p className="m-0 text-[11px] font-bold tracking-[0.12em] text-[#7a4a08] uppercase">
               Reatribuição aguardando confirmação
             </p>
@@ -1024,7 +1024,7 @@ function ReassignModal({
             {activity.title}
           </h3>
         </header>
-        <div className="flex flex-col gap-3.5 p-6">
+        <div className="flex flex-col gap-4 p-6">
           <label className="flex flex-col gap-1.5 text-[13px] font-medium">
             Atribuir a
             <select
@@ -1224,7 +1224,7 @@ export function AtividadesBoard({
   }
 
   return (
-    <main className="min-w-0 px-5 py-8 sm:px-8 lg:px-10">
+    <main className="mx-auto w-full max-w-[1180px] min-w-0 px-5 py-7 sm:px-8 lg:px-10">
       <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <p className="text-base-content/55 m-0 text-[11px] tracking-[0.18em] whitespace-nowrap uppercase">
