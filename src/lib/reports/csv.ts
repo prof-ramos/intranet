@@ -30,7 +30,12 @@ export const ALL_FIELDS: FieldDef[] = [
 
 export function toCsvCell(value: string | null | undefined): string {
   const str = value == null ? '' : value;
-  return `"${str.replace(/"/g, '""')}"`;
+  const escaped = str.replace(/"/g, '""');
+  // Prevent CSV/formula injection by prefixing dangerous characters with a tab
+  if (/^[-=+@\t]/.test(escaped)) {
+    return `"\t${escaped}"`;
+  }
+  return `"${escaped}"`;
 }
 
 export function generateCsv(rows: Associate[], selectedKeys: string[]): string {

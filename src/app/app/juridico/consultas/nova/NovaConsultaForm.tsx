@@ -7,10 +7,9 @@ import { createConsultation } from '@/app/app/juridico/actions';
 
 interface Props {
   associates: { id: number; name: string }[];
-  currentUserId: number;
 }
 
-export function NovaConsultaForm({ associates, currentUserId }: Props) {
+export function NovaConsultaForm({ associates }: Props) {
   const [title, setTitle] = useState('');
   const [questionSummary, setQuestionSummary] = useState('');
   const [questionFullText, setQuestionFullText] = useState('');
@@ -49,8 +48,6 @@ export function NovaConsultaForm({ associates, currentUserId }: Props) {
       </div>
 
       <form action={handleSubmit} className="max-w-2xl">
-        <input type="hidden" name="createdBy" value={currentUserId} />
-
         <div className="mb-5">
           <label htmlFor="title" className="label">
             <span className="label-text font-semibold">Título da consulta *</span>

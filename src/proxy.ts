@@ -21,7 +21,7 @@ export async function proxy(request: NextRequest) {
   try {
     await jwtVerify(token, await getSecret(), {
       algorithms: ['HS256'],
-      clockTolerance: 60,
+      clockTolerance: 5,
     });
     return NextResponse.next();
   } catch {

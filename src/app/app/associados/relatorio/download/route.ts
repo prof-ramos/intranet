@@ -5,8 +5,9 @@ import { getSession } from '@/lib/auth/session';
 import { getDevAuthUser, isSkipAuthEnabled } from '@/lib/auth/config';
 import { getAssociatesForReport } from '@/lib/reports/queries';
 import { generateCsv } from '@/lib/reports/csv';
-import { admins } from '@/lib/db/schema';
+import { admins, auditLogs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { consumeIpRateLimit } from '@/lib/rate-limit';
 
 function isFunctionalStatus(v: string): v is 'ativo' | 'aposentado' | 'cedido' | 'em_licenca' {
   return ['ativo', 'aposentado', 'cedido', 'em_licenca'].includes(v);
@@ -27,18 +28,38 @@ function canGenerateReports(role: string) {
 }
 
 export async function GET(request: NextRequest) {
+  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    ?? request.headers.get('x-real-ip')
+    ?? 'unknown';
+
+  const rateLimit = await consumeIpRateLimit(clientIp, 'report_download', {
+    windowMs: 60 * 1000,
+    maxRequests: 10,
+  });
+
+  if (!rateLimit.allowed) {
+    return new Response('Too many requests.', {
+      status: 429,
+      headers: {
+        'Retry-After': String(Math.ceil((rateLimit.retryAfterMs ?? 60000) / 1000)),
+      },
+    });
+  }
+
+  let session: Awaited<ReturnType<typeof getSession>> = null;
+
   if (isSkipAuthEnabled()) {
     const user = getDevAuthUser();
     if (!canGenerateReports(user.role)) {
       return new Response(null, { status: 403 });
     }
   } else {
-    const session = await getSession();
+    session = await getSession();
     if (!session?.isLoggedIn || !session.userId) {
       return new Response(null, { status: 302, headers: { Location: '/login' } });
     }
 
-    // Lazy import avoids DB initialization at Next.js build time.
+    // Importação tardia evita inicialização do DB durante o build do Next.js.
     const { db } = await import('@/lib/db');
     const [user] = await db
       .select({ role: admins.role, isActive: admins.isActive })
@@ -85,6 +106,29 @@ export async function GET(request: NextRequest) {
 
   const rows = await getAssociatesForReport(filters);
   const csv = generateCsv(rows, selectedKeys);
+
+  // Audit trail for CSV download (LGPD accountability)
+  const auditUserId = isSkipAuthEnabled()
+    ? getDevAuthUser().userId
+    : session!.userId;
+
+  // Importação tardia evita inicialização do DB durante o build do Next.js.
+  const { db } = await import('@/lib/db');
+  await db.insert(auditLogs).values({
+    action: 'report_download',
+    entityType: 'associate',
+    entityId: 0,
+    performedBy: auditUserId,
+    changes: {
+      old: {},
+      new: {
+        filters: Object.keys(filters),
+        fields: selectedKeys,
+        rowCount: rows.length,
+      },
+    },
+    metadata: { format: 'csv' },
+  });
 
   const date = new Date().toISOString().slice(0, 10);
 

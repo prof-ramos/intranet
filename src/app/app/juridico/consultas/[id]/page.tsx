@@ -3,8 +3,10 @@ import { notFound } from 'next/navigation';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { getConsultationById, getNotesByEntity } from '@/lib/juridico/queries';
 import { updateConsultationStatusFromForm, addNote } from '@/app/app/juridico/actions';
+import { formatDate, daysSince } from '@/lib/juridico/formatters';
 import { ArrowLeft, Clock, FileText, MessageSquare, Send, User } from 'lucide-react';
 import { hairline } from '@/lib/ui/tokens';
+import { StatusUpdater } from './StatusUpdater';
 
 const statusLabels: Record<string, string> = {
   aberta: 'Aberta',
@@ -20,24 +22,13 @@ const statusOptions = [
   { value: 'arquivada', label: 'Arquivada' },
 ];
 
-function formatDate(value: string | Date | null) {
-  if (!value) return '—';
-  const d = value instanceof Date ? value : new Date(value);
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function daysSince(value: string | Date | null) {
-  if (!value) return null;
-  const d = value instanceof Date ? value : new Date(value);
-  return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
-}
 
 export default async function ConsultaDetalhePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await requireAuth();
+  await requireAuth();
   const { id } = await params;
   const consultationId = Number(id);
 
@@ -76,18 +67,13 @@ export default async function ConsultaDetalhePage({
 
         <form action={updateConsultationStatusFromForm} className="flex items-center gap-2">
           <input type="hidden" name="id" value={consultationId} />
-          <select
-            name="status"
-            defaultValue={consultation.status}
-            className="select select-bordered select-sm"
-            onChange={(e) => e.currentTarget.form?.requestSubmit()}
-          >
+          <StatusUpdater defaultValue={consultation.status}>
             {statusOptions.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
               </option>
             ))}
-          </select>
+          </StatusUpdater>
         </form>
       </div>
 
@@ -193,7 +179,6 @@ export default async function ConsultaDetalhePage({
             <form action={addNote} className="flex flex-col gap-3">
               <input type="hidden" name="entityType" value="consultation" />
               <input type="hidden" name="entityId" value={consultationId} />
-              <input type="hidden" name="createdBy" value={user.userId} />
 
               <textarea
                 name="content"

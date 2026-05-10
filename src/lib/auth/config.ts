@@ -16,7 +16,7 @@ export interface SessionData extends AuthUser {
   isLoggedIn: boolean;
 }
 
-export const SESSION_COOKIE_NAME = 'asof-session';
+export const SESSION_COOKIE_NAME = '__Host-asof-session';
 export const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 const DEFAULT_DEV_USER: AuthUser = {

@@ -5,7 +5,7 @@ import { asc, eq } from 'drizzle-orm';
 import { NovaConsultaForm } from './NovaConsultaForm';
 
 export default async function NovaConsultaPage() {
-  const user = await requireAuth();
+  await requireAuth();
 
   const associateRows = await db
     .select({ id: associates.id, name: associates.fullName })
@@ -17,7 +17,6 @@ export default async function NovaConsultaPage() {
   return (
     <NovaConsultaForm
       associates={associateRows}
-      currentUserId={user.userId}
     />
   );
 }
