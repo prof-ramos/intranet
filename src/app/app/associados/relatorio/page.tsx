@@ -45,34 +45,55 @@ export default async function RelatorioPage() {
   return (
     <div>
       {/* Header */}
-      <div className="navbar border-base-300 bg-base-100 sticky top-0 z-20 border-b px-5 py-3 lg:px-10">
-        <div className="flex-1">
-          <span className="text-base font-semibold">Gerar Relatório</span>
-        </div>
-        <div className="hidden items-center gap-3 sm:flex">
-          <div
-            aria-label={`Avatar de ${user.name}`}
-            className="bg-primary text-primary-content ring-primary/15 grid h-10 w-10 place-items-center rounded-full text-sm font-bold ring-2"
-          >
-            {user.name
-              .split(' ')
-              .slice(0, 2)
-              .map((n: string) => n[0])
-              .join('')
-              .toUpperCase()}
-          </div>
-          <div className="leading-tight">
-            <p className="font-semibold">{user.name}</p>
-            <p className="text-base-content/60 text-sm">{getRoleLabel(user.role)}</p>
+      <div
+        className="sticky top-0 z-20 border-b px-5 py-3 sm:px-8 lg:px-10"
+        style={{ background: '#ffffff', borderColor: '#c9d2df' }}
+      >
+        <div className="mx-auto flex w-full max-w-[1180px] items-center justify-between">
+          <span className="text-base font-semibold" style={{ color: '#0d1f3c' }}>
+            Gerar Relatório
+          </span>
+          <div className="hidden items-center gap-3 sm:flex">
+            <div
+              aria-label={`Avatar de ${user.name}`}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
+              style={{ background: '#040920', boxShadow: '0 0 0 2px rgba(118,174,234,0.15)' }}
+            >
+              {user.name
+                .split(' ')
+                .slice(0, 2)
+                .map((n: string) => n[0])
+                .join('')
+                .toUpperCase()}
+            </div>
+            <div className="min-w-0 leading-tight">
+              <p className="truncate text-sm font-semibold" style={{ color: '#0d1f3c' }}>
+                {user.name}
+              </p>
+              <p className="text-xs" style={{ color: '#59677a' }}>
+                {getRoleLabel(user.role)}
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main */}
-      <main className="px-5 py-8 sm:px-8 lg:px-10">
-        <section className="mb-10">
-          <h1 className="font-serif text-5xl leading-none font-bold md:text-6xl">Relatórios</h1>
-          <p className="text-base-content/70 mt-4 text-xl">
+      <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
+        <section className="mb-7">
+          <p
+            className="m-0 text-[11px] tracking-[0.18em] uppercase"
+            style={{ color: '#59677a' }}
+          >
+            Associados · Exportação
+          </p>
+          <h1
+            className="mt-2 font-serif text-4xl leading-none font-bold md:text-5xl"
+            style={{ color: '#040920' }}
+          >
+            Relatórios
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed" style={{ color: '#59677a' }}>
             Selecione os campos e filtros para exportar os dados dos associados em CSV.
           </p>
         </section>
@@ -81,18 +102,32 @@ export default async function RelatorioPage() {
           {/* Field groups */}
           <div className="grid gap-6 lg:grid-cols-3">
             {FIELD_GROUPS.map((group) => (
-              <section key={group.title} className="rounded-box bg-base-100 p-6 shadow-md">
-                <h2 className="font-serif text-lg font-bold mb-4">{group.title}</h2>
+              <section
+                key={group.title}
+                className="flex flex-col gap-4 rounded-[16px] border bg-white p-5 sm:p-6"
+                style={{ borderColor: '#c9d2df' }}
+              >
+                <h2
+                  className="font-serif text-lg font-bold"
+                  style={{ color: '#040920' }}
+                >
+                  {group.title}
+                </h2>
                 <div className="flex flex-col gap-2.5">
                   {group.fields.map((field) => (
-                    <label key={field.key} className="flex items-center gap-3 cursor-pointer">
+                    <label
+                      key={field.key}
+                      className="flex cursor-pointer items-center gap-3"
+                    >
                       <input
                         type="checkbox"
                         name="fields"
                         value={field.key}
                         className="checkbox checkbox-primary checkbox-sm"
                       />
-                      <span className="text-sm">{field.label}</span>
+                      <span className="text-sm" style={{ color: '#0d1f3c' }}>
+                        {field.label}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -101,17 +136,27 @@ export default async function RelatorioPage() {
           </div>
 
           {/* Filters */}
-          <section className="rounded-box bg-base-100 p-6 shadow-md mt-6">
-            <h2 className="font-serif text-lg font-bold mb-4">Filtros</h2>
+          <section
+            className="mt-6 flex flex-col gap-4 rounded-[16px] border bg-white p-5 sm:p-6"
+            style={{ borderColor: '#c9d2df' }}
+          >
+            <h2 className="font-serif text-lg font-bold" style={{ color: '#040920' }}>
+              Filtros
+            </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="flex flex-col gap-1">
-                <label htmlFor="filter-functional" className="text-sm font-medium">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="filter-functional"
+                  className="text-[11px] font-bold tracking-[0.10em] uppercase"
+                  style={{ color: '#59677a' }}
+                >
                   Situação Funcional
                 </label>
                 <select
                   id="filter-functional"
                   name="functionalStatus"
-                  className="select select-bordered"
+                  className="h-12 w-full rounded-[8px] border bg-white px-3 text-sm"
+                  style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
                 >
                   <option value="todos">Todos</option>
                   <option value="ativo">Ativo</option>
@@ -121,14 +166,19 @@ export default async function RelatorioPage() {
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label htmlFor="filter-association" className="text-sm font-medium">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="filter-association"
+                  className="text-[11px] font-bold tracking-[0.10em] uppercase"
+                  style={{ color: '#59677a' }}
+                >
                   Situação Associativa
                 </label>
                 <select
                   id="filter-association"
                   name="associationStatus"
-                  className="select select-bordered"
+                  className="h-12 w-full rounded-[8px] border bg-white px-3 text-sm"
+                  style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
                 >
                   <option value="todos">Todos</option>
                   <option value="ativo">Associado Ativo</option>
@@ -136,14 +186,19 @@ export default async function RelatorioPage() {
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label htmlFor="filter-contribution" className="text-sm font-medium">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="filter-contribution"
+                  className="text-[11px] font-bold tracking-[0.10em] uppercase"
+                  style={{ color: '#59677a' }}
+                >
                   Contribuição
                 </label>
                 <select
                   id="filter-contribution"
                   name="contributionStatus"
-                  className="select select-bordered"
+                  className="h-12 w-full rounded-[8px] border bg-white px-3 text-sm"
+                  style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
                 >
                   <option value="todos">Todos</option>
                   <option value="em_dia">Em Dia</option>
@@ -152,14 +207,19 @@ export default async function RelatorioPage() {
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label htmlFor="filter-birth-month" className="text-sm font-medium">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="filter-birth-month"
+                  className="text-[11px] font-bold tracking-[0.10em] uppercase"
+                  style={{ color: '#59677a' }}
+                >
                   Aniversariantes do Mês
                 </label>
                 <select
                   id="filter-birth-month"
                   name="birthMonth"
-                  className="select select-bordered"
+                  className="h-12 w-full rounded-[8px] border bg-white px-3 text-sm"
+                  style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
                 >
                   <option value="todos">Todos os meses</option>
                   <option value="1">Janeiro</option>
@@ -180,12 +240,20 @@ export default async function RelatorioPage() {
           </section>
 
           {/* Actions */}
-          <div className="mt-6 flex items-center gap-4">
-            <button type="submit" className="btn btn-primary min-h-11">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <button
+              type="submit"
+              className="inline-flex h-10 items-center gap-2 rounded-[8px] px-5 text-[13px] font-semibold text-white"
+              style={{ background: '#040920' }}
+            >
               <FileSpreadsheet size={18} aria-hidden="true" />
               Gerar Relatório
             </button>
-            <button type="reset" className="btn btn-outline min-h-11">
+            <button
+              type="reset"
+              className="inline-flex h-10 items-center rounded-[8px] border px-4 text-[13px] font-semibold"
+              style={{ color: '#0d1f3c', borderColor: '#c9d2df', background: '#fff' }}
+            >
               Limpar
             </button>
           </div>
