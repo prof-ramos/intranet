@@ -66,7 +66,7 @@ Server Components fetch data directly from the database. The juridico module has
 - `src/lib/dashboard/queries.ts` — Dashboard aggregations
 - `src/lib/associates/queries.ts` — Associate list/pagination
 - `src/lib/reports/queries.ts` + `src/lib/reports/csv.ts` — Report generation
-- `src/lib/juridico/repository.ts` + `service.ts` + `queries.ts` — Legal consultations (full service layer)
+- `src/lib/juridico/repository.ts` + `service.ts` + `queries.ts` — Legal consultations (full service layer). `queries.ts` wraps repository calls with module-level `unstable_cache`; Server Actions call `revalidateTag` on mutations.
 
 ### Auth & Authorization
 
@@ -128,8 +128,9 @@ Formal, institutional interface. See `DESIGN.md` for full specification.
 - **Webpack is default.** Turbopack (`*:turbo` scripts) is for explicit diagnostics only due to prior Tailwind resolution issues on memory-constrained machines.
 - **No `middleware.ts`.** Next.js 16 renamed middleware to `proxy.ts`.
 - **No API routes for data fetching.** Server Components query Drizzle directly.
-- **No `error.tsx` in all routes.** Only `src/app/app/error.tsx` (generic) and `src/app/app/associados/error.tsx` (specific) exist.
+- **Error boundaries are not global.** Exist: `src/app/app/error.tsx` (generic app-level), `src/app/app/juridico/error.tsx` (juridico module), `src/app/app/juridico/consultas/error.tsx` (consultas sub-route). Not every route has one.
 - **Server Component shell + Client Component form.** Pages that need client interactivity (forms, state) use a Server Component for data fetching that renders a `'use client'` subcomponent. Example: `relatorio/page.tsx` → `RelatorioForm.tsx`.
+- **`next/dynamic` for heavy client components.** Use lazy loading for components not needed on initial render. Example: `ReassignModal` in `AtividadesBoard.tsx` is loaded via `dynamic(() => import('./ReassignModal'))`.
 
 ## Important Files
 

@@ -93,7 +93,7 @@ npm run db:studio
 
 - Vitest runs Node-environment tests matching `src/**/*.test.{ts,tsx}`.
 - ESLint uses `eslint-config-next` core web vitals plus TypeScript config.
-- After dependency or Next/Tailwind changes, validate with at least `npm run lint`, `npm run test`, and `npm run build` when feasible.
+- After dependency or Next/Tailwind changes, validate with at least `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` when feasible.
 
 ## Gotchas
 

@@ -106,7 +106,7 @@ Name: ASOF Intranet Web App
 
 Description: Internal web interface for ASOF administrative staff and leadership. It currently supports an authenticated dashboard, associates list, associate profile view, activity kanban, new activity form, login, and forced password-change flow. Some administrative areas are placeholders.
 
-Technologies: Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, DaisyUI 5, Lucide React, local Playfair and Google Sans fonts.
+Technologies: Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, DaisyUI 5, Lucide React, `@hello-pangea/dnd` (kanban drag-and-drop), local Playfair and Google Sans fonts.
 
 Deployment: Vercel-compatible Next.js application. The exact production hosting policy should be kept in deployment docs when finalized.
 
@@ -126,7 +126,7 @@ Deployment: Runs with the Next.js application. `npm run dev` and `npm run build`
 
 Name: Drizzle/PostgreSQL Data Layer
 
-Description: Centralizes database access through `src/lib/db/index.ts`, using schemas from `src/lib/db/schema/*`. Runtime connections prefer `DATABASE_URL`, then `DATABASE_POSTGRES_URL`. The juridico module follows a repository pattern: `src/lib/juridico/repository.ts` isolates all SQL, `src/lib/juridico/service.ts` contains business rules, and `src/lib/juridico/queries.ts` wraps repository calls with `unstable_cache`.
+Description: Centralizes database access through `src/lib/db/index.ts`, using schemas from `src/lib/db/schema/*`. Runtime connections prefer `DATABASE_URL`, then `DATABASE_POSTGRES_URL`. The juridico module follows a repository pattern: `src/lib/juridico/repository.ts` isolates all SQL (with `Promise.all` for parallel queries and JOIN-based N+1 elimination), `src/lib/juridico/service.ts` contains business rules, and `src/lib/juridico/queries.ts` wraps repository calls with `unstable_cache` (module-level, with `revalidateTag` in Server Actions).
 
 Technologies: Drizzle ORM, `postgres`, PostgreSQL.
 
@@ -253,8 +253,14 @@ npm run build
 npm run build:turbo
 npm run lint
 npm run typecheck
+npm run format
+npm run format:check
+npm run audit
 npm run test
 npm run test:watch
+npm run test:e2e
+npm run test:e2e:ui
+npm run test:e2e:debug
 npm run db:generate
 npm run db:migrate
 npm run db:seed
@@ -262,7 +268,7 @@ npm run db:supabase:status
 npm run db:studio
 ```
 
-Testing Frameworks: Vitest for unit tests. Existing tests cover auth config, password logic, authorization, login rate limiting, associate search params, juridico service (validation + number formatting), seed config, and smoke-level behavior.
+Testing Frameworks: Vitest for unit/integration tests; Playwright for E2E tests (`npm run test:e2e`, `npm run test:e2e:ui`, `npm run test:e2e:debug`). Unit tests cover auth config, password logic, authorization, login rate limiting, associate search params, juridico service, session management, and seed config.
 
 Code Quality Tools: ESLint, TypeScript `tsc --noEmit`, Prettier with Tailwind plugin, npm audit.
 
@@ -283,7 +289,7 @@ Runtime Notes:
 - Decide and document production hosting, observability, backup, and incident-response practices.
 - Keep `README.md`, `AGENTS.md`, `DESIGN.md`, `CLAUDE.md`, `API.md`, `CONTRIBUTING.md`, and this file synchronized when runtime or architecture decisions change.
 - Implement Fase 2 do módulo jurídico: processos, pareceres, biblioteca de pareceres, anexos.
-- Add IP-based rate limiting to login endpoint (currently per-email only).
+- Add IP-based rate limiting to login endpoint (currently per-email only via `login_attempts`; IP-based `rate_limits` table exists but is not wired to login).
 - Evaluate formal API documentation (OpenAPI/Swagger) if REST endpoints grow.
 
 ## 10. Project Identification
