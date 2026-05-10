@@ -270,51 +270,51 @@ export interface PendingAction {
 }
 
 export async function getPendingActions(): Promise<PendingAction[]> {
-  const slaRows = await db
-    .select({
-      id: legalConsultations.id,
-      internalNumber: legalConsultations.internalNumber,
-      title: legalConsultations.title,
-      slaDueDate: legalConsultations.slaDueDate,
-    })
-    .from(legalConsultations)
-    .where(
-      and(
-        ne(legalConsultations.status, 'arquivada'),
-        sql`${legalConsultations.slaDueDate} < now() + interval '2 days'`,
-        sql`${legalConsultations.slaDueDate} >= now()`,
-      ),
-    )
-    .orderBy(asc(legalConsultations.slaDueDate))
-    .limit(5);
-
-  const staleRows = await db
-    .select({
-      id: legalConsultations.id,
-      internalNumber: legalConsultations.internalNumber,
-      title: legalConsultations.title,
-      lastInteractionAt: legalConsultations.lastInteractionAt,
-    })
-    .from(legalConsultations)
-    .where(
-      and(
-        ne(legalConsultations.status, 'arquivada'),
-        sql`${legalConsultations.lastInteractionAt} < now() - interval '7 days'`,
-      ),
-    )
-    .orderBy(asc(legalConsultations.lastInteractionAt))
-    .limit(5);
-
-  const escritorioRows = await db
-    .select({
-      id: legalConsultations.id,
-      internalNumber: legalConsultations.internalNumber,
-      title: legalConsultations.title,
-    })
-    .from(legalConsultations)
-    .where(eq(legalConsultations.status, 'aguardando_escritorio'))
-    .orderBy(asc(legalConsultations.updatedAt))
-    .limit(5);
+  const [slaRows, staleRows, escritorioRows] = await Promise.all([
+    db
+      .select({
+        id: legalConsultations.id,
+        internalNumber: legalConsultations.internalNumber,
+        title: legalConsultations.title,
+        slaDueDate: legalConsultations.slaDueDate,
+      })
+      .from(legalConsultations)
+      .where(
+        and(
+          ne(legalConsultations.status, 'arquivada'),
+          sql`${legalConsultations.slaDueDate} < now() + interval '2 days'`,
+          sql`${legalConsultations.slaDueDate} >= now()`,
+        ),
+      )
+      .orderBy(asc(legalConsultations.slaDueDate))
+      .limit(5),
+    db
+      .select({
+        id: legalConsultations.id,
+        internalNumber: legalConsultations.internalNumber,
+        title: legalConsultations.title,
+        lastInteractionAt: legalConsultations.lastInteractionAt,
+      })
+      .from(legalConsultations)
+      .where(
+        and(
+          ne(legalConsultations.status, 'arquivada'),
+          sql`${legalConsultations.lastInteractionAt} < now() - interval '7 days'`,
+        ),
+      )
+      .orderBy(asc(legalConsultations.lastInteractionAt))
+      .limit(5),
+    db
+      .select({
+        id: legalConsultations.id,
+        internalNumber: legalConsultations.internalNumber,
+        title: legalConsultations.title,
+      })
+      .from(legalConsultations)
+      .where(eq(legalConsultations.status, 'aguardando_escritorio'))
+      .orderBy(asc(legalConsultations.updatedAt))
+      .limit(5),
+  ]);
 
   const actions: PendingAction[] = [
     ...slaRows.map((r) => ({
