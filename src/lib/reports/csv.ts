@@ -1,5 +1,5 @@
 import type { ReportAssociate } from './queries';
-import { ASSOCIATE_EXPORT_FIELDS } from '@/lib/lgpd/dtos';
+import { ASSOCIATE_EXPORT_FIELDS } from '@/lib/associates/lgpd';
 
 export interface FieldDef {
   key: string;

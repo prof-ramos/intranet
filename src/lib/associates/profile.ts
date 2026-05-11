@@ -7,7 +7,7 @@ import {
   toAssociateProfileDTO,
   type AssociateProfileDTO,
   type Role,
-} from '@/lib/lgpd/dtos';
+} from '@/lib/associates/lgpd';
 import { initialsFromName } from '@/lib/utils/initials';
 import { formatLongDate as formatAssociateDate, yearsSinceDate } from '@/lib/utils/date';
 

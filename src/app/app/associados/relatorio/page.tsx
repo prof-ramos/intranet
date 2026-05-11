@@ -1,5 +1,5 @@
 import { requireRole } from '@/lib/auth/authorization';
-import { getRoleLabel } from '@/lib/auth/roles';
+import { getRoleLabel } from '@/lib/ui/role-labels';
 import { RelatorioForm } from './RelatorioForm';
 
 export default async function RelatorioPage() {

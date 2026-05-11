@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth/require-auth';
 import { getAssociatesPaginated } from '@/lib/associates/queries';
-import { getRoleLabel } from '@/lib/auth/roles';
+import { getRoleLabel } from '@/lib/ui/role-labels';
 import { parseAssociatesSearchParams } from '@/lib/associates/search-params';
 import { Bell, ChevronLeft, ChevronRight, Download, Pencil, Search } from 'lucide-react';
 import Link from 'next/link';
