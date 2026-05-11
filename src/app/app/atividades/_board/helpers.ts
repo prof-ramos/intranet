@@ -1,3 +1,4 @@
+import { initialsFromName } from '@/lib/utils/initials';
 import type { BoardActivity, Filters, Status } from './types';
 
 const MS_PER_DAY = 86_400_000;
@@ -31,17 +32,7 @@ export function formatDueDate(value: string | null) {
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
 }
 
-export function initials(name: string) {
-  if (!name.trim()) return '';
-
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
-}
+export { initialsFromName as initials };
 
 export function normalizeActivity(activity: BoardActivity): BoardActivity {
   const dueDate = dateOnly(activity.dueDate);

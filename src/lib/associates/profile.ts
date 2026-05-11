@@ -63,15 +63,7 @@ export function yearsSinceDate(value: string | Date | null) {
   return Math.floor((Date.now() - start.getTime()) / (365.25 * 86_400_000));
 }
 
-export function initialsFromName(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
-}
+export { initialsFromName } from '@/lib/utils/initials';
 
 export function getAssociateStatusLabel(value: string | null) {
   const labels: Record<string, string> = {

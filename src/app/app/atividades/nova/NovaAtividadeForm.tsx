@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft, Check, X } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import type { BoardAssociate, BoardPerson } from '../AtividadesBoard';
+import { initialsFromName } from '@/lib/utils/initials';
 import {
   focusRingClass,
   focusWithinClass,
@@ -70,16 +71,6 @@ interface FormState {
   assigneeId: number;
   associate: BoardAssociate | null;
   tags: string[];
-}
-
-function initials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
 }
 
 function Field({
@@ -360,7 +351,7 @@ function AssigneePicker({
               className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-bold text-white"
               style={{ background: '#040920' }}
             >
-              {initials(person.name)}
+              {initialsFromName(person.name)}
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13px] font-semibold" style={{ color: '#0d1f3c' }}>

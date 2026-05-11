@@ -10,6 +10,7 @@ import {
   getKanbanCards,
   type KanbanCard,
 } from '@/lib/dashboard/queries';
+import { initialsFromName } from '@/lib/utils/initials';
 import { statusStyles } from '@/lib/ui/tokens';
 
 export interface DashboardStripeItem {
@@ -166,14 +167,4 @@ function toDashboardStatusColumnCard(card: KanbanCard): DashboardStatusColumnCar
     dueDate: card.dueDate,
     associateLabel: card.associateName ? initialsFromName(card.associateName) : null,
   };
-}
-
-function initialsFromName(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
 }
