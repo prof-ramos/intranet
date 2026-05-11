@@ -8,7 +8,6 @@ import {
   groupActivitiesByStatus,
   initials,
   normalizeActivity,
-  todayStart,
 } from './helpers';
 import type { BoardActivity, Filters } from './types';
 
@@ -19,6 +18,12 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
 });
+
+function todayStart() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+}
 
 function localDate(daysFromNow: number) {
   const date = todayStart();

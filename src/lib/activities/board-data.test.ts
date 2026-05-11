@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapActivityRowToBoardActivity } from '@/lib/activities/board-data';
+import { mapActivityRowToBoardActivity } from '@/lib/activities/repository';
 
 describe('mapActivityRowToBoardActivity', () => {
   it('maps nullable tags to an empty array and serializes completedAt', () => {
