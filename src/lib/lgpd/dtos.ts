@@ -1,4 +1,6 @@
 import type { Associate } from '@/lib/db/schema/associates';
+import type { AuthRole } from '@/lib/auth/config';
+import { isPrivilegedRole } from '@/lib/auth/permissions';
 
 // LGPD field classification for associate data
 export const SENSITIVE_FIELDS: Set<keyof Associate> = new Set([
@@ -57,10 +59,11 @@ function maskEmail(email: string | null): string | null {
   return `${maskedLocal}@${domain}`;
 }
 
-export type Role = 'admin' | 'diretoria' | 'secretaria';
+export type Role = AuthRole;
 
+/** Whether the role can view sensitive (LGPD-protected) fields. */
 export function canViewSensitiveFields(role: Role): boolean {
-  return role === 'admin' || role === 'diretoria';
+  return isPrivilegedRole(role);
 }
 
 /** Return a view of an associate respecting LGPD role boundaries. */
