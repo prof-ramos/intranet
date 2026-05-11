@@ -36,6 +36,13 @@
       "when": 1778592000000,
       "tag": "0004_database_optimization",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778595600000,
+      "tag": "0005_repair_legal_consultations_last_interaction",
+      "breakpoints": true
     }
   ]
 }

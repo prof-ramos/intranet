@@ -57,6 +57,7 @@ npm run build
 npm run build:turbo
 npm run lint
 npm run test
+npm run test:db
 npm run db:generate
 npm run db:migrate
 npm run db:seed
@@ -82,6 +83,10 @@ npm run db:studio
 - `drizzle.config.ts` targets PostgreSQL and writes migrations to `drizzle/postgres`.
 - Runtime DB access requires `DATABASE_URL` or `DATABASE_POSTGRES_URL`.
 - Drizzle migrations require a direct/non-pooling PostgreSQL URL via `DATABASE_MIGRATION_URL` or `DATABASE_POSTGRES_URL_NON_POOLING`.
+- Local development uses PostgreSQL from Homebrew, currently `postgresql@16` on `localhost:5432`.
+- Homebrew PostgreSQL uses the macOS user role on this machine (`$USER`, currently `gabrielramos`); do not use `postgres://postgres@localhost:5432/...` unless that role has been explicitly created.
+- For local development, use the same direct URL for runtime and migrations: `DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet` and `DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet`.
+- Supabase remains the remote/staging/production Postgres target; use pooler URLs only for runtime and direct/non-pooling URLs for migrations.
 - Seed scripts are `scripts/seed-associados.ts` and `scripts/seed-admin.ts`, both run by `npm run db:seed`.
 
 ## Development Auth
@@ -93,6 +98,7 @@ npm run db:studio
 ## Testing And Validation
 
 - Vitest runs Node-environment tests matching `src/**/*.test.{ts,tsx}`.
+- `npm run test:db` runs the PostgreSQL schema contract tests against `.env.local`; it validates tables, columns, enums, indexes, `pg_trgm`, migration SQL files, `_journal.json`, and `drizzle.__drizzle_migrations`.
 - ESLint uses `eslint-config-next` core web vitals plus TypeScript config.
 - After dependency or Next/Tailwind changes, validate with at least `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` when feasible.
 

@@ -13,7 +13,7 @@ import {
 import { AlertTriangle, ArrowRight, Calendar, Globe, Mail, Megaphone, Plus } from 'lucide-react';
 import Link from 'next/link';
 
-import { hairline, statusStyles, priorityStyles, skyBlue, textMuted, textPrimary, textSecondary } from '@/lib/ui/tokens';
+import { hairline, statusStyles, priorityStyles, skyBlue, textMuted } from '@/lib/ui/tokens';
 
 function formatDueDate(value: string | Date | null) {
   if (!value) return null;

@@ -106,7 +106,7 @@ Name: ASOF Intranet Web App
 
 Description: Internal web interface for ASOF administrative staff and leadership. It currently supports an authenticated dashboard, associates list, associate profile view, activity kanban, new activity form, login, and forced password-change flow. Some administrative areas are placeholders.
 
-Technologies: Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, DaisyUI 5, Lucide React, `@hello-pangea/dnd` (kanban drag-and-drop), local Playfair and Google Sans fonts.
+Technologies: Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, DaisyUI, Lucide React, `@hello-pangea/dnd` (kanban drag-and-drop), local Playfair and Google Sans fonts.
 
 Deployment: Vercel-compatible Next.js application. The exact production hosting policy should be kept in deployment docs when finalized.
 
@@ -126,11 +126,11 @@ Deployment: Runs with the Next.js application. `npm run dev` and `npm run build`
 
 Name: Drizzle/PostgreSQL Data Layer
 
-Description: Centralizes database access through `src/lib/db/index.ts`, using schemas from `src/lib/db/schema/*`. Runtime connections prefer `DATABASE_URL`, then `DATABASE_POSTGRES_URL`. The juridico module follows a repository pattern: `src/lib/juridico/repository.ts` isolates all SQL (with `Promise.all` for parallel queries and JOIN-based N+1 elimination), `src/lib/juridico/service.ts` contains business rules, and `src/lib/juridico/queries.ts` wraps repository calls with `unstable_cache` (module-level, with `revalidateTag` in Server Actions).
+Description: Centralizes database access through `src/lib/db/index.ts`, using schemas from `src/lib/db/schema/*`. Runtime connections prefer `DATABASE_URL`, then `DATABASE_POSTGRES_URL`. Local development uses PostgreSQL installed by Homebrew; remote/staging/production environments use Supabase Postgres. The juridico module follows a repository pattern: `src/lib/juridico/repository.ts` isolates all SQL (with `Promise.all` for parallel queries and JOIN-based N+1 elimination), `src/lib/juridico/service.ts` contains business rules, and `src/lib/juridico/queries.ts` wraps repository calls with `unstable_cache` (module-level, with `revalidateTag` in Server Actions).
 
 Technologies: Drizzle ORM, `postgres`, PostgreSQL.
 
-Deployment: Server-side only. Migrations require a direct/non-pooling PostgreSQL URL via `DATABASE_MIGRATION_URL` or `DATABASE_POSTGRES_URL_NON_POOLING`.
+Deployment: Server-side only. Migrations require a direct/non-pooling PostgreSQL URL via `DATABASE_MIGRATION_URL` or `DATABASE_POSTGRES_URL_NON_POOLING`. For local Homebrew PostgreSQL there is no pooler, so `DATABASE_URL` and `DATABASE_MIGRATION_URL` can point to the same local database.
 
 #### 3.2.3. Supabase SDK Tooling
 
@@ -148,7 +148,7 @@ Deployment: Used only from server/script contexts. Service-role keys must never 
 
 Name: ASOF Intranet PostgreSQL Database
 
-Type: PostgreSQL, currently backed by Supabase in the known remote environment.
+Type: PostgreSQL. Local development currently uses Homebrew PostgreSQL 16 on `localhost:5432`; known remote/staging/production environments use Supabase Postgres.
 
 Purpose: Stores administrative users, ASOF associates, activity workflow records, audit logs, and login attempt tracking for rate limiting.
 
@@ -200,6 +200,19 @@ Integration Method: CLI workflow such as `git add . && coderabbit review --promp
 O projeto é uma aplicação Next.js 16 App Router **full-stack**, não apenas frontend estático. Server Components, Server Actions e Route Handlers executam nativamente na plataforma Vercel sem configuração extra.
 
 ### 6.2 Variáveis de ambiente por ambiente
+
+#### Desenvolvimento local
+
+Local development uses PostgreSQL installed through Homebrew, currently `postgresql@16` running as the macOS user service.
+
+| Variável | Valor / Origem |
+|---|---|
+| `DATABASE_URL` | Direct local URL, e.g. `postgres://$USER@localhost:5432/asof_intranet` |
+| `DATABASE_MIGRATION_URL` | Same direct local URL; there is no local pooler |
+| `SESSION_SECRET` | Local development secret in `.env.local` |
+| `SKIP_AUTH` / `DEV_USER_*` | Development-only auth bypass values |
+
+Homebrew PostgreSQL usually creates a role matching the macOS username, not a `postgres` role. On this machine `$USER` resolves to `gabrielramos`; `postgres://postgres@localhost:5432/...` fails because that role does not exist.
 
 #### Staging / Preview (Vercel)
 
@@ -286,9 +299,17 @@ Local Setup Instructions:
 ```bash
 npm install
 cp .env.example .env.local
+createdb asof_intranet
 npm run db:migrate
 npm run db:seed
 npm run dev
+```
+
+For local Homebrew PostgreSQL, `.env.local` should use the macOS role:
+
+```bash
+DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet
+DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet
 ```
 
 Main Commands:
@@ -304,6 +325,7 @@ npm run format
 npm run format:check
 npm run audit
 npm run test
+npm run test:db
 npm run test:watch
 npm run test:e2e
 npm run test:e2e:ui
@@ -315,7 +337,12 @@ npm run db:supabase:status
 npm run db:studio
 ```
 
-Testing Frameworks: Vitest for unit/integration tests; Playwright for E2E tests (`npm run test:e2e`, `npm run test:e2e:ui`, `npm run test:e2e:debug`). Unit tests cover auth config, password logic, authorization, login rate limiting, associate search params, juridico service, session management, and seed config.
+Testing Frameworks: Vitest for unit tests; Playwright for E2E tests. Integration tests with real PostgreSQL run via `vitest.integration.config.ts` and require `DATABASE_URL`.
+
+- Unit tests: `npx vitest run` (14 files, 95 tests) — auth, password, authorization, login rate limiting, associate search params, juridico service validation, validation schemas, env config.
+- Database schema contract tests: `npm run test:db` — validates the real PostgreSQL database against the expected tables, columns, enums, indexes, `pg_trgm`, migration SQL files, `_journal.json`, and `drizzle.__drizzle_migrations`.
+- Integration tests: `npx vitest run --config vitest.integration.config.ts` — juridico service with DB insertion, login rate limiter with PostgreSQL store. Requires a dedicated test database (never dev/prod). Set `DATABASE_URL` via `.env.test.local` or shell export; create the test DB and run migrations before first use.
+- E2E tests: `npm run test:e2e` — Playwright with authentication fixtures.
 
 Code Quality Tools: ESLint, TypeScript `tsc --noEmit`, Prettier with Tailwind plugin, npm audit.
 
@@ -347,7 +374,7 @@ Repository URL: https://github.com/prof-ramos/intranet.git
 
 Primary Contact/Team: ASOF / Prof. Ramos development workflow
 
-Date of Last Update: 2026-05-10
+Date of Last Update: 2026-05-11
 
 ## 11. Glossary / Acronyms
 

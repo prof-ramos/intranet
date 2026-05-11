@@ -1,7 +1,7 @@
 import { describe, expect, it, afterAll } from 'vitest';
 import { db } from '@/lib/db';
 import { loginAttempts } from '@/lib/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { inArray } from 'drizzle-orm';
 import { createLoginRateLimiter } from './login-rate-limit';
 
 describe('login rate limiter integration', () => {

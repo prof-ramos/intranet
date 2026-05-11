@@ -2,7 +2,7 @@
 
 Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia associados, atividades administrativas e comunicações internas da diretoria.
 
-**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL/Supabase · JWT (jose)
+**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Drizzle ORM · PostgreSQL/Supabase · JWT (jose)
 
 ---
 
@@ -106,10 +106,34 @@ npm run build:turbo   # build de produção (Turbopack — diagnóstico)
 npm run lint          # ESLint
 npm run typecheck     # TypeScript sem emitir arquivos
 npm run format:check  # valida formatação
-npm run test          # Vitest (testes unitários/integração)
+npm run test          # Vitest (testes unitários)
 npm run test:e2e      # Playwright (testes end-to-end)
 npm run test:e2e:ui   # Playwright modo interativo
 npm run audit         # npm audit
+```
+
+**Testes de integração (requer PostgreSQL):**
+
+> Atenção: testes de integração **sempre** usam um banco de dados dedicado (ex: `asof_intranet_test`), nunca dev ou produção.
+
+Configure o banco de testes em um arquivo `.env.test.local`:
+
+```bash
+DATABASE_URL=postgres://<user>@localhost:5432/asof_intranet_test
+DATABASE_MIGRATION_URL=postgres://<user>@localhost:5432/asof_intranet_test
+```
+
+Crie o banco e aplique migrações antes da primeira execução:
+
+```bash
+createdb asof_intranet_test
+DATABASE_MIGRATION_URL=postgres://<user>@localhost:5432/asof_intranet_test npm run db:migrate
+```
+
+Execute os testes de integração:
+
+```bash
+npx vitest run --config vitest.integration.config.ts
 ```
 
 > `npm run dev` usa Webpack por padrão. O projeto reproduziu um problema de resolução do Tailwind no Turbopack em máquinas com 8 GB RAM — Turbopack está disponível mas é tratado como modo de diagnóstico explícito.

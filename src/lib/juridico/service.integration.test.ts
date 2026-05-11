@@ -35,6 +35,7 @@ describe('juridico service integration', () => {
 
   describe('createConsultationService', () => {
     it('creates a consultation with generated internal number and SLA', async () => {
+      const beforeCreate = new Date();
       const result = await createConsultationService({
         title: 'Consulta de teste integração',
         questionSummary: 'Resumo da pergunta',
@@ -43,6 +44,7 @@ describe('juridico service integration', () => {
         slaDays: 14,
         createdBy: 1,
       });
+      const afterCreate = new Date();
 
       expect(result.id).toBeDefined();
       testIds.push(result.id);
@@ -63,11 +65,14 @@ describe('juridico service integration', () => {
       expect(consultation[0].createdBy).toBe(1);
 
       // Verify SLA due date (within 1 minute tolerance)
-      const expectedDueDate = new Date();
-      expectedDueDate.setDate(expectedDueDate.getDate() + 14);
-      const actualDueDate = new Date(consultation[0].slaDueDate);
-      const diffMs = Math.abs(actualDueDate.getTime() - expectedDueDate.getTime());
-      expect(diffMs).toBeLessThan(60_000);
+      expect(consultation[0].slaDueDate).not.toBeNull();
+      const earliestDueDate = new Date(beforeCreate);
+      earliestDueDate.setDate(earliestDueDate.getDate() + 14);
+      const latestDueDate = new Date(afterCreate);
+      latestDueDate.setDate(latestDueDate.getDate() + 14);
+      const actualDueDate = new Date(consultation[0].slaDueDate!);
+      expect(actualDueDate.getTime()).toBeGreaterThanOrEqual(earliestDueDate.getTime());
+      expect(actualDueDate.getTime()).toBeLessThanOrEqual(latestDueDate.getTime());
     });
 
     it('handles null questionFullText and associateId', async () => {
