@@ -49,6 +49,9 @@ next-env.d.ts
 sqlite.db
 sqlite.db-*
 
+# screenshots (moved to docs/screenshots/)
+screenshot-*.png
+
 # visual brainstorming sessions
 .superpowers/
 

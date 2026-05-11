@@ -31,7 +31,7 @@ export const PUBLIC_FIELDS: Set<keyof Associate> = new Set([
 
 export type Sensitivity = 'sensitive' | 'public';
 
-export function fieldSensitivity(key: keyof Associate): Sensitivity {
+function fieldSensitivity(key: keyof Associate): Sensitivity {
   return SENSITIVE_FIELDS.has(key) ? 'sensitive' : 'public';
 }
 
