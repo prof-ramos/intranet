@@ -134,6 +134,7 @@ Formal, institutional interface. See `DESIGN.md` for full specification.
 - **Error boundaries are not global.** Exist: `src/app/app/error.tsx` (generic app-level), `src/app/app/juridico/error.tsx` (juridico module), `src/app/app/juridico/consultas/error.tsx` (consultas sub-route). Not every route has one.
 - **Server Component shell + Client Component form.** Pages that need client interactivity (forms, state) use a Server Component for data fetching that renders a `'use client'` subcomponent. Example: `relatorio/page.tsx` → `RelatorioForm.tsx`.
 - **`next/dynamic` for heavy client components.** Use lazy loading for components not needed on initial render. Example: `ReassignModal` in `AtividadesBoard.tsx` is loaded via `dynamic(() => import('./ReassignModal'))`.
+- **`BoardActivity` name fallbacks.** `assigneeName` and `associateName` are kept alongside the IDs as optimistic-render fallbacks for items created via QuickAdd before the next server sync. The `peopleById` map is the authoritative source; UI code must prefer it (`peopleById.get(id)?.name ?? activity.assigneeName`). Do not remove these fields to "de-normalize PII" — they are intentional.
 
 ## Important Files
 

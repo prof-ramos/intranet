@@ -108,6 +108,8 @@ Description: Internal web interface for ASOF administrative staff and leadership
 
 Technologies: Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, DaisyUI, Lucide React, `@hello-pangea/dnd` (kanban drag-and-drop), local Playfair and Google Sans fonts.
 
+**Atividades board DTO design:** `BoardActivity` carries `assigneeName`/`associateName` alongside `assigneeId`/`associateId`. These fields are optimistic-render fallbacks for items created via QuickAdd before the next data sync; `peopleById` (built from the `people` prop) is the authoritative name source. UI code must always prefer the map lookup and fall back to the DTO field, not the reverse.
+
 Deployment: Vercel-compatible Next.js application. The exact production hosting policy should be kept in deployment docs when finalized.
 
 ### 3.2. Backend Services

@@ -29,7 +29,9 @@ export interface BoardActivity {
   associateId: number | null;
   associateName: string | null;
   tags: string[];
-  /** Whole calendar-day offset from browser-local today; negative values mean overdue. */
+  /** Calendar-day offset from the browser's local midnight (not UTC). Negative = overdue.
+   *  Computed client-side in helpers.ts via `daysFromToday`. Multi-timezone handling is
+   *  intentionally out of scope — ASOF users operate from Brasília (BRT). */
   dueOffset: number | null;
 }
 

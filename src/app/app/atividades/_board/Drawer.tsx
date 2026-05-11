@@ -283,23 +283,7 @@ export function Drawer({
             </p>
           </section>
 
-          <section className="mt-7">
-            <p className="m-0 text-[11px] font-bold tracking-[0.16em] uppercase" style={labelStyle}>
-              Histórico
-            </p>
-            <ul className="mt-3 flex flex-col gap-3 text-xs">
-              <li className="grid grid-cols-[92px_1fr] gap-2" style={{ color: textSecondary }}>
-                <span style={{ color: textMuted }}>Hoje</span>
-                <span>
-                  <strong>ASOF</strong> sincronizou dados do quadro.
-                </span>
-              </li>
-              <li className="grid grid-cols-[92px_1fr] gap-2" style={{ color: textSecondary }}>
-                <span style={{ color: textMuted }}>Criação</span>
-                <span>Atividade registrada no painel operacional.</span>
-              </li>
-            </ul>
-          </section>
+          {/* TODO: histórico de alterações — aguardando coluna de timeline no schema `activities` */}
         </div>
       </aside>
     </>
