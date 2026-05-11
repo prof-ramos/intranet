@@ -17,23 +17,11 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmToggle, setConfirmToggle] = useState(false);
 
-  async function handleCopy(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
+  function handleCopy(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+    });
   }
 
   if (resetState?.success && resetState.tempPassword) {
@@ -53,19 +41,21 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
             {copied ? <Check size={14} /> : <Copy size={14} />}
           </button>
         </div>
-        <p className="text-xs text-[rgba(13,31,60,0.45)]">Copie antes de fechar. Não será exibida novamente.</p>
+        <p className="text-[10px] text-[rgba(13,31,60,0.45)]">Copie antes de fechar. Não será exibida novamente.</p>
       </div>
     );
   }
 
   return (
     <div className="inline-flex items-center gap-2">
+      {/* Feedback de erro */}
       {(resetState?.success === false || toggleState?.success === false) && (
         <span className="text-xs text-red-600">
           {resetState?.success === false ? resetState.message : toggleState?.message}
         </span>
       )}
 
+      {/* Botão reset senha */}
       {!confirmReset ? (
         <button
           type="button"
@@ -98,6 +88,7 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
         </form>
       )}
 
+      {/* Botão ativar/desativar */}
       {!confirmToggle ? (
         <button
           type="button"

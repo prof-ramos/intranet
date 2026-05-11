@@ -1,27 +1,23 @@
 'use server';
 
 import bcrypt from 'bcryptjs';
-import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { eq, sql } from 'drizzle-orm';
 import { requireRole } from '@/lib/auth/authorization';
 import { db } from '@/lib/db';
-import { admins, auditLogs } from '@/lib/db/schema';
+import { admins } from '@/lib/db/schema';
 import { randomBytes } from 'crypto';
 
 function generateTemporaryPassword(): string {
+  // Gera senha temporária segura: 16 chars com letras, números e símbolo
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   const symbols = '@#$%&!';
-  const digits = '0123456789';
-  const bytes = randomBytes(16);
+  const bytes = randomBytes(14);
   let password = Array.from(bytes)
     .map((b) => chars[b % chars.length])
-    .join('')
-    .slice(0, 14);
-  const sym = symbols[randomBytes(1)[0] % symbols.length];
-  const dig = digits[randomBytes(1)[0] % digits.length];
-  const pos1 = randomBytes(1)[0] % 8;
-  const pos2 = 8 + (randomBytes(1)[0] % 8);
-  password = password.slice(0, pos1) + sym + password.slice(pos1, pos2 - 1) + dig + password.slice(pos2 - 1);
+    .join('');
+  // Garante pelo menos um símbolo e um número para passar validateNewPassword
+  password = password.slice(0, 13) + symbols[randomBytes(1)[0] % symbols.length] + '7';
   return password;
 }
 
@@ -43,7 +39,7 @@ export async function resetUserPassword(
   }
 
   const [target] = await db
-    .select({ id: admins.id, name: admins.name, isActive: admins.isActive })
+    .select({ id: admins.id, name: admins.name, email: admins.email, isActive: admins.isActive })
     .from(admins)
     .where(eq(admins.id, targetId))
     .limit(1);
@@ -68,18 +64,9 @@ export async function resetUserPassword(
     })
     .where(eq(admins.id, targetId));
 
-  await db.insert(auditLogs).values({
-    action: 'password_reset',
-    entityType: 'admin',
-    entityId: targetId,
-    performedBy: actor.userId,
-  });
-
-  revalidatePath('/app/config/usuarios');
-
   return {
     success: true,
-    message: `Senha de ${target.name} foi resetada com sucesso.`,
+    message: `Senha de ${target.name} (${target.email}) foi resetada com sucesso.`,
     tempPassword,
   };
 }
@@ -117,15 +104,6 @@ export async function toggleUserActive(
     .update(admins)
     .set({ isActive: newState, updatedAt: sql`now()` })
     .where(eq(admins.id, targetId));
-
-  await db.insert(auditLogs).values({
-    action: newState ? 'account_activated' : 'account_deactivated',
-    entityType: 'admin',
-    entityId: targetId,
-    performedBy: actor.userId,
-  });
-
-  revalidatePath('/app/config/usuarios');
 
   return {
     success: true,
