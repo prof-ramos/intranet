@@ -33,10 +33,6 @@ export const PUBLIC_FIELDS: Set<keyof Associate> = new Set([
 
 export type Sensitivity = 'sensitive' | 'public';
 
-function fieldSensitivity(key: keyof Associate): Sensitivity {
-  return SENSITIVE_FIELDS.has(key) ? 'sensitive' : 'public';
-}
-
 function maskCpf(cpf: string | null): string | null {
   if (!cpf || cpf.length < 11) return cpf;
   return `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**`;

@@ -6,7 +6,7 @@ export interface ReportAccess {
   userId: number;
 }
 
-export function canGenerateReports(role: AuthRole | string): boolean {
+export function canGenerateReports(role: AuthRole): boolean {
   return isPrivilegedRole(role);
 }
 
@@ -23,9 +23,12 @@ export async function requireReportAccess(): Promise<ReportAccess | Response> {
     return new Response(null, { status: 302, headers: { Location: '/login' } });
   }
 
-  const { requireAuth } = await import('@/lib/auth/require-auth');
   try {
+    const { requireAuth } = await import('@/lib/auth/require-auth');
     const user = await requireAuth();
+    if (!isPrivilegedRole(user.role)) {
+      return new Response(null, { status: 403 });
+    }
     return { userId: user.userId };
   } catch {
     return new Response(null, { status: 302, headers: { Location: '/login' } });

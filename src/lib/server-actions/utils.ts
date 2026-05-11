@@ -2,13 +2,14 @@ import type { ZodIssue } from 'zod';
 
 /**
  * Convert a FormData object into a plain Record<string, unknown>.
- * Replaces the repeated `formData.forEach((value, key) => { raw[key] = value; })` pattern.
+ * Keys with multiple values become arrays; single values stay scalars.
  */
 export function formDataToRecord(formData: FormData): Record<string, unknown> {
   const raw: Record<string, unknown> = {};
-  formData.forEach((value, key) => {
-    raw[key] = value;
-  });
+  for (const key of formData.keys()) {
+    const values = formData.getAll(key);
+    raw[key] = values.length === 1 ? values[0] : values;
+  }
   return raw;
 }
 

@@ -7,5 +7,5 @@ export const ROLE_LABELS: Record<AuthRole, string> = {
 };
 
 export function getRoleLabel(role: AuthRole): string {
-  return ROLE_LABELS[role];
+  return ROLE_LABELS[role] ?? role;
 }

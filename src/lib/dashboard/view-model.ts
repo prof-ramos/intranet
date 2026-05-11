@@ -11,7 +11,6 @@ import {
   type KanbanCard,
 } from '@/lib/dashboard/queries';
 import { initialsFromName } from '@/lib/utils/initials';
-import { formatShortDate as formatDashboardDueDate } from '@/lib/utils/date';
 import { statusStyles } from '@/lib/ui/tokens';
 
 export interface DashboardStripeItem {
