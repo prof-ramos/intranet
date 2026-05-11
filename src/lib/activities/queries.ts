@@ -1,15 +1,11 @@
-import { unstable_cache } from 'next/cache';
 import type { AuthUser } from '@/lib/auth/config';
-import type { BoardAssociate, BoardPerson } from './types';
+import type { ActivitiesBoardData, BoardAssociate, BoardPerson } from './types';
 import { findActivities, findActiveAdmins, findActiveAssociates, mapActivityRowToBoardActivity } from './repository';
 
-const ACTIVITIES_CACHE_TAG = 'activities';
-const PEOPLE_CACHE_TAG = 'activities-people';
-
-async function getActivitiesBoardDataInner(
+export async function getActivitiesBoardData(
   user: Pick<AuthUser, 'userId' | 'name' | 'role'>,
   options: { limit?: number; offset?: number } = {},
-) {
+): Promise<ActivitiesBoardData> {
   const [activityRows, adminRows, associateRows] = await Promise.all([
     findActivities(options),
     findActiveAdmins(),
@@ -39,12 +35,6 @@ async function getActivitiesBoardDataInner(
     currentUser,
   };
 }
-
-export const getActivitiesBoardData = unstable_cache(
-  getActivitiesBoardDataInner,
-  [ACTIVITIES_CACHE_TAG],
-  { tags: [ACTIVITIES_CACHE_TAG, PEOPLE_CACHE_TAG] },
-);
 
 export async function getActivitiesFormData(user: Pick<AuthUser, 'userId' | 'name' | 'role'>) {
   const [adminRows, associateRows] = await Promise.all([

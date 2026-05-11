@@ -1,13 +1,11 @@
 'use server';
 
-import { revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/auth/authorization';
 import { createActivityService } from '@/lib/activities/service';
 import { isActivityStatus } from '@/lib/activities/status';
 import type { Priority, Status } from '@/lib/activities/types';
 import { ACTIVITY_PRIORITIES } from '@/lib/activities/types';
-
-const ACTIVITIES_CACHE_TAG = 'activities';
 
 export async function createActivity(formData: FormData) {
   const user = await requireRole(['admin', 'diretoria', 'secretaria']);
@@ -30,13 +28,19 @@ export async function createActivity(formData: FormData) {
     throw new Error('Prioridade de atividade inválida.');
   }
 
+  if (dueDate && isNaN(Date.parse(dueDate))) {
+    throw new Error('Data de vencimento inválida.');
+  }
+
   const assigneeId = assigneeIdRaw ? Number(assigneeIdRaw) : null;
   const associateId = associateIdRaw ? Number(associateIdRaw) : null;
 
   let tags: string[] = [];
   try {
-    tags = JSON.parse(tagsRaw);
-    if (!Array.isArray(tags)) tags = [];
+    const parsed = JSON.parse(tagsRaw);
+    if (Array.isArray(parsed)) {
+      tags = parsed.filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
+    }
   } catch {
     tags = [];
   }
@@ -53,5 +57,5 @@ export async function createActivity(formData: FormData) {
     createdBy: user.userId,
   });
 
-  revalidateTag(ACTIVITIES_CACHE_TAG, {});
+  revalidatePath('/app/atividades');
 }

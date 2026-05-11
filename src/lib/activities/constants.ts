@@ -28,6 +28,7 @@ export const TAG_SUGGESTIONS = [
   'ti',
   'cadastro',
   'siape',
+  'administrativo',
   'juridico',
   'financeiro',
 ] as const;

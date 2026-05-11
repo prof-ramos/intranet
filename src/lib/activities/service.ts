@@ -18,10 +18,13 @@ export async function createActivityService(input: CreateActivityInput) {
   if (!input.title.trim()) {
     throw new Error('O título da atividade é obrigatório.');
   }
+  if (input.title.length > 255) {
+    throw new Error('O título não pode exceder 255 caracteres.');
+  }
   if (!isActivityStatus(input.status)) {
     throw new Error('Status de atividade inválido.');
   }
-  if (!input.createdBy || Number.isNaN(input.createdBy)) {
+  if (input.createdBy == null || Number.isNaN(input.createdBy)) {
     throw new Error('Usuário criador inválido.');
   }
 

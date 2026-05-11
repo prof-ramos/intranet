@@ -36,11 +36,11 @@ export function filterActivities(
     }
     if (filters.dueWeek) {
       const offset = activity.dueOffset;
-      if (offset === null || offset < 0 || offset > 7) return false;
+      if (offset == null || offset < 0 || offset > 7) return false;
     }
     if (filters.dueLate) {
       const offset = activity.dueOffset;
-      if (offset === null || offset >= 0 || activity.status === 'concluido') return false;
+      if (offset == null || offset >= 0 || activity.status === 'concluido') return false;
     }
     return true;
   });

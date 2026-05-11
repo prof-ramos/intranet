@@ -57,3 +57,10 @@ export interface Filters {
   dueWeek: boolean;
   dueLate: boolean;
 }
+
+export interface ActivitiesBoardData {
+  initialActivities: BoardActivity[];
+  people: BoardPerson[];
+  associates: BoardAssociate[];
+  currentUser: BoardPerson;
+}
