@@ -16,6 +16,11 @@ export const primaryContainerHover = '#0d3260';
 export const primaryContainerActive = '#123d73';
 export const skyBlue = '#76AEEA';
 export const canvas = '#f8fafc';
+export const white = '#ffffff';
+export const borderMuted = '#c9d2df';
+export const borderSoft = '#dde3ec';
+export const activityColumnBg = '#eef1f6';
+export const overlayScrim = 'rgba(4, 9, 32, 0.35)';
 
 export const statusStyles: Record<
   string,
@@ -52,6 +57,8 @@ export const cardShadow =
   '0 1px 3px rgba(4, 9, 32, 0.08), 0 1px 2px rgba(4, 9, 32, 0.04)';
 export const elevatedShadow =
   '0 10px 15px -3px rgba(4, 9, 32, 0.08), 0 4px 6px -4px rgba(4, 9, 32, 0.04)';
+export const drawerShadow = '-12px 0 30px rgba(4, 9, 32, 0.12)';
+export const floatingBadgeShadow = `0 0 0 2px ${white}`;
 
 // Borders
 export const cardBorder = `1px solid ${hairline}`;
@@ -71,7 +78,23 @@ export const inputBg = '#ffffff';
 // Text colors
 export const textMuted = 'rgba(13, 31, 60, 0.55)';
 export const textPrimary = '#040920';
+export const textStrong = '#0d1f3c';
 export const textSecondary = 'rgba(13, 31, 60, 0.70)';
+export const textSubtle = 'rgba(13, 31, 60, 0.60)';
+export const textFaint = 'rgba(13, 31, 60, 0.40)';
+export const iconMuted = 'rgba(13, 31, 60, 0.45)';
+export const slateText = '#59677a';
+export const dangerText = '#b91c1c';
+export const warningText = '#a16207';
+export const successText = '#15803d';
+export const successTextHover = '#166534';
+
+export const reassignmentNotice = {
+  border: statusStyles.aguardando_terceiros.accent,
+  bg: priorityStyles.alta.bg,
+  label: '#7a4a08',
+  text: '#5a3a08',
+};
 
 export const infoNotice = {
   border: '#93c5fd',
