@@ -1,7 +1,13 @@
 import { db } from '@/lib/db';
 import { legalConsultations } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
-import { insertConsultation } from './repository';
+import {
+  insertConsultation,
+  insertNote,
+  touchConsultationInteraction,
+  updateConsultationStatus,
+} from './repository';
+import { isLegalConsultationStatus, type LegalConsultationStatus } from '@/lib/juridico/status';
 
 const MAX_RETRIES = 3;
 
@@ -32,8 +38,7 @@ export async function generateInternalNumber(): Promise<string> {
       return next;
     } catch (error) {
       const isUniqueViolation =
-        error instanceof Error &&
-        /unique constraint|duplicate key/i.test(error.message);
+        error instanceof Error && /unique constraint|duplicate key/i.test(error.message);
 
       if (!isUniqueViolation || attempt === MAX_RETRIES) {
         throw error;
@@ -87,4 +92,51 @@ export async function createConsultationService(input: CreateConsultationInput) 
   });
 
   return inserted;
+}
+
+export async function updateConsultationStatusService(id: number, status: string) {
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error('Consulta inválida.');
+  }
+  if (!isLegalConsultationStatus(status)) {
+    throw new Error('Status de consulta inválido.');
+  }
+
+  const validStatus: LegalConsultationStatus = status;
+  const lastInteractionAt = validStatus === 'respondida' ? new Date() : undefined;
+
+  await updateConsultationStatus(id, validStatus, lastInteractionAt);
+}
+
+export type LegalNoteEntityType = 'consultation' | 'process';
+
+interface AddNoteInput {
+  entityType: LegalNoteEntityType;
+  entityId: number;
+  content: string;
+  createdBy: number;
+  isEscritorioResponse: boolean;
+}
+
+export async function addNoteService(input: AddNoteInput) {
+  if (!['consultation', 'process'].includes(input.entityType)) {
+    throw new Error('Tipo de entidade inválido.');
+  }
+  if (!Number.isInteger(input.entityId) || input.entityId < 0) {
+    throw new Error('Entidade inválida.');
+  }
+  if (!input.content.trim()) {
+    throw new Error('O conteúdo da nota é obrigatório.');
+  }
+  if (!Number.isInteger(input.createdBy) || input.createdBy <= 0) {
+    throw new Error('Usuário criador inválido.');
+  }
+
+  await db.transaction(async (tx) => {
+    await insertNote({ ...input, content: input.content.trim() }, tx);
+
+    if (input.entityType === 'consultation') {
+      await touchConsultationInteraction(input.entityId, tx);
+    }
+  });
 }

@@ -6,7 +6,7 @@ test.describe('Juridico', () => {
     await page.goto('/app/juridico');
     await expect(page.locator('h1')).toContainText('Jurídico');
     await expect(page.locator('text=Consultas abertas')).toBeVisible();
-    await expect(page.locator('text=Aguardando escritório')).toBeVisible();
+    await expect(page.getByLabel('Indicadores').getByText('Aguardando escritório')).toBeVisible();
     await expect(page.locator('text=Ações pendentes')).toBeVisible();
   });
 

@@ -21,9 +21,9 @@ import type {
   Filters,
   PendingReassignment,
   Status,
-} from './_board/types';
+} from '@/lib/activities/types';
 
-export type { BoardActivity, BoardAssociate, BoardPerson } from './_board/types';
+export type { BoardActivity, BoardAssociate, BoardPerson } from '@/lib/activities/types';
 
 const ReassignModal = dynamic(() =>
   import('./ReassignModal').then((mod) => ({ default: mod.ReassignModal })),

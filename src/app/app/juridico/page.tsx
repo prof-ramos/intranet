@@ -7,6 +7,10 @@ import {
   countConsultationsRespondedThisMonth,
   getPendingActions,
 } from '@/lib/juridico/queries';
+import {
+  LEGAL_CONSULTATION_STATUS_LABELS,
+  type LegalConsultationStatus,
+} from '@/lib/juridico/status';
 import { AlertTriangle, Clock, FileQuestion, MessageSquare, Plus, Scale } from 'lucide-react';
 import { type CSSProperties } from 'react';
 import {
@@ -21,16 +25,10 @@ import {
   info,
   success,
   textPrimary,
+  textSecondary,
 } from '@/lib/ui/tokens';
 
-const statusLabels: Record<string, string> = {
-  aberta: 'Aberta',
-  aguardando_escritorio: 'Aguardando escritório',
-  respondida: 'Respondida',
-  arquivada: 'Arquivada',
-};
-
-const statusIcons: Record<string, React.ReactNode> = {
+const statusIcons: Record<LegalConsultationStatus, React.ReactNode> = {
   aberta: <FileQuestion size={20} />,
   aguardando_escritorio: <Clock size={20} />,
   respondida: <MessageSquare size={20} />,
@@ -68,7 +66,7 @@ export default async function JuridicoDashboardPage() {
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
       <div className="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.18em]" style={{ color: textMuted }}>
+          <p className="text-[11px] tracking-[0.18em] uppercase" style={{ color: textMuted }}>
             Área institucional
           </p>
           <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
@@ -78,7 +76,7 @@ export default async function JuridicoDashboardPage() {
         <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
           <Link
             href="/app/juridico/consultas"
-            className="inline-flex items-center gap-2 bg-white rounded-[8px] h-10 px-4 text-sm font-semibold border hover:bg-[var(--button-outline-hover)]"
+            className="inline-flex h-10 items-center gap-2 rounded-[8px] border bg-white px-4 text-sm font-semibold hover:bg-[var(--button-outline-hover)]"
             style={
               {
                 color: navy,
@@ -91,7 +89,7 @@ export default async function JuridicoDashboardPage() {
           </Link>
           <Link
             href="/app/juridico/consultas/nova"
-            className="inline-flex items-center gap-2 text-white rounded-[8px] h-10 px-5 text-sm font-semibold hover:bg-[var(--primary-hover)]"
+            className="inline-flex h-10 items-center gap-2 rounded-[8px] px-5 text-sm font-semibold text-white hover:bg-[var(--primary-hover)]"
             style={
               {
                 backgroundColor: navy,
@@ -156,7 +154,9 @@ export default async function JuridicoDashboardPage() {
           </div>
 
           {pendingActions.length === 0 ? (
-            <p className="text-sm" style={{ color: textMuted }}>Nenhuma ação pendente.</p>
+            <p className="text-sm" style={{ color: textMuted }}>
+              Nenhuma ação pendente.
+            </p>
           ) : (
             <ul className="flex flex-col gap-3">
               {pendingActions.map((action, index) => (
@@ -207,7 +207,7 @@ export default async function JuridicoDashboardPage() {
           <div className="rounded-[16px] bg-white p-4" style={{ border: `1px solid ${hairline}` }}>
             <h2 className="mb-3 font-serif text-lg font-bold">Status das consultas</h2>
             <ul className="flex flex-col gap-3">
-              {Object.entries(statusLabels).map(([status, label]) => {
+              {Object.entries(LEGAL_CONSULTATION_STATUS_LABELS).map(([status, label]) => {
                 const countValue =
                   status === 'aberta'
                     ? abertas
@@ -219,7 +219,9 @@ export default async function JuridicoDashboardPage() {
                 return (
                   <li key={status} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-[rgba(13,31,60,0.70)]">{statusIcons[status]}</span>
+                      <span style={{ color: textSecondary }}>
+                        {statusIcons[status as LegalConsultationStatus]}
+                      </span>
                       <p className="text-sm font-medium">{label}</p>
                     </div>
                     <span className="font-serif text-sm font-bold">{countValue}</span>

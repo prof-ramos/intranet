@@ -1,64 +1,14 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
-import { asc, eq } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth/require-auth';
-import { db } from '@/lib/db';
-import { activities, associates } from '@/lib/db/schema';
 import { hairline, infoNotice } from '@/lib/ui/tokens';
-import { toAssociateProfileDTO, canViewSensitiveFields } from '@/lib/lgpd/dtos';
-
-function dateOnly(value: string | Date | null) {
-  if (!value) return null;
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  return value.split(/[ T]/)[0] ?? value;
-}
-
-function formatDate(value: string | Date | null) {
-  const date = dateOnly(value);
-  if (!date) return null;
-  const [year, month, day] = date.split('-').map(Number);
-  if (!year || !month || !day) return date;
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
-}
-
-function yearsSince(value: string | Date | null) {
-  const date = dateOnly(value);
-  if (!date) return null;
-  const [year, month, day] = date.split('-').map(Number);
-  if (!year || !month || !day) return null;
-  const start = new Date(Date.UTC(year, month - 1, day));
-  return Math.floor((Date.now() - start.getTime()) / (365.25 * 86_400_000));
-}
-
-function initials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
-}
-
-function statusLabel(value: string | null) {
-  const labels: Record<string, string> = {
-    ativo: 'Ativo',
-    inativo: 'Inativo',
-    aposentado: 'Aposentado',
-    cedido: 'Cedido',
-    em_licenca: 'Em licença',
-    em_dia: 'Em dia',
-    inadimplente: 'Inadimplente',
-    pendente_migracao: 'Pendente migração',
-  };
-  return value ? (labels[value] ?? value) : null;
-}
+import {
+  formatAssociateDate,
+  getAssociateProfileViewModel,
+  getAssociateStatusLabel,
+  initialsFromName,
+} from '@/lib/associates/profile';
 
 function Pill({
   children,
@@ -153,37 +103,21 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
     notFound();
   }
 
-  const [rawAssociate] = await db
-    .select()
-    .from(associates)
-    .where(eq(associates.id, associateId))
-    .limit(1);
-
-  if (!rawAssociate) {
+  const profile = await getAssociateProfileViewModel(associateId, user.role);
+  if (!profile) {
     notFound();
   }
-
-  const associate = toAssociateProfileDTO(rawAssociate, user.role);
-
-  const linkedActivities = await db
-    .select({
-      id: activities.id,
-      title: activities.title,
-      status: activities.status,
-      dueDate: activities.dueDate,
-    })
-    .from(activities)
-    .where(eq(activities.associateId, associate.id))
-    .orderBy(asc(activities.dueDate), asc(activities.id))
-    .limit(10);
-
-  const isAssociationActive = associate.associationStatus === 'ativo';
-  const isFunctionalActive = associate.functionalStatus === 'ativo';
-  const joinedYears = yearsSince(associate.joinedAt);
-  const careerYears = yearsSince(associate.assignmentStartDate);
-  const location =
-    [associate.locationCity, associate.locationCountry].filter(Boolean).join(' / ') || null;
-  const showSensitive = canViewSensitiveFields(user.role);
+  const {
+    associate,
+    linkedActivities,
+    isAssociationActive,
+    isFunctionalActive,
+    joinedYears,
+    careerYears,
+    location,
+    showSensitive,
+    timeline,
+  } = profile;
 
   return (
     <main className="mx-auto w-full max-w-[1180px] min-w-0 px-5 py-7 sm:px-8 lg:px-10">
@@ -220,7 +154,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
               <div className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-[#040920] font-serif text-3xl font-bold text-white">
-                {initials(associate.fullName)}
+                {initialsFromName(associate.fullName)}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-base-content/55 m-0 text-[11px] tracking-[0.18em] uppercase">
@@ -236,7 +170,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
                     {isAssociationActive ? 'Associado ativo' : 'Inativo'}
                   </Pill>
                   <Pill tone={isFunctionalActive ? 'success' : 'neutral'}>
-                    {statusLabel(associate.functionalStatus) ?? 'Situação funcional pendente'}
+                    {getAssociateStatusLabel(associate.functionalStatus) ?? 'Situação funcional pendente'}
                   </Pill>
                   {associate.classPattern && <Pill>{associate.classPattern}</Pill>}
                 </div>
@@ -267,12 +201,12 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
                 {
                   label: 'Tempo na lotação',
                   value: careerYears !== null ? `${careerYears} anos` : null,
-                  sub: formatDate(associate.assignmentStartDate),
+                  sub: formatAssociateDate(associate.assignmentStartDate),
                 },
                 {
                   label: 'Tempo na ASOF',
                   value: joinedYears !== null ? `${joinedYears} anos` : null,
-                  sub: formatDate(associate.joinedAt),
+                  sub: formatAssociateDate(associate.joinedAt),
                 },
                 {
                   label: 'E-mail principal',
@@ -342,7 +276,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
               <Row label="Nome completo" value={associate.fullName} />
               <Row label="CPF" value={associate.cpf} mono />
               <Row label="SIAPE" value={associate.siape} mono />
-              <Row label="Data de nascimento" value={formatDate(associate.birthDate)} />
+              <Row label="Data de nascimento" value={formatAssociateDate(associate.birthDate)} />
               <Row label="E-mail principal" value={associate.primaryEmail} />
               <Row label="E-mail alternativo" value={associate.secondaryEmail} />
               <Row label="Telefone" value={associate.phone} mono />
@@ -359,11 +293,11 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
 
           <SectionCard id="administrativo" title="Administrativo" action={<EditButton />}>
             <dl className="m-0">
-              <Row label="Situação funcional" value={statusLabel(associate.functionalStatus)} />
+              <Row label="Situação funcional" value={getAssociateStatusLabel(associate.functionalStatus)} />
               <Row label="Classe / Padrão" value={associate.classPattern} />
               <Row label="Categoria" value={associate.associationCategory} />
-              <Row label="Contribuição" value={statusLabel(associate.contributionStatus)} />
-              <Row label="Início da lotação" value={formatDate(associate.assignmentStartDate)} />
+              <Row label="Contribuição" value={getAssociateStatusLabel(associate.contributionStatus)} />
+              <Row label="Início da lotação" value={formatAssociateDate(associate.assignmentStartDate)} />
             </dl>
             <div className="mt-4 rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-[#f8fafc] p-4">
               <p className="text-base-content/55 m-0 text-[11px] font-bold tracking-[0.10em] uppercase">
@@ -383,26 +317,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
 
           <SectionCard id="associacao" title="Associação · Histórico">
             <ol className="m-0 flex list-none flex-col p-0">
-              {[
-                {
-                  date: associate.updatedAt,
-                  event: 'Última atualização cadastral',
-                  detail: 'Registro sincronizado na base da intranet.',
-                  tone: 'neutral',
-                },
-                {
-                  date: associate.joinedAt,
-                  event: 'Adesão à ASOF',
-                  detail: associate.associationCategory ?? 'Categoria não informada.',
-                  tone: 'pos',
-                },
-                {
-                  date: associate.assignmentStartDate,
-                  event: 'Lotação registrada',
-                  detail: associate.assignment ?? 'Lotação não informada.',
-                  tone: 'neutral',
-                },
-              ].map((item, index, arr) => {
+              {timeline.map((item, index, arr) => {
                 const color =
                   item.tone === 'pos'
                     ? '#15803d'
@@ -415,7 +330,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
                     className="grid grid-cols-[132px_24px_1fr] items-start gap-1"
                   >
                     <span className="text-base-content/60 pt-3.5 text-xs">
-                      {formatDate(item.date)}
+                      {formatAssociateDate(item.date)}
                     </span>
                     <span className="flex flex-col items-center self-stretch">
                       <span
@@ -482,7 +397,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
                       {activity.title}
                     </p>
                     <span className="text-base-content/55 text-xs whitespace-nowrap">
-                      {formatDate(activity.dueDate)}
+                      {formatAssociateDate(activity.dueDate)}
                     </span>
                     <Link
                       href="/app/atividades"

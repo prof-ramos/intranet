@@ -2,20 +2,16 @@ import Link from 'next/link';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { getConsultationsPaginated } from '@/lib/juridico/queries';
 import { formatDate, daysSince } from '@/lib/juridico/formatters';
+import {
+  getLegalConsultationStatusBadgeClass,
+  getLegalConsultationStatusLabel,
+  LEGAL_CONSULTATION_STATUS_FILTER_OPTIONS,
+} from '@/lib/juridico/status';
 import { ArrowLeft, Plus, Search } from 'lucide-react';
 import { hairline } from '@/lib/ui/tokens';
 import { StatusFilter } from './StatusFilter';
 
 const PAGE_SIZE = 20;
-
-const statusOptions = [
-  { value: '', label: 'Todos' },
-  { value: 'aberta', label: 'Aberta' },
-  { value: 'aguardando_escritorio', label: 'Aguardando escritório' },
-  { value: 'respondida', label: 'Respondida' },
-  { value: 'arquivada', label: 'Arquivada' },
-];
-
 
 export default async function ConsultasPage({
   searchParams,
@@ -79,7 +75,7 @@ export default async function ConsultasPage({
         <form className="flex gap-2" method="get">
           {q && <input type="hidden" name="q" value={q} />}
           <StatusFilter defaultValue={status ?? ''}>
-            {statusOptions.map((o) => (
+            {LEGAL_CONSULTATION_STATUS_FILTER_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
@@ -134,17 +130,9 @@ export default async function ConsultasPage({
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            row.status === 'aberta'
-                              ? 'bg-[#f8fafc] text-[#59677a] border border-[rgba(4,9,32,0.05)]'
-                              : row.status === 'aguardando_escritorio'
-                                ? 'bg-[#fef3c7] text-[#a16207]'
-                                : row.status === 'respondida'
-                                  ? 'bg-[#dcfce7] text-[#15803d]'
-                                  : 'bg-[#f8fafc] text-[#59677a] border border-[rgba(4,9,32,0.05)]'
-                          }`}
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getLegalConsultationStatusBadgeClass(row.status)}`}
                         >
-                          {statusOptions.find((s) => s.value === row.status)?.label ?? row.status}
+                          {getLegalConsultationStatusLabel(row.status)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm">

@@ -70,7 +70,7 @@ const expectedColumns = {
     'id:int8:NO',
     'action:text:NO',
     'entity_type:audit_entity_type:NO',
-    'entity_id:int8:NO',
+    'entity_id:int8:YES',
     'performed_by:int8:YES',
     'changes:jsonb:YES',
     'metadata:jsonb:YES',
@@ -171,6 +171,7 @@ const expectedIndexes = {
   activities: [
     'activities_pkey',
     'idx_activities_assignee_id',
+    'idx_activities_associate_due_id',
     'idx_activities_associate_id',
     'idx_activities_created_by',
     'idx_activities_due_date',
@@ -194,7 +195,12 @@ const expectedIndexes = {
     'idx_associates_status_country',
     'idx_associates_status_name',
   ],
-  audit_logs: ['audit_logs_pkey', 'idx_audit_created_at', 'idx_audit_entity', 'idx_audit_performed_by'],
+  audit_logs: [
+    'audit_logs_pkey',
+    'idx_audit_created_at',
+    'idx_audit_entity',
+    'idx_audit_performed_by',
+  ],
   legal_consultations: [
     'idx_legal_consultations_answered_by',
     'idx_legal_consultations_associate',
@@ -237,7 +243,11 @@ const expectedIndexes = {
     'legal_processes_internal_number_unique',
     'legal_processes_pkey',
   ],
-  login_attempts: ['idx_login_attempts_email', 'idx_login_attempts_expires_at', 'login_attempts_pkey'],
+  login_attempts: [
+    'idx_login_attempts_email',
+    'idx_login_attempts_expires_at',
+    'login_attempts_pkey',
+  ],
   rate_limits: ['idx_rate_limits_expires_at', 'idx_rate_limits_key_scope', 'rate_limits_pkey'],
 } as const;
 
@@ -247,12 +257,14 @@ afterAll(async () => {
 
 describe('database schema contract', () => {
   it('has all expected public tables and columns', async () => {
-    const rows = await db<{
-      table_name: string;
-      column_name: string;
-      udt_name: string;
-      is_nullable: 'YES' | 'NO';
-    }[]>`
+    const rows = await db<
+      {
+        table_name: string;
+        column_name: string;
+        udt_name: string;
+        is_nullable: 'YES' | 'NO';
+      }[]
+    >`
       select table_name, column_name, udt_name, is_nullable
       from information_schema.columns
       where table_schema = 'public'

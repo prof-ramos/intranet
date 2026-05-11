@@ -1,0 +1,53 @@
+import { describe, expect, it } from 'vitest';
+import { parseReportExportParams } from '@/lib/reports/export-filters';
+
+describe('parseReportExportParams', () => {
+  it('accepts valid filters and selected fields', () => {
+    const params = new URLSearchParams({
+      functionalStatus: 'ativo',
+      associationStatus: 'inativo',
+      contributionStatus: 'em_dia',
+      birthMonth: '5',
+    });
+    params.append('fields', 'fullName');
+    params.append('fields', 'primaryEmail');
+
+    expect(parseReportExportParams(params)).toEqual({
+      filters: {
+        functionalStatus: 'ativo',
+        associationStatus: 'inativo',
+        contributionStatus: 'em_dia',
+        birthMonth: 5,
+      },
+      selectedKeys: ['fullName', 'primaryEmail'],
+    });
+  });
+
+  it('ignores invalid or neutral filter values', () => {
+    const params = new URLSearchParams({
+      functionalStatus: 'todos',
+      associationStatus: 'foo',
+      contributionStatus: 'bar',
+      birthMonth: '13',
+    });
+
+    expect(parseReportExportParams(params)).toEqual({
+      filters: {},
+      selectedKeys: [],
+    });
+  });
+
+  it('returns empty filters and fields for empty params', () => {
+    expect(parseReportExportParams(new URLSearchParams())).toEqual({
+      filters: {},
+      selectedKeys: [],
+    });
+  });
+
+  it.each(['0', '-1', 'abc'])('ignores invalid birthMonth value %s', (birthMonth) => {
+    expect(parseReportExportParams(new URLSearchParams({ birthMonth }))).toEqual({
+      filters: {},
+      selectedKeys: [],
+    });
+  });
+});

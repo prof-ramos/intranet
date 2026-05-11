@@ -3,13 +3,11 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
-import { legalConsultationStatus } from '@/lib/db/schema';
 import {
-  updateConsultationStatus as repoUpdateStatus,
-  insertNote,
-  touchConsultationInteraction,
-} from '@/lib/juridico/repository';
-import { createConsultationService } from '@/lib/juridico/service';
+  addNoteService,
+  createConsultationService,
+  updateConsultationStatusService,
+} from '@/lib/juridico/service';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { requireRole } from '@/lib/auth/authorization';
 import { consumeIpRateLimit } from '@/lib/rate-limit';
@@ -21,9 +19,7 @@ import {
 
 async function checkJuridicoRateLimit() {
   const h = await headers();
-  const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim()
-    ?? h.get('x-real-ip')
-    ?? 'unknown';
+  const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? h.get('x-real-ip') ?? 'unknown';
   const result = await consumeIpRateLimit(ip, 'juridico_action', {
     windowMs: 60 * 1000,
     maxRequests: 30,
@@ -75,18 +71,19 @@ export async function createConsultation(formData: FormData) {
  */
 export async function updateConsultationStatus(id: number, status: string) {
   await checkJuridicoRateLimit();
+  await requireAuth();
   await requireRole(['admin', 'diretoria']);
-  const validStatus = legalConsultationStatus.enumValues.includes(status as typeof legalConsultationStatus.enumValues[number])
-    ? (status as typeof legalConsultationStatus.enumValues[number])
-    : 'aberta';
+  const parsed = updateConsultationStatusSchema.safeParse({ id, status });
+  if (!parsed.success) {
+    const firstError = parsed.error.issues[0]?.message ?? 'Dados inválidos.';
+    throw new Error(firstError);
+  }
 
-  const lastInteractionAt = validStatus === 'respondida' ? new Date() : undefined;
-
-  await repoUpdateStatus(id, validStatus, lastInteractionAt);
+  await updateConsultationStatusService(parsed.data.id, parsed.data.status);
 
   revalidatePath('/app/juridico');
   revalidatePath('/app/juridico/consultas');
-  revalidatePath(`/app/juridico/consultas/${id}`);
+  revalidatePath(`/app/juridico/consultas/${parsed.data.id}`);
   revalidateTag('consultation-detail', {});
   revalidateTag('legal-notes', {});
 }
@@ -135,14 +132,10 @@ export async function addNote(formData: FormData) {
     throw new Error(firstError);
   }
 
-  await insertNote({
+  await addNoteService({
     ...parsed.data,
     createdBy: user.userId,
   });
-
-  if (parsed.data.entityType === 'consultation') {
-    await touchConsultationInteraction(parsed.data.entityId);
-  }
 
   revalidatePath('/app/juridico');
   revalidatePath('/app/juridico/consultas');

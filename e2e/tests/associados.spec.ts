@@ -21,7 +21,7 @@ test.describe('Associados', () => {
   test('navigates to associate profile', async ({ page, loginAsAdmin }) => {
     await loginAsAdmin();
     await page.goto('/app/associados');
-    await page.click('text=João da Silva');
+    await page.locator('tr:has-text("João da Silva") a[href^="/app/associados/"]').first().click();
     await expect(page).toHaveURL(/\/app\/associados\/\d+/);
     await expect(page.locator('body')).toContainText('João da Silva');
   });

@@ -1,36 +1,18 @@
 export const dynamic = 'force-dynamic';
 
 import { type NextRequest } from 'next/server';
-import { getSession } from '@/lib/auth/session';
-import { getDevAuthUser, isSkipAuthEnabled } from '@/lib/auth/config';
 import { getAssociatesForReport } from '@/lib/reports/queries';
 import { generateCsv } from '@/lib/reports/csv';
-import { admins, auditLogs } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { auditReportDownload } from '@/lib/reports/audit';
+import { parseReportExportParams } from '@/lib/reports/export-filters';
+import { requireReportAccess } from '@/lib/reports/policy';
 import { consumeIpRateLimit } from '@/lib/rate-limit';
 
-function isFunctionalStatus(v: string): v is 'ativo' | 'aposentado' | 'cedido' | 'em_licenca' {
-  return ['ativo', 'aposentado', 'cedido', 'em_licenca'].includes(v);
-}
-
-function isAssociationStatus(v: string): v is 'ativo' | 'inativo' {
-  return ['ativo', 'inativo'].includes(v);
-}
-
-function isContributionStatus(
-  v: string,
-): v is 'em_dia' | 'inadimplente' | 'pendente_migracao' {
-  return ['em_dia', 'inadimplente', 'pendente_migracao'].includes(v);
-}
-
-function canGenerateReports(role: string) {
-  return role === 'admin' || role === 'diretoria';
-}
-
 export async function GET(request: NextRequest) {
-  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    ?? request.headers.get('x-real-ip')
-    ?? 'unknown';
+  const clientIp =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    request.headers.get('x-real-ip') ??
+    'unknown';
 
   const rateLimit = await consumeIpRateLimit(clientIp, 'report_download', {
     windowMs: 60 * 1000,
@@ -46,89 +28,29 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  let session: Awaited<ReturnType<typeof getSession>> = null;
-
-  if (isSkipAuthEnabled()) {
-    const user = getDevAuthUser();
-    if (!canGenerateReports(user.role)) {
-      return new Response(null, { status: 403 });
-    }
-  } else {
-    session = await getSession();
-    if (!session?.isLoggedIn || !session.userId) {
-      return new Response(null, { status: 302, headers: { Location: '/login' } });
-    }
-
-    // Importação tardia evita inicialização do DB durante o build do Next.js.
-    const { db } = await import('@/lib/db');
-    const [user] = await db
-      .select({ role: admins.role, isActive: admins.isActive })
-      .from(admins)
-      .where(eq(admins.id, session.userId))
-      .limit(1);
-
-    if (!user?.isActive) {
-      return new Response(null, { status: 302, headers: { Location: '/login' } });
-    }
-
-    if (!canGenerateReports(user.role)) {
-      return new Response(null, { status: 403 });
-    }
+  const access = await requireReportAccess();
+  if (access instanceof Response) {
+    return access;
   }
 
   const { searchParams } = new URL(request.url);
-  const selectedKeys = searchParams.getAll('fields');
+  const { filters, selectedKeys } = parseReportExportParams(searchParams);
 
-  const filters: Parameters<typeof getAssociatesForReport>[0] = {};
-
-  const functionalStatusParam = searchParams.get('functionalStatus');
-  if (functionalStatusParam && functionalStatusParam !== 'todos' && isFunctionalStatus(functionalStatusParam)) {
-    filters.functionalStatus = functionalStatusParam;
+  let rows: Awaited<ReturnType<typeof getAssociatesForReport>>;
+  let csv: string;
+  try {
+    rows = await getAssociatesForReport(filters);
+    csv = generateCsv(rows, selectedKeys);
+  } catch (error) {
+    console.error('[report-download] failed to generate CSV', { error });
+    return new Response('Falha ao gerar relatório.', { status: 500 });
   }
 
-  const associationStatusParam = searchParams.get('associationStatus');
-  if (associationStatusParam && associationStatusParam !== 'todos' && isAssociationStatus(associationStatusParam)) {
-    filters.associationStatus = associationStatusParam;
+  try {
+    await auditReportDownload(access.userId, filters, selectedKeys, rows.length);
+  } catch (error) {
+    console.warn('[report-download] failed to persist audit log', { error });
   }
-
-  const contributionStatusParam = searchParams.get('contributionStatus');
-  if (contributionStatusParam && contributionStatusParam !== 'todos' && isContributionStatus(contributionStatusParam)) {
-    filters.contributionStatus = contributionStatusParam;
-  }
-
-  const birthMonthParam = searchParams.get('birthMonth');
-  if (birthMonthParam && birthMonthParam !== 'todos') {
-    const month = parseInt(birthMonthParam, 10);
-    if (month >= 1 && month <= 12) {
-      filters.birthMonth = month;
-    }
-  }
-
-  const rows = await getAssociatesForReport(filters);
-  const csv = generateCsv(rows, selectedKeys);
-
-  // Audit trail for CSV download (LGPD accountability)
-  const auditUserId = isSkipAuthEnabled()
-    ? getDevAuthUser().userId
-    : session!.userId;
-
-  // Importação tardia evita inicialização do DB durante o build do Next.js.
-  const { db } = await import('@/lib/db');
-  await db.insert(auditLogs).values({
-    action: 'report_download',
-    entityType: 'associate',
-    entityId: 0,
-    performedBy: auditUserId,
-    changes: {
-      old: {},
-      new: {
-        filters: Object.keys(filters),
-        fields: selectedKeys,
-        rowCount: rows.length,
-      },
-    },
-    metadata: { format: 'csv' },
-  });
 
   const date = new Date().toISOString().slice(0, 10);
 

@@ -42,6 +42,17 @@ npm run db:supabase:status
 Run a single test file: `npx vitest run src/lib/auth/password.test.ts`
 Run a single test: `npx vitest run -t "test name"`
 
+**E2E environment:** Playwright uses `http://localhost:3001`, not the regular
+dev server on `3000`. `e2e/global-setup.ts` creates/migrates/seeds `asof_test`
+and starts its own Next.js server on `127.0.0.1:3001` with `DATABASE_URL`
+pointing to that test database. The E2E server sets `NEXT_E2E=1`, so
+`next.config.ts` uses `distDir: ".next-e2e"` and avoids the Next.js dev lock
+used by the regular `.next/dev` server. If E2E specs are run against an
+existing `npm run dev` server on `3000`, they hit the `.env.local` database
+(`asof_intranet` locally); the E2E users may be missing, login redirects to
+`/login?error=1`, and repeated attempts can persist in `login_attempts` until
+the result becomes `/login?error=rate-limit`.
+
 **Post-change validation:** After dependency or Next/Tailwind changes, run at minimum `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build`.
 
 ## Architecture

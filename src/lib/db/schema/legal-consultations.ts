@@ -2,13 +2,9 @@ import { sql } from 'drizzle-orm';
 import { bigint, index, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { admins } from '@/lib/db/schema/admins';
 import { associates } from '@/lib/db/schema/associates';
+import { LEGAL_CONSULTATION_STATUSES } from '@/lib/juridico/status';
 
-export const legalConsultationStatus = pgEnum('legal_consultation_status', [
-  'aberta',
-  'aguardando_escritorio',
-  'respondida',
-  'arquivada',
-]);
+export const legalConsultationStatus = pgEnum('legal_consultation_status', LEGAL_CONSULTATION_STATUSES);
 
 export const legalSatisfaction = pgEnum('legal_satisfaction', [
   'satisfeito',

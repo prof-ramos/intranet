@@ -2,26 +2,16 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { getConsultationById, getNotesByEntity } from '@/lib/juridico/queries';
+import {
+  getLegalConsultationStatusBadgeClass,
+  getLegalConsultationStatusLabel,
+  LEGAL_CONSULTATION_STATUS_OPTIONS,
+} from '@/lib/juridico/status';
 import { updateConsultationStatusFromForm, addNote } from '@/app/app/juridico/actions';
 import { formatDate, daysSince } from '@/lib/juridico/formatters';
 import { ArrowLeft, Clock, FileText, MessageSquare, Send, User } from 'lucide-react';
 import { hairline } from '@/lib/ui/tokens';
 import { StatusUpdater } from './StatusUpdater';
-
-const statusLabels: Record<string, string> = {
-  aberta: 'Aberta',
-  aguardando_escritorio: 'Aguardando escritório',
-  respondida: 'Respondida',
-  arquivada: 'Arquivada',
-};
-
-const statusOptions = [
-  { value: 'aberta', label: 'Aberta' },
-  { value: 'aguardando_escritorio', label: 'Aguardando escritório' },
-  { value: 'respondida', label: 'Respondida' },
-  { value: 'arquivada', label: 'Arquivada' },
-];
-
 
 export default async function ConsultaDetalhePage({
   params,
@@ -68,7 +58,7 @@ export default async function ConsultaDetalhePage({
         <form action={updateConsultationStatusFromForm} className="flex items-center gap-2">
           <input type="hidden" name="id" value={consultationId} />
           <StatusUpdater defaultValue={consultation.status}>
-            {statusOptions.map((s) => (
+            {LEGAL_CONSULTATION_STATUS_OPTIONS.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
               </option>
@@ -82,17 +72,9 @@ export default async function ConsultaDetalhePage({
           <div className="rounded-[16px] bg-white p-5" style={{ border: `1px solid ${hairline}` }}>
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  consultation.status === 'aberta'
-                    ? 'bg-[#f8fafc] text-[#59677a] border border-[rgba(4,9,32,0.05)]'
-                    : consultation.status === 'aguardando_escritorio'
-                      ? 'bg-[#fef3c7] text-[#a16207]'
-                      : consultation.status === 'respondida'
-                        ? 'bg-[#dcfce7] text-[#15803d]'
-                        : 'bg-[#f8fafc] text-[#59677a] border border-[rgba(4,9,32,0.05)]'
-                }`}
+                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getLegalConsultationStatusBadgeClass(consultation.status)}`}
               >
-                {statusLabels[consultation.status] ?? consultation.status}
+                {getLegalConsultationStatusLabel(consultation.status)}
               </span>
               {stale !== null && stale > 7 && (
                 <span className="inline-flex items-center rounded-full bg-[#fef3c7] px-2.5 py-0.5 text-xs font-medium text-[#a16207]">
@@ -214,7 +196,7 @@ export default async function ConsultaDetalhePage({
             <ul className="flex flex-col gap-2 text-sm">
               <li className="flex justify-between">
                 <span className="text-[rgba(13,31,60,0.60)]">Status</span>
-                <span className="font-medium">{statusLabels[consultation.status]}</span>
+                <span className="font-medium">{getLegalConsultationStatusLabel(consultation.status)}</span>
               </li>
               <li className="flex justify-between">
                 <span className="text-[rgba(13,31,60,0.60)]">Número</span>

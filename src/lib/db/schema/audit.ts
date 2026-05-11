@@ -15,7 +15,7 @@ export const auditLogs = pgTable(
     id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
     action: text('action').notNull(),
     entityType: auditEntityType('entity_type').notNull(),
-    entityId: bigint('entity_id', { mode: 'number' }).notNull(),
+    entityId: bigint('entity_id', { mode: 'number' }),
     performedBy: bigint('performed_by', { mode: 'number' }).references(() => admins.id, {
       onDelete: 'set null',
     }),

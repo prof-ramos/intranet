@@ -349,7 +349,7 @@ describe('updateConsultationStatusSchema', () => {
   test('aceita status válido', () => {
     const result = updateConsultationStatusSchema.safeParse({
       id: '1',
-      status: 'em_analise',
+      status: 'aguardando_escritorio',
     });
     expect(result.success).toBe(true);
   });

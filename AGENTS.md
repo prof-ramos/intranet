@@ -101,6 +101,9 @@ npm run db:studio
 
 - Vitest runs Node-environment tests matching `src/**/*.test.{ts,tsx}`.
 - `npm run test:db` runs the PostgreSQL schema contract tests against `.env.local`; it validates tables, columns, enums, indexes, `pg_trgm`, migration SQL files, `_journal.json`, and `drizzle.__drizzle_migrations`.
+- E2E tests must be run with `npm run test:e2e` unless explicitly diagnosing a different server. Playwright is configured for `http://localhost:3001`, and `e2e/global-setup.ts` creates/migrates/seeds `asof_test` before starting its own Next.js dev server on `127.0.0.1:3001`.
+- The E2E server sets `NEXT_E2E=1`; `next.config.ts` then uses `distDir: ".next-e2e"` so Next.js has a separate dev lock/cache from the regular `.next/dev` server on `3000`.
+- Do not point E2E tests at an existing `npm run dev` server on `http://localhost:3000` unless that server's database has been intentionally seeded for E2E. The normal dev server uses `.env.local` (`asof_intranet` locally), so E2E logins can fail with `/login?error=1`; repeated failures can persist in `login_attempts` and become `/login?error=rate-limit`.
 - ESLint uses `eslint-config-next` core web vitals plus TypeScript config.
 - After dependency or Next/Tailwind changes, validate with at least `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` when feasible.
 

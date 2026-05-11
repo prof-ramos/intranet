@@ -21,6 +21,9 @@ export const borderMuted = '#c9d2df';
 export const borderSoft = '#dde3ec';
 export const activityColumnBg = '#eef1f6';
 export const overlayScrim = 'rgba(4, 9, 32, 0.35)';
+export const surfaceMuted = '#f8fafc';
+export const borderSubtle = 'rgba(4, 9, 32, 0.15)';
+export const borderFaint = 'rgba(4, 9, 32, 0.05)';
 
 export const statusStyles: Record<
   string,
@@ -88,6 +91,8 @@ export const dangerText = '#b91c1c';
 export const warningText = '#a16207';
 export const successText = '#15803d';
 export const successTextHover = '#166534';
+export const progressBg = surfaceMuted;
+export const progressFg = navy;
 
 export const reassignmentNotice = {
   border: statusStyles.aguardando_terceiros.accent,

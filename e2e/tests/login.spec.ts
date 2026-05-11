@@ -23,7 +23,9 @@ test.describe('Login', () => {
     await page.fill('input[name="password"]', 'wrong-password');
     await page.click('button[type="submit"]');
     await page.waitForURL('/login?error=1');
-    await expect(page.locator('role=alert')).toContainText('Email ou senha inválidos');
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Email ou senha inválidos.' }),
+    ).toHaveText('Email ou senha inválidos.');
   });
 
   test('redirects unauthenticated users to login', async ({ page }) => {

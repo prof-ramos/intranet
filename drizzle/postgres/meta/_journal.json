@@ -43,6 +43,13 @@
       "when": 1778595600000,
       "tag": "0005_repair_legal_consultations_last_interaction",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778599200000,
+      "tag": "0006_profile_activity_audit_hardening",
+      "breakpoints": true
     }
   ]
 }

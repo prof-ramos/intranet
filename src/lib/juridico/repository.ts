@@ -393,14 +393,16 @@ export async function updateConsultationStatus(
   await db.update(legalConsultations).set(set).where(eq(legalConsultations.id, id));
 }
 
+type DbExecutor = Pick<typeof db, 'insert' | 'update'>;
+
 export async function insertNote(values: {
   entityType: string;
   entityId: number;
   content: string;
   createdBy: number;
   isEscritorioResponse: boolean;
-}) {
-  await db.insert(legalNotes).values({
+}, executor: DbExecutor = db) {
+  await executor.insert(legalNotes).values({
     entityType: values.entityType,
     entityId: values.entityId,
     content: values.content,
@@ -409,8 +411,8 @@ export async function insertNote(values: {
   });
 }
 
-export async function touchConsultationInteraction(entityId: number) {
-  await db
+export async function touchConsultationInteraction(entityId: number, executor: DbExecutor = db) {
+  await executor
     .update(legalConsultations)
     .set({ lastInteractionAt: new Date(), updatedAt: new Date() })
     .where(eq(legalConsultations.id, entityId));

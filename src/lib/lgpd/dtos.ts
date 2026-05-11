@@ -64,10 +64,7 @@ export function canViewSensitiveFields(role: Role): boolean {
 }
 
 /** Return a view of an associate respecting LGPD role boundaries. */
-export function toAssociateProfileDTO(
-  associate: Associate,
-  role: Role,
-): Associate {
+export function toAssociateProfileDTO(associate: Associate, role: Role): Associate {
   if (canViewSensitiveFields(role)) {
     return associate;
   }
@@ -84,6 +81,26 @@ export function toAssociateProfileDTO(
     phone: maskPhone(associate.phone),
     whatsapp: maskPhone(associate.whatsapp),
     internalNotes: null,
+  };
+}
+
+export type AssociateProfileDTO = ReturnType<typeof toAssociateProfileDTO>;
+
+export interface ActivityLinkDTO {
+  id: number;
+  title: string;
+  status: string;
+  dueDate: string | null;
+}
+
+export function toActivityDTO(activity: ActivityLinkDTO, role: Role): ActivityLinkDTO {
+  if (canViewSensitiveFields(role)) {
+    return activity;
+  }
+
+  return {
+    ...activity,
+    title: 'Atividade vinculada',
   };
 }
 
@@ -127,10 +144,7 @@ export const ASSOCIATE_EXPORT_FIELDS: AnnotatedField[] = [
 ];
 
 /** Filters export fields by role. Admin/diretoria see everything; secretaria sees only public fields. */
-export function filterExportFieldsByRole(
-  fields: AnnotatedField[],
-  role: Role,
-): AnnotatedField[] {
+export function filterExportFieldsByRole(fields: AnnotatedField[], role: Role): AnnotatedField[] {
   if (canViewSensitiveFields(role)) return fields;
   return fields.filter((f) => f.sensitivity === 'public');
 }

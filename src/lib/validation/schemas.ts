@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LEGAL_CONSULTATION_STATUSES } from '@/lib/juridico/status';
 
 export const loginSchema = z.object({
   email: z.string().min(1, 'E-mail é obrigatório.').email('E-mail inválido.').toLowerCase().trim(),
@@ -71,7 +72,6 @@ export const updateAssociateSchema = z.object({
   contributionStatus: z.enum(validContributionStatuses).nullable().optional(),
 });
 
-export const validConsultationStatuses = ['aberta', 'em_analise', 'respondida', 'arquivada'] as const;
 export const validEntityTypes = ['consultation', 'process'] as const;
 
 export const createConsultationSchema = z.object({
@@ -84,7 +84,7 @@ export const createConsultationSchema = z.object({
 
 export const updateConsultationStatusSchema = z.object({
   id: z.coerce.number().int().positive('ID da consulta inválido.'),
-  status: z.enum(validConsultationStatuses),
+  status: z.enum(LEGAL_CONSULTATION_STATUSES),
 });
 
 export const addNoteSchema = z.object({

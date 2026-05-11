@@ -47,31 +47,31 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 ### Obrigatórias em produção
 
-| Variável | Descrição |
-|---|---|
-| `SESSION_SECRET` | Segredo JWT — mínimo 32 caracteres. Gere com: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
-| `DATABASE_URL` | URL PostgreSQL de runtime. Pode apontar para o pooler do Supabase, com `sslmode=require`. |
-| `DATABASE_MIGRATION_URL` | URL PostgreSQL direta/non-pooling para migrations do Drizzle. |
-| `DATABASE_SUPABASE_URL` | URL HTTP do projeto Supabase, usada pelos helpers SDK. |
-| `DATABASE_SUPABASE_SERVICE_ROLE_KEY` | Chave service-role para scripts/admin server-side. Nunca expor no cliente. |
+| Variável                             | Descrição                                                                                                                |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `SESSION_SECRET`                     | Segredo JWT — mínimo 32 caracteres. Gere com: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
+| `DATABASE_URL`                       | URL PostgreSQL de runtime. Pode apontar para o pooler do Supabase, com `sslmode=require`.                                |
+| `DATABASE_MIGRATION_URL`             | URL PostgreSQL direta/non-pooling para migrations do Drizzle.                                                            |
+| `DATABASE_SUPABASE_URL`              | URL HTTP do projeto Supabase, usada pelos helpers SDK.                                                                   |
+| `DATABASE_SUPABASE_SERVICE_ROLE_KEY` | Chave service-role para scripts/admin server-side. Nunca expor no cliente.                                               |
 
 ### Seed do admin inicial
 
-| Variável | Padrão | Descrição |
-|---|---|---|
-| `INITIAL_ADMIN_EMAIL` | — | Obrigatória. Email do primeiro admin |
-| `INITIAL_ADMIN_PASSWORD` | — | Obrigatória. Deve ter pelo menos 12 caracteres e combinar maiúsculas, minúsculas, números e símbolos |
+| Variável                 | Padrão | Descrição                                                                                            |
+| ------------------------ | ------ | ---------------------------------------------------------------------------------------------------- |
+| `INITIAL_ADMIN_EMAIL`    | —      | Obrigatória. Email do primeiro admin                                                                 |
+| `INITIAL_ADMIN_PASSWORD` | —      | Obrigatória. Deve ter pelo menos 12 caracteres e combinar maiúsculas, minúsculas, números e símbolos |
 
 ### Bypass de autenticação (apenas desenvolvimento)
 
-| Variável | Valor | Descrição |
-|---|---|---|
-| `SKIP_AUTH` | `true` | Desativa JWT e usa o usuário de dev abaixo |
-| `DEV_USER_ID` | `1` | ID do usuário simulado |
-| `DEV_USER_NAME` | `ASOF Dev User` | Nome exibido na sidebar |
-| `DEV_USER_EMAIL` | `dev@asof.local` | — |
-| `DEV_USER_ROLE` | `admin` | `admin` \| `diretoria` \| `secretaria` |
-| `DEV_USER_MUST_CHANGE_PASSWORD` | `false` | Simula fluxo de troca de senha |
+| Variável                        | Valor            | Descrição                                  |
+| ------------------------------- | ---------------- | ------------------------------------------ |
+| `SKIP_AUTH`                     | `true`           | Desativa JWT e usa o usuário de dev abaixo |
+| `DEV_USER_ID`                   | `1`              | ID do usuário simulado                     |
+| `DEV_USER_NAME`                 | `ASOF Dev User`  | Nome exibido na sidebar                    |
+| `DEV_USER_EMAIL`                | `dev@asof.local` | —                                          |
+| `DEV_USER_ROLE`                 | `admin`          | `admin` \| `diretoria` \| `secretaria`     |
+| `DEV_USER_MUST_CHANGE_PASSWORD` | `false`          | Simula fluxo de troca de senha             |
 
 > `SKIP_AUTH=true` é **ignorado em `NODE_ENV=production`** — o proxy rejeita a flag mesmo que esteja definida.
 
@@ -110,6 +110,38 @@ npm run test          # Vitest (testes unitários)
 npm run test:e2e      # Playwright (testes end-to-end)
 npm run test:e2e:ui   # Playwright modo interativo
 npm run audit         # npm audit
+```
+
+### Testes E2E com Playwright
+
+Os testes E2E não devem ser apontados para o servidor normal de desenvolvimento em
+`http://localhost:3000`.
+
+O fluxo correto é:
+
+```bash
+npm run test:e2e
+```
+
+Esse comando usa `playwright.config.ts`, cujo `baseURL` é
+`http://localhost:3001`. O `globalSetup` cria o banco `asof_test`, aplica as
+migrações, roda `scripts/seed-e2e.ts` e sobe um servidor Next.js separado em
+`127.0.0.1:3001` com `DATABASE_URL` apontando para `asof_test`.
+
+O servidor E2E define `NEXT_E2E=1`, fazendo o Next.js usar
+`distDir: .next-e2e`. Isso evita conflito com o lock do `next dev` normal em
+`.next/dev` quando já houver um servidor aberto em `3000`.
+
+O servidor de desenvolvimento em `3000` usa o banco normal da `.env.local`
+(`asof_intranet` no setup local). Se os testes E2E forem rodados contra `3000`,
+os usuários `e2e-*@asof.local` podem não existir nesse banco; o login retorna
+`/login?error=1` e tentativas repetidas podem acumular em `login_attempts` até
+gerar `/login?error=rate-limit`. Nesse caso, rode novamente pelo comando
+oficial acima, aguarde a expiração do rate limit ou limpe apenas as tentativas
+E2E no banco usado pelo servidor em `3000`:
+
+```sql
+DELETE FROM login_attempts WHERE email LIKE 'e2e-%@asof.local';
 ```
 
 **Testes de integração (requer PostgreSQL):**
