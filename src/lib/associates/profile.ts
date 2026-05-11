@@ -8,6 +8,8 @@ import {
   type AssociateProfileDTO,
   type Role,
 } from '@/lib/lgpd/dtos';
+import { initialsFromName } from '@/lib/utils/initials';
+import { formatLongDate as formatAssociateDate, yearsSinceDate } from '@/lib/utils/date';
 
 export interface AssociateLinkedActivity {
   id: number;
@@ -35,35 +37,7 @@ export interface AssociateProfileViewModel {
   timeline: AssociateTimelineItem[];
 }
 
-function dateOnly(value: string | Date | null) {
-  if (!value) return null;
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  return value.split(/[ T]/)[0] ?? value;
-}
-
-export function formatAssociateDate(value: string | Date | null) {
-  const date = dateOnly(value);
-  if (!date) return null;
-  const [year, month, day] = date.split('-').map(Number);
-  if (!year || !month || !day) return date;
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
-}
-
-export function yearsSinceDate(value: string | Date | null) {
-  const date = dateOnly(value);
-  if (!date) return null;
-  const [year, month, day] = date.split('-').map(Number);
-  if (!year || !month || !day) return null;
-  const start = new Date(Date.UTC(year, month - 1, day));
-  return Math.floor((Date.now() - start.getTime()) / (365.25 * 86_400_000));
-}
-
-export { initialsFromName } from '@/lib/utils/initials';
+export { initialsFromName, formatAssociateDate, yearsSinceDate };
 
 export function getAssociateStatusLabel(value: string | null) {
   const labels: Record<string, string> = {

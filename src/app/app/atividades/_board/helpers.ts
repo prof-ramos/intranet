@@ -1,38 +1,14 @@
+import { dateOnly, dateFromValue, daysFromToday, formatDueDate } from '@/lib/utils/date';
 import { initialsFromName } from '@/lib/utils/initials';
 import type { BoardActivity, Filters, Status } from './types';
 
-const MS_PER_DAY = 86_400_000;
+export { dateOnly, dateFromValue, daysFromToday, formatDueDate, initialsFromName as initials };
 
 export function todayStart() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return today;
 }
-
-export function dateOnly(value: string | null) {
-  if (!value) return null;
-  return value.split(/[ T]/)[0] ?? value;
-}
-
-export function dateFromValue(value: string | null) {
-  const date = dateOnly(value);
-  if (!date) return null;
-  return new Date(`${date}T00:00:00`);
-}
-
-export function daysFromToday(value: string | null) {
-  const date = dateFromValue(value);
-  if (!date) return null;
-  return Math.round((date.getTime() - todayStart().getTime()) / MS_PER_DAY);
-}
-
-export function formatDueDate(value: string | null) {
-  const date = dateFromValue(value);
-  if (!date) return null;
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
-}
-
-export { initialsFromName as initials };
 
 export function normalizeActivity(activity: BoardActivity): BoardActivity {
   const dueDate = dateOnly(activity.dueDate);

@@ -11,6 +11,7 @@ import {
   type KanbanCard,
 } from '@/lib/dashboard/queries';
 import { initialsFromName } from '@/lib/utils/initials';
+import { formatShortDate as formatDashboardDueDate } from '@/lib/utils/date';
 import { statusStyles } from '@/lib/ui/tokens';
 
 export interface DashboardStripeItem {
@@ -56,25 +57,7 @@ export interface DashboardViewModel {
   urgentActivities: DashboardUrgentActivity[];
 }
 
-export function formatDashboardDueDate(value: string | Date | null | undefined) {
-  if (!value) return null;
-  const normalized = value instanceof Date ? value.toISOString() : value;
-  const [date] = normalized.split(/[ T]/);
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
-  if (!match) return null;
-
-  const [, yearText, monthText, dayText] = match;
-  const year = Number(yearText);
-  const month = Number(monthText);
-  const day = Number(dayText);
-  const parsed = new Date(Date.UTC(year, month - 1, day));
-  const isValid =
-    parsed.getUTCFullYear() === year &&
-    parsed.getUTCMonth() === month - 1 &&
-    parsed.getUTCDate() === day;
-
-  return isValid ? `${dayText}/${monthText}` : null;
-}
+export { formatShortDate as formatDashboardDueDate } from '@/lib/utils/date';
 
 export async function getDashboardViewModel(): Promise<DashboardViewModel> {
   const [
