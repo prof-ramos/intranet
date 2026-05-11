@@ -8,9 +8,9 @@ import {
   createConsultationService,
   updateConsultationStatusService,
 } from '@/lib/juridico/service';
-import { requireAuth } from '@/lib/auth/require-auth';
 import { requireRole } from '@/lib/auth/authorization';
 import { consumeIpRateLimit } from '@/lib/rate-limit';
+import { formDataToRecord, firstZodError } from '@/lib/server-actions/utils';
 import {
   createConsultationSchema,
   updateConsultationStatusSchema,
@@ -36,18 +36,13 @@ async function checkJuridicoRateLimit() {
  */
 export async function createConsultation(formData: FormData) {
   await checkJuridicoRateLimit();
-  const user = await requireAuth();
-  await requireRole(['admin', 'diretoria']);
+  const user = await requireRole(['admin', 'diretoria']);
 
-  const raw: Record<string, unknown> = {};
-  formData.forEach((value, key) => {
-    raw[key] = value;
-  });
+  const raw = formDataToRecord(formData);
 
   const parsed = createConsultationSchema.safeParse(raw);
   if (!parsed.success) {
-    const firstError = parsed.error.issues[0]?.message ?? 'Dados inválidos.';
-    throw new Error(firstError);
+    throw new Error(firstZodError(parsed.error.issues));
   }
 
   const inserted = await createConsultationService({
@@ -71,12 +66,10 @@ export async function createConsultation(formData: FormData) {
  */
 export async function updateConsultationStatus(id: number, status: string) {
   await checkJuridicoRateLimit();
-  await requireAuth();
   await requireRole(['admin', 'diretoria']);
   const parsed = updateConsultationStatusSchema.safeParse({ id, status });
   if (!parsed.success) {
-    const firstError = parsed.error.issues[0]?.message ?? 'Dados inválidos.';
-    throw new Error(firstError);
+    throw new Error(firstZodError(parsed.error.issues));
   }
 
   await updateConsultationStatusService(parsed.data.id, parsed.data.status);
@@ -94,15 +87,11 @@ export async function updateConsultationStatus(id: number, status: string) {
  * @throws Error se ID ou status estiverem ausentes
  */
 export async function updateConsultationStatusFromForm(formData: FormData) {
-  const raw: Record<string, unknown> = {};
-  formData.forEach((value, key) => {
-    raw[key] = value;
-  });
+  const raw = formDataToRecord(formData);
 
   const parsed = updateConsultationStatusSchema.safeParse(raw);
   if (!parsed.success) {
-    const firstError = parsed.error.issues[0]?.message ?? 'Dados inválidos.';
-    throw new Error(firstError);
+    throw new Error(firstZodError(parsed.error.issues));
   }
 
   await updateConsultationStatus(parsed.data.id, parsed.data.status);
@@ -115,21 +104,16 @@ export async function updateConsultationStatusFromForm(formData: FormData) {
  */
 export async function addNote(formData: FormData) {
   await checkJuridicoRateLimit();
-  const user = await requireAuth();
-  await requireRole(['admin', 'diretoria']);
+  const user = await requireRole(['admin', 'diretoria']);
 
-  const raw: Record<string, unknown> = {};
-  formData.forEach((value, key) => {
-    raw[key] = value;
-  });
+  const raw = formDataToRecord(formData);
 
   const parsed = addNoteSchema.safeParse({
     ...raw,
-    isEscritorioResponse: raw.isEscritorioResponse === 'true',
+    isEscritórioResponse: raw.isEscritórioResponse === 'true',
   });
   if (!parsed.success) {
-    const firstError = parsed.error.issues[0]?.message ?? 'Dados inválidos.';
-    throw new Error(firstError);
+    throw new Error(firstZodError(parsed.error.issues));
   }
 
   await addNoteService({

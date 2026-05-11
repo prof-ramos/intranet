@@ -8,6 +8,7 @@ import { updateSession } from '@/lib/auth/session';
 import { validateNewPassword } from '@/lib/auth/password';
 import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
+import { firstZodError } from '@/lib/server-actions/utils';
 import { changePasswordSchema } from '@/lib/validation/schemas';
 
 function changePasswordError(message: string): never {
@@ -24,8 +25,7 @@ export async function changePassword(formData: FormData) {
   });
 
   if (!parsed.success) {
-    const firstError = parsed.error.issues[0]?.message ?? 'Dados inválidos.';
-    changePasswordError(firstError);
+    changePasswordError(firstZodError(parsed.error.issues));
   }
 
   const { currentPassword, newPassword } = parsed.data;

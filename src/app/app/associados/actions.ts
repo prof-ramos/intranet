@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { requireRole } from '@/lib/auth/authorization';
 import { db } from '@/lib/db';
 import { associates } from '@/lib/db/schema';
+import { formDataToRecord, firstZodError } from '@/lib/server-actions/utils';
 import { updateAssociateSchema } from '@/lib/validation/schemas';
 
 /**
@@ -15,15 +16,11 @@ import { updateAssociateSchema } from '@/lib/validation/schemas';
 export async function updateAssociate(formData: FormData) {
   await requireRole(['admin', 'diretoria']);
 
-  const raw: Record<string, unknown> = {};
-  formData.forEach((value, key) => {
-    raw[key] = value;
-  });
+  const raw = formDataToRecord(formData);
 
   const parsed = updateAssociateSchema.safeParse(raw);
   if (!parsed.success) {
-    const firstError = parsed.error.issues[0]?.message ?? 'Dados inválidos.';
-    throw new Error(firstError);
+    throw new Error(firstZodError(parsed.error.issues));
   }
 
   const {
