@@ -23,8 +23,12 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Provide dummy env vars to satisfy zod env validation during build
-ENV SESSION_SECRET="ci-dummy-secret-at-least-32-chars-long"
-ENV DATABASE_URL="postgres://postgres:postgres@localhost:5432/postgres"
+# Use ARG instead of ENV for secrets to avoid persisting them in image layers
+ARG SESSION_SECRET="ci-dummy-secret-at-least-32-chars-long"
+ARG DATABASE_URL="postgres://postgres:postgres@localhost:5432/postgres"
+
+ENV SESSION_SECRET=$SESSION_SECRET
+ENV DATABASE_URL=$DATABASE_URL
 ENV NODE_ENV=production
 
 RUN npm run build
@@ -57,5 +61,8 @@ EXPOSE 3000
 ENV PORT=3000
 # set hostname to localhost
 ENV HOSTNAME="0.0.0.0"
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD node -e "fetch('http://localhost:3000/login').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
 
 CMD ["node", "server.js"]
