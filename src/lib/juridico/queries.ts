@@ -46,7 +46,7 @@ export const getConsultationById = unstable_cache(
 
 export type { NoteItem } from './repository';
 export const getNotesByEntity = unstable_cache(
-  (entityType: string, entityId: number) => repoGetNotes(entityType, entityId),
+  (entityType: 'consultation' | 'process', entityId: number) => repoGetNotes(entityType, entityId),
   ['legal-notes'],
   { revalidate: 15, tags: ['legal', 'legal-notes'] },
 );

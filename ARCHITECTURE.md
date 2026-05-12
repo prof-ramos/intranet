@@ -222,12 +222,11 @@ PostgreSQL enums are preferred over free-text columns for status and type fields
 | `activity_priority` | `activities.priority` | ✅ Correct |
 | `audit_entity_type` | `audit_logs.entity_type` | ✅ Correct |
 | `legal_consultation_status` | `legal_consultations.status` | ✅ Correct |
-| `legal_satisfaction` | `legal_consultations.satisfaction` | ✅ Correct |
+| `legal_satisfaction` | `legal_consultations.satisfaction`, `legal_processes.satisfaction` (corrected in 0009) | ✅ Correct |
 | `legal_process_type` | `legal_processes.type` | ✅ Correct |
 | `legal_process_subtype` | `legal_processes.subtype` | ✅ Correct |
 | `legal_process_status` | `legal_processes.status` | ✅ Correct |
-| ~~`legal_note_entity_type`~~ | ~~`legal_notes.entity_type`~~ | ✅ Fixed in 0009 |
-| ~~`legal_processes.satisfaction`~~ | ~~was `text`~~ | ✅ Fixed in 0009 |
+| `legal_note_entity_type` | `legal_notes.entity_type` (fixed in 0009) | ✅ Correct |
 | `assignment_type` | `assignments.type` | ✅ Correct |
 
 **Principle:** Any column representing a bounded set of states MUST use a PostgreSQL enum. Text-only columns exist for unbounded data (names, emails, notes).

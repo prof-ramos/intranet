@@ -83,25 +83,40 @@ export async function createConsultationService(input: CreateConsultationInput) 
     throw new Error('Usuário criador inválido.');
   }
 
-  return db.transaction(async (tx) => {
-    const internalNumber = await generateInternalNumber(tx as unknown as Tx);
-    const slaDueDate = new Date();
-    slaDueDate.setDate(slaDueDate.getDate() + input.slaDays);
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await db.transaction(async (tx) => {
+        const internalNumber = await generateInternalNumber(tx as unknown as Tx);
+        const slaDueDate = new Date();
+        slaDueDate.setDate(slaDueDate.getDate() + input.slaDays);
 
-    return insertConsultation(
-      {
-        internalNumber,
-        title: input.title.trim(),
-        questionSummary: input.questionSummary.trim(),
-        questionFullText: input.questionFullText?.trim() || null,
-        associateId: input.associateId,
-        slaDueDate,
-        createdBy: input.createdBy,
-        lastInteractionAt: new Date(),
-      },
-      tx as unknown as Tx,
-    );
-  });
+        return insertConsultation(
+          {
+            internalNumber,
+            title: input.title.trim(),
+            questionSummary: input.questionSummary.trim(),
+            questionFullText: input.questionFullText?.trim() || null,
+            associateId: input.associateId,
+            slaDueDate,
+            createdBy: input.createdBy,
+            lastInteractionAt: new Date(),
+          },
+          tx as unknown as Tx,
+        );
+      });
+    } catch (error) {
+      const isUniqueViolation =
+        error instanceof Error && /unique constraint|duplicate key/i.test(error.message);
+
+      if (!isUniqueViolation || attempt === MAX_RETRIES) {
+        throw error;
+      }
+
+      await new Promise((r) => setTimeout(r, 50 * attempt));
+    }
+  }
+
+  throw new Error('Falha ao criar consulta após múltiplas tentativas.');
 }
 
 export async function updateConsultationStatusService(id: number, status: string) {

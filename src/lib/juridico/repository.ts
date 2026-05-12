@@ -240,7 +240,7 @@ export interface NoteItem {
   createdAt: string;
 }
 
-export async function getNotesByEntity(entityType: string, entityId: number): Promise<NoteItem[]> {
+export async function getNotesByEntity(entityType: 'consultation' | 'process', entityId: number): Promise<NoteItem[]> {
   const rows = await db
     .select({
       id: legalNotes.id,
@@ -252,7 +252,7 @@ export async function getNotesByEntity(entityType: string, entityId: number): Pr
     })
     .from(legalNotes)
     .leftJoin(admins, eq(legalNotes.createdBy, admins.id))
-    .where(and(eq(legalNotes.entityType, entityType as 'consultation' | 'process'), eq(legalNotes.entityId, entityId)))
+    .where(and(eq(legalNotes.entityType, entityType), eq(legalNotes.entityId, entityId)))
     .orderBy(asc(legalNotes.createdAt));
 
   return rows.map((r) => ({
