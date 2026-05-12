@@ -19,8 +19,6 @@ export const AREAS = [
   },
 ] as const;
 
-export type Area = (typeof AREAS)[number]['key'];
-
 export const TAG_SUGGESTIONS = [
   'secretaria',
   'comunicacao',

@@ -87,7 +87,7 @@ O projeto usa PostgreSQL via Drizzle.
 ```bash
 npm run db:generate   # gera migrações a partir do schema
 npm run db:migrate    # aplica migrações pendentes
-npm run db:seed       # insere admin inicial + associados de exemplo
+npm run db:seed       # insere admin inicial
 npm run db:supabase:status # consulta status/totais via Supabase SDK
 npm run db:studio     # abre Drizzle Studio no browser
 ```
