@@ -3,7 +3,7 @@ import { admins } from '@/lib/db/schema';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { getInitialAdminCredentials } from './seed-admin-config';
-import { ensureAdminPasswordAuthUser } from '@/lib/supabase/admin';
+import { ensureAdminPasswordAuthUser, deleteAdminAuthUser } from '@/lib/supabase/admin';
 
 async function main() {
   const { email, password } = getInitialAdminCredentials();
@@ -28,15 +28,15 @@ async function main() {
           updatedAt: new Date(),
         })
         .where(eq(admins.id, existingAdmin.id));
+    });
 
-      await ensureAdminPasswordAuthUser({
-        email,
-        password,
-        name: existingAdmin.name,
-        role: existingAdmin.role,
-        mustChangePassword: true,
-        resetPassword: true,
-      });
+    await ensureAdminPasswordAuthUser({
+      email,
+      password,
+      name: existingAdmin.name,
+      role: existingAdmin.role,
+      mustChangePassword: true,
+      resetPassword: true,
     });
 
     console.log(`Admin already exists and was synced with Supabase Auth: ${email}`);
@@ -44,24 +44,30 @@ async function main() {
     return;
   }
 
-  await db.transaction(async (tx) => {
-    await tx.insert(admins).values({
-      name: 'Administrador',
-      email,
-      passwordHash: hash,
-      role: 'admin',
-      mustChangePassword: true,
-    });
-
-    await ensureAdminPasswordAuthUser({
-      email,
-      password,
-      name: 'Administrador',
-      role: 'admin',
-      mustChangePassword: true,
-      resetPassword: true,
-    });
+  await ensureAdminPasswordAuthUser({
+    email,
+    password,
+    name: 'Administrador',
+    role: 'admin',
+    mustChangePassword: true,
+    resetPassword: true,
   });
+
+  try {
+    await db.transaction(async (tx) => {
+      await tx.insert(admins).values({
+        name: 'Administrador',
+        email,
+        passwordHash: hash,
+        role: 'admin',
+        mustChangePassword: true,
+      });
+    });
+  } catch (error) {
+    console.error('DB insert failed after creating auth user. Rolling back auth user...');
+    await deleteAdminAuthUser(email);
+    throw error;
+  }
 
   console.log(`Admin created: ${email}`);
   console.log('The admin must change the initial password on first login.');

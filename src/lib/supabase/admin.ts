@@ -102,3 +102,12 @@ export async function ensureAdminPasswordAuthUser({
 
   return data.user.id;
 }
+
+export async function deleteAdminAuthUser(email: string) {
+  const supabase = getSupabaseAdminClient();
+  const user = await findAuthUserByEmail(email);
+  if (!user) return;
+
+  const { error } = await supabase.auth.admin.deleteUser(user.id);
+  if (error) throw error;
+}
