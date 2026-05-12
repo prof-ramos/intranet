@@ -70,6 +70,7 @@ export const updateAssociateSchema = z.object({
   functionalStatus: z.enum(validFunctionalStatuses).nullable().optional(),
   associationStatus: z.enum(validAssociationStatuses).nullable().optional(),
   contributionStatus: z.enum(validContributionStatuses).nullable().optional(),
+  internalNotes: z.string().trim().nullable().optional(),
 });
 
 export const validEntityTypes = ['consultation', 'process'] as const;

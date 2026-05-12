@@ -2,81 +2,46 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { eq } from 'drizzle-orm';
 import { requireRole } from '@/lib/auth/authorization';
-import { db } from '@/lib/db';
-import { associates } from '@/lib/db/schema';
 import { formDataToRecord, firstZodError } from '@/lib/server-actions/utils';
 import { updateAssociateSchema } from '@/lib/validation/schemas';
+import { updateAssociateData } from '@/lib/associates/service';
 
-/**
- * Atualiza os dados editáveis de um associado.
- * Apenas admin e diretoria podem executar esta ação.
- */
 export async function updateAssociate(formData: FormData) {
   await requireRole(['admin', 'diretoria']);
 
   const raw = formDataToRecord(formData);
-
   const parsed = updateAssociateSchema.safeParse(raw);
   if (!parsed.success) {
     throw new Error(firstZodError(parsed.error.issues));
   }
 
-  const {
-    id,
-    fullName,
-    cpf,
-    siape,
-    primaryEmail,
-    secondaryEmail,
-    phone,
-    whatsapp,
-    birthDate,
-    address,
-    locationCity,
-    locationCountry,
-    assignment,
-    assignmentStartDate,
-    classPattern,
-    associationCategory,
-    functionalStatus,
-    associationStatus,
-    contributionStatus,
-  } = parsed.data;
-
-  const set: Record<string, unknown> = {
-    fullName,
-    cpf,
-    siape,
-    primaryEmail,
-    secondaryEmail,
-    phone,
-    whatsapp,
-    birthDate,
-    address,
-    locationCity,
-    locationCountry,
-    assignment,
-    assignmentStartDate,
-    classPattern,
-    associationCategory,
-    updatedAt: new Date(),
-  };
-
-  if (functionalStatus) set.functionalStatus = functionalStatus;
-  if (associationStatus) set.associationStatus = associationStatus;
-  if (contributionStatus) set.contributionStatus = contributionStatus;
-
-  try {
-    await db.update(associates).set(set).where(eq(associates.id, id));
-  } catch (err) {
-    console.error('[updateAssociate] DB error for id:', id, err);
-    throw new Error('Falha ao atualizar o associado. Tente novamente.');
-  }
+  const data = parsed.data;
+  await updateAssociateData({
+    id: data.id,
+    fullName: data.fullName,
+    cpf: data.cpf ?? null,
+    siape: data.siape ?? null,
+    primaryEmail: data.primaryEmail ?? null,
+    secondaryEmail: data.secondaryEmail ?? null,
+    phone: data.phone ?? null,
+    whatsapp: data.whatsapp ?? null,
+    birthDate: data.birthDate ?? null,
+    address: data.address ?? null,
+    locationCity: data.locationCity ?? null,
+    locationCountry: data.locationCountry ?? null,
+    assignment: data.assignment ?? null,
+    assignmentStartDate: data.assignmentStartDate ?? null,
+    classPattern: data.classPattern ?? null,
+    associationCategory: data.associationCategory ?? null,
+    functionalStatus: data.functionalStatus ?? null,
+    associationStatus: data.associationStatus ?? null,
+    contributionStatus: data.contributionStatus ?? null,
+    internalNotes: data.internalNotes ?? null,
+  });
 
   revalidatePath('/app/associados');
-  revalidatePath(`/app/associados/${id}`);
+  revalidatePath(`/app/associados/${data.id}`);
 
-  redirect(`/app/associados/${id}`);
+  redirect(`/app/associados/${data.id}`);
 }

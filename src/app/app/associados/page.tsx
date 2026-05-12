@@ -1,5 +1,5 @@
 import { requireAuth } from '@/lib/auth/require-auth';
-import { getAssociatesPaginated } from '@/lib/associates/queries';
+import { getAssociatesListPage } from '@/lib/associates/service';
 import { getRoleLabel } from '@/lib/ui/role-labels';
 import { parseAssociatesSearchParams } from '@/lib/associates/search-params';
 import { Bell, ChevronLeft, ChevronRight, Download, Pencil, Search } from 'lucide-react';
@@ -16,7 +16,7 @@ export default async function AssociadosPage({
   const user = await requireAuth();
   const { q, page } = parseAssociatesSearchParams(await searchParams);
 
-  const { rows, total } = await getAssociatesPaginated(page, PAGE_SIZE, q);
+  const { rows, total } = await getAssociatesListPage(page, PAGE_SIZE, q);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const from = total === 0 ? 0 : Math.min((page - 1) * PAGE_SIZE + 1, total);

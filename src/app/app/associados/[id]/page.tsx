@@ -5,10 +5,10 @@ import { requireAuth } from '@/lib/auth/require-auth';
 import { hairline, infoNotice } from '@/lib/ui/tokens';
 import {
   formatAssociateDate,
-  getAssociateProfileViewModel,
+  getAssociateProfile,
   getAssociateStatusLabel,
   initialsFromName,
-} from '@/lib/associates/profile';
+} from '@/lib/associates/service';
 
 function Pill({
   children,
@@ -78,7 +78,10 @@ function SectionCard({
 
 function EditButton({ children = 'Editar' }: { children?: React.ReactNode }) {
   return (
-    <button type="button" className="inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-10 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-8">
+    <button
+      type="button"
+      className="inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-10 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-8"
+    >
       {children}
     </button>
   );
@@ -103,7 +106,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
     notFound();
   }
 
-  const profile = await getAssociateProfileViewModel(associateId, user.role);
+  const profile = await getAssociateProfile(associateId, user.role);
   if (!profile) {
     notFound();
   }
