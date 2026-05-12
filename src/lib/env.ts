@@ -15,8 +15,20 @@ export const envSchema = z
     DB_SSL: z.string().optional(),
     USE_PGBOUNCER: z.string().optional(),
 
+    SESSION_SECRET: z
+      .string({
+        message:
+          'SESSION_SECRET must be set and at least 32 characters long. ' +
+          'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
+      })
+      .min(
+        32,
+        'SESSION_SECRET must be set and at least 32 characters long. ' +
+          'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
+      ),
+
     MAILJET_SENDER_NAME: z.string().optional().default('ASOF Intranet'),
-    GEMINI_API_KEY: z.string().optional(),
+    GEMINI_API_KEY: z.string().optional().describe('Gemini API key for AI features'),
 
     SKIP_AUTH: z.string().optional().default('false'),
     DEV_USER_ID: z.string().optional(),

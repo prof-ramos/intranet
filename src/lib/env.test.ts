@@ -4,6 +4,7 @@ import { envSchema } from './env';
 describe('envSchema', () => {
   const validEnv = {
     DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+    SESSION_SECRET: 'a'.repeat(32),
     SKIP_AUTH: 'false',
     NODE_ENV: 'development',
   };
@@ -13,8 +14,17 @@ describe('envSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  test('rejeita SESSION_SECRET menor que 32 caracteres', () => {
+    const result = envSchema.safeParse({
+      ...validEnv,
+      SESSION_SECRET: 'short',
+    });
+    expect(result.success).toBe(false);
+  });
+
   test('rejeita quando DATABASE_URL e DATABASE_POSTGRES_URL estão ausentes', () => {
     const result = envSchema.safeParse({
+      SESSION_SECRET: 'a'.repeat(32),
     });
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -30,6 +40,7 @@ describe('envSchema', () => {
   test('aceita DATABASE_POSTGRES_URL sem DATABASE_URL', () => {
     const result = envSchema.safeParse({
       DATABASE_POSTGRES_URL: 'postgres://user:pass@localhost:5432/db',
+      SESSION_SECRET: 'a'.repeat(32),
     });
     expect(result.success).toBe(true);
   });
@@ -71,6 +82,7 @@ describe('envSchema', () => {
   test('aceita produção sem Mailjet configurado', () => {
     const result = envSchema.safeParse({
       DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+      SESSION_SECRET: 'a'.repeat(32),
       SKIP_AUTH: 'false',
       NODE_ENV: 'production',
     });

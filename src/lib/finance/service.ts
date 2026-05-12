@@ -1,49 +1,57 @@
 import * as repository from './repository';
 import { logAuditAction } from '@/lib/audit/service';
+import { requireRole } from '@/lib/auth/authorization';
+import { db } from '@/lib/db';
 import { type NewMonthlyPayment } from '@/lib/db/schema/finance';
 
 export async function updateMonthlyPayment(
   adminId: number,
   payment: Omit<NewMonthlyPayment, 'updatedBy' | 'updatedAt'>,
 ) {
-  const result = await repository.upsertMonthlyPayment({
-    ...payment,
-    updatedBy: adminId,
-  });
-  const updatedPayment = result[0];
+  await requireRole(['admin', 'diretoria']);
 
-  if (!updatedPayment) {
-    throw new Error('Falha ao atualizar pagamento mensal.');
-  }
+  const result = await db.transaction(async (tx) => {
+    const upserted = await repository.upsertMonthlyPayment({
+      ...payment,
+      updatedBy: adminId,
+    });
+    const updatedPayment = upserted[0];
 
-  await logAuditAction({
-    adminId,
-    action: 'update',
-    entityType: 'monthly_payment',
-    entityId: updatedPayment.id,
-    changes: {
-      old: {}, // For simplicity, we could fetch old state but keeping it simple for now
-      new: {
-        status: payment.status,
-        paymentMethod: payment.paymentMethod,
-        paidAt: payment.paidAt,
+    if (!updatedPayment) {
+      throw new Error('Falha ao atualizar pagamento mensal.');
+    }
+
+    await logAuditAction({
+      adminId,
+      action: 'update',
+      entityType: 'monthly_payment',
+      entityId: updatedPayment.id,
+      changes: {
+        old: {},
+        new: {
+          status: payment.status,
+          paymentMethod: payment.paymentMethod,
+          paidAt: payment.paidAt,
+        },
       },
-    },
-    metadata: {
-      associateId: payment.associateId,
-      year: payment.year,
-      month: payment.month,
-    },
+      metadata: {
+        associateId: payment.associateId,
+        year: payment.year,
+        month: payment.month,
+      },
+    });
+
+    return updatedPayment;
   });
 
-  return updatedPayment;
+  return result;
 }
 
 export async function initializeMonth(adminId: number, year: number, month: number) {
   const associates = await repository.getAssociatesWithPayments(year, month);
-  
+
   const updates: NewMonthlyPayment[] = associates
-    .filter(a => !a.paymentId) // Only for those without a payment record yet
+    .filter(a => !a.paymentId)
     .map(a => ({
       associateId: a.associateId,
       year,

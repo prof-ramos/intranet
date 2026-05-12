@@ -1,8 +1,7 @@
 import { db } from '@/lib/db';
 import { legalConsultations } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
-import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import * as schema from '@/lib/db/schema';
+import type { DbExecutor, Tx } from './repository';
 import {
   insertConsultation,
   insertNote,
@@ -11,8 +10,6 @@ import {
 } from './repository';
 import { isLegalConsultationStatus, type LegalConsultationStatus } from '@/lib/juridico/status';
 
-type Tx = PostgresJsDatabase<typeof schema>;
-
 const MAX_RETRIES = 3;
 
 /**
@@ -20,10 +17,10 @@ const MAX_RETRIES = 3;
  * Se executado dentro de uma transação, recebe o executor via parâmetro.
  * Caso contrário, cria sua própria transação com retry em caso de conflito.
  */
-export async function generateInternalNumber(executor?: Tx): Promise<string> {
+export async function generateInternalNumber(executor?: typeof db): Promise<string> {
   const year = new Date().getFullYear();
 
-  async function nextNumber(tx: Tx): Promise<string> {
+  async function nextNumber(tx: typeof db): Promise<string> {
     const likePattern = `JUR-${year}-%`;
     const regexPattern = `JUR-${year}-([0-9]+)`;
     const [result] = await tx
@@ -43,7 +40,7 @@ export async function generateInternalNumber(executor?: Tx): Promise<string> {
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      return await db.transaction(async (tx) => nextNumber(tx as unknown as Tx));
+      return await db.transaction(async (tx) => nextNumber(tx as unknown as typeof db));
     } catch (error) {
       const isUniqueViolation =
         error instanceof Error && /unique constraint|duplicate key/i.test(error.message);

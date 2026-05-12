@@ -394,7 +394,7 @@ export async function updateConsultationStatus(
   await db.update(legalConsultations).set(set).where(eq(legalConsultations.id, id));
 }
 
-type DbExecutor = Pick<typeof db, 'insert' | 'update'>;
+export type DbExecutor = Pick<typeof db, 'insert' | 'update'>;
 
 export async function insertNote(values: {
   entityType: 'consultation' | 'process';

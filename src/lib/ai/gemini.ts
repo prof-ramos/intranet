@@ -35,9 +35,19 @@ REGRAS OBRIGATÓRIAS:
 Retorne apenas o corpo do ofício.
 `;
 
-  const result = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: prompt,
-  });
-  return result.text ?? '';
+  const timeoutMs = 15000;
+  try {
+    const result = await Promise.race([
+      ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Falha ao gerar conteúdo do ofício. Tente novamente.')), timeoutMs)
+      ),
+    ]);
+    return result.text ?? '';
+  } catch {
+    throw new Error('Falha ao gerar conteúdo do ofício. Tente novamente.');
+  }
 }

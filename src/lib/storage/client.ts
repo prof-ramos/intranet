@@ -32,9 +32,13 @@ export function getSupabaseAdminStorageClient() {
 /**
  * Server-created anon/publishable-key client for storage flows that must obey
  * Supabase RLS/policies instead of bypassing them with the service role key.
+ * Pass accessToken (from session) so RLS policies can evaluate auth.uid().
  */
-export function getSupabaseAnonStorageClient() {
+export function getSupabaseAnonStorageClient(accessToken?: string) {
   anonClient ??= createClient(getSupabaseUrl(), getSupabasePublishableKey());
+  if (accessToken) {
+    anonClient.auth.setSession({ access_token: accessToken, refresh_token: '' });
+  }
   return anonClient;
 }
 

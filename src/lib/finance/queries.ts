@@ -1,5 +1,17 @@
 import { unstable_cache } from 'next/cache';
-import * as repository from './repository';
+import { getAssociatesWithPayments } from './repository';
+
+// Cached wrapper at module scope to avoid creating a new cache on every call
+const fetchMonthlyPayments = unstable_cache(
+  async (year: number, month: number) => {
+    return getAssociatesWithPayments(year, month);
+  },
+  [],
+  {
+    tags: ['finance-monthly'],
+    revalidate: 3600,
+  },
+);
 
 export const getMonthlyPaymentsData = (year: number, month: number) => {
   if (!Number.isInteger(year) || year < 1900 || year > 2100) {
@@ -9,14 +21,5 @@ export const getMonthlyPaymentsData = (year: number, month: number) => {
     throw new Error('Mês inválido.');
   }
 
-  return unstable_cache(
-    async () => {
-      return repository.getAssociatesWithPayments(year, month);
-    },
-    [`monthly-payments-${year}-${month}`],
-    {
-      tags: [`finance-monthly-${year}-${month}`],
-      revalidate: 3600,
-    },
-  )();
+  return fetchMonthlyPayments(year, month);
 };
