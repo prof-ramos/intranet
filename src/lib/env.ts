@@ -32,6 +32,12 @@ export const envSchema = z
     DEV_USER_MUST_CHANGE_PASSWORD: z.string().optional().default('false'),
 
     NODE_ENV: z.string().optional(),
+
+    // ─── Mailjet ───────────────────────────────────────────────────────────────
+    MAILJET_API_KEY: z.string().optional(),
+    MAILJET_SECRET_KEY: z.string().optional(),
+    MAILJET_SENDER_EMAIL: z.string().email().optional().default('noreply@asof.org.br'),
+    MAILJET_SENDER_NAME: z.string().optional().default('ASOF Intranet'),
   })
   .refine(
     (data) => data.DATABASE_URL || data.DATABASE_POSTGRES_URL,
@@ -50,6 +56,18 @@ export const envSchema = z
     {
       message: 'DEV_USER_ID is required when SKIP_AUTH=true',
       path: ['DEV_USER_ID'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.NODE_ENV === 'production') {
+        return !!data.MAILJET_API_KEY && !!data.MAILJET_SECRET_KEY;
+      }
+      return true;
+    },
+    {
+      message: 'MAILJET_API_KEY and MAILJET_SECRET_KEY are required in production.',
+      path: ['MAILJET_API_KEY'],
     },
   );
 
