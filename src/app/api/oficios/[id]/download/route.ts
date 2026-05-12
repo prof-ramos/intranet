@@ -11,22 +11,31 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const officialLetterId = parseInt(id);
 
-  if (isNaN(officialLetterId)) {
+  if (!/^\d+$/.test(id)) {
     return new NextResponse('ID inválido', { status: 400 });
   }
 
+  const officialLetterId = parseInt(id);
+  const user = await requireRole(ALLOWED_ROLES);
+
+  let oficio: Awaited<ReturnType<typeof findOfficialLetterById>>;
+  let pdfBytes: Awaited<ReturnType<typeof generateOfficialLetterPdf>>;
+
   try {
-    const user = await requireRole(ALLOWED_ROLES);
-    const oficio = await findOfficialLetterById(officialLetterId);
+    oficio = await findOfficialLetterById(officialLetterId);
 
     if (!oficio) {
       return new NextResponse('Ofício não encontrado', { status: 404 });
     }
 
-    const pdfBytes = await generateOfficialLetterPdf(oficio);
+    pdfBytes = await generateOfficialLetterPdf(oficio);
+  } catch (error) {
+    console.error('PDF download failed for oficio', officialLetterId);
+    return new NextResponse('Erro ao gerar PDF', { status: 500 });
+  }
 
+  try {
     await logAuditAction({
       adminId: user.userId,
       action: 'official_letter_downloaded',
@@ -34,15 +43,14 @@ export async function GET(
       entityId: oficio.id,
       metadata: { number: oficio.number },
     });
-
-    return new NextResponse(new Uint8Array(pdfBytes).buffer, {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${oficio.number.replace(/\//g, '_')}.pdf"`,
-      },
-    });
-  } catch (error) {
-    console.error('PDF Download Error:', error);
-    return new NextResponse('Erro ao gerar PDF', { status: 500 });
+  } catch {
+    // Audit logging failure should not block the download
   }
+
+  return new NextResponse(new Uint8Array(pdfBytes).buffer, {
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${oficio.number.replace(/[^a-zA-Z0-9._-]/g, '_')}.pdf"`,
+    },
+  });
 }
