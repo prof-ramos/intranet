@@ -252,7 +252,7 @@ export async function getNotesByEntity(entityType: string, entityId: number): Pr
     })
     .from(legalNotes)
     .leftJoin(admins, eq(legalNotes.createdBy, admins.id))
-    .where(and(eq(legalNotes.entityType, entityType), eq(legalNotes.entityId, entityId)))
+    .where(and(eq(legalNotes.entityType, entityType as 'consultation' | 'process'), eq(legalNotes.entityId, entityId)))
     .orderBy(asc(legalNotes.createdAt));
 
   return rows.map((r) => ({
@@ -359,8 +359,9 @@ export async function insertConsultation(
     createdBy: number;
     lastInteractionAt: Date;
   },
+  executor: DbExecutor = db,
 ) {
-  const [inserted] = await db
+  const [inserted] = await executor
     .insert(legalConsultations)
     .values({
       internalNumber: values.internalNumber,
@@ -396,7 +397,7 @@ export async function updateConsultationStatus(
 type DbExecutor = Pick<typeof db, 'insert' | 'update'>;
 
 export async function insertNote(values: {
-  entityType: string;
+  entityType: 'consultation' | 'process';
   entityId: number;
   content: string;
   createdBy: number;

@@ -80,6 +80,17 @@ npm run db:studio
 - Current Drizzle migrations are in `drizzle/postgres`.
 - The `@/*` import alias maps to `src/*`.
 
+## Database Conventions
+
+- **Enums**: Use PostgreSQL enums for all status/type fields. Never use `text` for a bounded set of values.
+- **Indexes**: Create partial indexes for queries with conditional `WHERE`. Use trigram GIN (`gin_trgm_ops`) for `LIKE '%term%'`. Use composite indexes matching `(filter, order)` patterns. Prefix custom indexes with `idx_`.
+- **Connection pool**: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'` in `src/lib/db/index.ts`.
+- **Transactions**: Multi-table operations MUST use `db.transaction()`. Pass the `tx` executor to repository functions that accept one.
+- **RLS**: Re-enabled in migration 0009 as defense-in-depth. All current policies are permissive (`FOR ALL TO PUBLIC`); auth is enforced server-side. If a Supabase client is ever exposed to the browser, RLS policies must be narrowed.
+- **Update safety**: `updateAssociateById` and similar functions must use typed interfaces, not `Record<string, unknown>`, to prevent unintended column overwrites.
+- **Migrations**: Name SQL files with zero-padded index + description (e.g., `0009_quality_improvements.sql`). Update `_journal.json` with the correct timestamp.
+- **Testing**: `npm run test:db` validates tables, columns, enums, indexes, extensions, and migration alignment against the live database.
+
 ## Database
 
 - `drizzle.config.ts` targets PostgreSQL and writes migrations to `drizzle/postgres`.

@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { bigint, index, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { admins } from '@/lib/db/schema/admins';
 import { associates } from '@/lib/db/schema/associates';
+import { legalSatisfaction } from '@/lib/db/schema/legal-consultations';
 
 export const legalProcessType = pgEnum('legal_process_type', ['judicial', 'administrativo']);
 
@@ -28,7 +29,7 @@ export const legalProcesses = pgTable(
       onDelete: 'set null',
     }),
     status: legalProcessStatus('status').notNull().default('ativo'),
-    satisfaction: text('satisfaction').$type<'satisfeito' | 'insatisfeito' | 'sem_resposta'>(),
+    satisfaction: legalSatisfaction('satisfaction'),
     officeDeadline: timestamp('office_deadline', { withTimezone: true }),
     legalDeadline: timestamp('legal_deadline', { withTimezone: true }),
     lastCheckAt: timestamp('last_check_at', { withTimezone: true }),

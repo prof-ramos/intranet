@@ -11,7 +11,12 @@ import {
   updateAssociateById,
   type UpdateAssociateValues,
 } from './repository';
+import { functionalStatus as fsEnum, associationStatus as asEnum, contributionStatus as csEnum } from '@/lib/db/schema';
 import { formatLongDate, yearsSinceDate } from '@/lib/utils/date';
+
+type FsEnum = (typeof fsEnum.enumValues)[number];
+type AsEnum = (typeof asEnum.enumValues)[number];
+type CsEnum = (typeof csEnum.enumValues)[number];
 
 export { formatLongDate as formatAssociateDate, yearsSinceDate };
 export { initialsFromName } from '@/lib/utils/initials';
@@ -162,9 +167,9 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
     associationCategory: input.associationCategory,
   };
 
-  if (input.functionalStatus !== undefined) values.functionalStatus = input.functionalStatus;
-  if (input.associationStatus !== undefined) values.associationStatus = input.associationStatus;
-  if (input.contributionStatus !== undefined) values.contributionStatus = input.contributionStatus;
+  if (input.functionalStatus !== undefined) values.functionalStatus = input.functionalStatus as FsEnum | null;
+  if (input.associationStatus !== undefined) values.associationStatus = input.associationStatus as AsEnum;
+  if (input.contributionStatus !== undefined) values.contributionStatus = input.contributionStatus as CsEnum;
   if (input.internalNotes !== undefined) values.internalNotes = input.internalNotes;
 
   await updateAssociateById(input.id, values);

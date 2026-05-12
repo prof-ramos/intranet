@@ -1,7 +1,11 @@
 import { db } from '@/lib/db';
-import { associates, activities } from '@/lib/db/schema';
+import { associates, activities, functionalStatus, associationStatus, contributionStatus } from '@/lib/db/schema';
 import { eq, and, count, asc, sql } from 'drizzle-orm';
 import { buildAssociateNameSearchPattern } from './search-params';
+
+type FunctionalStatusEnum = (typeof functionalStatus.enumValues)[number];
+type AssociationStatusEnum = (typeof associationStatus.enumValues)[number];
+type ContributionStatusEnum = (typeof contributionStatus.enumValues)[number];
 
 export interface AssociateListItem {
   id: number;
@@ -87,16 +91,12 @@ export interface UpdateAssociateValues {
   assignmentStartDate?: string | null;
   classPattern?: string | null;
   associationCategory?: string | null;
-  functionalStatus?: string | null;
-  associationStatus?: string | null;
-  contributionStatus?: string | null;
+  functionalStatus?: FunctionalStatusEnum | null;
+  associationStatus?: AssociationStatusEnum;
+  contributionStatus?: ContributionStatusEnum;
   internalNotes?: string | null;
 }
 
 export async function updateAssociateById(id: number, values: UpdateAssociateValues) {
-  const set: Record<string, unknown> = {
-    ...values,
-    updatedAt: new Date(),
-  };
-  await db.update(associates).set(set).where(eq(associates.id, id));
+  await db.update(associates).set(values).where(eq(associates.id, id));
 }

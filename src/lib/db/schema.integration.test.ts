@@ -76,6 +76,14 @@ const expectedColumns = {
     'metadata:jsonb:YES',
     'created_at:timestamptz:NO',
   ],
+  assignments: [
+    'id:int8:NO',
+    'name:text:NO',
+    'type:assignment_type:NO',
+    'is_active:bool:NO',
+    'created_at:timestamptz:NO',
+    'updated_at:timestamptz:NO',
+  ],
   legal_consultations: [
     'id:int8:NO',
     'internal_number:text:NO',
@@ -96,7 +104,7 @@ const expectedColumns = {
   ],
   legal_notes: [
     'id:int8:NO',
-    'entity_type:text:NO',
+    'entity_type:legal_note_entity_type:NO',
     'entity_id:int8:NO',
     'content:text:NO',
     'created_by:int8:NO',
@@ -124,7 +132,7 @@ const expectedColumns = {
     'subtype:legal_process_subtype:NO',
     'associate_id:int8:YES',
     'status:legal_process_status:NO',
-    'satisfaction:text:YES',
+    'satisfaction:legal_satisfaction:YES',
     'office_deadline:timestamptz:YES',
     'legal_deadline:timestamptz:YES',
     'last_check_at:timestamptz:YES',
@@ -156,8 +164,9 @@ const expectedEnums = {
   activity_priority: ['baixa', 'normal', 'alta', 'urgente'],
   activity_status: ['a_fazer', 'em_andamento', 'aguardando_terceiros', 'concluido'],
   admin_role: ['admin', 'diretoria', 'secretaria'],
+  assignment_type: ['domestic', 'abroad'],
   association_status: ['ativo', 'inativo'],
-  audit_entity_type: ['associate', 'admin', 'activity', 'legal_consultation', 'legal_process'],
+  audit_entity_type: ['associate', 'admin', 'activity', 'assignment', 'legal_consultation', 'legal_process'],
   contribution_status: ['em_dia', 'inadimplente', 'pendente_migracao'],
   functional_status: ['ativo', 'aposentado', 'cedido', 'em_licenca'],
   legal_consultation_status: ['aberta', 'aguardando_escritorio', 'respondida', 'arquivada'],
@@ -165,6 +174,7 @@ const expectedEnums = {
   legal_process_subtype: ['justica_federal', 'stf', 'mre', 'cgu', 'tcu'],
   legal_process_type: ['judicial', 'administrativo'],
   legal_satisfaction: ['satisfeito', 'insatisfeito', 'sem_resposta'],
+  legal_note_entity_type: ['consultation', 'process'],
 } as const;
 
 const expectedIndexes = {
@@ -174,7 +184,6 @@ const expectedIndexes = {
     'idx_activities_associate_due_id',
     'idx_activities_associate_id',
     'idx_activities_created_by',
-    'idx_activities_due_date',
     'idx_activities_open_due_date',
     'idx_activities_position',
     'idx_activities_status',
@@ -201,18 +210,22 @@ const expectedIndexes = {
     'idx_audit_entity',
     'idx_audit_performed_by',
   ],
+  assignments: [
+    'assignments_pkey',
+  ],
   legal_consultations: [
     'idx_legal_consultations_answered_by',
     'idx_legal_consultations_associate',
     'idx_legal_consultations_created_at',
     'idx_legal_consultations_created_by',
-    'idx_legal_consultations_last_interaction',
     'idx_legal_consultations_open_last_interaction',
     'idx_legal_consultations_open_sla',
     'idx_legal_consultations_responded',
     'idx_legal_consultations_sla',
     'idx_legal_consultations_status',
+    'idx_legal_consultations_status_created_at',
     'idx_legal_consultations_status_updated_at',
+    'idx_legal_consultations_title_trgm',
     'legal_consultations_internal_number_unique',
     'legal_consultations_pkey',
   ],
@@ -272,6 +285,7 @@ describe('database schema contract', () => {
     `;
 
     const actual = rows.reduce<Record<string, string[]>>((acc, row) => {
+      if (row.table_name.startsWith('pg_stat_statements')) return acc;
       acc[row.table_name] ??= [];
       acc[row.table_name].push(`${row.column_name}:${row.udt_name}:${row.is_nullable}`);
       return acc;
