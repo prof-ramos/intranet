@@ -36,7 +36,7 @@ async function checkJuridicoRateLimit() {
  */
 export async function createConsultation(formData: FormData) {
   await checkJuridicoRateLimit();
-  const user = await requireRole(['admin', 'diretoria']);
+  const user = await requireRole(['admin', 'diretoria', 'secretaria']);
 
   const raw = formDataToRecord(formData);
 
@@ -66,7 +66,7 @@ export async function createConsultation(formData: FormData) {
  */
 async function updateConsultationStatus(id: number, status: string) {
   await checkJuridicoRateLimit();
-  await requireRole(['admin', 'diretoria']);
+  await requireRole(['admin', 'diretoria', 'secretaria']);
   const parsed = updateConsultationStatusSchema.safeParse({ id, status });
   if (!parsed.success) {
     throw new Error(firstZodError(parsed.error.issues));
@@ -104,7 +104,7 @@ export async function updateConsultationStatusFromForm(formData: FormData) {
  */
 export async function addNote(formData: FormData) {
   await checkJuridicoRateLimit();
-  const user = await requireRole(['admin', 'diretoria']);
+  const user = await requireRole(['admin', 'diretoria', 'secretaria']);
 
   const raw = formDataToRecord(formData);
 

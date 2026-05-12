@@ -54,3 +54,5 @@ jobs:
           SESSION_SECRET: "ci-dummy-secret-at-least-32-chars-long"
           DATABASE_URL: "postgres://postgres:postgres@localhost:5432/postgres"
           NODE_ENV: production
+          MAILJET_API_KEY: ${{ secrets.MAILJET_API_KEY }}
+          MAILJET_SECRET_KEY: ${{ secrets.MAILJET_SECRET_KEY }}
