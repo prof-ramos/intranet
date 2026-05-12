@@ -11,7 +11,16 @@ import {
   updateAssociateById,
   type UpdateAssociateValues,
 } from './repository';
+import { functionalStatus as fsEnum, associationStatus as asEnum, contributionStatus as csEnum } from '@/lib/db/schema';
 import { formatLongDate, yearsSinceDate } from '@/lib/utils/date';
+
+type FsEnum = (typeof fsEnum.enumValues)[number];
+type AsEnum = (typeof asEnum.enumValues)[number];
+type CsEnum = (typeof csEnum.enumValues)[number];
+
+const isFsEnum = (v: string): v is FsEnum => fsEnum.enumValues.includes(v as FsEnum);
+const isAsEnum = (v: string): v is AsEnum => asEnum.enumValues.includes(v as AsEnum);
+const isCsEnum = (v: string): v is CsEnum => csEnum.enumValues.includes(v as CsEnum);
 
 export { formatLongDate as formatAssociateDate, yearsSinceDate };
 export { initialsFromName } from '@/lib/utils/initials';
@@ -162,9 +171,24 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
     associationCategory: input.associationCategory,
   };
 
-  if (input.functionalStatus !== undefined) values.functionalStatus = input.functionalStatus;
-  if (input.associationStatus !== undefined) values.associationStatus = input.associationStatus;
-  if (input.contributionStatus !== undefined) values.contributionStatus = input.contributionStatus;
+  if (input.functionalStatus !== undefined) {
+    if (input.functionalStatus !== null && !isFsEnum(input.functionalStatus)) {
+      throw new Error('functionalStatus inválido.');
+    }
+    values.functionalStatus = input.functionalStatus as FsEnum | null;
+  }
+  if (input.associationStatus !== undefined) {
+    if (input.associationStatus === null || !isAsEnum(input.associationStatus)) {
+      throw new Error('associationStatus inválido.');
+    }
+    values.associationStatus = input.associationStatus;
+  }
+  if (input.contributionStatus !== undefined) {
+    if (input.contributionStatus === null || !isCsEnum(input.contributionStatus)) {
+      throw new Error('contributionStatus inválido.');
+    }
+    values.contributionStatus = input.contributionStatus;
+  }
   if (input.internalNotes !== undefined) values.internalNotes = input.internalNotes;
 
   await updateAssociateById(input.id, values);

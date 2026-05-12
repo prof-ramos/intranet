@@ -55,6 +55,9 @@ screenshot-*.png
 # visual brainstorming sessions
 .superpowers/
 
+# git worktrees
+.worktrees/
+
 # Playwright
 test-results/
 playwright-report/

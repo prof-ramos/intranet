@@ -1,5 +1,3 @@
-import { env } from '@/lib/env';
-
 export const AUTH_ROLES = ['admin', 'diretoria', 'secretaria'] as const;
 
 export type AuthRole = (typeof AUTH_ROLES)[number];
@@ -15,9 +13,6 @@ export interface AuthUser {
 export interface SessionData extends AuthUser {
   isLoggedIn: boolean;
 }
-
-export const SESSION_COOKIE_NAME = '__Host-asof-session';
-export const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 const DEFAULT_DEV_USER: AuthUser = {
   userId: 1,
@@ -63,8 +58,4 @@ export function getDevAuthUser(env: AuthEnv = process.env): AuthUser {
     role: parseDevUserRole(env.DEV_USER_ROLE),
     mustChangePassword: env.DEV_USER_MUST_CHANGE_PASSWORD === 'true',
   };
-}
-
-export function getSessionSecret(): string {
-  return env.SESSION_SECRET;
 }

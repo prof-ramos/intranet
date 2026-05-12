@@ -26,7 +26,10 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@google/genai": "^2.1.0",
     "@hello-pangea/dnd": "^18.0.1",
+    "@hookform/resolvers": "^5.2.2",
+    "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
     "bcryptjs": "^3.0.3",
     "daisyui": "^5.5.19",
@@ -34,10 +37,11 @@
     "jose": "^6.2.3",
     "lucide-react": "^1.14.0",
     "next": "16.2.6",
-    "node-mailjet": "^6.0.11",
+    "pdf-lib": "^1.17.1",
     "postgres": "^3.4.9",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "react-hook-form": "^7.75.0",
     "server-only": "^0.0.1",
     "zod": "^4.4.3"
   },

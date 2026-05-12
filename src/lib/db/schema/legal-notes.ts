@@ -1,11 +1,13 @@
-import { bigint, index, pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core';
+import { bigint, index, pgEnum, pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core';
 import { admins } from '@/lib/db/schema/admins';
+
+export const legalNoteEntityType = pgEnum('legal_note_entity_type', ['consultation', 'process']);
 
 export const legalNotes = pgTable(
   'legal_notes',
   {
     id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
-    entityType: text('entity_type').notNull(),
+    entityType: legalNoteEntityType('entity_type').notNull(),
     entityId: bigint('entity_id', { mode: 'number' }).notNull(),
     content: text('content').notNull(),
     createdBy: bigint('created_by', { mode: 'number' })

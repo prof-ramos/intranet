@@ -125,7 +125,7 @@ Set `SKIP_AUTH=true` in `.env.local` (ignored in production). Configures dev use
 ## Security
 
 - **LGPD:** CPF, SIAPE, email, address, and functional data are protected. Do not log or expose in API responses.
-- **JWT:** `SESSION_SECRET` minimum 32 chars.
+- **Auth:** Supabase Auth cookies via `@supabase/ssr`; do not reintroduce custom JWT `SESSION_SECRET` build requirements.
 - **DB:** SSL required in production or when `DB_SSL=true`/`sslmode=require`.
 - **Service-role keys:** Server/script only. Never expose to client components.
 

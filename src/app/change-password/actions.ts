@@ -4,12 +4,12 @@ import bcrypt from 'bcryptjs';
 import { redirect } from 'next/navigation';
 import { eq, sql } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth/require-auth';
-import { updateSession } from '@/lib/auth/session';
 import { validateNewPassword } from '@/lib/auth/password';
 import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
 import { firstZodError } from '@/lib/server-actions/utils';
 import { changePasswordSchema } from '@/lib/validation/schemas';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 function changePasswordError(message: string): never {
   redirect(`/change-password?error=${encodeURIComponent(message)}`);
@@ -35,6 +35,10 @@ export async function changePassword(formData: FormData) {
     changePasswordError(validation.message);
   }
 
+  if (!user.email) {
+    changePasswordError('Sessão inválida.');
+  }
+
   const [admin] = await db
     .select({
       id: admins.id,
@@ -53,6 +57,14 @@ export async function changePassword(formData: FormData) {
     changePasswordError('Senha atual inválida.');
   }
 
+  const supabase = await createServerSupabaseClient();
+  const { error: updateAuthError } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+  if (updateAuthError) {
+    changePasswordError('Não foi possível atualizar a senha no provedor de autenticação.');
+  }
+
   const passwordHash = await bcrypt.hash(newPassword, 12);
 
   await db
@@ -64,6 +76,5 @@ export async function changePassword(formData: FormData) {
     })
     .where(eq(admins.id, user.userId));
 
-  await updateSession({ mustChangePassword: false });
   redirect('/app');
 }

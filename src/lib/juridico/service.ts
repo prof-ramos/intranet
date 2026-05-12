@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { legalConsultations } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
+import type { DbExecutor, Tx } from './repository';
 import {
   insertConsultation,
   insertNote,
@@ -12,30 +13,34 @@ import { isLegalConsultationStatus, type LegalConsultationStatus } from '@/lib/j
 const MAX_RETRIES = 3;
 
 /**
- * Gera um número interno sequencial dentro de uma transação.
- * Usa retry com backoff em caso de conflito de unique constraint.
+ * Gera um número interno sequencial.
+ * Se executado dentro de uma transação, recebe o executor via parâmetro.
+ * Caso contrário, cria sua própria transação com retry em caso de conflito.
  */
-export async function generateInternalNumber(): Promise<string> {
+export async function generateInternalNumber(executor?: typeof db): Promise<string> {
   const year = new Date().getFullYear();
+
+  async function nextNumber(tx: typeof db): Promise<string> {
+    const likePattern = `JUR-${year}-%`;
+    const regexPattern = `JUR-${year}-([0-9]+)`;
+    const [result] = await tx
+      .select({
+        max: sql<string>`max(substring(${legalConsultations.internalNumber} from ${sql.raw(`'${regexPattern}'`)})::integer)`,
+      })
+      .from(legalConsultations)
+      .where(sql`${legalConsultations.internalNumber} like ${likePattern}`);
+
+    const nextNum = (Number(result?.max) || 0) + 1;
+    return `JUR-${year}-${String(nextNum).padStart(3, '0')}`;
+  }
+
+  if (executor) {
+    return nextNumber(executor);
+  }
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const next = await db.transaction(async (tx) => {
-        // Consulta dentro da transação garante snapshot isolation
-        const likePattern = `JUR-${year}-%`;
-        const regexPattern = `JUR-${year}-([0-9]+)`;
-        const [result] = await tx
-          .select({
-            max: sql<string>`max(substring(${legalConsultations.internalNumber} from ${sql.raw(`'${regexPattern}'`)})::integer)`,
-          })
-          .from(legalConsultations)
-          .where(sql`${legalConsultations.internalNumber} like ${likePattern}`);
-
-        const nextNum = (Number(result?.max) || 0) + 1;
-        return `JUR-${year}-${String(nextNum).padStart(3, '0')}`;
-      });
-
-      return next;
+      return await db.transaction(async (tx) => nextNumber(tx as unknown as typeof db));
     } catch (error) {
       const isUniqueViolation =
         error instanceof Error && /unique constraint|duplicate key/i.test(error.message);
@@ -44,7 +49,6 @@ export async function generateInternalNumber(): Promise<string> {
         throw error;
       }
 
-      // Backoff exponencial leve: 50ms, 150ms
       await new Promise((r) => setTimeout(r, 50 * attempt));
     }
   }
@@ -76,22 +80,40 @@ export async function createConsultationService(input: CreateConsultationInput) 
     throw new Error('Usuário criador inválido.');
   }
 
-  const internalNumber = await generateInternalNumber();
-  const slaDueDate = new Date();
-  slaDueDate.setDate(slaDueDate.getDate() + input.slaDays);
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await db.transaction(async (tx) => {
+        const internalNumber = await generateInternalNumber(tx as unknown as Tx);
+        const slaDueDate = new Date();
+        slaDueDate.setDate(slaDueDate.getDate() + input.slaDays);
 
-  const inserted = await insertConsultation({
-    internalNumber,
-    title: input.title.trim(),
-    questionSummary: input.questionSummary.trim(),
-    questionFullText: input.questionFullText?.trim() || null,
-    associateId: input.associateId,
-    slaDueDate,
-    createdBy: input.createdBy,
-    lastInteractionAt: new Date(),
-  });
+        return insertConsultation(
+          {
+            internalNumber,
+            title: input.title.trim(),
+            questionSummary: input.questionSummary.trim(),
+            questionFullText: input.questionFullText?.trim() || null,
+            associateId: input.associateId,
+            slaDueDate,
+            createdBy: input.createdBy,
+            lastInteractionAt: new Date(),
+          },
+          tx as unknown as Tx,
+        );
+      });
+    } catch (error) {
+      const isUniqueViolation =
+        error instanceof Error && /unique constraint|duplicate key/i.test(error.message);
 
-  return inserted;
+      if (!isUniqueViolation || attempt === MAX_RETRIES) {
+        throw error;
+      }
+
+      await new Promise((r) => setTimeout(r, 50 * attempt));
+    }
+  }
+
+  throw new Error('Falha ao criar consulta após múltiplas tentativas.');
 }
 
 export async function updateConsultationStatusService(id: number, status: string) {
@@ -122,7 +144,7 @@ export async function addNoteService(input: AddNoteInput) {
   if (!['consultation', 'process'].includes(input.entityType)) {
     throw new Error('Tipo de entidade inválido.');
   }
-  if (!Number.isInteger(input.entityId) || input.entityId < 0) {
+  if (!Number.isInteger(input.entityId) || input.entityId <= 0) {
     throw new Error('Entidade inválida.');
   }
   if (!input.content.trim()) {

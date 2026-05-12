@@ -169,6 +169,114 @@ Key Schemas/Tables:
 - `legal_opinion_tags` — opinion classification tags
 - `rate_limits` — IP-based rate limiting
 
+### 4.2. Database Architecture Decisions
+
+#### 4.2.1. Connection Pooling
+
+The `postgres.js` client is configured in `src/lib/db/index.ts`:
+
+| Parameter | Value | Rationale |
+|---|---|---|
+| `max` | `10` (default) | Postgres.js default; Supabase pooler default is 42. Tuned for < 1000 associates |
+| `max_lifetime` | `1800` (30 min) | Prevents connection leaks by recycling stale connections |
+| `connect_timeout` | `10s` | Fail fast if DB is unreachable |
+| `idle_timeout` | `20s` | Free idle connections during low traffic |
+| `statement_timeout` | `30000` (30s) | Kills runaway queries; prevents connection pool starvation |
+| `application_name` | `'asof-intranet'` | Identifies this app's queries in `pg_stat_statements` and `pg_stat_activity` |
+| `prepare` | `false` if pgBouncer detected | Prepared statements are incompatible with transaction mode poolers |
+
+SSL is enforced in production (`DB_SSL=true` or `NODE_ENV=production`).
+
+#### 4.2.2. Indexing Strategy
+
+Rules applied across all tables:
+
+1. **Partial indexes** for all queries with conditional `WHERE` clauses (e.g., `WHERE status != 'arquivada'`). Smaller index, faster scans.
+2. **Composite indexes** match the exact `(filter, order)` pattern of paginated queries.
+3. **GIN indexes** for JSONB operators (`@>`, `?`) on `tags` columns.
+4. **Trigram GIN indexes** for `LIKE '%term%'` searches on text columns.
+5. **No over-indexing**: tables with < 100 rows (e.g., `admins`) have minimal indexes.
+
+Current indexes by table:
+
+| Table | Est. Indexes | Primary Patterns (Authority: Migration files / Schema) |
+|---|---|---|
+| `associates` | 8 | Trigram for name, B-tree for status, composite for status+name |
+| `activities` | 9 | Partial for open items, composite for associate+due_date+id |
+| `legal_consultations` | 11 | Partial for open items, composite for status+updated_at, trigram for title |
+| `legal_processes` | 5 | B-tree on status, associate, type |
+| `legal_notes` | 3 | Composite for entity lookup |
+| `audit_logs` | 3 | Composite for entity lookup |
+| `monthly_payments` | 1 | Unique index for (associate, year, month) |
+| `login_attempts` / `rate_limits` | 2 each | B-tree on lookup key and expiry |
+
+> **Nota:** As contagens acima são informativas. A fonte canônica de verdade para o schema e índices são os arquivos em `src/lib/db/schema/` e as migrações em `drizzle/postgres/`. O comando `npm run verify:indexes` (script `scripts/verify-indexes.ts`) valida periodicamente se os índices no banco batem com os padrões documentados.
+
+#### 4.2.3. Enum Usage
+
+PostgreSQL enums are preferred over free-text columns for status and type fields:
+
+| Enum | Used By | Status |
+|---|---|---|
+| `admin_role` | `admins.role` | ✅ Correct |
+| `association_status` | `associates.association_status` | ✅ Correct |
+| `contribution_status` | `associates.contribution_status` | ✅ Correct |
+| `functional_status` | `associates.functional_status` | ✅ Correct |
+| `activity_status` | `activities.status` | ✅ Correct |
+| `activity_priority` | `activities.priority` | ✅ Correct |
+| `audit_entity_type` | `audit_logs.entity_type` | ✅ Correct |
+| `legal_consultation_status` | `legal_consultations.status` | ✅ Correct |
+| `legal_satisfaction` | `legal_consultations.satisfaction`, `legal_processes.satisfaction` (corrected in 0009) | ✅ Correct |
+| `legal_process_type` | `legal_processes.type` | ✅ Correct |
+| `legal_process_subtype` | `legal_processes.subtype` | ✅ Correct |
+| `legal_process_status` | `legal_processes.status` | ✅ Correct |
+| `legal_note_entity_type` | `legal_notes.entity_type` (fixed in 0009) | ✅ Correct |
+| `assignment_type` | `assignments.type` | ✅ Correct |
+
+**Principle:** Any column representing a bounded set of states MUST use a PostgreSQL enum. Text-only columns exist for unbounded data (names, emails, notes).
+
+#### 4.2.4. Row-Level Security (RLS)
+
+RLS was enabled in migration 0000 and **removed in migration 0001**. Rationale:
+
+- All database access goes through the Next.js server layer (Server Components / Server Actions).
+- No Supabase client is exposed to the browser; there is no direct client-to-DB path.
+- Auth is enforced via `requireAuth()` (JWT session verification + DB admin lookup) and `requireRole()` (role-based guards).
+
+**Risk:** Any direct database connection (e.g., Supabase client from a script, ad-hoc query tool) bypasses all authorization. RLS was reinstated in migration 0009 as a defense-in-depth layer.
+
+**LGPD Security & RLS Hardening:**
+1. **Permissive Policies:** Current policies use `FOR ALL TO PUBLIC USING (true) WITH CHECK (true)`. They are only a documented defense-in-depth posture and do not satisfy LGPD access restriction by themselves; effective authorization still comes from `requireAuth()`, `requireRole()`, server-only credentials, and not exposing database clients to browsers.
+2. **Monitoring:** Recomenda-se monitorar conexões diretas ao banco que não utilizem `application_name='asof-intranet'`.
+3. **Session Context:** Futuras iterações devem adotar predicados RLS que referenciem o estado da sessão, como `current_setting('app.user_id')`, fornecendo uma trava adicional no nível do banco.
+4. **Service-role Keys:** As chaves de serviço do Supabase (`service_role`) possuem privilégios totais e **devem** ser rotacionadas periodicamente, nunca commitadas e auditadas.
+5. **Narrowing:** Caso um cliente Supabase seja exposto ao browser, as políticas devem ser imediatamente restritas para `per-user` ou `per-role`.
+6. **Verification:** `npm run test:db` must include explicit checks for `relrowsecurity` and `pg_policies` on LGPD-sensitive tables whenever migrations change RLS, enums, FKs, or indexes.
+
+#### 4.2.5. Transaction Boundaries
+
+Transactions are used where data consistency across multiple tables is required:
+
+| Operation | Transaction | Status |
+|---|---|---|
+| `generateInternalNumber` | ✅ Yes | Inside `db.transaction(tx)` for sequence isolation |
+| `addNoteService` + `touchConsultationInteraction` | ✅ Yes | Note + timestamp update are atomic |
+| `createConsultationService` (generate number + insert) | ✅ Yes | Fixed in service refactor |
+| `updateConsultationStatus` | N/A | Single-statement update; no transaction needed |
+| Bulk associate import | ❌ No | Each row is upserted individually (future work) |
+
+#### 4.2.6. Known N+1 Patterns
+
+- `findLinkedActivities` is called per-associate in profile view. With ~763 associates and a covering index `(associate_id, due_date, id)`, each query is a fast index-only scan. Acceptable at current scale.
+- Dashboard aggregates run 3+ `count()` queries in parallel via `Promise.all`. Acceptable.
+
+#### 4.2.7. Monitoring
+
+- `pg_stat_statements` is installed (migration 0009) for query profiling.
+- No slow-query logging threshold is configured in Postgres.
+- Application-level monitoring: none currently. Consider `pglite` or Supabase observability dashboard for production.
+- RLS monitoring should flag direct connections whose `application_name` is missing or differs from `asof-intranet`, especially before enabling any browser-side Supabase feature.
+
 ## 5. External Integrations / APIs
 
 Service Name: Supabase
@@ -212,7 +320,6 @@ Local development uses PostgreSQL installed through Homebrew, currently `postgre
 |---|---|
 | `DATABASE_URL` | Direct local URL, e.g. `postgres://$USER@localhost:5432/asof_intranet` |
 | `DATABASE_MIGRATION_URL` | Same direct local URL; there is no local pooler |
-| `SESSION_SECRET` | Local development secret in `.env.local` |
 | `SKIP_AUTH` / `DEV_USER_*` | Development-only auth bypass values |
 
 Homebrew PostgreSQL usually creates a role matching the macOS username, not a `postgres` role. On this machine `$USER` resolves to `gabrielramos`; `postgres://postgres@localhost:5432/...` fails because that role does not exist.
@@ -221,7 +328,6 @@ Homebrew PostgreSQL usually creates a role matching the macOS username, not a `p
 
 | Variável | Origem / Dono |
 |---|---|
-| `SESSION_SECRET` | Gerada pelo time de infra (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) |
 | `DATABASE_URL` | Pooler de conexões do Supabase (porta 6543) |
 | `DATABASE_MIGRATION_URL` | URL direta/non-pooling do Supabase |
 | `DATABASE_SUPABASE_URL` | Dashboard do projeto Supabase |
@@ -229,7 +335,7 @@ Homebrew PostgreSQL usually creates a role matching the macOS username, not a `p
 
 #### Produção (Vercel)
 
-As mesmas variáveis do staging, apontando para o projeto Supabase de produção. `SESSION_SECRET` deve ser diferente do staging.
+As mesmas variáveis do staging, apontando para o projeto Supabase de produção.
 
 > **Regra:** `DATABASE_MIGRATION_URL` nunca usa pooler (porta 6543). Migrations precisam de conexão direta.
 
@@ -281,7 +387,6 @@ Data Encryption: TLS is expected for production HTTP and database transport. Run
 
 Key Security Tools/Practices:
 
-- `SESSION_SECRET` must be at least 32 characters.
 - `SKIP_AUTH=true` works only outside production.
 - Service-role Supabase keys are server/script-only.
 - Sensitive ASOF data such as CPF, SIAPE, email, address, and functional data must not be logged or exposed in public responses.

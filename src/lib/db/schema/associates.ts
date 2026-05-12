@@ -22,6 +22,14 @@ export const functionalStatus = pgEnum('functional_status', [
   'em_licenca',
 ]);
 
+export const paymentMethod = pgEnum('payment_method', [
+  'folha',
+  'boleto',
+  'pix',
+  'transferencia',
+  'outros',
+]);
+
 export const associates = pgTable(
   'associates',
   {
@@ -44,6 +52,7 @@ export const associates = pgTable(
     contributionStatus: contributionStatus('contribution_status')
       .notNull()
       .default('pendente_migracao'),
+    paymentMethod: paymentMethod('payment_method').notNull().default('folha'),
     address: text('address'),
     secondaryEmail: text('secondary_email'),
     internalNotes: text('internal_notes'),

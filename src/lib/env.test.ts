@@ -32,7 +32,7 @@ describe('envSchema', () => {
         i.path.includes('DATABASE_URL'),
       );
       expect(issue?.message).toBe(
-        'Either DATABASE_URL or DATABASE_POSTGRES_URL must be set.',
+        'Either DATABASE_URL, DATABASE_POSTGRES_URL, POSTGRES_URL, or POSTGRES_PRISMA_URL must be set.',
       );
     }
   });
@@ -75,9 +75,18 @@ describe('envSchema', () => {
       ...validEnv,
       SKIP_AUTH: 'true',
       NODE_ENV: 'production',
-      MAILJET_API_KEY: 'abc',
-      MAILJET_SECRET_KEY: '123',
     });
+    expect(result.success).toBe(true);
+  });
+
+  test('aceita produção sem Mailjet configurado', () => {
+    const result = envSchema.safeParse({
+      DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+      SESSION_SECRET: 'a'.repeat(32),
+      SKIP_AUTH: 'false',
+      NODE_ENV: 'production',
+    });
+
     expect(result.success).toBe(true);
   });
 

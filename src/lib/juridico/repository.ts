@@ -240,7 +240,7 @@ export interface NoteItem {
   createdAt: string;
 }
 
-export async function getNotesByEntity(entityType: string, entityId: number): Promise<NoteItem[]> {
+export async function getNotesByEntity(entityType: 'consultation' | 'process', entityId: number): Promise<NoteItem[]> {
   const rows = await db
     .select({
       id: legalNotes.id,
@@ -359,8 +359,9 @@ export async function insertConsultation(
     createdBy: number;
     lastInteractionAt: Date;
   },
+  executor: DbExecutor = db,
 ) {
-  const [inserted] = await db
+  const [inserted] = await executor
     .insert(legalConsultations)
     .values({
       internalNumber: values.internalNumber,
@@ -393,10 +394,10 @@ export async function updateConsultationStatus(
   await db.update(legalConsultations).set(set).where(eq(legalConsultations.id, id));
 }
 
-type DbExecutor = Pick<typeof db, 'insert' | 'update'>;
+export type DbExecutor = Pick<typeof db, 'insert' | 'update'>;
 
 export async function insertNote(values: {
-  entityType: string;
+  entityType: 'consultation' | 'process';
   entityId: number;
   content: string;
   createdBy: number;

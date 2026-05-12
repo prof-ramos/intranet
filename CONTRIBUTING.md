@@ -49,7 +49,6 @@ Edite `.env.local` conforme o modo de desenvolvimento:
 #### Modo de desenvolvimento com bypass de auth (recomendado para iniciar)
 
 ```bash
-SESSION_SECRET=qualquer-string-com-pelo-menos-32-caracteres-aqui
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/asof
 SKIP_AUTH=true
 DEV_USER_ID=1
@@ -64,7 +63,6 @@ DEV_USER_MUST_CHANGE_PASSWORD=false
 #### Modo de desenvolvimento com auth real (recomendado para testar login)
 
 ```bash
-SESSION_SECRET=qualquer-string-com-pelo-menos-32-caracteres-aqui
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/asof
 INITIAL_ADMIN_EMAIL=admin@asof.local
 INITIAL_ADMIN_PASSWORD=SenhaSegura123!
@@ -399,21 +397,11 @@ Usuário → /login → Server Action: login()
 
 ### Build falha com "Invalid environment variables"
 
-**Sintoma:**
-```
-❌ Invalid environment variables:
-  - SESSION_SECRET: SESSION_SECRET must be set and at least 32 characters long.
-```
-
-**Solução:**
-```bash
-# Gerar secret
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-
-# Adicionar a .env.local
-# ou no Vercel:
-vercel env add SESSION_SECRET production
-```
+`SESSION_SECRET` não é mais usado pela autenticação atual, que roda em
+Supabase Auth. Se o build exigir `SESSION_SECRET`, o deploy está usando uma
+versão antiga de `src/lib/env.ts` ou algum código reintroduziu validação de JWT
+customizada. Atualize a branch/deploy e verifique `src/lib/env.ts` antes de
+adicionar variáveis obsoletas ao Vercel.
 
 ### Typecheck falha com "Range out of order in character class"
 

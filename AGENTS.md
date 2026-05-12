@@ -84,6 +84,17 @@ npm run db:studio
 - Current Drizzle migrations are in `drizzle/postgres`.
 - The `@/*` import alias maps to `src/*`.
 
+## Database Conventions
+
+- **Enums**: Use PostgreSQL enums for all status/type fields. Never use `text` for a bounded set of values.
+- **Indexes**: Create partial indexes for queries with conditional `WHERE`. Use trigram GIN (`gin_trgm_ops`) for `LIKE '%term%'`. Use composite indexes matching `(filter, order)` patterns. Prefix custom indexes with `idx_`.
+- **Connection pool**: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'` in `src/lib/db/index.ts`.
+- **Transactions**: Multi-table operations MUST use `db.transaction()`. Pass the `tx` executor to repository functions that accept one.
+- **RLS**: Re-enabled in migration 0009 as defense-in-depth. All current policies are permissive (`FOR ALL TO PUBLIC`); auth is enforced server-side. If a Supabase client is ever exposed to the browser, RLS policies must be narrowed.
+- **Update safety**: `updateAssociateById` and similar functions must use typed interfaces, not `Record<string, unknown>`, to prevent unintended column overwrites.
+- **Migrations**: Name SQL files with zero-padded index + description (e.g., `0009_quality_improvements.sql`). Update `_journal.json` with the correct timestamp.
+- **Testing**: `npm run test:db` validates tables, columns, enums, indexes, extensions, and migration alignment against the live database.
+
 ## Database
 
 - `drizzle.config.ts` targets PostgreSQL and writes migrations to `drizzle/postgres`.
@@ -117,3 +128,12 @@ npm run db:studio
 - Do not downgrade Next.js below the pinned 16.2.6 line; keep RSC security fixes current when updating framework versions.
 - `next.config.ts` pins `turbopack.root` to this directory for explicit Turbopack checks. This was added because a prior real-project dev test resolved Tailwind from the parent project directory instead of this app directory.
 - The machine previously showed heavy memory pressure from `next dev` PostCSS/Tailwind workers on an 8 GB MacBook Air. Prefer controlled dev-server tests with `scripts/run-dev-60s.sh` when diagnosing freezes.
+
+## Worktrees e Isolamento
+
+- Use git worktrees para isolar cada feature em `.worktrees/<branch-name>`. Cada worktree é um checkout independente com seu próprio `node_modules` e `.next`.
+- Cada agente deve modificar apenas arquivos dentro da área que lhe foi atribuída (ex: `src/app/api` vs `src/components`). Quanto menos sobreposição de arquivos, menor a chance de conflito.
+- Faça rebase em `origin/main` frequentemente durante o desenvolvimento. Conflitos pequenos e frequentes são mais fáceis de resolver que um conflito gigante no final.
+- PRs devem ser pequenos e focados em uma única responsabilidade.
+- Quando duas features tocam a mesma área, o segundo agente faz rebase em cima do resultado do merge da primeira.
+- Ao remover o worktree quando a feature for mergeada: `git worktree remove .worktrees/<branch>`.

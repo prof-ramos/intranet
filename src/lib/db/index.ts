@@ -9,7 +9,12 @@ function positiveInteger(value: string | undefined, fallback: number) {
 }
 
 // databaseUrl intentionally prefers DATABASE_URL for runtime connections.
-const databaseUrl = env.DATABASE_URL ?? env.DATABASE_POSTGRES_URL;
+// Falls back to Supabase Vercel integration var names (POSTGRES_URL, POSTGRES_PRISMA_URL).
+const databaseUrl =
+  env.DATABASE_URL ??
+  env.DATABASE_POSTGRES_URL ??
+  env.POSTGRES_PRISMA_URL ??
+  env.POSTGRES_URL;
 
 if (!databaseUrl) {
   throw new Error('DATABASE_URL or DATABASE_POSTGRES_URL must be set.');
@@ -31,9 +36,14 @@ const usesTransactionPooler =
 
 const client = postgres(databaseUrl, {
   prepare: !usesTransactionPooler,
-  max: positiveInteger(env.DB_MAX_CONNECTIONS, 5),
+  max: positiveInteger(env.DB_MAX_CONNECTIONS, 10),
+  max_lifetime: 60 * 30,
   connect_timeout: positiveInteger(env.DB_CONNECT_TIMEOUT_SECONDS, 10),
   idle_timeout: positiveInteger(env.DB_IDLE_TIMEOUT_SECONDS, 20),
+  connection: {
+    application_name: 'asof-intranet',
+    statement_timeout: 30000,
+  },
   ssl:
     env.DB_SSL === 'true' ||
     env.NODE_ENV === 'production' ||

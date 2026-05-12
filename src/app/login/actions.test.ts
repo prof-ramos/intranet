@@ -1,19 +1,22 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { login } from '@/app/login/actions';
 
 let mockRateLimit = { allowed: true };
-let mockUser: { id: number; email: string; passwordHash: string; isActive: boolean; name: string; role: 'admin' | 'diretoria' | 'secretaria'; mustChangePassword: boolean } | null = null;
-let sessionCreated = false;
+let mockDbUser:
+  | {
+      id: number;
+      email: string;
+      isActive: boolean;
+      mustChangePassword: boolean;
+    }
+  | null = null;
+let mockAuthUser: { email?: string | null } | null = null;
+let mockSignInError: Error | null = null;
+const mockSignOut = vi.fn(() => Promise.resolve({ error: null }));
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn((path: string) => {
     throw new Error(`NEXT_REDIRECT:${path}`);
-  }),
-}));
-
-vi.mock('@/lib/auth/session', () => ({
-  createSession: vi.fn(() => {
-    sessionCreated = true;
   }),
 }));
 
@@ -22,7 +25,7 @@ vi.mock('@/lib/db', () => ({
     select: vi.fn(() => ({
       from: vi.fn(() => ({
         where: vi.fn(() => ({
-          limit: vi.fn(() => Promise.resolve(mockUser ? [mockUser] : [])),
+          limit: vi.fn(() => Promise.resolve(mockDbUser ? [mockDbUser] : [])),
         })),
       })),
     })),
@@ -32,15 +35,32 @@ vi.mock('@/lib/db', () => ({
 vi.mock('@/lib/auth/login-rate-limit', () => ({
   loginRateLimiter: {
     consume: vi.fn(() => Promise.resolve(mockRateLimit)),
-    reset: vi.fn(),
+    reset: vi.fn(() => Promise.resolve()),
   },
+}));
+
+vi.mock('@/lib/supabase/server', () => ({
+  createServerSupabaseClient: vi.fn(() =>
+    Promise.resolve({
+      auth: {
+        signInWithPassword: vi.fn(() =>
+          Promise.resolve({
+            data: { user: mockAuthUser },
+            error: mockSignInError,
+          }),
+        ),
+        signOut: mockSignOut,
+      },
+    }),
+  ),
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockRateLimit = { allowed: true };
-  mockUser = null;
-  sessionCreated = false;
+  mockDbUser = null;
+  mockAuthUser = null;
+  mockSignInError = null;
 });
 
 describe('login action', () => {
@@ -48,6 +68,7 @@ describe('login action', () => {
     const formData = new FormData();
     formData.set('email', '');
     formData.set('password', '');
+
     await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=1');
   });
 
@@ -56,81 +77,62 @@ describe('login action', () => {
     const formData = new FormData();
     formData.set('email', 'user@asof.local');
     formData.set('password', 'password');
+
     await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=rate-limit');
   });
 
-  it('redirects with error for unknown user (timing-safe)', async () => {
+  it('redirects with error when Supabase rejects the credentials', async () => {
+    mockSignInError = new Error('invalid login');
     const formData = new FormData();
     formData.set('email', 'unknown@asof.local');
     formData.set('password', 'Senha-Forte-2026!');
+
     await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=1');
   });
 
-  it('redirects with error for inactive user', async () => {
-    mockUser = {
+  it('signs out and redirects with error when the authenticated email is not an active admin', async () => {
+    mockAuthUser = { email: 'inactive@asof.local' };
+    mockDbUser = {
       id: 1,
       email: 'inactive@asof.local',
-      passwordHash: '$2b$12$abcdefghijklmnopqrstuvwxycdefghijklmnopqrstu',
       isActive: false,
-      name: 'Inactive',
-      role: 'admin',
       mustChangePassword: false,
     };
     const formData = new FormData();
     formData.set('email', 'inactive@asof.local');
     formData.set('password', 'Senha-Forte-2026!');
+
     await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=1');
+    expect(mockSignOut).toHaveBeenCalledOnce();
   });
 
-  it('redirects with error for wrong password', async () => {
-    mockUser = {
+  it('redirects to /app on successful login', async () => {
+    mockAuthUser = { email: 'admin@asof.local' };
+    mockDbUser = {
       id: 1,
       email: 'admin@asof.local',
-      passwordHash: await (await import('bcryptjs')).hash('correct-password-2026!', 12),
       isActive: true,
-      name: 'Admin',
-      role: 'admin',
-      mustChangePassword: false,
-    };
-    const formData = new FormData();
-    formData.set('email', 'admin@asof.local');
-    formData.set('password', 'wrong-password');
-    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=1');
-  });
-
-  it('creates session and redirects to /app on successful login', async () => {
-    const bcrypt = await import('bcryptjs');
-    mockUser = {
-      id: 1,
-      email: 'admin@asof.local',
-      passwordHash: await bcrypt.hash('Senha-Forte-2026!', 12),
-      isActive: true,
-      name: 'Admin',
-      role: 'admin',
       mustChangePassword: false,
     };
     const formData = new FormData();
     formData.set('email', 'admin@asof.local');
     formData.set('password', 'Senha-Forte-2026!');
+
     await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/app');
-    expect(sessionCreated).toBe(true);
   });
 
-  it('creates session and redirects to /app on successful login for user with mustChangePassword', async () => {
-    const bcrypt = await import('bcryptjs');
-    mockUser = {
+  it('redirects to /change-password when the admin must rotate the password', async () => {
+    mockAuthUser = { email: 'new@asof.local' };
+    mockDbUser = {
       id: 1,
       email: 'new@asof.local',
-      passwordHash: await bcrypt.hash('Senha-Forte-2026!', 12),
       isActive: true,
-      name: 'New User',
-      role: 'secretaria',
       mustChangePassword: true,
     };
     const formData = new FormData();
     formData.set('email', 'new@asof.local');
     formData.set('password', 'Senha-Forte-2026!');
-    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/app');
-    expect(sessionCreated).toBe(true);
+
+    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/change-password');
   });
 });
