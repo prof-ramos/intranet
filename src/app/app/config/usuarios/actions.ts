@@ -12,16 +12,15 @@ function generateTemporaryPassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   const symbols = '@#$%&!';
   const digits = '0123456789';
-  const bytes = randomBytes(20);
-  const base = Array.from(bytes.slice(0, 14))
+  const bytes = randomBytes(10);
+  const base = Array.from(bytes.slice(0, 6))
     .map((b) => chars[b % chars.length])
     .join('');
-  const sym = symbols[bytes[14] % symbols.length];
-  const dig = digits[bytes[15] % digits.length];
-  const pos1 = bytes[16] % 8;
-  const pos2 = 8 + (bytes[17] % 7);
-  const end = base.slice(0, pos1) + sym + base.slice(pos1, pos2) + dig + base.slice(pos2);
-  return end;
+  const sym = symbols[bytes[6] % symbols.length];
+  const dig = digits[bytes[7] % digits.length];
+  const pos1 = bytes[8] % 8;
+  const pos2 = 8 + (bytes[9] % 8);
+  return base.slice(0, pos1) + sym + base.slice(pos1, pos2) + dig + base.slice(pos2);
 }
 
 export async function resetUserPassword(
