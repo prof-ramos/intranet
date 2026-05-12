@@ -1,11 +1,6 @@
-import { requireAuth } from '@/lib/auth/require-auth';
-import { requireRole } from '@/lib/auth/authorization';
 import { Settings } from 'lucide-react';
 
 export default async function ConfigPage() {
-  await requireAuth();
-  await requireRole(['admin', 'diretoria']);
-
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
       <p className="text-[rgba(13,31,60,0.55)] text-[11px] tracking-[0.18em] uppercase">

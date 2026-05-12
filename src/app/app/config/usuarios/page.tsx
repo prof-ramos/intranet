@@ -1,13 +1,10 @@
-import { requireRole } from '@/lib/auth/authorization';
 import { Users } from 'lucide-react';
 
 export default async function UsuariosPage() {
-  await requireRole(['admin', 'diretoria']);
-
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
       <p className="text-[rgba(13,31,60,0.55)] text-[11px] tracking-[0.18em] uppercase">
-        Administração · Controle de acesso
+        Configurações · Usuários
       </p>
       <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
         Usuários

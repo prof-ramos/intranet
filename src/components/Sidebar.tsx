@@ -11,6 +11,7 @@ import {
   Users,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
+import { NavGroup } from '@/components/NavGroup';
 import { LogoutButton } from '@/components/LogoutButton';
 import { type AuthRole } from '@/lib/auth/config';
 import { focusRingClass } from '@/lib/ui/tokens';
@@ -74,18 +75,16 @@ export function Sidebar({ user }: SidebarProps) {
           </NavLink>
         )}
         {user.role !== 'secretaria' && (
-          <NavLink href="/app/usuarios" icon={<Shield size={20} />}>
-            Usuários
-          </NavLink>
+          <NavGroup
+            basePath="/app/config"
+            icon={<Settings size={20} />}
+            label="Configurações"
+            items={[
+              { href: '/app/config/usuarios', label: 'Usuários', icon: <Shield size={18} /> },
+              { href: '/app/config/auditoria', label: 'Auditoria', icon: <ShieldCheck size={18} /> },
+            ]}
+          />
         )}
-        {user.role !== 'secretaria' && (
-          <NavLink href="/app/auditoria" icon={<ShieldCheck size={20} />}>
-            Auditoria
-          </NavLink>
-        )}
-        <NavLink href="/app/config" icon={<Settings size={20} />}>
-          Configurações
-        </NavLink>
       </nav>
 
       {/* Footer */}

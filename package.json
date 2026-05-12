@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "next dev --webpack",
     "dev:turbo": "next dev --turbopack",
-    "build": "next build --webpack",
-    "build:turbo": "next build --turbopack",
+    "build": "NODE_ENV=production next build --webpack",
+    "build:turbo": "NODE_ENV=production next build --turbopack",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
