@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
+import { type CSSProperties, type ReactNode, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { primaryContainerActive, primaryContainerHover, skyBlue } from '@/lib/ui/tokens';
 
@@ -28,9 +28,14 @@ export function NavGroup({
   const [hovered, setHovered] = useState(false);
   const [expanded, setExpanded] = useState(isGroupActive);
 
-  useEffect(() => {
-    if (isGroupActive) setExpanded(true);
-  }, [isGroupActive]);
+  // Correctly handle state transitions during render
+  const [prevIsGroupActive, setPrevIsGroupActive] = useState(isGroupActive);
+  if (isGroupActive !== prevIsGroupActive) {
+    setPrevIsGroupActive(isGroupActive);
+    if (isGroupActive) {
+      setExpanded(true);
+    }
+  }
 
   const toggleStyle = {
     '--focus-ring-color': skyBlue,

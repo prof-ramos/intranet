@@ -6,7 +6,6 @@ import {
   ASSOCIATE_EXPORT_FIELDS,
   SENSITIVE_FIELDS,
   PUBLIC_FIELDS,
-  type Role,
 } from '@/lib/associates/lgpd';
 import type { Associate } from '@/lib/db/schema/associates';
 

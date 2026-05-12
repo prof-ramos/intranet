@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useState } from 'react';
 import { updateAssignment } from './actions';
 import { Pencil } from 'lucide-react';
 
@@ -14,11 +14,14 @@ export function AssignmentEditRow({ id, name, type }: AssignmentEditRowProps) {
   const [editing, setEditing] = useState(false);
   const [state, formAction, isPending] = useActionState(updateAssignment, null);
 
-  useEffect(() => {
+  // Correctly handle state transitions during render
+  const [prevState, setPrevState] = useState(state);
+  if (state !== prevState) {
+    setPrevState(state);
     if (state?.success) {
       setEditing(false);
     }
-  }, [state]);
+  }
 
   if (!editing) {
     return (

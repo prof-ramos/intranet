@@ -1,7 +1,7 @@
 import { asc, desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { activities, admins, associates } from '@/lib/db/schema';
-import type { BoardActivity, BoardAssociate, BoardPerson, Priority, Status } from './types';
+import type { BoardActivity, Priority, Status } from './types';
 
 const DEFAULT_ACTIVITY_LIMIT = 200;
 const MAX_ACTIVITY_LIMIT = 500;

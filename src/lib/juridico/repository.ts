@@ -417,14 +417,3 @@ export async function touchConsultationInteraction(entityId: number, executor: D
     .set({ lastInteractionAt: new Date(), updatedAt: new Date() })
     .where(eq(legalConsultations.id, entityId));
 }
-
-async function findMaxInternalNumberForYear(year: number): Promise<number> {
-  const [result] = await db
-    .select({
-      max: sql<string>`max(substring(${legalConsultations.internalNumber} from 'JUR-${year}-([0-9]+)')::integer)`,
-    })
-    .from(legalConsultations)
-    .where(sql`${legalConsultations.internalNumber} like ${`JUR-${year}-%`}`);
-
-  return Number(result?.max) || 0;
-}
