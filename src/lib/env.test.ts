@@ -75,6 +75,8 @@ describe('envSchema', () => {
       ...validEnv,
       SKIP_AUTH: 'true',
       NODE_ENV: 'production',
+      MAILJET_API_KEY: 'abc',
+      MAILJET_SECRET_KEY: '123',
     });
     expect(result.success).toBe(true);
   });
