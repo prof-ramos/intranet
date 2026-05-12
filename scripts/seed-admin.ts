@@ -10,30 +10,57 @@ async function main() {
   const hash = await bcrypt.hash(password, 12);
 
   const [existingAdmin] = await db
-    .select({ id: admins.id })
+    .select({
+      id: admins.id,
+      name: admins.name,
+      role: admins.role,
+    })
     .from(admins)
     .where(eq(admins.email, email))
     .limit(1);
   if (existingAdmin) {
-    console.log(`Admin already exists: ${email}`);
+    await db.transaction(async (tx) => {
+      await tx
+        .update(admins)
+        .set({
+          passwordHash: hash,
+          mustChangePassword: true,
+          updatedAt: new Date(),
+        })
+        .where(eq(admins.id, existingAdmin.id));
+
+      await ensureAdminPasswordAuthUser({
+        email,
+        password,
+        name: existingAdmin.name,
+        role: existingAdmin.role,
+        mustChangePassword: true,
+        resetPassword: true,
+      });
+    });
+
+    console.log(`Admin already exists and was synced with Supabase Auth: ${email}`);
+    console.log('The admin must change the initial password on first login.');
     return;
   }
 
-  await db.insert(admins).values({
-    name: 'Administrador',
-    email,
-    passwordHash: hash,
-    role: 'admin',
-    mustChangePassword: true,
-  });
+  await db.transaction(async (tx) => {
+    await tx.insert(admins).values({
+      name: 'Administrador',
+      email,
+      passwordHash: hash,
+      role: 'admin',
+      mustChangePassword: true,
+    });
 
-  await ensureAdminPasswordAuthUser({
-    email,
-    password,
-    name: 'Administrador',
-    role: 'admin',
-    mustChangePassword: true,
-    resetPassword: true,
+    await ensureAdminPasswordAuthUser({
+      email,
+      password,
+      name: 'Administrador',
+      role: 'admin',
+      mustChangePassword: true,
+      resetPassword: true,
+    });
   });
 
   console.log(`Admin created: ${email}`);
