@@ -7,6 +7,7 @@ import { requireRole } from '@/lib/auth/authorization';
 import { db } from '@/lib/db';
 import { admins, auditLogs } from '@/lib/db/schema';
 import { randomBytes } from 'crypto';
+import { ensureAdminPasswordAuthUser } from '@/lib/supabase/admin';
 
 function generateTemporaryPassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -41,7 +42,13 @@ export async function resetUserPassword(
   }
 
   const [target] = await db
-    .select({ id: admins.id, name: admins.name, isActive: admins.isActive })
+    .select({
+      id: admins.id,
+      name: admins.name,
+      email: admins.email,
+      role: admins.role,
+      isActive: admins.isActive,
+    })
     .from(admins)
     .where(eq(admins.id, targetId))
     .limit(1);
@@ -56,6 +63,15 @@ export async function resetUserPassword(
 
   const tempPassword = generateTemporaryPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 12);
+
+  await ensureAdminPasswordAuthUser({
+    email: target.email,
+    password: tempPassword,
+    name: target.name,
+    role: target.role,
+    mustChangePassword: true,
+    resetPassword: true,
+  });
 
   await db
     .update(admins)
@@ -100,7 +116,13 @@ export async function toggleUserActive(
   }
 
   const [target] = await db
-    .select({ id: admins.id, name: admins.name, isActive: admins.isActive })
+    .select({
+      id: admins.id,
+      name: admins.name,
+      email: admins.email,
+      role: admins.role,
+      isActive: admins.isActive,
+    })
     .from(admins)
     .where(eq(admins.id, targetId))
     .limit(1);

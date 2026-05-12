@@ -124,3 +124,12 @@ npm run db:studio
 - Do not downgrade Next.js below the pinned 16.2.6 line; keep RSC security fixes current when updating framework versions.
 - `next.config.ts` pins `turbopack.root` to this directory for explicit Turbopack checks. This was added because a prior real-project dev test resolved Tailwind from the parent project directory instead of this app directory.
 - The machine previously showed heavy memory pressure from `next dev` PostCSS/Tailwind workers on an 8 GB MacBook Air. Prefer controlled dev-server tests with `scripts/run-dev-60s.sh` when diagnosing freezes.
+
+## Worktrees e Isolamento
+
+- Use git worktrees para isolar cada feature em `.worktrees/<branch-name>`. Cada worktree é um checkout independente com seu próprio `node_modules` e `.next`.
+- Cada agente deve modificar apenas arquivos dentro da área que lhe foi atribuída (ex: `src/app/api` vs `src/components`). Quanto menos sobreposição de arquivos, menor a chance de conflito.
+- Faça rebase em `origin/main` frequentemente durante o desenvolvimento. Conflitos pequenos e frequentes são mais fáceis de resolver que um conflito gigante no final.
+- PRs devem ser pequenos e focados em uma única responsabilidade.
+- Quando duas features tocam a mesma área, o segundo agente faz rebase em cima do resultado do merge da primeira.
+- Ao remover o worktree quando a feature for mergeada: `git worktree remove .worktrees/<branch>`.

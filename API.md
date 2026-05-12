@@ -33,20 +33,18 @@ Não há rotas REST tradicionais (`/api/v1/...`). Toda a comunicação de dados 
 
 ## Autenticação
 
-### Sessão JWT
+### Sessão Supabase
 
-A autenticação é baseada em **sessão JWT** armazenada em cookie `httpOnly`:
+A autenticação usa Supabase Auth com cookies gerenciados pelo `@supabase/ssr`.
+`SESSION_SECRET` não é usado pelo runtime e não deve ser requisito de build em
+Preview ou Produção.
 
-- **Nome do cookie**: `__Host-asof-session`
-- **Atributos**: `Secure`, `HttpOnly`, `SameSite=Strict`, `Partitioned`
-- **TTL**: 8 horas (configurável em `SESSION_COOKIE_MAX_AGE`)
-- **Secret**: `SESSION_SECRET` (mínimo 32 caracteres)
 
 ### Fluxo de Login
 
 1. POST implícito via `<form action={login}>`
-2. Validação de credenciais com bcrypt
-3. Criação de sessão JWT via `createSession()`
+2. Validação de credenciais via Supabase Auth
+3. Resolução do usuário administrativo ativo no banco local
 4. Redirecionamento para `/app` (ou `/change-password` se `mustChangePassword=true`)
 
 ### Autorização

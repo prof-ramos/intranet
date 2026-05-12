@@ -64,6 +64,27 @@
       "when": 1778620800000,
       "tag": "0009_quality_improvements",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778620800001,
+      "tag": "0010_familiar_medusa",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1778620800002,
+      "tag": "0011_smooth_maggott",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1778620800003,
+      "tag": "0012_add_official_letters",
+      "breakpoints": true
     }
   ]
 }

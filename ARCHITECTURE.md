@@ -198,15 +198,18 @@ Rules applied across all tables:
 
 Current indexes by table:
 
-| Table | Indexes | Pattern |
+| Table | Est. Indexes | Primary Patterns (Authority: Migration files / Schema) |
 |---|---|---|
-| `associates` | 8 (3 unique + 5 regular) | Trigram for name, B-tree for status, composite for status+name |
+| `associates` | 8 | Trigram for name, B-tree for status, composite for status+name |
 | `activities` | 9 | Partial for open items, composite for associate+due_date+id |
 | `legal_consultations` | 11 | Partial for open items, composite for status+updated_at, trigram for title |
 | `legal_processes` | 5 | B-tree on status, associate, type |
 | `legal_notes` | 3 | Composite for entity lookup |
 | `audit_logs` | 3 | Composite for entity lookup |
+| `monthly_payments` | 1 | Unique index for (associate, year, month) |
 | `login_attempts` / `rate_limits` | 2 each | B-tree on lookup key and expiry |
+
+> **Nota:** As contagens acima são informativas. A fonte canônica de verdade para o schema e índices são os arquivos em `src/lib/db/schema/` e as migrações em `drizzle/postgres/`. O comando `npm run verify:indexes` (script `scripts/verify-indexes.ts`) valida periodicamente se os índices no banco batem com os padrões documentados.
 
 #### 4.2.3. Enum Usage
 
@@ -239,7 +242,15 @@ RLS was enabled in migration 0000 and **removed in migration 0001**. Rationale:
 - No Supabase client is exposed to the browser; there is no direct client-to-DB path.
 - Auth is enforced via `requireAuth()` (JWT session verification + DB admin lookup) and `requireRole()` (role-based guards).
 
-**Risk:** Any direct database connection (e.g., Supabase client from a script, ad-hoc query tool) bypasses all authorization. RLS was reinstated in migration 0009 as a defense-in-depth layer. All tables now have `FOR ALL TO PUBLIC USING (true) WITH CHECK (true)` policies since the server layer already enforces auth. If a Supabase client is ever exposed to the browser, these policies must be narrowed to per-user or per-role rules.
+**Risk:** Any direct database connection (e.g., Supabase client from a script, ad-hoc query tool) bypasses all authorization. RLS was reinstated in migration 0009 as a defense-in-depth layer.
+
+**LGPD Security & RLS Hardening:**
+1. **Permissive Policies:** Current policies use `FOR ALL TO PUBLIC USING (true) WITH CHECK (true)`. They are only a documented defense-in-depth posture and do not satisfy LGPD access restriction by themselves; effective authorization still comes from `requireAuth()`, `requireRole()`, server-only credentials, and not exposing database clients to browsers.
+2. **Monitoring:** Recomenda-se monitorar conexões diretas ao banco que não utilizem `application_name='asof-intranet'`.
+3. **Session Context:** Futuras iterações devem adotar predicados RLS que referenciem o estado da sessão, como `current_setting('app.user_id')`, fornecendo uma trava adicional no nível do banco.
+4. **Service-role Keys:** As chaves de serviço do Supabase (`service_role`) possuem privilégios totais e **devem** ser rotacionadas periodicamente, nunca commitadas e auditadas.
+5. **Narrowing:** Caso um cliente Supabase seja exposto ao browser, as políticas devem ser imediatamente restritas para `per-user` ou `per-role`.
+6. **Verification:** `npm run test:db` must include explicit checks for `relrowsecurity` and `pg_policies` on LGPD-sensitive tables whenever migrations change RLS, enums, FKs, or indexes.
 
 #### 4.2.5. Transaction Boundaries
 
@@ -263,6 +274,7 @@ Transactions are used where data consistency across multiple tables is required:
 - `pg_stat_statements` is installed (migration 0009) for query profiling.
 - No slow-query logging threshold is configured in Postgres.
 - Application-level monitoring: none currently. Consider `pglite` or Supabase observability dashboard for production.
+- RLS monitoring should flag direct connections whose `application_name` is missing or differs from `asof-intranet`, especially before enabling any browser-side Supabase feature.
 
 ## 5. External Integrations / APIs
 
@@ -307,7 +319,6 @@ Local development uses PostgreSQL installed through Homebrew, currently `postgre
 |---|---|
 | `DATABASE_URL` | Direct local URL, e.g. `postgres://$USER@localhost:5432/asof_intranet` |
 | `DATABASE_MIGRATION_URL` | Same direct local URL; there is no local pooler |
-| `SESSION_SECRET` | Local development secret in `.env.local` |
 | `SKIP_AUTH` / `DEV_USER_*` | Development-only auth bypass values |
 
 Homebrew PostgreSQL usually creates a role matching the macOS username, not a `postgres` role. On this machine `$USER` resolves to `gabrielramos`; `postgres://postgres@localhost:5432/...` fails because that role does not exist.
@@ -316,7 +327,6 @@ Homebrew PostgreSQL usually creates a role matching the macOS username, not a `p
 
 | Variável | Origem / Dono |
 |---|---|
-| `SESSION_SECRET` | Gerada pelo time de infra (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) |
 | `DATABASE_URL` | Pooler de conexões do Supabase (porta 6543) |
 | `DATABASE_MIGRATION_URL` | URL direta/non-pooling do Supabase |
 | `DATABASE_SUPABASE_URL` | Dashboard do projeto Supabase |
@@ -324,7 +334,7 @@ Homebrew PostgreSQL usually creates a role matching the macOS username, not a `p
 
 #### Produção (Vercel)
 
-As mesmas variáveis do staging, apontando para o projeto Supabase de produção. `SESSION_SECRET` deve ser diferente do staging.
+As mesmas variáveis do staging, apontando para o projeto Supabase de produção.
 
 > **Regra:** `DATABASE_MIGRATION_URL` nunca usa pooler (porta 6543). Migrations precisam de conexão direta.
 
@@ -376,7 +386,6 @@ Data Encryption: TLS is expected for production HTTP and database transport. Run
 
 Key Security Tools/Practices:
 
-- `SESSION_SECRET` must be at least 32 characters.
 - `SKIP_AUTH=true` works only outside production.
 - Service-role Supabase keys are server/script-only.
 - Sensitive ASOF data such as CPF, SIAPE, email, address, and functional data must not be logged or exposed in public responses.

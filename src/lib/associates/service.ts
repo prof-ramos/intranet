@@ -178,16 +178,16 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
     values.functionalStatus = input.functionalStatus as FsEnum | null;
   }
   if (input.associationStatus !== undefined) {
-    if (input.associationStatus !== null && !isAsEnum(input.associationStatus)) {
+    if (input.associationStatus === null || !isAsEnum(input.associationStatus)) {
       throw new Error('associationStatus inválido.');
     }
-    values.associationStatus = input.associationStatus as AsEnum;
+    values.associationStatus = input.associationStatus;
   }
   if (input.contributionStatus !== undefined) {
-    if (input.contributionStatus !== null && !isCsEnum(input.contributionStatus)) {
+    if (input.contributionStatus === null || !isCsEnum(input.contributionStatus)) {
       throw new Error('contributionStatus inválido.');
     }
-    values.contributionStatus = input.contributionStatus as CsEnum;
+    values.contributionStatus = input.contributionStatus;
   }
   if (input.internalNotes !== undefined) values.internalNotes = input.internalNotes;
 

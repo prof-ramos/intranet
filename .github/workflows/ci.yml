@@ -51,6 +51,5 @@ jobs:
         run: npm run build
         env:
           # Required variables for build-time validation in src/lib/env.ts
-          SESSION_SECRET: "ci-dummy-secret-at-least-32-chars-long"
           DATABASE_URL: "postgres://postgres:postgres@localhost:5432/postgres"
           NODE_ENV: production

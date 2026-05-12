@@ -9,7 +9,12 @@ function positiveInteger(value: string | undefined, fallback: number) {
 }
 
 // databaseUrl intentionally prefers DATABASE_URL for runtime connections.
-const databaseUrl = env.DATABASE_URL ?? env.DATABASE_POSTGRES_URL;
+// Falls back to Supabase Vercel integration var names (POSTGRES_URL, POSTGRES_PRISMA_URL).
+const databaseUrl =
+  env.DATABASE_URL ??
+  env.DATABASE_POSTGRES_URL ??
+  env.POSTGRES_PRISMA_URL ??
+  env.POSTGRES_URL;
 
 if (!databaseUrl) {
   throw new Error('DATABASE_URL or DATABASE_POSTGRES_URL must be set.');

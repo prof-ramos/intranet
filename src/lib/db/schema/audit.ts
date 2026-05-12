@@ -8,6 +8,9 @@ export const auditEntityType = pgEnum('audit_entity_type', [
   'assignment',
   'legal_consultation',
   'legal_process',
+  'finance',
+  'monthly_payment',
+  'official_letter',
 ]);
 
 export const auditLogs = pgTable(

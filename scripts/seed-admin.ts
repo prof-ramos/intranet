@@ -3,6 +3,7 @@ import { admins } from '@/lib/db/schema';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { getInitialAdminCredentials } from './seed-admin-config';
+import { ensureAdminPasswordAuthUser } from '@/lib/supabase/admin';
 
 async function main() {
   const { email, password } = getInitialAdminCredentials();
@@ -24,6 +25,15 @@ async function main() {
     passwordHash: hash,
     role: 'admin',
     mustChangePassword: true,
+  });
+
+  await ensureAdminPasswordAuthUser({
+    email,
+    password,
+    name: 'Administrador',
+    role: 'admin',
+    mustChangePassword: true,
+    resetPassword: true,
   });
 
   console.log(`Admin created: ${email}`);

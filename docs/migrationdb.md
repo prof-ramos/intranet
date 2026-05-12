@@ -105,18 +105,26 @@ const client = postgres(databaseUrl, {
 - `createConsultationService` rodar geração + insert dentro de `db.transaction()`
 
 **3.2** `src/lib/associates/repository.ts`
-- Remover `Record<string, unknown>` no `set` de `updateAssociateById`
+- Substituir `Record<string, unknown>` no `set` de `updateAssociateById` por `UpdateAssociateValues` (interface tipada com campos permitidos).
 
 ### Etapa 4 — Migration `0009_quality_improvements.sql`
 
 ```sql
--- pg_stat_statements
+-- pg_stat_statements: habilitar com restrições para minimizar PII nos logs
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 
--- Novos índices
-CREATE INDEX idx_legal_consultations_title_trgm
+-- Restringir detalhes para evitar captura de valores de parâmetros (PII)
+ALTER SYSTEM SET pg_stat_statements.track = 'top';
+ALTER SYSTEM SET pg_stat_statements.track_utility = off;
+SELECT pg_reload_conf();
+
+-- Apenas roles administrativas devem acessar pg_stat_statements
+REVOKE ALL ON TABLE pg_stat_statements FROM PUBLIC;
+
+-- Novos índices (Usar CONCURRENTLY em produção se a tabela for grande)
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_legal_consultations_title_trgm
   ON legal_consultations USING gin (title gin_trgm_ops);
-CREATE INDEX idx_legal_consultations_status_created_at
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_legal_consultations_status_created_at
   ON legal_consultations (status, created_at DESC);
 
 -- Remover redundantes
@@ -124,10 +132,22 @@ DROP INDEX IF EXISTS idx_activities_due_date;
 DROP INDEX IF EXISTS idx_legal_consultations_last_interaction;
 
 -- Enums
+DO $$ BEGIN
+    CREATE TYPE legal_satisfaction AS ENUM ('satisfeito', 'insatisfeito', 'sem_resposta');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 ALTER TABLE legal_processes
   ALTER COLUMN satisfaction TYPE legal_satisfaction
   USING satisfaction::legal_satisfaction;
-CREATE TYPE legal_note_entity_type AS ENUM ('consultation', 'process');
+
+DO $$ BEGIN
+    CREATE TYPE legal_note_entity_type AS ENUM ('consultation', 'process');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 ALTER TABLE legal_notes
   ALTER COLUMN entity_type TYPE legal_note_entity_type
   USING entity_type::legal_note_entity_type;
@@ -167,6 +187,25 @@ CREATE POLICY "rate_limits_all" ON rate_limits FOR ALL TO PUBLIC USING (true) WI
 | `expectedColumns.legal_notes` | `'entity_type:text:NO'` → `'entity_type:legal_note_entity_type:NO'` |
 | `expectedIndexes.activities` | Remover `'idx_activities_due_date'` |
 | `expectedIndexes.legal_consultations` | +`'idx_legal_consultations_title_trgm'`, +`'idx_legal_consultations_status_created_at'`, -`'idx_legal_consultations_last_interaction'` |
+
+Também validar explicitamente:
+- Todas as tabelas LGPD-sensíveis esperadas aparecem com RLS habilitado em `pg_class.relrowsecurity`.
+- Cada tabela com RLS habilitado possui ao menos uma policy registrada em `pg_policies`.
+- Policies permissivas são aceitas apenas enquanto não houver cliente Supabase no browser; esse teste não deve ser interpretado como autorização LGPD suficiente.
+
+### Etapa 6 — Validação
+
+| Comando | Propósito |
+|---|---|
+| `npm run lint` | Validar conformidade de estilo e bugs estáticos |
+| `npm run typecheck` | Validar integridade dos tipos TypeScript |
+| `npm run test` | Executar testes unitários (Vitest) |
+| `npm run test:db` | Validar contrato do schema local contra Drizzle |
+| `npm run test:e2e` | Testes end-to-end (Playwright) contra DB `asof_test` |
+| `npm run build` | Validar build de produção |
+
+> Nota: O comando `npm run test:e2e` cria e migra automaticamente um banco de dados separado (`asof_test`) para garantir isolamento.
+> Nota: `npm run test:db` é obrigatório para qualquer mudança em migration, enum, índice, FK, RLS ou `_journal.json`; ele é o contrato que confirma que o banco real, as migrations e o schema Drizzle continuam alinhados.
 
 ---
 

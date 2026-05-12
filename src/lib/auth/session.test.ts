@@ -1,107 +1,141 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { SignJWT } from 'jose';
-import { createSession, getSession, destroySession, updateSession } from '@/lib/auth/session';
-import { SESSION_COOKIE_NAME } from '@/lib/auth/config';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { destroySession, getSession } from '@/lib/auth/session';
 
-// Mock next/headers cookies
-let storedToken: string | null = null;
+let skipAuth = false;
+let mockAuthUser: { email?: string | null } | null = null;
+let mockAuthError: Error | null = null;
+let mockSignOutError: Error | null = null;
+let mockDbUser:
+  | {
+      id: number;
+      name: string;
+      email: string;
+      role: 'admin' | 'diretoria' | 'secretaria';
+      isActive: boolean;
+      mustChangePassword: boolean;
+    }
+  | null = null;
 
-const mockCookieStore = {
-  get: vi.fn(() => (storedToken ? { value: storedToken } : undefined)),
-  set: vi.fn((...[, value]: [string, string, Record<string, unknown>]) => {
-    storedToken = value;
-  }),
-  delete: vi.fn(() => {
-    storedToken = null;
-  }),
-};
-
-vi.mock('next/headers', () => ({
-  cookies: vi.fn(() => Promise.resolve(mockCookieStore)),
+vi.mock('@/lib/auth/config', () => ({
+  isSkipAuthEnabled: vi.fn(() => skipAuth),
+  isAuthRole: vi.fn((value: string | undefined) =>
+    value === 'admin' || value === 'diretoria' || value === 'secretaria',
+  ),
+  getDevAuthUser: vi.fn(() => ({
+    userId: 1,
+    name: 'Dev User',
+    email: 'dev@asof.local',
+    role: 'admin',
+    mustChangePassword: false,
+  })),
 }));
 
-const secret = 'a'.repeat(32);
-const payload = {
-  userId: 1,
-  name: 'Test User',
-  email: 'test@asof.local',
-  role: 'admin' as const,
-  mustChangePassword: false,
-  isLoggedIn: true,
-};
+vi.mock('@/lib/supabase/server', () => ({
+  createServerSupabaseClient: vi.fn(() =>
+    Promise.resolve({
+      auth: {
+        getUser: vi.fn(() =>
+          Promise.resolve({
+            data: { user: mockAuthUser },
+            error: mockAuthError,
+          }),
+        ),
+        signOut: vi.fn(() => Promise.resolve({ error: mockSignOutError })),
+      },
+    }),
+  ),
+}));
+
+vi.mock('@/lib/db', () => ({
+  db: {
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: vi.fn(() => Promise.resolve(mockDbUser ? [mockDbUser] : [])),
+        })),
+      })),
+    })),
+  },
+}));
 
 beforeEach(() => {
   vi.clearAllMocks();
-  storedToken = null;
+  skipAuth = false;
+  mockAuthUser = null;
+  mockAuthError = null;
+  mockSignOutError = null;
+  mockDbUser = null;
 });
 
 describe('session', () => {
-  it('creates a session cookie with correct attributes', async () => {
-    await createSession(payload);
+  it('returns the development user when SKIP_AUTH is enabled', async () => {
+    skipAuth = true;
 
-    expect(mockCookieStore.set).toHaveBeenCalledOnce();
-    const [name, token, options] = mockCookieStore.set.mock.calls[0];
-    expect(name).toBe(SESSION_COOKIE_NAME);
-    expect(token).toBeTruthy();
-    expect(options).toMatchObject({
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      path: '/',
-      partitioned: true,
+    await expect(getSession()).resolves.toEqual({
+      userId: 1,
+      name: 'Dev User',
+      email: 'dev@asof.local',
+      role: 'admin',
+      mustChangePassword: false,
+      isLoggedIn: true,
     });
-    expect(options.maxAge).toBe(60 * 60 * 24 * 7);
   });
 
-  it('returns session data for a valid token', async () => {
-    const token = await new SignJWT(payload as unknown as Record<string, unknown>)
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('7d')
-      .sign(new TextEncoder().encode(secret));
-
-    storedToken = token;
-
-    const session = await getSession();
-    expect(session).toMatchObject(payload);
+  it('returns null when Supabase has no authenticated user', async () => {
+    await expect(getSession()).resolves.toBeNull();
   });
 
-  it('returns null when no cookie exists', async () => {
-    storedToken = null;
-    const session = await getSession();
-    expect(session).toBeNull();
+  it('returns null when Supabase returns an auth error', async () => {
+    mockAuthError = new Error('token expired');
+    await expect(getSession()).resolves.toBeNull();
   });
 
-  it('returns null for an invalid token', async () => {
-    storedToken = 'invalid-token';
-    const session = await getSession();
-    expect(session).toBeNull();
+  it('returns null when the authenticated user is not present in admins', async () => {
+    mockAuthUser = { email: 'missing@asof.local' };
+    await expect(getSession()).resolves.toBeNull();
   });
 
-  it('destroys the session cookie', async () => {
-    await destroySession();
-    expect(mockCookieStore.delete).toHaveBeenCalledWith(SESSION_COOKIE_NAME);
+  it('returns null when the mapped admin is inactive', async () => {
+    mockAuthUser = { email: 'inactive@asof.local' };
+    mockDbUser = {
+      id: 2,
+      name: 'Inactive',
+      email: 'inactive@asof.local',
+      role: 'secretaria',
+      isActive: false,
+      mustChangePassword: false,
+    };
+
+    await expect(getSession()).resolves.toBeNull();
   });
 
-  it('updates session with new values', async () => {
-    const token = await new SignJWT(payload as unknown as Record<string, unknown>)
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('7d')
-      .sign(new TextEncoder().encode(secret));
+  it('returns the mapped admin session for an authenticated Supabase user', async () => {
+    mockAuthUser = { email: 'admin@asof.local' };
+    mockDbUser = {
+      id: 7,
+      name: 'Admin',
+      email: 'admin@asof.local',
+      role: 'diretoria',
+      isActive: true,
+      mustChangePassword: true,
+    };
 
-    storedToken = token;
-
-    await updateSession({ mustChangePassword: true });
-
-    expect(mockCookieStore.set).toHaveBeenCalledOnce();
-    const updatedSession = await getSession();
-    expect(updatedSession).toMatchObject({ ...payload, mustChangePassword: true });
+    await expect(getSession()).resolves.toEqual({
+      userId: 7,
+      name: 'Admin',
+      email: 'admin@asof.local',
+      role: 'diretoria',
+      mustChangePassword: true,
+      isLoggedIn: true,
+    });
   });
 
-  it('does nothing when updating without an existing session', async () => {
-    storedToken = null;
-    await updateSession({ mustChangePassword: true });
-    expect(mockCookieStore.set).not.toHaveBeenCalled();
+  it('signs out through Supabase when destroying the session', async () => {
+    await expect(destroySession()).resolves.toBeUndefined();
+  });
+
+  it('bubbles up Supabase sign-out errors', async () => {
+    mockSignOutError = new Error('boom');
+    await expect(destroySession()).rejects.toThrow('boom');
   });
 });

@@ -1,10 +1,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import {
+  DollarSign,
   FileSpreadsheet,
   Kanban,
   LayoutDashboard,
   MapPin,
+  Receipt,
   Scale,
   Settings,
   Shield,
@@ -70,6 +72,24 @@ export function Sidebar({ user }: SidebarProps) {
         <NavLink href="/app/juridico" icon={<Scale size={20} />}>
           Jurídico
         </NavLink>
+        <NavGroup
+          basePath="/app/secretaria"
+          icon={<FileSpreadsheet size={20} />}
+          label="Secretaria"
+          items={[
+            { href: '/app/secretaria/oficios', label: 'Ofícios', icon: <FileSpreadsheet size={18} /> },
+          ]}
+        />
+        {user.role !== 'secretaria' && (
+          <NavGroup
+            basePath="/app/financeiro"
+            icon={<DollarSign size={20} />}
+            label="Financeiro"
+            items={[
+              { href: '/app/financeiro/mensalidades', label: 'Mensalidades', icon: <Receipt size={18} /> },
+            ]}
+          />
+        )}
         {user.role !== 'secretaria' && (
           <NavLink href="/app/associados/relatorio" icon={<FileSpreadsheet size={20} />}>
             Relatórios

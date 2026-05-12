@@ -147,7 +147,7 @@ export async function addNoteService(input: AddNoteInput) {
   if (!['consultation', 'process'].includes(input.entityType)) {
     throw new Error('Tipo de entidade inválido.');
   }
-  if (!Number.isInteger(input.entityId) || input.entityId < 0) {
+  if (!Number.isInteger(input.entityId) || input.entityId <= 0) {
     throw new Error('Entidade inválida.');
   }
   if (!input.content.trim()) {

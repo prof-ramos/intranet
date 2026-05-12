@@ -65,6 +65,7 @@ const expectedColumns = {
     'source_payload:text:YES',
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
+    'payment_method:payment_method:NO',
   ],
   audit_logs: [
     'id:int8:NO',
@@ -158,6 +159,18 @@ const expectedColumns = {
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
   ],
+  monthly_payments: [
+    'id:int8:NO',
+    'associate_id:int8:NO',
+    'year:int4:NO',
+    'month:int4:NO',
+    'status:payment_status:NO',
+    'payment_method:payment_method:NO',
+    'paid_at:timestamptz:YES',
+    'updated_by:int8:YES',
+    'created_at:timestamptz:NO',
+    'updated_at:timestamptz:NO',
+  ],
 } as const;
 
 const expectedEnums = {
@@ -166,7 +179,7 @@ const expectedEnums = {
   admin_role: ['admin', 'diretoria', 'secretaria'],
   assignment_type: ['domestic', 'abroad'],
   association_status: ['ativo', 'inativo'],
-  audit_entity_type: ['associate', 'admin', 'activity', 'assignment', 'legal_consultation', 'legal_process'],
+  audit_entity_type: ['associate', 'admin', 'activity', 'assignment', 'legal_consultation', 'legal_process', 'finance', 'monthly_payment'],
   contribution_status: ['em_dia', 'inadimplente', 'pendente_migracao'],
   functional_status: ['ativo', 'aposentado', 'cedido', 'em_licenca'],
   legal_consultation_status: ['aberta', 'aguardando_escritorio', 'respondida', 'arquivada'],
@@ -175,6 +188,8 @@ const expectedEnums = {
   legal_process_type: ['judicial', 'administrativo'],
   legal_satisfaction: ['satisfeito', 'insatisfeito', 'sem_resposta'],
   legal_note_entity_type: ['consultation', 'process'],
+  payment_method: ['folha', 'boleto', 'pix', 'transferencia', 'outros'],
+  payment_status: ['pago', 'pendente', 'atrasado', 'isento'],
 } as const;
 
 const expectedIndexes = {
@@ -260,6 +275,10 @@ const expectedIndexes = {
     'idx_login_attempts_email',
     'idx_login_attempts_expires_at',
     'login_attempts_pkey',
+  ],
+  monthly_payments: [
+    'idx_monthly_payments_unique',
+    'monthly_payments_pkey',
   ],
   rate_limits: ['idx_rate_limits_expires_at', 'idx_rate_limits_key_scope', 'rate_limits_pkey'],
 } as const;

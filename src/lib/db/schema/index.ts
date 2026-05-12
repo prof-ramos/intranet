@@ -9,3 +9,5 @@ export * from './legal-processes';
 export * from './legal-notes';
 export * from './legal-opinions';
 export * from './rate-limits';
+export * from './finance';
+export * from './oficios';

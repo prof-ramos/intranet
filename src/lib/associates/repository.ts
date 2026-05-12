@@ -98,5 +98,5 @@ export interface UpdateAssociateValues {
 }
 
 export async function updateAssociateById(id: number, values: UpdateAssociateValues) {
-  await db.update(associates).set(values).where(eq(associates.id, id));
+  await db.update(associates).set({ ...values, updatedAt: new Date() }).where(eq(associates.id, id));
 }

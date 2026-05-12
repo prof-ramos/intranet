@@ -49,7 +49,6 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 | Variável                             | Descrição                                                                                                                |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `SESSION_SECRET`                     | Segredo JWT — mínimo 32 caracteres. Gere com: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
 | `DATABASE_URL`                       | URL PostgreSQL de runtime. Pode apontar para o pooler do Supabase, com `sslmode=require`.                                |
 | `DATABASE_MIGRATION_URL`             | URL PostgreSQL direta/non-pooling para migrations do Drizzle.                                                            |
 | `DATABASE_SUPABASE_URL`              | URL HTTP do projeto Supabase, usada pelos helpers SDK.                                                                   |

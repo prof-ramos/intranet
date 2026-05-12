@@ -1,60 +1,59 @@
-import { SignJWT, jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
-import {
-  SESSION_COOKIE_MAX_AGE,
-  SESSION_COOKIE_NAME,
-  getSessionSecret,
-  type SessionData,
-} from '@/lib/auth/config';
-
-let cachedSecret: Uint8Array | null = null;
-
-function getSecret(): Uint8Array {
-  cachedSecret ??= new TextEncoder().encode(getSessionSecret());
-  return cachedSecret;
-}
-
-export async function createSession(payload: SessionData): Promise<void> {
-  const cookieStore = await cookies();
-  const token = await new SignJWT(payload as unknown as Record<string, unknown>)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime(`${SESSION_COOKIE_MAX_AGE}s`)
-    .sign(getSecret());
-
-  cookieStore.set(SESSION_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'strict',
-    maxAge: SESSION_COOKIE_MAX_AGE,
-    path: '/',
-    partitioned: true,
-  });
-}
+import { db } from '@/lib/db';
+import { admins } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { getDevAuthUser, isAuthRole, isSkipAuthEnabled, type SessionData } from '@/lib/auth/config';
 
 export async function getSession(): Promise<SessionData | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  if (!token) return null;
+  if (isSkipAuthEnabled()) {
+    return { ...getDevAuthUser(), isLoggedIn: true };
+  }
 
-  try {
-    const { payload } = await jwtVerify(token, getSecret(), {
-      algorithms: ['HS256'],
-      clockTolerance: 5,
-    });
-    return payload as unknown as SessionData;
-  } catch {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user?.email) {
     return null;
   }
+
+  const [admin] = await db
+    .select({
+      id: admins.id,
+      name: admins.name,
+      email: admins.email,
+      role: admins.role,
+      isActive: admins.isActive,
+      mustChangePassword: admins.mustChangePassword,
+    })
+    .from(admins)
+    .where(eq(admins.email, user.email.toLowerCase()))
+    .limit(1);
+
+  if (!admin || !admin.isActive || !isAuthRole(admin.role)) {
+    return null;
+  }
+
+  return {
+    userId: admin.id,
+    name: admin.name,
+    email: admin.email,
+    role: admin.role,
+    mustChangePassword: admin.mustChangePassword,
+    isLoggedIn: true,
+  };
 }
 
 export async function destroySession(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE_NAME);
-}
+  if (isSkipAuthEnabled()) {
+    return;
+  }
 
-export async function updateSession(payload: Partial<SessionData>): Promise<void> {
-  const current = await getSession();
-  if (!current) return;
-  await createSession({ ...current, ...payload });
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    throw error;
+  }
 }

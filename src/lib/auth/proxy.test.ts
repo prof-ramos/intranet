@@ -1,72 +1,79 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { proxy } from '@/proxy';
-import { SESSION_COOKIE_NAME } from '@/lib/auth/config';
 
-// Minimal mocks for Next.js request/response
-function createMockRequest(token?: string) {
+let skipAuth = false;
+let mockUser: { email?: string | null } | null = null;
+const mockNext = vi.fn(() => ({ type: 'next' }));
+const mockRedirect = vi.fn((url: URL) => ({ type: 'redirect', url: url.toString() }));
+const mockGetResponse = vi.fn(() => ({ type: 'response' }));
+
+vi.mock('@/lib/auth/config', () => ({
+  isSkipAuthEnabled: vi.fn(() => skipAuth),
+}));
+
+vi.mock('@/lib/supabase/proxy', () => ({
+  createProxySupabaseClient: vi.fn(() => ({
+    client: {
+      auth: {
+        getUser: vi.fn(() => Promise.resolve({ data: { user: mockUser } })),
+      },
+    },
+    getResponse: mockGetResponse,
+  })),
+}));
+
+vi.mock('next/server', () => ({
+  NextResponse: {
+    next: () => mockNext(),
+    redirect: (url: URL) => mockRedirect(url),
+  },
+}));
+
+function createRequest(pathname: string) {
   return {
-    url: 'http://localhost:3000/app/dashboard',
+    url: `http://localhost:3000${pathname}`,
+    nextUrl: { pathname },
     cookies: {
-      get: vi.fn((name: string) =>
-        name === SESSION_COOKIE_NAME && token ? { value: token } : undefined
-      ),
+      getAll: vi.fn(() => []),
+      set: vi.fn(),
     },
   } as unknown as import('next/server').NextRequest;
 }
 
-const mockRedirect = vi.fn((url: URL) => ({ url: url.toString() }));
-const mockNext = vi.fn(() => ({ type: 'next' }));
-
-vi.mock('next/server', () => ({
-  NextResponse: {
-    redirect: (url: URL) => mockRedirect(url),
-    next: () => mockNext(),
-  },
-}));
-
 beforeEach(() => {
   vi.clearAllMocks();
+  skipAuth = false;
+  mockUser = null;
 });
 
 describe('proxy', () => {
-  it('redirects to login when no session cookie is present', async () => {
-    const req = createMockRequest();
-    await proxy(req);
-    expect(mockRedirect).toHaveBeenCalledOnce();
-    expect(mockRedirect.mock.calls[0][0].toString()).toBe('http://localhost:3000/login');
+  it('allows requests immediately when SKIP_AUTH is enabled', async () => {
+    skipAuth = true;
+
+    await expect(proxy(createRequest('/app'))).resolves.toEqual({ type: 'next' });
+    expect(mockGetResponse).not.toHaveBeenCalled();
   });
 
-  it('redirects to login for an invalid token', async () => {
-    const req = createMockRequest('invalid-token');
-    await proxy(req);
-    expect(mockRedirect).toHaveBeenCalledOnce();
-    expect(mockRedirect.mock.calls[0][0].toString()).toBe('http://localhost:3000/login');
+  it('redirects unauthenticated users away from protected routes', async () => {
+    await expect(proxy(createRequest('/app'))).resolves.toEqual({
+      type: 'redirect',
+      url: 'http://localhost:3000/login',
+    });
   });
 
-  it('allows the request when a valid token is present', async () => {
-    const { SignJWT } = await import('jose');
-    const secret = new TextEncoder().encode('a'.repeat(32));
-    const token = await new SignJWT({ userId: 1, isLoggedIn: true })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('7d')
-      .sign(secret);
+  it('redirects authenticated users away from /login', async () => {
+    mockUser = { email: 'admin@asof.local' };
 
-    const req = createMockRequest(token);
-    const result = await proxy(req);
-    expect(mockNext).toHaveBeenCalledOnce();
-    expect(result).toEqual({ type: 'next' });
+    await expect(proxy(createRequest('/login'))).resolves.toEqual({
+      type: 'redirect',
+      url: 'http://localhost:3000/app',
+    });
   });
 
-  it('allows the request when SKIP_AUTH is enabled', async () => {
-    const originalSkip = process.env.SKIP_AUTH;
-    process.env.SKIP_AUTH = 'true';
+  it('returns the refreshed response for authenticated protected requests', async () => {
+    mockUser = { email: 'admin@asof.local' };
 
-    const req = createMockRequest();
-    const result = await proxy(req);
-    expect(mockNext).toHaveBeenCalledOnce();
-    expect(result).toEqual({ type: 'next' });
-
-    process.env.SKIP_AUTH = originalSkip;
+    await expect(proxy(createRequest('/app/associados'))).resolves.toEqual({ type: 'response' });
+    expect(mockGetResponse).toHaveBeenCalledOnce();
   });
 });

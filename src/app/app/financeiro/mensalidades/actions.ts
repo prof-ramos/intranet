@@ -1,0 +1,60 @@
+'use server';
+
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { requireRole } from '@/lib/auth/authorization';
+import { updateMonthlyPayment, initializeMonth } from '@/lib/finance/service';
+import { type NewMonthlyPayment } from '@/lib/db/schema/finance';
+
+const validPaymentStatuses = ['pago', 'pendente', 'atrasado', 'isento'] as const;
+const validPaymentMethods = ['folha', 'boleto', 'pix', 'transferencia', 'outros'] as const;
+
+export async function updatePaymentAction(
+  payment: Omit<NewMonthlyPayment, 'updatedBy' | 'updatedAt'>,
+) {
+  const user = await requireRole(['admin', 'diretoria']);
+  validatePaymentInput(payment);
+
+  await updateMonthlyPayment(user.userId, payment);
+
+  revalidateTag(`finance-monthly-${payment.year}-${payment.month}`, 'max');
+  revalidatePath('/app/financeiro/mensalidades');
+}
+
+export async function initializeMonthAction(year: number, month: number) {
+  const user = await requireRole(['admin', 'diretoria']);
+  validateYearMonth(year, month);
+
+  await initializeMonth(user.userId, year, month);
+
+  revalidateTag(`finance-monthly-${year}-${month}`, 'max');
+  revalidatePath('/app/financeiro/mensalidades');
+}
+
+function validateYearMonth(year: number, month: number): void {
+  if (!Number.isInteger(year) || year < 1900 || year > 2100) {
+    throw new Error('Ano inválido.');
+  }
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    throw new Error('Mês inválido.');
+  }
+}
+
+function validatePaymentInput(payment: Omit<NewMonthlyPayment, 'updatedBy' | 'updatedAt'>): void {
+  validateYearMonth(payment.year, payment.month);
+  if (!Number.isInteger(payment.associateId) || payment.associateId <= 0) {
+    throw new Error('Associado inválido.');
+  }
+  if (!payment.status || !validPaymentStatuses.includes(payment.status)) {
+    throw new Error('Status de pagamento inválido.');
+  }
+  if (!payment.paymentMethod || !validPaymentMethods.includes(payment.paymentMethod)) {
+    throw new Error('Método de pagamento inválido.');
+  }
+  if (
+    payment.paidAt !== null &&
+    payment.paidAt !== undefined &&
+    (!(payment.paidAt instanceof Date) || Number.isNaN(payment.paidAt.getTime()))
+  ) {
+    throw new Error('Data de pagamento inválida.');
+  }
+}

@@ -1,13 +1,12 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { createSession } from '@/lib/auth/session';
 import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import bcrypt from 'bcryptjs';
 import { loginRateLimiter } from '@/lib/auth/login-rate-limit';
 import { loginSchema } from '@/lib/validation/schemas';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export async function login(formData: FormData) {
   const parsed = loginSchema.safeParse({
@@ -24,24 +23,37 @@ export async function login(formData: FormData) {
   const rateLimit = await loginRateLimiter.consume(email);
   if (!rateLimit.allowed) redirect('/login?error=rate-limit');
 
-  const [user] = await db.select().from(admins).where(eq(admins.email, email)).limit(1);
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user: authUser },
+    error,
+  } = await supabase.auth.signInWithPassword({ email, password });
 
-  // Always run bcrypt.compare to prevent timing-based user enumeration.
-  const DUMMY_HASH = '$2b$12$..AtteJQVcIwONDECxQ3cue37ZA4VVeOy9MIxxuWQ4i6h4bjKJ3NK';
-  const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
+  if (error) {
+    redirect('/login?error=1');
+  }
 
-  if (!user || !user.isActive || !valid) redirect('/login?error=1');
+  if (!authUser?.email) {
+    await supabase.auth.signOut();
+    redirect('/login?error=1');
+  }
+
+  const [user] = await db
+    .select({
+      id: admins.id,
+      email: admins.email,
+      isActive: admins.isActive,
+      mustChangePassword: admins.mustChangePassword,
+    })
+    .from(admins)
+    .where(eq(admins.email, authUser.email.toLowerCase()))
+    .limit(1);
+
+  if (!user || !user.isActive) {
+    await supabase.auth.signOut();
+    redirect('/login?error=1');
+  }
 
   await loginRateLimiter.reset(email);
-
-  await createSession({
-    userId: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    mustChangePassword: user.mustChangePassword,
-    isLoggedIn: true,
-  });
-
-  redirect('/app');
+  redirect(user.mustChangePassword ? '/change-password' : '/app');
 }

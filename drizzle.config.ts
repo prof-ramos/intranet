@@ -3,6 +3,7 @@ import { defineConfig } from 'drizzle-kit';
 const databaseUrl =
   process.env.DATABASE_MIGRATION_URL ??
   process.env.DATABASE_POSTGRES_URL_NON_POOLING ??
+  process.env.POSTGRES_URL_NON_POOLING ??
   process.env.DATABASE_POSTGRES_URL ??
   process.env.DATABASE_URL;
 
@@ -23,14 +24,15 @@ if (!['postgres:', 'postgresql:'].includes(parsedDatabaseUrl.protocol)) {
   throw new Error('The resolved DATABASE_* value must use postgres:// or postgresql://.');
 }
 
-const isPoolingUrl =
+// Transaction-mode pooler (port 6543 or pgbouncer param) breaks prepared statements.
+// Session-mode pooler (port 5432 on pooler hostname) is safe for migrations.
+const isTransactionPooler =
   parsedDatabaseUrl.searchParams.has('pgbouncer') ||
-  parsedDatabaseUrl.hostname.includes('pooler.') ||
   parsedDatabaseUrl.port === '6543';
 
-if (isPoolingUrl) {
+if (isTransactionPooler) {
   throw new Error(
-    'Drizzle migrations require a direct/non-pooling PostgreSQL URL. Set DATABASE_MIGRATION_URL or DATABASE_POSTGRES_URL_NON_POOLING.',
+    'Drizzle migrations require a direct or session-mode PostgreSQL URL (not transaction-mode pooler on port 6543). Set DATABASE_MIGRATION_URL or DATABASE_POSTGRES_URL_NON_POOLING.',
   );
 }
 
