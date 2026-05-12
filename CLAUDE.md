@@ -88,7 +88,7 @@ Server Components fetch data directly from the database. The juridico module has
 - `src/lib/auth/require-auth.ts` — `requireAuth()` validates JWT session, queries DB for active user, caches with `React.cache()`.
 - `src/lib/auth/authorization.ts` — `requireRole(['admin', 'diretoria'])` throws if the current user's role isn't in the allowed list.
 - `src/lib/auth/session.ts` — JWT via `jose`, httpOnly + sameSite=strict + secure cookie.
-- `src/lib/auth/password.ts` — Strong password policy (12+ chars, mixed case, number, symbol).
+- `src/lib/auth/password.ts` — Password policy (8+ chars, at least 1 number and 1 special character).
 - `src/lib/auth/login-rate-limit.ts` — PostgreSQL-backed rate limiter (table `login_attempts`).
 
 ### Environment Validation

@@ -3,22 +3,20 @@ export type PasswordValidationResult =
   | { valid: false; message: string };
 
 export function validateNewPassword(password: string): PasswordValidationResult {
-  if (password.length < 12) {
+  if (password.length < 8) {
     return {
       valid: false,
-      message: 'A senha deve ter pelo menos 12 caracteres.',
+      message: 'A senha deve ter pelo menos 8 caracteres.',
     };
   }
 
-  const hasUpper = /[A-Z]/.test(password);
-  const hasLower = /[a-z]/.test(password);
   const hasNumber = /\d/.test(password);
   const hasSymbol = /[^A-Za-z0-9]/.test(password);
 
-  if (!hasUpper || !hasLower || !hasNumber || !hasSymbol) {
+  if (!hasNumber || !hasSymbol) {
     return {
       valid: false,
-      message: 'A senha deve combinar letras maiúsculas, minúsculas, números e símbolos.',
+      message: 'A senha deve conter pelo menos um número e um caractere especial.',
     };
   }
 

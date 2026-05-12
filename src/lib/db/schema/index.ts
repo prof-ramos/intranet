@@ -1,6 +1,7 @@
 export * from './admins';
 export * from './associates';
 export * from './activities';
+export * from './assignments';
 export * from './audit';
 export * from './login-attempts';
 export * from './legal-consultations';

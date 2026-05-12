@@ -49,6 +49,13 @@ test.describe('Config routes – admin/diretoria only', () => {
     await expect(page.locator('h1')).toContainText('Auditoria');
   });
 
+  test('admin can access lotacoes page', async ({ page, loginAsAdmin }) => {
+    await loginAsAdmin();
+    await page.goto('/app/config/lotacoes');
+    await expect(page).toHaveURL(/\/app\/config\/lotacoes/);
+    await expect(page.locator('h1')).toContainText('Lotações');
+  });
+
   test('diretoria can access config page', async ({ page, loginAsDiretoria }) => {
     await loginAsDiretoria();
     await page.goto('/app/config');
@@ -72,6 +79,12 @@ test.describe('Config routes – admin/diretoria only', () => {
     await page.goto('/app/config/auditoria');
     await expect(page).toHaveURL('/app');
   });
+
+  test('secretaria is redirected from lotacoes to dashboard', async ({ page, loginAsSecretaria }) => {
+    await loginAsSecretaria();
+    await page.goto('/app/config/lotacoes');
+    await expect(page).toHaveURL('/app');
+  });
 });
 
 test.describe('Config sidebar navigation', () => {
@@ -82,6 +95,7 @@ test.describe('Config sidebar navigation', () => {
     await expect(configButton).toBeVisible();
     await configButton.click();
     await expect(page.getByRole('link', { name: 'Usuários' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Lotações' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Auditoria' })).toBeVisible();
   });
 

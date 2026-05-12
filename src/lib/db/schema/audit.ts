@@ -5,6 +5,7 @@ export const auditEntityType = pgEnum('audit_entity_type', [
   'associate',
   'admin',
   'activity',
+  'assignment',
   'legal_consultation',
   'legal_process',
 ]);

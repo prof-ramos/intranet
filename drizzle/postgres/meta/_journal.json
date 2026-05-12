@@ -50,6 +50,13 @@
       "when": 1778599200000,
       "tag": "0006_profile_activity_audit_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1778549268057,
+      "tag": "0008_fearless_madripoor",
+      "breakpoints": true
     }
   ]
 }

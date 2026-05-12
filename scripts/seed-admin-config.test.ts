@@ -10,15 +10,15 @@ describe('initial admin credentials', () => {
 
   it('requires an explicit initial password', () => {
     expect(() => getInitialAdminCredentials({ INITIAL_ADMIN_EMAIL: 'admin@asof.org.br' }))
-      .toThrow('INITIAL_ADMIN_PASSWORD must be set and at least 12 characters long.');
+      .toThrow('INITIAL_ADMIN_PASSWORD must be set and at least 8 characters long.');
   });
 
   it('reports the validation reason when the initial password is weak', () => {
     expect(() => getInitialAdminCredentials({
       INITIAL_ADMIN_EMAIL: 'admin@asof.org.br',
-      INITIAL_ADMIN_PASSWORD: 'abcdefghijkl',
+      INITIAL_ADMIN_PASSWORD: 'abcdefgh',
     })).toThrow(
-      'INITIAL_ADMIN_PASSWORD invalid: A senha deve combinar letras maiúsculas, minúsculas, números e símbolos.',
+      'INITIAL_ADMIN_PASSWORD invalid: A senha deve conter pelo menos um número e um caractere especial.',
     );
   });
 
