@@ -2,23 +2,30 @@ import { describe, expect, it } from 'vitest';
 import { validateNewPassword } from '@/lib/auth/password';
 
 describe('password validation', () => {
-  it('rejects short or incomplete passwords', () => {
-    expect(validateNewPassword('Abc123!')).toEqual({
+  it('rejects passwords shorter than 8 characters', () => {
+    expect(validateNewPassword('Ab1!')).toEqual({
       valid: false,
-      message: 'A senha deve ter pelo menos 12 caracteres.',
-    });
-
-    expect(validateNewPassword('abcdefghijkl')).toEqual({
-      valid: false,
-      message: 'A senha deve combinar letras maiúsculas, minúsculas, números e símbolos.',
+      message: 'A senha deve ter pelo menos 8 caracteres.',
     });
   });
 
-  it('accepts strong passwords', () => {
-    expect(validateNewPassword('Senha-Forte-2026!')).toEqual({ valid: true });
+  it('rejects passwords without a number', () => {
+    expect(validateNewPassword('abcdefgh!')).toEqual({
+      valid: false,
+      message: 'A senha deve conter pelo menos um número e um caractere especial.',
+    });
   });
 
-  it('accepts a strong password with exactly 12 characters', () => {
-    expect(validateNewPassword('Abcdef123!@#')).toEqual({ valid: true });
+  it('rejects passwords without a special character', () => {
+    expect(validateNewPassword('abcdefgh1')).toEqual({
+      valid: false,
+      message: 'A senha deve conter pelo menos um número e um caractere especial.',
+    });
+  });
+
+  it('accepts valid passwords with 8+ chars, 1 number, 1 special char', () => {
+    expect(validateNewPassword('Senha-26')).toEqual({ valid: true });
+    expect(validateNewPassword('abc123!xyz')).toEqual({ valid: true });
+    expect(validateNewPassword('Min1@max')).toEqual({ valid: true });
   });
 });

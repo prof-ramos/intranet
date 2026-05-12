@@ -4,6 +4,7 @@ import {
   FileSpreadsheet,
   Kanban,
   LayoutDashboard,
+  MapPin,
   Scale,
   Settings,
   Shield,
@@ -81,6 +82,7 @@ export function Sidebar({ user }: SidebarProps) {
             label="Configurações"
             items={[
               { href: '/app/config/usuarios', label: 'Usuários', icon: <Shield size={18} /> },
+              { href: '/app/config/lotacoes', label: 'Lotações', icon: <MapPin size={18} /> },
               { href: '/app/config/auditoria', label: 'Auditoria', icon: <ShieldCheck size={18} /> },
             ]}
           />

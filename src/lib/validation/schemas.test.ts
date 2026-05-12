@@ -66,15 +66,15 @@ describe('changePasswordSchema', () => {
     }
   });
 
-  test('rejeita nova senha menor que 12 caracteres', () => {
+  test('rejeita nova senha menor que 8 caracteres', () => {
     const result = changePasswordSchema.safeParse({
       currentPassword: 'oldpass123',
-      newPassword: 'short',
-      confirmPassword: 'short',
+      newPassword: 'Ab1!',
+      confirmPassword: 'Ab1!',
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0].message).toBe('A nova senha deve ter pelo menos 12 caracteres.');
+      expect(result.error.issues[0].message).toBe('A nova senha deve ter pelo menos 8 caracteres.');
     }
   });
 

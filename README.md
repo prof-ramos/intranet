@@ -60,7 +60,7 @@ Acesse [http://localhost:3000](http://localhost:3000).
 | Variável                 | Padrão | Descrição                                                                                            |
 | ------------------------ | ------ | ---------------------------------------------------------------------------------------------------- |
 | `INITIAL_ADMIN_EMAIL`    | —      | Obrigatória. Email do primeiro admin                                                                 |
-| `INITIAL_ADMIN_PASSWORD` | —      | Obrigatória. Deve ter pelo menos 12 caracteres e combinar maiúsculas, minúsculas, números e símbolos |
+| `INITIAL_ADMIN_PASSWORD` | —      | Obrigatória. Deve ter pelo menos 8 caracteres, incluindo 1 número e 1 caractere especial |
 
 ### Bypass de autenticação (apenas desenvolvimento)
 

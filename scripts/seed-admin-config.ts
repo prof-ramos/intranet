@@ -11,7 +11,7 @@ export function getInitialAdminCredentials(env: SeedAdminEnv = process.env) {
   }
 
   if (!password) {
-    throw new Error('INITIAL_ADMIN_PASSWORD must be set and at least 12 characters long.');
+    throw new Error('INITIAL_ADMIN_PASSWORD must be set and at least 8 characters long.');
   }
 
   const validation = validateNewPassword(password);

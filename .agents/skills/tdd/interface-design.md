@@ -21,8 +21,8 @@ Good interfaces make testing natural:
    function calculateDiscount(cart): Discount {}
 
    // Hard to test
-   function applyDiscount(cart, discount: number): void {
-     cart.total -= discount; // mutates state, side effect
+   function applyDiscount(cart): void {
+     cart.total -= discount;
    }
    ```
 

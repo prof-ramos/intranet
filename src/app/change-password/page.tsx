@@ -52,7 +52,7 @@ export default async function ChangePasswordPage({
                 name="newPassword"
                 type="password"
                 required
-                minLength={12}
+                minLength={8}
                 autoComplete="new-password"
                 className="input w-full"
               />
@@ -68,7 +68,7 @@ export default async function ChangePasswordPage({
                 name="confirmPassword"
                 type="password"
                 required
-                minLength={12}
+                minLength={8}
                 autoComplete="new-password"
                 className="input w-full"
               />
