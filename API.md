@@ -159,7 +159,7 @@ POST (Server Action) → /change-password/actions.ts
 | Campo | Tipo | Obrigatório | Descrição |
 |---|---|---|---|
 | `currentPassword` | string | Sim | Senha atual |
-| `newPassword` | string | Sim | Nova senha (mínimo 12 caracteres, maiúscula, minúscula, número, símbolo) |
+| `newPassword` | string | Sim | Nova senha (mínimo 8 caracteres, número, símbolo) |
 | `confirmPassword` | string | Sim | Confirmação da nova senha |
 
 **Respostas**:
@@ -170,7 +170,7 @@ POST (Server Action) → /change-password/actions.ts
 **Validações**:
 
 - `newPassword === confirmPassword`
-- `validateNewPassword()` — regras de complexidade (12+ chars, mixed case, number, symbol)
+- `validateNewPassword()` — regras de complexidade (8+ chars, number, symbol)
 - Verificação da senha atual com bcrypt
 
 **Exemplo**:
@@ -178,7 +178,7 @@ POST (Server Action) → /change-password/actions.ts
 ```tsx
 <form action={changePassword}>
   <input name="currentPassword" type="password" required />
-  <input name="newPassword" type="password" required minLength={12} />
+  <input name="newPassword" type="password" required minLength={8} />
   <input name="confirmPassword" type="password" required />
   <button type="submit">Alterar senha</button>
 </form>
@@ -443,11 +443,6 @@ with open('relatorio.csv', 'wb') as f:
 
 - Download de CSV limitado a 10 requisições/minuto por IP.
 - Filtros de data de nascimento usam `EXTRACT(month FROM birthDate)`.
-
-### Migrações Pendentes
-
-- A migration `0003` (tabela `rate_limits`) ainda não foi aplicada ao banco de produção (Issue #15).
-- Sem essa tabela, o rate limiting por IP **não funciona** e retornará erro de tabela inexistente.
 
 ---
 

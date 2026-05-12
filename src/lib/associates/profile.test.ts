@@ -4,7 +4,7 @@ import {
   getAssociateStatusLabel,
   initialsFromName,
   yearsSinceDate,
-} from '@/lib/associates/profile';
+} from '@/lib/associates/service';
 
 describe('associates/profile helpers', () => {
   it('formats date values for pt-BR display', () => {

@@ -14,6 +14,10 @@ A ASOF (Associação Nacional dos Oficiais de Chancelaria do Serviço Exterior B
 | **Situação funcional** | Status no serviço público: `ativo`, `aposentado`, `cedido`, `em_licenca` | `functionalStatus` |
 | **SIAPE** | Número de matrícula do servidor federal | `siape` |
 | **Contribuição** | Status de pagamento da anuidade ASOF: `em_dia`, `inadimplente`, `pendente_migracao` | `contributionStatus` |
+| **Mensalidade** | Registro mensal de pagamento de associado | `monthly_payments` |
+| **Ofício** | Documento oficial gerado pelo sistema | `oficios` |
+| **Método de pagamento** | Forma de quitação da mensalidade: `boleto`, `transferencia`, `debito_automatico` | `paymentMethod` |
+| **Status de pagamento** | Situação da mensalidade: `em_dia`, `inadimplente`, `isento` | `paymentStatus` |
 
 ## Roles do sistema
 
@@ -100,7 +104,7 @@ npm run db:studio
 - Homebrew PostgreSQL uses the macOS user role on this machine (`$USER`, currently `gabrielramos`); do not use `postgres://postgres@localhost:5432/...` unless that role has been explicitly created.
 - For local development, use the same direct URL for runtime and migrations: `DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet` and `DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet`.
 - Supabase remains the remote/staging/production Postgres target; use pooler URLs only for runtime and direct/non-pooling URLs for migrations.
-- Seed scripts are `scripts/seed-associados.ts` and `scripts/seed-admin.ts`, both run by `npm run db:seed`.
+- Seed scripts are `scripts/seed-admin.ts` only; `scripts/seed-associados.ts` was removed.
 
 ## Development Auth
 

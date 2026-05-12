@@ -15,14 +15,6 @@ export const ACTIVITY_STATUS_OPTIONS = ACTIVITY_STATUSES.map((value) => ({
   accent: statusStyles[value].accent,
 })) as readonly { value: Status; label: string; accent: string }[];
 
-export const ACTIVITY_STATUS_FILTER_OPTIONS = [
-  { value: '', label: 'Todas' },
-  ...ACTIVITY_STATUSES.map((value) => ({
-    value,
-    label: ACTIVITY_STATUS_LABELS[value],
-  })),
-] as const;
-
 export function isActivityStatus(value: string): value is Status {
   return ACTIVITY_STATUSES.includes(value as Status);
 }

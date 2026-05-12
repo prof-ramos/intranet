@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   ACTIVITY_STATUS_LABELS,
   ACTIVITY_STATUS_OPTIONS,
-  ACTIVITY_STATUS_FILTER_OPTIONS,
   isActivityStatus,
   getActivityStatusLabel,
 } from '@/lib/activities/status';
@@ -45,16 +44,6 @@ describe('activities/status', () => {
         expect(ACTIVITY_STATUS_LABELS[opt.value]).toBeDefined();
         expect(opt.accent).toBeDefined();
       }
-    });
-  });
-
-  describe('ACTIVITY_STATUS_FILTER_OPTIONS', () => {
-    it('starts with empty "Todas" option', () => {
-      expect(ACTIVITY_STATUS_FILTER_OPTIONS[0]).toEqual({ value: '', label: 'Todas' });
-    });
-
-    it('has one entry per status plus the empty option', () => {
-      expect(ACTIVITY_STATUS_FILTER_OPTIONS).toHaveLength(ACTIVITY_STATUSES.length + 1);
     });
   });
 });

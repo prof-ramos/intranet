@@ -53,3 +53,5 @@ jobs:
           # Required variables for build-time validation in src/lib/env.ts
           DATABASE_URL: "postgres://postgres:postgres@localhost:5432/postgres"
           NODE_ENV: production
+          MAILJET_API_KEY: ${{ secrets.MAILJET_API_KEY }}
+          MAILJET_SECRET_KEY: ${{ secrets.MAILJET_SECRET_KEY }}

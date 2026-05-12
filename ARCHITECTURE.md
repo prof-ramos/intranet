@@ -12,7 +12,8 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 │   │   │   ├── associados/          # Associates list, profile, and CSV reports
 │   │   │   ├── atividades/          # Kanban board and new activity form
 │   │   │   ├── auditoria/           # Audit logs (LGPD accountability)
-│   │   │   ├── config/              # Configuration placeholder
+│   │   │   ├── config/              # Configuration modules (users, assignments, audit)
+│   │   │   ├── financeiro/          # Monthly payments and financial dashboard
 │   │   │   ├── juridico/            # Legal consultations and notes (Fase 1)
 │   │   │   ├── usuarios/            # User-management placeholder
 │   │   │   ├── layout.tsx           # Authenticated app shell
@@ -27,9 +28,9 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 │       ├── associates/              # Search parameter parsing + repository queries
 │       ├── auth/                    # Auth config, sessions, guards, password logic, rate limiting
 │       ├── db/                      # Drizzle client and schema exports
-│       │   └── schema/              # admins, associates, activities, audit_logs, login_attempts,
-│       │                            # legal_consultations, legal_processes, legal_notes,
-│       │                            # legal_opinions, legal_opinion_tags, rate_limits
+│       │   └── schema/              # admins, associates, activities, assignments, audit_logs, login_attempts,
+│       │                            # legal_consultations, legal_processes, legal_notes, legal_opinions,
+│       │                            # legal_opinion_tags, monthly_payments, oficios, rate_limits
 │       ├── dashboard/               # Dashboard aggregation queries
 │       ├── env.ts                   # Zod-validated environment variables
 │       ├── ip.ts                    # Client IP extraction from headers
