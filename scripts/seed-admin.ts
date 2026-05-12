@@ -65,7 +65,7 @@ async function main() {
     });
   } catch (error) {
     console.error('DB insert failed after creating auth user. Rolling back auth user...');
-    await deleteAdminAuthUser(email);
+    try { await deleteAdminAuthUser(email); } catch { /* cleanup failure logged by helper */ }
     throw error;
   }
 
