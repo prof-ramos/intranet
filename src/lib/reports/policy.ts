@@ -6,10 +6,6 @@ export interface ReportAccess {
   userId: number;
 }
 
-export function canGenerateReports(role: AuthRole): boolean {
-  return isPrivilegedRole(role);
-}
-
 export async function requireReportAccess(): Promise<ReportAccess | Response> {
   if (isSkipAuthEnabled()) {
     const user = getDevAuthUser();

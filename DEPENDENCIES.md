@@ -82,31 +82,26 @@ react-kanban-kit@0.0.2-beta.7
 
 ## Dependências Problemáticas
 
-### 1. `react-kanban-kit` — Risco: ALTO
+### 1. `react-kanban-kit` — Risco: ALTO (substituído)
 
-**Problemas**:
+**Status**: ✅ Substituído por `@hello-pangea/dnd` em `src/app/app/atividades/AtividadesBoard.tsx`.
+
+**Problemas originais**:
 - Versão beta (`0.0.2-beta.7`) sem garantia de estabilidade
 - Traz `vite-plugin-dts` como **dependency** (deveria ser devDependency ou peerDependency)
 - `vite-plugin-dts` traz `vue-tsc` e `@microsoft/api-extractor` com vulnerabilidades
 - Dependências de build no bundle de produção = bundle maior e mais lento
 - Não há atividade recente no repositório
 
-**Uso atual**: `src/app/app/atividades/AtividadesBoard.tsx`
-
-**Alternativas**: Ver seção [Alternativas Recomendadas](#alternativas-recomendadas)
+**Remoção**: O pacote foi removido do `package.json`.
 
 ---
 
-### 2. `@libsql/client` — Risco: BAIXO
+### 2. `@libsql/client` — Risco: NENHUM (removido)
 
-**Problemas**:
-- É uma **dependência legada do SQLite/libSQL**
-- O projeto usa **PostgreSQL** via `postgres` + Drizzle ORM
-- Não há importação direta de `@libsql/client` no código fonte
-- Fica no bundle de produção desnecessariamente
-- É uma **dependência peer de `drizzle-orm`** — se removermos do `package.json`, o npm ainda pode instalá-la como peer dep
+**Status**: ✅ Removido do projeto.
 
-**Recomendação**: Remover do `dependencies` do `package.json`. Se `drizzle-orm` exigir como peer, configure como `optional`.
+O pacote foi uma dependência legada do SQLite/libSQL usada apenas pelo script `scripts/seed-associados.ts` (também removido). O projeto usa exclusivamente PostgreSQL via `postgres` + Drizzle ORM. Tanto `@libsql/client` quanto `seed-associados.ts` foram eliminados do `package.json` e do repositório.
 
 ---
 
@@ -163,15 +158,6 @@ react-kanban-kit@0.0.2-beta.7
 
 **Ação**: Mover para `devDependencies` (não é usado em runtime):
 
-```bash
-npm uninstall @libsql/client
-npm install --save-dev @libsql/client
-```
-
-O `drizzle-orm` já suporta múltiplos drivers. O pacote `@libsql/client` é necessário apenas para o script `scripts/seed-associados.ts`, que lê de um banco SQLite legado e insere no PostgreSQL.
-
----
-
 ### Atualizar Tailwind CSS
 
 ```bash
@@ -195,8 +181,6 @@ npm update tailwindcss @tailwindcss/postcss
 | `zod` | Validação | Essencial |
 | `lucide-react` | Ícones | Essencial |
 | `@supabase/supabase-js` | SDK Supabase | Essencial (scripts/admin) |
-| `react-kanban-kit` | Kanban board | ❌ Substituir |
-| `@libsql/client` | Driver SQLite | ❌ Remover |
 | `daisyui` | Componentes UI | 🚫 Remover gradualmente |
 | `server-only` | Guarda de servidor | ✅ Manter |
 

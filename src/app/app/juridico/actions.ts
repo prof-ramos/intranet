@@ -64,7 +64,7 @@ export async function createConsultation(formData: FormData) {
  * @param id - ID da consulta
  * @param status - Novo status
  */
-export async function updateConsultationStatus(id: number, status: string) {
+async function updateConsultationStatus(id: number, status: string) {
   await checkJuridicoRateLimit();
   await requireRole(['admin', 'diretoria']);
   const parsed = updateConsultationStatusSchema.safeParse({ id, status });

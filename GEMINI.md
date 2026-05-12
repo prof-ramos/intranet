@@ -9,7 +9,7 @@ This file provides the primary instructional context for Gemini CLI when working
 ### Core Technologies
 - **Framework:** Next.js 16.2.6 (App Router)
 - **Runtime:** Node.js 20+
-- **Language:** TypeScript 6 (v6.x)
+- **Language:** TypeScript 5.x
 - **Styling:** Tailwind CSS 4, DaisyUI 5 (being phased out for custom tokens)
 - **Database:** PostgreSQL (Supabase in production, Homebrew local)
 - **ORM:** Drizzle ORM

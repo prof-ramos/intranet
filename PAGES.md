@@ -70,6 +70,14 @@ Formulário para criar nova atividade com:
 - Vinculação a responsável (admin) e associado
 - Data de vencimento e tags
 
+### `/app/financeiro/mensalidades`
+Dashboard financeiro de mensalidades com:
+- Inicialização mensal de pagamentos (`initializeMonthAction`)
+- Tabela de pagamentos com status (`em_dia`, `inadimplente`, `isento`)
+- KPIs: total recebido, inadimplentes, isentos, taxa de adimplência
+- Navegação mensal (mês anterior/próximo)
+- Acesso restrito a admin/diretoria
+
 ### `/app/juridico`
 Dashboard do módulo jurídico com:
 - Indicadores: consultas abertas, aguardando escritório, sem atualização >7 dias, SLA vencendo, respondidas no mês
