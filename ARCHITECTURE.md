@@ -310,6 +310,64 @@ Integration Method: CLI workflow such as `git add . && coderabbit review --promp
 
 O projeto é uma aplicação Next.js 16 App Router **full-stack**, não apenas frontend estático. Server Components, Server Actions e Route Handlers executam nativamente na plataforma Vercel sem configuração extra.
 
+O deploy de produção usa o domínio customizado `https://intranet.asof.com.br`. O projeto deve ser tratado pela Vercel como **Next.js**, não como `Other`/site estático. Essa decisão fica versionada em `vercel.json`:
+
+```json
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs"
+}
+```
+
+Não configure `outputDirectory` para `public` ou `.` neste projeto. Para Next.js, deixe a Vercel usar o output do framework; caso contrário, o deploy pode ficar `Ready` mas servir apenas arquivos estáticos, causando `404 NOT_FOUND` em rotas como `/`, `/login` e `/app`.
+
+#### Incidente de deploy — 2026-05-12
+
+Sintoma observado:
+
+- `vercel inspect intranet.asof.com.br` resolvia para um deployment `Ready`;
+- `https://intranet.asof.com.br/`, `/login` e `/app` retornavam `HTTP/2 404` com `x-vercel-error: NOT_FOUND`;
+- URLs internas `*.vercel.app` retornavam `401` por Vercel Authentication;
+- arquivos estáticos como `/next.svg` podiam retornar `200`;
+- o build log listava rotas Next.js válidas, mas a borda servia comportamento de site estático.
+
+Causa raiz:
+
+- o projeto estava configurado na Vercel como `Framework Preset: Other`, com `Output Directory: public if it exists, or .`;
+- como havia `public/`, o domínio customizado servia o output estático em vez do app Next.js;
+- o problema não estava no código da app, proxy/middleware, DNS, certificado ou Vercel Authentication.
+
+Correção aplicada:
+
+- adicionar `"framework": "nextjs"` em `vercel.json`;
+- redeployar produção com `vercel deploy --prod --yes`;
+- validar o domínio customizado depois do deploy.
+
+Validação esperada:
+
+```bash
+vercel project inspect asof-intranet
+vercel inspect intranet.asof.com.br
+
+curl -sSI https://intranet.asof.com.br/
+curl -sSI https://intranet.asof.com.br/app
+curl -sSI https://intranet.asof.com.br/login
+```
+
+Resultado saudável:
+
+- `/` retorna `307` para `/app`;
+- `/app` retorna `307` para `/login` quando não há sessão;
+- `/login` retorna `200`;
+- `vercel inspect intranet.asof.com.br` mostra `status Ready` e aliases incluindo `https://intranet.asof.com.br`.
+
+Se `/login` voltar a responder `404 NOT_FOUND`, conferir primeiro:
+
+1. `vercel project inspect asof-intranet` — deve indicar framework Next.js, não `Other`.
+2. `vercel inspect intranet.asof.com.br` — deve apontar para o deployment de produção mais recente.
+3. `vercel alias list | rg 'intranet\.asof\.com\.br'` — deve apontar o domínio para o deployment esperado.
+4. `curl -sSI https://intranet.asof.com.br/next.svg` — se estático retorna `200` mas rotas Next retornam `404`, suspeite de output estático/Framework Preset errado.
+
 ### 6.2 Variáveis de ambiente por ambiente
 
 #### Desenvolvimento local
@@ -367,15 +425,36 @@ Antes de promover staging → produção:
 
 ### 6.5 CI/CD
 
-Não há `.github/workflows` no repositório atualmente. O processo é manual via Vercel Git Integration (auto-deploy em push para `main`) ou CLI (`vercel --prod`).
+O repositório possui GitHub Actions em `.github/workflows/ci.yml` com lint, typecheck, testes unitários e build verification em `push`/`pull_request` para `main`. O deploy de produção é feito pela Vercel Git Integration em push para `main` ou manualmente por CLI:
+
+```bash
+vercel deploy --prod --yes
+```
 
 **Recomendação futura:** adicionar GitHub Actions com:
-- Job `lint-test-build` em todo PR
 - Job `e2e` com Playwright + banco de testes
 - Job `migrate-staging` em merge para `main`
 - Job `migrate-prod` manual (triggered) antes de promote
 
 Monitoring & Logging: No dedicated monitoring stack is currently configured in code. Local diagnostics live in `scripts/run-dev-60s.sh`.
+
+### 6.6 Git hygiene para deploys Vercel
+
+Não versionar worktrees locais em `.claude/worktrees/`. Em 2026-05-12, `.claude/worktrees/associates-migration` estava rastreado como gitlink/submódulo (`mode 160000`) sem `.gitmodules`, causando o warning:
+
+```text
+Warning: Failed to fetch one or more git submodules
+fatal: no submodule mapping found in .gitmodules for path '.claude/worktrees/associates-migration'
+```
+
+Esse warning polui CI/CD e deve permanecer eliminado. `.gitignore` ignora `.claude/worktrees/`; se o warning reaparecer, validar com:
+
+```bash
+git submodule status
+git ls-files --stage | rg '\.claude/worktrees|160000'
+```
+
+Resultado saudável: `git submodule status` sai com código `0`, e o `rg` não encontra gitlinks em `.claude/worktrees`.
 
 ## 7. Security Considerations
 

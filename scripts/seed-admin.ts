@@ -19,17 +19,6 @@ async function main() {
     .where(eq(admins.email, email))
     .limit(1);
   if (existingAdmin) {
-    await db.transaction(async (tx) => {
-      await tx
-        .update(admins)
-        .set({
-          passwordHash: hash,
-          mustChangePassword: true,
-          updatedAt: new Date(),
-        })
-        .where(eq(admins.id, existingAdmin.id));
-    });
-
     await ensureAdminPasswordAuthUser({
       email,
       password,
@@ -38,6 +27,15 @@ async function main() {
       mustChangePassword: true,
       resetPassword: true,
     });
+
+    await db
+      .update(admins)
+      .set({
+        passwordHash: hash,
+        mustChangePassword: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(admins.id, existingAdmin.id));
 
     console.log(`Admin already exists and was synced with Supabase Auth: ${email}`);
     console.log('The admin must change the initial password on first login.');
@@ -54,14 +52,12 @@ async function main() {
   });
 
   try {
-    await db.transaction(async (tx) => {
-      await tx.insert(admins).values({
-        name: 'Administrador',
-        email,
-        passwordHash: hash,
-        role: 'admin',
-        mustChangePassword: true,
-      });
+    await db.insert(admins).values({
+      name: 'Administrador',
+      email,
+      passwordHash: hash,
+      role: 'admin',
+      mustChangePassword: true,
     });
   } catch (error) {
     console.error('DB insert failed after creating auth user. Rolling back auth user...');

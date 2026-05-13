@@ -1,4 +1,5 @@
 import { login } from '@/app/login/actions';
+import { SubmitButton } from '@/app/login/SubmitButton';
 
 export default async function LoginPage({
   searchParams,
@@ -49,9 +50,7 @@ export default async function LoginPage({
               />
             </fieldset>
 
-            <button type="submit" className="h-11 w-full rounded-[8px] bg-[#040920] font-semibold text-sm text-white hover:bg-[#0d3260]">
-              Entrar
-            </button>
+            <SubmitButton />
           </form>
         </div>
       </div>

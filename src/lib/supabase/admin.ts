@@ -108,6 +108,12 @@ export async function deleteAdminAuthUser(email: string) {
   const user = await findAuthUserByEmail(email);
   if (!user) return;
 
+  console.log('[AUDIT] Deleting Supabase auth user', {
+    targetUserId: user.id,
+    targetEmail: user.email,
+    timestamp: new Date().toISOString(),
+  });
+
   const { error } = await supabase.auth.admin.deleteUser(user.id);
   if (error) throw error;
 }
