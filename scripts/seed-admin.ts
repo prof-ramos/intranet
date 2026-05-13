@@ -37,12 +37,12 @@ async function main() {
       })
       .where(eq(admins.id, existingAdmin.id));
 
-    console.log(`Admin already exists and was synced with Supabase Auth: ${email}`);
+    console.log('Admin already exists and was synced with Supabase Auth.');
     console.log('The admin must change the initial password on first login.');
     return;
   }
 
-  await ensureAdminPasswordAuthUser({
+  const { userId } = await ensureAdminPasswordAuthUser({
     email,
     password,
     name: 'Administrador',
@@ -61,11 +61,15 @@ async function main() {
     });
   } catch (error) {
     console.error('DB insert failed after creating auth user. Rolling back auth user...');
-    try { await deleteAdminAuthUser(email); } catch { /* cleanup failure logged by helper */ }
+    try {
+      await deleteAdminAuthUser(email);
+    } catch {
+      /* cleanup failure logged by helper */
+    }
     throw error;
   }
 
-  console.log(`Admin created: ${email}`);
+  console.log('Admin created successfully.');
   console.log('The admin must change the initial password on first login.');
 }
 
