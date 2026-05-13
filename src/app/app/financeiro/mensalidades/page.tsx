@@ -6,11 +6,20 @@ import { Calendar, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import Link from 'next/link';
 import { textMuted, navy, hairline } from '@/lib/ui/tokens';
 import { requireRole } from '@/lib/auth/authorization';
+import {
+  parseMonthlyPaymentsSearchParams,
+  buildMonthlyPaymentsSearchParams,
+} from '@/lib/finance/search-params';
 
 interface PageProps {
   searchParams: Promise<{
     year?: string;
     month?: string;
+    q?: string;
+    status?: string;
+    method?: string;
+    location?: string;
+    page?: string;
   }>;
 }
 
@@ -33,9 +42,15 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
   const now = new Date();
   const currentYear = parseSearchInteger(params.year, now.getFullYear());
   const currentMonth = parseSearchInteger(params.month, now.getMonth() + 1);
+  const currentFilters = parseMonthlyPaymentsSearchParams(params);
   const initializeCurrentMonthAction = initializeMonthAction.bind(null, currentYear, currentMonth);
 
-  const data = await getMonthlyPaymentsData(currentYear, currentMonth);
+  const data = await getMonthlyPaymentsData(currentYear, currentMonth, {
+    q: currentFilters.q,
+    status: currentFilters.status,
+    method: currentFilters.method,
+    location: currentFilters.location,
+  });
 
   // Helper for prev/next month
   const getPrevMonth = () => {
@@ -45,7 +60,10 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
       m = 12;
       y -= 1;
     }
-    return `/app/financeiro/mensalidades?year=${y}&month=${m}`;
+    const params = new URLSearchParams(buildMonthlyPaymentsSearchParams(currentFilters, {}));
+    params.set('year', y.toString());
+    params.set('month', m.toString());
+    return `/app/financeiro/mensalidades?${params.toString()}`;
   };
 
   const getNextMonth = () => {
@@ -55,7 +73,10 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
       m = 1;
       y += 1;
     }
-    return `/app/financeiro/mensalidades?year=${y}&month=${m}`;
+    const params = new URLSearchParams(buildMonthlyPaymentsSearchParams(currentFilters, {}));
+    params.set('year', y.toString());
+    params.set('month', m.toString());
+    return `/app/financeiro/mensalidades?${params.toString()}`;
   };
 
   const hasNoData = data.every(p => !p.paymentId);

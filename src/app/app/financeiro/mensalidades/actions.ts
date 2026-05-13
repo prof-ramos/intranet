@@ -9,15 +9,28 @@ const validPaymentStatuses = ['pago', 'pendente', 'atrasado', 'isento'] as const
 const validPaymentMethods = ['folha', 'boleto', 'pix', 'transferencia', 'outros'] as const;
 
 export async function updatePaymentAction(
-  payment: Omit<NewMonthlyPayment, 'updatedBy' | 'updatedAt'>,
+  payment: Omit<NewMonthlyPayment, 'updatedBy' | 'updatedAt'> & {
+    expectedUpdatedAt?: string | null;
+  },
 ) {
   const user = await requireRole(['admin', 'diretoria']);
   validatePaymentInput(payment);
 
-  await updateMonthlyPayment(user.userId, payment);
+  const { expectedUpdatedAt, ...paymentData } = payment;
+
+  try {
+    await updateMonthlyPayment(user.userId, paymentData, expectedUpdatedAt);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'CONCURRENCY_CONFLICT') {
+      return { success: false, error: 'CONCURRENCY_CONFLICT' } as const;
+    }
+    throw error;
+  }
 
   revalidateTag(`finance-monthly-${payment.year}-${payment.month}`, 'max');
   revalidatePath('/app/financeiro/mensalidades');
+
+  return { success: true } as const;
 }
 
 export async function initializeMonthAction(year: number, month: number) {

@@ -20,6 +20,14 @@ export const associateSearchParamsSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
 });
 
+export const monthlyPaymentsSearchParamsSchema = z.object({
+  q: z.string().optional(),
+  status: z.enum(['pago', 'pendente', 'atrasado', 'isento']).optional(),
+  method: z.enum(['folha', 'boleto', 'pix', 'transferencia', 'outros']).optional(),
+  location: z.enum(['brasil', 'exterior']).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+});
+
 const validFunctionalStatuses = ['ativo', 'aposentado', 'cedido', 'em_licenca'] as const;
 const validAssociationStatuses = ['ativo', 'inativo'] as const;
 const validContributionStatuses = ['em_dia', 'inadimplente', 'pendente_migracao'] as const;

@@ -41,6 +41,7 @@ interface Payment {
   locationCountry: string | null;
   locationCity: string | null;
   functionalStatus: 'ativo' | 'aposentado' | 'cedido' | 'em_licenca' | null;
+  updatedAt: Date | null;
 }
 
 interface MonthlyPaymentsTableProps {
@@ -96,6 +97,7 @@ export default function MonthlyPaymentsTable({
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const filteredPayments = useMemo(() => {
     return payments.filter((p) => {
@@ -116,18 +118,33 @@ export default function MonthlyPaymentsTable({
     associateId: number,
     newStatus: 'pago' | 'pendente' | 'atrasado' | 'isento',
     currentMethod: PaymentMethod,
+    expectedUpdatedAt: Date | null,
   ) => {
     setUpdatingId(associateId);
+    setErrorMessage(null);
+    setSuccessMessage(null);
     try {
-      setErrorMessage(null);
-      await updatePaymentAction({
+      const result = await updatePaymentAction({
         associateId,
         year,
         month,
         status: newStatus,
         paymentMethod: currentMethod,
         paidAt: newStatus === 'pago' ? new Date() : null,
+        expectedUpdatedAt: expectedUpdatedAt ? expectedUpdatedAt.toISOString() : null,
       });
+
+      if (result && !result.success) {
+        if (result.error === 'CONCURRENCY_CONFLICT') {
+          setErrorMessage('Este registro foi alterado por outro usuário. Recarregue a página.');
+        } else {
+          setErrorMessage('Erro ao atualizar pagamento. Tente novamente.');
+        }
+        return;
+      }
+
+      setSuccessMessage('Pagamento atualizado com sucesso.');
+      window.setTimeout(() => setSuccessMessage(null), 3000);
     } catch {
       setErrorMessage('Erro ao atualizar pagamento. Tente novamente.');
     } finally {
@@ -263,6 +280,16 @@ export default function MonthlyPaymentsTable({
         </div>
       </div>
 
+      {successMessage && (
+        <div
+          role="status"
+          className="rounded-[8px] px-4 py-3 text-sm font-medium"
+          style={{ backgroundColor: successBg, color: success, border: `1px solid ${success}` }}
+        >
+          {successMessage}
+        </div>
+      )}
+
       {errorMessage && (
         <div
           role="alert"
@@ -380,6 +407,7 @@ export default function MonthlyPaymentsTable({
                                 p.associateId,
                                 s.value as 'pago' | 'pendente' | 'atrasado' | 'isento',
                                 currentMethod,
+                                p.updatedAt,
                               )
                             }
                             className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
