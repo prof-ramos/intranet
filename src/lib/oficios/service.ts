@@ -1,9 +1,9 @@
-import { db } from '@/lib/db';
+import { db, type Tx } from '@/lib/db';
 import * as repository from './repository';
 import { type NewOfficialLetter } from '@/lib/db/schema/oficios';
 import { logAuditAction } from '@/lib/audit/service';
 
-export async function generateOfficialLetterNumber(year: number, tx: repository.Tx = db) {
+export async function generateOfficialLetterNumber(year: number, tx: Tx = db) {
   const lastSequence = await repository.getLastSequenceForYear(year, tx);
   const nextSequence = lastSequence + 1;
   const paddedSequence = String(nextSequence).padStart(3, '0');

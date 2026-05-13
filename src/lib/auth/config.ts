@@ -1,5 +1,7 @@
 export const AUTH_ROLES = ['admin', 'diretoria', 'secretaria'] as const;
 
+export const PRIVILEGED_ROLES: readonly AuthRole[] = ['admin', 'diretoria'];
+
 export type AuthRole = (typeof AUTH_ROLES)[number];
 
 export interface AuthUser {

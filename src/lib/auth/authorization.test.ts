@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { canAccessRole, requireRole } from '@/lib/auth/authorization';
+import { canAccessRole, requireRole, isPrivilegedRole } from '@/lib/auth/authorization';
+import { PRIVILEGED_ROLES } from '@/lib/auth/config';
+import type { AuthRole } from '@/lib/auth/config';
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn((path: string) => {
@@ -48,5 +50,26 @@ describe('requireRole', () => {
     });
 
     await expect(requireRole(['admin', 'diretoria'])).rejects.toThrow('NEXT_REDIRECT:/app');
+  });
+});
+
+describe('isPrivilegedRole', () => {
+  it('returns true for admin', () => {
+    expect(isPrivilegedRole('admin')).toBe(true);
+  });
+
+  it('returns true for diretoria', () => {
+    expect(isPrivilegedRole('diretoria')).toBe(true);
+  });
+
+  it('returns false for secretaria', () => {
+    expect(isPrivilegedRole('secretaria')).toBe(false);
+  });
+
+  it('PRIVILEGED_ROLES contains exactly admin and diretoria', () => {
+    const roles: AuthRole[] = ['admin', 'diretoria', 'secretaria'];
+    for (const role of roles) {
+      expect(PRIVILEGED_ROLES.includes(role)).toBe(role === 'admin' || role === 'diretoria');
+    }
   });
 });

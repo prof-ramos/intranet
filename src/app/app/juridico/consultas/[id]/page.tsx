@@ -8,7 +8,7 @@ import {
   LEGAL_CONSULTATION_STATUS_OPTIONS,
 } from '@/lib/juridico/status';
 import { updateConsultationStatusFromForm, addNote } from '@/app/app/juridico/actions';
-import { formatDate, daysSince } from '@/lib/juridico/formatters';
+import { formatDate, daysSince } from '@/lib/utils/date';
 import { ArrowLeft, Clock, FileText, MessageSquare, Send, User } from 'lucide-react';
 import { hairline } from '@/lib/ui/tokens';
 import { StatusUpdater } from './StatusUpdater';

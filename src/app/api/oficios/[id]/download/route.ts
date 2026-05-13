@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRole } from '@/lib/auth/require-auth';
+import { requireRole } from '@/lib/auth/authorization';
 import { findOfficialLetterById } from '@/lib/oficios/repository';
 import { generateOfficialLetterPdf } from '@/lib/oficios/pdf';
 import { logAuditAction } from '@/lib/audit/service';

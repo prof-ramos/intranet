@@ -6,8 +6,6 @@ import { type AuthUser } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
 
-export { requireRole } from '@/lib/auth/authorization';
-
 export const requireAuth = cache(async (): Promise<AuthUser> => {
   const session = await getSession();
   if (!session?.isLoggedIn) {

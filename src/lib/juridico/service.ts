@@ -1,7 +1,8 @@
 import { db } from '@/lib/db';
 import { legalConsultations } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
-import type { DbExecutor, Tx } from './repository';
+import type { WriteExecutor } from './repository';
+import type { Tx } from '@/lib/db';
 import {
   insertConsultation,
   insertNote,
@@ -17,10 +18,10 @@ const MAX_RETRIES = 3;
  * Se executado dentro de uma transação, recebe o executor via parâmetro.
  * Caso contrário, cria sua própria transação com retry em caso de conflito.
  */
-export async function generateInternalNumber(executor?: typeof db): Promise<string> {
+export async function generateInternalNumber(executor?: Tx): Promise<string> {
   const year = new Date().getFullYear();
 
-  async function nextNumber(tx: typeof db): Promise<string> {
+  async function nextNumber(tx: Tx): Promise<string> {
     const likePattern = `JUR-${year}-%`;
     const regexPattern = `JUR-${year}-([0-9]+)`;
     const [result] = await tx
@@ -83,7 +84,7 @@ export async function createConsultationService(input: CreateConsultationInput) 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       return await db.transaction(async (tx) => {
-        const internalNumber = await generateInternalNumber(tx as unknown as Tx);
+        const internalNumber = await generateInternalNumber(tx);
         const slaDueDate = new Date();
         slaDueDate.setDate(slaDueDate.getDate() + input.slaDays);
 

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { LEGAL_CONSULTATION_STATUSES } from '@/lib/juridico/status';
+import { paymentStatus } from '@/lib/db/schema/finance';
+import { functionalStatus, associationStatus, contributionStatus } from '@/lib/db/schema/associates';
 
 export const loginSchema = z.object({
   email: z.string().min(1, 'E-mail é obrigatório.').email('E-mail inválido.').toLowerCase().trim(),
@@ -22,15 +24,15 @@ export const associateSearchParamsSchema = z.object({
 
 export const monthlyPaymentsSearchParamsSchema = z.object({
   q: z.string().optional(),
-  status: z.enum(['pago', 'pendente', 'atrasado', 'isento']).optional(),
+  status: z.enum(paymentStatus.enumValues).optional(),
   method: z.enum(['folha', 'boleto', 'pix', 'transferencia', 'outros']).optional(),
   location: z.enum(['brasil', 'exterior']).optional(),
   page: z.coerce.number().int().min(1).default(1),
 });
 
-const validFunctionalStatuses = ['ativo', 'aposentado', 'cedido', 'em_licenca'] as const;
-const validAssociationStatuses = ['ativo', 'inativo'] as const;
-const validContributionStatuses = ['em_dia', 'inadimplente', 'pendente_migracao'] as const;
+const validFunctionalStatuses = functionalStatus.enumValues;
+const validAssociationStatuses = associationStatus.enumValues;
+const validContributionStatuses = contributionStatus.enumValues;
 
 function isValidDateString(value: string | null): boolean {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;

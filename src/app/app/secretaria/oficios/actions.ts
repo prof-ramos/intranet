@@ -1,6 +1,6 @@
 'use server';
 
-import { requireRole } from '@/lib/auth/require-auth';
+import { requireRole } from '@/lib/auth/authorization';
 import * as service from '@/lib/oficios/service';
 import * as repository from '@/lib/oficios/repository';
 import { generateOfficialLetterContent } from '@/lib/ai/gemini';

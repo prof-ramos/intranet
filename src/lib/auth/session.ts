@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getDevAuthUser, isAuthRole, isSkipAuthEnabled, type SessionData } from '@/lib/auth/config';
 
@@ -56,4 +57,11 @@ export async function destroySession(): Promise<void> {
   if (error) {
     throw error;
   }
+}
+
+export async function logout() {
+  'use server';
+
+  await destroySession();
+  redirect('/login');
 }

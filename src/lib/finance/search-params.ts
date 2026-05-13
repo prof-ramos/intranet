@@ -1,8 +1,10 @@
 import { monthlyPaymentsSearchParamsSchema } from '@/lib/validation/schemas';
+import { paymentStatus } from '@/lib/db/schema/finance';
+import { escapeLikePattern } from '@/lib/db/like-pattern';
 
 export interface MonthlyPaymentsSearchParams {
   q: string;
-  status?: 'pago' | 'pendente' | 'atrasado' | 'isento';
+  status?: typeof paymentStatus.enumValues[number];
   method?: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros';
   location?: 'brasil' | 'exterior';
   page: number;
@@ -45,10 +47,5 @@ export function buildMonthlyPaymentsSearchParams(
 }
 
 export function buildAssociateNameSearchPattern(query: string): string {
-  const escaped = query
-    .replace(/\\/g, '\\\\')
-    .replace(/_/g, '\\_')
-    .replace(/%/g, '\\%');
-
-  return `%${escaped}%`;
+  return `%${escapeLikePattern(query)}%`;
 }
