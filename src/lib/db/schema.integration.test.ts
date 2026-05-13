@@ -171,6 +171,29 @@ const expectedColumns = {
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
   ],
+  oficios: [
+    'id:int8:NO',
+    'number:text:NO',
+    'year:int4:NO',
+    'sequence:int4:NO',
+    'recipient:text:NO',
+    'recipient_role:text:NO',
+    'vocativo:text:NO',
+    'letter_date:text:NO',
+    'subject:text:NO',
+    'itamaraty_sector:text:NO',
+    'signatory_name:text:NO',
+    'signatory_role:text:NO',
+    'closure:text:NO',
+    'body_rich_text:text:NO',
+    'body_plain_text:text:NO',
+    'pdf_storage_path:text:YES',
+    'status:official_letter_status:NO',
+    'created_by:int8:NO',
+    'updated_by:int8:YES',
+    'created_at:timestamptz:NO',
+    'updated_at:timestamptz:NO',
+  ],
 } as const;
 
 const expectedEnums = {
@@ -179,7 +202,17 @@ const expectedEnums = {
   admin_role: ['admin', 'diretoria', 'secretaria'],
   assignment_type: ['domestic', 'abroad'],
   association_status: ['ativo', 'inativo'],
-  audit_entity_type: ['associate', 'admin', 'activity', 'assignment', 'legal_consultation', 'legal_process', 'finance', 'monthly_payment'],
+  audit_entity_type: [
+    'associate',
+    'admin',
+    'activity',
+    'assignment',
+    'legal_consultation',
+    'legal_process',
+    'finance',
+    'monthly_payment',
+    'official_letter',
+  ],
   contribution_status: ['em_dia', 'inadimplente', 'pendente_migracao'],
   functional_status: ['ativo', 'aposentado', 'cedido', 'em_licenca'],
   legal_consultation_status: ['aberta', 'aguardando_escritorio', 'respondida', 'arquivada'],
@@ -188,6 +221,7 @@ const expectedEnums = {
   legal_process_type: ['judicial', 'administrativo'],
   legal_satisfaction: ['satisfeito', 'insatisfeito', 'sem_resposta'],
   legal_note_entity_type: ['consultation', 'process'],
+  official_letter_status: ['gerado', 'cancelado', 'rascunho'],
   payment_method: ['folha', 'boleto', 'pix', 'transferencia', 'outros'],
   payment_status: ['pago', 'pendente', 'atrasado', 'isento'],
 } as const;
@@ -277,11 +311,27 @@ const expectedIndexes = {
     'login_attempts_pkey',
   ],
   monthly_payments: [
+    'idx_monthly_payments_status',
     'idx_monthly_payments_unique',
+    'idx_monthly_payments_updated_by',
+    'idx_monthly_payments_year_month_method',
+    'idx_monthly_payments_year_month_status',
     'monthly_payments_pkey',
+  ],
+  oficios: [
+    'idx_oficios_created_at',
+    'idx_oficios_created_by',
+    'idx_oficios_status',
+    'idx_oficios_updated_by',
+    'idx_oficios_year',
+    'oficios_number_key',
+    'oficios_pkey',
+    'uq_oficios_year_sequence',
   ],
   rate_limits: ['idx_rate_limits_expires_at', 'idx_rate_limits_key_scope', 'rate_limits_pkey'],
 } as const;
+
+const expectedAppTables = Object.keys(expectedColumns).sort();
 
 afterAll(async () => {
   await db.end();
@@ -357,6 +407,31 @@ describe('database schema contract', () => {
     `;
 
     expect(rows).toEqual([{ extname: 'pg_trgm' }]);
+  });
+
+  it('has RLS enabled with at least one policy on every app table', async () => {
+    const rows = await db<
+      { relname: string; relrowsecurity: boolean; policy_count: number }[]
+    >`
+      select c.relname, c.relrowsecurity, count(p.polname)::int as policy_count
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+      left join pg_policy p on p.polrelid = c.oid
+      where n.nspname = 'public'
+        and c.relkind = 'r'
+        and c.relname = any(${expectedAppTables})
+      group by c.relname, c.relrowsecurity
+      order by c.relname
+    `;
+
+    expect(rows).toEqual(
+      expectedAppTables.map((relname) => ({
+        relname,
+        relrowsecurity: true,
+        policy_count: expect.any(Number),
+      })),
+    );
+    expect(rows.every((row) => row.policy_count > 0)).toBe(true);
   });
 
   it('has migration SQL files, journal entries, and DB migration history aligned', async () => {

@@ -1,55 +1,51 @@
 import { z } from 'zod';
 
+const emptyStringToUndefined = (value: unknown) => (value === '' ? undefined : value);
+const optionalString = z.preprocess(emptyStringToUndefined, z.string().optional());
+const optionalNonEmptyString = z.preprocess(
+  emptyStringToUndefined,
+  z.string().min(1).optional(),
+);
+const optionalUrl = z.preprocess(emptyStringToUndefined, z.string().url().optional());
+
 export const envSchema = z
   .object({
-    DATABASE_URL: z.string().url().optional(),
-    DATABASE_POSTGRES_URL: z.string().url().optional(),
-    POSTGRES_URL: z.string().url().optional(),
-    POSTGRES_PRISMA_URL: z.string().url().optional(),
-    POSTGRES_URL_NON_POOLING: z.string().url().optional(),
+    DATABASE_URL: optionalUrl,
+    DATABASE_POSTGRES_URL: optionalUrl,
+    POSTGRES_URL: optionalUrl,
+    POSTGRES_PRISMA_URL: optionalUrl,
+    POSTGRES_URL_NON_POOLING: optionalUrl,
 
-    DB_CONNECT_TIMEOUT_SECONDS: z.string().optional(),
-    DB_IDLE_TIMEOUT_SECONDS: z.string().optional(),
-    DB_MAX_CONNECTIONS: z.string().optional(),
-    DB_POOL_MODE: z.string().optional(),
-    DB_SSL: z.string().optional(),
-    USE_PGBOUNCER: z.string().optional(),
+    DB_CONNECT_TIMEOUT_SECONDS: optionalString,
+    DB_IDLE_TIMEOUT_SECONDS: optionalString,
+    DB_MAX_CONNECTIONS: optionalString,
+    DB_POOL_MODE: optionalString,
+    DB_SSL: optionalString,
+    USE_PGBOUNCER: optionalString,
 
-    SESSION_SECRET: z
-      .string({
-        message:
-          'SESSION_SECRET must be set and at least 32 characters long. ' +
-          'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
-      })
-      .min(
-        32,
-        'SESSION_SECRET must be set and at least 32 characters long. ' +
-          'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"',
-      ),
+    MAILJET_SENDER_NAME: optionalString.default('ASOF Intranet'),
+    GEMINI_API_KEY: optionalString.describe('Gemini API key for AI features'),
 
-    MAILJET_SENDER_NAME: z.string().optional().default('ASOF Intranet'),
-    GEMINI_API_KEY: z.string().optional().describe('Gemini API key for AI features'),
+    SKIP_AUTH: optionalString.default('false'),
+    DEV_USER_ID: optionalString,
+    DEV_USER_NAME: optionalString,
+    DEV_USER_EMAIL: optionalString,
+    DEV_USER_ROLE: optionalString,
+    DEV_USER_MUST_CHANGE_PASSWORD: optionalString.default('false'),
 
-    SKIP_AUTH: z.string().optional().default('false'),
-    DEV_USER_ID: z.string().optional(),
-    DEV_USER_NAME: z.string().optional(),
-    DEV_USER_EMAIL: z.string().optional(),
-    DEV_USER_ROLE: z.string().optional(),
-    DEV_USER_MUST_CHANGE_PASSWORD: z.string().optional().default('false'),
-
-    NODE_ENV: z.string().optional(),
+    NODE_ENV: optionalString,
 
     // ─── Supabase ───────────────────────────────────────────────────────────────
-    NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
-    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1).optional(),
-    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
-    DATABASE_SUPABASE_URL: z.string().url().optional(),
-    DATABASE_SUPABASE_PUBLISHABLE_KEY: z.string().min(1).optional(),
-    DATABASE_SUPABASE_ANON_KEY: z.string().min(1).optional(),
-    DATABASE_SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
-    NEXT_PUBLIC_DATABASE_SUPABASE_URL: z.string().url().optional(),
-    NEXT_PUBLIC_DATABASE_SUPABASE_PUBLISHABLE_KEY: z.string().min(1).optional(),
-    NEXT_PUBLIC_DATABASE_SUPABASE_ANON_KEY: z.string().min(1).optional(),
+    NEXT_PUBLIC_SUPABASE_URL: optionalUrl,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: optionalNonEmptyString,
+    SUPABASE_SERVICE_ROLE_KEY: optionalNonEmptyString,
+    DATABASE_SUPABASE_URL: optionalUrl,
+    DATABASE_SUPABASE_PUBLISHABLE_KEY: optionalNonEmptyString,
+    DATABASE_SUPABASE_ANON_KEY: optionalNonEmptyString,
+    DATABASE_SUPABASE_SERVICE_ROLE_KEY: optionalNonEmptyString,
+    NEXT_PUBLIC_DATABASE_SUPABASE_URL: optionalUrl,
+    NEXT_PUBLIC_DATABASE_SUPABASE_PUBLISHABLE_KEY: optionalNonEmptyString,
+    NEXT_PUBLIC_DATABASE_SUPABASE_ANON_KEY: optionalNonEmptyString,
   })
   .refine(
     (data) =>

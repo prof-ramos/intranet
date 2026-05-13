@@ -85,6 +85,13 @@
       "when": 1778620800003,
       "tag": "0012_add_official_letters",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1778620800004,
+      "tag": "0013_db_contract_hardening",
+      "breakpoints": true
     }
   ]
 }

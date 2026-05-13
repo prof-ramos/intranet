@@ -137,3 +137,126 @@ npm run db:studio
 - PRs devem ser pequenos e focados em uma única responsabilidade.
 - Quando duas features tocam a mesma área, o segundo agente faz rebase em cima do resultado do merge da primeira.
 - Ao remover o worktree quando a feature for mergeada: `git worktree remove .worktrees/<branch>`.
+
+## Padrão Git Worktree + Subagentes Paralelos
+
+Este projeto usa um padrão padronizado de **git worktrees** combinado com **subagentes paralelos** no Maestri para acelerar o desenvolvimento de features sem conflitos.
+
+### Estrutura de Worktrees
+
+```
+<repo-root>/
+├── .git/
+├── .worktrees/
+│   ├── feature-auth-refactor/      ← worktree 1 (agente A)
+│   ├── feature-new-dashboard/      ← worktree 2 (agente B)
+│   └── fix-login-race/             ← worktree 3 (agente C)
+├── src/
+└── ...
+```
+
+**Comandos:**
+```bash
+# Criar worktree para uma feature
+git worktree add -b feature/nome .worktrees/feature-nome
+
+# Entrar no worktree
+cd .worktrees/feature-nome
+
+# Remover worktree após merge
+git worktree remove .worktrees/feature-nome
+```
+
+### Padrão de Subagentes Paralelos
+
+Quando uma feature é grande o suficiente, o Maestro decompõe em tarefas independentes e delega a **subagentes em worktrees separados**:
+
+```
+Maestro (terminal principal)
+├── Agente A — worktree: feature-auth-refactor
+│   └── Responsabilidade: refatorar middleware de auth
+├── Agente B — worktree: feature-new-dashboard  
+│   └── Responsabilidade: criar componentes do dashboard
+└── Agente C — worktree: fix-login-race
+    └── Responsabilidade: corrigir race condition no login
+```
+
+**Regras de Coordenação:**
+
+1. **Isolamento obrigatório**: Cada subagente trabalha APENAS em seu worktree. Nenhum agente toca arquivos de outro.
+2. **Rebase frequente**: Subagentes fazem `git rebase origin/main` a cada 30 min ou antes de qualquer push.
+3. **Sem push direto para main**: Todos os worktrees usam branches nomeadas (`feature/*`, `fix/*`).
+4. **Sincronização via notes**: Subagentes escrevem status em notes do Maestri (`maestri note write`) em vez de commits de merge.
+5. **Testes locais independentes**: Cada worktree roda seu próprio `npm run test` e `npm run build` antes de reportar conclusão.
+
+### Fluxo de Orquestração
+
+**Passo 1 — Decomposição (Maestro)**
+- Analisa a feature e divide em tarefas com fronteiras claras (nenhuma tarefa deve editar os mesmos arquivos que outra).
+- Cria um plano de dependências: o que pode ser paralelo vs. o que precisa ser sequencial.
+
+**Passo 2 — Alocação (Maestro)**
+- Cria worktrees: `git worktree add -b feature/<nome> .worktrees/<nome>`
+- Recruta subagentes no Maestri (um por worktree).
+- Conecta notes de contexto a cada subagente.
+
+**Passo 3 — Execução Paralela (Subagentes)**
+- Cada subagente implementa sua tarefa no próprio worktree.
+- Reporta progresso via `maestri note write` a cada checkpoint.
+- Sinaliza conclusão ao Maestro.
+
+**Passo 4 — Integração (Maestro)**
+- Revisa cada branch individualmente (code review via `maestri ask`).
+- Resolve conflitos de merge se necessário.
+- Faz squash/merge para `main` na ordem correta (respeitando dependências).
+- Remove worktrees após merge bem-sucedido.
+
+### Exemplo Prático
+
+**Cenário:** Implementar novo módulo de "Eventos e Notificações"
+
+```
+Maestro
+├── Agente A — worktree: feature/eventos-db
+│   └── Schema Drizzle + migration PostgreSQL
+├── Agente B — worktree: feature/eventos-api
+│   └── Server Actions + repository + queries
+├── Agente C — worktree: feature/eventos-ui
+│   └── Páginas React + componentes + formulários
+└── Agente D — worktree: feature/eventos-tests
+    └── Testes unitários + E2E + schema contract
+```
+
+**Dependências:**
+- A → B (API depende do schema)
+- B → C (UI depende da API)
+- D pode rodar em paralelo, mas precisa do schema de A
+
+**Orquestração:**
+1. Maestro lança A primeiro.
+2. Quando A termina, Maestro faz merge do schema e lança B e D em paralelo.
+3. Quando B termina, Maestro lança C.
+4. Maestro integra tudo e faz merge final.
+
+### Anti-padrões a Evitar
+
+- **NÃO** compartilhar um único worktree entre múltiplos agentes.
+- **NÃO** permitir subagentes fazerem merge direto para `main`.
+- **NÃO** deixar worktrees abandonados por mais de 48h sem rebase.
+- **NÃO** dividir tarefas que editam o mesmo arquivo (ex: dois agentes modificando `src/lib/db/schema.ts`).
+
+### Comandos Úteis
+
+```bash
+# Listar worktrees ativos
+git worktree list
+
+# Forçar remoção de worktree sujo
+git worktree remove --force .worktrees/<nome>
+
+# Prune worktrees inválidos
+git worktree prune
+
+# Verificar branch de cada worktree
+git worktree list --porcelain
+```

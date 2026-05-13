@@ -71,3 +71,7 @@ playwright/.cache/
 # OMC local state (may contain PII/session data)
 .omc/state/
 .omc/sessions/
+.omc/project-memory.json
+
+# Maestri local state (machine-specific paths, session data)
+.maestri/

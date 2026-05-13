@@ -10,7 +10,7 @@ export const db = drizzle(client, { schema });
 
 export async function truncateAll() {
   // Order matters due to foreign keys
-  await client`TRUNCATE TABLE legal_notes, legal_consultations, legal_processes, legal_opinions, audit_logs, login_attempts, rate_limits, activities, associates, admins CASCADE`;
+  await client`TRUNCATE TABLE legal_notes, legal_consultations, legal_processes, legal_opinions, audit_logs, login_attempts, rate_limits, activities, monthly_payments, oficios, associates, admins CASCADE`;
 }
 
 export async function closeDb() {

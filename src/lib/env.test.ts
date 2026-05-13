@@ -4,7 +4,6 @@ import { envSchema } from './env';
 describe('envSchema', () => {
   const validEnv = {
     DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
-    SESSION_SECRET: 'a'.repeat(32),
     SKIP_AUTH: 'false',
     NODE_ENV: 'development',
   };
@@ -14,17 +13,8 @@ describe('envSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  test('rejeita SESSION_SECRET menor que 32 caracteres', () => {
-    const result = envSchema.safeParse({
-      ...validEnv,
-      SESSION_SECRET: 'short',
-    });
-    expect(result.success).toBe(false);
-  });
-
   test('rejeita quando DATABASE_URL e DATABASE_POSTGRES_URL estão ausentes', () => {
     const result = envSchema.safeParse({
-      SESSION_SECRET: 'a'.repeat(32),
     });
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -40,9 +30,23 @@ describe('envSchema', () => {
   test('aceita DATABASE_POSTGRES_URL sem DATABASE_URL', () => {
     const result = envSchema.safeParse({
       DATABASE_POSTGRES_URL: 'postgres://user:pass@localhost:5432/db',
-      SESSION_SECRET: 'a'.repeat(32),
     });
     expect(result.success).toBe(true);
+  });
+
+  test('trata DATABASE_URL vazia como ausente e usa fallback valido', () => {
+    const result = envSchema.safeParse({
+      DATABASE_URL: '',
+      DATABASE_POSTGRES_URL: 'postgres://user:pass@localhost:5432/db',
+      SKIP_AUTH: 'false',
+      NODE_ENV: 'production',
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.DATABASE_URL).toBeUndefined();
+      expect(result.data.DATABASE_POSTGRES_URL).toBe('postgres://user:pass@localhost:5432/db');
+    }
   });
 
   test('rejeita SKIP_AUTH=true sem DEV_USER_ID fora de produção', () => {
@@ -82,7 +86,6 @@ describe('envSchema', () => {
   test('aceita produção sem Mailjet configurado', () => {
     const result = envSchema.safeParse({
       DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
-      SESSION_SECRET: 'a'.repeat(32),
       SKIP_AUTH: 'false',
       NODE_ENV: 'production',
     });
