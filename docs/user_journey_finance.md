@@ -26,13 +26,14 @@ Este documento descreve a jornada do administrador ao interagir com o módulo fi
 ## Fluxo 2: Gestão e Filtros
 *O objetivo é localizar rapidamente associados para conferência de pagamentos.*
 
-1. **Busca**: O administrador utiliza a barra de busca para filtrar por **Nome** ou **SIAPE**.
-2. **Filtros Avançados**:
-   - Filtra por **Status** (ex: ver apenas "Atrasados").
-   - Filtra por **Forma de Pagamento** (ex: ver apenas quem paga via "PIX").
-3. **Visualização**: A tabela exibe o status atual, a forma de pagamento e o nome do associado de forma clara e premium.
-4. **Paginação**: A listagem deve usar paginação e filtros no servidor para evitar carregar todo o cadastro financeiro no browser.
-5. **Privacidade**: SIAPE/CPF, quando necessários, devem ser mascarados na listagem e exibidos integralmente apenas em contexto administrativo justificado.
+1. **Busca**: O administrador utiliza a barra de busca para filtrar por **Nome** (busca textual com debounce sincronizada na URL).
+2. **Filtros Avançados** (sincronizados com URL — `search-params.ts`):
+   - Filtra por **Status** (`pago`, `pendente`, `atrasado`, `isento`).
+   - Filtra por **Forma de Pagamento** (`folha`, `boleto`, `pix`, `transferencia`, `outros`).
+   - Filtra por **Localização** (`brasil`, `exterior`).
+3. **Visualização**: A tabela exibe o status atual, a forma de pagamento efetiva e o nome do associado. Pills de filtro refletem o estado ativo da URL.
+4. **Server-side**: Filtros são aplicados no PostgreSQL via Drizzle ORM (`ILIKE` nome, `eq` status/método/localização). Cache separado por combinação de filtros (`unstable_cache`).
+5. **Privacidade**: SIAPE/CPF não são exibidos na listagem.
 
 ---
 
@@ -42,28 +43,33 @@ Este documento descreve a jornada do administrador ao interagir com o módulo fi
 1. **Seleção**: O administrador localiza o associado (ex: que enviou um comprovante de PIX).
 2. **Ação**: No seletor de status da linha correspondente, altera de **"Pendente"** para **"Marcar Pago"**.
 3. **Feedback**:
-   - O sistema exibe um indicador de carregamento enquanto a *Server Action* processa.
-   - O ícone muda para um check verde (`CheckCircle`).
-   - A coluna de auditoria (interna) registra o `updatedBy` e a data `paidAt`.
+   - Indicador de carregamento enquanto a *Server Action* processa.
+   - Banner verde de sucesso: "Pagamento atualizado com sucesso." (auto-limpa em 3s).
+   - Em caso de conflito de concorrência: banner vermelho "Este registro foi alterado por outro usuário. Recarregue a página."
+4. **Concorrência**: A Server Action valida `expectedUpdatedAt`. Se outro usuário alterou o registro no intervalo, a operação é rejeitada sem sobrescrever dados.
 
 ---
 
 ## Fluxo 4: Auditoria e Conformidade (LGPD)
 *O objetivo é garantir que todas as alterações financeiras sejam rastreáveis.*
 
-1. **Registro**: Cada clique em "Marcar Pago" ou alteração de status gera uma entrada na tabela `audit_logs`.
-2. **Conteúdo**: O log armazena:
-   - Quem realizou a alteração (`performedBy`).
-   - O associado afetado (`entityId`).
-   - Os valores antigo e novo do status.
-   - O mês/ano e a origem da alteração, sem incluir CPF, endereço ou comprovantes em texto livre.
-3. **Transparência**: Em caso de erro, o administrador pode consultar o módulo de **Auditoria** para verificar quem e quando alterou o registro financeiro.
+1. **Registro**: Cada alteração de status gera uma entrada na tabela `audit_logs`.
+2. **Conteúdo completo**: O log captura `changes.old` e `changes.new`:
+   - `old`: `{ status, paymentMethod, paidAt }` do registro anterior (ou `null` em insert).
+   - `new`: `{ status, paymentMethod, paidAt }` após a alteração.
+   - `metadata`: `{ associateId, year, month }`.
+3. **Sanitização**: Campos sensíveis (CPF, SIAPE, email, endereço) são removidos automaticamente pelo `logAuditAction`.
+4. **Transparência**: Administradores podem consultar o módulo **Auditoria** (`/app/config/auditoria`) para verificar quem e quando alterou o registro financeiro.
 
 ---
 
-## Regras de Negócio Implementadas (Baseadas no Schema)
-- **Imutabilidade de Identidade**: O vínculo `associate_id`, `year` e `month` é único (protegido por `uniqueIndex`).
-- **Segurança de Role**: Apenas usuários com role `admin` ou `diretoria` podem ver e editar mensalidades.
-- **Fallbacks**: O sistema sempre prefere o `paymentMethod` registrado no mês, mas exibe o `defaultPaymentMethod` do associado se o registro mensal ainda não foi customizado.
-- **Bulk-init seguro**: Inicializações mensais nunca sobrescrevem pagamentos já alterados manualmente sem uma ação explícita e auditada.
-- **Sem PII em logs**: Logs operacionais e erros de Server Actions devem referenciar IDs internos e contagens, não documentos pessoais.
+## Regras de Negócio Implementadas
+
+- **Imutabilidade de Identidade**: `uniqueIndex` em `(associateId, year, month)`.
+- **Segurança de Role**: Apenas `admin` e `diretoria` acessam o módulo (`requireRole`).
+- **Fallback de método**: Exibe `monthPaymentMethod` se existir, senão `defaultPaymentMethod` do associado.
+- **Bulk-init seguro**: `initializeMonth` cria registros apenas para associados ativos sem registro no mês. Não sobrescreve pagamentos já alterados.
+- **Concorrência**: `updateMonthlyPayment` compara `expectedUpdatedAt` dentro de `db.transaction()`. Se divergir, rejeita com `CONCURRENCY_CONFLICT`.
+- **Audit log completo**: Captura old state (`status`, `paymentMethod`, `paidAt`) antes do update.
+- **Sem PII em logs**: `logAuditAction` sanitiza CPF, SIAPE, email, endereço automaticamente.
+- **Filtros server-side**: `ILIKE` com escape de wildcards (`%`, `_`) para prevenir SQL injection.
