@@ -3,6 +3,7 @@ import 'server-only';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseServiceRoleKey, getSupabaseUrl } from '@/lib/supabase/config';
 import type { AuthRole } from '@/lib/auth/config';
+import { logAuditAction } from '@/lib/audit/service';
 
 interface EnsureAdminAuthUserInput {
   email: string;
@@ -108,16 +109,20 @@ export async function ensureAdminPasswordAuthUser({
   return { userId: data.user.id, created: true };
 }
 
-export async function deleteAdminAuthUser(email: string) {
+export async function deleteAdminAuthUser(email: string, adminId?: number) {
   const supabase = getSupabaseAdminClient();
   const user = await findAuthUserByEmail(email);
   if (!user) return;
 
-  console.log('[AUDIT] Deleting Supabase auth user', {
-    targetUserId: user.id,
-    targetEmail: user.email,
-    timestamp: new Date().toISOString(),
-  });
+  if (adminId !== undefined) {
+    await logAuditAction({
+      adminId,
+      action: 'delete_auth_user',
+      entityType: 'admin',
+      entityId: undefined,
+      metadata: { targetUserId: user.id },
+    });
+  }
 
   const { error } = await supabase.auth.admin.deleteUser(user.id);
   if (error) throw error;

@@ -53,7 +53,7 @@ export async function login(formData: FormData) {
     if (!rateLimit.allowed) redirect('/login?error=rate-limit');
   } catch (error) {
     console.error('[Login] Rate-limit check failed; denying login.', {
-      error: error instanceof Error ? error.message : 'unknown',
+      error: error instanceof Error ? 'rate_limiter_error' : 'unknown',
     });
     redirect('/login?error=rate-limit');
   }
@@ -95,7 +95,7 @@ export async function login(formData: FormData) {
     await retryTransientConnection(() => loginRateLimiter.reset(email));
   } catch (error) {
     console.warn('[Login] Rate-limit reset failed after successful login.', {
-      error: error instanceof Error ? error.message : 'unknown',
+      error: error instanceof Error ? 'rate_limiter_error' : 'unknown',
     });
   }
   redirect(user.mustChangePassword ? '/change-password' : '/app');

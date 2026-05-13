@@ -92,20 +92,27 @@ export interface TopRegion {
   total: number;
 }
 
-const fetchTopRegions = unstable_cache(
-  async (limit: number): Promise<TopRegion[]> =>
-    db
-      .select({ country: associates.locationCountry, total: count() })
-      .from(associates)
-      .where(eq(associates.associationStatus, 'ativo'))
-      .groupBy(associates.locationCountry)
-      .orderBy(desc(count()))
-      .limit(limit),
-  ['top-regions'],
-  { revalidate: TTL_STABLE, tags: ['associates', 'dashboard'] },
-);
+const topRegionsCache = new Map<number, ReturnType<typeof unstable_cache>>();
 
-export const getTopRegions = (limit = 6): Promise<TopRegion[]> => fetchTopRegions(limit);
+export const getTopRegions = (limit = 6): Promise<TopRegion[]> => {
+  let cached = topRegionsCache.get(limit);
+  if (!cached) {
+    cached = unstable_cache(
+      async (): Promise<TopRegion[]> =>
+        db
+          .select({ country: associates.locationCountry, total: count() })
+          .from(associates)
+          .where(eq(associates.associationStatus, 'ativo'))
+          .groupBy(associates.locationCountry)
+          .orderBy(desc(count()))
+          .limit(limit),
+      ['top-regions', String(limit)],
+      { revalidate: TTL_STABLE, tags: ['associates', 'dashboard'] },
+    );
+    topRegionsCache.set(limit, cached);
+  }
+  return cached();
+};
 
 export interface UrgentActivity {
   id: number;
@@ -115,26 +122,32 @@ export interface UrgentActivity {
   dueDate: string | null;
 }
 
-const fetchUrgentActivities = unstable_cache(
-  async (limit: number): Promise<UrgentActivity[]> =>
-    db
-      .select({
-        id: activities.id,
-        title: activities.title,
-        status: activities.status,
-        priority: activities.priority,
-        dueDate: activities.dueDate,
-      })
-      .from(activities)
-      .where(and(ne(activities.status, 'concluido'), sql`${activities.dueDate} < now()`))
-      .orderBy(activities.dueDate)
-      .limit(limit),
-  ['urgent-activities'],
-  { revalidate: TTL_REALTIME, tags: ['activities', 'dashboard'] },
-);
+const urgentActivitiesCache = new Map<number, ReturnType<typeof unstable_cache>>();
 
-export const getUrgentActivities = (limit = 4): Promise<UrgentActivity[]> =>
-  fetchUrgentActivities(limit);
+export const getUrgentActivities = (limit = 4): Promise<UrgentActivity[]> => {
+  let cached = urgentActivitiesCache.get(limit);
+  if (!cached) {
+    cached = unstable_cache(
+      async (): Promise<UrgentActivity[]> =>
+        db
+          .select({
+            id: activities.id,
+            title: activities.title,
+            status: activities.status,
+            priority: activities.priority,
+            dueDate: activities.dueDate,
+          })
+          .from(activities)
+          .where(and(ne(activities.status, 'concluido'), sql`${activities.dueDate} < now()`))
+          .orderBy(activities.dueDate)
+          .limit(limit),
+      ['urgent-activities', String(limit)],
+      { revalidate: TTL_REALTIME, tags: ['activities', 'dashboard'] },
+    );
+    urgentActivitiesCache.set(limit, cached);
+  }
+  return cached();
+};
 
 export interface KanbanCard {
   id: number;
@@ -145,32 +158,39 @@ export interface KanbanCard {
   associateName: string | null;
 }
 
-const fetchKanbanCards = unstable_cache(
-  async (limit: number): Promise<KanbanCard[]> =>
-    db
-      .select({
-        id: activities.id,
-        title: activities.title,
-        status: activities.status,
-        priority: activities.priority,
-        dueDate: activities.dueDate,
-        associateName: associates.fullName,
-      })
-      .from(activities)
-      .leftJoin(associates, eq(activities.associateId, associates.id))
-      .orderBy(
-        asc(activities.status),
-        desc(sql`case ${activities.priority}
-          when 'urgente' then 4
-          when 'alta' then 3
-          when 'normal' then 2
-          else 1
-        end`),
-        asc(activities.dueDate),
-      )
-      .limit(limit),
-  ['kanban-cards'],
-  { revalidate: TTL_REALTIME, tags: ['activities', 'dashboard'] },
-);
+const kanbanCardsCache = new Map<number, ReturnType<typeof unstable_cache>>();
 
-export const getKanbanCards = (limit = 20): Promise<KanbanCard[]> => fetchKanbanCards(limit);
+export const getKanbanCards = (limit = 20): Promise<KanbanCard[]> => {
+  let cached = kanbanCardsCache.get(limit);
+  if (!cached) {
+    cached = unstable_cache(
+      async (): Promise<KanbanCard[]> =>
+        db
+          .select({
+            id: activities.id,
+            title: activities.title,
+            status: activities.status,
+            priority: activities.priority,
+            dueDate: activities.dueDate,
+            associateName: associates.fullName,
+          })
+          .from(activities)
+          .leftJoin(associates, eq(activities.associateId, associates.id))
+          .orderBy(
+            asc(activities.status),
+            desc(sql`case ${activities.priority}
+              when 'urgente' then 4
+              when 'alta' then 3
+              when 'normal' then 2
+              else 1
+            end`),
+            asc(activities.dueDate),
+          )
+          .limit(limit),
+      ['kanban-cards', String(limit)],
+      { revalidate: TTL_REALTIME, tags: ['activities', 'dashboard'] },
+    );
+    kanbanCardsCache.set(limit, cached);
+  }
+  return cached();
+};
