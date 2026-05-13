@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useTransition, useCallback, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Search,
   CheckCircle2,
@@ -30,6 +31,10 @@ import {
   borderMuted,
   focusRingClass,
 } from '@/lib/ui/tokens';
+import {
+  buildMonthlyPaymentsSearchParams,
+  type MonthlyPaymentsSearchParams,
+} from '@/lib/finance/search-params';
 
 interface Payment {
   associateId: number;
@@ -48,6 +53,7 @@ interface MonthlyPaymentsTableProps {
   payments: Payment[];
   year: number;
   month: number;
+  currentFilters: MonthlyPaymentsSearchParams;
 }
 
 const statusConfig: Record<string, { label: string; icon: typeof CheckCircle2; color: string; bg: string }> = {
@@ -90,29 +96,66 @@ export default function MonthlyPaymentsTable({
   payments,
   year,
   month,
+  currentFilters,
 }: MonthlyPaymentsTableProps) {
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [methodFilter, setMethodFilter] = useState<string>('all');
-  const [locationFilter, setLocationFilter] = useState<string>('all');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  // Local search for immediate UX; server-side filtering handles the rest
+  const [search, setSearch] = useState(currentFilters.q);
+  const [debouncedSearch, setDebouncedSearch] = useState(currentFilters.q);
+
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const filteredPayments = useMemo(() => {
-    return payments.filter((p) => {
-      const matchesSearch =
-        p.fullName.toLowerCase().includes(search.toLowerCase());
-      const currentStatus = getEffectivePaymentStatus(p.paymentStatus);
-      const matchesStatus = statusFilter === 'all' || currentStatus === statusFilter;
-      const currentMethod = getEffectivePaymentMethod(p.monthPaymentMethod, p.defaultPaymentMethod);
-      const matchesMethod = methodFilter === 'all' || currentMethod === methodFilter;
-      const loc = locationGroup(p.locationCountry);
-      const matchesLocation = locationFilter === 'all' || loc === locationFilter;
+  const searchTimerRef = useRef<number | undefined>(undefined);
 
-      return matchesSearch && matchesStatus && matchesMethod && matchesLocation;
+  // Debounce search input to URL
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    window.clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = window.setTimeout(() => {
+      setDebouncedSearch(value);
+      const params = new URLSearchParams(searchParams.toString());
+      if (value.trim()) {
+        params.set('q', value.trim().slice(0, 80));
+      } else {
+        params.delete('q');
+      }
+      params.set('year', String(year));
+      params.set('month', String(month));
+      startTransition(() => {
+        router.push(`/app/financeiro/mensalidades?${params.toString()}`);
+      });
+    }, 400);
+  }, [router, searchParams, year, month]);
+
+  const updateFilter = useCallback((key: keyof MonthlyPaymentsSearchParams, value: string | undefined) => {
+    const base = buildMonthlyPaymentsSearchParams(currentFilters, {});
+    const params = new URLSearchParams(base);
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    params.set('year', String(year));
+    params.set('month', String(month));
+    startTransition(() => {
+      router.push(`/app/financeiro/mensalidades?${params.toString()}`);
     });
-  }, [payments, search, statusFilter, methodFilter, locationFilter]);
+  }, [currentFilters, router, year, month]);
+
+  const filteredPayments = useMemo(() => {
+    if (!debouncedSearch.trim()) return payments;
+    const term = debouncedSearch.toLowerCase();
+    return payments.filter((p) => p.fullName.toLowerCase().includes(term));
+  }, [payments, debouncedSearch]);
+
+  const statusFilter = currentFilters.status ?? 'all';
+  const methodFilter = currentFilters.method ?? 'all';
+  const locationFilter = currentFilters.location ?? 'all';
 
   const handleStatusChange = async (
     associateId: number,
@@ -197,14 +240,16 @@ export default function MonthlyPaymentsTable({
               height: 40,
             }}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            aria-label="Buscar associado por nome"
           />
         </div>
 
         {/* Status pills */}
         <div className="flex flex-wrap gap-1.5">
           <button
-            onClick={() => setStatusFilter('all')}
+            onClick={() => updateFilter('status', undefined)}
+            aria-pressed={statusFilter === 'all'}
             className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors"
             style={{
               backgroundColor: statusFilter === 'all' ? navy : canvas,
@@ -220,7 +265,8 @@ export default function MonthlyPaymentsTable({
             return (
               <button
                 key={s.value}
-                onClick={() => setStatusFilter(active ? 'all' : s.value)}
+                onClick={() => updateFilter('status', active ? undefined : s.value)}
+                aria-pressed={active}
                 className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors"
                 style={{
                   backgroundColor: active ? cfg.color : cfg.bg,
@@ -242,7 +288,8 @@ export default function MonthlyPaymentsTable({
             return (
               <button
                 key={m.value}
-                onClick={() => setMethodFilter(active ? 'all' : m.value)}
+                onClick={() => updateFilter('method', active ? undefined : m.value)}
+                aria-pressed={active}
                 className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors"
                 style={{
                   backgroundColor: active ? navy : canvas,
@@ -264,7 +311,8 @@ export default function MonthlyPaymentsTable({
             return (
               <button
                 key={l.value}
-                onClick={() => setLocationFilter(active ? 'all' : l.value)}
+                onClick={() => updateFilter('location', active ? undefined : l.value)}
+                aria-pressed={active}
                 className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors"
                 style={{
                   backgroundColor: active ? navy : canvas,
@@ -279,6 +327,12 @@ export default function MonthlyPaymentsTable({
           })}
         </div>
       </div>
+
+      {isPending && (
+        <div className="text-xs font-medium" style={{ color: textMuted }}>
+          Atualizando...
+        </div>
+      )}
 
       {successMessage && (
         <div

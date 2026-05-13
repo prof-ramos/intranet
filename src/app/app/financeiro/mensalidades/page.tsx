@@ -160,7 +160,12 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
       <FinanceKPIs payments={data} />
 
       {/* Table */}
-      <MonthlyPaymentsTable payments={data} year={currentYear} month={currentMonth} />
+      <MonthlyPaymentsTable
+        payments={data}
+        year={currentYear}
+        month={currentMonth}
+        currentFilters={currentFilters}
+      />
     </main>
   );
 }
