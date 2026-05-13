@@ -57,6 +57,7 @@ screenshot-*.png
 
 # git worktrees
 .worktrees/
+.claude/worktrees/
 
 # Playwright
 test-results/
@@ -66,3 +67,7 @@ playwright/.cache/
 # Claude Code local settings (personal overrides, never share)
 .claude/settings.local.json
 .mcp.json
+
+# OMC local state (may contain PII/session data)
+.omc/state/
+.omc/sessions/

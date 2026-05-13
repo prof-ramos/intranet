@@ -54,6 +54,11 @@ async function findAuthUserByEmail(email: string) {
   }
 }
 
+interface EnsureResult {
+  userId: string;
+  created: boolean;
+}
+
 export async function ensureAdminPasswordAuthUser({
   email,
   password,
@@ -61,7 +66,7 @@ export async function ensureAdminPasswordAuthUser({
   role,
   mustChangePassword,
   resetPassword = false,
-}: EnsureAdminAuthUserInput) {
+}: EnsureAdminAuthUserInput): Promise<EnsureResult> {
   const supabase = getSupabaseAdminClient();
   const existingUser = await findAuthUserByEmail(email);
   const metadataAttributes = {
@@ -85,7 +90,7 @@ export async function ensureAdminPasswordAuthUser({
       throw error;
     }
 
-    return existingUser.id;
+    return { userId: existingUser.id, created: false };
   }
 
   if (!password) {
@@ -100,5 +105,20 @@ export async function ensureAdminPasswordAuthUser({
     throw error;
   }
 
-  return data.user.id;
+  return { userId: data.user.id, created: true };
+}
+
+export async function deleteAdminAuthUser(email: string) {
+  const supabase = getSupabaseAdminClient();
+  const user = await findAuthUserByEmail(email);
+  if (!user) return;
+
+  console.log('[AUDIT] Deleting Supabase auth user', {
+    targetUserId: user.id,
+    targetEmail: user.email,
+    timestamp: new Date().toISOString(),
+  });
+
+  const { error } = await supabase.auth.admin.deleteUser(user.id);
+  if (error) throw error;
 }

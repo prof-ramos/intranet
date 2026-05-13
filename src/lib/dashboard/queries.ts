@@ -92,19 +92,20 @@ export interface TopRegion {
   total: number;
 }
 
-export const getTopRegions = unstable_cache(
-  async (limit = 6): Promise<TopRegion[]> => {
-    return db
+const fetchTopRegions = unstable_cache(
+  async (limit: number): Promise<TopRegion[]> =>
+    db
       .select({ country: associates.locationCountry, total: count() })
       .from(associates)
       .where(eq(associates.associationStatus, 'ativo'))
       .groupBy(associates.locationCountry)
       .orderBy(desc(count()))
-      .limit(limit);
-  },
+      .limit(limit),
   ['top-regions'],
   { revalidate: TTL_STABLE, tags: ['associates', 'dashboard'] },
 );
+
+export const getTopRegions = (limit = 6): Promise<TopRegion[]> => fetchTopRegions(limit);
 
 export interface UrgentActivity {
   id: number;
@@ -114,9 +115,9 @@ export interface UrgentActivity {
   dueDate: string | null;
 }
 
-export const getUrgentActivities = unstable_cache(
-  async (limit = 4): Promise<UrgentActivity[]> => {
-    return db
+const fetchUrgentActivities = unstable_cache(
+  async (limit: number): Promise<UrgentActivity[]> =>
+    db
       .select({
         id: activities.id,
         title: activities.title,
@@ -127,11 +128,13 @@ export const getUrgentActivities = unstable_cache(
       .from(activities)
       .where(and(ne(activities.status, 'concluido'), sql`${activities.dueDate} < now()`))
       .orderBy(activities.dueDate)
-      .limit(limit);
-  },
+      .limit(limit),
   ['urgent-activities'],
   { revalidate: TTL_REALTIME, tags: ['activities', 'dashboard'] },
 );
+
+export const getUrgentActivities = (limit = 4): Promise<UrgentActivity[]> =>
+  fetchUrgentActivities(limit);
 
 export interface KanbanCard {
   id: number;
@@ -142,9 +145,9 @@ export interface KanbanCard {
   associateName: string | null;
 }
 
-export const getKanbanCards = unstable_cache(
-  async (limit = 20): Promise<KanbanCard[]> => {
-    return db
+const fetchKanbanCards = unstable_cache(
+  async (limit: number): Promise<KanbanCard[]> =>
+    db
       .select({
         id: activities.id,
         title: activities.title,
@@ -165,8 +168,9 @@ export const getKanbanCards = unstable_cache(
         end`),
         asc(activities.dueDate),
       )
-      .limit(limit);
-  },
+      .limit(limit),
   ['kanban-cards'],
   { revalidate: TTL_REALTIME, tags: ['activities', 'dashboard'] },
 );
+
+export const getKanbanCards = (limit = 20): Promise<KanbanCard[]> => fetchKanbanCards(limit);
