@@ -114,16 +114,20 @@ export async function deleteAdminAuthUser(email: string, adminId?: number) {
   const user = await findAuthUserByEmail(email);
   if (!user) return;
 
-  if (adminId !== undefined) {
-    await logAuditAction({
-      adminId,
-      action: 'delete_auth_user',
-      entityType: 'admin',
-      entityId: undefined,
-      metadata: { targetUserId: user.id },
-    });
-  }
-
   const { error } = await supabase.auth.admin.deleteUser(user.id);
   if (error) throw error;
+
+  if (adminId !== undefined) {
+    try {
+      await logAuditAction({
+        adminId,
+        action: 'delete_auth_user',
+        entityType: 'admin',
+        entityId: undefined,
+        metadata: { targetUserId: user.id },
+      });
+    } catch {
+      // Audit logging failure must not block the deletion flow.
+    }
+  }
 }

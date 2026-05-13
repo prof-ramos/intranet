@@ -9,6 +9,18 @@ const TTL_MODERATE = 120; // 2 min — dados de média volatilidade
 const TTL_VOLATILE = 30; // 30s — dados que mudam frequentemente (atividades)
 const TTL_REALTIME = 15; // 15s — dados altamente voláteis
 
+const MAX_CACHE_ENTRIES = 10;
+
+function setWithLimit<K, V>(map: Map<K, V>, key: K, value: V) {
+  if (map.size >= MAX_CACHE_ENTRIES && !map.has(key)) {
+    const firstKey = map.keys().next().value;
+    if (firstKey !== undefined) {
+      map.delete(firstKey);
+    }
+  }
+  map.set(key, value);
+}
+
 export const countActiveAssociates = unstable_cache(
   async (): Promise<number> => {
     const rows = await db
@@ -95,23 +107,24 @@ export interface TopRegion {
 const topRegionsCache = new Map<number, ReturnType<typeof unstable_cache>>();
 
 export const getTopRegions = (limit = 6): Promise<TopRegion[]> => {
-  let cached = topRegionsCache.get(limit);
-  if (!cached) {
-    cached = unstable_cache(
-      async (): Promise<TopRegion[]> =>
-        db
-          .select({ country: associates.locationCountry, total: count() })
-          .from(associates)
-          .where(eq(associates.associationStatus, 'ativo'))
-          .groupBy(associates.locationCountry)
-          .orderBy(desc(count()))
-          .limit(limit),
-      ['top-regions', String(limit)],
-      { revalidate: TTL_STABLE, tags: ['associates', 'dashboard'] },
-    );
-    topRegionsCache.set(limit, cached);
-  }
-  return cached();
+  const existing = topRegionsCache.get(limit);
+  if (existing) return existing();
+
+  const created = unstable_cache(
+    async (): Promise<TopRegion[]> =>
+      db
+        .select({ country: associates.locationCountry, total: count() })
+        .from(associates)
+        .where(eq(associates.associationStatus, 'ativo'))
+        .groupBy(associates.locationCountry)
+        .orderBy(desc(count()))
+        .limit(limit),
+    ['top-regions', String(limit)],
+    { revalidate: TTL_STABLE, tags: ['associates', 'dashboard'] },
+  );
+
+  setWithLimit(topRegionsCache, limit, created);
+  return created();
 };
 
 export interface UrgentActivity {
@@ -125,28 +138,29 @@ export interface UrgentActivity {
 const urgentActivitiesCache = new Map<number, ReturnType<typeof unstable_cache>>();
 
 export const getUrgentActivities = (limit = 4): Promise<UrgentActivity[]> => {
-  let cached = urgentActivitiesCache.get(limit);
-  if (!cached) {
-    cached = unstable_cache(
-      async (): Promise<UrgentActivity[]> =>
-        db
-          .select({
-            id: activities.id,
-            title: activities.title,
-            status: activities.status,
-            priority: activities.priority,
-            dueDate: activities.dueDate,
-          })
-          .from(activities)
-          .where(and(ne(activities.status, 'concluido'), sql`${activities.dueDate} < now()`))
-          .orderBy(activities.dueDate)
-          .limit(limit),
-      ['urgent-activities', String(limit)],
-      { revalidate: TTL_REALTIME, tags: ['activities', 'dashboard'] },
-    );
-    urgentActivitiesCache.set(limit, cached);
-  }
-  return cached();
+  const existing = urgentActivitiesCache.get(limit);
+  if (existing) return existing();
+
+  const created = unstable_cache(
+    async (): Promise<UrgentActivity[]> =>
+      db
+        .select({
+          id: activities.id,
+          title: activities.title,
+          status: activities.status,
+          priority: activities.priority,
+          dueDate: activities.dueDate,
+        })
+        .from(activities)
+        .where(and(ne(activities.status, 'concluido'), sql`${activities.dueDate} < now()`))
+        .orderBy(activities.dueDate)
+        .limit(limit),
+    ['urgent-activities', String(limit)],
+    { revalidate: TTL_REALTIME, tags: ['activities', 'dashboard'] },
+  );
+
+  setWithLimit(urgentActivitiesCache, limit, created);
+  return created();
 };
 
 export interface KanbanCard {
@@ -161,36 +175,37 @@ export interface KanbanCard {
 const kanbanCardsCache = new Map<number, ReturnType<typeof unstable_cache>>();
 
 export const getKanbanCards = (limit = 20): Promise<KanbanCard[]> => {
-  let cached = kanbanCardsCache.get(limit);
-  if (!cached) {
-    cached = unstable_cache(
-      async (): Promise<KanbanCard[]> =>
-        db
-          .select({
-            id: activities.id,
-            title: activities.title,
-            status: activities.status,
-            priority: activities.priority,
-            dueDate: activities.dueDate,
-            associateName: associates.fullName,
-          })
-          .from(activities)
-          .leftJoin(associates, eq(activities.associateId, associates.id))
-          .orderBy(
-            asc(activities.status),
-            desc(sql`case ${activities.priority}
-              when 'urgente' then 4
-              when 'alta' then 3
-              when 'normal' then 2
-              else 1
-            end`),
-            asc(activities.dueDate),
-          )
-          .limit(limit),
-      ['kanban-cards', String(limit)],
-      { revalidate: TTL_REALTIME, tags: ['activities', 'dashboard'] },
-    );
-    kanbanCardsCache.set(limit, cached);
-  }
-  return cached();
+  const existing = kanbanCardsCache.get(limit);
+  if (existing) return existing();
+
+  const created = unstable_cache(
+    async (): Promise<KanbanCard[]> =>
+      db
+        .select({
+          id: activities.id,
+          title: activities.title,
+          status: activities.status,
+          priority: activities.priority,
+          dueDate: activities.dueDate,
+          associateName: associates.fullName,
+        })
+        .from(activities)
+        .leftJoin(associates, eq(activities.associateId, associates.id))
+        .orderBy(
+          asc(activities.status),
+          desc(sql`case ${activities.priority}
+            when 'urgente' then 4
+            when 'alta' then 3
+            when 'normal' then 2
+            else 1
+          end`),
+          asc(activities.dueDate),
+        )
+        .limit(limit),
+    ['kanban-cards', String(limit)],
+    { revalidate: TTL_REALTIME, tags: ['activities', 'dashboard'] },
+  );
+
+  setWithLimit(kanbanCardsCache, limit, created);
+  return created();
 };

@@ -1,6 +1,18 @@
 import { unstable_cache } from 'next/cache';
 import { getAssociatesWithPayments } from './repository';
 
+const MAX_CACHE_ENTRIES = 12;
+
+function setWithLimit<K, V>(map: Map<K, V>, key: K, value: V) {
+  if (map.size >= MAX_CACHE_ENTRIES && !map.has(key)) {
+    const firstKey = map.keys().next().value;
+    if (firstKey !== undefined) {
+      map.delete(firstKey);
+    }
+  }
+  map.set(key, value);
+}
+
 type PaymentsData = Awaited<ReturnType<typeof getAssociatesWithPayments>>;
 type CachedPaymentsFn = () => Promise<PaymentsData>;
 
@@ -15,14 +27,15 @@ export const getMonthlyPaymentsData = (year: number, month: number): Promise<Pay
   }
 
   const cacheKey = `${year}-${month}`;
-  let cached = monthlyPaymentsCache.get(cacheKey);
-  if (!cached) {
-    cached = unstable_cache(
-      async () => getAssociatesWithPayments(year, month),
-      ['finance-monthly', String(year), String(month)],
-      { tags: ['finance-monthly'], revalidate: 3600 },
-    ) as CachedPaymentsFn;
-    monthlyPaymentsCache.set(cacheKey, cached);
-  }
-  return cached();
+  const existing = monthlyPaymentsCache.get(cacheKey);
+  if (existing) return existing();
+
+  const created = unstable_cache(
+    async () => getAssociatesWithPayments(year, month),
+    ['finance-monthly', String(year), String(month)],
+    { tags: ['finance-monthly'], revalidate: 3600 },
+  ) as CachedPaymentsFn;
+
+  setWithLimit(monthlyPaymentsCache, cacheKey, created);
+  return created();
 };
