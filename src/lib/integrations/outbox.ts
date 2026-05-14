@@ -93,6 +93,9 @@ export async function emitDomainEvent(
     sanitizePiiValue(input.payload),
   ) as DomainEventPayloadMap[typeof input.type];
 
+  const EVENT_RETENTION_DAYS = 90;
+  const expiresAt = new Date(Date.now() + EVENT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+
   const [event] = await executor
     .insert(domainEvents)
     .values({
@@ -102,6 +105,7 @@ export async function emitDomainEvent(
       actorAdminId: input.actorAdminId,
       payload,
       deliveryStatus: 'pending',
+      expiresAt,
     })
     .returning();
 

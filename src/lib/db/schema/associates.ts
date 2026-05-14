@@ -79,6 +79,7 @@ export const associates = pgTable(
     index('idx_associates_association_status').on(table.associationStatus),
     index('idx_associates_contribution_status').on(table.contributionStatus),
     index('idx_associates_status_name').on(table.associationStatus, table.fullName),
+    index('idx_associates_name_trgm').using('gin', table.fullName.op('gin_trgm_ops')),
   ],
 );
 

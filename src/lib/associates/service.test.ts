@@ -13,6 +13,7 @@ const mockFindLinkedActivities = vi.fn();
 const mockUpdateAssociateById = vi.fn();
 const mockEmitDomainEvent = vi.fn();
 const mockTransaction = vi.fn();
+const mockLogDataAccess = vi.fn();
 
 vi.mock('@/lib/db', () => ({
   db: {
@@ -29,6 +30,10 @@ vi.mock('./repository', () => ({
 
 vi.mock('@/lib/integrations/outbox', () => ({
   emitDomainEvent: (...args: unknown[]) => mockEmitDomainEvent(...args),
+}));
+
+vi.mock('@/lib/audit/service', () => ({
+  logDataAccess: (...args: unknown[]) => mockLogDataAccess(...args),
 }));
 
 vi.mock('./lgpd', () => ({
@@ -110,14 +115,15 @@ describe('getAssociateForEdit', () => {
 
   it('returns null when associate not found', async () => {
     mockFindAssociateById.mockResolvedValue(null);
-    const result = await getAssociateForEdit(999, 'admin');
+    const result = await getAssociateForEdit(999, 'admin', 1);
     expect(result).toBeNull();
+    expect(mockLogDataAccess).not.toHaveBeenCalled();
   });
 
   it('returns DTO with canEditInternalNotes true for admin', async () => {
     mockFindAssociateById.mockResolvedValue({ ...baseAssociate });
 
-    const result = await getAssociateForEdit(1, 'admin');
+    const result = await getAssociateForEdit(1, 'admin', 42);
     expect(result).not.toBeNull();
     expect(result!.canEditInternalNotes).toBe(true);
     expect(result!.internalNotes).toBe('notes');
@@ -126,9 +132,35 @@ describe('getAssociateForEdit', () => {
   it('returns DTO with canEditInternalNotes false for secretaria', async () => {
     mockFindAssociateById.mockResolvedValue({ ...baseAssociate });
 
-    const result = await getAssociateForEdit(1, 'secretaria');
+    const result = await getAssociateForEdit(1, 'secretaria', 99);
     expect(result).not.toBeNull();
     expect(result!.canEditInternalNotes).toBe(false);
+  });
+
+  it('logs data access with view action', async () => {
+    mockFindAssociateById.mockResolvedValue({ ...baseAssociate });
+
+    await getAssociateForEdit(1, 'admin', 42);
+    expect(mockLogDataAccess).toHaveBeenCalledWith({
+      adminId: 42,
+      action: 'view',
+      entityType: 'associate',
+      entityId: 1,
+      metadata: { accessType: 'edit_form', sensitiveFields: true },
+    });
+  });
+
+  it('logs data access indicating masked fields for secretaria', async () => {
+    mockFindAssociateById.mockResolvedValue({ ...baseAssociate });
+
+    await getAssociateForEdit(1, 'secretaria', 99);
+    expect(mockLogDataAccess).toHaveBeenCalledWith({
+      adminId: 99,
+      action: 'view',
+      entityType: 'associate',
+      entityId: 1,
+      metadata: { accessType: 'edit_form', sensitiveFields: false },
+    });
   });
 });
 

@@ -57,8 +57,7 @@ function sanitizeResponseExcerpt(value: string | null | undefined): string | nul
 
   const sanitized = value
     .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '[redacted-email]')
-    .replace(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, '[redacted-cpf]')
-    .replace(/\b\d{6,12}\b/g, '[redacted-number]');
+    .replace(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, '[redacted-cpf]');
 
   return sanitized.length > RESPONSE_EXCERPT_LIMIT
     ? sanitized.slice(0, RESPONSE_EXCERPT_LIMIT)
@@ -104,6 +103,7 @@ async function deliverEventToSubscription(
   attempt: number,
   executor: Pick<import('@/lib/db').Tx, 'insert' | 'update' | 'select' | 'execute'>,
 ) {
+  const idempotencyKey = `${eventId}:${subscription.id}`;
   const timestamp = String(Math.floor(Date.now() / 1000));
   const requestId = randomUUID();
   const pathWithQuery = buildPathWithQuery(subscription.targetUrl);
@@ -129,6 +129,7 @@ async function deliverEventToSubscription(
       headers: {
         'content-type': 'application/json; charset=utf-8',
         'user-agent': 'asof-intranet-webhooks/1.0',
+        'idempotency-key': idempotencyKey,
         'x-asof-event-type': eventType,
         'x-asof-timestamp': timestamp,
         'x-asof-signature': `sha256=${signature}`,
@@ -147,6 +148,7 @@ async function deliverEventToSubscription(
         webhookSubscriptionId: subscription.id,
         attempt,
         requestId,
+        idempotencyKey,
         status: 'delivered',
         statusCode,
         responseExcerpt,
@@ -164,16 +166,24 @@ async function deliverEventToSubscription(
   }
 
   const shouldRetry = attempt < MAX_WEBHOOK_ATTEMPTS && isRetryableStatus(statusCode);
+  const failureReason = shouldRetry
+    ? null
+    : attempt >= MAX_WEBHOOK_ATTEMPTS
+      ? `Max retry attempts (${MAX_WEBHOOK_ATTEMPTS}) exhausted.`
+      : `Non-retryable HTTP status ${statusCode}.`;
+
   await insertWebhookDelivery({
     domainEventId: eventId,
     webhookSubscriptionId: subscription.id,
     attempt,
     requestId,
+    idempotencyKey,
     status: shouldRetry ? 'retry_scheduled' : 'failed',
     statusCode,
     responseExcerpt,
     nextRetryAt: shouldRetry ? calculateNextRetryAt(attempt) : null,
     failedAt: shouldRetry ? null : new Date(),
+    failureReason,
   }, executor);
 
   return shouldRetry ? ('retry_scheduled' as const) : ('failed' as const);
@@ -206,13 +216,10 @@ export async function dispatchDomainEventById(eventId: number) {
       };
     }
 
-    const results: Array<'delivered' | 'retry_scheduled' | 'failed'> = [];
-
-    for (const subscription of subscriptions) {
+    const dispatchPromises = subscriptions.map(async (subscription) => {
       const previous = getLastDeliveryAttemptForSubscription(previousDeliveries, subscription.id);
       if (previous?.status === 'delivered') {
-        results.push('delivered');
-        continue;
+        return 'delivered' as const;
       }
 
       if (
@@ -220,17 +227,15 @@ export async function dispatchDomainEventById(eventId: number) {
         previous.nextRetryAt &&
         previous.nextRetryAt.getTime() > Date.now()
       ) {
-        results.push('retry_scheduled');
-        continue;
+        return 'retry_scheduled' as const;
       }
 
       if (previous?.status === 'failed' && previous.attempt >= MAX_WEBHOOK_ATTEMPTS) {
-        results.push('failed');
-        continue;
+        return 'failed' as const;
       }
 
       const attempt = (previous?.attempt ?? 0) + 1;
-      const result = await deliverEventToSubscription(
+      return deliverEventToSubscription(
         event.id,
         event.eventType,
         subscription,
@@ -238,8 +243,12 @@ export async function dispatchDomainEventById(eventId: number) {
         attempt,
         tx,
       );
-      results.push(result);
-    }
+    });
+
+    const settled = await Promise.allSettled(dispatchPromises);
+    const results = settled.map((outcome) =>
+      outcome.status === 'fulfilled' ? outcome.value : ('failed' as const),
+    );
 
     await updateDomainEventDeliveryStatus(event.id, getOverallEventStatus(results), tx);
 

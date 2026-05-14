@@ -12,3 +12,4 @@ export * from './legal-opinions';
 export * from './rate-limits';
 export * from './finance';
 export * from './oficios';
+export * from './views';

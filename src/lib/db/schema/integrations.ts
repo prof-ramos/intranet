@@ -57,6 +57,7 @@ export const domainEvents = pgTable(
     }),
     payload: jsonb('payload').$type<Record<string, unknown>>().notNull(),
     deliveryStatus: domainEventDeliveryStatus('delivery_status').notNull().default('pending'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
@@ -71,6 +72,8 @@ export const domainEvents = pgTable(
     index('idx_domain_events_delivery_status').on(table.deliveryStatus),
     index('idx_domain_events_occurred_at').on(table.occurredAt),
     index('idx_domain_events_status_occurred_at').on(table.deliveryStatus, table.occurredAt),
+    index('idx_domain_events_expires_at').on(table.expiresAt),
+    index('idx_domain_events_pending').on(table.id).where(sql`${table.deliveryStatus} = 'pending'`),
   ],
 );
 
@@ -101,6 +104,7 @@ export const webhookSubscriptions = pgTable(
     index('idx_webhook_subscriptions_active').on(table.isActive),
     index('idx_webhook_subscriptions_created_by').on(table.createdBy),
     index('idx_webhook_subscriptions_subscribed_events').using('gin', table.subscribedEvents),
+    index('idx_webhook_subscriptions_active_partial').on(table.id).where(sql`${table.isActive} = true`),
   ],
 );
 
@@ -116,12 +120,14 @@ export const webhookDeliveries = pgTable(
       .references(() => webhookSubscriptions.id, { onDelete: 'restrict' }),
     attempt: integer('attempt').notNull().default(1),
     requestId: text('request_id').notNull(),
+    idempotencyKey: text('idempotency_key'),
     status: webhookDeliveryStatus('status').notNull().default('pending'),
     statusCode: integer('status_code'),
     responseExcerpt: text('response_excerpt'),
     deliveredAt: timestamp('delivered_at', { withTimezone: true }),
     nextRetryAt: timestamp('next_retry_at', { withTimezone: true }),
     failedAt: timestamp('failed_at', { withTimezone: true }),
+    failureReason: text('failure_reason'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -163,7 +169,7 @@ export const integrationApiKeys = pgTable(
   (table) => [
     uniqueIndex('idx_integration_api_keys_name_unique').on(table.name),
     uniqueIndex('idx_integration_api_keys_key_hash_unique').on(table.keyHash),
-    index('idx_integration_api_keys_active').on(table.isActive),
+    index('idx_integration_api_keys_active').on(table.id).where(sql`${table.isActive} = true`),
     index('idx_integration_api_keys_created_by').on(table.createdBy),
   ],
 );

@@ -34,3 +34,33 @@ export async function logAuditAction(options: LogAuditOptions): Promise<void> {
     // Não propaga o erro para não bloquear a operação principal
   }
 }
+
+export type DataAccessAction = 'view' | 'export' | 'edit';
+
+export interface LogDataAccessOptions {
+  adminId: number;
+  action: DataAccessAction;
+  entityType: NewAuditLog['entityType'];
+  entityId?: number | null;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Convenience function for LGPD Art. 30/37 data access logging.
+ * Wraps `logAuditAction` with a typed action namespace (`data_view`, `data_export`, `data_edit`).
+ */
+export async function logDataAccess(options: LogDataAccessOptions): Promise<void> {
+  const actionPrefix: Record<DataAccessAction, string> = {
+    view: 'data_view',
+    export: 'data_export',
+    edit: 'data_edit',
+  };
+
+  return logAuditAction({
+    adminId: options.adminId,
+    action: actionPrefix[options.action],
+    entityType: options.entityType,
+    entityId: options.entityId,
+    metadata: options.metadata,
+  });
+}

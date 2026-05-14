@@ -40,6 +40,7 @@ export const oficios = pgTable(
     index('idx_oficios_year').on(table.year),
     index('idx_oficios_status').on(table.status),
     index('idx_oficios_created_at').on(table.createdAt),
+    index('idx_oficios_created_at_desc').on(table.createdAt.desc()),
     index('idx_oficios_created_by').on(table.createdBy),
     index('idx_oficios_updated_by').on(table.updatedBy),
     check('chk_oficios_year', sql`${table.year} between 2000 and 2100`),

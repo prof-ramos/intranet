@@ -141,6 +141,83 @@
       "when": 1778928000000,
       "tag": "0017_rate_limits_unique_key_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1779014400000,
+      "tag": "0024_add_webhook_idempotency_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1779100800000,
+      "tag": "0025_create_partial_idx_webhook_subscriptions_active",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1779100800001,
+      "tag": "0026_create_partial_idx_domain_events_pending",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1779100800002,
+      "tag": "0027_create_partial_idx_integration_api_keys_active",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1779100800003,
+      "tag": "0028_add_name_trgm_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1779100800004,
+      "tag": "0029_add_composite_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1779100800005,
+      "tag": "0030_add_related_process_fk",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1779100800006,
+      "tag": "0031_convert_counters_to_integer",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1779187200000,
+      "tag": "0032_add_event_retention",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1779273600000,
+      "tag": "0033_create_pii_safe_views",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1779360000000,
+      "tag": "0034_add_webhook_delivery_failure_reason",
+      "breakpoints": true
     }
   ]
 }

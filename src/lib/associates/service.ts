@@ -16,6 +16,7 @@ import {
 import { db } from '@/lib/db';
 import { functionalStatus as fsEnum, associationStatus as asEnum, contributionStatus as csEnum } from '@/lib/db/schema';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
+import { logDataAccess } from '@/lib/audit/service';
 import { formatLongDate, yearsSinceDate } from '@/lib/utils/date';
 import { encryptPii, piiBlindIndex, decryptPiiField } from '@/lib/crypto/pii';
 
@@ -105,6 +106,7 @@ export async function getAssociatesListPage(
 export async function getAssociateForEdit(
   id: number,
   role: Role,
+  adminId: number,
 ): Promise<EditAssociateDTO | null> {
   const row = await findAssociateById(id);
   if (!row) return null;
@@ -115,6 +117,15 @@ export async function getAssociateForEdit(
   const siape = canViewSensitiveFields(role)
     ? decryptPiiField(row.siapeCiphertext, row.siape)
     : maskSiape(decryptPiiField(row.siapeCiphertext, row.siape));
+
+  // LGPD Art. 30/37: log PII data access
+  await logDataAccess({
+    adminId,
+    action: 'view',
+    entityType: 'associate',
+    entityId: id,
+    metadata: { accessType: 'edit_form', sensitiveFields: canViewSensitiveFields(role) },
+  });
 
   return {
     id: row.id,

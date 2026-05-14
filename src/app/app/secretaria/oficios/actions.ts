@@ -9,9 +9,9 @@ import { revalidatePath } from 'next/cache';
 
 const ALLOWED_ROLES = ['admin', 'diretoria', 'secretaria'] as const;
 
-export async function getOfficialLettersAction(year?: number) {
+export async function getOfficialLettersAction(year?: number, limit?: number) {
   await requireRole(ALLOWED_ROLES);
-  return repository.findOfficialLetters(year);
+  return repository.findOfficialLetters(year, { limit });
 }
 
 export async function getOfficialLetterAction(id: number) {

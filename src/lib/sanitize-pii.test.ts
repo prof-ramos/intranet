@@ -183,4 +183,50 @@ describe('sanitizePiiValue', () => {
   it('returns empty array as-is', () => {
     expect(sanitizePiiValue([])).toEqual([]);
   });
+
+  it('does not redact internal IDs like JUR-2026-001', () => {
+    const input = {
+      oficioId: 'JUR-2026-001',
+      processNumber: '2026-042',
+      name: 'Carlos',
+    };
+
+    const result = sanitizePiiValue(input);
+
+    expect(result).toEqual({
+      oficioId: 'JUR-2026-001',
+      processNumber: '2026-042',
+      name: 'Carlos',
+    });
+  });
+
+  it('redacts CPF values under sensitive keys', () => {
+    const input = {
+      cpf: '123.456.789-00',
+      name: 'Maria',
+    };
+
+    const result = sanitizePiiValue(input);
+
+    expect(result).toEqual({
+      cpf: '[REDACTED]',
+      name: 'Maria',
+    });
+  });
+
+  it('does not redact numeric codes under non-sensitive keys', () => {
+    const input = {
+      eventId: 2026001,
+      referenceCode: 'REF-2026-042',
+      count: 42,
+    };
+
+    const result = sanitizePiiValue(input);
+
+    expect(result).toEqual({
+      eventId: 2026001,
+      referenceCode: 'REF-2026-042',
+      count: 42,
+    });
+  });
 });

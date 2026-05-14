@@ -30,6 +30,7 @@ export const monthlyPayments = pgTable(
     index('idx_monthly_payments_updated_by').on(table.updatedBy),
     index('idx_monthly_payments_year_month_status').on(table.year, table.month, table.status),
     index('idx_monthly_payments_year_month_method').on(table.year, table.month, table.paymentMethod),
+    index('idx_monthly_payments_associate_id').on(table.associateId),
     check('chk_monthly_payments_month', sql`${table.month} between 1 and 12`),
     check('chk_monthly_payments_year', sql`${table.year} between 2000 and 2100`),
   ],

@@ -1,4 +1,4 @@
-import { bigint, index, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { bigint, index, integer, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const rateLimits = pgTable(
   'rate_limits',
@@ -6,7 +6,7 @@ export const rateLimits = pgTable(
     id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
     key: text('key').notNull(),
     scope: text('scope').notNull(),
-    attempts: bigint('attempts', { mode: 'number' }).notNull().default(0),
+    attempts: integer('attempts').notNull().default(0),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
