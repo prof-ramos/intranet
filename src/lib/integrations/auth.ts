@@ -6,12 +6,14 @@ import { canAccessRole } from '@/lib/auth/authorization';
 import { safeCompare } from '@/lib/crypto/safe-compare';
 import { getSession } from '@/lib/auth/session';
 import { getIntegrationConfig, isIntegrationAuthConfigured } from '@/lib/integrations/config';
+import { hashKey } from '@/lib/integrations/keys/service';
+import { findActiveApiKeyByHash, updateApiKeyLastUsed } from '@/lib/integrations/keys/repository';
 import { getRequestId, jsonError } from '@/lib/integrations/http';
-import { updateApiKeyLastUsed } from '@/lib/integrations/keys/repository';
 import {
   INTEGRATION_AUTH_SCHEME,
   INTEGRATION_HEADER_NAMES,
   type IntegrationAuthResult,
+  type IntegrationScope,
   type IntegrationSignatureInput,
   type RequestPrincipal,
 } from '@/lib/integrations/types';
@@ -108,6 +110,20 @@ export function buildIntegrationAuthHeaders(
   };
 }
 
+/**
+ * Verify an incoming integration request against either the configured
+ * environment-variable API key or a database-backed API key.
+ *
+ * Auth flow:
+ * 1. Check if integrations are enabled and at least one auth source is available.
+ * 2. Extract key, timestamp, and signature headers.
+ * 3. Try env-var key match first (existing behaviour). If it matches, verify HMAC.
+ * 4. If env-var key does not match, hash the incoming key and look it up in
+ *    the `integration_api_keys` table. If found and active, verify HMAC using
+ *    the same shared hmacSecret.
+ * 5. If neither path succeeds, return `invalid_key`.
+ * 6. On success, return a principal that includes scopes for table-backed keys.
+ */
 export async function verifyIntegrationRequest(request: Request): Promise<IntegrationAuthResult> {
   const config = getIntegrationConfig();
 
@@ -118,7 +134,9 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
     };
   }
 
-  if (!isIntegrationAuthConfigured(config)) {
+  // We no longer require env-var auth to be configured — table keys are also valid.
+  // But if there's no hmacSecret, we can't verify signatures at all.
+  if (!config.hmacSecret) {
     return {
       ok: false,
       reason: 'misconfigured',
@@ -136,29 +154,56 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
     };
   }
 
-  if (!safeCompare(config.apiKey ?? '', key)) {
-    return {
-      ok: false,
-      reason: 'invalid_key',
-    };
-  }
-
   const timestampResult = isTimestampWithinTolerance(timestamp, config.timestampToleranceSeconds);
   if (!timestampResult.ok) {
     return timestampResult;
   }
 
   const body = await readRequestBody(request);
-  const expectedSignature = signIntegrationRequest(
-    {
-      method: request.method,
-      pathWithQuery: getPathWithQuery(request),
-      timestamp,
-      body,
-    },
-    config.hmacSecret ?? '',
-  );
+  const signaturePayload: IntegrationSignatureInput = {
+    method: request.method,
+    pathWithQuery: getPathWithQuery(request),
+    timestamp,
+    body,
+  };
+  const expectedSignature = signIntegrationRequest(signaturePayload, config.hmacSecret);
 
+  // --- Path 1: env-var key ---
+  const envAuthConfigured = isIntegrationAuthConfigured(config);
+  if (envAuthConfigured && safeCompare(config.apiKey ?? '', key)) {
+    if (!safeCompare(expectedSignature, signature)) {
+      return {
+        ok: false,
+        reason: 'invalid_signature',
+      };
+    }
+
+    // Env-var keys have full access (no scopes restriction).
+    updateApiKeyLastUsed(sha256Hex(key)).catch(() => {});
+
+    return {
+      ok: true,
+      principal: {
+        kind: 'integration',
+        scheme: INTEGRATION_AUTH_SCHEME,
+        keyId: key,
+        // No scopes — env-var keys have unrestricted access.
+      },
+    };
+  }
+
+  // --- Path 2: table-backed key ---
+  const keyHash = sha256Hex(key);
+  const tableKey = await findActiveApiKeyByHash(keyHash);
+
+  if (!tableKey) {
+    return {
+      ok: false,
+      reason: 'invalid_key',
+    };
+  }
+
+  // HMAC verification for table-backed path uses the same shared hmacSecret.
   if (!safeCompare(expectedSignature, signature)) {
     return {
       ok: false,
@@ -166,16 +211,16 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
     };
   }
 
-  // Update lastUsedAt on the matching API key record. This is a non-critical
-  // tracking side-effect — failures are swallowed so they never block auth.
-  updateApiKeyLastUsed(sha256Hex(key)).catch(() => {});
+  // Update lastUsedAt for the table-backed key.
+  updateApiKeyLastUsed(keyHash).catch(() => {});
 
   return {
     ok: true,
     principal: {
       kind: 'integration',
       scheme: INTEGRATION_AUTH_SCHEME,
-      keyId: key,
+      keyId: tableKey.name,
+      scopes: tableKey.scopes,
     },
   };
 }
@@ -254,13 +299,27 @@ function mapIntegrationFailureToResponse(request: Request, reason: IntegrationAu
         requestId,
         details: reason.details,
       });
+    case 'insufficient_scope':
+      return jsonError(403, 'insufficient_scope', 'The API key does not have the required scope for this endpoint.', {
+        requestId,
+        details: reason.details,
+      });
   }
 }
 
+/**
+ * Authorize an integration or session request.
+ *
+ * When `requiredScopes` is provided, table-backed API keys (those with a
+ * `scopes` array on the principal) must possess at least one of the listed
+ * scopes. Env-var-backed keys (no `scopes` on the principal) always pass
+ * scope checks — they have unrestricted access.
+ */
 export async function authorizeIntegrationRequest(
   request: Request,
   options: {
     allowSessionRoles?: readonly AuthRole[];
+    requiredScopes?: readonly IntegrationScope[];
   } = {},
 ): Promise<
   | {
@@ -282,6 +341,27 @@ export async function authorizeIntegrationRequest(
         ok: false,
         response: mapIntegrationFailureToResponse(request, integrationResult),
       };
+    }
+
+    // Scope check for table-backed keys.
+    const { requiredScopes } = options;
+    if (requiredScopes && requiredScopes.length > 0 && integrationResult.principal.scopes) {
+      const hasScope = integrationResult.principal.scopes.some((s) =>
+        requiredScopes.includes(s as IntegrationScope),
+      );
+      if (!hasScope) {
+        return {
+          ok: false,
+          response: mapIntegrationFailureToResponse(request, {
+            ok: false,
+            reason: 'insufficient_scope',
+            details: {
+              required: requiredScopes,
+              provided: integrationResult.principal.scopes,
+            },
+          }),
+        };
+      }
     }
 
     return {

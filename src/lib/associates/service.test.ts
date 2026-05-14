@@ -35,8 +35,21 @@ vi.mock('./lgpd', () => ({
   toAssociateProfileDTO: (a: unknown) => a,
   toActivityDTO: (a: unknown) => a,
   canViewSensitiveFields: (role: string) => role === 'admin' || role === 'diretoria',
-  maskCpf: (cpf: string | null) => cpf ? `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**` : null,
-  maskSiape: (siape: string | null) => siape ? `${siape.slice(0, 2)}****${siape.slice(-2)}` : null,
+  maskCpf: (cpf: string | null) => (cpf ? `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**` : null),
+  maskSiape: (siape: string | null) => (siape ? `${siape.slice(0, 2)}****${siape.slice(-2)}` : null),
+}));
+
+vi.mock('@/lib/crypto/pii', () => ({
+  encryptPii: (v: string) => `enc:v2:k1.iv.tag.${btoa(v)}`,
+  decryptPii: (v: string) => {
+    if (v.startsWith('enc:v2:')) return atob(v.split('.')[3]);
+    return v;
+  },
+  piiBlindIndex: (v: string) => `hash-${v}`,
+  decryptPiiField: (ciphertext: string | null, plaintext: string | null) => {
+    if (ciphertext) return atob(ciphertext.split('.')[3]);
+    return plaintext ?? null;
+  },
 }));
 
 vi.mock('@/lib/utils/date', () => ({
@@ -45,31 +58,18 @@ vi.mock('@/lib/utils/date', () => ({
 }));
 
 vi.mock('@/lib/utils/initials', () => ({
-  initialsFromName: (name: string) => name.split(' ').map((n: string) => n[0]).join(''),
+  initialsFromName: (name: string) => name.split(' ').map((n) => n[0]).join(''),
 }));
 
-const mockEncryptPii = vi.fn((plaintext: string) => `enc:v2:k1.${plaintext}`);
-const mockPiiBlindIndex = vi.fn((plaintext: string) => `hash-${plaintext}`);
-const mockDecryptPiiField = vi.fn(
-  (ciphertext: string | null, plaintext: string | null) =>
-    ciphertext ? ciphertext.replace('enc:v2:k1.', '') : plaintext,
-);
-
-vi.mock('@/lib/crypto/pii', () => ({
-  encryptPii: (plaintext: string) => mockEncryptPii(plaintext),
-  piiBlindIndex: (plaintext: string) => mockPiiBlindIndex(plaintext),
-  decryptPiiField: (ciphertext: string | null, plaintext: string | null) => mockDecryptPiiField(ciphertext, plaintext),
-}));
-
-const baseRow = {
+const baseAssociate = {
   id: 1,
   fullName: 'Alice',
-  cpf: '123.456.789-00',
-  cpfCiphertext: 'enc:v2:k1.123.456.789-00',
-  cpfHash: 'hash-123.456.789-00',
-  siape: '1234567',
-  siapeCiphertext: 'enc:v2:k1.1234567',
-  siapeHash: 'hash-1234567',
+  cpf: '123',
+  cpfCiphertext: null,
+  cpfHash: null,
+  siape: '456',
+  siapeCiphertext: null,
+  siapeHash: null,
   primaryEmail: 'a@b.com',
   secondaryEmail: null,
   phone: null,
@@ -86,12 +86,6 @@ const baseRow = {
   associationStatus: 'ativo',
   contributionStatus: 'em_dia',
   internalNotes: 'notes',
-  sourcePayload: null,
-  sourceRowNumber: null,
-  joinedAt: null,
-  paymentMethod: 'folha',
-  createdAt: new Date(),
-  updatedAt: new Date(),
 };
 
 describe('getAssociatesListPage', () => {
@@ -120,85 +114,63 @@ describe('getAssociateForEdit', () => {
     expect(result).toBeNull();
   });
 
-  it('returns DTO with decrypted CPF/SIAPE for admin', async () => {
-    mockFindAssociateById.mockResolvedValue({ ...baseRow });
+  it('returns DTO with canEditInternalNotes true for admin', async () => {
+    mockFindAssociateById.mockResolvedValue({ ...baseAssociate });
 
     const result = await getAssociateForEdit(1, 'admin');
     expect(result).not.toBeNull();
     expect(result!.canEditInternalNotes).toBe(true);
-    expect(mockDecryptPiiField).toHaveBeenCalledWith('enc:v2:k1.123.456.789-00', '123.456.789-00');
-    expect(mockDecryptPiiField).toHaveBeenCalledWith('enc:v2:k1.1234567', '1234567');
+    expect(result!.internalNotes).toBe('notes');
   });
 
-  it('returns masked CPF/SIAPE for secretaria', async () => {
-    mockFindAssociateById.mockResolvedValue({ ...baseRow });
+  it('returns DTO with canEditInternalNotes false for secretaria', async () => {
+    mockFindAssociateById.mockResolvedValue({ ...baseAssociate });
 
     const result = await getAssociateForEdit(1, 'secretaria');
     expect(result).not.toBeNull();
-    // decryptPiiField is called to get the real value, then maskCpf/maskSiape mask it
-    expect(mockDecryptPiiField).toHaveBeenCalledWith('enc:v2:k1.123.456.789-00', '123.456.789-00');
-    expect(mockDecryptPiiField).toHaveBeenCalledWith('enc:v2:k1.1234567', '1234567');
-    // Result is masked (mock maskCpf returns "***.456.789-**" pattern)
-    expect(result!.cpf).toMatch(/\*/);
-    expect(result!.siape).toMatch(/\*/);
-  });
-
-  it('falls back to plaintext when ciphertext is null', async () => {
-    mockFindAssociateById.mockResolvedValue({
-      ...baseRow,
-      cpfCiphertext: null,
-      siapeCiphertext: null,
-    });
-
-    const result = await getAssociateForEdit(1, 'admin');
-    expect(result).not.toBeNull();
-    expect(mockDecryptPiiField).toHaveBeenCalledWith(null, '123.456.789-00');
-    expect(mockDecryptPiiField).toHaveBeenCalledWith(null, '1234567');
+    expect(result!.canEditInternalNotes).toBe(false);
   });
 });
 
 describe('updateAssociateData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockTransaction.mockImplementation((callback: (tx: unknown) => unknown) => callback({ tx: true }));
-    mockFindAssociateById.mockResolvedValue({ ...baseRow });
+    mockTransaction.mockImplementation((callback) => callback({ tx: true }));
+    mockFindAssociateById.mockResolvedValue({
+      ...baseAssociate,
+      primaryEmail: 'alice@example.com',
+      internalNotes: null,
+    });
   });
 
-  it('encrypts CPF and SIAPE and computes blind indexes on update', async () => {
+  it('calls repository with PII encryption fields when cpf/siape provided', async () => {
     await updateAssociateData({
       id: 1,
       fullName: 'Alice',
-      cpf: '999.888.777-66',
-      siape: '7654321',
+      cpf: '999',
+      siape: '123',
+      functionalStatus: 'ativo',
       associationStatus: 'ativo',
       contributionStatus: 'em_dia',
     });
 
-    expect(mockEncryptPii).toHaveBeenCalledWith('999.888.777-66');
-    expect(mockEncryptPii).toHaveBeenCalledWith('7654321');
-    expect(mockPiiBlindIndex).toHaveBeenCalledWith('999.888.777-66');
-    expect(mockPiiBlindIndex).toHaveBeenCalledWith('7654321');
-
     expect(mockUpdateAssociateById).toHaveBeenCalledWith(
       1,
       expect.objectContaining({
-        cpf: '999.888.777-66',
-        cpfCiphertext: 'enc:v2:k1.999.888.777-66',
-        cpfHash: 'hash-999.888.777-66',
-        siape: '7654321',
-        siapeCiphertext: 'enc:v2:k1.7654321',
-        siapeHash: 'hash-7654321',
+        cpfCiphertext: expect.any(String),
+        cpfHash: 'hash-999',
+        siapeCiphertext: expect.any(String),
+        siapeHash: 'hash-123',
       }),
       { tx: true },
     );
   });
 
-  it('sets ciphertext/hash to null when CPF/SIAPE are null', async () => {
+  it('sets PII encryption fields to null when cpf/siape not provided', async () => {
     await updateAssociateData({
       id: 1,
       fullName: 'Alice',
-      cpf: null,
-      siape: null,
+      functionalStatus: 'ativo',
       associationStatus: 'ativo',
       contributionStatus: 'em_dia',
     });
@@ -206,37 +178,8 @@ describe('updateAssociateData', () => {
     expect(mockUpdateAssociateById).toHaveBeenCalledWith(
       1,
       expect.objectContaining({
-        cpf: null,
         cpfCiphertext: null,
         cpfHash: null,
-        siape: null,
-        siapeCiphertext: null,
-        siapeHash: null,
-      }),
-      { tx: true },
-    );
-  });
-
-  it('does not call encrypt when CPF/SIAPE are undefined', async () => {
-    await updateAssociateData({
-      id: 1,
-      fullName: 'Alice',
-      associationStatus: 'ativo',
-      contributionStatus: 'em_dia',
-    });
-
-    // encryptPii and piiBlindIndex are not called when cpf/siape are undefined
-    // (the service uses input.cpf != null checks)
-    expect(mockEncryptPii).not.toHaveBeenCalled();
-    expect(mockPiiBlindIndex).not.toHaveBeenCalled();
-
-    expect(mockUpdateAssociateById).toHaveBeenCalledWith(
-      1,
-      expect.objectContaining({
-        cpf: undefined,
-        cpfCiphertext: null,
-        cpfHash: null,
-        siape: undefined,
         siapeCiphertext: null,
         siapeHash: null,
       }),

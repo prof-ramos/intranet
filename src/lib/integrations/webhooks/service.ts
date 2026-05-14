@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { db } from '@/lib/db';
 import {
   getDomainEventById,
   getLastDeliveryAttemptForSubscription,
@@ -123,6 +124,7 @@ async function deliverEventToSubscription(
   subscription: Awaited<ReturnType<typeof listActiveWebhookSubscriptionsForEvent>>[number],
   body: string,
   attempt: number,
+  executor: Pick<import('@/lib/db').Tx, 'insert' | 'update' | 'select' | 'execute'>,
 ) {
   const timestamp = String(Math.floor(Date.now() / 1000));
   const requestId = randomUUID();
@@ -171,7 +173,7 @@ async function deliverEventToSubscription(
         statusCode,
         responseExcerpt,
         deliveredAt: new Date(),
-      });
+      }, executor);
 
       return 'delivered' as const;
     }
@@ -194,7 +196,7 @@ async function deliverEventToSubscription(
     responseExcerpt,
     nextRetryAt: shouldRetry ? calculateNextRetryAt(attempt) : null,
     failedAt: shouldRetry ? null : new Date(),
-  });
+  }, executor);
 
   return shouldRetry ? ('retry_scheduled' as const) : ('failed' as const);
 }
@@ -208,65 +210,68 @@ export async function dispatchDomainEventById(eventId: number) {
     };
   }
 
-  await updateDomainEventDeliveryStatus(event.id, 'processing');
+  return db.transaction(async (tx) => {
+    await updateDomainEventDeliveryStatus(event.id, 'processing', tx);
 
-  const bodyEnvelope = buildWebhookBody(event);
-  const body = JSON.stringify(bodyEnvelope);
-  const subscriptions = await listActiveWebhookSubscriptionsForEvent(event.eventType);
-  const previousDeliveries = await listWebhookDeliveriesForEvent(event.id);
+    const bodyEnvelope = buildWebhookBody(event);
+    const body = JSON.stringify(bodyEnvelope);
+    const subscriptions = await listActiveWebhookSubscriptionsForEvent(event.eventType, tx);
+    const previousDeliveries = await listWebhookDeliveriesForEvent(event.id, tx);
 
-  if (subscriptions.length === 0) {
-    await updateDomainEventDeliveryStatus(event.id, 'delivered');
+    if (subscriptions.length === 0) {
+      await updateDomainEventDeliveryStatus(event.id, 'delivered', tx);
+      return {
+        dispatched: true as const,
+        eventId: event.id,
+        subscriptions: 0,
+        results: [] as Array<'delivered' | 'retry_scheduled' | 'failed'>,
+      };
+    }
+
+    const results: Array<'delivered' | 'retry_scheduled' | 'failed'> = [];
+
+    for (const subscription of subscriptions) {
+      const previous = getLastDeliveryAttemptForSubscription(previousDeliveries, subscription.id);
+      if (previous?.status === 'delivered') {
+        results.push('delivered');
+        continue;
+      }
+
+      if (
+        previous?.status === 'retry_scheduled' &&
+        previous.nextRetryAt &&
+        previous.nextRetryAt.getTime() > Date.now()
+      ) {
+        results.push('retry_scheduled');
+        continue;
+      }
+
+      if (previous?.status === 'failed' && previous.attempt >= MAX_WEBHOOK_ATTEMPTS) {
+        results.push('failed');
+        continue;
+      }
+
+      const attempt = (previous?.attempt ?? 0) + 1;
+      const result = await deliverEventToSubscription(
+        event.id,
+        event.eventType,
+        subscription,
+        body,
+        attempt,
+        tx,
+      );
+      results.push(result);
+    }
+
+    await updateDomainEventDeliveryStatus(event.id, getOverallEventStatus(results), tx);
+
     return {
-      dispatched: true,
+      dispatched: true as const,
       eventId: event.id,
-      subscriptions: 0,
-      results: [],
+      subscriptions: subscriptions.length,
+      results,
     };
-  }
-
-  const results: Array<'delivered' | 'retry_scheduled' | 'failed'> = [];
-
-  for (const subscription of subscriptions) {
-    const previous = getLastDeliveryAttemptForSubscription(previousDeliveries, subscription.id);
-    if (previous?.status === 'delivered') {
-      results.push('delivered');
-      continue;
-    }
-
-    if (
-      previous?.status === 'retry_scheduled' &&
-      previous.nextRetryAt &&
-      previous.nextRetryAt.getTime() > Date.now()
-    ) {
-      results.push('retry_scheduled');
-      continue;
-    }
-
-    if (previous?.status === 'failed' && previous.attempt >= MAX_WEBHOOK_ATTEMPTS) {
-      results.push('failed');
-      continue;
-    }
-
-    const attempt = (previous?.attempt ?? 0) + 1;
-    const result = await deliverEventToSubscription(
-      event.id,
-      event.eventType,
-      subscription,
-      body,
-      attempt,
-    );
-    results.push(result);
-  }
-
-  await updateDomainEventDeliveryStatus(event.id, getOverallEventStatus(results));
-
-  return {
-    dispatched: true,
-    eventId: event.id,
-    subscriptions: subscriptions.length,
-    results,
-  };
+  });
 }
 
 export async function dispatchPendingDomainEvents(limit = 20) {

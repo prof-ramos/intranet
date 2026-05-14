@@ -3,6 +3,8 @@ import {
   toAssociateProfileDTO,
   toActivityDTO,
   canViewSensitiveFields,
+  maskCpf,
+  maskSiape,
 } from './lgpd';
 import {
   findAssociatesPaginated,
@@ -16,7 +18,6 @@ import { functionalStatus as fsEnum, associationStatus as asEnum, contributionSt
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { formatLongDate, yearsSinceDate } from '@/lib/utils/date';
 import { encryptPii, piiBlindIndex, decryptPiiField } from '@/lib/crypto/pii';
-import { maskCpf, maskSiape } from './lgpd';
 
 type FsEnum = (typeof fsEnum.enumValues)[number];
 type AsEnum = (typeof asEnum.enumValues)[number];

@@ -1,4 +1,6 @@
 import type { AuthRole } from '@/lib/auth/config';
+import type { IntegrationScope } from '@/lib/integrations/keys/service';
+export type { IntegrationScope };
 
 export const INTEGRATION_API_VERSION = 'v1' as const;
 export const INTEGRATION_AUTH_SCHEME = 'api-key-hmac-sha256' as const;
@@ -12,6 +14,7 @@ export const INTEGRATION_HEADER_NAMES = {
 
 export type IntegrationErrorCode =
   | 'forbidden'
+  | 'insufficient_scope'
   | 'integration_auth_disabled'
   | 'integration_auth_invalid'
   | 'integration_auth_missing'
@@ -73,6 +76,8 @@ export interface IntegrationPrincipal {
   kind: 'integration';
   scheme: typeof INTEGRATION_AUTH_SCHEME;
   keyId: string;
+  /** Scopes from the database-backed API key. Absent for env-var-backed keys (full access). */
+  scopes?: IntegrationScope[];
 }
 
 export interface SessionPrincipal {
@@ -91,7 +96,8 @@ export type IntegrationAuthFailureReason =
   | 'invalid_key'
   | 'invalid_signature'
   | 'invalid_timestamp'
-  | 'timestamp_skew';
+  | 'timestamp_skew'
+  | 'insufficient_scope';
 
 export type IntegrationAuthResult =
   | {

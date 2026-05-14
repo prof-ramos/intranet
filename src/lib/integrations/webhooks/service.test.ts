@@ -29,6 +29,19 @@ vi.mock('@/lib/integrations/webhooks/secrets', () => ({
   decryptWebhookSecret: (...args: unknown[]) => mockDecryptWebhookSecret(...args),
 }));
 
+const mockTx = {
+  select: vi.fn(),
+  insert: vi.fn(),
+  update: vi.fn(),
+  execute: vi.fn(),
+};
+
+vi.mock('@/lib/db', () => ({
+  db: {
+    transaction: (callback: (tx: typeof mockTx) => Promise<unknown>) => callback(mockTx),
+  },
+}));
+
 describe('dispatchDomainEventById', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -75,7 +88,7 @@ describe('dispatchDomainEventById', () => {
     });
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockInsertWebhookDelivery).not.toHaveBeenCalled();
-    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'delivered');
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'delivered', mockTx);
   });
 
   it('waits until nextRetryAt before retrying scheduled failures', async () => {
@@ -97,7 +110,7 @@ describe('dispatchDomainEventById', () => {
     });
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockInsertWebhookDelivery).not.toHaveBeenCalled();
-    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'pending');
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'pending', mockTx);
   });
 
   it('does not retry failed deliveries after the maximum attempts', async () => {
@@ -119,7 +132,7 @@ describe('dispatchDomainEventById', () => {
     });
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockInsertWebhookDelivery).not.toHaveBeenCalled();
-    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'failed');
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'failed', mockTx);
   });
 });
 

@@ -139,7 +139,9 @@ export async function initializeMonth(adminId: number, year: number, month: numb
     }));
 
   if (updates.length > 0) {
-    await Promise.all(updates.map((update) => repository.upsertMonthlyPayment(update)));
+    await db.transaction(async (tx) => {
+      await Promise.all(updates.map((update) => repository.upsertMonthlyPayment(update, tx)));
+    });
   }
 
   await logAuditAction({

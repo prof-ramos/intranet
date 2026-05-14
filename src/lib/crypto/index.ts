@@ -7,7 +7,7 @@ import {
   randomBytes,
 } from 'node:crypto';
 
-// ─── V1 Encryption (legacy, used by webhook secrets) ────────────────────────
+// ─── V1 Encryption (legacy, used by webhook secrets) ─────────────────────────
 
 const V1_PREFIX = 'enc:v1:';
 const V2_PREFIX = 'enc:v2:';
