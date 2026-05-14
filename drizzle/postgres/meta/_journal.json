@@ -225,6 +225,13 @@
       "when": 1779446400000,
       "tag": "0035_drop_redundant_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1779532800000,
+      "tag": "0036_encrypt_remaining_pii_columns",
+      "breakpoints": true
     }
   ]
 }

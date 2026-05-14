@@ -1,6 +1,7 @@
 import { bigint, check, index, integer, pgEnum, pgTable, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
-import { associates, paymentMethod } from './associates';
+import { associates } from './associates';
+import { paymentMethod } from './enums';
 import { admins } from './admins';
 
 export const paymentStatus = pgEnum('payment_status', ['pago', 'pendente', 'atrasado', 'isento']);

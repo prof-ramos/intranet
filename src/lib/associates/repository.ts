@@ -84,11 +84,19 @@ export interface UpdateAssociateValues {
   siapeCiphertext?: string | null;
   siapeHash?: string | null;
   primaryEmail?: string | null;
+  primaryEmailCiphertext?: string | null;
+  primaryEmailHash?: string | null;
   secondaryEmail?: string | null;
   phone?: string | null;
+  phoneCiphertext?: string | null;
+  phoneHash?: string | null;
   whatsapp?: string | null;
+  whatsappCiphertext?: string | null;
+  whatsappHash?: string | null;
   birthDate?: string | null;
   address?: string | null;
+  addressCiphertext?: string | null;
+  addressHash?: string | null;
   locationCity?: string | null;
   locationCountry?: string | null;
   assignment?: string | null;
@@ -132,6 +140,18 @@ export async function findAssociateBySiapeHash(
     .select()
     .from(associates)
     .where(eq(associates.siapeHash, siapeHash))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function findAssociateByPrimaryEmailHash(
+  primaryEmailHash: string,
+  executor: Pick<Tx, 'select'> = db,
+) {
+  const [row] = await executor
+    .select()
+    .from(associates)
+    .where(eq(associates.primaryEmailHash, primaryEmailHash))
     .limit(1);
   return row ?? null;
 }
