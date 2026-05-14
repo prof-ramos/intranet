@@ -1,4 +1,4 @@
-import { db, type Tx } from '@/lib/db';
+import { db } from '@/lib/db';
 import {
   legalConsultations,
   legalNotes,
@@ -390,7 +390,7 @@ export async function updateConsultationStatus(
   await db.update(legalConsultations).set(set).where(eq(legalConsultations.id, id));
 }
 
-/** Subset of Tx for write-only operations (insert/update). */
+/** Write-only executor for insert/update operations. */
 export type WriteExecutor = Pick<typeof db, 'insert' | 'update'>;
 
 export async function insertNote(values: {

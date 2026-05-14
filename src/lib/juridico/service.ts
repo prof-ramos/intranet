@@ -1,7 +1,6 @@
 import { db } from '@/lib/db';
 import { legalConsultations } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
-import type { WriteExecutor } from './repository';
 import type { Tx } from '@/lib/db';
 import {
   insertConsultation,

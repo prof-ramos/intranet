@@ -31,7 +31,7 @@ export async function GET(
 
     pdfBytes = await generateOfficialLetterPdf(oficio);
   } catch (error) {
-    console.error('PDF download failed for oficio', officialLetterId);
+    console.error('PDF download failed for oficio', officialLetterId, error);
     return new NextResponse('Erro ao gerar PDF', { status: 500 });
   }
 
