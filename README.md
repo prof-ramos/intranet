@@ -85,7 +85,7 @@ Acesse [http://localhost:3000](http://localhost:3000).
 | `ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY` | — | Chave usada para criptografar/decriptografar `webhook_subscriptions.secret_ciphertext` |
 | `CRON_SECRET` | — | Segredo bearer enviado pelo Vercel Cron para `/api/v1/events/dispatch` |
 
-As rotas versionadas atuais são `/api/v1/health`, `/api/v1/events` e `/api/v1/events/dispatch`. Elas suportam a fundação outbound-only: eventos são gravados em `domain_events`, subscriptions são gerenciadas internamente por admins em `/app/config/integracoes/webhooks`, dispatch manual é feito por `/api/v1/events`, e o dispatch agendado é feito pelo cron bearer-only configurado em `vercel.json`. URLs de destino de webhooks devem ser HTTPS públicas; localhost, hostnames locais/internos e redes privadas/reservadas são rejeitados. Ainda não há endpoint inbound público.
+As rotas versionadas atuais são `/api/v1/health`, `/api/v1/events` e `/api/v1/events/dispatch`. Elas suportam a fundação outbound-only: eventos são gravados em `domain_events`, subscriptions são gerenciadas internamente por admins em `/app/config/integracoes/webhooks`, dispatch manual é feito por `/api/v1/events`, e o dispatch agendado é feito pelo cron bearer-only configurado em `vercel.json`. Como o deploy usa o plano Free/Hobby da Vercel, o cron roda no máximo uma vez por dia (`0 3 * * *`). URLs de destino de webhooks devem ser HTTPS públicas; localhost, hostnames locais/internos e redes privadas/reservadas são rejeitados. Ainda não há endpoint inbound público.
 
 ---
 

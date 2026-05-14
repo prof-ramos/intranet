@@ -327,7 +327,7 @@ Current event types:
 Operational constraints:
 
 - The dispatcher uses a 10s fetch timeout per delivery.
-- Retry scheduling is recorded in `webhook_deliveries`; Vercel Cron calls `/api/v1/events/dispatch` every 5 minutes and skips retries whose `next_retry_at` is still in the future.
+- Retry scheduling is recorded in `webhook_deliveries`; on the Vercel Hobby/Free plan, Vercel Cron calls `/api/v1/events/dispatch` once per day (`0 3 * * *`) and skips retries whose `next_retry_at` is still in the future. Manual/operator dispatch through `/api/v1/events` remains available for urgent batches.
 - `associate.updated` emits only `associateId`, safe changed field names, and an internal app link. It never emits CPF, SIAPE, emails, phone, address, WhatsApp, birth date, or internal notes.
 - Webhook subscription management is available only inside the authenticated admin UI at `/app/config/integracoes/webhooks`; no public CRUD endpoint exists for subscriptions.
 - Webhook target URLs must be public HTTPS endpoints; localhost, local/internal hostnames, and private/link-local/reserved IP ranges are rejected before persistence.

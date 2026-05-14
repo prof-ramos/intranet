@@ -608,6 +608,7 @@ curl -L \
 - A superficie atual foi desenhada para uso por usuarios autenticados na propria intranet
 - Como a base contem dados protegidos pela LGPD, qualquer ampliacao de superficie HTTP deve partir de payload minimo, auditoria e controle estrito de permissao
 - O cron atual processa pendencias por lote; nao ha fila dedicada externa nem concorrencia distribuida
+- No plano Free/Hobby da Vercel, o cron e limitado a execucao diaria; para dispatch mais frequente, use `POST /api/v1/events` manualmente ou migre para Vercel Pro/worker externo
 - A UI administrativa de webhook subscriptions e interna e restrita a `admin`; nao ha CRUD publico de subscriptions
 
 ---
