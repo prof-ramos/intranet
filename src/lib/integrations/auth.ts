@@ -6,7 +6,6 @@ import { canAccessRole } from '@/lib/auth/authorization';
 import { safeCompare } from '@/lib/crypto/safe-compare';
 import { getSession } from '@/lib/auth/session';
 import { getIntegrationConfig, isIntegrationAuthConfigured } from '@/lib/integrations/config';
-import { hashKey } from '@/lib/integrations/keys/service';
 import { findActiveApiKeyByHash, updateApiKeyLastUsed } from '@/lib/integrations/keys/repository';
 import { getRequestId, jsonError } from '@/lib/integrations/http';
 import {

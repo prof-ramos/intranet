@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createApiKey, listApiKeys, revokeApiKey, rotateApiKey, VALID_SCOPES, hashKey } from './service';
+import { createApiKey, revokeApiKey, rotateApiKey, VALID_SCOPES, hashKey } from './service';
 
 const mockInsert = vi.fn();
 const mockSelect = vi.fn();
@@ -54,7 +54,7 @@ describe('integration API key service', () => {
 
   describe('createApiKey', () => {
     it('creates a key with valid scopes', async () => {
-      const chain = createMockExecutor();
+      createMockExecutor();
 
       const result = await createApiKey('Test Key', ['events:read'], 1, {
         insert: mockInsert,
@@ -87,7 +87,7 @@ describe('integration API key service', () => {
 
   describe('revokeApiKey', () => {
     it('revokes an active key', async () => {
-      const chain = createMockExecutor();
+      createMockExecutor();
       mockReturning.mockResolvedValue([{ id: 1 }]);
 
       const result = await revokeApiKey(1, {
@@ -112,7 +112,7 @@ describe('integration API key service', () => {
 
   describe('rotateApiKey', () => {
     it('creates a new key and revokes the old one', async () => {
-      const chain = createMockExecutor();
+      createMockExecutor();
       mockSelect.mockReturnValue({
         from: () => ({
           where: () => ({

@@ -18,13 +18,10 @@ vi.mock('@/lib/integrations/config', () => ({
   isIntegrationAuthConfigured: mockIsIntegrationAuthConfigured,
 }));
 
-vi.mock('@/lib/integrations/keys/service', () => {
-  const { createHash } = require('node:crypto');
-  return {
-    hashKey: (rawKey: string) => createHash('sha256').update(rawKey).digest('hex'),
-    VALID_SCOPES: ['events:read', 'events:write', 'webhooks:manage', 'admin'],
-  };
-});
+vi.mock('@/lib/integrations/keys/service', () => ({
+  hashKey: (rawKey: string) => createHash('sha256').update(rawKey).digest('hex'),
+  VALID_SCOPES: ['events:read', 'events:write', 'webhooks:manage', 'admin'],
+}));
 
 vi.mock('@/lib/integrations/keys/repository', () => ({
   findActiveApiKeyByHash: mockFindActiveApiKeyByHash,
@@ -41,7 +38,7 @@ vi.mock('@/lib/auth/authorization', () => ({
 
 vi.mock('@/lib/integrations/http', () => ({
   getRequestId: vi.fn(() => 'test-request-id'),
-  jsonError: vi.fn((_status: number, code: string, message: string, _opts?: unknown) => ({
+  jsonError: vi.fn((_status: number, code: string, message: string) => ({
     status: _status,
     body: { ok: false, error: { code, message } },
   })),
