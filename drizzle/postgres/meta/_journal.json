@@ -218,6 +218,13 @@
       "when": 1779360000000,
       "tag": "0034_add_webhook_delivery_failure_reason",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1779446400000,
+      "tag": "0035_drop_redundant_indexes",
+      "breakpoints": true
     }
   ]
 }

@@ -75,7 +75,6 @@ export const associates = pgTable(
     uniqueIndex('idx_associates_primary_email').on(table.primaryEmail),
     index('idx_associates_cpf_hash').on(table.cpfHash),
     index('idx_associates_siape_hash').on(table.siapeHash),
-    index('idx_associates_name').on(table.fullName),
     index('idx_associates_association_status').on(table.associationStatus),
     index('idx_associates_contribution_status').on(table.contributionStatus),
     index('idx_associates_status_name').on(table.associationStatus, table.fullName),
