@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { rateLimits } from '@/lib/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 export interface IntegrationRateLimitOptions {
   maxRequests: number;
@@ -14,70 +14,46 @@ export interface IntegrationRateLimitResult {
   retryAfterMs?: number;
 }
 
-interface RateLimitEntry {
+interface AtomicIncrementResult {
   attempts: number;
   expiresAt: number;
 }
 
 export interface IntegrationRateLimitStore {
-  getEntry(key: string, scope: string, now: number, windowMs: number): Promise<RateLimitEntry | null>;
-  incrementAttempts(key: string, scope: string): Promise<void>;
+  atomicIncrement(key: string, scope: string, now: number, windowMs: number): Promise<AtomicIncrementResult>;
   cleanup(now: number): Promise<void>;
 }
 
 const dbStore: IntegrationRateLimitStore = {
-  async getEntry(key, scope, now, windowMs) {
+  async atomicIncrement(key, scope, now, windowMs) {
     const expiresAt = new Date(now + windowMs);
+    const nowDate = new Date(now);
 
-    const rows = await db
-      .select()
-      .from(rateLimits)
-      .where(sql`${rateLimits.key} = ${key} AND ${rateLimits.scope} = ${scope}`)
-      .limit(1);
-
-    if (rows.length === 0) {
-      const inserted = await db
-        .insert(rateLimits)
-        .values({
-          key,
-          scope,
-          attempts: 0,
-          expiresAt,
-        })
-        .returning();
-      return {
-        attempts: inserted[0].attempts,
-        expiresAt: inserted[0].expiresAt.getTime(),
-      };
-    }
-
-    const row = rows[0];
-    if (row.expiresAt.getTime() <= now) {
-      const updated = await db
-        .update(rateLimits)
-        .set({ attempts: 0, expiresAt, updatedAt: new Date() })
-        .where(eq(rateLimits.id, row.id))
-        .returning();
-      return {
-        attempts: updated[0].attempts,
-        expiresAt: updated[0].expiresAt.getTime(),
-      };
-    }
+    const result = await db
+      .insert(rateLimits)
+      .values({
+        key,
+        scope,
+        attempts: 1,
+        expiresAt,
+      })
+      .onConflictDoUpdate({
+        target: [rateLimits.key, rateLimits.scope],
+        set: {
+          attempts: sql`CASE WHEN ${rateLimits.expiresAt} <= ${nowDate} THEN 1 ELSE ${rateLimits.attempts} + 1 END`,
+          expiresAt: sql`CASE WHEN ${rateLimits.expiresAt} <= ${nowDate} THEN ${expiresAt} ELSE ${rateLimits.expiresAt} END`,
+          updatedAt: new Date(),
+        },
+      })
+      .returning({
+        attempts: rateLimits.attempts,
+        expiresAt: rateLimits.expiresAt,
+      });
 
     return {
-      attempts: row.attempts,
-      expiresAt: row.expiresAt.getTime(),
+      attempts: result[0].attempts,
+      expiresAt: result[0].expiresAt.getTime(),
     };
-  },
-
-  async incrementAttempts(key, scope) {
-    await db
-      .update(rateLimits)
-      .set({
-        attempts: sql`${rateLimits.attempts} + 1`,
-        updatedAt: new Date(),
-      })
-      .where(sql`${rateLimits.key} = ${key} AND ${rateLimits.scope} = ${scope}`);
   },
 
   async cleanup(now) {
@@ -93,25 +69,19 @@ export function createIntegrationRateLimiter(
 ) {
   return {
     async consume(key: string, now = Date.now()): Promise<IntegrationRateLimitResult> {
-      const entry = await store.getEntry(key, options.scope, now, options.windowMs);
+      const { attempts, expiresAt } = await store.atomicIncrement(key, options.scope, now, options.windowMs);
 
-      if (!entry) {
-        return { allowed: true, remaining: options.maxRequests };
-      }
-
-      if (entry.attempts >= options.maxRequests) {
+      if (attempts > options.maxRequests) {
         return {
           allowed: false,
           remaining: 0,
-          retryAfterMs: entry.expiresAt - now,
+          retryAfterMs: expiresAt - now,
         };
       }
 
-      await store.incrementAttempts(key, options.scope);
-
       return {
         allowed: true,
-        remaining: Math.max(0, options.maxRequests - (entry.attempts + 1)),
+        remaining: options.maxRequests - attempts,
       };
     },
 

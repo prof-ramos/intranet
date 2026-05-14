@@ -134,6 +134,13 @@
       "when": 1778845200001,
       "tag": "0023_rls_restrict_to_authenticated",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1778928000000,
+      "tag": "0017_rate_limits_unique_key_scope",
+      "breakpoints": true
     }
   ]
 }

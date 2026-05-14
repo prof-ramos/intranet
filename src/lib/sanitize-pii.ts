@@ -23,6 +23,18 @@ export function sanitizePiiValue(value: unknown, visited?: WeakSet<object>): unk
     return value;
   }
 
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+
+  if (typeof value === 'function' || typeof value === 'symbol') {
+    return null;
+  }
+
   if (typeof value !== 'object') {
     return value;
   }

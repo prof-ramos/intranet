@@ -109,45 +109,46 @@ export async function revokeApiKey(
 export async function rotateApiKey(
   id: number,
   createdBy: number,
-  executor: { insert: Tx['insert']; update: Tx['update']; select: Tx['select'] } = db,
 ): Promise<CreateApiKeyResult | null> {
-  const [existing] = await executor
-    .select({ name: integrationApiKeys.name, scopes: integrationApiKeys.scopes, isActive: integrationApiKeys.isActive })
-    .from(integrationApiKeys)
-    .where(eq(integrationApiKeys.id, id))
-    .limit(1);
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ name: integrationApiKeys.name, scopes: integrationApiKeys.scopes, isActive: integrationApiKeys.isActive })
+      .from(integrationApiKeys)
+      .where(eq(integrationApiKeys.id, id))
+      .limit(1);
 
-  if (!existing || !existing.isActive) {
-    return null;
-  }
+    if (!existing || !existing.isActive) {
+      return null;
+    }
 
-  const rawKey = `${KEY_PREFIX}${randomBytes(KEY_BYTES).toString('base64url')}`;
-  const keyHash = hashKey(rawKey);
+    const rawKey = `${KEY_PREFIX}${randomBytes(KEY_BYTES).toString('base64url')}`;
+    const keyHash = hashKey(rawKey);
 
-  const [row] = await executor
-    .insert(integrationApiKeys)
-    .values({
-      name: existing.name,
-      keyHash,
-      scopes: existing.scopes as IntegrationScope[],
-      isActive: true,
-      createdBy,
-    })
-    .returning();
+    const [row] = await tx
+      .insert(integrationApiKeys)
+      .values({
+        name: existing.name,
+        keyHash,
+        scopes: existing.scopes as IntegrationScope[],
+        isActive: true,
+        createdBy,
+      })
+      .returning();
 
-  await executor
-    .update(integrationApiKeys)
-    .set({ isActive: false, updatedAt: new Date() })
-    .where(eq(integrationApiKeys.id, id));
+    await tx
+      .update(integrationApiKeys)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(integrationApiKeys.id, id));
 
-  return {
-    id: row.id,
-    name: row.name,
-    key: rawKey,
-    scopes: row.scopes as IntegrationScope[],
-    isActive: row.isActive,
-    createdAt: row.createdAt,
-  };
+    return {
+      id: row.id,
+      name: row.name,
+      key: rawKey,
+      scopes: row.scopes as IntegrationScope[],
+      isActive: row.isActive,
+      createdAt: row.createdAt,
+    };
+  });
 }
 
 export { VALID_SCOPES, hashKey };

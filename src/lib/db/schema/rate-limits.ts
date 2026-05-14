@@ -1,4 +1,4 @@
-import { bigint, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { bigint, index, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const rateLimits = pgTable(
   'rate_limits',
@@ -12,7 +12,7 @@ export const rateLimits = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    index('idx_rate_limits_key_scope').on(table.key, table.scope),
+    uniqueIndex('idx_rate_limits_key_scope').on(table.key, table.scope),
     index('idx_rate_limits_expires_at').on(table.expiresAt),
   ],
 );

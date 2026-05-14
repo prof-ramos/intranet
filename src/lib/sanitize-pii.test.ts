@@ -138,6 +138,36 @@ describe('sanitizePiiValue', () => {
     });
   });
 
+  it('converts Date to ISO string', () => {
+    const date = new Date('2026-05-20T12:00:00.000Z');
+    expect(sanitizePiiValue(date)).toBe('2026-05-20T12:00:00.000Z');
+  });
+
+  it('converts bigint to string', () => {
+    expect(sanitizePiiValue(BigInt(9007199254740991))).toBe('9007199254740991');
+  });
+
+  it('replaces functions and symbols with null', () => {
+    expect(sanitizePiiValue(() => {})).toBeNull();
+    expect(sanitizePiiValue(Symbol('foo'))).toBeNull();
+  });
+
+  it('converts nested Date and bigint values inside objects', () => {
+    const input = {
+      timestamp: new Date('2026-01-15T08:30:00.000Z'),
+      bigCount: BigInt(123),
+      name: 'test',
+    };
+
+    const result = sanitizePiiValue(input);
+
+    expect(result).toEqual({
+      timestamp: '2026-01-15T08:30:00.000Z',
+      bigCount: '123',
+      name: 'test',
+    });
+  });
+
   it('returns primitives as-is', () => {
     expect(sanitizePiiValue('hello')).toBe('hello');
     expect(sanitizePiiValue(42)).toBe(42);

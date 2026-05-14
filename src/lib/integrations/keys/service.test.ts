@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createApiKey, revokeApiKey, rotateApiKey, VALID_SCOPES, hashKey } from './service';
 
 const mockInsert = vi.fn();
-const mockSelect = vi.fn();
 const mockUpdate = vi.fn();
 const mockReturning = vi.fn();
 const mockFrom = vi.fn();
@@ -10,6 +9,22 @@ const mockWhere = vi.fn();
 const mockOrderBy = vi.fn();
 const mockValues = vi.fn();
 const mockSet = vi.fn();
+
+const transactionMock = vi.hoisted(() => ({
+  tx: {
+    select: vi.fn(),
+    insert: vi.fn(),
+    update: vi.fn(),
+  } as unknown as Record<string, unknown>,
+}));
+
+vi.mock('@/lib/db', () => ({
+  db: {
+    transaction: vi.fn(async (callback: (tx: typeof transactionMock.tx) => Promise<unknown>) =>
+      callback(transactionMock.tx),
+    ),
+  },
+}));
 
 function mockExecutor() {
   const chain = {
@@ -111,18 +126,14 @@ describe('integration API key service', () => {
   });
 
   describe('rotateApiKey', () => {
-    it('creates a new key and revokes the old one', async () => {
-      createMockExecutor();
-      mockSelect.mockReturnValue({
-        from: () => ({
-          where: () => ({
-            limit: () => [
-              { name: 'Old Key', scopes: ['events:read', 'webhooks:manage'], isActive: true },
-            ],
-          }),
-        }),
-      });
-      mockReturning.mockResolvedValueOnce([
+    it('creates a new key and revokes the old one within a transaction', async () => {
+      const limit = vi.fn().mockResolvedValue([
+        { name: 'Old Key', scopes: ['events:read', 'webhooks:manage'], isActive: true },
+      ]);
+      const where = vi.fn(() => ({ limit }));
+      const from = vi.fn(() => ({ where }));
+      const select = vi.fn(() => ({ from }));
+      const returning = vi.fn().mockResolvedValue([
         {
           id: 2,
           name: 'Old Key',
@@ -135,11 +146,11 @@ describe('integration API key service', () => {
         },
       ]);
 
-      const result = await rotateApiKey(1, 1, {
-        insert: mockInsert,
-        update: mockUpdate,
-        select: mockSelect,
-      } as unknown as Parameters<typeof rotateApiKey>[2]);
+      transactionMock.tx.select = select;
+      transactionMock.tx.insert = vi.fn(() => ({ values: vi.fn(() => ({ returning })) }));
+      transactionMock.tx.update = vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) }));
+
+      const result = await rotateApiKey(1, 1);
 
       expect(result).not.toBeNull();
       expect(result!.key).toMatch(/^asof_/);
@@ -148,19 +159,16 @@ describe('integration API key service', () => {
 
     it('returns null for non-existent or inactive key', async () => {
       createMockExecutor();
-      mockSelect.mockReturnValue({
-        from: () => ({
-          where: () => ({
-            limit: () => [],
-          }),
-        }),
-      });
+      const limit = vi.fn().mockResolvedValue([]);
+      const where = vi.fn(() => ({ limit }));
+      const from = vi.fn(() => ({ where }));
+      const select = vi.fn(() => ({ from }));
 
-      const result = await rotateApiKey(999, 1, {
-        insert: mockInsert,
-        update: mockUpdate,
-        select: mockSelect,
-      } as unknown as Parameters<typeof rotateApiKey>[2]);
+      transactionMock.tx.select = select;
+      transactionMock.tx.insert = vi.fn();
+      transactionMock.tx.update = vi.fn();
+
+      const result = await rotateApiKey(999, 1);
 
       expect(result).toBeNull();
     });
