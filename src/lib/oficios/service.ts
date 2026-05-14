@@ -2,6 +2,13 @@ import { db, type Tx } from '@/lib/db';
 import * as repository from './repository';
 import { type NewOfficialLetter } from '@/lib/db/schema/oficios';
 import { logAuditAction } from '@/lib/audit/service';
+import { emitDomainEvent } from '@/lib/integrations/outbox';
+
+const OFFICIAL_LETTER_OPERATIONAL_STATUS = 'gerado' satisfies NewOfficialLetter['status'];
+
+function isOperationalOfficialLetterStatus(status: NewOfficialLetter['status']) {
+  return status === OFFICIAL_LETTER_OPERATIONAL_STATUS;
+}
 
 export async function generateOfficialLetterNumber(year: number, tx: Tx = db) {
   const lastSequence = await repository.getLastSequenceForYear(year, tx);
@@ -42,6 +49,27 @@ export async function saveOfficialLetter(
       metadata: { number: result.number },
     });
 
+    if (isOperationalOfficialLetterStatus(result.status)) {
+      await emitDomainEvent(
+        {
+          type: 'official_letter.created',
+          entityType: 'official_letter',
+          entityId: result.id,
+          actorAdminId: userId,
+          payload: {
+            number: result.number,
+            status: result.status,
+            year: result.year,
+            sequence: result.sequence,
+            links: {
+              app: `/app/secretaria/oficios/${result.id}`,
+            },
+          },
+        },
+        tx,
+      );
+    }
+
     return result;
   });
 }
@@ -56,6 +84,9 @@ export async function updateOfficialLetter(
     if (!old) throw new Error('Ofício não encontrado.');
 
     const result = await repository.updateOfficialLetter(id, { ...data, updatedBy: userId }, tx);
+    if (!result) {
+      throw new Error('Falha ao atualizar ofício.');
+    }
 
     await logAuditAction({
       adminId: userId,
@@ -64,6 +95,27 @@ export async function updateOfficialLetter(
       entityId: id,
       changes: { old, new: result },
     });
+
+    if (!isOperationalOfficialLetterStatus(old.status) && isOperationalOfficialLetterStatus(result.status)) {
+      await emitDomainEvent(
+        {
+          type: 'official_letter.published',
+          entityType: 'official_letter',
+          entityId: result.id,
+          actorAdminId: userId,
+          payload: {
+            number: result.number,
+            status: result.status,
+            year: result.year,
+            sequence: result.sequence,
+            links: {
+              app: `/app/secretaria/oficios/${result.id}`,
+            },
+          },
+        },
+        tx,
+      );
+    }
 
     return result;
   });

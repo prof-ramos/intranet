@@ -11,12 +11,24 @@ const mockFindAssociatesPaginated = vi.fn();
 const mockFindAssociateById = vi.fn();
 const mockFindLinkedActivities = vi.fn();
 const mockUpdateAssociateById = vi.fn();
+const mockEmitDomainEvent = vi.fn();
+const mockTransaction = vi.fn();
+
+vi.mock('@/lib/db', () => ({
+  db: {
+    transaction: (callback: (tx: unknown) => unknown) => mockTransaction(callback),
+  },
+}));
 
 vi.mock('./repository', () => ({
   findAssociatesPaginated: (...args: unknown[]) => mockFindAssociatesPaginated(...args),
   findAssociateById: (...args: unknown[]) => mockFindAssociateById(...args),
   findLinkedActivities: (...args: unknown[]) => mockFindLinkedActivities(...args),
   updateAssociateById: (...args: unknown[]) => mockUpdateAssociateById(...args),
+}));
+
+vi.mock('@/lib/integrations/outbox', () => ({
+  emitDomainEvent: (...args: unknown[]) => mockEmitDomainEvent(...args),
 }));
 
 vi.mock('./lgpd', () => ({
@@ -123,6 +135,29 @@ describe('getAssociateForEdit', () => {
 describe('updateAssociateData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTransaction.mockImplementation((callback) => callback({ tx: true }));
+    mockFindAssociateById.mockResolvedValue({
+      id: 1,
+      fullName: 'Alice',
+      cpf: '123',
+      siape: '456',
+      primaryEmail: 'alice@example.com',
+      secondaryEmail: null,
+      phone: null,
+      whatsapp: null,
+      birthDate: null,
+      address: null,
+      locationCity: null,
+      locationCountry: null,
+      assignment: null,
+      assignmentStartDate: null,
+      classPattern: null,
+      associationCategory: null,
+      functionalStatus: 'ativo',
+      associationStatus: 'ativo',
+      contributionStatus: 'em_dia',
+      internalNotes: null,
+    });
   });
 
   it('calls repository with trimmed values', async () => {
@@ -153,7 +188,50 @@ describe('updateAssociateData', () => {
       functionalStatus: 'ativo',
       associationStatus: 'ativo',
       contributionStatus: 'em_dia',
+    }, { tx: true });
+  });
+
+  it('emits associate.updated with only safe changed field names', async () => {
+    await updateAssociateData({
+      id: 1,
+      fullName: 'Alice Silva',
+      cpf: '999',
+      primaryEmail: 'new@example.com',
+      assignment: 'Embaixada em Paris',
+      associationStatus: 'ativo',
+      contributionStatus: 'em_dia',
+      updatedBy: 7,
     });
+
+    expect(mockEmitDomainEvent).toHaveBeenCalledWith(
+      {
+        type: 'associate.updated',
+        entityType: 'associate',
+        entityId: 1,
+        actorAdminId: 7,
+        payload: {
+          associateId: 1,
+          changedFields: ['fullName', 'assignment'],
+          links: {
+            app: '/app/associados/1',
+          },
+        },
+      },
+      { tx: true },
+    );
+  });
+
+  it('does not emit associate.updated when only sensitive fields changed', async () => {
+    await updateAssociateData({
+      id: 1,
+      fullName: 'Alice',
+      cpf: '999',
+      primaryEmail: 'new@example.com',
+      associationStatus: 'ativo',
+      contributionStatus: 'em_dia',
+    });
+
+    expect(mockEmitDomainEvent).not.toHaveBeenCalled();
   });
 });
 

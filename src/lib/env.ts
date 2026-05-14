@@ -6,6 +6,10 @@ const optionalNonEmptyString = z.preprocess(
   emptyStringToUndefined,
   z.string().min(1).optional(),
 );
+const optionalSecretString = z.preprocess(
+  emptyStringToUndefined,
+  z.string().min(32).optional(),
+);
 const optionalUrl = z.preprocess(emptyStringToUndefined, z.string().url().optional());
 
 export const envSchema = z
@@ -34,6 +38,9 @@ export const envSchema = z
     DEV_USER_MUST_CHANGE_PASSWORD: optionalString.default('false'),
 
     NODE_ENV: optionalString,
+    VERCEL_ENV: optionalString,
+    CRON_SECRET: optionalNonEmptyString,
+    ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY: optionalSecretString,
 
     // ─── Supabase ───────────────────────────────────────────────────────────────
     NEXT_PUBLIC_SUPABASE_URL: optionalUrl,
@@ -69,6 +76,18 @@ export const envSchema = z
     {
       message: 'DEV_USER_ID is required when SKIP_AUTH=true',
       path: ['DEV_USER_ID'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.VERCEL_ENV === 'production') {
+        return !!data.CRON_SECRET;
+      }
+      return true;
+    },
+    {
+      message: 'CRON_SECRET is required for production Vercel cron dispatch.',
+      path: ['CRON_SECRET'],
     },
   );
 

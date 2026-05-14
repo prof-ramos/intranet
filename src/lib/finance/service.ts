@@ -1,6 +1,7 @@
 import * as repository from './repository';
 import { logAuditAction } from '@/lib/audit/service';
 import { db } from '@/lib/db';
+import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { monthlyPayments, type NewMonthlyPayment } from '@/lib/db/schema/finance';
 import { and, eq, sql } from 'drizzle-orm';
 
@@ -90,6 +91,30 @@ export async function updateMonthlyPayment(
         month: payment.month,
       },
     });
+
+    if (oldState && oldState.status !== payment.status) {
+      await emitDomainEvent(
+        {
+          type: 'monthly_payment.updated',
+          entityType: 'monthly_payment',
+          entityId: updatedPayment.id,
+          actorAdminId: adminId,
+          payload: {
+            associateId: payment.associateId,
+            year: payment.year,
+            month: payment.month,
+            previousStatus: oldState.status,
+            status: payment.status,
+            paymentMethod: payment.paymentMethod,
+            paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
+            links: {
+              app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
+            },
+          },
+        },
+        tx,
+      );
+    }
 
     return updatedPayment;
   });

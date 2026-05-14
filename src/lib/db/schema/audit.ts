@@ -11,6 +11,8 @@ export const auditEntityType = pgEnum('audit_entity_type', [
   'finance',
   'monthly_payment',
   'official_letter',
+  'domain_event',
+  'webhook_subscription',
 ]);
 
 export const auditLogs = pgTable(

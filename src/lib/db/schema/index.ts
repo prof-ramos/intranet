@@ -3,6 +3,7 @@ export * from './associates';
 export * from './activities';
 export * from './assignments';
 export * from './audit';
+export * from './integrations';
 export * from './login-attempts';
 export * from './legal-consultations';
 export * from './legal-processes';

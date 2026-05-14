@@ -34,6 +34,7 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 │       ├── dashboard/               # Dashboard aggregation queries
 │       ├── env.ts                   # Zod-validated environment variables
 │       ├── ip.ts                    # Client IP extraction from headers
+│       ├── integrations/            # Versioned integration auth, JSON envelopes, and route helpers
 │       ├── juridico/                # Repository, service, queries, formatters
 │       ├── rate-limit.ts            # IP-based rate limiting (PostgreSQL-backed)
 │       ├── reports/                 # Report queries and CSV serialization
@@ -69,8 +70,10 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
                  |        +--> [requireAuth() — full session revalidation]
                  |        +--> [requireRole() — role-based access control]
                  |        +--> [loginRateLimiter — per-email rate limiting]
+                 |        +--> [Integration auth helpers — API key + HMAC + timestamp]
                  |
                  +--> [src/lib/env.ts — Zod env validation]
+                 +--> [src/lib/integrations/* — versioned HTTP helpers for /api/v1/*]
                  |
                  +--> [Drizzle ORM client]
                  |        |
@@ -135,7 +138,17 @@ Technologies: Drizzle ORM, `postgres`, PostgreSQL.
 
 Deployment: Server-side only. Migrations require a direct/non-pooling PostgreSQL URL via `DATABASE_MIGRATION_URL` or `DATABASE_POSTGRES_URL_NON_POOLING`. For local Homebrew PostgreSQL there is no pooler, so `DATABASE_URL` and `DATABASE_MIGRATION_URL` can point to the same local database.
 
-#### 3.2.3. Supabase SDK Tooling
+#### 3.2.3. Integration HTTP Foundation
+
+Name: Versioned Integration Helpers
+
+Description: Provides the initial `/api/v1/*` groundwork for outbound integrations. The current foundation is intentionally narrow: shared JSON envelopes, request ID propagation, API key + HMAC + timestamp verification helpers, an authenticated health route, an operator-facing `/api/v1/events` route, and a bearer-only cron `/api/v1/events/dispatch` route that dispatches persisted outbound events without exposing broad domain APIs or accepting inbound event ingestion. Event payloads are persisted through an outbox (`domain_events`) with event-type allowlists and are sanitized again before outbound delivery.
+
+Technologies: Next.js Route Handlers, Web `Request`/`Response`, Node `crypto`.
+
+Deployment: Server-side only. Integration auth secrets are read in `src/lib/integrations/config.ts` from `ASOF_INTEGRATIONS_ENABLED`, `ASOF_INTEGRATION_API_KEY`, `ASOF_INTEGRATION_HMAC_SECRET`, and optional `ASOF_INTEGRATION_TIMESTAMP_TOLERANCE_SECONDS`. Outbound webhook subscription secrets are stored as `secret_ciphertext` and encrypted/decrypted through `src/lib/integrations/webhooks/secrets.ts` using `ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY`. Scheduled dispatch uses Vercel Cron in `vercel.json` and validates `Authorization: Bearer $CRON_SECRET`.
+
+#### 3.2.4. Supabase SDK Tooling
 
 Name: Supabase Server/Admin SDK Helpers
 
@@ -168,6 +181,10 @@ Key Schemas/Tables:
 - `legal_opinions` — legal opinion library (schema prepared)
 - `legal_opinion_tags` — opinion classification tags
 - `rate_limits` — IP-based rate limiting
+- `domain_events` — integration outbox for outbound domain events
+- `webhook_subscriptions` — configured outbound webhook destinations, with encrypted `secret_ciphertext`
+- `webhook_deliveries` — delivery attempts, status, response excerpts, and retry scheduling metadata
+- `integration_api_keys` — reserved table for future persisted M2M keys and scopes
 
 ### 4.2. Database Architecture Decisions
 
@@ -209,6 +226,9 @@ Current indexes by table:
 | `audit_logs` | 3 | Composite for entity lookup |
 | `monthly_payments` | 1 | Unique index for (associate, year, month) |
 | `login_attempts` / `rate_limits` | 2 each | B-tree on lookup key and expiry |
+| `domain_events` | 6 | Event type, entity lookup, actor, status, occurred_at |
+| `webhook_subscriptions` | 5 | Name uniqueness, target URL, active flag, creator, subscribed event lookup |
+| `webhook_deliveries` | 5 | Request id uniqueness, event/subscription lookup, status/retry |
 
 > **Nota:** As contagens acima são informativas. A fonte canônica de verdade para o schema e índices são os arquivos em `src/lib/db/schema/` e as migrações em `drizzle/postgres/`. O comando `npm run verify:indexes` (script `scripts/verify-indexes.ts`) valida periodicamente se os índices no banco batem com os padrões documentados.
 
@@ -232,6 +252,10 @@ PostgreSQL enums are preferred over free-text columns for status and type fields
 | `legal_process_status` | `legal_processes.status` | ✅ Correct |
 | `legal_note_entity_type` | `legal_notes.entity_type` (fixed in 0009) | ✅ Correct |
 | `assignment_type` | `assignments.type` | ✅ Correct |
+| `domain_event_type` | `domain_events.event_type` | ✅ Correct |
+| `domain_event_entity_type` | `domain_events.entity_type` | ✅ Correct |
+| `domain_event_delivery_status` | `domain_events.delivery_status` | ✅ Correct |
+| `webhook_delivery_status` | `webhook_deliveries.status` | ✅ Correct |
 
 **Principle:** Any column representing a bounded set of states MUST use a PostgreSQL enum. Text-only columns exist for unbounded data (names, emails, notes).
 
@@ -284,6 +308,30 @@ Service Name: Supabase
 Purpose: Managed PostgreSQL database hosting and programmatic database status checks.
 
 Integration Method: PostgreSQL connection strings for Drizzle runtime/migrations; Supabase JavaScript SDK for server/admin tooling.
+
+Service Name: Integration Consumers (outbound)
+
+Purpose: External automation consumers can receive signed outbound events from the intranet, such as workflow tools or other approved systems.
+
+Integration Method: Domain services emit minimized events into `domain_events`. `/api/v1/events` dispatches pending or specific events for manual/operator use, while `/api/v1/events/dispatch` runs the scheduled bearer-only batch path for Vercel Cron. Each outbound POST is signed with HMAC SHA-256, delivery attempts are recorded in `webhook_deliveries`, manual/scheduled dispatches are audited with `audit_logs.entity_type = 'domain_event'`, and subscription administration is audited with `audit_logs.entity_type = 'webhook_subscription'`. There is no public inbound webhook endpoint yet.
+
+Current event types:
+
+- `legal_consultation.created`
+- `legal_consultation.status_changed`
+- `associate.updated`
+- `monthly_payment.updated`
+- `official_letter.created`
+- `official_letter.published`
+
+Operational constraints:
+
+- The dispatcher uses a 10s fetch timeout per delivery.
+- Retry scheduling is recorded in `webhook_deliveries`; Vercel Cron calls `/api/v1/events/dispatch` every 5 minutes and skips retries whose `next_retry_at` is still in the future.
+- `associate.updated` emits only `associateId`, safe changed field names, and an internal app link. It never emits CPF, SIAPE, emails, phone, address, WhatsApp, birth date, or internal notes.
+- Webhook subscription management is available only inside the authenticated admin UI at `/app/config/integracoes/webhooks`; no public CRUD endpoint exists for subscriptions.
+- Webhook target URLs must be public HTTPS endpoints; localhost, local/internal hostnames, and private/link-local/reserved IP ranges are rejected before persistence.
+- Plaintext legacy webhook secrets are accepted only for transition; no secret value is logged.
 
 Service Name: GitHub
 
@@ -468,6 +516,9 @@ Key Security Tools/Practices:
 
 - `SKIP_AUTH=true` works only outside production.
 - Service-role Supabase keys are server/script-only.
+- Integration signing is HMAC-SHA256 over method, path+query, timestamp, and body hash. The current versioned surface is deliberately limited to `/api/v1/health`, `/api/v1/events`, and `/api/v1/events/dispatch`, with outbound dispatch only.
+- Outbound event payloads must stay within the allowlists in `src/lib/integrations/outbox.ts`. CPF, SIAPE, email, address, phone, tokens, secrets, legal full text, official-letter body text, and internal notes must not be placed in `domain_events.payload`.
+- Manual dispatch through `/api/v1/events` and scheduled dispatch through `/api/v1/events/dispatch` are audited before the response is returned. Webhook subscription CRUD/secret rotation is audited separately as `webhook_subscription`. Webhook delivery attempts are recorded in `webhook_deliveries`; successful delivery audit beyond the dispatch record remains future hardening.
 - Sensitive ASOF data such as CPF, SIAPE, email, address, and functional data must not be logged or exposed in public responses.
 - Database migrations reject pooled PostgreSQL URLs to avoid unsafe migration behavior.
 - Login rate limiting is backed by PostgreSQL (`login_attempts` table) for multi-instance consistency.
@@ -477,7 +528,7 @@ Key Security Tools/Practices:
 - Dummy bcrypt hash is used when user is not found to prevent timing-based user enumeration.
 - `createdBy` is derived from the JWT session, never from client-provided FormData.
 - LIKE queries escape `%` and `_` to prevent wildcard injection.
-- All environment variables are validated via Zod in `src/lib/env.ts` at startup.
+- Core application environment variables are validated via Zod in `src/lib/env.ts` at startup. The isolated integration groundwork currently reads its own `ASOF_INTEGRATION_*` variables in `src/lib/integrations/config.ts`.
 
 ## 8. Development & Testing Environment
 

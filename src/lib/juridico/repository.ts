@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { db, type Tx } from '@/lib/db';
 import {
   legalConsultations,
   legalNotes,
@@ -170,11 +170,16 @@ export interface ConsultationDetail {
   createdBy: { id: number; name: string };
 }
 
-export async function getConsultationById(id: number): Promise<ConsultationDetail | null> {
+export type ReadExecutor = Pick<typeof db, 'select'>;
+
+export async function getConsultationById(
+  id: number,
+  executor: ReadExecutor = db,
+): Promise<ConsultationDetail | null> {
   const answeredByAdmin = alias(admins, 'answered_by_admin');
   const createdByAdmin = alias(admins, 'created_by_admin');
 
-  const [row] = await db
+  const [row] = await executor
     .select({
       id: legalConsultations.id,
       internalNumber: legalConsultations.internalNumber,
@@ -378,6 +383,7 @@ export async function updateConsultationStatus(
   id: number,
   status: (typeof legalConsultationStatus.enumValues)[number],
   lastInteractionAt?: Date,
+  executor: Pick<Tx, 'update'> = db,
 ) {
   const set: Record<string, unknown> = {
     status,
@@ -387,7 +393,7 @@ export async function updateConsultationStatus(
     set.lastInteractionAt = lastInteractionAt;
   }
 
-  await db.update(legalConsultations).set(set).where(eq(legalConsultations.id, id));
+  await executor.update(legalConsultations).set(set).where(eq(legalConsultations.id, id));
 }
 
 /** Write-only executor for insert/update operations. */
