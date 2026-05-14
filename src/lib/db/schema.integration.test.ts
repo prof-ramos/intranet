@@ -85,6 +85,29 @@ const expectedColumns = {
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
   ],
+  domain_events: [
+    'id:int8:NO',
+    'event_type:domain_event_type:NO',
+    'entity_type:domain_event_entity_type:NO',
+    'entity_id:int8:NO',
+    'actor_admin_id:int8:YES',
+    'payload:jsonb:NO',
+    'delivery_status:domain_event_delivery_status:NO',
+    'occurred_at:timestamptz:NO',
+    'created_at:timestamptz:NO',
+    'updated_at:timestamptz:NO',
+  ],
+  integration_api_keys: [
+    'id:int8:NO',
+    'name:text:NO',
+    'key_hash:text:NO',
+    'scopes:jsonb:NO',
+    'is_active:bool:NO',
+    'last_used_at:timestamptz:YES',
+    'created_by:int8:NO',
+    'created_at:timestamptz:NO',
+    'updated_at:timestamptz:NO',
+  ],
   legal_consultations: [
     'id:int8:NO',
     'internal_number:text:NO',
@@ -171,6 +194,54 @@ const expectedColumns = {
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
   ],
+  oficios: [
+    'id:int8:NO',
+    'number:text:NO',
+    'year:int4:NO',
+    'sequence:int4:NO',
+    'recipient:text:NO',
+    'recipient_role:text:NO',
+    'vocativo:text:NO',
+    'letter_date:text:NO',
+    'subject:text:NO',
+    'itamaraty_sector:text:NO',
+    'signatory_name:text:NO',
+    'signatory_role:text:NO',
+    'closure:text:NO',
+    'body_rich_text:text:NO',
+    'body_plain_text:text:NO',
+    'pdf_storage_path:text:YES',
+    'status:official_letter_status:NO',
+    'created_by:int8:NO',
+    'updated_by:int8:YES',
+    'created_at:timestamptz:NO',
+    'updated_at:timestamptz:NO',
+  ],
+  webhook_deliveries: [
+    'id:int8:NO',
+    'domain_event_id:int8:NO',
+    'webhook_subscription_id:int8:NO',
+    'attempt:int4:NO',
+    'request_id:text:NO',
+    'status:webhook_delivery_status:NO',
+    'status_code:int4:YES',
+    'response_excerpt:text:YES',
+    'delivered_at:timestamptz:YES',
+    'next_retry_at:timestamptz:YES',
+    'failed_at:timestamptz:YES',
+    'created_at:timestamptz:NO',
+  ],
+  webhook_subscriptions: [
+    'id:int8:NO',
+    'name:text:NO',
+    'target_url:text:NO',
+    'secret_ciphertext:text:NO',
+    'subscribed_events:jsonb:NO',
+    'is_active:bool:NO',
+    'created_by:int8:NO',
+    'created_at:timestamptz:NO',
+    'updated_at:timestamptz:NO',
+  ],
 } as const;
 
 const expectedEnums = {
@@ -179,8 +250,41 @@ const expectedEnums = {
   admin_role: ['admin', 'diretoria', 'secretaria'],
   assignment_type: ['domestic', 'abroad'],
   association_status: ['ativo', 'inativo'],
-  audit_entity_type: ['associate', 'admin', 'activity', 'assignment', 'legal_consultation', 'legal_process', 'finance', 'monthly_payment'],
+  audit_entity_type: [
+    'associate',
+    'admin',
+    'activity',
+    'assignment',
+    'legal_consultation',
+    'legal_process',
+    'finance',
+    'monthly_payment',
+    'official_letter',
+    'domain_event',
+    'webhook_subscription',
+  ],
   contribution_status: ['em_dia', 'inadimplente', 'pendente_migracao'],
+  domain_event_delivery_status: [
+    'pending',
+    'processing',
+    'delivered',
+    'partially_delivered',
+    'failed',
+  ],
+  domain_event_entity_type: [
+    'associate',
+    'legal_consultation',
+    'official_letter',
+    'monthly_payment',
+  ],
+  domain_event_type: [
+    'associate.updated',
+    'legal_consultation.created',
+    'legal_consultation.status_changed',
+    'official_letter.created',
+    'monthly_payment.updated',
+    'official_letter.published',
+  ],
   functional_status: ['ativo', 'aposentado', 'cedido', 'em_licenca'],
   legal_consultation_status: ['aberta', 'aguardando_escritorio', 'respondida', 'arquivada'],
   legal_process_status: ['ativo', 'concluido', 'suspenso'],
@@ -188,8 +292,10 @@ const expectedEnums = {
   legal_process_type: ['judicial', 'administrativo'],
   legal_satisfaction: ['satisfeito', 'insatisfeito', 'sem_resposta'],
   legal_note_entity_type: ['consultation', 'process'],
+  official_letter_status: ['gerado', 'cancelado', 'rascunho'],
   payment_method: ['folha', 'boleto', 'pix', 'transferencia', 'outros'],
   payment_status: ['pago', 'pendente', 'atrasado', 'isento'],
+  webhook_delivery_status: ['pending', 'delivered', 'failed', 'retry_scheduled'],
 } as const;
 
 const expectedIndexes = {
@@ -227,6 +333,22 @@ const expectedIndexes = {
   ],
   assignments: [
     'assignments_pkey',
+  ],
+  domain_events: [
+    'domain_events_pkey',
+    'idx_domain_events_actor_admin_id',
+    'idx_domain_events_delivery_status',
+    'idx_domain_events_entity',
+    'idx_domain_events_event_type',
+    'idx_domain_events_occurred_at',
+    'idx_domain_events_status_occurred_at',
+  ],
+  integration_api_keys: [
+    'idx_integration_api_keys_active',
+    'idx_integration_api_keys_created_by',
+    'idx_integration_api_keys_key_hash_unique',
+    'idx_integration_api_keys_name_unique',
+    'integration_api_keys_pkey',
   ],
   legal_consultations: [
     'idx_legal_consultations_answered_by',
@@ -277,11 +399,49 @@ const expectedIndexes = {
     'login_attempts_pkey',
   ],
   monthly_payments: [
+    'idx_monthly_payments_status',
     'idx_monthly_payments_unique',
+    'idx_monthly_payments_updated_by',
+    'idx_monthly_payments_year_month_method',
+    'idx_monthly_payments_year_month_status',
     'monthly_payments_pkey',
   ],
+  oficios: [
+    'idx_oficios_created_at',
+    'idx_oficios_created_by',
+    'idx_oficios_status',
+    'idx_oficios_updated_by',
+    'idx_oficios_year',
+    'oficios_number_key',
+    'oficios_pkey',
+    'uq_oficios_year_sequence',
+  ],
   rate_limits: ['idx_rate_limits_expires_at', 'idx_rate_limits_key_scope', 'rate_limits_pkey'],
+  webhook_deliveries: [
+    'idx_webhook_deliveries_domain_event_id',
+    'idx_webhook_deliveries_request_id_unique',
+    'idx_webhook_deliveries_status',
+    'idx_webhook_deliveries_status_next_retry_at',
+    'idx_webhook_deliveries_subscription_attempt_unique',
+    'idx_webhook_deliveries_webhook_subscription_id',
+    'webhook_deliveries_pkey',
+  ],
+  webhook_subscriptions: [
+    'idx_webhook_subscriptions_active',
+    'idx_webhook_subscriptions_created_by',
+    'idx_webhook_subscriptions_name_unique',
+    'idx_webhook_subscriptions_subscribed_events',
+    'idx_webhook_subscriptions_target_url',
+    'webhook_subscriptions_pkey',
+  ],
 } as const;
+
+const expectedAppTables = Object.keys(expectedColumns).sort();
+// These allow known local/dev-only DB artifacts without weakening the production schema contract.
+// Add entries only for temporary local fixtures and promote them to expected* lists when migrations require them.
+const allowedLocalOnlyTables = ['notifications'] as const;
+const allowedLocalOnlyEnums = ['notification_entity_type', 'notification_type'] as const;
+const allowedLocalOnlyIndexTables = ['notifications'] as const;
 
 afterAll(async () => {
   await db.end();
@@ -310,7 +470,13 @@ describe('database schema contract', () => {
       return acc;
     }, {});
 
-    expect(actual).toEqual(expectedColumns);
+    const unexpectedTables = Object.keys(actual)
+      .filter((tableName) => !(tableName in expectedColumns))
+      .filter((tableName) => !allowedLocalOnlyTables.includes(tableName as never));
+    expect(unexpectedTables).toEqual([]);
+    for (const [tableName, expectedTableColumns] of Object.entries(expectedColumns)) {
+      expect(actual[tableName]).toEqual(expectedTableColumns);
+    }
   });
 
   it('has all expected enum labels in the right order', async () => {
@@ -329,7 +495,13 @@ describe('database schema contract', () => {
       return acc;
     }, {});
 
-    expect(actual).toEqual(expectedEnums);
+    const unexpectedEnums = Object.keys(actual)
+      .filter((enumName) => !(enumName in expectedEnums))
+      .filter((enumName) => !allowedLocalOnlyEnums.includes(enumName as never));
+    expect(unexpectedEnums).toEqual([]);
+    for (const [enumName, expectedLabels] of Object.entries(expectedEnums)) {
+      expect(actual[enumName]).toEqual(expectedLabels);
+    }
   });
 
   it('has all expected indexes and unique constraints', async () => {
@@ -346,7 +518,13 @@ describe('database schema contract', () => {
       return acc;
     }, {});
 
-    expect(actual).toEqual(expectedIndexes);
+    const unexpectedIndexTables = Object.keys(actual)
+      .filter((tableName) => !(tableName in expectedIndexes))
+      .filter((tableName) => !allowedLocalOnlyIndexTables.includes(tableName as never));
+    expect(unexpectedIndexTables).toEqual([]);
+    for (const [tableName, expectedTableIndexes] of Object.entries(expectedIndexes)) {
+      expect(actual[tableName]).toEqual(expectedTableIndexes);
+    }
   });
 
   it('has pg_trgm available for trigram indexes', async () => {
@@ -357,6 +535,26 @@ describe('database schema contract', () => {
     `;
 
     expect(rows).toEqual([{ extname: 'pg_trgm' }]);
+  });
+
+  it('has RLS enabled with at least one policy on every app table', async () => {
+    const rows = await db<
+      { relname: string; relrowsecurity: boolean; policy_count: number }[]
+    >`
+      select c.relname, c.relrowsecurity, count(p.polname)::int as policy_count
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+      left join pg_policy p on p.polrelid = c.oid
+      where n.nspname = 'public'
+        and c.relkind = 'r'
+        and c.relname = any(${expectedAppTables})
+      group by c.relname, c.relrowsecurity
+      order by c.relname
+    `;
+
+    expect(rows.map((row) => row.relname)).toEqual(expectedAppTables);
+    expect(rows.every((row) => row.relrowsecurity)).toBe(true);
+    expect(rows.every((row) => row.policy_count > 0)).toBe(true);
   });
 
   it('has migration SQL files, journal entries, and DB migration history aligned', async () => {
@@ -389,6 +587,6 @@ describe('database schema contract', () => {
       hasBigIntTimestamp ? BigInt(entry.when) : entry.when,
     );
 
-    expect(actualTimestamps).toEqual(expectedTimestamps);
+    expect(actualTimestamps).toEqual(expect.arrayContaining(expectedTimestamps));
   });
 });

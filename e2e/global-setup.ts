@@ -2,6 +2,9 @@ import { execSync, spawn } from 'child_process';
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 
+const ENV_FILE = path.resolve(process.cwd(), '.env.development.local');
+const ENV_FILE_FLAG = existsSync(ENV_FILE) ? `--env-file="${ENV_FILE}" ` : '';
+
 const localDbUser = process.env.USER;
 if (!process.env.TEST_DATABASE_URL && !localDbUser) {
   throw new Error('TEST_DATABASE_URL is required when USER is not available.');
@@ -64,10 +67,16 @@ export default async function globalSetup() {
     stdio: 'inherit',
   });
 
-  // Seed E2E data
-  execSync(`TEST_DATABASE_URL="${TEST_DATABASE_URL}" npx tsx scripts/seed-e2e.ts`, {
-    stdio: 'inherit',
-  });
+  // Seed E2E data. Load .env.development.local so the seed script can access
+  // Supabase service-role keys when creating auth users.
+  const tsxCli = path.resolve(process.cwd(), 'node_modules/tsx/dist/cli.mjs');
+  execSync(
+    `TEST_DATABASE_URL="${TEST_DATABASE_URL}" node ${ENV_FILE_FLAG}"${tsxCli}" scripts/seed-e2e.ts`,
+    {
+      cwd: path.resolve(process.cwd()),
+      stdio: 'inherit',
+    },
+  );
 
   // Start dev server. Next.js 16 prevents two dev servers from sharing the same
   // distDir; NEXT_E2E makes next.config.ts use .next-e2e for this process.

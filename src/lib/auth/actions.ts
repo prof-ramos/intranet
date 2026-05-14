@@ -1,9 +1,15 @@
 'use server';
 
-import { destroySession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
+import { destroySession } from '@/lib/auth/session';
 
 export async function logout() {
-  await destroySession();
+  try {
+    await destroySession();
+  } catch {
+    console.error('[auth] failed to destroy session during logout');
+    throw new Error('Falha ao encerrar sessão.');
+  }
+
   redirect('/login');
 }

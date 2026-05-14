@@ -1,11 +1,12 @@
 import { db } from '@/lib/db';
-import { monthlyPayments, type NewMonthlyPayment } from '@/lib/db/schema/finance';
+import { monthlyPayments, paymentStatus, type NewMonthlyPayment } from '@/lib/db/schema/finance';
 import { associates } from '@/lib/db/schema/associates';
 import { and, eq, ilike, sql } from 'drizzle-orm';
+import { escapeLikePattern } from '@/lib/db/like-pattern';
 
 export interface MonthlyPaymentsFilters {
   q?: string;
-  status?: 'pago' | 'pendente' | 'atrasado' | 'isento';
+  status?: typeof paymentStatus.enumValues[number];
   method?: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros';
   location?: 'brasil' | 'exterior';
 }
@@ -58,12 +59,7 @@ export async function upsertMonthlyPayment(payment: NewMonthlyPayment) {
 }
 
 function buildNamePattern(query: string): string {
-  const escaped = query
-    .replace(/\\/g, '\\\\')
-    .replace(/_/g, '\\_')
-    .replace(/%/g, '\\%');
-
-  return `%${escaped}%`;
+  return `%${escapeLikePattern(query)}%`;
 }
 
 export async function getAssociatesWithPayments(

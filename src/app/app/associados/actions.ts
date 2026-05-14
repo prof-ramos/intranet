@@ -8,7 +8,7 @@ import { updateAssociateSchema } from '@/lib/validation/schemas';
 import { updateAssociateData } from '@/lib/associates/service';
 
 export async function updateAssociate(formData: FormData) {
-  await requireRole(['admin', 'diretoria']);
+  const actor = await requireRole(['admin', 'diretoria']);
 
   const raw = formDataToRecord(formData);
   const parsed = updateAssociateSchema.safeParse(raw);
@@ -38,6 +38,7 @@ export async function updateAssociate(formData: FormData) {
     associationStatus: data.associationStatus ?? null,
     contributionStatus: data.contributionStatus ?? null,
     internalNotes: data.internalNotes ?? null,
+    updatedBy: actor.userId,
   });
 
   revalidatePath('/app/associados');

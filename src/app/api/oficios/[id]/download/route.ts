@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRole } from '@/lib/auth/require-auth';
+import { requireRole } from '@/lib/auth/authorization';
 import { findOfficialLetterById } from '@/lib/oficios/repository';
 import { generateOfficialLetterPdf } from '@/lib/oficios/pdf';
 import { logAuditAction } from '@/lib/audit/service';
@@ -31,7 +31,7 @@ export async function GET(
 
     pdfBytes = await generateOfficialLetterPdf(oficio);
   } catch (error) {
-    console.error('PDF download failed for oficio', officialLetterId);
+    console.error('PDF download failed for oficio', officialLetterId, error);
     return new NextResponse('Erro ao gerar PDF', { status: 500 });
   }
 

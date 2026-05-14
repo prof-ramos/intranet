@@ -1,4 +1,5 @@
 import { associateSearchParamsSchema } from '@/lib/validation/schemas';
+import { escapeLikePattern } from '@/lib/db/like-pattern';
 
 export interface AssociatesSearchParams {
   q: string;
@@ -20,10 +21,5 @@ export function parseAssociatesSearchParams(params: {
 }
 
 export function buildAssociateNameSearchPattern(query: string): string {
-  const escaped = query
-    .replace(/\\/g, '\\\\')
-    .replace(/_/g, '\\_')
-    .replace(/%/g, '\\%');
-
-  return `%${escaped}%`;
+  return `%${escapeLikePattern(query)}%`;
 }

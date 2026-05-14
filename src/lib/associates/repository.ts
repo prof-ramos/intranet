@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { db, type Tx } from '@/lib/db';
 import { associates, activities, functionalStatus, associationStatus, contributionStatus } from '@/lib/db/schema';
 import { eq, and, count, asc, sql } from 'drizzle-orm';
 import { buildAssociateNameSearchPattern } from './search-params';
@@ -49,8 +49,8 @@ export async function findAssociatesPaginated(
   return { rows, total };
 }
 
-export async function findAssociateById(id: number) {
-  const [row] = await db.select().from(associates).where(eq(associates.id, id)).limit(1);
+export async function findAssociateById(id: number, executor: Pick<Tx, 'select'> = db) {
+  const [row] = await executor.select().from(associates).where(eq(associates.id, id)).limit(1);
   return row ?? null;
 }
 
@@ -97,6 +97,13 @@ export interface UpdateAssociateValues {
   internalNotes?: string | null;
 }
 
-export async function updateAssociateById(id: number, values: UpdateAssociateValues) {
-  await db.update(associates).set({ ...values, updatedAt: new Date() }).where(eq(associates.id, id));
+export async function updateAssociateById(
+  id: number,
+  values: UpdateAssociateValues,
+  executor: Pick<Tx, 'update'> = db,
+) {
+  await executor
+    .update(associates)
+    .set({ ...values, updatedAt: new Date() })
+    .where(eq(associates.id, id));
 }

@@ -7,6 +7,7 @@ import {
   createConsultationSchema,
   updateConsultationStatusSchema,
   addNoteSchema,
+  webhookSubscriptionFormSchema,
 } from './schemas';
 
 describe('loginSchema', () => {
@@ -412,5 +413,34 @@ describe('addNoteSchema', () => {
       const issue = result.error.issues.find((i) => i.path[0] === 'content');
       expect(issue?.message).toBe('Conteúdo da nota é obrigatório.');
     }
+  });
+});
+
+describe('webhookSubscriptionFormSchema', () => {
+  test('aceita URL HTTPS pública', () => {
+    const result = webhookSubscriptionFormSchema.safeParse({
+      name: 'Automação externa',
+      targetUrl: 'https://hooks.example.com/asof',
+      subscribedEvents: ['associate.updated'],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  test.each([
+    'http://hooks.example.com/asof',
+    'https://localhost/webhook',
+    'https://127.0.0.1/webhook',
+    'https://10.0.0.1/webhook',
+    'https://192.168.0.10/webhook',
+    'https://169.254.169.254/latest/meta-data',
+  ])('rejeita URL insegura ou privada: %s', (targetUrl) => {
+    const result = webhookSubscriptionFormSchema.safeParse({
+      name: 'Automação externa',
+      targetUrl,
+      subscribedEvents: ['associate.updated'],
+    });
+
+    expect(result.success).toBe(false);
   });
 });

@@ -74,6 +74,19 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 > `SKIP_AUTH=true` é **ignorado em `NODE_ENV=production`** — o proxy rejeita a flag mesmo que esteja definida.
 
+### Integrações e webhooks outbound
+
+| Variável | Padrão | Descrição |
+| --- | --- | --- |
+| `ASOF_INTEGRATIONS_ENABLED` | `false` | Habilita autenticação M2M para `/api/v1/*` |
+| `ASOF_INTEGRATION_API_KEY` | — | Chave compartilhada enviada em `x-asof-key` |
+| `ASOF_INTEGRATION_HMAC_SECRET` | — | Segredo usado para validar `x-asof-signature` |
+| `ASOF_INTEGRATION_TIMESTAMP_TOLERANCE_SECONDS` | `300` | Janela máxima de diferença para `x-asof-timestamp` |
+| `ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY` | — | Chave usada para criptografar/decriptografar `webhook_subscriptions.secret_ciphertext` |
+| `CRON_SECRET` | — | Segredo bearer enviado pelo Vercel Cron para `/api/v1/events/dispatch` |
+
+As rotas versionadas atuais são `/api/v1/health`, `/api/v1/events` e `/api/v1/events/dispatch`. Elas suportam a fundação outbound-only: eventos são gravados em `domain_events`, subscriptions são gerenciadas internamente por admins em `/app/config/integracoes/webhooks`, dispatch manual é feito por `/api/v1/events`, e o dispatch agendado é feito pelo cron bearer-only configurado em `vercel.json`. Como o deploy usa o plano Free/Hobby da Vercel, o cron roda no máximo uma vez por dia (`0 3 * * *`). URLs de destino de webhooks devem ser HTTPS públicas; localhost, hostnames locais/internos e redes privadas/reservadas são rejeitados. Ainda não há endpoint inbound público.
+
 ---
 
 ## Banco de dados
@@ -183,6 +196,7 @@ src/
   lib/
     auth/         # session JWT, requireAuth, config
     db/           # cliente Drizzle/PostgreSQL + schema
+    integrations/ # auth M2M, envelopes JSON, outbox e webhooks outbound
     supabase/     # helpers Supabase SDK server/admin
 
 proxy.ts          # proxy de autenticação (Next.js 16 — substitui middleware.ts)

@@ -11,7 +11,9 @@ import {
   updateAssociateById,
   type UpdateAssociateValues,
 } from './repository';
+import { db } from '@/lib/db';
 import { functionalStatus as fsEnum, associationStatus as asEnum, contributionStatus as csEnum } from '@/lib/db/schema';
+import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { formatLongDate, yearsSinceDate } from '@/lib/utils/date';
 
 type FsEnum = (typeof fsEnum.enumValues)[number];
@@ -150,6 +152,35 @@ export interface UpdateAssociateInput {
   associationStatus?: string | null;
   contributionStatus?: string | null;
   internalNotes?: string | null;
+  updatedBy?: number | null;
+}
+
+const WEBHOOK_SAFE_ASSOCIATE_FIELDS: Array<keyof UpdateAssociateValues> = [
+  'fullName',
+  'locationCity',
+  'locationCountry',
+  'assignment',
+  'assignmentStartDate',
+  'classPattern',
+  'associationCategory',
+  'functionalStatus',
+  'associationStatus',
+  'contributionStatus',
+];
+
+function normalizeComparableValue(value: unknown) {
+  return value instanceof Date ? value.toISOString() : (value ?? null);
+}
+
+function getChangedWebhookSafeFields(
+  current: NonNullable<Awaited<ReturnType<typeof findAssociateById>>>,
+  values: UpdateAssociateValues,
+) {
+  return WEBHOOK_SAFE_ASSOCIATE_FIELDS.filter(
+    (field) =>
+      Object.prototype.hasOwnProperty.call(values, field) &&
+      normalizeComparableValue(current[field]) !== normalizeComparableValue(values[field]),
+  );
 }
 
 export async function updateAssociateData(input: UpdateAssociateInput) {
@@ -191,7 +222,37 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
   }
   if (input.internalNotes !== undefined) values.internalNotes = input.internalNotes;
 
-  await updateAssociateById(input.id, values);
+  await db.transaction(async (tx) => {
+    const current = await findAssociateById(input.id, tx);
+    if (!current) {
+      throw new Error('Associado não encontrado.');
+    }
+
+    const changedFields = getChangedWebhookSafeFields(current, values);
+
+    await updateAssociateById(input.id, values, tx);
+
+    if (changedFields.length === 0) {
+      return;
+    }
+
+    await emitDomainEvent(
+      {
+        type: 'associate.updated',
+        entityType: 'associate',
+        entityId: input.id,
+        actorAdminId: input.updatedBy ?? null,
+        payload: {
+          associateId: input.id,
+          changedFields,
+          links: {
+            app: `/app/associados/${input.id}`,
+          },
+        },
+      },
+      tx,
+    );
+  });
 }
 
 export async function getAssociateProfile(

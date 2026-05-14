@@ -1,26 +1,33 @@
 import { db } from '@/lib/db';
+import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { legalConsultations } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
-import type { DbExecutor, Tx } from './repository';
+import type { Tx } from '@/lib/db';
 import {
   insertConsultation,
   insertNote,
   touchConsultationInteraction,
   updateConsultationStatus,
+  getConsultationById,
 } from './repository';
 import { isLegalConsultationStatus, type LegalConsultationStatus } from '@/lib/juridico/status';
 
 const MAX_RETRIES = 3;
+const WEBHOOKABLE_STATUS_TRANSITIONS = new Set<LegalConsultationStatus>([
+  'aguardando_escritorio',
+  'respondida',
+  'arquivada',
+]);
 
 /**
  * Gera um número interno sequencial.
  * Se executado dentro de uma transação, recebe o executor via parâmetro.
  * Caso contrário, cria sua própria transação com retry em caso de conflito.
  */
-export async function generateInternalNumber(executor?: typeof db): Promise<string> {
+export async function generateInternalNumber(executor?: Tx): Promise<string> {
   const year = new Date().getFullYear();
 
-  async function nextNumber(tx: typeof db): Promise<string> {
+  async function nextNumber(tx: Tx): Promise<string> {
     const likePattern = `JUR-${year}-%`;
     const regexPattern = `JUR-${year}-([0-9]+)`;
     const [result] = await tx
@@ -83,11 +90,11 @@ export async function createConsultationService(input: CreateConsultationInput) 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       return await db.transaction(async (tx) => {
-        const internalNumber = await generateInternalNumber(tx as unknown as Tx);
+        const internalNumber = await generateInternalNumber(tx);
         const slaDueDate = new Date();
         slaDueDate.setDate(slaDueDate.getDate() + input.slaDays);
 
-        return insertConsultation(
+        const inserted = await insertConsultation(
           {
             internalNumber,
             title: input.title.trim(),
@@ -100,6 +107,28 @@ export async function createConsultationService(input: CreateConsultationInput) 
           },
           tx as unknown as Tx,
         );
+
+        await emitDomainEvent(
+          {
+            type: 'legal_consultation.created',
+            entityType: 'legal_consultation',
+            entityId: inserted.id,
+            actorAdminId: input.createdBy,
+            payload: {
+              internalNumber,
+              status: 'aberta',
+              associateId: input.associateId,
+              slaDueDate: slaDueDate.toISOString(),
+              title: input.title.trim(),
+              links: {
+                app: `/app/juridico/consultas/${inserted.id}`,
+              },
+            },
+          },
+          tx as unknown as Tx,
+        );
+
+        return inserted;
       });
     } catch (error) {
       const isUniqueViolation =
@@ -127,7 +156,41 @@ export async function updateConsultationStatusService(id: number, status: string
   const validStatus: LegalConsultationStatus = status;
   const lastInteractionAt = validStatus === 'respondida' ? new Date() : undefined;
 
-  await updateConsultationStatus(id, validStatus, lastInteractionAt);
+  await db.transaction(async (tx) => {
+    const current = await getConsultationById(id, tx);
+    if (!current) {
+      throw new Error('Consulta inválida.');
+    }
+
+    if (current.status === validStatus) {
+      return;
+    }
+
+    await updateConsultationStatus(id, validStatus, lastInteractionAt, tx);
+
+    if (!WEBHOOKABLE_STATUS_TRANSITIONS.has(validStatus)) {
+      return;
+    }
+
+    await emitDomainEvent(
+      {
+        type: 'legal_consultation.status_changed',
+        entityType: 'legal_consultation',
+        entityId: id,
+        actorAdminId: current.createdBy.id,
+        payload: {
+          internalNumber: current.internalNumber,
+          title: current.title,
+          previousStatus: current.status,
+          status: validStatus,
+          links: {
+            app: `/app/juridico/consultas/${id}`,
+          },
+        },
+      },
+      tx,
+    );
+  });
 }
 
 export type LegalNoteEntityType = 'consultation' | 'process';

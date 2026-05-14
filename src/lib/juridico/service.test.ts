@@ -4,9 +4,17 @@ import {
   createConsultationService,
   updateConsultationStatusService,
 } from './service';
-import { insertNote, touchConsultationInteraction, updateConsultationStatus } from './repository';
+import {
+  getConsultationById,
+  insertNote,
+  touchConsultationInteraction,
+  updateConsultationStatus,
+} from './repository';
+import { emitDomainEvent } from '@/lib/integrations/outbox';
 
 const transactionMock = vi.hoisted(() => ({ tx: { __tx: true } }));
+const FIXED_CREATED_AT = '2026-05-13T10:00:00.000Z';
+const FIXED_UPDATED_AT = '2026-05-13T11:00:00.000Z';
 
 vi.mock('@/lib/db', () => ({
   db: {
@@ -17,10 +25,15 @@ vi.mock('@/lib/db', () => ({
 }));
 
 vi.mock('./repository', () => ({
+  getConsultationById: vi.fn(),
   insertConsultation: vi.fn(),
   insertNote: vi.fn(),
   touchConsultationInteraction: vi.fn(),
   updateConsultationStatus: vi.fn(),
+}));
+
+vi.mock('@/lib/integrations/outbox', () => ({
+  emitDomainEvent: vi.fn(),
 }));
 
 describe('juridico service', () => {
@@ -114,12 +127,32 @@ describe('juridico service', () => {
 
   describe('updateConsultationStatusService', () => {
     it('touches last interaction when status becomes respondida', async () => {
+      vi.mocked(getConsultationById).mockResolvedValue({
+        id: 10,
+        internalNumber: 'JUR-2026-010',
+        title: 'Consulta',
+        questionSummary: 'Resumo',
+        questionFullText: null,
+        status: 'aberta',
+        satisfaction: null,
+        slaDueDate: null,
+        lastInteractionAt: null,
+        finalAnswer: null,
+        attachments: [],
+        createdAt: FIXED_CREATED_AT,
+        updatedAt: FIXED_UPDATED_AT,
+        associate: null,
+        answeredBy: null,
+        createdBy: { id: 1, name: 'Admin' },
+      });
+
       await updateConsultationStatusService(10, 'respondida');
 
       expect(updateConsultationStatus).toHaveBeenCalledOnce();
       const [, status, lastInteractionAt] = vi.mocked(updateConsultationStatus).mock.calls[0];
       expect(status).toBe('respondida');
       expect(lastInteractionAt).toBeInstanceOf(Date);
+      expect(emitDomainEvent).toHaveBeenCalledOnce();
     });
 
     it('throws for invalid status', async () => {
@@ -136,6 +169,32 @@ describe('juridico service', () => {
       );
 
       expect(updateConsultationStatus).not.toHaveBeenCalled();
+    });
+
+    it('does not emit status change events for non-webhookable statuses', async () => {
+      vi.mocked(getConsultationById).mockResolvedValue({
+        id: 10,
+        internalNumber: 'JUR-2026-010',
+        title: 'Consulta',
+        questionSummary: 'Resumo',
+        questionFullText: null,
+        status: 'aguardando_escritorio',
+        satisfaction: null,
+        slaDueDate: null,
+        lastInteractionAt: null,
+        finalAnswer: null,
+        attachments: [],
+        createdAt: FIXED_CREATED_AT,
+        updatedAt: FIXED_UPDATED_AT,
+        associate: null,
+        answeredBy: null,
+        createdBy: { id: 1, name: 'Admin' },
+      });
+
+      await updateConsultationStatusService(10, 'aberta');
+
+      expect(updateConsultationStatus).toHaveBeenCalledOnce();
+      expect(emitDomainEvent).not.toHaveBeenCalled();
     });
   });
 

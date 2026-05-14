@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireRole } from '@/lib/auth/authorization';
-import { updateMonthlyPayment, initializeMonth } from '@/lib/finance/service';
+import { updateMonthlyPayment, initializeMonth, validateYearMonth } from '@/lib/finance/service';
 import { type NewMonthlyPayment } from '@/lib/db/schema/finance';
 
 const validPaymentStatuses = ['pago', 'pendente', 'atrasado', 'isento'] as const;
@@ -35,21 +35,11 @@ export async function updatePaymentAction(
 
 export async function initializeMonthAction(year: number, month: number) {
   const user = await requireRole(['admin', 'diretoria']);
-  validateYearMonth(year, month);
 
   await initializeMonth(user.userId, year, month);
 
   revalidateTag(`finance-monthly-${year}-${month}`, 'max');
   revalidatePath('/app/financeiro/mensalidades');
-}
-
-function validateYearMonth(year: number, month: number): void {
-  if (!Number.isInteger(year) || year < 1900 || year > 2100) {
-    throw new Error('Ano inválido.');
-  }
-  if (!Number.isInteger(month) || month < 1 || month > 12) {
-    throw new Error('Mês inválido.');
-  }
 }
 
 function validatePaymentInput(payment: Omit<NewMonthlyPayment, 'updatedBy' | 'updatedAt'>): void {

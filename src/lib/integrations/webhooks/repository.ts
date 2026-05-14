@@ -1,0 +1,194 @@
+import { and, asc, desc, eq, inArray, lt, sql } from 'drizzle-orm';
+import { db, type Tx } from '@/lib/db';
+import {
+  domainEvents,
+  webhookDeliveries,
+  webhookSubscriptions,
+  type DomainEvent,
+  type NewWebhookSubscription,
+  type WebhookDelivery,
+  type WebhookSubscription,
+} from '@/lib/db/schema/integrations';
+import type { DomainEventType } from '@/lib/integrations/outbox';
+
+type ReadExecutor = Pick<typeof db, 'select'>;
+type WriteExecutor = Pick<Tx, 'insert' | 'update' | 'execute'>;
+
+export async function getDomainEventById(id: number, executor: ReadExecutor = db): Promise<DomainEvent | null> {
+  const [event] = await executor
+    .select()
+    .from(domainEvents)
+    .where(eq(domainEvents.id, id))
+    .limit(1);
+  return event ?? null;
+}
+
+export async function listDispatchableDomainEvents(
+  limit = 20,
+  executor: ReadExecutor = db,
+): Promise<DomainEvent[]> {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
+    throw new Error('limit must be an integer between 1 and 1000.');
+  }
+
+  return executor
+    .select()
+    .from(domainEvents)
+    .where(inArray(domainEvents.deliveryStatus, ['pending', 'partially_delivered', 'failed']))
+    .orderBy(asc(domainEvents.occurredAt))
+    .limit(limit);
+}
+
+export async function listActiveWebhookSubscriptionsForEvent(
+  eventType: DomainEventType,
+  executor: ReadExecutor = db,
+): Promise<WebhookSubscription[]> {
+  return executor
+    .select()
+    .from(webhookSubscriptions)
+    .where(
+      sql`${webhookSubscriptions.isActive} = true and ${webhookSubscriptions.subscribedEvents} @> ${JSON.stringify([eventType])}::jsonb`,
+    )
+    .orderBy(asc(webhookSubscriptions.id));
+}
+
+export async function listWebhookSubscriptions(
+  executor: ReadExecutor = db,
+): Promise<WebhookSubscription[]> {
+  return executor
+    .select()
+    .from(webhookSubscriptions)
+    .orderBy(desc(webhookSubscriptions.createdAt), asc(webhookSubscriptions.id));
+}
+
+export async function getWebhookSubscriptionById(
+  id: number,
+  executor: ReadExecutor = db,
+): Promise<WebhookSubscription | null> {
+  const [subscription] = await executor
+    .select()
+    .from(webhookSubscriptions)
+    .where(eq(webhookSubscriptions.id, id))
+    .limit(1);
+  return subscription ?? null;
+}
+
+export async function insertWebhookSubscription(
+  values: NewWebhookSubscription,
+  executor: WriteExecutor = db,
+) {
+  const [subscription] = await executor.insert(webhookSubscriptions).values(values).returning();
+  return subscription;
+}
+
+export async function updateWebhookSubscriptionById(
+  id: number,
+  values: Partial<Pick<WebhookSubscription, 'name' | 'targetUrl' | 'subscribedEvents' | 'isActive' | 'secretCiphertext'>>,
+  executor: WriteExecutor = db,
+) {
+  const [subscription] = await executor
+    .update(webhookSubscriptions)
+    .set({ ...values, updatedAt: new Date() })
+    .where(eq(webhookSubscriptions.id, id))
+    .returning();
+  return subscription ?? null;
+}
+
+export async function listWebhookDeliveriesForEvent(
+  domainEventId: number,
+  executor: ReadExecutor = db,
+): Promise<WebhookDelivery[]> {
+  return executor
+    .select()
+    .from(webhookDeliveries)
+    .where(eq(webhookDeliveries.domainEventId, domainEventId))
+    .orderBy(asc(webhookDeliveries.webhookSubscriptionId), asc(webhookDeliveries.attempt));
+}
+
+export async function insertWebhookDelivery(
+  values: typeof webhookDeliveries.$inferInsert,
+  executor: WriteExecutor = db,
+) {
+  const [delivery] = await executor.insert(webhookDeliveries).values(values).returning();
+  return delivery;
+}
+
+export async function updateDomainEventDeliveryStatus(
+  id: number,
+  status: DomainEvent['deliveryStatus'],
+  executor: WriteExecutor = db,
+) {
+  await executor
+    .update(domainEvents)
+    .set({
+      deliveryStatus: status,
+      updatedAt: new Date(),
+    })
+    .where(eq(domainEvents.id, id));
+}
+
+export function getLastDeliveryAttemptForSubscription(
+  deliveries: WebhookDelivery[],
+  webhookSubscriptionId: number,
+): WebhookDelivery | null {
+  const matching = deliveries.filter((delivery) => delivery.webhookSubscriptionId === webhookSubscriptionId);
+  return matching.at(-1) ?? null;
+}
+
+/**
+ * Recover events stuck in "processing" status for longer than the threshold.
+ * Resets them to "pending" so they can be picked up by the next dispatch cycle.
+ * Call this BEFORE listing dispatchable events to prevent events from being
+ * permanently stuck if a dispatcher crashed mid-processing.
+ */
+export async function recoverStuckProcessingEvents(
+  stuckThresholdMinutes = 10,
+  executor: WriteExecutor = db,
+) {
+  const cutoff = new Date(Date.now() - stuckThresholdMinutes * 60 * 1000);
+  return executor
+    .update(domainEvents)
+    .set({ deliveryStatus: 'pending', updatedAt: new Date() })
+    .where(
+      and(
+        eq(domainEvents.deliveryStatus, 'processing'),
+        lt(domainEvents.updatedAt, cutoff),
+      ),
+    );
+}
+
+/**
+ * Atomically lock and fetch dispatchable domain events using
+ * SELECT ... FOR UPDATE SKIP LOCKED, then mark them as "processing".
+ * This prevents multiple concurrent dispatchers from claiming the same events.
+ *
+ * Drizzle ORM does not natively support FOR UPDATE SKIP LOCKED,
+ * so we use a raw SQL UPDATE ... RETURNING approach that achieves
+ * the same result in a single atomic statement.
+ */
+export async function lockAndFetchDispatchableEvents(
+  limit = 20,
+  executor: typeof db = db,
+): Promise<DomainEvent[]> {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
+    throw new Error('limit must be an integer between 1 and 1000.');
+  }
+
+  const rows = await executor.execute<DomainEvent>(sql`
+    UPDATE domain_events
+    SET delivery_status = 'processing',
+        updated_at = now()
+    WHERE id IN (
+      SELECT id FROM domain_events
+      WHERE delivery_status IN ('pending', 'partially_delivered', 'failed')
+      ORDER BY occurred_at ASC
+      LIMIT ${limit}
+      FOR UPDATE SKIP LOCKED
+    )
+    RETURNING *
+  `);
+
+  // Drizzle's execute() returns a RowList<T> which extends Array<T>;
+  // cast to DomainEvent[] for a clean public return type.
+  return rows as DomainEvent[];
+}

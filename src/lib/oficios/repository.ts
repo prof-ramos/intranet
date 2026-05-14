@@ -1,13 +1,6 @@
-import { db } from '@/lib/db';
+import { db, type Tx } from '@/lib/db';
 import { oficios, type NewOfficialLetter } from '@/lib/db/schema/oficios';
-import { and, desc, eq, type ExtractTablesWithRelations } from 'drizzle-orm';
-import type { PgTransaction } from 'drizzle-orm/pg-core';
-import type { PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
-import * as schema from '@/lib/db/schema';
-
-export type Tx =
-  | typeof db
-  | PgTransaction<PostgresJsQueryResultHKT, typeof schema, ExtractTablesWithRelations<typeof schema>>;
+import { and, desc, eq } from 'drizzle-orm';
 
 export async function findOfficialLetters(year?: number, tx: Tx = db) {
   const filters = [];

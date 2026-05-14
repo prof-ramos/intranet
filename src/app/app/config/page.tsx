@@ -1,4 +1,5 @@
-import { Settings } from 'lucide-react';
+import Link from 'next/link';
+import { Settings, Webhook } from 'lucide-react';
 
 export default async function ConfigPage() {
   return (
@@ -10,7 +11,20 @@ export default async function ConfigPage() {
         Configurações
       </h1>
 
-      <div className="mt-8 rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white p-8 text-center">
+      <div className="mt-8 grid gap-4 md:grid-cols-2">
+        <Link
+          href="/app/config/integracoes/webhooks"
+          className="rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white p-6 transition-colors hover:border-[#76AEEA] hover:bg-[rgba(118,174,234,0.05)]"
+        >
+          <Webhook size={32} className="mb-4 text-[#0d3260]" aria-hidden="true" />
+          <h2 className="font-serif text-xl font-bold text-[#040920]">Integrações e webhooks</h2>
+          <p className="mt-2 text-sm leading-6 text-[rgba(13,31,60,0.55)]">
+            Gerencie destinos HTTP para automações externas e entregas outbound assinadas.
+          </p>
+        </Link>
+      </div>
+
+      <div className="mt-6 rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white p-8 text-center">
         <Settings size={40} className="mx-auto mb-4 text-[rgba(13,31,60,0.25)]" aria-hidden="true" />
         <h2 className="font-serif text-xl font-bold text-[#040920]">Módulo em preparação</h2>
         <p className="mt-2 text-sm text-[rgba(13,31,60,0.55)]">

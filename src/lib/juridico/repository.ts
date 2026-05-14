@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { db, type Tx } from '@/lib/db';
 import {
   legalConsultations,
   legalNotes,
@@ -16,8 +16,7 @@ import {
   sql,
 } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-
-export type Tx = typeof db;
+import { escapeLikePattern } from '@/lib/db/like-pattern';
 
 export interface ConsultationListItem {
   id: number;
@@ -102,10 +101,7 @@ export async function getConsultationsPaginated(
   }
 
   if (filters.search) {
-    const escaped = filters.search
-      .replace(/\\/g, '\\\\')
-      .replace(/_/g, '\\_')
-      .replace(/%/g, '\\%');
+    const escaped = escapeLikePattern(filters.search);
     const pattern = `%${escaped}%`;
     conditions.push(
       sql`${legalConsultations.title} like ${pattern} escape '\\' or ${legalConsultations.internalNumber} like ${pattern} escape '\\'`,
@@ -174,11 +170,16 @@ export interface ConsultationDetail {
   createdBy: { id: number; name: string };
 }
 
-export async function getConsultationById(id: number): Promise<ConsultationDetail | null> {
+export type ReadExecutor = Pick<typeof db, 'select'>;
+
+export async function getConsultationById(
+  id: number,
+  executor: ReadExecutor = db,
+): Promise<ConsultationDetail | null> {
   const answeredByAdmin = alias(admins, 'answered_by_admin');
   const createdByAdmin = alias(admins, 'created_by_admin');
 
-  const [row] = await db
+  const [row] = await executor
     .select({
       id: legalConsultations.id,
       internalNumber: legalConsultations.internalNumber,
@@ -359,7 +360,7 @@ export async function insertConsultation(
     createdBy: number;
     lastInteractionAt: Date;
   },
-  executor: DbExecutor = db,
+  executor: WriteExecutor = db,
 ) {
   const [inserted] = await executor
     .insert(legalConsultations)
@@ -382,6 +383,7 @@ export async function updateConsultationStatus(
   id: number,
   status: (typeof legalConsultationStatus.enumValues)[number],
   lastInteractionAt?: Date,
+  executor: Pick<Tx, 'update'> = db,
 ) {
   const set: Record<string, unknown> = {
     status,
@@ -391,10 +393,11 @@ export async function updateConsultationStatus(
     set.lastInteractionAt = lastInteractionAt;
   }
 
-  await db.update(legalConsultations).set(set).where(eq(legalConsultations.id, id));
+  await executor.update(legalConsultations).set(set).where(eq(legalConsultations.id, id));
 }
 
-export type DbExecutor = Pick<typeof db, 'insert' | 'update'>;
+/** Write-only executor for insert/update operations. */
+export type WriteExecutor = Pick<typeof db, 'insert' | 'update'>;
 
 export async function insertNote(values: {
   entityType: 'consultation' | 'process';
@@ -402,7 +405,7 @@ export async function insertNote(values: {
   content: string;
   createdBy: number;
   isEscritorioResponse: boolean;
-}, executor: DbExecutor = db) {
+}, executor: WriteExecutor = db) {
   await executor.insert(legalNotes).values({
     entityType: values.entityType,
     entityId: values.entityId,
@@ -412,7 +415,7 @@ export async function insertNote(values: {
   });
 }
 
-export async function touchConsultationInteraction(entityId: number, executor: DbExecutor = db) {
+export async function touchConsultationInteraction(entityId: number, executor: WriteExecutor = db) {
   await executor
     .update(legalConsultations)
     .set({ lastInteractionAt: new Date(), updatedAt: new Date() })

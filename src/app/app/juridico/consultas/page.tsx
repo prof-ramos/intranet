@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { getConsultationsPaginated } from '@/lib/juridico/queries';
-import { formatDate, daysSince } from '@/lib/juridico/formatters';
+import { formatDate, daysSince } from '@/lib/utils/date';
 import {
   getLegalConsultationStatusBadgeClass,
   getLegalConsultationStatusLabel,

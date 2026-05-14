@@ -42,7 +42,7 @@ async function main() {
     return;
   }
 
-  const { userId } = await ensureAdminPasswordAuthUser({
+  await ensureAdminPasswordAuthUser({
     email,
     password,
     name: 'Administrador',

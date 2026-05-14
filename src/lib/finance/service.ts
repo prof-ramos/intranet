@@ -1,17 +1,24 @@
 import * as repository from './repository';
 import { logAuditAction } from '@/lib/audit/service';
-import { requireRole } from '@/lib/auth/authorization';
 import { db } from '@/lib/db';
+import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { monthlyPayments, type NewMonthlyPayment } from '@/lib/db/schema/finance';
 import { and, eq, sql } from 'drizzle-orm';
+
+export function validateYearMonth(year: number, month: number): void {
+  if (!Number.isInteger(year) || year < 1900 || year > 2100) {
+    throw new Error('Ano inválido.');
+  }
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    throw new Error('Mês inválido.');
+  }
+}
 
 export async function updateMonthlyPayment(
   adminId: number,
   payment: Omit<NewMonthlyPayment, 'updatedBy' | 'updatedAt'>,
   expectedUpdatedAt?: string | null,
 ) {
-  await requireRole(['admin', 'diretoria']);
-
   const result = await db.transaction(async (tx) => {
     const existing = await tx
       .select()
@@ -85,6 +92,30 @@ export async function updateMonthlyPayment(
       },
     });
 
+    if (oldState && oldState.status !== payment.status) {
+      await emitDomainEvent(
+        {
+          type: 'monthly_payment.updated',
+          entityType: 'monthly_payment',
+          entityId: updatedPayment.id,
+          actorAdminId: adminId,
+          payload: {
+            associateId: payment.associateId,
+            year: payment.year,
+            month: payment.month,
+            previousStatus: oldState.status,
+            status: payment.status,
+            paymentMethod: payment.paymentMethod,
+            paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
+            links: {
+              app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
+            },
+          },
+        },
+        tx,
+      );
+    }
+
     return updatedPayment;
   });
 
@@ -92,6 +123,8 @@ export async function updateMonthlyPayment(
 }
 
 export async function initializeMonth(adminId: number, year: number, month: number) {
+  validateYearMonth(year, month);
+
   const associates = await repository.getAssociatesWithPayments(year, month);
 
   const updates: NewMonthlyPayment[] = associates

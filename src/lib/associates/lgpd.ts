@@ -1,6 +1,6 @@
 import type { Associate } from '@/lib/db/schema/associates';
 import type { AuthRole } from '@/lib/auth/config';
-import { isPrivilegedRole } from '@/lib/auth/permissions';
+import { isPrivilegedRole } from '@/lib/auth/authorization';
 
 // LGPD field classification for associate data
 export const SENSITIVE_FIELDS: Set<keyof Associate> = new Set([

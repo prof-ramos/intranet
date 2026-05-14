@@ -26,10 +26,12 @@ export type ReportAssociate = Pick<Associate,
   | 'associationCategory'
 >;
 
+import type { functionalStatus as FunctionalStatusEnum, associationStatus as AssociationStatusEnum, contributionStatus as ContributionStatusEnum } from '@/lib/db/schema/associates';
+
 interface ReportFilters {
-  functionalStatus?: string;
-  associationStatus?: string;
-  contributionStatus?: string;
+  functionalStatus?: typeof FunctionalStatusEnum.enumValues[number];
+  associationStatus?: typeof AssociationStatusEnum.enumValues[number];
+  contributionStatus?: typeof ContributionStatusEnum.enumValues[number];
   birthMonth?: number;
 }
 
@@ -39,15 +41,15 @@ export async function getAssociatesForReport(
   const conditions = [];
 
   if (filters.functionalStatus) {
-    conditions.push(eq(associates.functionalStatus, filters.functionalStatus as 'ativo' | 'aposentado' | 'cedido' | 'em_licenca'));
+    conditions.push(eq(associates.functionalStatus, filters.functionalStatus));
   }
 
   if (filters.associationStatus) {
-    conditions.push(eq(associates.associationStatus, filters.associationStatus as 'ativo' | 'inativo'));
+    conditions.push(eq(associates.associationStatus, filters.associationStatus));
   }
 
   if (filters.contributionStatus) {
-    conditions.push(eq(associates.contributionStatus, filters.contributionStatus as 'em_dia' | 'inadimplente' | 'pendente_migracao'));
+    conditions.push(eq(associates.contributionStatus, filters.contributionStatus));
   }
 
   if (filters.birthMonth !== undefined) {
