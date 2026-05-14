@@ -106,6 +106,20 @@
       "when": 1778755200001,
       "tag": "0016_operational_webhook_subscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1778790899000,
+      "tag": "0017_login_attempts_email_hash",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1778870000000,
+      "tag": "0018_add_pii_encryption_columns",
+      "breakpoints": true
     }
   ]
 }

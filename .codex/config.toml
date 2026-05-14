@@ -1,0 +1,6 @@
+# Project-scoped Codex CLI configuration.
+# This file is loaded only after the project is trusted by Codex.
+
+[features]
+hooks = true
+codex_hooks = true

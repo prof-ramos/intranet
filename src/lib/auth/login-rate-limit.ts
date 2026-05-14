@@ -1,6 +1,8 @@
 import { db } from '@/lib/db';
 import { loginAttempts } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
+import { hkdfDeriveKey, blindIndex, KEY_CONTEXTS } from '@/lib/crypto';
+import { env } from '@/lib/env';
 
 export interface LoginRateLimitOptions {
   maxAttempts: number;
@@ -25,6 +27,26 @@ export interface RateLimitStore {
   cleanup(now: number): Promise<void>;
 }
 
+/**
+ * Derives the HMAC search key for email hashing from the master encryption key.
+ * Falls back to the webhook encryption key if the master key is not set (backward compat).
+ */
+function getEmailSearchKey(): string {
+  const masterKey = env.ENCRYPTION_MASTER_KEY ?? env.ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY;
+  if (!masterKey) {
+    throw new Error('ENCRYPTION_MASTER_KEY or ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY must be set for email hashing.');
+  }
+  return hkdfDeriveKey(masterKey, KEY_CONTEXTS.piiSearch).toString('hex');
+}
+
+/**
+ * Computes a deterministic HMAC-SHA-256 blind index for an email address.
+ * Uses a dedicated search key derived via HKDF to prevent offline enumeration.
+ */
+export function hashEmail(email: string): string {
+  return blindIndex(email.trim().toLowerCase(), getEmailSearchKey());
+}
+
 const dbStore: RateLimitStore = {
   async getEntry(key, now, windowMs) {
     const expiresAt = new Date(now + windowMs);
@@ -40,6 +62,7 @@ const dbStore: RateLimitStore = {
         .insert(loginAttempts)
         .values({
           email: key,
+          emailHash: hashEmail(key),
           attempts: 0,
           expiresAt,
         })
@@ -54,7 +77,7 @@ const dbStore: RateLimitStore = {
     if (row.expiresAt.getTime() <= now) {
       const updated = await db
         .update(loginAttempts)
-        .set({ attempts: 0, expiresAt, updatedAt: new Date() })
+        .set({ attempts: 0, emailHash: hashEmail(key), expiresAt, updatedAt: new Date() })
         .where(eq(loginAttempts.id, row.id))
         .returning();
       return {

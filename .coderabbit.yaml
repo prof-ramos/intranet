@@ -20,9 +20,17 @@ reviews:
   path_filters:
     - "!node_modules/**"
     - "!.next/**"
-    - "!drizzle/**"
     - "!*.lock"
   path_instructions:
+    - path: "drizzle/postgres/**/*.sql"
+      instructions: >
+        Revise migrations PostgreSQL com foco em segurança, LGPD e reversibilidade operacional.
+        Sinalize DROP/ALTER destrutivo, RLS permissivo sem justificativa, enums fora do domínio,
+        índices ausentes para FKs/filtros, e SQL que exponha dados pessoais em logs ou views.
+    - path: "drizzle/postgres/meta/_journal.json"
+      instructions: >
+        Confirme que o journal acompanha novas migrations SQL, preserva ordem zero-padded e
+        usa timestamp coerente com o arquivo de migration correspondente.
     - path: "src/lib/db/schema/**/*.ts"
       instructions: >
         Verifique se novas tabelas possuem índices em FKs e colunas de filtro.

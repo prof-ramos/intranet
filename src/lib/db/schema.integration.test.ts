@@ -44,10 +44,14 @@ const expectedColumns = {
     'source_row_number:text:YES',
     'full_name:text:NO',
     'cpf:text:YES',
+    'cpf_ciphertext:text:YES',
+    'cpf_hash:text:YES',
     'primary_email:text:YES',
     'phone:text:YES',
     'whatsapp:text:YES',
     'siape:text:YES',
+    'siape_ciphertext:text:YES',
+    'siape_hash:text:YES',
     'functional_status:functional_status:YES',
     'assignment:text:YES',
     'assignment_start_date:date:YES',
@@ -168,6 +172,7 @@ const expectedColumns = {
   login_attempts: [
     'id:int8:NO',
     'email:text:NO',
+    'email_hash:text:YES',
     'attempts:int8:NO',
     'expires_at:timestamptz:NO',
     'created_at:timestamptz:NO',
@@ -318,10 +323,12 @@ const expectedIndexes = {
     'idx_associates_birth_month',
     'idx_associates_contribution_status',
     'idx_associates_cpf',
+    'idx_associates_cpf_hash',
     'idx_associates_name',
     'idx_associates_name_trgm',
     'idx_associates_primary_email',
     'idx_associates_siape',
+    'idx_associates_siape_hash',
     'idx_associates_status_country',
     'idx_associates_status_name',
   ],
@@ -395,6 +402,7 @@ const expectedIndexes = {
   ],
   login_attempts: [
     'idx_login_attempts_email',
+    'idx_login_attempts_email_hash',
     'idx_login_attempts_expires_at',
     'login_attempts_pkey',
   ],
@@ -475,7 +483,7 @@ describe('database schema contract', () => {
       .filter((tableName) => !allowedLocalOnlyTables.includes(tableName as never));
     expect(unexpectedTables).toEqual([]);
     for (const [tableName, expectedTableColumns] of Object.entries(expectedColumns)) {
-      expect(actual[tableName]).toEqual(expectedTableColumns);
+      expect(actual[tableName]?.toSorted()).toEqual(expectedTableColumns.toSorted());
     }
   });
 

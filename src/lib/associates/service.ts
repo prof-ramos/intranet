@@ -15,6 +15,8 @@ import { db } from '@/lib/db';
 import { functionalStatus as fsEnum, associationStatus as asEnum, contributionStatus as csEnum } from '@/lib/db/schema';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { formatLongDate, yearsSinceDate } from '@/lib/utils/date';
+import { encryptPii, piiBlindIndex, decryptPiiField } from '@/lib/crypto/pii';
+import { maskCpf, maskSiape } from './lgpd';
 
 type FsEnum = (typeof fsEnum.enumValues)[number];
 type AsEnum = (typeof asEnum.enumValues)[number];
@@ -106,11 +108,18 @@ export async function getAssociateForEdit(
   const row = await findAssociateById(id);
   if (!row) return null;
 
+  const cpf = canViewSensitiveFields(role)
+    ? decryptPiiField(row.cpfCiphertext, row.cpf)
+    : maskCpf(decryptPiiField(row.cpfCiphertext, row.cpf));
+  const siape = canViewSensitiveFields(role)
+    ? decryptPiiField(row.siapeCiphertext, row.siape)
+    : maskSiape(decryptPiiField(row.siapeCiphertext, row.siape));
+
   return {
     id: row.id,
     fullName: row.fullName,
-    cpf: row.cpf,
-    siape: row.siape,
+    cpf,
+    siape,
     primaryEmail: row.primaryEmail,
     secondaryEmail: row.secondaryEmail,
     phone: row.phone,
@@ -187,7 +196,11 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
   const values: UpdateAssociateValues = {
     fullName: input.fullName,
     cpf: input.cpf,
+    cpfCiphertext: input.cpf != null ? encryptPii(input.cpf) : null,
+    cpfHash: input.cpf != null ? piiBlindIndex(input.cpf) : null,
     siape: input.siape,
+    siapeCiphertext: input.siape != null ? encryptPii(input.siape) : null,
+    siapeHash: input.siape != null ? piiBlindIndex(input.siape) : null,
     primaryEmail: input.primaryEmail,
     secondaryEmail: input.secondaryEmail,
     phone: input.phone,

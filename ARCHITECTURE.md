@@ -27,10 +27,12 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 │   └── lib/
 │       ├── associates/              # Search parameter parsing + repository queries
 │       ├── auth/                    # Auth config, sessions, guards, password logic, rate limiting
+│       ├── crypto/                    # AES-256-GCM encryption, safe-compare, versioned ciphertext format
 │       ├── db/                      # Drizzle client and schema exports
 │       │   └── schema/              # admins, associates, activities, assignments, audit_logs, login_attempts,
 │       │                            # legal_consultations, legal_processes, legal_notes, legal_opinions,
-│       │                            # legal_opinion_tags, monthly_payments, oficios, rate_limits
+│       │                            # legal_opinion_tags, monthly_payments, oficios, rate_limits,
+│       │                            # domain_events, webhook_subscriptions, webhook_deliveries, integration_api_keys
 │       ├── dashboard/               # Dashboard aggregation queries
 │       ├── env.ts                   # Zod-validated environment variables
 │       ├── ip.ts                    # Client IP extraction from headers
@@ -184,7 +186,7 @@ Key Schemas/Tables:
 - `domain_events` — integration outbox for outbound domain events
 - `webhook_subscriptions` — configured outbound webhook destinations, with encrypted `secret_ciphertext`
 - `webhook_deliveries` — delivery attempts, status, response excerpts, and retry scheduling metadata
-- `integration_api_keys` — reserved table for future persisted M2M keys and scopes
+- `integration_api_keys` — persisted API keys with SHA-256 hashes, scopes, and `last_used_at` tracking
 
 ### 4.2. Database Architecture Decisions
 
@@ -225,7 +227,7 @@ Current indexes by table:
 | `legal_notes` | 3 | Composite for entity lookup |
 | `audit_logs` | 3 | Composite for entity lookup |
 | `monthly_payments` | 1 | Unique index for (associate, year, month) |
-| `login_attempts` / `rate_limits` | 2 each | B-tree on lookup key and expiry |
+| `login_attempts` / `rate_limits` | 3 / 2 | login_attempts: B-tree on email, email_hash, expiry; rate_limits: B-tree on key and expiry |
 | `domain_events` | 6 | Event type, entity lookup, actor, status, occurred_at |
 | `webhook_subscriptions` | 5 | Name uniqueness, target URL, active flag, creator, subscribed event lookup |
 | `webhook_deliveries` | 5 | Request id uniqueness, event/subscription lookup, status/retry |
@@ -261,18 +263,20 @@ PostgreSQL enums are preferred over free-text columns for status and type fields
 
 #### 4.2.4. Row-Level Security (RLS)
 
-RLS was enabled in migration 0000 and **removed in migration 0001**. Rationale:
+RLS was enabled in migration 0000 and **removed in migration 0001**, then **reinstated in migration 0009** with permissive policies. In **migration 0017**, RLS was hardened:
 
-- All database access goes through the Next.js server layer (Server Components / Server Actions).
-- No Supabase client is exposed to the browser; there is no direct client-to-DB path.
-- Auth is enforced via `requireAuth()` (JWT session verification + DB admin lookup) and `requireRole()` (role-based guards).
+- **Critical tables** (`admins`, `associates`, `login_attempts`, `rate_limits`, `audit_logs`, `integration_api_keys`, `webhook_subscriptions`, `domain_events`, `webhook_deliveries`): policies changed from `FOR ALL TO PUBLIC USING (true) WITH CHECK (true)` to `FOR ALL TO authenticated USING (true) WITH CHECK (true)`.
+- **Previously unprotected tables** (`monthly_payments`, `oficios`): RLS enabled for the first time with `FOR ALL TO authenticated USING (true) WITH CHECK (true)`.
+- **Non-sensitive operational tables** (`activities`, `assignments`, `legal_consultations`, etc.): retain permissive `PUBLIC` policies since they contain no PII.
 
-**Risk:** Any direct database connection (e.g., Supabase client from a script, ad-hoc query tool) bypasses all authorization. RLS was reinstated in migration 0009 as a defense-in-depth layer.
+**Current posture:** `TO authenticated` policies ensure that only authenticated database connections can access PII-bearing tables. The app enforces role-based access via `requireAuth()`/`requireRole()` on top of RLS. This is defense-in-depth — if a Supabase client key were exposed, anonymous access would be blocked.
+
+**Planned hardening (Wave 3):** JWT-based RLS policies that reference `current_setting('request.jwt.claims')` for per-role access control at the database level. This provides true row-level security even for authenticated connections.
 
 **LGPD Security & RLS Hardening:**
-1. **Permissive Policies:** Current policies use `FOR ALL TO PUBLIC USING (true) WITH CHECK (true)`. They are only a documented defense-in-depth posture and do not satisfy LGPD access restriction by themselves; effective authorization still comes from `requireAuth()`, `requireRole()`, server-only credentials, and not exposing database clients to browsers.
-2. **Monitoring:** Recomenda-se monitorar conexões diretas ao banco que não utilizem `application_name='asof-intranet'`.
-3. **Session Context:** Futuras iterações devem adotar predicados RLS que referenciem o estado da sessão, como `current_setting('app.user_id')`, fornecendo uma trava adicional no nível do banco.
+1. **Authenticated-only policies:** Critical tables require `authenticated` role. App enforces role checks server-side.
+2. **Monitoring:** Recomenda-se monitorar conexões diretas ao banco que não utilizam `application_name='asof-intranet'`.
+3. **Session Context:** Futuras iterações devem adotar predicados RLS que referenciem o estado da sessão, como `current_setting('request.jwt.claims')`, fornecendo uma trava adicional no nível do banco.
 4. **Service-role Keys:** As chaves de serviço do Supabase (`service_role`) possuem privilégios totais e **devem** ser rotacionadas periodicamente, nunca commitadas e auditadas.
 5. **Narrowing:** Caso um cliente Supabase seja exposto ao browser, as políticas devem ser imediatamente restritas para `per-user` ou `per-role`.
 6. **Verification:** `npm run test:db` must include explicit checks for `relrowsecurity` and `pg_policies` on LGPD-sensitive tables whenever migrations change RLS, enums, FKs, or indexes.
@@ -287,6 +291,9 @@ Transactions are used where data consistency across multiple tables is required:
 | `addNoteService` + `touchConsultationInteraction` | ✅ Yes | Note + timestamp update are atomic |
 | `createConsultationService` (generate number + insert) | ✅ Yes | Fixed in service refactor |
 | `updateConsultationStatus` | N/A | Single-statement update; no transaction needed |
+| `initializeMonth` (finance) | ✅ Yes | Transaction-wrapped individual upserts; atomic rollback on partial failure |
+| `dispatchDomainEventById` (single event) | ✅ Yes | Transaction wraps lock + delivery updates |
+| `dispatchBatchEvents` (cron) | ✅ Yes | `SELECT FOR UPDATE SKIP LOCKED` for atomic event claiming; stuck events recovered on dispatch |
 | Bulk associate import | ❌ No | Each row is upserted individually (future work) |
 
 #### 4.2.6. Known N+1 Patterns
@@ -510,7 +517,7 @@ Authentication: JWT session cookie named `__Host-asof-session` (prefixo `__Host-
 
 Authorization: Roles are `admin`, `diretoria`, and `secretaria`. Route-level restrictions exist through `requireRole()`; the juridico module blocks `secretaria` at layout level (`src/app/app/juridico/layout.tsx`).
 
-Data Encryption: TLS is expected for production HTTP and database transport. Runtime database SSL is required automatically in production or when `DB_SSL=true` / `sslmode=require` is present.
+Data Encryption: TLS is expected for production HTTP and database transport. Runtime database SSL is required automatically in production or when `DB_SSL=true` / `sslmode=require` is present. Webhook subscription secrets are encrypted at rest using AES-256-GCM (`src/lib/crypto/index.ts`) with the `enc:v1:` versioned format. PII fields (CPF, SIAPE) are scheduled for encryption at rest in Wave 1 of the DB architecture improvements plan.
 
 Key Security Tools/Practices:
 
@@ -518,10 +525,13 @@ Key Security Tools/Practices:
 - Service-role Supabase keys are server/script-only.
 - Integration signing is HMAC-SHA256 over method, path+query, timestamp, and body hash. The current versioned surface is deliberately limited to `/api/v1/health`, `/api/v1/events`, and `/api/v1/events/dispatch`, with outbound dispatch only.
 - Outbound event payloads must stay within the allowlists in `src/lib/integrations/outbox.ts`. CPF, SIAPE, email, address, phone, tokens, secrets, legal full text, official-letter body text, and internal notes must not be placed in `domain_events.payload`.
+- `safeCompare` is extracted to `src/lib/crypto/safe-compare.ts` and used for both integration auth and webhook dispatch verification (timing-safe comparison).
+- Integration auth (`src/lib/integrations/auth.ts`) updates `last_used_at` on the `integration_api_keys` table after successful authentication, providing usage tracking for API keys.
 - Manual dispatch through `/api/v1/events` and scheduled dispatch through `/api/v1/events/dispatch` are audited before the response is returned. Webhook subscription CRUD/secret rotation is audited separately as `webhook_subscription`. Webhook delivery attempts are recorded in `webhook_deliveries`; successful delivery audit beyond the dispatch record remains future hardening.
+- Batch dispatch uses `SELECT FOR UPDATE SKIP LOCKED` to claim events atomically, preventing double-processing across concurrent workers. Stuck events in `processing` status are recovered at the start of each dispatch cycle.
 - Sensitive ASOF data such as CPF, SIAPE, email, address, and functional data must not be logged or exposed in public responses.
 - Database migrations reject pooled PostgreSQL URLs to avoid unsafe migration behavior.
-- Login rate limiting is backed by PostgreSQL (`login_attempts` table) for multi-instance consistency.
+- Login rate limiting is backed by PostgreSQL (`login_attempts` table) for multi-instance consistency. Email lookups use SHA-256 hash (`email_hash` column) to avoid storing plaintext emails in rate-limit queries (migration 0018).
 - IP-based rate limiting (`rate_limits` table) protects report downloads (10 req/min) and juridico Server Actions (30 req/min).
 - Audit trail for CSV downloads: every `report_download` is logged in `audit_logs` with filters, fields, and row count (LGPD accountability).
 - CSV injection prevention: cells starting with `-`, `=`, `+`, `@`, or tab are prefixed with `\t` and quoted.
@@ -603,6 +613,7 @@ Runtime Notes:
 - Implement Fase 2 do módulo jurídico: processos, pareceres, biblioteca de pareceres, anexos.
 - Add IP-based rate limiting to login endpoint (currently per-email only via `login_attempts`; IP-based `rate_limits` table exists but is not wired to login).
 - Evaluate formal API documentation (OpenAPI/Swagger) if REST endpoints grow.
+- **DB Architecture Improvements:** See `docs/db-architecture-review-2026-05-14.md` and `.omc/plans/ralplan-2026-05-14-db-improvements.md` for the full prioritized plan. Phase 1 (Quick Wins) is complete. Remaining phases cover PII encryption at rest, integration API key CRUD, transaction hardening, CHECK constraints, partial indexes, JWT-based RLS, and more.
 
 ## 10. Project Identification
 
@@ -612,7 +623,7 @@ Repository URL: https://github.com/prof-ramos/intranet.git
 
 Primary Contact/Team: ASOF / Prof. Ramos development workflow
 
-Date of Last Update: 2026-05-11
+Date of Last Update: 2026-05-14
 
 ## 11. Glossary / Acronyms
 
