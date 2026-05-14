@@ -75,14 +75,15 @@ the result becomes `/login?error=rate-limit`.
 
 ### Database Conventions
 
-- **Enums**: Use PostgreSQL enums for all status/type fields. Never use `text` for a bounded set of values.
-- **Indexes**: Create partial indexes for queries with conditional `WHERE`. Use trigram GIN (`gin_trgm_ops`) for `LIKE '%term%'`. Use composite indexes matching `(filter, order)` patterns. Prefix custom indexes with `idx_`.
-- **Connection pool**: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'` in `src/lib/db/index.ts`.
-- **Transactions**: Multi-table operations MUST use `db.transaction()`. Pass the `tx` executor to repository functions that accept one.
-- **RLS**: Re-enabled in migration 0009 as defense-in-depth. All current policies are permissive (`FOR ALL TO PUBLIC`); auth is enforced server-side. If a Supabase client is ever exposed to the browser, RLS policies must be narrowed.
+- **Enums**: Use PostgreSQL enums for all status/type fields. Never use `text` for a bounded set of values. Shared enums (`paymentMethod`, `legalSatisfaction`) live in `src/lib/db/schema/enums.ts`.
+- **Indexes**: Create partial indexes for queries with conditional `WHERE`. Use trigram GIN (`extensions.gin_trgm_ops` on Supabase) for `LIKE '%term%'`. Use composite indexes matching `(filter, order)` patterns. Prefix custom indexes with `idx_`. Each `CREATE INDEX CONCURRENTLY` must be in its own migration file (Drizzle/Supabase wrap migrations in transactions).
+- **Connection pool**: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'` in `src/lib/db/index.ts`. Pool config values are validated via Zod in `src/lib/env.ts`.
+- **Transactions**: Multi-table operations MUST use `db.transaction()`. Pass the `tx` executor to repository functions that accept one. This includes `initializeMonth`, `dispatchDomainEventById`, and `rotateApiKey`.
+- **RLS**: Hardened in migration 0023 — all policies use `TO authenticated` (not `TO PUBLIC`) and `FORCE ROW LEVEL SECURITY` is applied on all 16 application tables. JWT-based RLS policies are deferred; auth is enforced server-side.
 - **Update safety**: `updateAssociateById` and similar functions must use typed interfaces, not `Record<string, unknown>`, to prevent unintended column overwrites.
-- **Migrations**: Name SQL files with zero-padded index + description (e.g., `0009_quality_improvements.sql`). Update `_journal.json` with the correct timestamp.
+- **Migrations**: Name SQL files with zero-padded index + description (e.g., `0009_quality_improvements.sql`). Update `_journal.json` with the correct timestamp. `CREATE INDEX CONCURRENTLY` and `ALTER COLUMN TYPE ... USING` require manual migration SQL (Drizzle doesn't generate these).
 - **Testing**: `npm run test:db` validates tables, columns, enums, indexes, extensions, and migration alignment against the live database.
+- **CHECK constraints**: Use table-level `check()` (3rd argument of `pgTable`), not column-level `.check()` — Drizzle doesn't support column-level `.check()`. `pgEnum` already enforces enum values so CHECK constraints are only needed for range constraints.
 
 ### Data Access Pattern
 
@@ -93,7 +94,35 @@ Server Components fetch data directly from the database. The juridico module has
 - `src/lib/reports/queries.ts` + `src/lib/reports/csv.ts` — Report generation
 - `src/lib/finance/queries.ts` — Financial dashboard and monthly payments
 - `src/lib/juridico/repository.ts` + `service.ts` + `queries.ts` — Legal consultations (full service layer). `queries.ts` wraps repository calls with module-level `unstable_cache`; Server Actions call `revalidateTag` on mutations.
+- `src/lib/oficios/repository.ts` + `service.ts` — Official letters (repository + service). `findOfficialLetters` has a default LIMIT 100; Server Actions cap at 1000.
+- `src/lib/associates/repository.ts` — Associate data access. Uses HMAC blind indexes (`cpfHash`, `siapeHash`, `primaryEmailHash`) for PII lookups, never plaintext comparisons.
 - `src/app/app/associados/actions.ts` — Server Actions for associate mutations (create/update). `[id]/editar/` is the edit route; `[id]/editar/EditarAssociadoForm.tsx` is the client form.
+
+### PII Encryption
+
+All PII fields (CPF, SIAPE, email, phone, address, WhatsApp) are encrypted at rest using AES-256-GCM with HKDF key derivation:
+- `src/lib/crypto/index.ts` — `deriveKey(masterKey, context)` uses `crypto.hkdfSync('sha256', ...)` with domain-separated contexts (`pii-encryption`, `pii-search`, `webhook-secrets`). Supports V2 format `enc:v2:{keyId}.{iv}.{authTag}.{ciphertext}` for key rotation.
+- `src/lib/crypto/pii.ts` — `encryptPii`, `decryptPii`, `piiBlindIndex`, `decryptPiiField`. Blind indexes use HMAC-SHA-256 (not plain SHA-256) to prevent offline enumeration.
+- **Per-column fallback**: `decryptPiiField(row.cpfCiphertext, row.cpf)` — decrypts ciphertext if present, falls back to plaintext column. This supports incremental backfill.
+- **Role-based masking**: `canViewSensitiveFields(role)` determines PII visibility. `getAssociateForEdit` decrypts for admin/diretoria, masks for secretaria.
+- `src/lib/associates/lgpd.ts` — `SENSITIVE_FIELDS` set drives PII masking; includes `sourcePayload`, `primaryEmail`, and all ciphertext columns.
+- `scripts/backfill-pii-encryption.ts` — Idempotent backfill script. Uses `Buffer` for key material with `buffer.fill(0)` after use.
+
+### Integration Auth (Dual-Auth)
+
+`src/lib/integrations/auth.ts` supports two authentication paths with OR logic:
+1. **Env-var key**: `ASOF_INTEGRATION_API_KEY` + `ASOF_INTEGRATION_HMAC_SECRET`. Env-var keys have full access (no scope restriction).
+2. **Table-backed key**: `integration_api_keys` table with HMAC-SHA-256 hashed keys and scope arrays. Table keys are validated with scope checks per endpoint.
+
+`authorizeIntegrationRequest(request, { requiredScopes, allowSessionRoles })` handles both paths plus optional session-based auth for operator UI access. Scope validation: table-backed keys must possess at least one of the `requiredScopes`; env-var keys bypass scope checks.
+
+### PII Sanitization
+
+`src/lib/sanitize-pii.ts` provides a shared `sanitizePiiValue()` function used by both `src/lib/audit/service.ts` and `src/lib/integrations/outbox.ts`. It redacts values for sensitive keys (CPF, SIAPE, email, phone, address, token, password, secret, etc.) while preserving structure. Handles Date, BigInt, function, and symbol values.
+
+### Integration Rate Limiting
+
+`src/lib/integrations/rate-limit.ts` provides a PostgreSQL-backed rate limiter using atomic `INSERT...ON CONFLICT DO UPDATE...RETURNING`. Applied to `/api/v1/events` and `/api/v1/health` endpoints. Default: 60 requests per 15-minute window per IP.
 
 ### Auth & Authorization
 
@@ -102,11 +131,14 @@ Server Components fetch data directly from the database. The juridico module has
 - `src/lib/auth/authorization.ts` — `requireRole(['admin', 'diretoria'])` throws if the current user's role isn't in the allowed list.
 - `src/lib/auth/session.ts` — JWT via `jose`, httpOnly + sameSite=strict + secure cookie.
 - `src/lib/auth/password.ts` — Password policy (8+ chars, at least 1 number and 1 special character).
-- `src/lib/auth/login-rate-limit.ts` — PostgreSQL-backed rate limiter (table `login_attempts`).
+- `src/lib/auth/login-rate-limit.ts` — PostgreSQL-backed rate limiter (table `login_attempts`). Uses HMAC-SHA-256 for email hashing (not plain SHA-256).
+- `src/lib/integrations/auth.ts` — Dual-auth for API endpoints (env-var key OR table-backed key with scopes). `authorizeIntegrationRequest()` checks integration headers first, then falls back to session auth if `allowSessionRoles` is provided.
+- `src/lib/integrations/keys/service.ts` — CRUD for `integration_api_keys` table (create, list, revoke, rotate). Rotate is transactional — creates new key and revokes old in one `db.transaction()`.
+- `src/lib/integrations/rate-limit.ts` — PostgreSQL-backed rate limiter for public API endpoints (60 req/15min per IP).
 
 ### Environment Validation
 
-`src/lib/env.ts` uses Zod to validate env vars at startup. Imported in `next.config.ts` so missing required vars fail early. Do not access `process.env` directly; import from `@/lib/env`.
+`src/lib/env.ts` uses Zod to validate env vars at startup. Imported in `next.config.ts` so missing required vars fail early. Do not access `process.env` directly; import from `@/lib/env`. DB connection pool params (`DB_MAX_CONNECTIONS`, `DB_CONNECT_TIMEOUT_SECONDS`, `DB_IDLE_TIMEOUT_SECONDS`) use `z.coerce.number().int().positive().optional()` — the `positiveInteger()` helper was removed from `db/index.ts`.
 
 ## Domain Context
 
@@ -139,12 +171,17 @@ Set `SKIP_AUTH=true` in `.env.local` (ignored in production). Configures dev use
 
 ## Security
 
-- **LGPD:** CPF, SIAPE, email, address, and functional data are protected. Do not log or expose in API responses.
-- **Auth:** Supabase Auth cookies via `@supabase/ssr`; do not reintroduce custom JWT `SESSION_SECRET` build requirements.
-- **DB:** SSL required in production or when `DB_SSL=true`/`sslmode=require`.
+- **LGPD:** CPF, SIAPE, email, phone, address, WhatsApp, and functional data are protected. Do not log or expose in API responses. All PII is encrypted at rest using AES-256-GCM with HKDF key derivation (`src/lib/crypto/`). HMAC-SHA-256 blind indexes enable searchable encrypted fields without plaintext comparison.
+- **Auth:** Supabase Auth cookies via `@supabase/ssr`; do not reintroduce custom JWT `SESSION_SECRET` build requirements. Integration auth supports dual paths (env-var key OR table-backed API keys with scopes).
+- **DB:** SSL required in production or when `DB_SSL=true`/`sslmode=require`. RLS policies use `TO authenticated` (not `TO PUBLIC`); `FORCE ROW LEVEL SECURITY` applied on all tables.
 - **Service-role keys:** Server/script only. Never expose to client components.
 - **CSV injection prevention:** Cells starting with `-`, `=`, `+`, `@`, or tab are prefixed with `\t` and quoted.
 - **LIKE query safety:** Escape `%` and `_` to prevent wildcard injection.
+- **PII sanitization:** `src/lib/sanitize-pii.ts` provides shared `sanitizePiiValue()` used by both audit service and webhook outbox. Never log or store plaintext PII in audit logs or domain event payloads.
+- **PII encryption sunset:** Plaintext PII columns have a 2-week sunset after deploy. After backfill completes and ciphertext is verified, code reads from ciphertext columns with per-column fallback to plaintext. Final migration drops plaintext columns.
+- **Key rotation:** Encryption uses V2 format `enc:v2:{keyId}.{iv}.{authTag}.{ciphertext}` supporting zero-downtime key rotation. Decryption tries all known keys; encryption uses the active key.
+- **Rate limiting:** PostgreSQL-backed rate limiter at `/api/v1/events` and `/api/v1/health` (60 req/15min/IP). Login rate limiting per email via `login_attempts` table.
+- **Data access logging:** `logDataAccess()` in `src/lib/audit/service.ts` records PII view events for LGPD Art. 30/37 compliance.
 
 ## Design System
 
@@ -159,6 +196,9 @@ Formal, institutional interface. See `DESIGN.md` for full specification.
 - **Webpack is default.** Turbopack (`*:turbo` scripts) is for explicit diagnostics only due to prior Tailwind resolution issues on memory-constrained machines.
 - **No `middleware.ts`.** Next.js 16 renamed middleware to `proxy.ts`.
 - **No API routes for data fetching.** Server Components query Drizzle directly. Exception: `src/app/app/associados/relatorio/download/route.ts` is a Route Handler used for CSV file streaming — not a data-fetch endpoint.
+- **PII encryption at rest.** All sensitive fields (CPF, SIAPE, email, phone, address, WhatsApp) use AES-256-GCM with HKDF key derivation and HMAC-SHA-256 blind indexes. Per-column fallback supports incremental backfill. Plaintext columns have a 2-week sunset timeline.
+- **Dual-auth transition.** Integration auth supports both env-var API keys (unrestricted) and table-backed API keys (scoped). Env-var path will be deprecated once table auth is verified in production.
+- **Shared PII sanitization.** `src/lib/sanitize-pii.ts` is the single source of truth for redacting sensitive values. Used by both audit service and webhook outbox.
 - **Error boundaries are not global.** Exist: `src/app/app/error.tsx` (generic app-level), `src/app/app/juridico/error.tsx` (juridico module), `src/app/app/juridico/consultas/error.tsx` (consultas sub-route). Not every route has one.
 - **Server Component shell + Client Component form.** Pages that need client interactivity (forms, state) use a Server Component for data fetching that renders a `'use client'` subcomponent. Example: `relatorio/page.tsx` → `RelatorioForm.tsx`.
 - **`next/dynamic` for heavy client components.** Use lazy loading for components not needed on initial render. Example: `ReassignModal` in `AtividadesBoard.tsx` is loaded via `dynamic(() => import('./ReassignModal'))`.
@@ -301,12 +341,21 @@ git diff --cached --name-status
 ## Important Files
 
 - `src/proxy.ts` — Route guard
-- `src/lib/env.ts` — Environment validation
+- `src/lib/env.ts` — Environment validation (Zod)
 - `src/lib/auth/require-auth.ts` — Auth guard for pages
+- `src/lib/crypto/index.ts` — HKDF key derivation, V2 encryption format
+- `src/lib/crypto/pii.ts` — PII encrypt/decrypt/blind-index functions
+- `src/lib/sanitize-pii.ts` — Shared PII sanitizer for audit logs and webhooks
 - `src/lib/db/index.ts` — Database client
+- `src/lib/db/schema/views.ts` — PII-safe `associates_list_view`
+- `src/lib/db/schema/enums.ts` — Shared enums (`paymentMethod`, `legalSatisfaction`)
 - `src/lib/ui/tokens.ts` — Design tokens
 - `src/lib/associates/search-params.ts` — Associates list filter/pagination URL params
 - `src/lib/finance/search-params.ts` — Monthly payments filter/pagination URL params
+- `src/lib/integrations/auth.ts` — Dual-auth (env-var OR table-backed API keys with scopes)
+- `src/lib/integrations/keys/service.ts` — Integration API key CRUD (create, list, revoke, rotate)
+- `src/lib/integrations/rate-limit.ts` — PostgreSQL-backed rate limiter for API endpoints
+- `src/lib/integrations/webhooks/service.ts` — Transactional webhook dispatch with `Promise.allSettled`
 - `next.config.ts` — Next.js config (imports `env.ts`)
 - `drizzle.config.ts` — Migration config
 - `vitest.config.ts` — Test config
