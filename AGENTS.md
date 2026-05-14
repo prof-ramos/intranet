@@ -131,6 +131,11 @@ npm run db:studio
 
 ## Worktrees e Isolamento
 
+- Antes de iniciar qualquer nova frente, rode `git status --short --branch` e identifique se ha arquivos modificados, staged ou untracked que pertencem a outra task.
+- Nao misture frentes no mesmo PR. Se a task atual terminou, faca commit/PR antes de iniciar a proxima. Se precisar pausar uma frente, use `git stash push -u -m "<nome-da-frente>"` ou crie um worktree/branch dedicado.
+- Evite `git add .` quando houver mais de uma frente aberta. Prefira `git add <arquivos-da-task>` e confira com `git diff --cached --name-status` antes de commitar.
+- Worktrees aninhados tambem contam: se `.claude/worktrees/*` ou `.worktrees/*` aparecer como dirty no repo principal, entre no worktree correspondente e faca commit/stash la dentro. Nao resolva isso apagando ou revertendo alteracoes sem confirmar a origem.
+- Antes de abrir PR, o `git status --short --branch` deve estar limpo ou conter apenas arquivos explicitamente fora do escopo e preservados em stash/branch separado.
 - Use git worktrees para isolar cada feature em `.worktrees/<branch-name>`. Cada worktree é um checkout independente com seu próprio `node_modules` e `.next`.
 - Cada agente deve modificar apenas arquivos dentro da área que lhe foi atribuída (ex: `src/app/api` vs `src/components`). Quanto menos sobreposição de arquivos, menor a chance de conflito.
 - Faça rebase em `origin/main` frequentemente durante o desenvolvimento. Conflitos pequenos e frequentes são mais fáceis de resolver que um conflito gigante no final.
@@ -244,6 +249,8 @@ Maestro
 - **NÃO** permitir subagentes fazerem merge direto para `main`.
 - **NÃO** deixar worktrees abandonados por mais de 48h sem rebase.
 - **NÃO** dividir tarefas que editam o mesmo arquivo (ex: dois agentes modificando `src/lib/db/schema.ts`).
+- **NÃO** abrir PR a partir de um worktree com mudanças de outra frente no working tree.
+- **NÃO** usar `git add .` como atalho antes de revisar `git status --short` e `git diff --cached --name-status`.
 
 ### Comandos Úteis
 
@@ -259,4 +266,10 @@ git worktree prune
 
 # Verificar branch de cada worktree
 git worktree list --porcelain
+
+# Preservar uma frente inacabada antes de trocar de task
+git stash push -u -m "nome-da-frente"
+
+# Conferir exatamente o que entrara no commit
+git diff --cached --name-status
 ```

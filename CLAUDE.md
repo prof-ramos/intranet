@@ -168,6 +168,14 @@ Formal, institutional interface. See `DESIGN.md` for full specification.
 
 Este projeto adota um padrão de **git worktrees** combinado com **subagentes paralelos** no Maestri para desenvolvimento acelerado e sem conflitos.
 
+### Controle de Escopo Antes de Commit/PR
+
+- Antes de iniciar uma nova frente, rode `git status --short --branch` e classifique cada arquivo como: task atual, outra frente, worktree aninhado ou artefato local.
+- Nao misture frentes no mesmo PR. Se a entrega atual terminou, crie commit/PR antes de iniciar a proxima. Se a proxima frente ja comecou, preserve-a com `git stash push -u -m "<nome-da-frente>"` ou mova para branch/worktree proprio antes de abrir PR.
+- Evite `git add .` quando houver qualquer mudanca fora do escopo. Use `git add <arquivos-da-task>` e valide o indice com `git diff --cached --name-status`.
+- Se `.claude/worktrees/*` ou `.worktrees/*` aparecer como dirty no repo principal, entre no worktree correspondente e resolva la dentro com commit ou stash. Nao apague nem reverta conteudo de outro agente sem confirmacao.
+- Antes de `gh pr create`, o working tree deve estar limpo ou as mudancas fora do escopo devem estar explicitamente preservadas em stash/branch separado e mencionadas no handoff.
+
 ### Estrutura de Worktrees
 
 ```
@@ -256,6 +264,8 @@ Maestro
 - **NÃO** permitir subagentes fazerem merge direto para `main`.
 - **NÃO** deixar worktrees abandonados por mais de 48h sem rebase.
 - **NÃO** dividir tarefas que editam o mesmo arquivo.
+- **NÃO** abrir PR com arquivos sujos de outra frente no working tree.
+- **NÃO** usar `git add .` sem antes conferir `git status --short` e `git diff --cached --name-status`.
 
 ### Comandos Úteis
 
@@ -274,6 +284,12 @@ git worktree remove --force .worktrees/<nome>
 
 # Prune worktrees inválidos
 git worktree prune
+
+# Preservar uma frente inacabada antes de trocar de task
+git stash push -u -m "nome-da-frente"
+
+# Conferir exatamente o que entrara no commit
+git diff --cached --name-status
 ```
 
 ## Gotchas
