@@ -26,7 +26,7 @@ const expectedColumns = {
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
     'completed_at:timestamptz:YES',
-    'position:float4:NO',
+    'position:int4:NO',
   ],
   admins: [
     'id:int8:NO',
@@ -533,6 +533,41 @@ describe('database schema contract', () => {
     for (const [tableName, expectedTableIndexes] of Object.entries(expectedIndexes)) {
       expect(actual[tableName]).toEqual(expectedTableIndexes);
     }
+  });
+
+  it('has all expected CHECK constraints for range validation', async () => {
+    const rows = await db<
+      {
+        table_name: string;
+        constraint_name: string;
+        check_clause: string;
+      }[]
+    >`
+      select ccu.table_name, tc.constraint_name, cc.check_clause
+      from information_schema.check_constraints cc
+      join information_schema.table_constraints tc
+        on cc.constraint_catalog = tc.constraint_catalog
+        and cc.constraint_schema = tc.constraint_schema
+        and cc.constraint_name = tc.constraint_name
+        and tc.constraint_type = 'CHECK'
+      join information_schema.constraint_column_usage ccu
+        on tc.constraint_catalog = ccu.constraint_catalog
+        and tc.constraint_schema = ccu.constraint_schema
+        and tc.constraint_name = ccu.constraint_name
+      where tc.constraint_schema = 'public'
+        and tc.constraint_name like 'chk_%'
+      order by ccu.table_name, tc.constraint_name
+    `;
+
+    const actual = rows.map((row) => `${row.table_name}:${row.constraint_name}`);
+    const expected = [
+      'monthly_payments:chk_monthly_payments_month',
+      'monthly_payments:chk_monthly_payments_year',
+      'oficios:chk_oficios_sequence',
+      'oficios:chk_oficios_year',
+      'webhook_deliveries:chk_webhook_deliveries_attempt',
+    ];
+    expect(actual).toEqual(expected);
   });
 
   it('has pg_trgm available for trigram indexes', async () => {

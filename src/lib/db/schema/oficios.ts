@@ -1,4 +1,5 @@
-import { bigint, index, integer, pgEnum, pgTable, text, timestamp, unique } from 'drizzle-orm/pg-core';
+import { bigint, check, index, integer, pgEnum, pgTable, text, timestamp, unique } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { admins } from './admins';
 
 export const officialLetterStatus = pgEnum('official_letter_status', ['gerado', 'cancelado', 'rascunho']);
@@ -41,6 +42,8 @@ export const oficios = pgTable(
     index('idx_oficios_created_at').on(table.createdAt),
     index('idx_oficios_created_by').on(table.createdBy),
     index('idx_oficios_updated_by').on(table.updatedBy),
+    check('chk_oficios_year', sql`${table.year} between 2000 and 2100`),
+    check('chk_oficios_sequence', sql`${table.sequence} > 0`),
   ],
 );
 

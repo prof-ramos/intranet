@@ -32,7 +32,7 @@ export async function generateInternalNumber(executor?: Tx): Promise<string> {
     const regexPattern = `JUR-${year}-([0-9]+)`;
     const [result] = await tx
       .select({
-        max: sql<string>`max(substring(${legalConsultations.internalNumber} from ${sql.raw(`'${regexPattern}'`)})::integer)`,
+        max: sql<string>`max(substring(${legalConsultations.internalNumber} from ${regexPattern})::integer)`,
       })
       .from(legalConsultations)
       .where(sql`${legalConsultations.internalNumber} like ${likePattern}`);

@@ -13,35 +13,13 @@ import {
 import { signIntegrationRequest } from '@/lib/integrations/auth';
 import type { DomainEventType } from '@/lib/integrations/outbox';
 import { decryptWebhookSecret } from '@/lib/integrations/webhooks/secrets';
+import { sanitizePiiValue } from '@/lib/sanitize-pii';
 
 const MAX_WEBHOOK_ATTEMPTS = 5;
 const RESPONSE_EXCERPT_LIMIT = 500;
 const WEBHOOK_TIMEOUT_MS = 10_000;
-const SENSITIVE_PAYLOAD_KEY_PATTERN = /cpf|siape|email|address|endereco|phone|telefone|whatsapp|secret|token|password/i;
 
 type DispatchDomainEventResult = Awaited<ReturnType<typeof dispatchDomainEventById>>;
-
-function sanitizeEventPayload(value: unknown, visited = new WeakSet<object>()): unknown {
-  if (value == null || typeof value !== 'object') {
-    return value ?? null;
-  }
-
-  if (visited.has(value)) {
-    return '[circular]';
-  }
-  visited.add(value);
-
-  if (Array.isArray(value)) {
-    return value.map((item) => sanitizeEventPayload(item, visited));
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).map(([key, entry]) => [
-      key,
-      SENSITIVE_PAYLOAD_KEY_PATTERN.test(key) ? '[redacted]' : sanitizeEventPayload(entry, visited),
-    ]),
-  );
-}
 
 function buildWebhookBody(event: Awaited<ReturnType<typeof getDomainEventById>>) {
   if (!event) {
@@ -59,7 +37,7 @@ function buildWebhookBody(event: Awaited<ReturnType<typeof getDomainEventById>>)
     actor: {
       adminId: event.actorAdminId,
     },
-    data: sanitizeEventPayload(event.payload),
+    data: sanitizePiiValue(event.payload),
   };
 }
 

@@ -1,4 +1,4 @@
-import { bigint, index, jsonb, pgEnum, pgTable, real, text, timestamp } from 'drizzle-orm/pg-core';
+import { bigint, index, integer, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { admins } from '@/lib/db/schema/admins';
 import { associates } from '@/lib/db/schema/associates';
@@ -38,7 +38,7 @@ export const activities = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date()),
     completedAt: timestamp('completed_at', { withTimezone: true }),
-    position: real('position').notNull().default(1000),
+    position: integer('position').notNull().default(1000),
   },
   (table) => [
     index('idx_activities_status').on(table.status),

@@ -22,6 +22,7 @@ export type IntegrationErrorCode =
   | 'invalid_request'
   | 'method_not_allowed'
   | 'not_implemented'
+  | 'rate_limit_exceeded'
   | 'unauthorized';
 
 export interface JsonEnvelopeMeta {

@@ -1,7 +1,7 @@
-import { sql } from 'drizzle-orm';
 import {
   bigint,
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -11,6 +11,7 @@ import {
   timestamp,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { admins } from './admins';
 
 export const domainEventType = pgEnum('domain_event_type', [
@@ -134,6 +135,7 @@ export const webhookDeliveries = pgTable(
     index('idx_webhook_deliveries_webhook_subscription_id').on(table.webhookSubscriptionId),
     index('idx_webhook_deliveries_status').on(table.status),
     index('idx_webhook_deliveries_status_next_retry_at').on(table.status, table.nextRetryAt),
+    check('chk_webhook_deliveries_attempt', sql`${table.attempt} > 0`),
   ],
 );
 

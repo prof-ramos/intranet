@@ -110,15 +110,29 @@
     {
       "idx": 15,
       "version": "7",
-      "when": 1778790899000,
-      "tag": "0017_login_attempts_email_hash",
+      "when": 1778841600000,
+      "tag": "0020_add_check_constraints",
       "breakpoints": true
     },
     {
       "idx": 16,
       "version": "7",
-      "when": 1778870000000,
-      "tag": "0018_add_pii_encryption_columns",
+      "when": 1778841600001,
+      "tag": "0021_alter_activities_position_to_integer",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1778845200000,
+      "tag": "0022_set_idle_transaction_timeout",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1778845200001,
+      "tag": "0023_rls_restrict_to_authenticated",
       "breakpoints": true
     }
   ]

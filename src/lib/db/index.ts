@@ -6,11 +6,6 @@ import type { PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
 import * as schema from './schema';
 import { env } from '@/lib/env';
 
-function positiveInteger(value: string | undefined, fallback: number) {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
-}
-
 // databaseUrl intentionally prefers DATABASE_URL for runtime connections.
 // Falls back to Supabase Vercel integration var names (POSTGRES_URL, POSTGRES_PRISMA_URL).
 const databaseUrl =
@@ -39,10 +34,10 @@ const usesTransactionPooler =
 
 const client = postgres(databaseUrl, {
   prepare: !usesTransactionPooler,
-  max: positiveInteger(env.DB_MAX_CONNECTIONS, 10),
+  max: env.DB_MAX_CONNECTIONS ?? 10,
   max_lifetime: 60 * 30,
-  connect_timeout: positiveInteger(env.DB_CONNECT_TIMEOUT_SECONDS, 10),
-  idle_timeout: positiveInteger(env.DB_IDLE_TIMEOUT_SECONDS, 20),
+  connect_timeout: env.DB_CONNECT_TIMEOUT_SECONDS ?? 10,
+  idle_timeout: env.DB_IDLE_TIMEOUT_SECONDS ?? 20,
   connection: {
     application_name: 'asof-intranet',
     statement_timeout: 30000,
