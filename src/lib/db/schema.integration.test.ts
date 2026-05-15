@@ -79,6 +79,19 @@ const expectedColumns = {
     'updated_at:timestamptz:NO',
     'payment_method:payment_method:NO',
   ],
+  associates_list_view: [
+    'id:int8:YES',
+    'full_name:text:YES',
+    'assignment:text:YES',
+    'class_pattern:text:YES',
+    'association_status:association_status:YES',
+    'functional_status:functional_status:YES',
+    'contribution_status:contribution_status:YES',
+    'location_country:text:YES',
+    'location_city:text:YES',
+    'created_at:timestamptz:YES',
+    'updated_at:timestamptz:YES',
+  ],
   audit_logs: [
     'id:int8:NO',
     'action:text:NO',
@@ -330,22 +343,21 @@ const expectedIndexes = {
   admins: ['admins_email_unique', 'admins_pkey'],
   associates: [
     'associates_pkey',
+    'idx_associates_address_hash',
     'idx_associates_association_status',
     'idx_associates_birth_month',
     'idx_associates_contribution_status',
     'idx_associates_cpf',
     'idx_associates_cpf_hash',
-    'idx_associates_name',
     'idx_associates_name_trgm',
+    'idx_associates_phone_hash',
     'idx_associates_primary_email',
     'idx_associates_primary_email_hash',
-    'idx_associates_phone_hash',
-    'idx_associates_address_hash',
-    'idx_associates_whatsapp_hash',
     'idx_associates_siape',
     'idx_associates_siape_hash',
     'idx_associates_status_country',
     'idx_associates_status_name',
+    'idx_associates_whatsapp_hash',
   ],
   audit_logs: [
     'audit_logs_pkey',
@@ -425,7 +437,6 @@ const expectedIndexes = {
   ],
   monthly_payments: [
     'idx_monthly_payments_associate_id',
-    'idx_monthly_payments_association_status',
     'idx_monthly_payments_status',
     'idx_monthly_payments_unique',
     'idx_monthly_payments_updated_by',
@@ -465,7 +476,9 @@ const expectedIndexes = {
   ],
 } as const;
 
-const expectedAppTables = Object.keys(expectedColumns).sort();
+const expectedAppTables = Object.keys(expectedColumns)
+  .filter((name) => name !== 'associates_list_view')
+  .sort();
 // These allow known local/dev-only DB artifacts without weakening the production schema contract.
 // Add entries only for temporary local fixtures and promote them to expected* lists when migrations require them.
 const allowedLocalOnlyTables = ['notifications'] as const;

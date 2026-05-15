@@ -10,4 +10,4 @@ CREATE TABLE "assignments" (
 );
 --> statement-breakpoint
 ALTER TABLE "audit_logs" ALTER COLUMN "entity_id" DROP NOT NULL;--> statement-breakpoint
-CREATE INDEX "idx_activities_associate_due_id" ON "activities" USING btree ("associate_id","due_date","id");
+CREATE INDEX IF NOT EXISTS "idx_activities_associate_due_id" ON "activities" USING btree ("associate_id","due_date","id");

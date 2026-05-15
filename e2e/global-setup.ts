@@ -17,6 +17,7 @@ const DEV_SERVER_PID_FILE = path.resolve(process.cwd(), `${E2E_DIST_DIR}/e2e-dev
 const DEV_SERVER_LOG_FILE = path.resolve(process.cwd(), `${E2E_DIST_DIR}/e2e-dev-server.log`);
 const NEXT_BIN = path.resolve(process.cwd(), 'node_modules/next/dist/bin/next');
 const E2E_SESSION_SECRET = 'e2e-session-secret-at-least-32-characters-long';
+const E2E_ENCRYPTION_MASTER_KEY = 'e2e-encryption-master-key-at-least-32-chars';
 const E2E_BASE_URL = 'http://127.0.0.1:3001';
 
 function getRecentServerLog() {
@@ -54,12 +55,9 @@ async function waitForServerReady(pid: number) {
 export default async function globalSetup() {
   mkdirSync(path.dirname(DEV_SERVER_PID_FILE), { recursive: true });
 
-  // Ensure test DB exists
-  try {
-    execSync(`createdb asof_test`, { stdio: 'ignore' });
-  } catch {
-    // DB may already exist
-  }
+  // Recreate the local E2E DB so migration replay starts from a clean history.
+  execSync(`dropdb --if-exists asof_test`, { stdio: 'ignore' });
+  execSync(`createdb asof_test`, { stdio: 'ignore' });
 
   // Run migrations
   execSync(`DATABASE_URL="${TEST_DATABASE_URL}" npx drizzle-kit migrate`, {
@@ -93,6 +91,7 @@ export default async function globalSetup() {
         SKIP_AUTH: 'false',
         // Fixed only for ephemeral E2E runs; tests do not persist signed sessions.
         SESSION_SECRET: E2E_SESSION_SECRET,
+        ENCRYPTION_MASTER_KEY: process.env.ENCRYPTION_MASTER_KEY ?? E2E_ENCRYPTION_MASTER_KEY,
       },
       detached: true,
       stdio: ['ignore', logFd, logFd],

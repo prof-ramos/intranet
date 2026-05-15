@@ -77,7 +77,10 @@ async function main() {
         };
 
         if (existing) {
-          const { error } = await supabase.auth.admin.updateUserById(existing.id, payload);
+          const { error } = await supabase.auth.admin.updateUserById(existing.id, {
+            ...payload,
+            password: 'Senha-Forte-2026!',
+          });
           if (error) {
             console.error(`Failed to update auth user ${admin.email}:`, error.message);
           } else {
