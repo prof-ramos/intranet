@@ -47,10 +47,12 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 │       │   ├── types.ts             # Shared integration types (scopes, auth results, signatures)
 │       │   └── webhooks/            # Webhook dispatch, subscription management, secrets
 │       ├── juridico/                # Repository, service, queries, formatters
+│       ├── notifications/           # Real-time notification system (repository, service, events)
 │       ├── oficios/                 # Official letters repository + service
 │       ├── sanitize-pii.ts         # Shared PII sanitizer for audit logs and webhooks
 │       ├── reports/                # Report queries and CSV serialization
 │       ├── supabase/                # Supabase SDK factories for script/server use
+│       │   └── client.ts            # Supabase realtime client for notifications
 │       └── ui/                      # Shared UI tokens/helpers
 ├── drizzle/
 │   └── postgres/                    # Current PostgreSQL migrations
@@ -125,6 +127,25 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 ```
 
 The application is intentionally compact: the web UI and backend behavior live in one Next.js codebase. Server Components and Server Actions own most request-time work. `proxy.ts` performs coarse protected-route validation before the protected app renders. Database access is centralized through Drizzle.
+
+### 3.2.5. Notification System
+
+Name: Real-time Notification System
+
+Description: Provides in-app notifications for activity reassignments and legal consultation updates using Supabase realtime subscriptions. Notifications are created via repository methods, delivered through a client-side hook with optimistic UI updates, and marked as read individually or in bulk.
+
+Technologies: Supabase realtime (`@supabase/supabase-js`), React hooks, Server Actions.
+
+Key files:
+- `src/lib/notifications/repository.ts` — create, list, count unread, mark read, mark all read
+- `src/lib/notifications/service.ts` — business logic layer
+- `src/lib/notifications/events.ts` — event bus integration
+- `src/components/NotificationBell.tsx` — UI component with realtime subscription
+- `src/hooks/useNotifications.ts` — realtime subscription hook
+- `src/app/app/notifications/actions.ts` — Server Actions for notification mutations
+- `src/lib/supabase/client.ts` — Supabase client factory for realtime
+
+Required env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 ## 3. Core Components
 
@@ -211,6 +232,7 @@ Key Schemas/Tables:
 - `webhook_subscriptions` — configured outbound webhook destinations, with encrypted `secret_ciphertext`
 - `webhook_deliveries` — delivery attempts, idempotency keys, failure reasons, status, response excerpts, retry scheduling
 - `integration_api_keys` — persisted M2M API keys with scopes, HMAC-SHA-256 hashed
+- `notifications` — real-time notification system (activity reassignments, legal consultation updates) with RLS
 - `associates_list_view` — PII-safe view excluding CPF, SIAPE, email, phone, address, WhatsApp ciphertext/hash columns
 
 Encrypted columns pattern: Each PII field has a `{field}Ciphertext` column (AES-256-GCM, `enc:v2:{keyId}.{iv}.{authTag}.{ciphertext}`) and a `{field}Hash` column (HMAC-SHA-256 blind index). Application code reads ciphertext with per-column fallback to plaintext during backfill transition.
@@ -659,7 +681,7 @@ Repository URL: https://github.com/prof-ramos/intranet.git
 
 Primary Contact/Team: ASOF / Prof. Ramos development workflow
 
-Date of Last Update: 2026-05-14
+Date of Last Update: 2026-05-15
 
 ## 11. Glossary / Acronyms
 

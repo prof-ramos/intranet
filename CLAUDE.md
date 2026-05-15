@@ -69,7 +69,7 @@ the result becomes `/login?error=rate-limit`.
 ### Database Layer
 
 - `src/lib/db/index.ts` — Drizzle client. Prefers `DATABASE_URL`, falls back to `DATABASE_POSTGRES_URL`. Auto-detects transaction pooler (pgbouncer/port 6543) and sets `prepare: false` accordingly.
-- `src/lib/db/schema/` — Drizzle schemas: `admins`, `associates`, `activities`, `audit_logs`, `login_attempts`, `rate_limits`, `legal_consultations`, `legal_notes`, `legal_processes`, `legal_opinions`, `monthly_payments`, `oficios`, `assignments`, `domain_events`, `webhook_subscriptions`, `webhook_deliveries`, `integration_api_keys`.
+- `src/lib/db/schema/` — Drizzle schemas: `admins`, `associates`, `activities`, `audit_logs`, `login_attempts`, `rate_limits`, `legal_consultations`, `legal_notes`, `legal_processes`, `legal_opinions`, `monthly_payments`, `oficios`, `assignments`, `domain_events`, `webhook_subscriptions`, `webhook_deliveries`, `integration_api_keys`, `notifications`.
 - `drizzle.config.ts` — Targets PostgreSQL, writes migrations to `drizzle/postgres/`. **Rejects pooled URLs** — migrations require direct/non-pooling connection.
 - **Migrations:** Use `DATABASE_MIGRATION_URL` or `DATABASE_POSTGRES_URL_NON_POOLING`.
 
@@ -123,6 +123,18 @@ All PII fields (CPF, SIAPE, email, phone, address, WhatsApp) are encrypted at re
 ### Integration Rate Limiting
 
 `src/lib/integrations/rate-limit.ts` provides a PostgreSQL-backed rate limiter using atomic `INSERT...ON CONFLICT DO UPDATE...RETURNING`. Applied to `/api/v1/events` and `/api/v1/health` endpoints. Default: 60 requests per 15-minute window per IP.
+
+### Notifications
+
+Real-time notification system for activities and legal consultations:
+- `src/lib/notifications/repository.ts` — create, list, count unread, mark read, mark all read
+- `src/lib/notifications/service.ts` — business logic layer
+- `src/lib/notifications/events.ts` — event bus integration
+- `src/components/NotificationBell.tsx` — UI component with Supabase realtime subscription
+- `src/hooks/useNotifications.ts` — realtime subscription hook
+- `src/app/app/notifications/actions.ts` — Server Actions for notification mutations
+
+Required env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 ### Auth & Authorization
 
@@ -356,9 +368,24 @@ git diff --cached --name-status
 - `src/lib/integrations/keys/service.ts` — Integration API key CRUD (create, list, revoke, rotate)
 - `src/lib/integrations/rate-limit.ts` — PostgreSQL-backed rate limiter for API endpoints
 - `src/lib/integrations/webhooks/service.ts` — Transactional webhook dispatch with `Promise.allSettled`
+- `src/lib/supabase/client.ts` — Supabase realtime client (notifications)
 - `next.config.ts` — Next.js config (imports `env.ts`)
 - `drizzle.config.ts` — Migration config
 - `vitest.config.ts` — Test config
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default label vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context repo — `CONTEXT.md` at root + `docs/adr/` for architectural decisions. See `docs/agents/domain.md`.
 
 ## External Resources
 
