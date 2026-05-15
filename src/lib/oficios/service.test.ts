@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { saveOfficialLetter, updateOfficialLetter } from './service';
+import { saveOfficialLetter, updateOfficialLetter, cancelOfficialLetter, generateOfficialLetterNumber } from './service';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import type { NewOfficialLetter, OfficialLetter } from '@/lib/db/schema/oficios';
 
@@ -95,6 +95,49 @@ describe('oficios service', () => {
     );
   });
 
+  it('generates padded sequence number starting from last+1', async () => {
+    const repository = await import('./repository');
+    vi.mocked(repository.getLastSequenceForYear).mockResolvedValue(5);
+
+    const result = await generateOfficialLetterNumber(2026);
+    expect(result).toEqual({ number: 'OFÍCIO No 006/2026/ASOF', sequence: 6 });
+  });
+
+  it('generates sequence 001 when no letters exist for the year', async () => {
+    const repository = await import('./repository');
+    vi.mocked(repository.getLastSequenceForYear).mockResolvedValue(0);
+
+    const result = await generateOfficialLetterNumber(2026);
+    expect(result).toEqual({ number: 'OFÍCIO No 001/2026/ASOF', sequence: 1 });
+  });
+
+  it('does not emit event when a draft is created', async () => {
+    const repository = await import('./repository');
+    vi.mocked(repository.createOfficialLetter).mockResolvedValue({
+      ...BASE_OFFICIAL_LETTER,
+      status: 'rascunho',
+    });
+
+    await saveOfficialLetter(
+      {
+        recipient: 'Destinatário',
+        recipientRole: 'Cargo',
+        vocativo: 'Senhor',
+        letterDate: '13 de maio de 2026',
+        subject: 'Assunto',
+        itamaratySector: 'SGP',
+        signatoryName: 'Nome',
+        signatoryRole: 'Cargo',
+        closure: 'Atenciosamente,',
+        bodyRichText: 'Texto',
+        bodyPlainText: 'Texto',
+      },
+      1,
+    );
+
+    expect(emitDomainEvent).not.toHaveBeenCalled();
+  });
+
   it('emits a published event when an existing draft transitions to gerado', async () => {
     const repository = await import('./repository');
     vi.mocked(repository.findOfficialLetterById).mockResolvedValue({
@@ -122,5 +165,33 @@ describe('oficios service', () => {
       }),
       transactionMock.tx,
     );
+  });
+
+  it('cancels an official letter and logs audit action', async () => {
+      const repository = await import('./repository');
+      const audit = await import('@/lib/audit/service');
+
+      vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
+      vi.mocked(repository.cancelOfficialLetter).mockResolvedValue({
+        ...BASE_OFFICIAL_LETTER,
+        status: 'cancelado',
+      });
+
+      const result = await cancelOfficialLetter(12, 1);
+
+      expect(result.status).toBe('cancelado');
+      expect(audit.logAuditAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'official_letter_cancelled',
+          entityId: 12,
+        }),
+      );
+    });
+
+    it('throws when cancelling a non-existent letter', async () => {
+      const repository = await import('./repository');
+      vi.mocked(repository.findOfficialLetterById).mockResolvedValue(null as any);
+
+    await expect(cancelOfficialLetter(999, 1)).rejects.toThrow('Ofício não encontrado.');
   });
 });
