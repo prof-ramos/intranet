@@ -19,7 +19,7 @@ export function toCsvCell(value: string | null | undefined): string {
   const str = value == null ? '' : value;
   const escaped = str.replace(/"/g, '""');
   // Prevent CSV/formula injection by prefixing dangerous characters with a tab
-  if (/^[-=+@\t]/.test(escaped)) {
+  if (/^[-=+@\t\r]/.test(escaped)) {
     return `"\t${escaped}"`;
   }
   return `"${escaped}"`;
