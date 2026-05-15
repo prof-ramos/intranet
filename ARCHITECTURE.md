@@ -25,21 +25,31 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 │   │   └── page.tsx                 # Root redirect entrypoint
 │   ├── components/                  # Shared UI shell components
 │   └── lib/
-│       ├── associates/              # Search parameter parsing + repository queries
+│       ├── associates/              # Search parameter parsing + repository queries + PII masking
 │       ├── auth/                    # Auth config, sessions, guards, password logic, rate limiting
-│       ├── crypto/                    # AES-256-GCM encryption, safe-compare, versioned ciphertext format
+│       ├── crypto/                  # HKDF key derivation, AES-256-GCM encryption, PII blind indexes
 │       ├── db/                      # Drizzle client and schema exports
 │       │   └── schema/              # admins, associates, activities, assignments, audit_logs, login_attempts,
 │       │                            # legal_consultations, legal_processes, legal_notes, legal_opinions,
 │       │                            # legal_opinion_tags, monthly_payments, oficios, rate_limits,
-│       │                            # domain_events, webhook_subscriptions, webhook_deliveries, integration_api_keys
+│       │                            # domain_events, webhook_subscriptions, webhook_deliveries,
+│       │                            # integration_api_keys, enums, views
 │       ├── dashboard/               # Dashboard aggregation queries
 │       ├── env.ts                   # Zod-validated environment variables
 │       ├── ip.ts                    # Client IP extraction from headers
-│       ├── integrations/            # Versioned integration auth, JSON envelopes, and route helpers
+│       ├── integrations/            # Versioned integration auth, JSON envelopes, rate limiting, and route helpers
+│       │   ├── auth.ts              # Dual-auth (env-var OR table-backed API keys with scopes)
+│       │   ├── config.ts            # Integration environment configuration
+│       │   ├── http.ts              # JSON envelopes, request ID, error helpers
+│       │   ├── keys/                # API key CRUD (service, repository)
+│       │   ├── outbox.ts            # Domain event outbox with PII sanitization
+│       │   ├── rate-limit.ts        # PostgreSQL-backed API rate limiter
+│       │   ├── types.ts             # Shared integration types (scopes, auth results, signatures)
+│       │   └── webhooks/            # Webhook dispatch, subscription management, secrets
 │       ├── juridico/                # Repository, service, queries, formatters
-│       ├── rate-limit.ts            # IP-based rate limiting (PostgreSQL-backed)
-│       ├── reports/                 # Report queries and CSV serialization
+│       ├── oficios/                 # Official letters repository + service
+│       ├── sanitize-pii.ts         # Shared PII sanitizer for audit logs and webhooks
+│       ├── reports/                # Report queries and CSV serialization
 │       ├── supabase/                # Supabase SDK factories for script/server use
 │       └── ui/                      # Shared UI tokens/helpers
 ├── drizzle/
@@ -59,37 +69,47 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 ## 2. High-Level System Diagram
 
 ```text
-[Internal ASOF User]
-        |
-        v
-[Next.js App Router UI]
-        |
+[Internal ASOF User]                          [External Integration Consumer]
+        |                                              |
+        v                                              v
+[Next.js App Router UI]                    [/api/v1/events, /api/v1/health]
+        |                                              |
         +--> [proxy.ts route guard] --> [JWT cookie validation with jose]
-        |
-        +--> [Server Components / Server Actions]
-                 |
-                 +--> [Auth helpers in src/lib/auth]
+        |                                              |
+        +--> [Server Components / Server Actions]    +--> [Integration auth helpers]
+                 |                                           +--> [env-var key (full access)]
+                 +--> [Auth helpers in src/lib/auth]         +--> [table-backed key (scoped)]
                  |        +--> [requireAuth() — full session revalidation]
                  |        +--> [requireRole() — role-based access control]
                  |        +--> [loginRateLimiter — per-email rate limiting]
-                 |        +--> [Integration auth helpers — API key + HMAC + timestamp]
+                 |        +--> [Integration auth — dual path: env OR table]
+                 |        +--> [Data access logging — LGPD Art. 30/37]
                  |
                  +--> [src/lib/env.ts — Zod env validation]
+                 +--> [src/lib/crypto/ — HKDF + AES-256-GCM + HMAC blind indexes]
+                 +--> [src/lib/sanitize-pii.ts — shared PII redaction]
                  +--> [src/lib/integrations/* — versioned HTTP helpers for /api/v1/*]
                  |
                  +--> [Drizzle ORM client]
                  |        |
-                 |        +--> [Repository layer — dashboard, associates, reports, juridico]
+                 |        +--> [Repository layer — dashboard, associates, reports, juridico, oficios]
                  |        |        +--> [src/lib/juridico/repository.ts — SQL isolation]
                  |        |        +--> [src/lib/juridico/service.ts — business rules]
+                 |        |        +--> [src/lib/associates/repository.ts — HMAC blind index lookups]
+                 |        |        +--> [src/lib/associates/service.ts — PII decrypt/mask per role]
                  |        |
-                 |        +--> [Rate limiting — src/lib/rate-limit.ts (PostgreSQL)]
+                 |        +--> [Rate limiting — src/lib/integrations/rate-limit.ts (PostgreSQL)]
                  |        |
                  |        v
                  |  [PostgreSQL database]
-                 |        +--> [audit_logs — LGPD accountability]
-                 |        +--> [login_attempts — auth rate limiting]
+                 |        +--> [audit_logs — LGPD accountability + data access logging]
+                 |        +--> [login_attempts — auth rate limiting (HMAC email hash)]
                  |        +--> [rate_limits — IP rate limiting]
+                 |        +--> [domain_events — outbox with PII sanitization + retention]
+                 |        +--> [webhook_subscriptions — encrypted secrets, event subscriptions]
+                 |        +--> [webhook_deliveries — delivery attempts, idempotency keys, failure reasons]
+                 |        +--> [integration_api_keys — scoped API keys, HMAC hashed]
+                 |        +--> [associates_list_view — PII-safe view excluding sensitive columns]
                  |
                  +--> [src/lib/ui/tokens.ts — design tokens]
 
@@ -98,6 +118,8 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
         +--> [Drizzle Kit migrations]
         |
         +--> [Seed/status scripts]
+        |
+        +--> [backfill-pii-encryption.ts — idempotent PII encryption backfill]
         |
         +--> [Supabase SDK helpers] --> [Supabase project APIs]
 ```
@@ -144,11 +166,11 @@ Deployment: Server-side only. Migrations require a direct/non-pooling PostgreSQL
 
 Name: Versioned Integration Helpers
 
-Description: Provides the initial `/api/v1/*` groundwork for outbound integrations. The current foundation is intentionally narrow: shared JSON envelopes, request ID propagation, API key + HMAC + timestamp verification helpers, an authenticated health route, an operator-facing `/api/v1/events` route, and a bearer-only cron `/api/v1/events/dispatch` route that dispatches persisted outbound events without exposing broad domain APIs or accepting inbound event ingestion. Event payloads are persisted through an outbox (`domain_events`) with event-type allowlists and are sanitized again before outbound delivery.
+Description: Provides the `/api/v1/*` groundwork for outbound integrations and inbound API access. The foundation includes: shared JSON envelopes, request ID propagation, dual-auth API key verification (env-var OR table-backed with scopes), HMAC-SHA-256 timestamp verification, PostgreSQL-backed rate limiting (60 req/15min/IP), an authenticated health route, an operator-facing `/api/v1/events` route, and a bearer-only cron `/api/v1/events/dispatch` route. Outbound webhook dispatch uses `Promise.allSettled()` for parallel delivery with deterministic idempotency keys (`{eventId}:{subscriptionId}`). Event payloads are persisted through an outbox (`domain_events`) with event-type allowlists, PII sanitization via shared `sanitize-pii.ts`, and 90-day retention (`expiresAt`). Failed deliveries are tracked with `failureReason` column. Webhook subscription secrets are stored as `secret_ciphertext` encrypted with HKDF-derived keys.
 
-Technologies: Next.js Route Handlers, Web `Request`/`Response`, Node `crypto`.
+Technologies: Next.js Route Handlers, Web `Request`/`Response`, Node `crypto`, Drizzle ORM, PostgreSQL.
 
-Deployment: Server-side only. Integration auth secrets are read in `src/lib/integrations/config.ts` from `ASOF_INTEGRATIONS_ENABLED`, `ASOF_INTEGRATION_API_KEY`, `ASOF_INTEGRATION_HMAC_SECRET`, and optional `ASOF_INTEGRATION_TIMESTAMP_TOLERANCE_SECONDS`. Outbound webhook subscription secrets are stored as `secret_ciphertext` and encrypted/decrypted through `src/lib/integrations/webhooks/secrets.ts` using `ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY`. Scheduled dispatch uses Vercel Cron in `vercel.json` and validates `Authorization: Bearer $CRON_SECRET`.
+Deployment: Server-side only. Integration auth supports two paths: (1) env-var keys (`ASOF_INTEGRATION_API_KEY` + `ASOF_INTEGRATION_HMAC_SECRET`) with unrestricted access, and (2) table-backed API keys (`integration_api_keys`) with per-key scope arrays. Table-backed keys use HMAC-SHA-256 for key hashing and scope validation per endpoint. Scheduled dispatch uses Vercel Cron in `vercel.json` and validates `Authorization: Bearer $CRON_SECRET`.
 
 #### 3.2.4. Supabase SDK Tooling
 
@@ -173,20 +195,25 @@ Purpose: Stores administrative users, ASOF associates, activity workflow records
 Key Schemas/Tables:
 
 - `admins` — administrative users
-- `associates` — ASOF members
-- `activities` — administrative workflow records
-- `audit_logs` — LGPD accountability trail
-- `login_attempts` — per-email login rate limiting
+- `associates` — ASOF members (PII fields encrypted at rest with AES-256-GCM; HMAC blind indexes for searchable fields)
+- `activities` — administrative workflow records (`position` column is `integer`, not `real`)
+- `audit_logs` — LGPD accountability trail + data access logging (`access_type: 'view' | 'export' | 'edit'`)
+- `login_attempts` — per-email login rate limiting (email stored as HMAC-SHA-256 hash)
 - `legal_consultations` — legal member consultations
 - `legal_processes` — legal cases (schema prepared, Fase 2)
 - `legal_notes` — interaction history for consultations/processes
-- `legal_opinions` — legal opinion library (schema prepared)
+- `legal_opinions` — legal opinion library (FK to `legal_processes`)
 - `legal_opinion_tags` — opinion classification tags
-- `rate_limits` — IP-based rate limiting
-- `domain_events` — integration outbox for outbound domain events
+- `monthly_payments` — payment records (CHECK: month 1-12, year 2000-2100)
+- `oficios` — official documents (CHECK: year 2000-2100, sequence > 0)
+- `rate_limits` — IP-based rate limiting (unique index on key+scope, `integer` counters)
+- `domain_events` — integration outbox with `expiresAt` for retention (90-day default), PII-sanitized payloads
 - `webhook_subscriptions` — configured outbound webhook destinations, with encrypted `secret_ciphertext`
-- `webhook_deliveries` — delivery attempts, status, response excerpts, and retry scheduling metadata
-- `integration_api_keys` — persisted API keys with SHA-256 hashes, scopes, and `last_used_at` tracking
+- `webhook_deliveries` — delivery attempts, idempotency keys, failure reasons, status, response excerpts, retry scheduling
+- `integration_api_keys` — persisted M2M API keys with scopes, HMAC-SHA-256 hashed
+- `associates_list_view` — PII-safe view excluding CPF, SIAPE, email, phone, address, WhatsApp ciphertext/hash columns
+
+Encrypted columns pattern: Each PII field has a `{field}Ciphertext` column (AES-256-GCM, `enc:v2:{keyId}.{iv}.{authTag}.{ciphertext}`) and a `{field}Hash` column (HMAC-SHA-256 blind index). Application code reads ciphertext with per-column fallback to plaintext during backfill transition.
 
 ### 4.2. Database Architecture Decisions
 
@@ -220,17 +247,19 @@ Current indexes by table:
 
 | Table | Est. Indexes | Primary Patterns (Authority: Migration files / Schema) |
 |---|---|---|
-| `associates` | 8 | Trigram for name, B-tree for status, composite for status+name |
+| `associates` | 10 | GIN trigram for name, HMAC hash indexes for CPF/SIAPE/email lookups, composite for status+name, partial for active |
 | `activities` | 9 | Partial for open items, composite for associate+due_date+id |
 | `legal_consultations` | 11 | Partial for open items, composite for status+updated_at, trigram for title |
 | `legal_processes` | 5 | B-tree on status, associate, type |
 | `legal_notes` | 3 | Composite for entity lookup |
 | `audit_logs` | 3 | Composite for entity lookup |
-| `monthly_payments` | 1 | Unique index for (associate, year, month) |
-| `login_attempts` / `rate_limits` | 3 / 2 | login_attempts: B-tree on email, email_hash, expiry; rate_limits: B-tree on key and expiry |
-| `domain_events` | 6 | Event type, entity lookup, actor, status, occurred_at |
-| `webhook_subscriptions` | 5 | Name uniqueness, target URL, active flag, creator, subscribed event lookup |
-| `webhook_deliveries` | 5 | Request id uniqueness, event/subscription lookup, status/retry |
+| `monthly_payments` | 3 | Unique index for (associate, year, month), composite for status+contribution, FK on associate_id |
+| `oficios` | 3 | DESC on created_at, B-tree on year, unique on year+sequence |
+| `login_attempts` / `rate_limits` | 2 each | B-tree on lookup key and expiry; rate_limits has unique index on (key, scope) |
+| `domain_events` | 8 | Event type, entity lookup, actor, status, occurred_at, partial for pending, retention expiry |
+| `webhook_subscriptions` | 6 | Name uniqueness, target URL, partial for active, creator, subscribed event lookup |
+| `webhook_deliveries` | 6 | Request id uniqueness, event/subscription lookup, status/retry, idempotency key uniqueness |
+| `integration_api_keys` | 3 | HMAC hash for lookup, partial for active keys |
 
 > **Nota:** As contagens acima são informativas. A fonte canônica de verdade para o schema e índices são os arquivos em `src/lib/db/schema/` e as migrações em `drizzle/postgres/`. O comando `npm run verify:indexes` (script `scripts/verify-indexes.ts`) valida periodicamente se os índices no banco batem com os padrões documentados.
 
@@ -248,7 +277,7 @@ PostgreSQL enums are preferred over free-text columns for status and type fields
 | `activity_priority` | `activities.priority` | ✅ Correct |
 | `audit_entity_type` | `audit_logs.entity_type` | ✅ Correct |
 | `legal_consultation_status` | `legal_consultations.status` | ✅ Correct |
-| `legal_satisfaction` | `legal_consultations.satisfaction`, `legal_processes.satisfaction` (corrected in 0009) | ✅ Correct |
+| `legal_satisfaction` | `legal_consultations.satisfaction`, `legal_processes.satisfaction` (corrected in 0009) | ✅ Correct (shared, in `enums.ts`) |
 | `legal_process_type` | `legal_processes.type` | ✅ Correct |
 | `legal_process_subtype` | `legal_processes.subtype` | ✅ Correct |
 | `legal_process_status` | `legal_processes.status` | ✅ Correct |
@@ -258,25 +287,22 @@ PostgreSQL enums are preferred over free-text columns for status and type fields
 | `domain_event_entity_type` | `domain_events.entity_type` | ✅ Correct |
 | `domain_event_delivery_status` | `domain_events.delivery_status` | ✅ Correct |
 | `webhook_delivery_status` | `webhook_deliveries.status` | ✅ Correct |
+| `payment_method` | `monthly_payments.method` | ✅ Correct (shared, in `enums.ts`) |
 
-**Principle:** Any column representing a bounded set of states MUST use a PostgreSQL enum. Text-only columns exist for unbounded data (names, emails, notes).
+**Principle:** Any column representing a bounded set of states MUST use a PostgreSQL enum. Text-only columns exist for unbounded data (names, emails, notes). Cross-file shared enums (`payment_method`, `legal_satisfaction`) are centralized in `src/lib/db/schema/enums.ts`.
 
 #### 4.2.4. Row-Level Security (RLS)
 
-RLS was enabled in migration 0000 and **removed in migration 0001**, then **reinstated in migration 0009** with permissive policies. In **migration 0017**, RLS was hardened:
+RLS was enabled in migration 0000, removed in migration 0001, reinstated in migration 0009, and hardened in migration 0023.
 
-- **Critical tables** (`admins`, `associates`, `login_attempts`, `rate_limits`, `audit_logs`, `integration_api_keys`, `webhook_subscriptions`, `domain_events`, `webhook_deliveries`): policies changed from `FOR ALL TO PUBLIC USING (true) WITH CHECK (true)` to `FOR ALL TO authenticated USING (true) WITH CHECK (true)`.
-- **Previously unprotected tables** (`monthly_payments`, `oficios`): RLS enabled for the first time with `FOR ALL TO authenticated USING (true) WITH CHECK (true)`.
-- **Non-sensitive operational tables** (`activities`, `assignments`, `legal_consultations`, etc.): retain permissive `PUBLIC` policies since they contain no PII.
+**Current state:** All 16 application tables have `FORCE ROW LEVEL SECURITY` applied and all policies use `TO authenticated` (not `TO PUBLIC`). This blocks anonymous (`anon`) database access while allowing authenticated connections.
 
-**Current posture:** `TO authenticated` policies ensure that only authenticated database connections can access PII-bearing tables. The app enforces role-based access via `requireAuth()`/`requireRole()` on top of RLS. This is defense-in-depth — if a Supabase client key were exposed, anonymous access would be blocked.
-
-**Planned hardening (Wave 3):** JWT-based RLS policies that reference `current_setting('request.jwt.claims')` for per-role access control at the database level. This provides true row-level security even for authenticated connections.
+**Rationale:** All database access goes through the Next.js server layer (Server Components / Server Actions). No Supabase client is exposed to the browser; there is no direct client-to-DB path. Auth is enforced via `requireAuth()` (JWT session verification + DB admin lookup) and `requireRole()` (role-based guards).
 
 **LGPD Security & RLS Hardening:**
-1. **Authenticated-only policies:** Critical tables require `authenticated` role. App enforces role checks server-side.
-2. **Monitoring:** Recomenda-se monitorar conexões diretas ao banco que não utilizam `application_name='asof-intranet'`.
-3. **Session Context:** Futuras iterações devem adotar predicados RLS que referenciem o estado da sessão, como `current_setting('request.jwt.claims')`, fornecendo uma trava adicional no nível do banco.
+1. **Authenticated-only policies:** Migration 0023 changed all policies from `TO PUBLIC` to `TO authenticated` and applied `FORCE ROW LEVEL SECURITY`. This blocks `anon` role at the DB level.
+2. **Monitoring:** Recomenda-se monitorar conexões diretas ao banco que não utilizem `application_name='asof-intranet'`.
+3. **Session Context:** Futuras iterações devem adotar predicados RLS que referenciem o estado da sessão, como `current_setting('app.user_id')`, fornecendo uma trava adicional no nível do banco (deferred — W3.0).
 4. **Service-role Keys:** As chaves de serviço do Supabase (`service_role`) possuem privilégios totais e **devem** ser rotacionadas periodicamente, nunca commitadas e auditadas.
 5. **Narrowing:** Caso um cliente Supabase seja exposto ao browser, as políticas devem ser imediatamente restritas para `per-user` ou `per-role`.
 6. **Verification:** `npm run test:db` must include explicit checks for `relrowsecurity` and `pg_policies` on LGPD-sensitive tables whenever migrations change RLS, enums, FKs, or indexes.
@@ -291,9 +317,9 @@ Transactions are used where data consistency across multiple tables is required:
 | `addNoteService` + `touchConsultationInteraction` | ✅ Yes | Note + timestamp update are atomic |
 | `createConsultationService` (generate number + insert) | ✅ Yes | Fixed in service refactor |
 | `updateConsultationStatus` | N/A | Single-statement update; no transaction needed |
-| `initializeMonth` (finance) | ✅ Yes | Transaction-wrapped individual upserts; atomic rollback on partial failure |
-| `dispatchDomainEventById` (single event) | ✅ Yes | Transaction wraps lock + delivery updates |
-| `dispatchBatchEvents` (cron) | ✅ Yes | `SELECT FOR UPDATE SKIP LOCKED` for atomic event claiming; stuck events recovered on dispatch |
+| `initializeMonth` | ✅ Yes | `db.transaction()` wraps all individual upserts |
+| `dispatchDomainEventById` | ✅ Yes | `db.transaction()` wraps claim + delivery |
+| `rotateApiKey` | ✅ Yes | `db.transaction()` creates new key and revokes old atomically |
 | Bulk associate import | ❌ No | Each row is upserted individually (future work) |
 
 #### 4.2.6. Known N+1 Patterns
@@ -517,28 +543,31 @@ Authentication: JWT session cookie named `__Host-asof-session` (prefixo `__Host-
 
 Authorization: Roles are `admin`, `diretoria`, and `secretaria`. Route-level restrictions exist through `requireRole()`; the juridico module blocks `secretaria` at layout level (`src/app/app/juridico/layout.tsx`).
 
-Data Encryption: TLS is expected for production HTTP and database transport. Runtime database SSL is required automatically in production or when `DB_SSL=true` / `sslmode=require` is present. Webhook subscription secrets are encrypted at rest using AES-256-GCM (`src/lib/crypto/index.ts`) with the `enc:v1:` versioned format. PII fields (CPF, SIAPE) are scheduled for encryption at rest in Wave 1 of the DB architecture improvements plan.
+Data Encryption: TLS is expected for production HTTP and database transport. Runtime database SSL is required automatically in production or when `DB_SSL=true` / `sslmode=require` is present. PII fields (CPF, SIAPE, email, phone, address, WhatsApp) are encrypted at rest using AES-256-GCM with HKDF key derivation (`src/lib/crypto/`). HMAC-SHA-256 blind indexes enable searchable encrypted fields. Encryption format `enc:v2:{keyId}.{iv}.{authTag}.{ciphertext}` supports zero-downtime key rotation.
 
 Key Security Tools/Practices:
 
 - `SKIP_AUTH=true` works only outside production.
 - Service-role Supabase keys are server/script-only.
-- Integration signing is HMAC-SHA256 over method, path+query, timestamp, and body hash. The current versioned surface is deliberately limited to `/api/v1/health`, `/api/v1/events`, and `/api/v1/events/dispatch`, with outbound dispatch only.
-- Outbound event payloads must stay within the allowlists in `src/lib/integrations/outbox.ts`. CPF, SIAPE, email, address, phone, tokens, secrets, legal full text, official-letter body text, and internal notes must not be placed in `domain_events.payload`.
-- `safeCompare` is extracted to `src/lib/crypto/safe-compare.ts` and used for both integration auth and webhook dispatch verification (timing-safe comparison).
-- Integration auth (`src/lib/integrations/auth.ts`) updates `last_used_at` on the `integration_api_keys` table after successful authentication, providing usage tracking for API keys.
-- Manual dispatch through `/api/v1/events` and scheduled dispatch through `/api/v1/events/dispatch` are audited before the response is returned. Webhook subscription CRUD/secret rotation is audited separately as `webhook_subscription`. Webhook delivery attempts are recorded in `webhook_deliveries`; successful delivery audit beyond the dispatch record remains future hardening.
-- Batch dispatch uses `SELECT FOR UPDATE SKIP LOCKED` to claim events atomically, preventing double-processing across concurrent workers. Stuck events in `processing` status are recovered at the start of each dispatch cycle.
+- **Dual-auth integration:** API endpoints accept both env-var API keys (unrestricted) and table-backed API keys (scoped) via `src/lib/integrations/auth.ts`. Table keys use HMAC-SHA-256 hashing and per-endpoint scope validation.
+- Integration signing is HMAC-SHA256 over method, path+query, timestamp, and body hash. The versioned surface covers `/api/v1/health`, `/api/v1/events`, and `/api/v1/events/dispatch`.
+- Outbound event payloads must stay within the allowlists in `src/lib/integrations/outbox.ts`. PII (CPF, SIAPE, email, phone, address, tokens, secrets, etc.) is sanitized via `src/lib/sanitize-pii.ts` before storage in `domain_events.payload` or `audit_logs.changes`.
+- Webhook delivery uses `Promise.allSettled()` for parallel dispatch with deterministic idempotency keys. Failed deliveries record `failureReason` for dead-letter analysis.
 - Sensitive ASOF data such as CPF, SIAPE, email, address, and functional data must not be logged or exposed in public responses.
 - Database migrations reject pooled PostgreSQL URLs to avoid unsafe migration behavior.
-- Login rate limiting is backed by PostgreSQL (`login_attempts` table) for multi-instance consistency. Email lookups use SHA-256 hash (`email_hash` column) to avoid storing plaintext emails in rate-limit queries (migration 0018).
-- IP-based rate limiting (`rate_limits` table) protects report downloads (10 req/min) and juridico Server Actions (30 req/min).
-- Audit trail for CSV downloads: every `report_download` is logged in `audit_logs` with filters, fields, and row count (LGPD accountability).
+- Login rate limiting is backed by PostgreSQL (`login_attempts` table with HMAC-SHA-256 email hashing) for multi-instance consistency.
+- IP-based rate limiting (`rate_limits` table) protects report downloads (10 req/min), juridico Server Actions (30 req/min), and public API endpoints (60 req/15min/IP via `src/lib/integrations/rate-limit.ts`).
+- **PII access logging:** `logDataAccess()` in `src/lib/audit/service.ts` records view/export/edit access to PII data for LGPD Art. 30/37 compliance.
+- **PII-safe views:** `associates_list_view` excludes all ciphertext and hash columns, providing a safe default for list queries.
+- Audit trail for CSV downloads: every `report_download` is logged in `audit_logs` with filters, fields, and row count.
 - CSV injection prevention: cells starting with `-`, `=`, `+`, `@`, or tab are prefixed with `\t` and quoted.
 - Dummy bcrypt hash is used when user is not found to prevent timing-based user enumeration.
 - `createdBy` is derived from the JWT session, never from client-provided FormData.
 - LIKE queries escape `%` and `_` to prevent wildcard injection.
-- Core application environment variables are validated via Zod in `src/lib/env.ts` at startup. The isolated integration groundwork currently reads its own `ASOF_INTEGRATION_*` variables in `src/lib/integrations/config.ts`.
+- `sql.raw()` is banned in service code — replaced with parameterized `sql` template literals.
+- CHECK constraints enforce valid ranges at the DB level (month 1-12, year 2000-2100, sequence > 0, attempt > 0).
+- Core application environment variables are validated via Zod in `src/lib/env.ts` at startup. DB pool parameters use `z.coerce.number().int().positive().optional()`. Integration variables are validated in `src/lib/integrations/config.ts`.
+- `idle_in_transaction_session_timeout` is set to 30s at the PostgreSQL level via `ALTER DATABASE SET`.
 
 ## 8. Development & Testing Environment
 
@@ -587,7 +616,7 @@ npm run db:studio
 
 Testing Frameworks: Vitest for unit tests; Playwright for E2E tests. Integration tests with real PostgreSQL run via `vitest.integration.config.ts` and require `DATABASE_URL`.
 
-- Unit tests: `npx vitest run` (14 files, 95 tests) — auth, password, authorization, login rate limiting, associate search params, juridico service validation, validation schemas, env config.
+- Unit tests: `npx vitest run` — auth, password, authorization, login rate limiting, PII encryption, HKDF key derivation, HMAC blind indexes, integration auth (dual-path), API key CRUD, webhook dispatch, rate limiting, associate search params, juridico service validation, oficios, finance, validation schemas, env config, sanitize-pii.
 - Database schema contract tests: `npm run test:db` — validates the real PostgreSQL database against the expected tables, columns, enums, indexes, `pg_trgm`, migration SQL files, `_journal.json`, and `drizzle.__drizzle_migrations`.
 - Integration tests: `npx vitest run --config vitest.integration.config.ts` — juridico service with DB insertion, login rate limiter with PostgreSQL store. Requires a dedicated test database (never dev/prod). Set `DATABASE_URL` via `.env.test.local` or shell export; create the test DB and run migrations before first use.
 - E2E tests: `npm run test:e2e` — Playwright with authentication fixtures.
@@ -607,13 +636,20 @@ Runtime Notes:
 - ~~Replace remaining placeholder dashboard/static metrics with real persisted data.~~ ✅ Dashboard jurídico agora usa queries reais.
 - ~~Expand explicit role guards for administrative routes and actions.~~ ✅ `requireRole()` ativo em `/app/juridico`.
 - ~~Keep PostgreSQL/Supabase documentation aligned with code; remove or archive stale SQLite/libSQL references.~~ ✅ SQLite/libSQL references removidos.
+- ~~Encrypt PII at rest (CPF, SIAPE).~~ ✅ Done — AES-256-GCM with HKDF key derivation and HMAC-SHA-256 blind indexes.
+- ~~Add integration API keys with scoped access.~~ ✅ Done — dual-auth with env-var and table-backed keys.
+- ~~RLS hardening from `TO PUBLIC` to `TO authenticated`.~~ ✅ Done — migration 0023.
+- ~~PII sanitization in audit logs and domain events.~~ ✅ Done — shared `sanitize-pii.ts`.
+- ~~Rate limiting for public API endpoints.~~ ✅ Done — PostgreSQL-backed limiter at 60 req/15min/IP.
+- ~~Transaction wrapping for multi-table operations.~~ ✅ Done — `dispatchDomainEventById`, `initializeMonth`, `rotateApiKey`.
 - Add integration tests for login/session cookies, protected routes, and high-risk server actions.
+- Implement JWT-based RLS policies for critical tables (deferred — W3.0).
 - Decide and document production hosting, observability, backup, and incident-response practices.
 - Keep `README.md`, `AGENTS.md`, `DESIGN.md`, `CLAUDE.md`, `API.md`, `CONTRIBUTING.md`, and this file synchronized when runtime or architecture decisions change.
 - Implement Fase 2 do módulo jurídico: processos, pareceres, biblioteca de pareceres, anexos.
-- Add IP-based rate limiting to login endpoint (currently per-email only via `login_attempts`; IP-based `rate_limits` table exists but is not wired to login).
+- Deprecate env-var integration API key path (Phase 2 of dual-auth transition).
+- Drop plaintext PII columns after backfill verification (migration 0019b / sunset timeline).
 - Evaluate formal API documentation (OpenAPI/Swagger) if REST endpoints grow.
-- **DB Architecture Improvements:** See `docs/db-architecture-review-2026-05-14.md` and `.omc/plans/ralplan-2026-05-14-db-improvements.md` for the full prioritized plan. Phase 1 (Quick Wins) is complete. Remaining phases cover PII encryption at rest, integration API key CRUD, transaction hardening, CHECK constraints, partial indexes, JWT-based RLS, and more.
 
 ## 10. Project Identification
 

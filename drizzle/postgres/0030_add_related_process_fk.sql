@@ -1,0 +1,1 @@
+ALTER TABLE legal_opinions ADD CONSTRAINT fk_legal_opinions_related_process FOREIGN KEY (related_process_id) REFERENCES legal_processes(id) ON DELETE SET NULL;

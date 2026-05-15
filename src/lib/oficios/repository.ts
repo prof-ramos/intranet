@@ -2,7 +2,9 @@ import { db, type Tx } from '@/lib/db';
 import { oficios, type NewOfficialLetter } from '@/lib/db/schema/oficios';
 import { and, desc, eq } from 'drizzle-orm';
 
-export async function findOfficialLetters(year?: number, tx: Tx = db) {
+export async function findOfficialLetters(year?: number, options?: { limit?: number; tx?: Tx }) {
+  const limit = options?.limit ?? 100;
+  const tx = options?.tx ?? db;
   const filters = [];
   if (year) {
     filters.push(eq(oficios.year, year));
@@ -12,7 +14,8 @@ export async function findOfficialLetters(year?: number, tx: Tx = db) {
     .select()
     .from(oficios)
     .where(and(...filters))
-    .orderBy(desc(oficios.createdAt));
+    .orderBy(desc(oficios.createdAt))
+    .limit(limit);
 }
 
 export async function findOfficialLetterById(id: number, tx: Tx = db) {

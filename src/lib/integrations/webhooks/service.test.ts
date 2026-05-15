@@ -29,6 +29,19 @@ vi.mock('@/lib/integrations/webhooks/secrets', () => ({
   decryptWebhookSecret: (...args: unknown[]) => mockDecryptWebhookSecret(...args),
 }));
 
+const mockTx = {
+  select: vi.fn(),
+  insert: vi.fn(),
+  update: vi.fn(),
+  execute: vi.fn(),
+};
+
+vi.mock('@/lib/db', () => ({
+  db: {
+    transaction: (callback: (tx: typeof mockTx) => Promise<unknown>) => callback(mockTx),
+  },
+}));
+
 describe('dispatchDomainEventById', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -75,7 +88,7 @@ describe('dispatchDomainEventById', () => {
     });
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockInsertWebhookDelivery).not.toHaveBeenCalled();
-    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'delivered');
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'delivered', mockTx);
   });
 
   it('waits until nextRetryAt before retrying scheduled failures', async () => {
@@ -97,7 +110,7 @@ describe('dispatchDomainEventById', () => {
     });
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockInsertWebhookDelivery).not.toHaveBeenCalled();
-    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'pending');
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'pending', mockTx);
   });
 
   it('does not retry failed deliveries after the maximum attempts', async () => {
@@ -119,7 +132,57 @@ describe('dispatchDomainEventById', () => {
     });
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockInsertWebhookDelivery).not.toHaveBeenCalled();
-    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'failed');
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'failed', mockTx);
+  });
+
+  it('records failureReason when delivery permanently fails with non-retryable status', async () => {
+    mockListWebhookDeliveriesForEvent.mockResolvedValue([]);
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      status: 403,
+      text: () => Promise.resolve('Forbidden'),
+    });
+
+    const result = await dispatchDomainEventById(99);
+
+    expect(result).toMatchObject({ dispatched: true, results: ['failed'] });
+    expect(mockInsertWebhookDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'failed',
+        failureReason: 'Non-retryable HTTP status 403.',
+        failedAt: expect.any(Date),
+      }),
+      mockTx,
+    );
+  });
+
+  it('records failureReason when delivery exhausts max retry attempts', async () => {
+    mockListWebhookDeliveriesForEvent.mockResolvedValue([
+      {
+        webhookSubscriptionId: 5,
+        attempt: 4,
+        status: 'retry_scheduled',
+        nextRetryAt: new Date(Date.now() - 60_000),
+      },
+    ]);
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      status: 503,
+      text: () => Promise.resolve('Service Unavailable'),
+    });
+
+    const result = await dispatchDomainEventById(99);
+
+    // attempt 5 (4+1), which equals MAX_WEBHOOK_ATTEMPTS, should fail permanently
+    expect(result).toMatchObject({ dispatched: true, results: ['failed'] });
+    expect(mockInsertWebhookDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'failed',
+        failureReason: 'Max retry attempts (5) exhausted.',
+        failedAt: expect.any(Date),
+      }),
+      mockTx,
+    );
   });
 });
 

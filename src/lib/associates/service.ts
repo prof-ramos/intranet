@@ -3,6 +3,8 @@ import {
   toAssociateProfileDTO,
   toActivityDTO,
   canViewSensitiveFields,
+  maskCpf,
+  maskSiape,
 } from './lgpd';
 import {
   findAssociatesPaginated,
@@ -14,9 +16,9 @@ import {
 import { db } from '@/lib/db';
 import { functionalStatus as fsEnum, associationStatus as asEnum, contributionStatus as csEnum } from '@/lib/db/schema';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
+import { logDataAccess } from '@/lib/audit/service';
 import { formatLongDate, yearsSinceDate } from '@/lib/utils/date';
 import { encryptPii, piiBlindIndex, decryptPiiField } from '@/lib/crypto/pii';
-import { maskCpf, maskSiape } from './lgpd';
 
 type FsEnum = (typeof fsEnum.enumValues)[number];
 type AsEnum = (typeof asEnum.enumValues)[number];
@@ -104,6 +106,7 @@ export async function getAssociatesListPage(
 export async function getAssociateForEdit(
   id: number,
   role: Role,
+  adminId: number,
 ): Promise<EditAssociateDTO | null> {
   const row = await findAssociateById(id);
   if (!row) return null;
@@ -114,18 +117,31 @@ export async function getAssociateForEdit(
   const siape = canViewSensitiveFields(role)
     ? decryptPiiField(row.siapeCiphertext, row.siape)
     : maskSiape(decryptPiiField(row.siapeCiphertext, row.siape));
+  const primaryEmail = decryptPiiField(row.primaryEmailCiphertext, row.primaryEmail);
+  const phone = decryptPiiField(row.phoneCiphertext, row.phone);
+  const address = decryptPiiField(row.addressCiphertext, row.address);
+  const whatsapp = decryptPiiField(row.whatsappCiphertext, row.whatsapp);
+
+  // LGPD Art. 30/37: log PII data access
+  await logDataAccess({
+    adminId,
+    action: 'view',
+    entityType: 'associate',
+    entityId: id,
+    metadata: { accessType: 'edit_form', sensitiveFields: canViewSensitiveFields(role) },
+  });
 
   return {
     id: row.id,
     fullName: row.fullName,
     cpf,
     siape,
-    primaryEmail: row.primaryEmail,
+    primaryEmail,
     secondaryEmail: row.secondaryEmail,
-    phone: row.phone,
-    whatsapp: row.whatsapp,
+    phone,
+    whatsapp,
     birthDate: row.birthDate,
-    address: row.address,
+    address,
     locationCity: row.locationCity,
     locationCountry: row.locationCountry,
     assignment: row.assignment,
@@ -202,11 +218,19 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
     siapeCiphertext: input.siape != null ? encryptPii(input.siape) : null,
     siapeHash: input.siape != null ? piiBlindIndex(input.siape) : null,
     primaryEmail: input.primaryEmail,
+    primaryEmailCiphertext: input.primaryEmail != null ? encryptPii(input.primaryEmail) : null,
+    primaryEmailHash: input.primaryEmail != null ? piiBlindIndex(input.primaryEmail) : null,
     secondaryEmail: input.secondaryEmail,
     phone: input.phone,
+    phoneCiphertext: input.phone != null ? encryptPii(input.phone) : null,
+    phoneHash: input.phone != null ? piiBlindIndex(input.phone) : null,
     whatsapp: input.whatsapp,
+    whatsappCiphertext: input.whatsapp != null ? encryptPii(input.whatsapp) : null,
+    whatsappHash: input.whatsapp != null ? piiBlindIndex(input.whatsapp) : null,
     birthDate: input.birthDate,
     address: input.address,
+    addressCiphertext: input.address != null ? encryptPii(input.address) : null,
+    addressHash: input.address != null ? piiBlindIndex(input.address) : null,
     locationCity: input.locationCity,
     locationCountry: input.locationCountry,
     assignment: input.assignment,

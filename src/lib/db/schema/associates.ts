@@ -8,6 +8,7 @@ import {
   timestamp,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { paymentMethod } from './enums';
 
 export const associationStatus = pgEnum('association_status', ['ativo', 'inativo']);
 export const contributionStatus = pgEnum('contribution_status', [
@@ -22,14 +23,6 @@ export const functionalStatus = pgEnum('functional_status', [
   'em_licenca',
 ]);
 
-export const paymentMethod = pgEnum('payment_method', [
-  'folha',
-  'boleto',
-  'pix',
-  'transferencia',
-  'outros',
-]);
-
 export const associates = pgTable(
   'associates',
   {
@@ -40,8 +33,17 @@ export const associates = pgTable(
     cpfCiphertext: text('cpf_ciphertext'),
     cpfHash: text('cpf_hash'),
     primaryEmail: text('primary_email'),
+    primaryEmailCiphertext: text('primary_email_ciphertext'),
+    primaryEmailHash: text('primary_email_hash'),
     phone: text('phone'),
+    phoneCiphertext: text('phone_ciphertext'),
+    phoneHash: text('phone_hash'),
+    address: text('address'),
+    addressCiphertext: text('address_ciphertext'),
+    addressHash: text('address_hash'),
     whatsapp: text('whatsapp'),
+    whatsappCiphertext: text('whatsapp_ciphertext'),
+    whatsappHash: text('whatsapp_hash'),
     siape: text('siape'),
     siapeCiphertext: text('siape_ciphertext'),
     siapeHash: text('siape_hash'),
@@ -57,7 +59,6 @@ export const associates = pgTable(
       .notNull()
       .default('pendente_migracao'),
     paymentMethod: paymentMethod('payment_method').notNull().default('folha'),
-    address: text('address'),
     secondaryEmail: text('secondary_email'),
     internalNotes: text('internal_notes'),
     birthDate: date('birth_date', { mode: 'string' }),
@@ -75,10 +76,14 @@ export const associates = pgTable(
     uniqueIndex('idx_associates_primary_email').on(table.primaryEmail),
     index('idx_associates_cpf_hash').on(table.cpfHash),
     index('idx_associates_siape_hash').on(table.siapeHash),
-    index('idx_associates_name').on(table.fullName),
+    index('idx_associates_primary_email_hash').on(table.primaryEmailHash),
+    index('idx_associates_phone_hash').on(table.phoneHash),
+    index('idx_associates_address_hash').on(table.addressHash),
+    index('idx_associates_whatsapp_hash').on(table.whatsappHash),
     index('idx_associates_association_status').on(table.associationStatus),
     index('idx_associates_contribution_status').on(table.contributionStatus),
     index('idx_associates_status_name').on(table.associationStatus, table.fullName),
+    index('idx_associates_name_trgm').using('gin', table.fullName.op('gin_trgm_ops')),
   ],
 );
 

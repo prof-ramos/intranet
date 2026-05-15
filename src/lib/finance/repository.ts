@@ -41,8 +41,8 @@ export async function findMonthlyPayment(associateId: number, year: number, mont
   return rows[0] ?? null;
 }
 
-export async function upsertMonthlyPayment(payment: NewMonthlyPayment) {
-  return db
+export async function upsertMonthlyPayment(payment: NewMonthlyPayment, executor: Pick<import('@/lib/db').Tx, 'insert'> = db) {
+  return executor
     .insert(monthlyPayments)
     .values(payment)
     .onConflictDoUpdate({

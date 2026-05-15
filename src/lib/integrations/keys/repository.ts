@@ -1,10 +1,44 @@
 import 'server-only';
 
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db, type Tx } from '@/lib/db';
 import { integrationApiKeys } from '@/lib/db/schema/integrations';
+import type { IntegrationScope } from '@/lib/integrations/keys/service';
 
+type ReadExecutor = Pick<typeof db, 'select'>;
 type WriteExecutor = Pick<Tx, 'insert' | 'update'>;
+
+export interface ActiveApiKeyRecord {
+  id: number;
+  name: string;
+  keyHash: string;
+  scopes: IntegrationScope[];
+  isActive: boolean;
+}
+
+export async function findActiveApiKeyByHash(
+  keyHash: string,
+  executor: ReadExecutor = db,
+): Promise<ActiveApiKeyRecord | null> {
+  const [row] = await executor
+    .select({
+      id: integrationApiKeys.id,
+      name: integrationApiKeys.name,
+      keyHash: integrationApiKeys.keyHash,
+      scopes: integrationApiKeys.scopes,
+      isActive: integrationApiKeys.isActive,
+    })
+    .from(integrationApiKeys)
+    .where(and(eq(integrationApiKeys.keyHash, keyHash), eq(integrationApiKeys.isActive, true)))
+    .limit(1);
+
+  if (!row) return null;
+
+  return {
+    ...row,
+    scopes: row.scopes as IntegrationScope[],
+  };
+}
 
 export async function updateApiKeyLastUsed(keyHash: string, executor: WriteExecutor = db) {
   return executor

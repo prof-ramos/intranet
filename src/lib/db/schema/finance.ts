@@ -1,5 +1,7 @@
-import { bigint, index, integer, pgEnum, pgTable, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
-import { associates, paymentMethod } from './associates';
+import { bigint, check, index, integer, pgEnum, pgTable, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { associates } from './associates';
+import { paymentMethod } from './enums';
 import { admins } from './admins';
 
 export const paymentStatus = pgEnum('payment_status', ['pago', 'pendente', 'atrasado', 'isento']);
@@ -29,6 +31,9 @@ export const monthlyPayments = pgTable(
     index('idx_monthly_payments_updated_by').on(table.updatedBy),
     index('idx_monthly_payments_year_month_status').on(table.year, table.month, table.status),
     index('idx_monthly_payments_year_month_method').on(table.year, table.month, table.paymentMethod),
+    index('idx_monthly_payments_associate_id').on(table.associateId),
+    check('chk_monthly_payments_month', sql`${table.month} between 1 and 12`),
+    check('chk_monthly_payments_year', sql`${table.year} between 2000 and 2100`),
   ],
 );
 

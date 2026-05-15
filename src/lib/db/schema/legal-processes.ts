@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { bigint, index, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { admins } from '@/lib/db/schema/admins';
 import { associates } from '@/lib/db/schema/associates';
-import { legalSatisfaction } from '@/lib/db/schema/legal-consultations';
+import { legalSatisfaction } from './enums';
 
 export const legalProcessType = pgEnum('legal_process_type', ['judicial', 'administrativo']);
 

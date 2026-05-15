@@ -20,9 +20,9 @@ export const envSchema = z
     POSTGRES_PRISMA_URL: optionalUrl,
     POSTGRES_URL_NON_POOLING: optionalUrl,
 
-    DB_CONNECT_TIMEOUT_SECONDS: optionalString,
-    DB_IDLE_TIMEOUT_SECONDS: optionalString,
-    DB_MAX_CONNECTIONS: optionalString,
+    DB_CONNECT_TIMEOUT_SECONDS: z.coerce.number().int().positive().optional(),
+    DB_IDLE_TIMEOUT_SECONDS: z.coerce.number().int().positive().optional(),
+    DB_MAX_CONNECTIONS: z.coerce.number().int().positive().optional(),
     DB_POOL_MODE: optionalString,
     DB_SSL: optionalString,
     USE_PGBOUNCER: optionalString,

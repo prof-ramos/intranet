@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { bigint, index, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { admins } from '@/lib/db/schema/admins';
+import { legalProcesses } from '@/lib/db/schema/legal-processes';
 
 export const legalOpinionTags = pgTable(
   'legal_opinion_tags',
@@ -24,7 +25,9 @@ export const legalOpinions = pgTable(
     attachments: jsonb('attachments')
       .$type<string[]>()
       .default(sql`'[]'::jsonb`),
-    relatedProcessId: bigint('related_process_id', { mode: 'number' }),
+    relatedProcessId: bigint('related_process_id', { mode: 'number' }).references(() => legalProcesses.id, {
+      onDelete: 'set null',
+    }),
     createdBy: bigint('created_by', { mode: 'number' })
       .notNull()
       .references(() => admins.id, { onDelete: 'restrict' }),

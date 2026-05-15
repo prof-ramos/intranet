@@ -8,10 +8,12 @@ import { officialLetterFormSchema, type OfficialLetterFormValues } from '@/lib/o
 import { revalidatePath } from 'next/cache';
 
 const ALLOWED_ROLES = ['admin', 'diretoria', 'secretaria'] as const;
+const MAX_OFFICIAL_LETTERS_LIMIT = 1000;
 
-export async function getOfficialLettersAction(year?: number) {
+export async function getOfficialLettersAction(year?: number, limit?: number) {
   await requireRole(ALLOWED_ROLES);
-  return repository.findOfficialLetters(year);
+  const safeLimit = limit != null ? Math.min(Math.max(1, Math.floor(limit)), MAX_OFFICIAL_LETTERS_LIMIT) : undefined;
+  return repository.findOfficialLetters(year, { limit: safeLimit });
 }
 
 export async function getOfficialLetterAction(id: number) {

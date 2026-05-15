@@ -1,4 +1,4 @@
-import { bigint, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { bigint, index, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
 export const loginAttempts = pgTable(
   'login_attempts',
@@ -6,7 +6,7 @@ export const loginAttempts = pgTable(
     id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
     email: text('email').notNull(),
     emailHash: text('email_hash'),
-    attempts: bigint('attempts', { mode: 'number' }).notNull().default(0),
+    attempts: integer('attempts').notNull().default(0),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

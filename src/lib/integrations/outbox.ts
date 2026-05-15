@@ -4,6 +4,7 @@ import {
   domainEventEntityType,
   domainEventType,
 } from '@/lib/db/schema/integrations';
+import { sanitizePiiValue } from '@/lib/sanitize-pii';
 import { z } from 'zod';
 
 export type DomainEventType = (typeof domainEventType.enumValues)[number];
@@ -84,49 +85,16 @@ export interface EmitDomainEventInput<T extends DomainEventType = DomainEventTyp
   payload: DomainEventPayloadMap[T];
 }
 
-function sanitizePayloadValue(value: unknown, visited = new WeakSet<object>()): unknown {
-  if (value == null) {
-    return null;
-  }
-
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-
-  if (typeof value === 'bigint') {
-    return value.toString();
-  }
-
-  if (typeof value === 'function' || typeof value === 'symbol') {
-    return null;
-  }
-
-  if (typeof value !== 'object') {
-    return value;
-  }
-
-  if (visited.has(value as object)) {
-    return '[circular]';
-  }
-
-  visited.add(value as object);
-
-  if (Array.isArray(value)) {
-    return value.map((item) => sanitizePayloadValue(item, visited));
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).map(([key, entry]) => [key, sanitizePayloadValue(entry, visited)]),
-  );
-}
-
 export async function emitDomainEvent(
   input: EmitDomainEventInput,
   executor: Pick<Tx, 'insert'> = db,
 ) {
   const payload = payloadSchemaByEventType[input.type].parse(
-    sanitizePayloadValue(input.payload),
+    sanitizePiiValue(input.payload),
   ) as DomainEventPayloadMap[typeof input.type];
+
+  const EVENT_RETENTION_DAYS = 90;
+  const expiresAt = new Date(Date.now() + EVENT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
 
   const [event] = await executor
     .insert(domainEvents)
@@ -137,6 +105,7 @@ export async function emitDomainEvent(
       actorAdminId: input.actorAdminId,
       payload,
       deliveryStatus: 'pending',
+      expiresAt,
     })
     .returning();
 

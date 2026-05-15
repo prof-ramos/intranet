@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { auditLogs, type NewAuditLog } from '@/lib/db/schema/audit';
+import { sanitizePiiValue } from '@/lib/sanitize-pii';
 
 export interface LogAuditOptions {
   adminId: number;
@@ -8,29 +9,6 @@ export interface LogAuditOptions {
   entityId?: number | null;
   changes?: NewAuditLog['changes'];
   metadata?: Record<string, unknown>;
-}
-
-const SENSITIVE_KEY_PATTERN = /cpf|siape|email|endereco|address|rg|telefone|phone|whatsapp/i;
-
-function sanitizeSensitiveData<T>(value: T, visited = new WeakSet<object>()): T {
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return value;
-  }
-  if (visited.has(value)) {
-    return '[circular]' as T;
-  }
-  visited.add(value);
-
-  if (Array.isArray(value)) {
-    return value.map((item) => sanitizeSensitiveData(item, visited)) as T;
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).map(([key, entry]) => [
-      key,
-      SENSITIVE_KEY_PATTERN.test(key) ? '[redacted]' : sanitizeSensitiveData(entry, visited),
-    ]),
-  ) as T;
 }
 
 export async function logAuditAction(options: LogAuditOptions): Promise<void> {
@@ -44,8 +22,8 @@ export async function logAuditAction(options: LogAuditOptions): Promise<void> {
       action: options.action,
       entityType: options.entityType,
       entityId: options.entityId,
-      changes: sanitizeSensitiveData(options.changes),
-      metadata: sanitizeSensitiveData(options.metadata),
+      changes: sanitizePiiValue(options.changes) as NewAuditLog['changes'],
+      metadata: sanitizePiiValue(options.metadata) as NewAuditLog['metadata'],
     });
   } catch (error) {
     console.error('[AUDIT_FAILURE]', {
@@ -55,4 +33,34 @@ export async function logAuditAction(options: LogAuditOptions): Promise<void> {
     });
     // Não propaga o erro para não bloquear a operação principal
   }
+}
+
+export type DataAccessAction = 'view' | 'export' | 'edit';
+
+export interface LogDataAccessOptions {
+  adminId: number;
+  action: DataAccessAction;
+  entityType: NewAuditLog['entityType'];
+  entityId?: number | null;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Convenience function for LGPD Art. 30/37 data access logging.
+ * Wraps `logAuditAction` with a typed action namespace (`data_view`, `data_export`, `data_edit`).
+ */
+export async function logDataAccess(options: LogDataAccessOptions): Promise<void> {
+  const actionPrefix: Record<DataAccessAction, string> = {
+    view: 'data_view',
+    export: 'data_export',
+    edit: 'data_edit',
+  };
+
+  return logAuditAction({
+    adminId: options.adminId,
+    action: actionPrefix[options.action],
+    entityType: options.entityType,
+    entityId: options.entityId,
+    metadata: options.metadata,
+  });
 }

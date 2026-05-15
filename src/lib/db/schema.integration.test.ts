@@ -26,7 +26,7 @@ const expectedColumns = {
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
     'completed_at:timestamptz:YES',
-    'position:float4:NO',
+    'position:int4:NO',
   ],
   admins: [
     'id:int8:NO',
@@ -47,8 +47,17 @@ const expectedColumns = {
     'cpf_ciphertext:text:YES',
     'cpf_hash:text:YES',
     'primary_email:text:YES',
+    'primary_email_ciphertext:text:YES',
+    'primary_email_hash:text:YES',
     'phone:text:YES',
+    'phone_ciphertext:text:YES',
+    'phone_hash:text:YES',
+    'address:text:YES',
+    'address_ciphertext:text:YES',
+    'address_hash:text:YES',
     'whatsapp:text:YES',
+    'whatsapp_ciphertext:text:YES',
+    'whatsapp_hash:text:YES',
     'siape:text:YES',
     'siape_ciphertext:text:YES',
     'siape_hash:text:YES',
@@ -61,7 +70,6 @@ const expectedColumns = {
     'joined_at:timestamptz:YES',
     'association_category:text:YES',
     'contribution_status:contribution_status:NO',
-    'address:text:YES',
     'secondary_email:text:YES',
     'internal_notes:text:YES',
     'birth_date:date:YES',
@@ -97,6 +105,7 @@ const expectedColumns = {
     'actor_admin_id:int8:YES',
     'payload:jsonb:NO',
     'delivery_status:domain_event_delivery_status:NO',
+    'expires_at:timestamptz:YES',
     'occurred_at:timestamptz:NO',
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
@@ -173,7 +182,7 @@ const expectedColumns = {
     'id:int8:NO',
     'email:text:NO',
     'email_hash:text:YES',
-    'attempts:int8:NO',
+    'attempts:int4:NO',
     'expires_at:timestamptz:NO',
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
@@ -182,7 +191,7 @@ const expectedColumns = {
     'id:int8:NO',
     'key:text:NO',
     'scope:text:NO',
-    'attempts:int8:NO',
+    'attempts:int4:NO',
     'expires_at:timestamptz:NO',
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
@@ -228,9 +237,11 @@ const expectedColumns = {
     'webhook_subscription_id:int8:NO',
     'attempt:int4:NO',
     'request_id:text:NO',
+    'idempotency_key:text:YES',
     'status:webhook_delivery_status:NO',
     'status_code:int4:YES',
     'response_excerpt:text:YES',
+    'failure_reason:text:YES',
     'delivered_at:timestamptz:YES',
     'next_retry_at:timestamptz:YES',
     'failed_at:timestamptz:YES',
@@ -327,6 +338,10 @@ const expectedIndexes = {
     'idx_associates_name',
     'idx_associates_name_trgm',
     'idx_associates_primary_email',
+    'idx_associates_primary_email_hash',
+    'idx_associates_phone_hash',
+    'idx_associates_address_hash',
+    'idx_associates_whatsapp_hash',
     'idx_associates_siape',
     'idx_associates_siape_hash',
     'idx_associates_status_country',
@@ -347,7 +362,9 @@ const expectedIndexes = {
     'idx_domain_events_delivery_status',
     'idx_domain_events_entity',
     'idx_domain_events_event_type',
+    'idx_domain_events_expires_at',
     'idx_domain_events_occurred_at',
+    'idx_domain_events_pending',
     'idx_domain_events_status_occurred_at',
   ],
   integration_api_keys: [
@@ -407,6 +424,8 @@ const expectedIndexes = {
     'login_attempts_pkey',
   ],
   monthly_payments: [
+    'idx_monthly_payments_associate_id',
+    'idx_monthly_payments_association_status',
     'idx_monthly_payments_status',
     'idx_monthly_payments_unique',
     'idx_monthly_payments_updated_by',
@@ -416,6 +435,7 @@ const expectedIndexes = {
   ],
   oficios: [
     'idx_oficios_created_at',
+    'idx_oficios_created_at_desc',
     'idx_oficios_created_by',
     'idx_oficios_status',
     'idx_oficios_updated_by',
@@ -436,6 +456,7 @@ const expectedIndexes = {
   ],
   webhook_subscriptions: [
     'idx_webhook_subscriptions_active',
+    'idx_webhook_subscriptions_active_partial',
     'idx_webhook_subscriptions_created_by',
     'idx_webhook_subscriptions_name_unique',
     'idx_webhook_subscriptions_subscribed_events',
@@ -533,6 +554,41 @@ describe('database schema contract', () => {
     for (const [tableName, expectedTableIndexes] of Object.entries(expectedIndexes)) {
       expect(actual[tableName]).toEqual(expectedTableIndexes);
     }
+  });
+
+  it('has all expected CHECK constraints for range validation', async () => {
+    const rows = await db<
+      {
+        table_name: string;
+        constraint_name: string;
+        check_clause: string;
+      }[]
+    >`
+      select ccu.table_name, tc.constraint_name, cc.check_clause
+      from information_schema.check_constraints cc
+      join information_schema.table_constraints tc
+        on cc.constraint_catalog = tc.constraint_catalog
+        and cc.constraint_schema = tc.constraint_schema
+        and cc.constraint_name = tc.constraint_name
+        and tc.constraint_type = 'CHECK'
+      join information_schema.constraint_column_usage ccu
+        on tc.constraint_catalog = ccu.constraint_catalog
+        and tc.constraint_schema = ccu.constraint_schema
+        and tc.constraint_name = ccu.constraint_name
+      where tc.constraint_schema = 'public'
+        and tc.constraint_name like 'chk_%'
+      order by ccu.table_name, tc.constraint_name
+    `;
+
+    const actual = rows.map((row) => `${row.table_name}:${row.constraint_name}`);
+    const expected = [
+      'monthly_payments:chk_monthly_payments_month',
+      'monthly_payments:chk_monthly_payments_year',
+      'oficios:chk_oficios_sequence',
+      'oficios:chk_oficios_year',
+      'webhook_deliveries:chk_webhook_deliveries_attempt',
+    ];
+    expect(actual).toEqual(expected);
   });
 
   it('has pg_trgm available for trigram indexes', async () => {

@@ -11,6 +11,9 @@ import {
 } from '@/lib/db/schema/integrations';
 import type { DomainEventType } from '@/lib/integrations/outbox';
 
+/** Default retention period for delivered webhook records before cleanup. */
+const DELIVERED_RECORD_RETENTION_DAYS = 30;
+
 type ReadExecutor = Pick<typeof db, 'select'>;
 type WriteExecutor = Pick<Tx, 'insert' | 'update' | 'execute'>;
 
@@ -191,4 +194,57 @@ export async function lockAndFetchDispatchableEvents(
   // Drizzle's execute() returns a RowList<T> which extends Array<T>;
   // cast to DomainEvent[] for a clean public return type.
   return rows as DomainEvent[];
+}
+
+/**
+ * Retrieve domain events whose overall delivery status is "failed",
+ * meaning all subscriptions have permanently failed (exhausted retries
+ * or received a non-retryable status). These events form the dead-letter
+ * queue and can be inspected or replayed by operators.
+ */
+export async function getFailedEvents(
+  limit = 50,
+  executor: ReadExecutor = db,
+): Promise<DomainEvent[]> {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
+    throw new Error('limit must be an integer between 1 and 1000.');
+  }
+
+  return executor
+    .select()
+    .from(domainEvents)
+    .where(eq(domainEvents.deliveryStatus, 'failed'))
+    .orderBy(desc(domainEvents.occurredAt))
+    .limit(limit);
+}
+
+/**
+ * Remove webhook delivery records for successfully delivered events
+ * that are older than the retention period. This keeps the deliveries
+ * table from growing unboundedly while preserving recent and failed records
+ * for debugging and potential replay.
+ *
+ * Returns the number of deleted rows.
+ */
+export async function cleanUpOldDeliveries(
+  retentionDays: number = DELIVERED_RECORD_RETENTION_DAYS,
+  executor: Pick<typeof db, 'delete'> = db,
+): Promise<number> {
+  if (!Number.isInteger(retentionDays) || retentionDays < 1) {
+    throw new Error('retentionDays must be a positive integer.');
+  }
+
+  const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+
+  const result = await executor
+    .delete(webhookDeliveries)
+    .where(
+      and(
+        eq(webhookDeliveries.status, 'delivered'),
+        lt(webhookDeliveries.createdAt, cutoff),
+      ),
+    )
+    .returning({ id: webhookDeliveries.id });
+
+  return result.length;
 }

@@ -12,7 +12,7 @@ export default async function EditarAssociadoPage({ params }: { params: Promise<
     notFound();
   }
 
-  const associate = await getAssociateForEdit(associateId, user.role);
+  const associate = await getAssociateForEdit(associateId, user.role, user.userId);
   if (!associate) {
     notFound();
   }
