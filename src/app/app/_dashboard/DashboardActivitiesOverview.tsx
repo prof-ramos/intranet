@@ -20,35 +20,35 @@ interface DashboardActivitiesOverviewProps {
 export function DashboardActivitiesOverview({ statusColumns }: DashboardActivitiesOverviewProps) {
   return (
     <div
-      className="min-w-0 rounded-[10px] bg-white p-4 sm:p-5"
+      className="min-w-0 rounded-[16px] bg-white p-5 sm:p-6"
       style={{ border: `1px solid ${hairline}` }}
     >
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="font-serif text-xl font-bold">Atividades em curso</h2>
+      <div className="mb-5 flex flex-wrap items-baseline justify-between gap-4">
+        <h2 className="font-serif text-xl leading-tight font-bold">Atividades em curso</h2>
         <Link
           href="/app/atividades"
-          className="inline-flex items-center gap-1 text-sm font-semibold"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-[8px] px-2 text-sm font-semibold lg:min-h-8"
           style={{ color: skyBlue }}
         >
           Abrir kanban <ArrowRight size={14} aria-hidden="true" />
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {statusColumns.map((column) => (
           <article
             key={column.status}
-            className="min-w-0 rounded-[10px] p-3"
+            className="min-w-0 rounded-[16px] p-3"
             style={{ backgroundColor: surfaceMuted }}
           >
-            <div className="mb-3 flex items-center justify-between gap-3 px-1">
+            <div className="mb-3 flex min-h-8 items-center justify-between gap-3 px-1">
               <div className="flex min-w-0 items-center gap-2">
                 <span
                   className="h-2 w-2 shrink-0 rounded-[2px]"
                   style={{ backgroundColor: column.accent }}
                   aria-hidden="true"
                 />
-                <p className="truncate text-[11px] font-bold tracking-[0.06em] uppercase">
+                <p className="truncate text-[11px] leading-tight font-bold tracking-[0.06em] uppercase">
                   {column.label}
                 </p>
               </div>
@@ -91,7 +91,7 @@ export function DashboardActivitiesOverview({ statusColumns }: DashboardActiviti
                           </span>
                         )}
                       </div>
-                      <div className="mt-2 flex items-center justify-between gap-2">
+                      <div className="mt-3 flex items-center justify-between gap-2">
                         <span
                           className="max-w-full truncate rounded-full border px-2 py-1 text-[10px] font-semibold"
                           style={{
