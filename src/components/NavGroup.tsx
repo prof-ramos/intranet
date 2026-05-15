@@ -48,11 +48,12 @@ export function NavGroup({
   return (
     <div>
       <button
+        type="button"
         onClick={() => setExpanded(!expanded)}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         className={[
-          'flex h-[58px] w-full items-center gap-3 pr-9 text-base transition-colors duration-150',
+          'flex min-h-[58px] w-full items-center gap-3 pr-9 text-sm leading-tight font-medium transition-colors duration-150',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring-color)]',
           'border-l-[6px]',
           isGroupActive ? 'pl-[30px] text-white' : 'border-transparent pl-9 text-white/70',
@@ -62,8 +63,10 @@ export function NavGroup({
         aria-expanded={expanded}
         aria-controls={menuId}
       >
-        <span className="shrink-0">{icon}</span>
-        <span className="flex-1 text-left">{label}</span>
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center" aria-hidden="true">
+          {icon}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-left">{label}</span>
         <ChevronDown
           size={16}
           className={[
@@ -74,7 +77,7 @@ export function NavGroup({
         />
       </button>
       {expanded && (
-        <div id={menuId} className="flex flex-col">
+        <div id={menuId} className="flex flex-col py-1">
           {items.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
             const itemStyle = {
@@ -88,15 +91,18 @@ export function NavGroup({
                 key={item.href}
                 href={item.href}
                 className={[
-                  'flex h-[46px] items-center gap-3 pr-9 text-sm transition-colors duration-150',
+                  'flex min-h-11 items-center gap-3 pr-9 text-sm leading-tight transition-colors duration-150',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring-color)]',
                   'border-l-[6px] pl-[42px]',
                   isActive ? 'text-white' : 'border-transparent text-white/60 hover:text-white',
                 ].join(' ')}
                 style={itemStyle}
+                aria-current={isActive ? 'page' : undefined}
               >
-                <span className="shrink-0">{item.icon}</span>
-                <span>{item.label}</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center" aria-hidden="true">
+                  {item.icon}
+                </span>
+                <span className="truncate">{item.label}</span>
               </Link>
             );
           })}
