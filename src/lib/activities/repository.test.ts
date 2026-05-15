@@ -1,0 +1,142 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Drizzle mock chains require any for self-referencing builders */
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { mapActivityRowToBoardActivity, findActivities, findActiveAdmins, findActiveAssociates, insertActivity } from './repository';
+
+const { dbMock, MOCK_ACTIVITY, MOCK_ADMIN, MOCK_ASSOCIATE } = vi.hoisted(() => {
+  const MOCK_ACTIVITY = {
+    id: 1,
+    title: 'Test Activity',
+    description: 'Desc',
+    status: 'a_fazer',
+    priority: 'normal',
+    dueDate: '2026-06-01',
+    completedAt: null,
+    assigneeId: 1,
+    assigneeName: 'Admin',
+    associateId: 10,
+    associateName: 'Associate',
+    tags: ['urgent'],
+  };
+  const MOCK_ADMIN = { id: 1, name: 'Admin', role: 'admin' as const };
+  const MOCK_ASSOCIATE = { id: 10, name: 'Associate' };
+
+  let _selectResult: any[] = [MOCK_ACTIVITY];
+  let _insertResult: any[] = [MOCK_ACTIVITY];
+
+  const selectChain: Record<string, any> = {};
+  selectChain.from = vi.fn().mockReturnValue(selectChain);
+  selectChain.leftJoin = vi.fn().mockReturnValue(selectChain);
+  selectChain.where = vi.fn().mockReturnValue(selectChain);
+  selectChain.orderBy = vi.fn().mockReturnValue(selectChain);
+  selectChain.groupBy = vi.fn().mockReturnValue(selectChain);
+  selectChain.limit = vi.fn().mockReturnValue(selectChain);
+  selectChain.offset = vi.fn().mockImplementation(() => Promise.resolve(_selectResult));
+  selectChain.then = (resolve: any, reject: any) =>
+    Promise.resolve(_selectResult).then(resolve, reject);
+
+  const insertChain: Record<string, any> = {};
+  insertChain.values = vi.fn().mockReturnValue(insertChain);
+  insertChain.returning = vi.fn().mockImplementation(() => Promise.resolve(_insertResult));
+
+  const dbMock = {
+    select: vi.fn().mockReturnValue(selectChain),
+    insert: vi.fn().mockReturnValue(insertChain),
+    _selectChain: selectChain,
+    _insertChain: insertChain,
+    setSelectResult(val: any[]) { _selectResult = val; },
+    setInsertResult(val: any[]) { _insertResult = val; },
+  };
+
+  return { dbMock, MOCK_ACTIVITY, MOCK_ADMIN, MOCK_ASSOCIATE };
+});
+
+vi.mock('@/lib/db', () => ({ db: dbMock }));
+
+describe('activities repository', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    dbMock.setSelectResult([MOCK_ACTIVITY]);
+    dbMock.setInsertResult([MOCK_ACTIVITY]);
+  });
+
+  describe('mapActivityRowToBoardActivity', () => {
+    it('maps a full activity row', () => {
+      const result = mapActivityRowToBoardActivity(MOCK_ACTIVITY as any);
+      expect(result.id).toBe(1);
+      expect(result.title).toBe('Test Activity');
+      expect(result.tags).toEqual(['urgent']);
+      expect(result.dueOffset).toBeNull();
+    });
+
+    it('converts completedAt to ISO string', () => {
+      const date = new Date('2026-05-15T10:00:00.000Z');
+      const result = mapActivityRowToBoardActivity({ ...MOCK_ACTIVITY, completedAt: date } as any);
+      expect(result.completedAt).toBe(date.toISOString());
+    });
+
+    it('defaults tags to empty array when null', () => {
+      const result = mapActivityRowToBoardActivity({ ...MOCK_ACTIVITY, tags: null } as any);
+      expect(result.tags).toEqual([]);
+    });
+  });
+
+  describe('findActivities', () => {
+    it('queries with default limit 200', async () => {
+      const results = await findActivities();
+      expect(results).toEqual([MOCK_ACTIVITY]);
+      expect(dbMock._selectChain.limit).toHaveBeenCalledWith(200);
+    });
+
+    it('clamps limit to MAX_ACTIVITY_LIMIT (500)', async () => {
+      await findActivities({ limit: 999 });
+      expect(dbMock._selectChain.limit).toHaveBeenCalledWith(500);
+    });
+
+    it('clamps negative limit to 1', async () => {
+      await findActivities({ limit: -5 });
+      expect(dbMock._selectChain.limit).toHaveBeenCalledWith(1);
+    });
+
+    it('applies offset when provided', async () => {
+      await findActivities({ offset: 20 });
+      expect(dbMock._selectChain.offset).toHaveBeenCalledWith(20);
+    });
+  });
+
+  describe('findActiveAdmins', () => {
+    it('queries for active admins', async () => {
+      dbMock.setSelectResult([MOCK_ADMIN]);
+      const results = await findActiveAdmins();
+      expect(results).toEqual([MOCK_ADMIN]);
+      expect(dbMock._selectChain.where).toHaveBeenCalled();
+    });
+  });
+
+  describe('findActiveAssociates', () => {
+    it('queries for ativo associates with limit 100', async () => {
+      dbMock.setSelectResult([MOCK_ASSOCIATE]);
+      const results = await findActiveAssociates();
+      expect(results).toEqual([MOCK_ASSOCIATE]);
+      expect(dbMock._selectChain.limit).toHaveBeenCalledWith(100);
+    });
+  });
+
+  describe('insertActivity', () => {
+    it('inserts and returns the new activity', async () => {
+      dbMock.setInsertResult([MOCK_ACTIVITY]);
+      const result = await insertActivity({
+        title: 'Test Activity',
+        description: null,
+        status: 'a_fazer',
+        priority: 'normal',
+        assigneeId: 1,
+        associateId: null,
+        dueDate: null,
+        tags: [],
+        createdBy: 1,
+      });
+      expect(result).toEqual(MOCK_ACTIVITY);
+      expect(dbMock.insert).toHaveBeenCalled();
+    });
+  });
+});
