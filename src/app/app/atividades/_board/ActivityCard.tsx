@@ -25,7 +25,8 @@ export function Avatar({ person, compact = false }: { person?: BoardPerson; comp
 
   return (
     <span
-      title={person.name}
+      aria-label={person.name}
+      role="img"
       className={`grid shrink-0 place-items-center rounded-full ${
         compact ? 'h-5 w-5 text-[8px]' : 'h-6 w-6 text-[9px]'
       }`}
@@ -62,11 +63,12 @@ export function ActivityCardContent({
     >
       {hasPending && (
         <span
-          title="Reatribuição pendente"
+          aria-label="Reatribuição pendente"
+          role="status"
           className="absolute -top-1.5 -right-1.5 grid h-[18px] w-[18px] place-items-center rounded-full text-[10px] font-bold"
           style={{ background: warningText, color: buttonPrimaryText, boxShadow: floatingBadgeShadow }}
         >
-          !
+          <span aria-hidden="true">!</span>
         </span>
       )}
 

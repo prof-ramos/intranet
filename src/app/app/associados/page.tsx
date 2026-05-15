@@ -1,10 +1,10 @@
 import { requireAuth } from '@/lib/auth/require-auth';
-import { getAssociatesListPage } from '@/lib/associates/service';
+import { getAssociatesListPage, getAssociateStatusLabel } from '@/lib/associates/service';
 import { getRoleLabel } from '@/lib/ui/role-labels';
 import { parseAssociatesSearchParams } from '@/lib/associates/search-params';
-import { Bell, ChevronLeft, ChevronRight, Download, Pencil, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Pencil, Search } from 'lucide-react';
 import Link from 'next/link';
-import { hairline, textMuted, navy, skyBlue, error, success, successBg, canvas } from '@/lib/ui/tokens';
+import { hairline, textMuted, navy, skyBlue, success, successBg, canvas } from '@/lib/ui/tokens';
 
 const PAGE_SIZE = 20;
 
@@ -29,7 +29,6 @@ export default async function AssociadosPage({
     year: 'numeric',
   });
   const todayLabel = today.charAt(0).toUpperCase() + today.slice(1);
-  const unreadNotifications: number | null = null;
 
   return (
     <div>
@@ -45,35 +44,18 @@ export default async function AssociadosPage({
                   name="q"
                   type="search"
                   defaultValue={q}
-                  className="grow bg-transparent text-sm outline-none placeholder:text-[rgba(13,31,60,0.55)]"
+                  autoComplete="off"
+                  className="grow bg-transparent text-sm outline-none placeholder:text-[rgba(13,31,60,0.65)]"
                   placeholder="Buscar por nome..."
                 />
               </label>
             </form>
           </div>
 
-          <div className="flex min-w-0 items-center justify-between gap-4 sm:justify-end">
-            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center">
-              {unreadNotifications !== null && unreadNotifications > 0 && (
-                <span className="absolute -top-1 -right-1 z-10 grid h-5 min-w-[20px] place-items-center rounded-full px-1.5 text-[10px] font-bold text-white" style={{ backgroundColor: error }}>
-                  {unreadNotifications}
-                </span>
-              )}
-              <button
-                type="button"
-                className="grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-[rgba(4,9,32,0.04)]"
-                aria-label={
-                  unreadNotifications !== null && unreadNotifications > 0
-                    ? `Notificações — ${unreadNotifications} não lidas`
-                    : 'Notificações'
-                }
-              >
-                <Bell size={20} aria-hidden="true" />
-              </button>
-            </div>
-
-            <div className="hidden min-h-11 min-w-0 items-center gap-3 border-l pl-4 sm:flex" style={{ borderColor: hairline }}>
+          <div className="flex min-w-0 items-center justify-end gap-4">
+            <div className="hidden min-h-11 min-w-0 items-center gap-3 sm:flex">
               <div
+                role="img"
                 aria-label={`Avatar de ${user.name}`}
                 className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
                 style={{ backgroundColor: navy, boxShadow: `0 0 0 2px ${skyBlue}26` }}
@@ -119,49 +101,56 @@ export default async function AssociadosPage({
               </Link>
               <Link
                 href="/app/associados/relatorio"
-                aria-label="Exportar associados"
+                aria-label="Exportar associados para CSV"
                 className="inline-flex h-11 w-11 items-center justify-center rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)]"
               >
                 <Download size={18} aria-hidden="true" />
               </Link>
-              <div className="flex overflow-hidden rounded-[8px] border" style={{ borderColor: hairline }}>
+              <nav aria-label="Paginação de associados" className="flex items-center gap-1">
                 {page > 1 ? (
                   <Link
                     href={`/app/associados?q=${encodeURIComponent(q)}&page=${page - 1}`}
-                    className="inline-flex h-11 w-11 items-center justify-center bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)]"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-[8px] border bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)]"
+                    style={{ borderColor: hairline }}
                     aria-label="Página anterior"
                   >
                     <ChevronLeft size={16} aria-hidden="true" />
                   </Link>
                 ) : (
-                  <button
-                    type="button"
-                    className="inline-flex h-11 w-11 cursor-not-allowed items-center justify-center" style={{ backgroundColor: canvas, color: textMuted }}
-                    aria-label="Página anterior"
-                    disabled
+                  <span
+                    className="inline-flex h-11 w-11 cursor-not-allowed items-center justify-center rounded-[8px] border"
+                    style={{ borderColor: hairline, backgroundColor: canvas, color: textMuted }}
+                    aria-label="Página anterior (indisponível)"
+                    aria-disabled="true"
                   >
                     <ChevronLeft size={16} aria-hidden="true" />
-                  </button>
+                  </span>
+                )}
+                {totalPages > 0 && (
+                  <span className="px-2 text-xs tabular-nums" style={{ color: textMuted }}>
+                    {page}/{totalPages}
+                  </span>
                 )}
                 {page < totalPages ? (
                   <Link
                     href={`/app/associados?q=${encodeURIComponent(q)}&page=${page + 1}`}
-                    className="inline-flex h-11 w-11 items-center justify-center border-l bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)]" style={{ borderColor: hairline }}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-[8px] border bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)]"
+                    style={{ borderColor: hairline }}
                     aria-label="Próxima página"
                   >
                     <ChevronRight size={16} aria-hidden="true" />
                   </Link>
                 ) : (
-                  <button
-                    type="button"
-                    className="inline-flex h-11 w-11 cursor-not-allowed items-center justify-center border-l" style={{ borderColor: hairline, backgroundColor: canvas, color: textMuted }}
-                    aria-label="Próxima página"
-                    disabled
+                  <span
+                    className="inline-flex h-11 w-11 cursor-not-allowed items-center justify-center rounded-[8px] border"
+                    style={{ borderColor: hairline, backgroundColor: canvas, color: textMuted }}
+                    aria-label="Próxima página (indisponível)"
+                    aria-disabled="true"
                   >
                     <ChevronRight size={16} aria-hidden="true" />
-                  </button>
+                  </span>
                 )}
-              </div>
+              </nav>
             </div>
           </div>
 
@@ -206,7 +195,7 @@ export default async function AssociadosPage({
                               : { backgroundColor: canvas, color: textMuted, borderColor: hairline }
                           }
                         >
-                          {row.functionalStatus ?? '—'}
+                          {getAssociateStatusLabel(row.functionalStatus) ?? '—'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">

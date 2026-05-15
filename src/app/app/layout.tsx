@@ -7,6 +7,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="drawer md:drawer-open min-h-screen">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-[8px] focus:bg-[#040920] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:outline-none"
+      >
+        Ir para o conteúdo principal
+      </a>
+
       <input id="app-drawer" type="checkbox" className="drawer-toggle" aria-hidden="true" />
 
       <div id="main-content" className="drawer-content flex flex-col">

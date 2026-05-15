@@ -224,13 +224,13 @@ export function FilterBar({
             })
           }
           className={[
-            'px-2 text-xs underline',
+            'inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-3 text-xs font-semibold transition',
             desktopDenseControlClass,
             focusRingClass,
           ].join(' ')}
-          style={{ color: textSubtle }}
+          style={{ borderColor: textSubtle, color: textSubtle }}
         >
-          Limpar
+          Limpar filtros
         </button>
       )}
     </div>

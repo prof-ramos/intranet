@@ -37,6 +37,7 @@ export function NavGroup({
     }
   }
 
+  const menuId = `nav-group-${basePath.replace(/\//g, '-')}`;
   const toggleStyle = {
     '--focus-ring-color': skyBlue,
     borderLeftColor: isGroupActive ? skyBlue : 'transparent',
@@ -58,6 +59,8 @@ export function NavGroup({
         ].join(' ')}
         style={toggleStyle}
         aria-expanded={expanded}
+        aria-controls={menuId}
+        aria-current={isGroupActive ? 'page' : undefined}
       >
         <span className="shrink-0">{icon}</span>
         <span className="flex-1 text-left">{label}</span>
@@ -71,7 +74,7 @@ export function NavGroup({
         />
       </button>
       {expanded && (
-        <div className="flex flex-col">
+        <div id={menuId} className="flex flex-col">
           {items.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
             const itemStyle = {

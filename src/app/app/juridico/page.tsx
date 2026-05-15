@@ -222,7 +222,9 @@ export default async function JuridicoDashboardPage() {
                       <span style={{ color: textSecondary }}>
                         {statusIcons[status as LegalConsultationStatus]}
                       </span>
-                      <p className="text-sm font-medium">{label}</p>
+                      <p className="text-sm font-medium">
+                        {status === 'respondida' ? `${label} (este mês)` : label}
+                      </p>
                     </div>
                     <span className="font-serif text-sm font-bold">{countValue}</span>
                   </li>

@@ -79,7 +79,7 @@ export const inputFocusBorder = skyBlue;
 export const inputBg = '#ffffff';
 
 // Text colors
-export const textMuted = 'rgba(13, 31, 60, 0.55)';
+export const textMuted = 'rgba(13, 31, 60, 0.65)';
 export const textPrimary = '#040920';
 export const textStrong = '#0d1f3c';
 export const textSecondary = 'rgba(13, 31, 60, 0.70)';
