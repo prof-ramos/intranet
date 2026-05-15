@@ -55,10 +55,53 @@ export function Drawer({
   onRequestReassign: () => void;
 }) {
   const closeRef = useRef<HTMLButtonElement | null>(null);
+  const drawerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (activity) closeRef.current?.focus();
   }, [activity]);
+
+  useEffect(() => {
+    if (!activity) return;
+
+    const el = drawerRef.current;
+    if (!el) return;
+
+    const focusableSelectors = [
+      'a[href]',
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab') {
+        const focusable = Array.from(el!.querySelectorAll<HTMLElement>(focusableSelectors));
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [activity, onClose]);
 
   if (!activity) return null;
 
@@ -78,6 +121,7 @@ export function Drawer({
         onClick={onClose}
       />
       <aside
+        ref={drawerRef}
         className="fixed top-0 right-0 bottom-0 z-50 flex w-full max-w-[480px] flex-col bg-white"
         style={{ boxShadow: drawerShadow }}
         role="dialog"

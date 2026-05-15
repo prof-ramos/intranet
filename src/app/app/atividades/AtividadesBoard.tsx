@@ -270,6 +270,12 @@ export function AtividadesBoard({
                                   {...dragProvided.dragHandleProps}
                                   style={{ marginBottom: 8, ...dragProvided.draggableProps.style }}
                                   onClick={() => setDrawerId(activity.id)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      setDrawerId(activity.id);
+                                    }
+                                  }}
                                 >
                                   <ActivityCardContent
                                     activity={activity}
@@ -293,7 +299,7 @@ export function AtividadesBoard({
             })}
           </div>
         </DragDropContext>
-        <div className="pointer-events-none absolute top-0 right-0 bottom-4 w-10 bg-gradient-to-l from-base-100 to-transparent md:hidden" />
+        <div className="pointer-events-none absolute top-0 right-0 bottom-4 w-10 bg-gradient-to-l from-[#f8fafc] to-transparent md:hidden" />
       </div>
 
       <div className="text-[rgba(13,31,60,0.55)] mt-5 flex items-center gap-2 text-xs">

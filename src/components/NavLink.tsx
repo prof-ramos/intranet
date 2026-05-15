@@ -35,6 +35,7 @@ export function NavLink({
       href={href}
       className={className}
       style={style}
+      aria-current={isActive ? 'page' : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Pencil } from 'lucide-react';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { hairline, infoNotice } from '@/lib/ui/tokens';
 import {
@@ -76,14 +76,15 @@ function SectionCard({
   );
 }
 
-function EditButton({ children = 'Editar' }: { children?: React.ReactNode }) {
+function EditLink({ href, children = 'Editar' }: { href: string; children?: React.ReactNode }) {
   return (
-    <button
-      type="button"
-      className="inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-10 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-8"
+    <Link
+      href={href}
+      className="inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-10 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76aeea] focus-visible:ring-offset-1 lg:h-8"
     >
+      <Pencil size={13} aria-hidden="true" />
       {children}
-    </button>
+    </Link>
   );
 }
 
@@ -274,7 +275,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
             </div>
           )}
 
-          <SectionCard id="identificacao" title="Identificação" action={<EditButton />}>
+          <SectionCard id="identificacao" title="Identificação" action={<EditLink href={`/app/associados/${id}/editar`} />}>
             <dl className="m-0">
               <Row label="Nome completo" value={associate.fullName} />
               <Row label="CPF" value={associate.cpf} mono />
@@ -287,14 +288,14 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
             </dl>
           </SectionCard>
 
-          <SectionCard id="endereco" title="Endereço" action={<EditButton />}>
+          <SectionCard id="endereco" title="Endereço" action={<EditLink href={`/app/associados/${id}/editar`} />}>
             <dl className="m-0">
               <Row label="Endereço" value={associate.address} />
               <Row label="Cidade / País" value={location} />
             </dl>
           </SectionCard>
 
-          <SectionCard id="administrativo" title="Administrativo" action={<EditButton />}>
+          <SectionCard id="administrativo" title="Administrativo" action={<EditLink href={`/app/associados/${id}/editar`} />}>
             <dl className="m-0">
               <Row label="Situação funcional" value={getAssociateStatusLabel(associate.functionalStatus)} />
               <Row label="Classe / Padrão" value={associate.classPattern} />
@@ -361,7 +362,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
             </ol>
           </SectionCard>
 
-          <SectionCard id="observacoes" title="Observações internas" action={<EditButton />}>
+          <SectionCard id="observacoes" title="Observações internas" action={<EditLink href={`/app/associados/${id}/editar`} />}>
             <p className="text-base-content/75 m-0 text-sm leading-relaxed whitespace-pre-wrap">
               {associate.internalNotes || 'Nenhuma observação interna registrada.'}
             </p>
@@ -370,7 +371,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
           <SectionCard
             id="atividades"
             title={`Atividades vinculadas (${linkedActivities.length})`}
-            action={<EditButton>Nova atividade</EditButton>}
+            action={<EditLink href="/app/atividades/nova">Nova atividade</EditLink>}
           >
             {linkedActivities.length === 0 ? (
               <p className="text-base-content/55 m-0 text-sm">
@@ -403,10 +404,10 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
                       {formatAssociateDate(activity.dueDate)}
                     </span>
                     <Link
-                      href="/app/atividades"
+                      href={`/app/atividades?open=${activity.id}`}
                       className="inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap text-[#040920]"
                     >
-                      Abrir <ExternalLink size={14} aria-hidden="true" />
+                      Ver no quadro <ExternalLink size={14} aria-hidden="true" />
                     </Link>
                   </li>
                 ))}
