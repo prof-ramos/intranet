@@ -41,6 +41,7 @@ export const envSchema = z
     VERCEL_ENV: optionalString,
     CRON_SECRET: optionalNonEmptyString,
     ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY: optionalSecretString,
+    ENCRYPTION_MASTER_KEY: optionalSecretString,
 
     // ─── Supabase ───────────────────────────────────────────────────────────────
     NEXT_PUBLIC_SUPABASE_URL: optionalUrl,

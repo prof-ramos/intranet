@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { env } from '@/lib/env';
-import { decrypt, encrypt } from '@/lib/crypto';
+import { decrypt, encrypt, V1_PREFIX, V2_PREFIX } from '@/lib/crypto';
 
 export function encryptWebhookSecret(secret: string): string {
   const key = env.ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY?.trim();
@@ -13,8 +13,8 @@ export function encryptWebhookSecret(secret: string): string {
 }
 
 export function decryptWebhookSecret(secretCiphertext: string): string {
-  // Legacy plaintext secrets (no enc:v1: prefix) pass through without a key.
-  if (!secretCiphertext.startsWith('enc:v1:')) {
+  // Legacy plaintext secrets (no supported encryption prefix) pass through without a key.
+  if (!secretCiphertext.startsWith(V1_PREFIX) && !secretCiphertext.startsWith(V2_PREFIX)) {
     return secretCiphertext;
   }
 

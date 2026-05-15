@@ -78,7 +78,11 @@ export async function findLinkedActivities(associateId: number): Promise<LinkedA
 export interface UpdateAssociateValues {
   fullName: string;
   cpf?: string | null;
+  cpfCiphertext?: string | null;
+  cpfHash?: string | null;
   siape?: string | null;
+  siapeCiphertext?: string | null;
+  siapeHash?: string | null;
   primaryEmail?: string | null;
   secondaryEmail?: string | null;
   phone?: string | null;
@@ -106,4 +110,28 @@ export async function updateAssociateById(
     .update(associates)
     .set({ ...values, updatedAt: new Date() })
     .where(eq(associates.id, id));
+}
+
+export async function findAssociateByCpfHash(
+  cpfHash: string,
+  executor: Pick<Tx, 'select'> = db,
+) {
+  const [row] = await executor
+    .select()
+    .from(associates)
+    .where(eq(associates.cpfHash, cpfHash))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function findAssociateBySiapeHash(
+  siapeHash: string,
+  executor: Pick<Tx, 'select'> = db,
+) {
+  const [row] = await executor
+    .select()
+    .from(associates)
+    .where(eq(associates.siapeHash, siapeHash))
+    .limit(1);
+  return row ?? null;
 }

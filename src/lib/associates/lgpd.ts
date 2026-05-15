@@ -5,7 +5,11 @@ import { isPrivilegedRole } from '@/lib/auth/authorization';
 // LGPD field classification for associate data
 export const SENSITIVE_FIELDS: Set<keyof Associate> = new Set([
   'cpf',
+  'cpfCiphertext',
+  'cpfHash',
   'siape',
+  'siapeCiphertext',
+  'siapeHash',
   'address',
   'birthDate',
   'primaryEmail',
@@ -13,6 +17,7 @@ export const SENSITIVE_FIELDS: Set<keyof Associate> = new Set([
   'phone',
   'whatsapp',
   'internalNotes',
+  'sourcePayload',
 ]);
 
 export const PUBLIC_FIELDS: Set<keyof Associate> = new Set([
@@ -33,12 +38,12 @@ export const PUBLIC_FIELDS: Set<keyof Associate> = new Set([
 
 export type Sensitivity = 'sensitive' | 'public';
 
-function maskCpf(cpf: string | null): string | null {
+export function maskCpf(cpf: string | null): string | null {
   if (!cpf || cpf.length < 11) return cpf;
   return `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**`;
 }
 
-function maskSiape(siape: string | null): string | null {
+export function maskSiape(siape: string | null): string | null {
   if (!siape || siape.length < 4) return siape;
   return `${siape.slice(0, 2)}****${siape.slice(-2)}`;
 }
