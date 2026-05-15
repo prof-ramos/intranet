@@ -1,4 +1,4 @@
-import { execSync, spawn } from 'child_process';
+import { execFileSync, execSync, spawn } from 'child_process';
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 
@@ -19,6 +19,7 @@ const NEXT_BIN = path.resolve(process.cwd(), 'node_modules/next/dist/bin/next');
 const E2E_SESSION_SECRET = 'e2e-session-secret-at-least-32-characters-long';
 const E2E_ENCRYPTION_MASTER_KEY = 'e2e-encryption-master-key-at-least-32-chars';
 const E2E_BASE_URL = 'http://127.0.0.1:3001';
+const LOCAL_DB_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 
 function getRecentServerLog() {
   if (!existsSync(DEV_SERVER_LOG_FILE)) return '';
@@ -52,12 +53,44 @@ async function waitForServerReady(pid: number) {
   );
 }
 
+function getTestDatabaseCommandConfig() {
+  const url = new URL(TEST_DATABASE_URL);
+  const databaseName = decodeURIComponent(url.pathname.replace(/^\//, ''));
+
+  if (!databaseName || ['postgres', 'template0', 'template1'].includes(databaseName)) {
+    throw new Error(`Refusing to recreate unsafe E2E database name: ${databaseName || '<empty>'}`);
+  }
+
+  if (!LOCAL_DB_HOSTS.has(url.hostname)) {
+    throw new Error(`Refusing to recreate non-local E2E database host: ${url.hostname}`);
+  }
+
+  const args: string[] = [];
+  if (url.hostname) args.push('-h', url.hostname);
+  if (url.port) args.push('-p', url.port);
+  if (url.username) args.push('-U', decodeURIComponent(url.username));
+
+  const env = {
+    ...process.env,
+    ...(url.password ? { PGPASSWORD: decodeURIComponent(url.password) } : {}),
+  };
+
+  return { args, databaseName, env };
+}
+
 export default async function globalSetup() {
   mkdirSync(path.dirname(DEV_SERVER_PID_FILE), { recursive: true });
 
   // Recreate the local E2E DB so migration replay starts from a clean history.
-  execSync(`dropdb --if-exists asof_test`, { stdio: 'ignore' });
-  execSync(`createdb asof_test`, { stdio: 'ignore' });
+  const testDb = getTestDatabaseCommandConfig();
+  execFileSync('dropdb', [...testDb.args, '--if-exists', testDb.databaseName], {
+    stdio: 'ignore',
+    env: testDb.env,
+  });
+  execFileSync('createdb', [...testDb.args, testDb.databaseName], {
+    stdio: 'ignore',
+    env: testDb.env,
+  });
 
   // Run migrations
   execSync(`DATABASE_URL="${TEST_DATABASE_URL}" npx drizzle-kit migrate`, {
