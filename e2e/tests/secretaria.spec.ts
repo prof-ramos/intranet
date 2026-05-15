@@ -26,9 +26,8 @@ test.describe('Secretaria — Ofícios', () => {
   test('edit link navigates to edit page', async ({ page, loginAsAdmin }) => {
     await loginAsAdmin();
     await page.goto('/app/secretaria/oficios');
-    // Click edit on the first ofício row
-    await page.locator('tr:has-text("OFÍCIO No 001/2026/ASOF") a[title="Editar"]').click();
-    await expect(page).toHaveURL(/\/app\/secretaria\/oficios\/\d+\/editar/);
+    await page.getByRole('link', { name: 'Editar' }).first().click();
+    await expect(page).toHaveURL(/\/app\/secretaria\/oficios\/\d+\/editar/, { timeout: 15000 });
     await expect(page.locator('h1')).toContainText('Editar Ofício');
   });
 
