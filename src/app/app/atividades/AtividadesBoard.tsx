@@ -4,6 +4,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { ArrowRight, ChevronDown, Clock, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { compactActionClass, focusRingClass } from '@/lib/ui/tokens';
@@ -42,11 +43,22 @@ export function AtividadesBoard({
   associates,
   currentUser,
 }: AtividadesBoardProps) {
+  const searchParams = useSearchParams();
   const [items, setItems] = useState(() => initialActivities.map(normalizeActivity));
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [compact, setCompact] = useState(false);
   const [collapsedDone, setCollapsedDone] = useState(false);
-  const [drawerId, setDrawerId] = useState<number | null>(null);
+  const [drawerId, setDrawerId] = useState<number | null>(() => {
+    const openId = searchParams.get('open');
+    if (openId) {
+      const parsed = Number(openId);
+      if (Number.isInteger(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+    return null;
+  });
+
   const [reassignActivity, setReassignActivity] = useState<BoardActivity | null>(null);
   const [pendings, setPendings] = useState<PendingReassignment[]>([]);
 

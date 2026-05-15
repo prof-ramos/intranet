@@ -127,7 +127,7 @@ export default async function AssociadosPage({
                   </span>
                 )}
                 {totalPages > 0 && (
-                  <span className="px-2 text-xs tabular-nums" style={{ color: textMuted }}>
+                  <span className="px-2 text-xs tabular-nums" style={{ color: textMuted }} aria-live="polite" role="status">
                     {page}/{totalPages}
                   </span>
                 )}

@@ -72,7 +72,8 @@ describe('officialLetterFormSchema', () => {
   });
 
   it('rejects missing required fields', () => {
-    const { recipient: _, ...missing } = validData;
+    const missing = { ...validData } as Record<string, unknown>;
+    delete missing.recipient;
     const result = officialLetterFormSchema.safeParse(missing);
     expect(result.success).toBe(false);
   });
