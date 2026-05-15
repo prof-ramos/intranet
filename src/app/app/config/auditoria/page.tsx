@@ -1,6 +1,6 @@
 import { requireRole } from '@/lib/auth/authorization';
 import { db } from '@/lib/db';
-import { auditLogs } from '@/lib/db/schema/audit';
+import { auditLogs, type AuditLog } from '@/lib/db/schema/audit';
 import { admins } from '@/lib/db/schema/admins';
 import { desc, eq, and, gte, lt, ilike, count } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
@@ -52,7 +52,7 @@ export default async function AuditoriaPage({
   const filters: SQL[] = [];
 
   if (entityType && Object.prototype.hasOwnProperty.call(entityTypeLabels, entityType)) {
-    filters.push(eq(auditLogs.entityType, entityType as Parameters<typeof eq>[1]));
+    filters.push(eq(auditLogs.entityType, entityType as AuditLog['entityType']));
   }
   if (q) {
     filters.push(ilike(auditLogs.action, `%${q}%`));
