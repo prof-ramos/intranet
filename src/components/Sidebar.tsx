@@ -12,6 +12,7 @@ import {
   Shield,
   ShieldCheck,
   Users,
+  Webhook,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { NavGroup } from '@/components/NavGroup';
@@ -104,6 +105,7 @@ export function Sidebar({ user }: SidebarProps) {
               { href: '/app/config/usuarios', label: 'Usuários', icon: <Shield size={18} /> },
               { href: '/app/config/lotacoes', label: 'Lotações', icon: <MapPin size={18} /> },
               { href: '/app/config/auditoria', label: 'Auditoria', icon: <ShieldCheck size={18} /> },
+              { href: '/app/config/integracoes/webhooks', label: 'Integrações', icon: <Webhook size={18} /> },
             ]}
           />
         )}
