@@ -19,7 +19,7 @@ export function NavLink({
 
   const isActive = pathname === href || (href !== '/app' && pathname.startsWith(`${href}/`));
   const className = [
-    'flex h-[58px] items-center gap-3 pr-9 text-base transition-colors duration-150',
+    'flex min-h-[58px] items-center gap-3 pr-9 text-sm leading-tight font-medium transition-colors duration-150',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring-color)]',
     isActive ? 'border-l-[6px] pl-[30px] text-white' : 'border-l-[6px] border-transparent pl-9 text-white/70',
     !isActive && hovered ? 'text-white' : '',
@@ -39,8 +39,10 @@ export function NavLink({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <span className="shrink-0">{icon}</span>
-      <span>{children}</span>
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center" aria-hidden="true">
+        {icon}
+      </span>
+      <span className="truncate">{children}</span>
     </Link>
   );
 }
