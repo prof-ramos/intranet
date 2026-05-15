@@ -29,10 +29,10 @@ interface SidebarProps {
 
 export function Sidebar({ user }: SidebarProps) {
   return (
-    <aside className="w-72 min-h-full flex flex-col shrink-0" style={{ backgroundColor: '#06284f' }}>
+    <aside className="flex min-h-full w-72 shrink-0 flex-col" style={{ backgroundColor: '#06284f' }}>
       {/* Logo */}
       <div
-        className="px-6 py-6 flex flex-col items-center"
+        className="flex min-h-[124px] flex-col items-center justify-center px-6 py-6"
         style={{
           background: 'linear-gradient(180deg, #031a35 0%, #06284f 100%)',
           borderBottom: '1px solid rgba(142, 193, 232, 0.22)',
@@ -41,7 +41,7 @@ export function Sidebar({ user }: SidebarProps) {
         <Link
           href="/app"
           aria-label="Ir para a página inicial"
-          className={['rounded', focusRingClass].join(' ')}
+          className={['rounded-[8px]', focusRingClass].join(' ')}
         >
           <Image
             src="https://asof.org.br/img/asof-dark.svg"
@@ -54,13 +54,13 @@ export function Sidebar({ user }: SidebarProps) {
             unoptimized
           />
         </Link>
-        <p className="mt-2 text-[9px] uppercase tracking-[0.18em] text-[#b3d2ea] font-sans">
+        <p className="mt-2 font-sans text-[9px] tracking-[0.18em] text-[#b3d2ea] uppercase">
           Intranet
         </p>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 flex flex-col pt-2">
+      <nav className="flex flex-1 flex-col py-2" aria-label="Navegação principal">
         <NavLink href="/app" icon={<LayoutDashboard size={20} />}>
           Dashboard
         </NavLink>
@@ -114,8 +114,8 @@ export function Sidebar({ user }: SidebarProps) {
       {/* Footer */}
       <div className="px-9 py-6" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
         <div className="mb-3">
-          <p className="text-sm font-semibold text-white leading-tight">{user.name}</p>
-          <p className="text-xs text-white/50 mt-0.5 capitalize">{user.role}</p>
+          <p className="text-sm leading-tight font-semibold text-white">{user.name}</p>
+          <p className="mt-0.5 text-xs text-white/50 capitalize">{user.role}</p>
         </div>
         <LogoutButton />
       </div>
