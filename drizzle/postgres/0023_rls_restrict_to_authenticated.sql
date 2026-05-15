@@ -4,6 +4,13 @@
 -- We change them to: TO authenticated USING(true) WITH CHECK(true)
 -- Additionally, FORCE ROW LEVEL SECURITY on all tables so even the table owner is subject to policies
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    CREATE ROLE authenticated;
+  END IF;
+END $$;
+
 -- List all tables with RLS policies that use TO PUBLIC
 -- Generate ALTER POLICY statements for each
 

@@ -3,11 +3,13 @@ import { admins, associates, monthlyPayments, oficios } from '@/lib/db/schema';
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 
+const E2E_ADMIN_PASSWORD = 'Senha-Forte-2026!';
+
 async function main() {
   // Clear existing E2E data
   await truncateAll();
 
-  const passwordHash = await bcrypt.hash('Senha-Forte-2026!', 12);
+  const passwordHash = await bcrypt.hash(E2E_ADMIN_PASSWORD, 12);
 
   const insertedAdmins = await db
     .insert(admins)
@@ -77,7 +79,10 @@ async function main() {
         };
 
         if (existing) {
-          const { error } = await supabase.auth.admin.updateUserById(existing.id, payload);
+          const { error } = await supabase.auth.admin.updateUserById(existing.id, {
+            ...payload,
+            password: E2E_ADMIN_PASSWORD,
+          });
           if (error) {
             console.error(`Failed to update auth user ${admin.email}:`, error.message);
           } else {
@@ -86,7 +91,7 @@ async function main() {
         } else {
           const { error } = await supabase.auth.admin.createUser({
             ...payload,
-            password: 'Senha-Forte-2026!',
+            password: E2E_ADMIN_PASSWORD,
           });
           if (error) {
             console.error(`Failed to create auth user ${admin.email}:`, error.message);
