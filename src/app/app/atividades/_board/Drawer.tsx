@@ -175,7 +175,7 @@ export function Drawer({
                 className="mt-2 rounded-md bg-white/60 p-2.5 text-xs leading-relaxed italic"
                 style={{ color: reassignmentNotice.text }}
               >
-                “{pending.message}”
+                "{pending.message}"
               </p>
             )}
             <div className="mt-2.5 flex gap-2">
@@ -183,13 +183,11 @@ export function Drawer({
                 type="button"
                 onClick={() => onChange({ acceptReassign: pending.id })}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-[8px] px-4 h-11 text-sm font-semibold transition-colors hover:bg-[var(--activity-hover-bg)] lg:h-8"
-                style={
-                  {
-                    background: successText,
-                    color: buttonPrimaryText,
-                    '--activity-hover-bg': successTextHover,
-                  } as CSSProperties
-                }
+                style={{
+                  background: successText,
+                  color: buttonPrimaryText,
+                  '--activity-hover-bg': successTextHover,
+                } as CSSProperties}
               >
                 Aceitar
               </button>
