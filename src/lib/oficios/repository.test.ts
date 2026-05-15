@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Drizzle mock chains require any for self-referencing builders */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   findOfficialLetters,

@@ -190,7 +190,7 @@ describe('oficios service', () => {
 
     it('throws when cancelling a non-existent letter', async () => {
       const repository = await import('./repository');
-      vi.mocked(repository.findOfficialLetterById).mockResolvedValue(null as any);
+      vi.mocked(repository.findOfficialLetterById).mockResolvedValue(null as unknown as Awaited<ReturnType<typeof repository.findOfficialLetterById>>);
 
     await expect(cancelOfficialLetter(999, 1)).rejects.toThrow('Ofício não encontrado.');
   });

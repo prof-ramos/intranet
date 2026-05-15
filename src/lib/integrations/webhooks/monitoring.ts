@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { webhookDeliveries, webhookSubscriptions } from '@/lib/db/schema';
-import { and, desc, eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 export interface FailedDeliverySummary {
   id: number;

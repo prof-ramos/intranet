@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Drizzle mock chains require any for self-referencing builders */
 import { describe, it, expect, vi } from 'vitest';
 import { getFailedDeliveries } from './monitoring';
 
