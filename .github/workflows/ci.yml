@@ -56,3 +56,41 @@ jobs:
           NODE_ENV: production
           MAILJET_API_KEY: ${{ secrets.MAILJET_API_KEY }}
           MAILJET_SECRET_KEY: ${{ secrets.MAILJET_SECRET_KEY }}
+
+  database-contract:
+    name: Database Contract
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: asof_intranet
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d asof_intranet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/asof_intranet
+      DATABASE_MIGRATION_URL: postgres://postgres:postgres@localhost:5432/asof_intranet
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply migrations
+        run: node node_modules/drizzle-kit/bin.cjs migrate
+
+      - name: Run database contract tests
+        run: npm run test:db
