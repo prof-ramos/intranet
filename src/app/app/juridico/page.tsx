@@ -77,25 +77,21 @@ export default async function JuridicoDashboardPage() {
           <Link
             href="/app/juridico/consultas"
             className="inline-flex h-10 items-center gap-2 rounded-[8px] border bg-white px-4 text-sm font-semibold hover:bg-[var(--button-outline-hover)]"
-            style={
-              {
-                color: navy,
-                borderColor: buttonOutlineBorder,
-                '--button-outline-hover': buttonOutlineHoverBg,
-              } as CSSProperties
-            }
+            style={{
+              color: navy,
+              borderColor: buttonOutlineBorder,
+              '--button-outline-hover': buttonOutlineHoverBg,
+            } as CSSProperties}
           >
             <Scale size={16} aria-hidden="true" /> Ver consultas
           </Link>
           <Link
             href="/app/juridico/consultas/nova"
             className="inline-flex h-10 items-center gap-2 rounded-[8px] px-5 text-sm font-semibold text-white hover:bg-[var(--primary-hover)]"
-            style={
-              {
-                backgroundColor: navy,
-                '--primary-hover': primaryContainerHover,
-              } as CSSProperties
-            }
+            style={{
+              backgroundColor: navy,
+              '--primary-hover': primaryContainerHover,
+            } as CSSProperties}
           >
             <Plus size={16} aria-hidden="true" /> Nova consulta
           </Link>
@@ -143,7 +139,7 @@ export default async function JuridicoDashboardPage() {
           style={{ border: `1px solid ${hairline}` }}
         >
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
-            <h2 className="font-serif text-xl font-bold">Ações pendentes</h2>
+            <h2 className="font-serif text-xl font-bold">Ções pendentes</h2>
             <Link
               href="/app/juridico/consultas"
               className="inline-flex items-center gap-1 text-sm font-semibold hover:text-[var(--primary-hover)]"
