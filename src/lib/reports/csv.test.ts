@@ -71,9 +71,11 @@ describe('toCsvCell', () => {
     expect(toCsvCell('123')).toBe('"123"');
   });
 
-  it('passes carriage return through unchanged (current behavior — not escaped)', () => {
-    // \r is not in the dangerous-char regex /^[-=+@\t]/, so it passes through.
-    // If CSV consumers misinterpret rows, consider adding \r to the escape list.
+  it('prefixes tab before carriage return to prevent CSV row injection', () => {
+    expect(toCsvCell('\rline2')).toBe('"\t\rline2"');
+  });
+
+  it('handles mixed CRLF inside a cell', () => {
     expect(toCsvCell('line1\r\nline2')).toBe('"line1\r\nline2"');
   });
 });

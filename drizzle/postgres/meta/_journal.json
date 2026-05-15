@@ -110,124 +110,138 @@
     {
       "idx": 15,
       "version": "7",
-      "when": 1778841600000,
-      "tag": "0020_add_check_constraints",
+      "when": 1778755200002,
+      "tag": "0017_login_attempts_email_hash",
       "breakpoints": true
     },
     {
       "idx": 16,
-      "version": "7",
-      "when": 1778841600001,
-      "tag": "0021_alter_activities_position_to_integer",
-      "breakpoints": true
-    },
-    {
-      "idx": 17,
-      "version": "7",
-      "when": 1778845200000,
-      "tag": "0022_set_idle_transaction_timeout",
-      "breakpoints": true
-    },
-    {
-      "idx": 18,
-      "version": "7",
-      "when": 1778845200001,
-      "tag": "0023_rls_restrict_to_authenticated",
-      "breakpoints": true
-    },
-    {
-      "idx": 19,
       "version": "7",
       "when": 1778928000000,
       "tag": "0017_rate_limits_unique_key_scope",
       "breakpoints": true
     },
     {
+      "idx": 17,
+      "version": "7",
+      "when": 1778928000001,
+      "tag": "0018_add_pii_encryption_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1778841600000,
+      "tag": "0020_add_check_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1778841600001,
+      "tag": "0021_alter_activities_position_to_integer",
+      "breakpoints": true
+    },
+    {
       "idx": 20,
+      "version": "7",
+      "when": 1778845200000,
+      "tag": "0022_set_idle_transaction_timeout",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1778845200001,
+      "tag": "0023_rls_restrict_to_authenticated",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
       "version": "7",
       "when": 1779014400000,
       "tag": "0024_add_webhook_idempotency_key",
       "breakpoints": true
     },
     {
-      "idx": 21,
+      "idx": 23,
       "version": "7",
       "when": 1779100800000,
       "tag": "0025_create_partial_idx_webhook_subscriptions_active",
       "breakpoints": true
     },
     {
-      "idx": 22,
+      "idx": 24,
       "version": "7",
       "when": 1779100800001,
       "tag": "0026_create_partial_idx_domain_events_pending",
       "breakpoints": true
     },
     {
-      "idx": 23,
+      "idx": 25,
       "version": "7",
       "when": 1779100800002,
       "tag": "0027_create_partial_idx_integration_api_keys_active",
       "breakpoints": true
     },
     {
-      "idx": 24,
+      "idx": 26,
       "version": "7",
       "when": 1779100800003,
       "tag": "0028_add_name_trgm_index",
       "breakpoints": true
     },
     {
-      "idx": 25,
+      "idx": 27,
       "version": "7",
       "when": 1779100800004,
       "tag": "0029_add_composite_indexes",
       "breakpoints": true
     },
     {
-      "idx": 26,
+      "idx": 28,
       "version": "7",
       "when": 1779100800005,
       "tag": "0030_add_related_process_fk",
       "breakpoints": true
     },
     {
-      "idx": 27,
+      "idx": 29,
       "version": "7",
       "when": 1779100800006,
       "tag": "0031_convert_counters_to_integer",
       "breakpoints": true
     },
     {
-      "idx": 28,
+      "idx": 30,
       "version": "7",
       "when": 1779187200000,
       "tag": "0032_add_event_retention",
       "breakpoints": true
     },
     {
-      "idx": 29,
+      "idx": 31,
       "version": "7",
       "when": 1779273600000,
       "tag": "0033_create_pii_safe_views",
       "breakpoints": true
     },
     {
-      "idx": 30,
+      "idx": 32,
       "version": "7",
       "when": 1779360000000,
       "tag": "0034_add_webhook_delivery_failure_reason",
       "breakpoints": true
     },
     {
-      "idx": 31,
+      "idx": 33,
       "version": "7",
       "when": 1779446400000,
       "tag": "0035_drop_redundant_indexes",
       "breakpoints": true
     },
     {
-      "idx": 32,
+      "idx": 34,
       "version": "7",
       "when": 1779532800000,
       "tag": "0036_encrypt_remaining_pii_columns",

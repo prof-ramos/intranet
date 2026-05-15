@@ -1,10 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { type NextRequest } from 'next/server';
-import { getAssociatesForReport } from '@/lib/reports/queries';
-import { generateCsv } from '@/lib/reports/csv';
-import { auditReportDownload } from '@/lib/reports/audit';
-import { logDataAccess } from '@/lib/audit/service';
+import { generateReport } from '@/lib/reports/service';
 import { parseReportExportParams } from '@/lib/reports/export-filters';
 import { requireReportAccess } from '@/lib/reports/policy';
 import { consumeIpRateLimit } from '@/lib/rate-limit';
@@ -37,33 +34,13 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const { filters, selectedKeys } = parseReportExportParams(searchParams);
 
-  let rows: Awaited<ReturnType<typeof getAssociatesForReport>>;
   let csv: string;
   try {
-    rows = await getAssociatesForReport(filters);
-    csv = generateCsv(rows, selectedKeys);
+    const result = await generateReport(access.userId, filters, selectedKeys);
+    csv = result.csv;
   } catch (error) {
     console.error('[report-download] failed to generate CSV', { error });
     return new Response('Falha ao gerar relatório.', { status: 500 });
-  }
-
-  try {
-    await auditReportDownload(access.userId, filters, selectedKeys, rows.length);
-  } catch (error) {
-    console.warn('[report-download] failed to persist audit log', { error });
-  }
-
-  // LGPD Art. 30/37: log PII data export
-  try {
-    await logDataAccess({
-      adminId: access.userId,
-      action: 'export',
-      entityType: 'associate',
-      entityId: null,
-      metadata: { format: 'csv', fieldCount: selectedKeys.length, rowCount: rows.length },
-    });
-  } catch (error) {
-    console.warn('[report-download] failed to persist data access log', { error });
   }
 
   const date = new Date().toISOString().slice(0, 10);

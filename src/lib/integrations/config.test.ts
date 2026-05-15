@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getIntegrationConfig, isIntegrationAuthConfigured } from './config';
+import { getIntegrationConfig, isIntegrationAuthConfigured, isIntegrationAuthAvailable } from './config';
 
 // Mock server-only to avoid import errors in test environment
 vi.mock('server-only', () => ({}));
@@ -113,5 +113,45 @@ describe('isIntegrationAuthConfigured', () => {
   it('returns false when both are missing', () => {
     const config = { enabled: false, apiKey: null, hmacSecret: null, timestampToleranceSeconds: 300 };
     expect(isIntegrationAuthConfigured(config)).toBe(false);
+  });
+});
+
+describe('isIntegrationAuthAvailable', () => {
+  it('returns true when env-var auth is configured (no DB query needed)', async () => {
+    const config = { enabled: true, apiKey: 'key', hmacSecret: 'secret', timestampToleranceSeconds: 300 };
+    const result = await isIntegrationAuthAvailable(config);
+    expect(result).toBe(true);
+    // DB mock should not have been called
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it('returns false when no hmacSecret is set (table-backed keys cannot work)', async () => {
+    const config = { enabled: false, apiKey: null, hmacSecret: null, timestampToleranceSeconds: 300 };
+    const result = await isIntegrationAuthAvailable(config);
+    expect(result).toBe(false);
+  });
+
+  it('returns true when DB has at least one active key', async () => {
+    mockFrom.mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        limit: vi.fn().mockResolvedValue([{ id: 1 }]),
+      }),
+    });
+
+    const config = { enabled: false, apiKey: null, hmacSecret: 'secret', timestampToleranceSeconds: 300 };
+    const result = await isIntegrationAuthAvailable(config);
+    expect(result).toBe(true);
+  });
+
+  it('returns false when DB has no active keys', async () => {
+    mockFrom.mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        limit: vi.fn().mockResolvedValue([]),
+      }),
+    });
+
+    const config = { enabled: false, apiKey: null, hmacSecret: 'secret', timestampToleranceSeconds: 300 };
+    const result = await isIntegrationAuthAvailable(config);
+    expect(result).toBe(false);
   });
 });
