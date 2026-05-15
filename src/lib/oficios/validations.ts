@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
 export const officialLetterFormSchema = z.object({
-  recipient: z.string().min(1, 'O destinatário é obrigatório.').trim(),
-  recipientRole: z.string().min(1, 'O cargo do destinatário é obrigatório.').trim(),
-  vocativo: z.string().min(1, 'O vocativo é obrigatório.').trim(),
-  letterDate: z.string().min(1, 'A data é obrigatória.').trim(),
-  subject: z.string().min(1, 'O assunto é obrigatório.').trim(),
-  itamaratySector: z.string().min(1, 'O setor no Itamaraty é obrigatório.').trim(),
-  signatoryName: z.string().min(1, 'O nome do signatário é obrigatório.').trim(),
-  signatoryRole: z.string().min(1, 'O cargo do signatário é obrigatório.').trim(),
+  recipient: z.string().trim().min(1, 'O destinatário é obrigatório.'),
+  recipientRole: z.string().trim().min(1, 'O cargo do destinatário é obrigatório.'),
+  vocativo: z.string().trim().min(1, 'O vocativo é obrigatório.'),
+  letterDate: z.string().trim().min(1, 'A data é obrigatória.'),
+  subject: z.string().trim().min(1, 'O assunto é obrigatório.'),
+  itamaratySector: z.string().trim().min(1, 'O setor no Itamaraty é obrigatório.'),
+  signatoryName: z.string().trim().min(1, 'O nome do signatário é obrigatório.'),
+  signatoryRole: z.string().trim().min(1, 'O cargo do signatário é obrigatório.'),
   closure: z.enum(['Atenciosamente,', 'Respeitosamente,'], {
     message: 'Selecione um fecho válido.',
   }),
