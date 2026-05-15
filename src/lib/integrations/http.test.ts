@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { getRequestId, jsonOk, jsonError, jsonMethodNotAllowed } from './http';
 import { INTEGRATION_HEADER_NAMES, INTEGRATION_API_VERSION } from '@/lib/integrations/types';
 
