@@ -246,6 +246,20 @@
       "when": 1779532800000,
       "tag": "0036_encrypt_remaining_pii_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1779532800001,
+      "tag": "0037_add_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1779532800002,
+      "tag": "0038_harden_notifications",
+      "breakpoints": true
     }
   ]
 }
