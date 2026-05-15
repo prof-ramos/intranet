@@ -57,42 +57,47 @@ export default async function AuditoriaPage({
   if (q) {
     filters.push(ilike(auditLogs.action, `%${q}%`));
   }
+  // BRT = UTC-3, fixed offset since Brazil eliminated DST in 2019.
+  // new Date('YYYY-MM-DDT00:00:00-03:00') gives the correct São Paulo midnight in UTC.
   if (de) {
-    const d = new Date(de);
+    const d = new Date(`${de}T00:00:00-03:00`);
     if (!isNaN(d.getTime())) filters.push(gte(auditLogs.createdAt, d));
   }
   if (ate) {
-    const d = new Date(ate);
+    const d = new Date(`${ate}T00:00:00-03:00`);
     if (!isNaN(d.getTime())) {
-      d.setDate(d.getDate() + 1);
+      // Exclusive upper bound: start of next day in BRT = +24h
+      d.setUTCDate(d.getUTCDate() + 1);
       filters.push(lt(auditLogs.createdAt, d));
     }
   }
 
   const where = filters.length > 0 ? and(...filters) : undefined;
 
-  const [rows, [{ total }]] = await Promise.all([
-    db
-      .select({
-        id: auditLogs.id,
-        action: auditLogs.action,
-        entityType: auditLogs.entityType,
-        entityId: auditLogs.entityId,
-        actorName: admins.name,
-        createdAt: auditLogs.createdAt,
-      })
-      .from(auditLogs)
-      .leftJoin(admins, eq(auditLogs.performedBy, admins.id))
-      .where(where)
-      .orderBy(desc(auditLogs.createdAt))
-      .limit(PAGE_SIZE)
-      .offset((page - 1) * PAGE_SIZE),
-    db.select({ total: count() }).from(auditLogs).where(where),
-  ]);
-
+  // Count first so we can clamp page before fetching rows (avoids empty-table
+  // with misleading footer when a manual URL supplies page > totalPages).
+  const [{ total }] = await db.select({ total: count() }).from(auditLogs).where(where);
   const totalPages = Math.ceil(total / PAGE_SIZE);
-  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const to = Math.min(page * PAGE_SIZE, total);
+  const effectivePage = total > 0 ? Math.min(page, totalPages) : 1;
+
+  const rows = await db
+    .select({
+      id: auditLogs.id,
+      action: auditLogs.action,
+      entityType: auditLogs.entityType,
+      entityId: auditLogs.entityId,
+      actorName: admins.name,
+      createdAt: auditLogs.createdAt,
+    })
+    .from(auditLogs)
+    .leftJoin(admins, eq(auditLogs.performedBy, admins.id))
+    .where(where)
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(PAGE_SIZE)
+    .offset((effectivePage - 1) * PAGE_SIZE);
+
+  const from = total === 0 ? 0 : (effectivePage - 1) * PAGE_SIZE + 1;
+  const to = Math.min(effectivePage * PAGE_SIZE, total);
 
   function pageUrl(p: number) {
     const sp = new URLSearchParams();
