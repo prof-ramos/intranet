@@ -139,7 +139,7 @@ export default async function JuridicoDashboardPage() {
           style={{ border: `1px solid ${hairline}` }}
         >
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
-            <h2 className="font-serif text-xl font-bold">Ções pendentes</h2>
+            <h2 className="font-serif text-xl font-bold">Ações pendentes</h2>
             <Link
               href="/app/juridico/consultas"
               className="inline-flex items-center gap-1 text-sm font-semibold hover:text-[var(--primary-hover)]"
