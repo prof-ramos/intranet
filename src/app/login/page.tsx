@@ -1,5 +1,6 @@
 import { login } from '@/app/login/actions';
 import { SubmitButton } from '@/app/login/SubmitButton';
+import { focusRingClass, hairline } from '@/lib/ui/tokens';
 
 export default async function LoginPage({
   searchParams,
@@ -36,7 +37,8 @@ export default async function LoginPage({
                 type="email"
                 required
                 autoComplete="email"
-                className="h-11 w-full rounded-[8px] border border-[#e2e8f0] px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76aeea] focus-visible:ring-offset-1"
+                className={`h-11 w-full rounded-[8px] border px-3 text-sm ${focusRingClass}`}
+                style={{ borderColor: hairline }}
                 placeholder="seu@email.com"
               />
             </div>
@@ -54,7 +56,8 @@ export default async function LoginPage({
                 type="password"
                 required
                 autoComplete="current-password"
-                className="h-11 w-full rounded-[8px] border border-[#e2e8f0] px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76aeea] focus-visible:ring-offset-1"
+                className={`h-11 w-full rounded-[8px] border px-3 text-sm ${focusRingClass}`}
+                style={{ borderColor: hairline }}
               />
             </div>
 
