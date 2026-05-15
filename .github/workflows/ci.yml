@@ -92,5 +92,12 @@ jobs:
       - name: Apply migrations
         run: node node_modules/drizzle-kit/bin.cjs migrate
 
+      - name: Write test database env file
+        run: |
+          {
+            echo "DATABASE_URL=$DATABASE_URL"
+            echo "DATABASE_MIGRATION_URL=$DATABASE_MIGRATION_URL"
+          } > .env.local
+
       - name: Run database contract tests
         run: npm run test:db
