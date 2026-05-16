@@ -4,7 +4,7 @@ import { getRoleLabel } from '@/lib/ui/role-labels';
 import { parseAssociatesSearchParams } from '@/lib/associates/search-params';
 import { ChevronLeft, ChevronRight, Download, Pencil, Search } from 'lucide-react';
 import Link from 'next/link';
-import { hairline, textMuted, navy, skyBlue, success, successBg, canvas } from '@/lib/ui/tokens';
+import { hairline, textMuted, navy, skyBlue, success, successBg, canvas, focusRingClass } from '@/lib/ui/tokens';
 
 const PAGE_SIZE = 20;
 
@@ -96,13 +96,13 @@ export default async function AssociadosPage({
               {total === 0 ? 'Nenhum resultado' : `${from}–${to} de ${total}`}
             </p>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <Link href="/app/associados?page=1" className="text-sm font-semibold">
+              <Link href="/app/associados?page=1" className={`text-sm font-semibold hover:underline ${focusRingClass}`}>
                 Ver todos ({total})
               </Link>
               <Link
                 href="/app/associados/relatorio"
                 aria-label="Exportar associados para CSV"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)]"
+                className={`inline-flex h-11 w-11 items-center justify-center rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
               >
                 <Download size={18} aria-hidden="true" />
               </Link>
@@ -110,7 +110,7 @@ export default async function AssociadosPage({
                 {page > 1 ? (
                   <Link
                     href={`/app/associados?q=${encodeURIComponent(q)}&page=${page - 1}`}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-[8px] border bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)]"
+                    className={`inline-flex h-11 w-11 items-center justify-center rounded-[8px] border bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
                     style={{ borderColor: hairline }}
                     aria-label="Página anterior"
                   >
@@ -134,7 +134,7 @@ export default async function AssociadosPage({
                 {page < totalPages ? (
                   <Link
                     href={`/app/associados?q=${encodeURIComponent(q)}&page=${page + 1}`}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-[8px] border bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)]"
+                    className={`inline-flex h-11 w-11 items-center justify-center rounded-[8px] border bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
                     style={{ borderColor: hairline }}
                     aria-label="Próxima página"
                   >
@@ -177,7 +177,7 @@ export default async function AssociadosPage({
                   rows.map((row) => (
                     <tr key={row.id} className="group border-b transition-colors hover:bg-[#f8fafc]" style={{ borderColor: hairline }}>
                       <td className="px-4 py-3 font-medium">
-                        <Link href={`/app/associados/${row.id}`} className="hover:underline">
+                        <Link href={`/app/associados/${row.id}`} className={`hover:underline ${focusRingClass}`}>
                           {row.fullName}
                         </Link>
                       </td>
@@ -201,7 +201,7 @@ export default async function AssociadosPage({
                       <td className="px-4 py-3 text-center">
                         <Link
                           href={`/app/associados/${row.id}/editar`}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[rgba(13,31,60,0.55)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-[#f8fafc] hover:text-[#76aeea]"
+                          className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-[rgba(13,31,60,0.55)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-[#f8fafc] hover:text-[#76aeea] ${focusRingClass}`}
                           aria-label={`Editar ${row.fullName}`}
                         >
                           <Pencil size={14} aria-hidden="true" />

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ExternalLink, Pencil } from 'lucide-react';
 import { requireAuth } from '@/lib/auth/require-auth';
-import { hairline, infoNotice } from '@/lib/ui/tokens';
+import { focusRingClass, hairline, infoNotice } from '@/lib/ui/tokens';
 import {
   formatAssociateDate,
   getAssociateProfile,
@@ -127,7 +127,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
     <main className="mx-auto w-full max-w-[1180px] min-w-0 px-5 py-7 sm:px-8 lg:px-10">
       <Link
         href="/app/associados"
-        className="text-base-content/60 mb-4 inline-flex items-center gap-1.5 text-xs font-medium"
+        className={`text-base-content/60 mb-4 inline-flex items-center gap-1.5 text-xs font-medium hover:underline ${focusRingClass}`}
       >
         <ArrowLeft size={14} aria-hidden="true" />
         Voltar para Associados
@@ -143,7 +143,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
               <a
                 key={anchor}
                 href={`#${anchor}`}
-                className="rounded-md border-l-2 border-transparent px-2.5 py-1.5 text-[13px] font-medium text-[rgba(13,31,60,0.65)] transition-colors hover:border-[#040920] hover:bg-[rgba(4,9,32,0.05)] hover:text-[#040920]"
+                className={`rounded-md border-l-2 border-transparent px-2.5 py-1.5 text-[13px] font-medium text-[rgba(13,31,60,0.65)] transition-colors hover:border-[#040920] hover:bg-[rgba(4,9,32,0.05)] hover:text-[#040920] ${focusRingClass}`}
               >
                 {label}
               </a>
@@ -182,13 +182,13 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
               <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
                 <button
                   type="button"
-                  className="inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-11 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-10 lg:min-h-10"
+                  className={`inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-11 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-10 lg:min-h-10 ${focusRingClass}`}
                 >
                   Imprimir ficha
                 </button>
                 <Link
                   href={`/app/associados/${id}/editar`}
-                  className="inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-10 lg:min-h-10"
+                  className={`inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-10 lg:min-h-10 ${focusRingClass}`}
                 >
                   Editar dados
                 </Link>
@@ -405,7 +405,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
                     </span>
                     <Link
                       href={`/app/atividades?open=${activity.id}`}
-                      className="inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap text-[#040920]"
+                      className={`inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap text-[#040920] hover:underline ${focusRingClass}`}
                     >
                       Ver no quadro <ExternalLink size={14} aria-hidden="true" />
                     </Link>

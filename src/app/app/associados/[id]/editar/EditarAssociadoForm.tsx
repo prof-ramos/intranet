@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useState } from 'react';
 import { updateAssociate } from '@/app/app/associados/actions';
+import { focusRingClass } from '@/lib/ui/tokens';
 
 interface Props {
   associate: {
@@ -53,7 +54,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
       <div className="mb-5 flex items-center gap-3">
         <Link
           href={`/app/associados/${associate.id}`}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[rgba(13,31,60,0.40)] transition-colors hover:bg-[rgba(4,9,32,0.04)]"
+          className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-[rgba(13,31,60,0.40)] transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
           aria-label="Voltar"
         >
           <ArrowLeft size={18} />
@@ -98,6 +99,8 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 defaultValue={associate.cpf ?? ''}
                 className="input input-bordered w-full"
                 placeholder="000.000.000-00"
+                spellCheck={false}
+                autoComplete="off"
               />
             </div>
 
@@ -111,6 +114,8 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 type="text"
                 defaultValue={associate.siape ?? ''}
                 className="input input-bordered w-full"
+                spellCheck={false}
+                autoComplete="off"
               />
             </div>
 
@@ -356,8 +361,8 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
         )}
 
         {error && (
-          <div className="alert alert-error mb-5">
-            <span className="text-sm">{error}</span>
+          <div role="alert" className="mb-5 rounded-[8px] border border-[#fca5a5] bg-[#fee2e2] px-4 py-3 text-sm text-[#7f1d1d]">
+            {error}
           </div>
         )}
 
@@ -365,14 +370,14 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-4 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260]"
+            className={`inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-4 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
           >
             <Save size={16} aria-hidden="true" />
             {saving ? 'Salvando...' : 'Salvar alterações'}
           </button>
           <Link
             href={`/app/associados/${associate.id}`}
-            className="inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-11 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)]"
+            className={`inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-11 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
           >
             Cancelar
           </Link>

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { Users, RotateCcw } from 'lucide-react';
+import { focusRingClass } from '@/lib/ui/tokens';
 
 export default function AssociadosError({
   error,
@@ -28,8 +29,9 @@ export default function AssociadosError({
           <p className="text-sm text-[rgba(13,31,60,0.40)]">Código: {error.digest}</p>
         )}
         <button
+          type="button"
           onClick={reset}
-          className="inline-flex items-center gap-2 rounded-lg bg-[#040920] px-4 py-2 text-white transition hover:bg-[#0d3260]"
+          className={`inline-flex items-center gap-2 rounded-lg bg-[#040920] px-4 py-2 text-white transition hover:bg-[#0d3260] ${focusRingClass}`}
         >
           <RotateCcw className="h-4 w-4" />
           Tentar novamente

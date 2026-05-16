@@ -112,7 +112,7 @@ export function RelatorioForm() {
   }
 
   const chipStyle =
-    'inline-flex h-8 items-center rounded-full border px-3 text-[11px] font-semibold transition';
+    'inline-flex h-8 items-center rounded-full border px-3 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2';
   const chipActive = { borderColor: '#040920', background: '#040920', color: '#fff' };
   const chipInactive = { borderColor: '#c9d2df', background: '#fff', color: '#0d1f3c' };
 
@@ -162,7 +162,7 @@ export function RelatorioForm() {
                 <button
                   type="button"
                   onClick={() => toggleGroup(groupIndex)}
-                  className="inline-flex h-8 items-center rounded-full border px-3 text-[11px] font-semibold transition"
+                  className="inline-flex h-8 items-center rounded-full border px-3 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2"
                   style={
                     fullySelected
                       ? { borderColor: '#040920', background: '#040920', color: '#fff' }
@@ -220,7 +220,7 @@ export function RelatorioForm() {
                 birthMonth: 'todos',
               })
             }
-            className="inline-flex h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold transition"
+            className="inline-flex h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2"
             style={{ borderColor: '#c9d2df', background: '#fff', color: '#59677a' }}
           >
             Limpar filtros
@@ -344,7 +344,7 @@ export function RelatorioForm() {
         <button
           type="submit"
           disabled={selected.size === 0}
-          className="inline-flex h-10 items-center gap-2 rounded-[8px] px-5 text-[13px] font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-10 items-center gap-2 rounded-[8px] px-5 text-[13px] font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2"
           style={{ background: '#040920' }}
         >
           <FileSpreadsheet size={18} aria-hidden="true" />
@@ -353,7 +353,7 @@ export function RelatorioForm() {
         <button
           type="button"
           onClick={clearAll}
-          className="inline-flex h-10 items-center rounded-[8px] border px-4 text-[13px] font-semibold"
+          className="inline-flex h-10 items-center rounded-[8px] border px-4 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2"
           style={{ color: '#0d1f3c', borderColor: '#c9d2df', background: '#fff' }}
         >
           Limpar
