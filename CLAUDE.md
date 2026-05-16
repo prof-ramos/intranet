@@ -200,8 +200,17 @@ Set `SKIP_AUTH=true` in `.env.local` (ignored in production). Configures dev use
 Formal, institutional interface. See `DESIGN.md` for full specification.
 - **DaisyUI being phased out.** New/refactored UI uses explicit `DESIGN.md` tokens (colors, borders, radii) instead of DaisyUI utility classes (`btn btn-primary`, `input input-bordered`). Prefer explicit inline `style={{}}` or Tailwind arbitrary values matching the design system.
 - **Primary:** Navy `#040920` · **Sidebar:** `#06284f` · **Accent:** Sky blue `#76aeea`
-- **Typography:** Playfair Display (headlines, metrics) + Google Sans (body, controls)
+- **Typography:** Playfair Display (headings only) + Google Sans (numeric metrics, body, controls)
 - **Tokens:** `src/lib/ui/tokens.ts` — `statusStyles`, `priorityStyles`, `focusRingClass`, `hairline`, etc.
+
+### UI / Accessibility Conventions
+
+- **Focus rings**: Always use `focusRingClass` from `src/lib/ui/tokens.ts` — never write raw `focus-visible:*` classes inline.
+- **Hover**: CSS `hover:` classes only — no `onMouseEnter`/`onMouseLeave`/`useState` for hover. Use CSS custom property `--nav-hover-bg: primaryContainerHover` for token-backed hover backgrounds.
+- **Async states**: `role="status"` + `aria-live="polite"` for loading; `role="alert"` for errors.
+- **Sensitive inputs**: `spellCheck={false}` + `autoComplete="off"` on CPF, SIAPE, phone, WhatsApp fields.
+- **Animation**: `motion-safe:animate-pulse` not `animate-pulse` (respects prefers-reduced-motion).
+- **Collapsible panels**: Always render the `aria-controls` target in the DOM; use the HTML `hidden` attribute to toggle visibility instead of conditional rendering.
 
 ## Key Decisions
 
