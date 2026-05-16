@@ -182,7 +182,7 @@ export function Drawer({
               <button
                 type="button"
                 onClick={() => onChange({ acceptReassign: pending.id })}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-[8px] px-4 h-11 text-sm font-semibold transition-colors hover:bg-[var(--activity-hover-bg)] lg:h-8"
+                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[8px] px-4 h-11 text-sm font-semibold transition-colors hover:bg-[var(--activity-hover-bg)] lg:h-8 ${focusRingClass}`}
                 style={
                   {
                     background: successText,
@@ -196,7 +196,7 @@ export function Drawer({
               <button
                 type="button"
                 onClick={() => onChange({ rejectReassign: pending.id })}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-[8px] border bg-white px-4 h-11 text-sm font-semibold transition-colors hover:bg-[var(--activity-hover-bg)] lg:h-8"
+                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[8px] border bg-white px-4 h-11 text-sm font-semibold transition-colors hover:bg-[var(--activity-hover-bg)] lg:h-8 ${focusRingClass}`}
                 style={{
                   borderColor: buttonOutlineBorder,
                   color: dangerText,
@@ -282,7 +282,7 @@ export function Drawer({
               <button
                 type="button"
                 onClick={onRequestReassign}
-                className="inline-flex ml-auto items-center justify-center gap-2 rounded-[8px] border bg-white px-4 h-10 text-sm font-semibold transition-colors hover:bg-[var(--activity-hover-bg)] lg:h-8"
+                className={`inline-flex ml-auto items-center justify-center gap-2 rounded-[8px] border bg-white px-4 h-10 text-sm font-semibold transition-colors hover:bg-[var(--activity-hover-bg)] lg:h-8 ${focusRingClass}`}
                 style={{ borderColor: buttonOutlineBorder, color: textPrimary, ...hoverBgStyle }}
                 disabled={people.length < 2}
                 aria-disabled={people.length < 2}

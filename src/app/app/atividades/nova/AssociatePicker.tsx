@@ -57,7 +57,7 @@ export function AssociatePicker({
         }}
         onFocus={() => setOpen(true)}
         placeholder="Buscar associado..."
-        className="input input-bordered min-h-11 w-full rounded-[8px] bg-white"
+        className={`min-h-11 w-full rounded-[8px] border bg-white px-3 text-sm ${focusRingClass}`}
         style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
       />
       {open && (

@@ -115,7 +115,7 @@ export function NovaAtividadeForm({
     <main className="mx-auto w-full max-w-[1180px] min-w-0 px-5 py-7 sm:px-8 lg:px-10">
       <Link
         href="/app/atividades"
-        className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium"
+        className={`mb-4 inline-flex items-center gap-1.5 text-xs font-medium ${focusRingClass}`}
         style={{ color: '#59677a' }}
       >
         <ArrowLeft size={14} aria-hidden="true" />
@@ -138,7 +138,7 @@ export function NovaAtividadeForm({
         <div className="flex flex-wrap gap-2">
           <Link
             href="/app/atividades"
-            className="inline-flex min-h-10 items-center justify-center rounded-[8px] border px-4 text-[13px] font-semibold"
+            className={`inline-flex min-h-10 items-center justify-center rounded-[8px] border px-4 text-[13px] font-semibold ${focusRingClass}`}
             style={{ color: '#0d1f3c', borderColor: '#c9d2df', background: '#fff' }}
           >
             Cancelar
@@ -146,7 +146,7 @@ export function NovaAtividadeForm({
           <button
             type="button"
             onClick={() => submit(true)}
-            className="inline-flex min-h-10 items-center justify-center rounded-[8px] border px-4 text-[13px] font-semibold"
+            className={`inline-flex min-h-10 items-center justify-center rounded-[8px] border px-4 text-[13px] font-semibold ${focusRingClass}`}
             style={{ color: '#0d1f3c', borderColor: '#c9d2df', background: '#fff' }}
           >
             Salvar e criar outra
@@ -154,7 +154,7 @@ export function NovaAtividadeForm({
           <button
             type="button"
             onClick={() => submit(false)}
-            className="inline-flex min-h-10 items-center justify-center rounded-[8px] px-5 text-[13px] font-semibold text-white"
+            className={`inline-flex min-h-10 items-center justify-center rounded-[8px] px-5 text-[13px] font-semibold text-white ${focusRingClass}`}
             style={{ background: '#040920' }}
           >
             Criar atividade
@@ -201,7 +201,7 @@ export function NovaAtividadeForm({
               placeholder="Ex.: Publicar boletim de Maio"
               aria-invalid={!!error}
               aria-describedby={error ? 'activity-title-error' : 'activity-title-hint'}
-              className="h-12 w-full rounded-[8px] border bg-white px-3 text-lg font-medium"
+              className={`h-12 w-full rounded-[8px] border bg-white px-3 text-lg font-medium ${focusRingClass}`}
               style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
             />
           </Field>
@@ -253,7 +253,7 @@ export function NovaAtividadeForm({
               placeholder="O que precisa ser feito? Quem está envolvido? Quais arquivos?"
               rows={6}
               aria-describedby="activity-description-hint"
-              className="min-h-36 w-full rounded-[8px] border bg-white p-3 text-sm leading-relaxed"
+              className={`min-h-36 w-full rounded-[8px] border bg-white p-3 text-sm leading-relaxed ${focusRingClass}`}
               style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
             />
           </Field>
@@ -351,7 +351,7 @@ export function NovaAtividadeForm({
                 value={form.dueDate}
                 onChange={(event) => update({ dueDate: event.target.value })}
                 aria-describedby="activity-due-date-hint"
-                className="h-12 w-full rounded-[8px] border bg-white px-3"
+                className={`h-12 w-full rounded-[8px] border bg-white px-3 ${focusRingClass}`}
                 style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
               />
             </Field>

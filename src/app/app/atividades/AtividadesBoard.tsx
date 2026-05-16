@@ -171,7 +171,7 @@ export function AtividadesBoard({
         </div>
         <Link
           href="/app/atividades/nova"
-          className="inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-10 lg:min-h-10"
+          className={`inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-10 lg:min-h-10 ${focusRingClass}`}
         >
           <Plus size={16} aria-hidden="true" />
           Nova atividade
@@ -283,7 +283,7 @@ export function AtividadesBoard({
                                   style={{ marginBottom: 8, ...dragProvided.draggableProps.style }}
                                   onClick={() => setDrawerId(activity.id)}
                                   onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
+                                    if (e.key === 'Enter' || e.key === ' ') {
                                       e.preventDefault();
                                       setDrawerId(activity.id);
                                     }

@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from 'react';
 import { useMemo } from 'react';
-import { canvas, dangerText, hairline, textSubtle } from '@/lib/ui/tokens';
+import { canvas, dangerText, focusRingClass, hairline, textSubtle } from '@/lib/ui/tokens';
 import type { BoardActivity, Status } from './types';
 
 export function SummaryStrip({
@@ -75,7 +75,7 @@ export function SummaryStrip({
               type="button"
               key={item.label}
               onClick={item.action}
-              className="hover:bg-[var(--summary-hover-bg)] flex flex-col px-5 py-4 text-left"
+              className={`hover:bg-[var(--summary-hover-bg)] flex flex-col px-5 py-4 text-left ${focusRingClass}`}
               style={
                 {
                   borderTop: `3px solid ${item.topColor}`,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { focusRingClass } from '@/lib/ui/tokens';
 
 export interface ReassignModalPerson {
   id: number;
@@ -32,6 +33,14 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
     closeRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   return (
     <>
       <button
@@ -62,7 +71,7 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
             <select
               value={toUserId?.toString() ?? ''}
               onChange={(event) => setToUserId(event.target.value ? Number(event.target.value) : null)}
-              className="h-10 w-full rounded-[8px] border border-[#e2e8f0] bg-white px-3 text-sm outline-none focus:border-[#76aeea]"
+              className={`h-10 w-full rounded-[8px] border border-[#e2e8f0] bg-white px-3 text-sm ${focusRingClass}`}
             >
               {candidates.map((person) => (
                 <option key={person.id} value={person.id}>
@@ -78,7 +87,7 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
               onChange={(event) => setMessage(event.target.value)}
               rows={3}
               placeholder="Por que você está repassando?"
-              className="w-full rounded-[8px] border border-[#e2e8f0] bg-white p-3 text-sm outline-none focus:border-[#76aeea]"
+              className={`w-full rounded-[8px] border border-[#e2e8f0] bg-white p-3 text-sm ${focusRingClass}`}
             />
           </label>
           <p className="bg-[#f8fafc] text-[rgba(13,31,60,0.70)] m-0 rounded-[8px] p-3 text-xs leading-relaxed">
@@ -91,14 +100,14 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
             type="button"
             ref={closeRef}
             onClick={onClose}
-            className="inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-11 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-8"
+            className={`inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-11 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-8 ${focusRingClass}`}
           >
             Cancelar
           </button>
           <button
             type="button"
             onClick={() => toUserId !== null && onSubmit(toUserId, message)}
-            className="inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-8"
+            className={`inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-8 ${focusRingClass}`}
             disabled={toUserId === null || !candidates.some((c) => c.id === toUserId)}
           >
             Solicitar

@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { X } from 'lucide-react';
-import { focusWithinClass } from '@/lib/ui/tokens';
+import { focusRingClass, focusWithinClass } from '@/lib/ui/tokens';
 import { TAG_SUGGESTIONS } from '@/lib/activities/constants';
 
 export function TagInput({
@@ -54,7 +54,7 @@ export function TagInput({
             onClick={() => onChange(value.filter((item) => item !== tag))}
             className={[
               'grid h-6 w-6 place-items-center rounded-full lg:h-4 lg:w-4',
-              focusWithinClass,
+              focusRingClass,
             ].join(' ')}
             style={{ color: '#59677a', background: 'rgba(13,31,60,0.08)' }}
             aria-label={`Remover tag ${tag}`}
@@ -92,7 +92,7 @@ export function TagInput({
               key={tag}
               type="button"
               onClick={() => addTag(tag)}
-              className="block w-full rounded-md px-2.5 py-2 text-left text-[13px] hover:bg-[#f8fafc]"
+              className={`block w-full rounded-md px-2.5 py-2 text-left text-[13px] hover:bg-[#f8fafc] ${focusRingClass}`}
               style={{ color: '#0d1f3c' }}
             >
               #{tag}
