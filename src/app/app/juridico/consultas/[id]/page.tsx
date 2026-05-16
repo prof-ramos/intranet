@@ -10,7 +10,7 @@ import {
 import { updateConsultationStatusFromForm, addNote } from '@/app/app/juridico/actions';
 import { formatDate, daysSince } from '@/lib/utils/date';
 import { ArrowLeft, Clock, FileText, MessageSquare, Send, User } from 'lucide-react';
-import { hairline } from '@/lib/ui/tokens';
+import { hairline, focusRingClass } from '@/lib/ui/tokens';
 import { StatusUpdater } from './StatusUpdater';
 
 export default async function ConsultaDetalhePage({
@@ -40,7 +40,7 @@ export default async function ConsultaDetalhePage({
         <div className="flex items-center gap-3">
           <Link
             href="/app/juridico/consultas"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-[rgba(4,9,32,0.04)]"
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
@@ -167,7 +167,7 @@ export default async function ConsultaDetalhePage({
                 rows={3}
                 required
                 placeholder="Descreva a interação..."
-                className="w-full rounded-[8px] border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] focus:border-[#76aeea] focus:outline-none"
+                className={`w-full rounded-[8px] border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] ${focusRingClass}`}
               />
 
               <label className="flex items-center gap-2 text-sm">
@@ -175,13 +175,13 @@ export default async function ConsultaDetalhePage({
                   type="checkbox"
                   name="isEscritorioResponse"
                   value="true"
-                  className="h-4 w-4 rounded-[4px] border border-[#e2e8f0] bg-white accent-[#040920]"
+                  className={`h-4 w-4 rounded-[4px] border border-[#e2e8f0] bg-white accent-[#040920] ${focusRingClass}`}
                 />
                 Resposta do escritório
               </label>
 
               <div className="flex justify-end">
-                <button type="submit" className="inline-flex items-center gap-2 bg-[#040920] text-white rounded-[8px] h-10 px-4 text-sm font-semibold hover:bg-[#0d3260]">
+                <button type="submit" className={`inline-flex items-center gap-2 bg-[#040920] text-white rounded-[8px] h-10 px-4 text-sm font-semibold hover:bg-[#0d3260] ${focusRingClass}`}>
                   <Send size={14} aria-hidden="true" />
                   Adicionar nota
                 </button>

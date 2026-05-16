@@ -8,7 +8,7 @@ import {
   LEGAL_CONSULTATION_STATUS_FILTER_OPTIONS,
 } from '@/lib/juridico/status';
 import { ArrowLeft, Plus, Search } from 'lucide-react';
-import { hairline } from '@/lib/ui/tokens';
+import { hairline, focusRingClass } from '@/lib/ui/tokens';
 import { StatusFilter } from './StatusFilter';
 
 const PAGE_SIZE = 20;
@@ -35,7 +35,7 @@ export default async function ConsultasPage({
         <div className="flex items-center gap-3">
           <Link
             href="/app/juridico"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-[rgba(4,9,32,0.04)]"
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
             aria-label="Voltar"
           >
             <ArrowLeft size={18} />
@@ -49,7 +49,7 @@ export default async function ConsultasPage({
         </div>
         <Link
           href="/app/juridico/consultas/nova"
-          className="inline-flex items-center gap-2 bg-[#040920] text-white rounded-[8px] h-10 px-5 text-sm font-semibold hover:bg-[#0d3260]"
+          className={`inline-flex items-center gap-2 bg-[#040920] text-white rounded-[8px] h-10 px-5 text-sm font-semibold hover:bg-[#0d3260] ${focusRingClass}`}
         >
           <Plus size={16} aria-hidden="true" /> Nova consulta
         </Link>
@@ -67,7 +67,7 @@ export default async function ConsultasPage({
             name="q"
             defaultValue={q ?? ''}
             placeholder="Buscar por título ou número..."
-            className="h-10 w-full max-w-md rounded-[8px] border border-[#e2e8f0] bg-white pl-9 pr-3 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] focus:border-[#76aeea] focus:outline-none"
+            className={`h-10 w-full max-w-md rounded-[8px] border border-[#e2e8f0] bg-white pl-9 pr-3 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] ${focusRingClass}`}
           />
           {status && <input type="hidden" name="status" value={status} />}
         </form>
@@ -117,7 +117,7 @@ export default async function ConsultasPage({
                       <td className="px-4 py-3">
                         <Link
                           href={`/app/juridico/consultas/${row.id}`}
-                          className="text-sm font-semibold text-[#040920] hover:underline"
+                          className={`text-sm font-semibold text-[#040920] hover:underline ${focusRingClass}`}
                         >
                           {row.internalNumber}
                         </Link>
@@ -166,7 +166,7 @@ export default async function ConsultasPage({
               {page > 1 && (
                 <Link
                   href={`/app/juridico/consultas?page=${page - 1}${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${status}` : ''}`}
-                  className="inline-flex items-center gap-2 bg-white text-[#040920] rounded-[8px] h-10 px-4 text-sm font-semibold border border-[rgba(4,9,32,0.15)] hover:bg-[rgba(4,9,32,0.04)]"
+                  className={`inline-flex items-center gap-2 bg-white text-[#040920] rounded-[8px] h-10 px-4 text-sm font-semibold border border-[rgba(4,9,32,0.15)] hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
                 >
                   Anterior
                 </Link>
@@ -174,7 +174,7 @@ export default async function ConsultasPage({
               {page < totalPages && (
                 <Link
                   href={`/app/juridico/consultas?page=${page + 1}${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${status}` : ''}`}
-                  className="inline-flex items-center gap-2 bg-white text-[#040920] rounded-[8px] h-10 px-4 text-sm font-semibold border border-[rgba(4,9,32,0.15)] hover:bg-[rgba(4,9,32,0.04)]"
+                  className={`inline-flex items-center gap-2 bg-white text-[#040920] rounded-[8px] h-10 px-4 text-sm font-semibold border border-[rgba(4,9,32,0.15)] hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
                 >
                   Próxima
                 </Link>

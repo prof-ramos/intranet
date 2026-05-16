@@ -26,6 +26,7 @@ import {
   success,
   textPrimary,
   textSecondary,
+  focusRingClass,
 } from '@/lib/ui/tokens';
 
 const statusIcons: Record<LegalConsultationStatus, React.ReactNode> = {
@@ -76,7 +77,7 @@ export default async function JuridicoDashboardPage() {
         <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
           <Link
             href="/app/juridico/consultas"
-            className="inline-flex h-10 items-center gap-2 rounded-[8px] border bg-white px-4 text-sm font-semibold hover:bg-[var(--button-outline-hover)]"
+            className={`inline-flex h-10 items-center gap-2 rounded-[8px] border bg-white px-4 text-sm font-semibold hover:bg-[var(--button-outline-hover)] ${focusRingClass}`}
             style={
               {
                 color: navy,
@@ -89,7 +90,7 @@ export default async function JuridicoDashboardPage() {
           </Link>
           <Link
             href="/app/juridico/consultas/nova"
-            className="inline-flex h-10 items-center gap-2 rounded-[8px] px-5 text-sm font-semibold text-white hover:bg-[var(--primary-hover)]"
+            className={`inline-flex h-10 items-center gap-2 rounded-[8px] px-5 text-sm font-semibold text-white hover:bg-[var(--primary-hover)] ${focusRingClass}`}
             style={
               {
                 backgroundColor: navy,
@@ -146,7 +147,7 @@ export default async function JuridicoDashboardPage() {
             <h2 className="font-serif text-xl font-bold">Ações pendentes</h2>
             <Link
               href="/app/juridico/consultas"
-              className="inline-flex items-center gap-1 text-sm font-semibold hover:text-[var(--primary-hover)]"
+              className={`inline-flex items-center gap-1 text-sm font-semibold hover:text-[var(--primary-hover)] ${focusRingClass}`}
               style={{ color: navy, '--primary-hover': primaryContainerHover } as CSSProperties}
             >
               Ver todas
@@ -184,7 +185,7 @@ export default async function JuridicoDashboardPage() {
                   <div>
                     <Link
                       href={`/app/juridico/consultas/${action.id}`}
-                      className="text-sm leading-snug font-semibold hover:text-[var(--primary-hover)]"
+                      className={`text-sm leading-snug font-semibold hover:text-[var(--primary-hover)] ${focusRingClass}`}
                       style={{ '--primary-hover': primaryContainerHover } as CSSProperties}
                     >
                       {action.internalNumber} — {action.title}
