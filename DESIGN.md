@@ -77,7 +77,7 @@ typography:
     lineHeight: 1.25
     letterSpacing: 0em
   metric-lg:
-    fontFamily: Playfair Display
+    fontFamily: Google Sans
     fontSize: 30px
     fontWeight: 700
     lineHeight: 1
@@ -406,7 +406,7 @@ Avoid large saturated color blocks in the main work area. Most screens should be
 
 Typography carries most of the brand personality. Page titles and section titles use **Playfair Display** to create an editorial, official tone. Body text, labels, tables, buttons, and controls use **Google Sans** for clarity and administrative efficiency.
 
-Headlines should be large, dark navy, and tight. They should not be all caps. Eyebrows and field labels may be uppercase with generous letter spacing, giving screens the rhythm of a formal dossier. Metrics use the serif family to make numbers feel important without adding color or ornament.
+Headlines should be large, dark navy, and tight. They should not be all caps. Eyebrows and field labels may be uppercase with generous letter spacing, giving screens the rhythm of a formal dossier. Metrics and numeric values use **Google Sans** for tabular clarity; the serif is reserved for text headings only.
 
 Body copy should stay compact. The interface works best at 12px to 16px for operational text, with only page titles and major metrics breaking that density.
 
@@ -453,7 +453,7 @@ These are implemented as Tailwind class strings in `src/lib/ui/tokens.ts` and sh
 ## Do's and Don'ts
 
 - Do keep the main canvas pale, quiet, and spacious enough for scanning.
-- Do use Playfair Display for titles and important metrics, not for dense body text.
+- Do use Playfair Display for titles and section headings; use Google Sans for numeric metrics and dense body text.
 - Do communicate status with small dots, badges, and text color rather than large colored blocks.
 - Do keep administrative controls compact and predictable.
 - Don't introduce gradients, decorative blobs, glass effects, or marketing-style hero sections.
