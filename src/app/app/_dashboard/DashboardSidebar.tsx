@@ -1,12 +1,15 @@
-import { AlertTriangle, Globe, Mail, Megaphone } from 'lucide-react';
+import { AlertTriangle, Clock, Globe, Mail, Megaphone } from 'lucide-react';
 import {
+  borderSubtle,
   dangerText,
   hairline,
   priorityStyles,
   progressBg,
   progressFg,
   skyBlue,
+  surfaceMuted,
   textMuted,
+  textStrong,
   textSubtle,
 } from '@/lib/ui/tokens';
 import {
@@ -78,12 +81,18 @@ export function DashboardSidebar({ topRegions, urgentActivities, user }: Dashboa
           <Mail size={20} style={{ color: skyBlue }} aria-hidden="true" />
           <h2 className="font-serif text-lg leading-tight font-bold">Comunicação</h2>
         </div>
-        <p className="text-sm leading-snug font-semibold">
-          Módulo de comunicação em desenvolvimento
-        </p>
-        <p className="mt-2 text-xs leading-relaxed" style={{ color: textSubtle }}>
-          Aguarde atualizações para métricas de e-mail e SLA.
-        </p>
+        <div
+          className="flex flex-col items-center gap-3 rounded-[10px] px-4 py-5 text-center"
+          style={{ backgroundColor: surfaceMuted, border: `1px dashed ${borderSubtle}` }}
+        >
+          <Clock size={20} style={{ color: textSubtle }} aria-hidden="true" />
+          <div>
+            <p className="text-sm font-semibold" style={{ color: textStrong }}>Em desenvolvimento</p>
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: textSubtle }}>
+              Métricas de e-mail e SLA em breve.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="rounded-[16px] bg-white p-5" style={{ border: `1px solid ${hairline}` }}>
@@ -96,7 +105,12 @@ export function DashboardSidebar({ topRegions, urgentActivities, user }: Dashboa
             <li key={region.country ?? 'sem-pais'}>
               <div className="mb-2 flex items-baseline justify-between gap-3">
                 <p className="truncate text-sm font-medium">{region.country ?? 'Não informado'}</p>
-                <p className="font-serif text-sm font-bold">{region.total}</p>
+                <p className="shrink-0 font-serif text-sm font-bold tabular-nums">
+                  {region.total}
+                  <span className="ml-1.5 text-[11px] font-sans font-normal" style={{ color: textMuted }}>
+                    {region.pct}%
+                  </span>
+                </p>
               </div>
               <div
                 role="progressbar"
@@ -104,7 +118,7 @@ export function DashboardSidebar({ topRegions, urgentActivities, user }: Dashboa
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-label={region.country ?? 'Não informado'}
-                className="h-1 overflow-hidden rounded-full"
+                className="h-1.5 overflow-hidden rounded-full"
                 style={{ backgroundColor: progressBg }}
               >
                 <div

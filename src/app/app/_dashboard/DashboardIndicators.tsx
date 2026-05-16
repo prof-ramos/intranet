@@ -1,4 +1,4 @@
-import { hairline, textMuted, textPrimary } from '@/lib/ui/tokens';
+import { hairline, skyBlue, textMuted, textPrimary } from '@/lib/ui/tokens';
 import type { DashboardStripeItem } from '@/lib/dashboard/view-model';
 
 interface DashboardIndicatorsProps {
@@ -15,7 +15,7 @@ export function DashboardIndicators({ stripe }: DashboardIndicatorsProps) {
         <div
           key={item.id}
           className="min-h-[104px] rounded-[16px] bg-white p-5 shadow-none"
-          style={{ border: `1px solid ${hairline}` }}
+          style={{ border: `1px solid ${hairline}`, borderTop: `3px solid ${skyBlue}` }}
         >
           <div
             className="text-[11px] leading-tight font-bold tracking-[0.1em] uppercase"

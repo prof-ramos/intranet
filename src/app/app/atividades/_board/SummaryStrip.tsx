@@ -31,12 +31,18 @@ export function SummaryStrip({
   }, [activities]);
 
   const items = [
-    { value: counts.total, label: 'total' },
-    { value: counts.byStatus.a_fazer, label: 'a fazer' },
-    { value: counts.byStatus.em_andamento, label: 'em andamento' },
-    { value: counts.byStatus.aguardando_terceiros, label: 'aguardando' },
-    { value: counts.byStatus.concluido, label: 'concluído' },
-    { value: counts.late, label: 'atrasadas', action: onLateClick, danger: counts.late > 0 },
+    { value: counts.total, label: 'total', topColor: '#040920' },
+    { value: counts.byStatus.a_fazer, label: 'a fazer', topColor: '#94a3b8' },
+    { value: counts.byStatus.em_andamento, label: 'em andamento', topColor: '#76aeea' },
+    { value: counts.byStatus.aguardando_terceiros, label: 'aguardando', topColor: '#e7c16b' },
+    { value: counts.byStatus.concluido, label: 'concluído', topColor: '#86efac' },
+    {
+      value: counts.late,
+      label: 'atrasadas',
+      action: onLateClick,
+      danger: counts.late > 0,
+      topColor: counts.late > 0 ? '#b91c1c' : '#94a3b8',
+    },
   ];
 
   return (
@@ -49,7 +55,7 @@ export function SummaryStrip({
         const content = (
           <>
             <span
-              className="font-serif text-3xl leading-none font-bold"
+              className="font-serif text-3xl leading-none font-bold tabular-nums"
               style={{ color: item.danger ? dangerText : undefined }}
             >
               {item.value}
@@ -72,6 +78,7 @@ export function SummaryStrip({
               className="hover:bg-[var(--summary-hover-bg)] flex flex-col px-5 py-4 text-left"
               style={
                 {
+                  borderTop: `3px solid ${item.topColor}`,
                   borderLeft: index === 0 ? 'none' : `1px solid ${hairline}`,
                   '--summary-hover-bg': canvas,
                 } as CSSProperties
@@ -86,7 +93,10 @@ export function SummaryStrip({
           <div
             key={item.label}
             className="flex flex-col px-5 py-4"
-            style={{ borderLeft: index === 0 ? 'none' : `1px solid ${hairline}` }}
+            style={{
+              borderTop: `3px solid ${item.topColor}`,
+              borderLeft: index === 0 ? 'none' : `1px solid ${hairline}`,
+            }}
           >
             {content}
           </div>
