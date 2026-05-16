@@ -99,6 +99,11 @@ export function DashboardSidebar({ topRegions, urgentActivities, user }: Dashboa
                 <p className="font-serif text-sm font-bold">{region.total}</p>
               </div>
               <div
+                role="progressbar"
+                aria-valuenow={region.pct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={region.country ?? 'Não informado'}
                 className="h-1 overflow-hidden rounded-full"
                 style={{ backgroundColor: progressBg }}
               >

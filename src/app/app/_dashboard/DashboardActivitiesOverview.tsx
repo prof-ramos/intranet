@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import {
   borderFaint,
   borderSubtle,
+  focusRingClass,
   hairline,
   iconMuted,
   priorityStyles,
@@ -27,7 +28,7 @@ export function DashboardActivitiesOverview({ statusColumns }: DashboardActiviti
         <h2 className="font-serif text-xl leading-tight font-bold">Atividades em curso</h2>
         <Link
           href="/app/atividades"
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-[8px] px-2 text-sm font-semibold lg:min-h-8"
+          className={`inline-flex min-h-11 items-center gap-1.5 rounded-[8px] px-2 text-sm font-semibold hover:underline lg:min-h-8 ${focusRingClass}`}
           style={{ color: skyBlue }}
         >
           Abrir kanban <ArrowRight size={14} aria-hidden="true" />
