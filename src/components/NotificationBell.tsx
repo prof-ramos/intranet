@@ -157,6 +157,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
         <div
           role="dialog"
           aria-label="Painel de notificações"
+          aria-modal="true"
           className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-[8px] border bg-white"
           style={{ borderColor: hairline, boxShadow: elevatedShadow }}
         >
@@ -172,7 +173,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
               type="button"
               onClick={handleMarkAllAsRead}
               disabled={loading || unreadCount === 0}
-              className={`inline-flex h-9 items-center gap-2 rounded-[8px] px-3 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${focusRingClass}`}
+              className={`inline-flex h-9 items-center gap-2 rounded-[8px] px-3 text-xs font-semibold transition-colors hover:bg-[rgba(4,9,32,0.04)] disabled:cursor-not-allowed disabled:opacity-50 ${focusRingClass}`}
               style={{ color: navy, backgroundColor: unreadCount > 0 ? canvas : 'transparent' }}
             >
               <CheckCheck size={14} aria-hidden="true" />
@@ -182,12 +183,12 @@ export function NotificationBell({ userId }: NotificationBellProps) {
 
           <div className="max-h-[28rem] overflow-y-auto">
             {loading ? (
-              <div className="flex items-center gap-2 px-4 py-6 text-sm" style={{ color: textMuted }}>
+              <div role="status" aria-live="polite" className="flex items-center gap-2 px-4 py-6 text-sm" style={{ color: textMuted }}>
                 <Loader2 size={16} className="animate-spin" aria-hidden="true" />
                 Carregando notificações...
               </div>
             ) : loadError ? (
-              <div className="px-4 py-6 text-sm" style={{ color: textMuted }}>
+              <div role="alert" className="px-4 py-6 text-sm" style={{ color: textMuted }}>
                 {loadError}
               </div>
             ) : notifications.length === 0 ? (
