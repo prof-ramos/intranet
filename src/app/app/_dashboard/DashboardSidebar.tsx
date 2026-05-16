@@ -105,7 +105,7 @@ export function DashboardSidebar({ topRegions, urgentActivities, user }: Dashboa
             <li key={region.country ?? 'sem-pais'}>
               <div className="mb-2 flex items-baseline justify-between gap-3">
                 <p className="truncate text-sm font-medium">{region.country ?? 'Não informado'}</p>
-                <p className="shrink-0 font-serif text-sm font-bold tabular-nums">
+                <p className="shrink-0 font-sans text-sm font-bold tabular-nums">
                   {region.total}
                   <span className="ml-1.5 text-[11px] font-sans font-normal" style={{ color: textMuted }}>
                     {region.pct}%

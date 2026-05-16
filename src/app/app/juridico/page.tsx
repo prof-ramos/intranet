@@ -119,7 +119,7 @@ export default async function JuridicoDashboardPage() {
               {c.label}
             </div>
             <div
-              className="mt-2 font-serif text-2xl leading-none"
+              className="mt-2 font-sans text-2xl leading-none"
               style={{
                 color:
                   c.tone === 'neg'
@@ -226,7 +226,7 @@ export default async function JuridicoDashboardPage() {
                         {status === 'respondida' ? `${label} (este mês)` : label}
                       </p>
                     </div>
-                    <span className="font-serif text-sm font-bold">{countValue}</span>
+                    <span className="font-sans text-sm font-bold">{countValue}</span>
                   </li>
                 );
               })}

@@ -55,7 +55,7 @@ export function SummaryStrip({
         const content = (
           <>
             <span
-              className="font-serif text-3xl leading-none font-bold tabular-nums"
+              className="font-sans text-3xl leading-none font-bold tabular-nums"
               style={{ color: item.danger ? dangerText : undefined }}
             >
               {item.value}

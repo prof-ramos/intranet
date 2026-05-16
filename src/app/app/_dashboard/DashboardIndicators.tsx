@@ -24,7 +24,7 @@ export function DashboardIndicators({ stripe }: DashboardIndicatorsProps) {
             {item.label}
           </div>
           <div
-            className="mt-3 font-serif text-[30px] leading-none font-bold tabular-nums"
+            className="mt-3 font-sans text-[30px] leading-none font-bold tabular-nums"
             style={{ color: textPrimary }}
           >
             {item.value}

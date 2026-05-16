@@ -106,7 +106,7 @@ export function FinanceKPIs({ payments }: FinanceKPIsProps) {
             </div>
           </div>
           <div
-            className="mt-2 font-serif text-2xl leading-none font-bold"
+            className="mt-2 font-sans text-2xl leading-none font-bold"
             style={{ color: textPrimary }}
           >
             {item.value}
