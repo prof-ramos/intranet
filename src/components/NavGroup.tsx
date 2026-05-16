@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { type CSSProperties, type ReactNode, useState } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { primaryContainerActive, primaryContainerHover, skyBlue } from '@/lib/ui/tokens';
 
@@ -25,24 +25,19 @@ export function NavGroup({
 }) {
   const pathname = usePathname();
   const isGroupActive = pathname === basePath || pathname.startsWith(`${basePath}/`);
-  const [hovered, setHovered] = useState(false);
   const [expanded, setExpanded] = useState(isGroupActive);
 
-  // Correctly handle state transitions during render
-  const [prevIsGroupActive, setPrevIsGroupActive] = useState(isGroupActive);
-  if (isGroupActive !== prevIsGroupActive) {
-    setPrevIsGroupActive(isGroupActive);
-    if (isGroupActive) {
-      setExpanded(true);
-    }
-  }
+  useEffect(() => {
+    if (isGroupActive) setExpanded(true);
+  }, [isGroupActive]);
 
   const sanitizedBasePath = basePath.replace(/^\/+/, '').replace(/\//g, '-') || 'root';
   const menuId = `nav-group-${sanitizedBasePath}`;
   const toggleStyle = {
     '--focus-ring-color': skyBlue,
+    '--nav-hover-bg': primaryContainerHover,
     borderLeftColor: isGroupActive ? skyBlue : 'transparent',
-    backgroundColor: isGroupActive ? primaryContainerActive : hovered ? primaryContainerHover : undefined,
+    backgroundColor: isGroupActive ? primaryContainerActive : undefined,
   } as CSSProperties;
 
   return (
@@ -50,14 +45,11 @@ export function NavGroup({
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
         className={[
           'flex min-h-[58px] w-full items-center gap-3 pr-9 text-sm leading-tight font-medium transition-colors duration-150',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring-color)]',
           'border-l-[6px]',
-          isGroupActive ? 'pl-[30px] text-white' : 'border-transparent pl-9 text-white/70',
-          !isGroupActive && hovered ? 'text-white' : '',
+          isGroupActive ? 'pl-[30px] text-white' : 'border-transparent pl-9 text-white/70 hover:text-white hover:bg-[var(--nav-hover-bg)]',
         ].join(' ')}
         style={toggleStyle}
         aria-expanded={expanded}
@@ -76,8 +68,7 @@ export function NavGroup({
           aria-hidden="true"
         />
       </button>
-      {expanded && (
-        <div id={menuId} className="flex flex-col py-1">
+      <div id={menuId} className="flex flex-col py-1" hidden={!expanded}>
           {items.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
             const itemStyle = {
@@ -106,8 +97,7 @@ export function NavGroup({
               </Link>
             );
           })}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { type CSSProperties, type ReactNode, useState } from 'react';
+import { type CSSProperties, type ReactNode } from 'react';
 import { primaryContainerActive, primaryContainerHover, skyBlue } from '@/lib/ui/tokens';
 
 export function NavLink({
@@ -15,19 +15,18 @@ export function NavLink({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const [hovered, setHovered] = useState(false);
 
   const isActive = pathname === href || (href !== '/app' && pathname.startsWith(`${href}/`));
   const className = [
     'flex min-h-[58px] items-center gap-3 pr-9 text-sm leading-tight font-medium transition-colors duration-150',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring-color)]',
-    isActive ? 'border-l-[6px] pl-[30px] text-white' : 'border-l-[6px] border-transparent pl-9 text-white/70',
-    !isActive && hovered ? 'text-white' : '',
+    isActive ? 'border-l-[6px] pl-[30px] text-white' : 'border-l-[6px] border-transparent pl-9 text-white/70 hover:text-white hover:bg-[var(--nav-hover-bg)]',
   ].join(' ');
   const style = {
     '--focus-ring-color': skyBlue,
+    '--nav-hover-bg': primaryContainerHover,
     borderLeftColor: isActive ? skyBlue : 'transparent',
-    backgroundColor: isActive ? primaryContainerActive : hovered ? primaryContainerHover : undefined,
+    backgroundColor: isActive ? primaryContainerActive : undefined,
   } as CSSProperties;
 
   return (
@@ -36,8 +35,6 @@ export function NavLink({
       className={className}
       style={style}
       aria-current={isActive ? 'page' : undefined}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       <span className="flex h-5 w-5 shrink-0 items-center justify-center" aria-hidden="true">
         {icon}
