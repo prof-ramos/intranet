@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ASOF Intranet — Sistema interno da Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia ~763 associados, atividades administrativas e comunicações internas da diretoria.
 
-**Stack:** Next.js 16.2.6 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL/Supabase · JWT (jose)
+**Stack:** Next.js 16.2.6 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL/Supabase · Supabase Auth
 
 ## Commands
 
@@ -60,9 +60,9 @@ the result becomes `/login?error=rate-limit`.
 
 ### Routing & Auth Flow
 
-- `src/proxy.ts` — Next.js 16 proxy (replaces `middleware.ts`). Coarse JWT cookie validation for `/app/:path*` routes. Redirects to `/login` if missing/invalid. No DB queries here; full user revalidation happens in `requireAuth()` inside `src/app/app/layout.tsx`.
+- `src/proxy.ts` — Next.js 16 proxy (replaces `middleware.ts`). Coarse Supabase user lookup for `/app/:path*` routes. Redirects to `/login` if missing/invalid. No Drizzle queries here; full user revalidation happens in `requireAuth()` inside `src/app/app/layout.tsx`.
 - `src/app/app/layout.tsx` — Authenticated shell. Calls `requireAuth()`, renders sidebar.
-- `src/app/app/auditoria/page.tsx`, `config/page.tsx`, `usuarios/page.tsx` — Thin single-page modules (read-only views, no sub-routes).
+- `src/app/app/config/auditoria/page.tsx`, `src/app/app/config/page.tsx`, `src/app/app/config/usuarios/page.tsx` — Thin configuration modules. Audit is read-only; users has admin-only actions.
 - `src/app/login/actions.ts` — Server Action for login. Rate-limited (5 attempts / 15 min), bcrypt with dummy hash for timing attack protection.
 - `src/app/change-password/` — Required password-change flow for `mustChangePassword=true`.
 
@@ -129,7 +129,7 @@ All PII fields (CPF, SIAPE, email, phone, address, WhatsApp) are encrypted at re
 Real-time notification system for activities and legal consultations:
 - `src/lib/notifications/repository.ts` — create, list, count unread, mark read, mark all read
 - `src/lib/notifications/service.ts` — business logic layer
-- `src/lib/notifications/events.ts` — event bus integration
+- `src/lib/events.ts` — in-process event bus used by notifications
 - `src/components/NotificationBell.tsx` — UI component with Supabase realtime subscription
 - `src/hooks/useNotifications.ts` — realtime subscription hook
 - `src/app/app/notifications/actions.ts` — Server Actions for notification mutations
@@ -139,9 +139,9 @@ Required env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 ### Auth & Authorization
 
 - `src/lib/auth/config.ts` — `AUTH_ROLES` = `['admin', 'diretoria', 'secretaria']`.
-- `src/lib/auth/require-auth.ts` — `requireAuth()` validates JWT session, queries DB for active user, caches with `React.cache()`.
+- `src/lib/auth/require-auth.ts` — `requireAuth()` validates the Supabase session, queries DB for active user, caches with `React.cache()`.
 - `src/lib/auth/authorization.ts` — `requireRole(['admin', 'diretoria'])` throws if the current user's role isn't in the allowed list.
-- `src/lib/auth/session.ts` — JWT via `jose`, httpOnly + sameSite=strict + secure cookie.
+- `src/lib/auth/session.ts` — server-side Supabase session lookup plus local admin revalidation.
 - `src/lib/auth/password.ts` — Password policy (8+ chars, at least 1 number and 1 special character).
 - `src/lib/auth/login-rate-limit.ts` — PostgreSQL-backed rate limiter (table `login_attempts`). Uses HMAC-SHA-256 for email hashing (not plain SHA-256).
 - `src/lib/integrations/auth.ts` — Dual-auth for API endpoints (env-var key OR table-backed key with scopes). `authorizeIntegrationRequest()` checks integration headers first, then falls back to session auth if `allowSessionRoles` is provided.

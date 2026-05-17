@@ -101,10 +101,8 @@ src/
     app/                    # Área autenticada (/app/*)
       associados/           # CRUD de associados + relatórios
       atividades/           # Kanban de atividades administrativas
-      auditoria/            # Logs de auditoria (LGPD)
-      config/               # Configurações do sistema
+      config/               # Configurações, auditoria, usuários, integrações e lotações
       juridico/             # Módulo jurídico (consultas, processos)
-      usuarios/             # Gestão de usuários
       layout.tsx            # Layout com sidebar
       page.tsx              # Dashboard
       error.tsx             # Error boundary global
@@ -120,7 +118,7 @@ src/
     LogoutButton.tsx        # Botão de logout com action
 
   lib/                      # Código de negócio e infraestrutura
-    auth/                   # JWT, session, login, rate limit
+    auth/                   # Supabase session lookup, login, guards, rate limit
     db/                     # Cliente Drizzle + schema
     juridico/               # Repository, service, queries do módulo jurídico
     associates/             # Queries e helpers de associados
@@ -129,7 +127,7 @@ src/
     supabase/               # Clientes Supabase (server/admin)
     ui/                     # Design tokens
     env.ts                  # Validação de variáveis de ambiente (Zod)
-    ip.ts                   # Extração de IP de headers
+    events.ts               # Event bus em processo para notificações
     rate-limit.ts           # Rate limiting por IP
 
   proxy.ts                  # Guarda de autenticação (Next.js 16)
@@ -373,13 +371,13 @@ describe('minhaFuncao', () => {
 
 ```
 Usuário → /login → Server Action: login()
-  → bcrypt.compare() → JWT session → Cookie __Host-asof-session
+  → bcrypt.compare() → Supabase Auth session
   → Redirect /app (ou /change-password se mustChangePassword=true)
 ```
 
 ### Verificação de sessão
 
-- **Proxy** (`src/proxy.ts`): verificação grossa de JWT para rotas `/app/*`
+- **Proxy** (`src/proxy.ts`): lookup grosso de usuário Supabase para rotas `/app/*`
 - **Layout** (`src/app/app/layout.tsx`): `requireAuth()` completo com query ao banco
 - **Página**: `requireAuth()` retorna o usuário logado
 
@@ -504,7 +502,7 @@ Isso evita que o Drizzle tente conectar durante o build estático do Next.js.
 
 ### Por que não há `middleware.ts`?
 
-Next.js 16 renomeou `middleware.ts` para `proxy.ts`. O arquivo `src/proxy.ts` faz a verificação grossa de JWT para rotas `/app/*`.
+Next.js 16 renomeou `middleware.ts` para `proxy.ts`. O arquivo `src/proxy.ts` faz o lookup grosso de usuário Supabase para rotas `/app/*`.
 
 ### Por que não há API routes REST?
 

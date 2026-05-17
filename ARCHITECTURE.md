@@ -11,11 +11,9 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 │   │   ├── app/                     # Authenticated intranet area (/app/*)
 │   │   │   ├── associados/          # Associates list, profile, and CSV reports
 │   │   │   ├── atividades/          # Kanban board and new activity form
-│   │   │   ├── auditoria/           # Audit logs (LGPD accountability)
-│   │   │   ├── config/              # Configuration modules (users, assignments, audit)
+│   │   │   ├── config/              # Configuration modules (users, assignments, audit, webhooks)
 │   │   │   ├── financeiro/          # Monthly payments and financial dashboard
 │   │   │   ├── juridico/            # Legal consultations and notes (Fase 1)
-│   │   │   ├── usuarios/            # User-management placeholder
 │   │   │   ├── layout.tsx           # Authenticated app shell
 │   │   │   └── page.tsx             # Dashboard
 │   │   ├── change-password/         # Required password-change flow
@@ -36,7 +34,7 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 │       │                            # integration_api_keys, enums, views
 │       ├── dashboard/               # Dashboard aggregation queries
 │       ├── env.ts                   # Zod-validated environment variables
-│       ├── ip.ts                    # Client IP extraction from headers
+│       ├── events.ts                # In-process domain event bus
 │       ├── integrations/            # Versioned integration auth, JSON envelopes, rate limiting, and route helpers
 │       │   ├── auth.ts              # Dual-auth (env-var OR table-backed API keys with scopes)
 │       │   ├── config.ts            # Integration environment configuration
@@ -59,7 +57,7 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 ├── docs/                            # Product, design, diagnostics, and analysis docs
 ├── scripts/                         # Seed, diagnostics, and Supabase status scripts
 ├── public/                          # Static public assets
-├── proxy.ts                         # Next.js 16 proxy (replaces middleware.ts) — JWT cookie validation for /app/*
+├── proxy.ts                         # Next.js 16 proxy (replaces middleware.ts) — Supabase user lookup for /app/*
 ├── drizzle.config.ts                # Drizzle migration config for PostgreSQL
 ├── next.config.ts                   # Next.js config
 ├── package.json                     # npm scripts and dependencies
@@ -76,7 +74,7 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
         v                                              v
 [Next.js App Router UI]                    [/api/v1/events, /api/v1/health]
         |                                              |
-        +--> [proxy.ts route guard] --> [JWT cookie validation with jose]
+        +--> [proxy.ts route guard] --> [Supabase user lookup]
         |                                              |
         +--> [Server Components / Server Actions]    +--> [Integration auth helpers]
                  |                                           +--> [env-var key (full access)]
@@ -139,7 +137,7 @@ Technologies: Supabase realtime (`@supabase/supabase-js`), React hooks, Server A
 Key files:
 - `src/lib/notifications/repository.ts` — create, list, count unread, mark read, mark all read
 - `src/lib/notifications/service.ts` — business logic layer
-- `src/lib/notifications/events.ts` — event bus integration
+- `src/lib/events.ts` — in-process event bus used by notifications
 - `src/components/NotificationBell.tsx` — UI component with realtime subscription
 - `src/hooks/useNotifications.ts` — realtime subscription hook
 - `src/app/app/notifications/actions.ts` — Server Actions for notification mutations
@@ -153,7 +151,7 @@ Required env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 Name: ASOF Intranet Web App
 
-Description: Internal web interface for ASOF administrative staff and leadership. It currently supports an authenticated dashboard, associates list, associate profile view, activity kanban, new activity form, login, and forced password-change flow. Some administrative areas are placeholders.
+Description: Internal web interface for ASOF administrative staff and leadership. It currently supports an authenticated dashboard, associates list, associate profile view, activity kanban, new activity form, finance, legal consultations, official letters, configuration screens, login, and forced password-change flow. The root configuration screen still has a small placeholder area for future operational preferences.
 
 Technologies: Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, DaisyUI, Lucide React, `@hello-pangea/dnd` (kanban drag-and-drop), local Playfair and Google Sans fonts.
 
@@ -169,7 +167,7 @@ Name: ASOF Intranet Server Runtime
 
 Description: Handles SSR/RSC rendering, Server Actions, authentication workflows, password change, protected app rendering, and database reads/writes.
 
-Technologies: Next.js 16, React Server Components, TypeScript, `jose`, `bcryptjs`, Drizzle ORM.
+Technologies: Next.js 16, React Server Components, TypeScript, Supabase Auth, `bcryptjs`, Drizzle ORM.
 
 Deployment: Runs with the Next.js application. `npm run dev` and `npm run build` use Webpack explicitly; Turbopack scripts are kept for explicit diagnostics.
 
@@ -319,7 +317,7 @@ RLS was enabled in migration 0000, removed in migration 0001, reinstated in migr
 
 **Current state:** All 16 application tables have `FORCE ROW LEVEL SECURITY` applied and all policies use `TO authenticated` (not `TO PUBLIC`). This blocks anonymous (`anon`) database access while allowing authenticated connections.
 
-**Rationale:** All database access goes through the Next.js server layer (Server Components / Server Actions). No Supabase client is exposed to the browser; there is no direct client-to-DB path. Auth is enforced via `requireAuth()` (JWT session verification + DB admin lookup) and `requireRole()` (role-based guards).
+**Rationale:** All database access goes through the Next.js server layer (Server Components / Server Actions). No Supabase client is exposed to the browser for direct database writes. Auth is enforced via `requireAuth()` (Supabase session lookup + DB admin lookup) and `requireRole()` (role-based guards).
 
 **LGPD Security & RLS Hardening:**
 1. **Authenticated-only policies:** Migration 0023 changed all policies from `TO PUBLIC` to `TO authenticated` and applied `FORCE ROW LEVEL SECURITY`. This blocks `anon` role at the DB level.
@@ -580,7 +578,7 @@ Resultado saudável: `git submodule status` sai com código `0`, e o `rg` não e
 
 ## 7. Security Considerations
 
-Authentication: JWT session cookie named `__Host-asof-session` (prefixo `__Host-` requer HTTPS), signed/verified with `jose`. Cookie attributes: `Secure`, `HttpOnly`, `SameSite=Strict`, `Partitioned`. Login and password-change behavior live under `src/lib/auth` and `src/app/login` / `src/app/change-password`.
+Authentication: Supabase Auth cookies managed by `@supabase/ssr`, followed by local admin revalidation in `src/lib/auth/session.ts`. Login and password-change behavior live under `src/lib/auth` and `src/app/login` / `src/app/change-password`.
 
 Authorization: Roles are `admin`, `diretoria`, and `secretaria`. Route-level restrictions exist through `requireRole()`; the juridico module blocks `secretaria` at layout level (`src/app/app/juridico/layout.tsx`).
 
@@ -603,7 +601,7 @@ Key Security Tools/Practices:
 - Audit trail for CSV downloads: every `report_download` is logged in `audit_logs` with filters, fields, and row count.
 - CSV injection prevention: cells starting with `-`, `=`, `+`, `@`, or tab are prefixed with `\t` and quoted.
 - Dummy bcrypt hash is used when user is not found to prevent timing-based user enumeration.
-- `createdBy` is derived from the JWT session, never from client-provided FormData.
+- `createdBy` is derived from the authenticated server session, never from client-provided FormData.
 - LIKE queries escape `%` and `_` to prevent wildcard injection.
 - `sql.raw()` is banned in service code — replaced with parameterized `sql` template literals.
 - CHECK constraints enforce valid ranges at the DB level (month 1-12, year 2000-2100, sequence > 0, attempt > 0).

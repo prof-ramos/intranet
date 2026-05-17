@@ -13,7 +13,7 @@ This file provides the primary instructional context for Gemini CLI when working
 - **Styling:** Tailwind CSS 4, DaisyUI 5 (being phased out for custom tokens)
 - **Database:** PostgreSQL (Supabase in production, Homebrew local)
 - **ORM:** Drizzle ORM
-- **Authentication:** Custom JWT-based (`jose`, `bcryptjs`), managed via `src/proxy.ts` (Next.js 16 proxy) and `requireAuth` guards.
+- **Authentication:** Supabase Auth plus local admin revalidation, managed via `src/proxy.ts` (Next.js 16 proxy) and `requireAuth` guards. Password hashes still use `bcryptjs`.
 - **Testing:** Vitest (unit/integration), Playwright (E2E).
 
 ## Architecture & Data Patterns
@@ -27,7 +27,7 @@ This file provides the primary instructional context for Gemini CLI when working
 - **Server Actions:** Handle all mutations, located in `src/app/app/.../actions.ts` or `src/lib/server-actions`.
 
 ### Authentication & Authorization
-- **Proxy Guard:** `src/proxy.ts` performs coarse JWT cookie validation for `/app/*`.
+- **Proxy Guard:** `src/proxy.ts` performs a coarse Supabase user lookup for `/app/*`.
 - **Session Revalidation:** `requireAuth()` in `src/app/app/layout.tsx` ensures the session is valid against the database.
 - **Role-Based Access Control (RBAC):** `requireRole(['admin', 'diretoria'])` protects specific routes and actions. Roles: `admin`, `diretoria`, `secretaria`.
 - **Password Policy:** 8+ chars, 1 number, 1 special character. Forced change on first login.

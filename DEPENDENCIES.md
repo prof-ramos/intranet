@@ -1,7 +1,7 @@
 # Análise de Dependências — ASOF Intranet
 
 > Relatório de análise de dependências, vulnerabilidades e recomendações.
-> Última atualização: 2026-05-10
+> Última atualização: 2026-05-17
 
 ---
 
@@ -21,13 +21,13 @@
 
 | Métrica | Valor |
 |---|---|
-| **Dependências diretas** | 13 |
+| **Dependências diretas** | 12 |
 | **DevDependencies** | 17 |
 | **Vulnerabilidades** | **0** |
 | **Pacotes desatualizados** | 3 |
 | **Pacotes candidatos à remoção** | 1 (`daisyui`) |
 
-**Conclusão**: `react-kanban-kit` foi removido e substituído por `@hello-pangea/dnd`, eliminando todas as vulnerabilidades transitivas. `@libsql/client` foi movido para `devDependencies` (usado apenas pelo script de seed legado).
+**Conclusão**: `react-kanban-kit` foi removido e substituído por `@hello-pangea/dnd`, eliminando todas as vulnerabilidades transitivas. `@libsql/client` e o seed legado foram removidos. `jose` também foi removido em 2026-05-17 porque a autenticação atual usa Supabase Auth e não havia imports do pacote no código, scripts ou testes.
 
 ---
 
@@ -176,7 +176,6 @@ npm update tailwindcss @tailwindcss/postcss
 | `react` / `react-dom` | UI | Essencial |
 | `drizzle-orm` | ORM | Essencial |
 | `postgres` | Driver PostgreSQL | Essencial |
-| `jose` | JWT | Essencial |
 | `bcryptjs` | Hash de senha | Essencial |
 | `zod` | Validação | Essencial |
 | `lucide-react` | Ícones | Essencial |

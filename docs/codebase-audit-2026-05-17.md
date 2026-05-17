@@ -130,3 +130,44 @@ O codebase está significativamente mais consistente do que no início da audito
 - baseline de validação integral verde.
 
 Ainda assim, “auditoria completa” no sentido absoluto continua dependendo de julgamento de retorno marginal. No estado atual, os maiores riscos aparentes já foram tratados; o que resta tende mais a aprofundamento e expansão do que a fragilidade estrutural imediata.
+
+## Lote de limpeza conservadora - código morto e documentação obsoleta
+
+Data: 2026-05-17.
+
+### Diagnóstico inicial
+
+- `git status --short --branch` estava limpo em `main`.
+- `npm run typecheck -- --noUnusedLocals --noUnusedParameters false` não encontrou imports, variáveis ou declarações locais não utilizadas.
+- A varredura de rotas confirmou que `/app/config/auditoria` e `/app/config/usuarios` existem como páginas reais.
+- A documentação ainda citava caminhos e descrições antigos: `src/app/app/auditoria/page.tsx`, `src/lib/notifications/events.ts`, `src/lib/ip.ts`, `usuarios/` como placeholder e auditoria/configuração como placeholder.
+
+### Itens removidos ou atualizados
+
+| Item | Ação | Justificativa |
+|---|---|---|
+| `.DS_Store` no root | Removido do filesystem local | Artefato de Finder; já está coberto por `.gitignore`; não é entrada de build, teste, rota, script ou runtime. |
+| `jose` | Removido de `package.json` e `package-lock.json` | `rg` não encontrou import ou require em `src`, `scripts`, `e2e` ou testes; `src/lib/auth/session.ts` e `src/proxy.ts` usam Supabase Auth via helpers Supabase, não JWT customizado. |
+| `ARCHITECTURE.md` | Atualizado | Removidas referências a paths inexistentes (`src/lib/ip.ts`, `src/lib/notifications/events.ts`, `src/app/app/usuarios`) e descrição antiga de placeholders administrativos. |
+| `CLAUDE.md` | Atualizado | Corrigidos paths de configuração/auditoria/usuários e event bus real (`src/lib/events.ts`). |
+| `README.md`, `CLAUDE.md`, `GEMINI.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md`, `API.md`, `DEPENDENCIES.md` e plano E2E histórico | Atualizados | Removidas descrições obsoletas de JWT customizado/`jose`; a autenticação atual é Supabase Auth com revalidação local de admin. |
+| `PAGES.md` | Atualizado | Auditoria não é mais placeholder; configuração tem hub real de integrações/webhooks e apenas uma área reservada para preferências futuras. |
+
+### Candidatos mantidos por cautela
+
+- `.claude/agents`, `.claude/commands` e `.agents/skills`: parecem fragmentar a árvore, mas são tooling de agentes e podem ser consumidos fora do build da aplicação.
+- `docs/superpowers/*`, `docs/dbsave.md`, `docs/migrationdb.md`: há conteúdo histórico e alguns trechos antigos, mas servem como registros de decisões/planos; não foram removidos sem critério de arquivamento explícito.
+- Migrations antigas e snapshots Drizzle: não remover sem evidência de journal/live DB e sem fluxo dedicado de migração.
+- Campos `assigneeName`/`associateName` em `BoardActivity`: preservados conforme regra de domínio documentada em `AGENTS.md`.
+- Achados do `knip --production`: mantidos por cautela quando eram rotas App Router, Server Actions, scripts operacionais, exports públicos ou dependiam de configuração externa. O próprio Knip avisou que não conseguiu carregar `drizzle.config.ts` sem URL de banco, então o relatório foi usado apenas como triagem auxiliar.
+
+### Validações
+
+- `npm run typecheck -- --noUnusedLocals --noUnusedParameters false` — passou.
+- `npm exec knip -- --production --dependencies --reporter compact --no-exit-code --no-progress` — apontou apenas `jose` como dependência direta não usada; uma primeira execução sem env também emitiu aviso por falta de URL de banco ao carregar `drizzle.config.ts`.
+- `env DATABASE_URL=postgres://gabrielramos@localhost:5432/asof_intranet npm exec knip -- --production --dependencies --reporter compact --no-exit-code --no-progress` — passou sem novos achados depois da remoção de `jose`.
+- `npm run typecheck` — passou.
+- `npm run lint` — passou.
+- `npm run test` — passou (`100` arquivos de teste, `731` testes).
+- `npm run build` — passou; o build confirmou as rotas App Router atuais, incluindo `/app/config/auditoria` e `/app/config/usuarios`.
+- `npm audit --audit-level=low` — passou com `0` vulnerabilidades.

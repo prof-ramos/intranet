@@ -8,7 +8,7 @@ Documentação das funcionalidades de cada rota da aplicação.
 Redireciona automaticamente para `/login` se o usuário não estiver autenticado, ou para `/app` se estiver.
 
 ### `/login`
-Página de autenticação. Aceita email e senha, valida via Server Action `login`, cria sessão JWT com cookie `__Host-asof-session`. Exibe mensagem de erro para credenciais inválidas. Protegida contra enumeração de usuários via timing attack (bcrypt dummy hash).
+Página de autenticação. Aceita email e senha, valida via Server Action `login` e cria sessão via Supabase Auth. Exibe mensagem de erro para credenciais inválidas. Protegida contra enumeração de usuários via timing attack (bcrypt dummy hash).
 
 ### `/change-password`
 Fluxo obrigatório de troca de senha para usuários com `mustChangePassword=true`. Requer autenticação. Valida senha atual, nova senha (mínimo 8 caracteres) e confirmação.
@@ -111,10 +111,13 @@ Detalhamento de uma consulta jurídica:
 - Painel lateral com resumo
 
 ### `/app/config`
-Página de configurações do sistema (placeholder — em preparação).
+Hub de configurações do sistema. Hoje expõe integrações e webhooks e mantém uma área reservada para futuras preferências operacionais.
 
 ### `/app/config/auditoria`
-Consulta de eventos de auditoria (placeholder — em preparação). Acesso restrito a admin/diretoria.
+Consulta paginada de eventos de auditoria. Acesso restrito a admin/diretoria.
+- Filtro por ação, tipo de entidade e intervalo de datas
+- Exibe ator, ação, entidade e data/hora em America/Sao_Paulo
+- Paginação de 50 eventos por página
 
 ### `/app/config/usuarios`
 Gerenciamento de usuários administrativos:

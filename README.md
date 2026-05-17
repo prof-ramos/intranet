@@ -2,7 +2,7 @@
 
 Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia associados, atividades administrativas e comunicações internas da diretoria.
 
-**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Drizzle ORM · PostgreSQL/Supabase · JWT (jose)
+**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Drizzle ORM · PostgreSQL/Supabase · Supabase Auth
 
 ---
 
@@ -65,7 +65,7 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 | Variável                        | Valor            | Descrição                                  |
 | ------------------------------- | ---------------- | ------------------------------------------ |
-| `SKIP_AUTH`                     | `true`           | Desativa JWT e usa o usuário de dev abaixo |
+| `SKIP_AUTH`                     | `true`           | Desativa Supabase Auth e usa o usuário de dev abaixo |
 | `DEV_USER_ID`                   | `1`              | ID do usuário simulado                     |
 | `DEV_USER_NAME`                 | `ASOF Dev User`  | Nome exibido na sidebar                    |
 | `DEV_USER_EMAIL`                | `dev@asof.local` | —                                          |
@@ -198,7 +198,7 @@ src/
     layout.tsx    # layout raiz (fontes, tema)
   components/     # componentes compartilhados (Sidebar, NavLink…)
   lib/
-    auth/         # session JWT, requireAuth, config
+    auth/         # Supabase session lookup, requireAuth, config
     db/           # cliente Drizzle/PostgreSQL + schema
     integrations/ # auth M2M, envelopes JSON, outbox e webhooks outbound
     supabase/     # helpers Supabase SDK server/admin
