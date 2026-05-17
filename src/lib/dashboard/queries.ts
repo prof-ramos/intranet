@@ -1,4 +1,9 @@
 import { db } from '@/lib/db';
+import {
+  isDomesticCountrySql,
+  isExteriorCountrySql,
+  normalizedCountryLabelSql,
+} from '@/lib/associates/location-country';
 import { activities, associates } from '@/lib/db/schema';
 import { and, asc, count, desc, eq, ne, sql } from 'drizzle-orm';
 import { unstable_cache } from 'next/cache';
@@ -33,15 +38,24 @@ export const countActiveAssociates = unstable_cache(
   { revalidate: TTL_STABLE, tags: ['associates', 'dashboard'] },
 );
 
-export const countPendingMigrationAssociates = unstable_cache(
-  async (): Promise<number> => {
+export interface ActiveAssociatesByLocation {
+  brasil: number;
+  exterior: number;
+}
+
+export const countActiveAssociatesByLocation = unstable_cache(
+  async (): Promise<ActiveAssociatesByLocation> => {
     const rows = await db
-      .select({ count: count() })
+      .select({
+        brasil: sql<number>`count(*) filter (where ${isDomesticCountrySql(associates.locationCountry)})::int`,
+        exterior: sql<number>`count(*) filter (where ${isExteriorCountrySql(associates.locationCountry)})::int`,
+      })
       .from(associates)
-      .where(eq(associates.contributionStatus, 'pendente_migracao'));
-    return rows[0].count;
+      .where(eq(associates.associationStatus, 'ativo'));
+
+    return rows[0] ?? { brasil: 0, exterior: 0 };
   },
-  ['pending-migration-count'],
+  ['active-associates-by-location-count'],
   { revalidate: TTL_STABLE, tags: ['associates', 'dashboard'] },
 );
 
@@ -110,13 +124,15 @@ export const getTopRegions = (limit = 6): Promise<TopRegion[]> => {
   const existing = topRegionsCache.get(limit);
   if (existing) return existing();
 
+  const normalizedCountry = normalizedCountryLabelSql(associates.locationCountry);
+
   const created = unstable_cache(
     async (): Promise<TopRegion[]> =>
       db
-        .select({ country: associates.locationCountry, total: count() })
+        .select({ country: normalizedCountry, total: count() })
         .from(associates)
         .where(eq(associates.associationStatus, 'ativo'))
-        .groupBy(associates.locationCountry)
+        .groupBy(normalizedCountry)
         .orderBy(desc(count()))
         .limit(limit),
     ['top-regions', String(limit)],

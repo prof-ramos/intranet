@@ -8,6 +8,7 @@ import {
   groupActivitiesByStatus,
   initials,
   normalizeActivity,
+  summarizeActivities,
 } from './helpers';
 import type { BoardActivity, Filters } from './types';
 
@@ -151,5 +152,26 @@ describe('activity board grouping', () => {
     expect(() =>
       groupActivitiesByStatus([activity({ id: 9, status: 'desconhecido' as never })]),
     ).toThrow('invalid status "desconhecido" for activity 9');
+  });
+});
+
+describe('activity board summary', () => {
+  it('summarizes only the provided set and excludes completed items from late count', () => {
+    const summary = summarizeActivities([
+      activity({ id: 1, status: 'a_fazer', dueOffset: -2 }),
+      activity({ id: 2, status: 'em_andamento', dueOffset: 1 }),
+      activity({ id: 3, status: 'concluido', dueOffset: -5 }),
+    ]);
+
+    expect(summary).toEqual({
+      byStatus: {
+        a_fazer: 1,
+        em_andamento: 1,
+        aguardando_terceiros: 0,
+        concluido: 1,
+      },
+      late: 1,
+      total: 3,
+    });
   });
 });

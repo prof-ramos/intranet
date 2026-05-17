@@ -110,7 +110,8 @@ export async function addNote(formData: FormData) {
 
   const parsed = addNoteSchema.safeParse({
     ...raw,
-    isEscritórioResponse: raw.isEscritórioResponse === 'true',
+    isEscritorioResponse:
+      raw.isEscritorioResponse === 'true' || raw.isEscritórioResponse === 'true',
   });
   if (!parsed.success) {
     throw new Error(firstZodError(parsed.error.issues));

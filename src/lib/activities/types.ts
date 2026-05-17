@@ -24,6 +24,14 @@ export interface BoardAssociate {
   name: string;
 }
 
+export interface ActivityTimelineItem {
+  id: number;
+  action: string;
+  actorName: string | null;
+  createdAt: string;
+  summary: string;
+}
+
 export interface BoardActivity {
   id: number;
   title: string;
@@ -38,14 +46,6 @@ export interface BoardActivity {
   associateName: string | null;
   tags: string[];
   dueOffset: number | null;
-}
-
-export interface PendingReassignment {
-  id: string;
-  activityId: number;
-  fromUserId: number;
-  toUserId: number;
-  message: string;
 }
 
 export interface Filters {

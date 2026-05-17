@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { Users, RotateCcw } from 'lucide-react';
 import { focusRingClass } from '@/lib/ui/tokens';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 export default function AssociadosError({
   error,
@@ -12,7 +13,7 @@ export default function AssociadosError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Associados error boundary caught:', error);
+    console.error('Associados error boundary caught:', toSafeErrorLog(error));
   }, [error]);
 
   return (

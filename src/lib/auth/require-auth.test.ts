@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { requireAuth } from '@/lib/auth/require-auth';
 
 let mockSession: import('@/lib/auth/config').SessionData | null = null;
+let mockDbError: Error | null = null;
 let mockDbAdmin: {
   id: number;
   name: string;
@@ -30,7 +31,11 @@ vi.mock('@/lib/db', () => ({
     select: vi.fn(() => ({
       from: vi.fn(() => ({
         where: vi.fn(() => ({
-          limit: vi.fn(() => Promise.resolve(mockDbAdmin ? [mockDbAdmin] : [])),
+          limit: vi.fn(() =>
+            mockDbError
+              ? Promise.reject(mockDbError)
+              : Promise.resolve(mockDbAdmin ? [mockDbAdmin] : []),
+          ),
         })),
       })),
     })),
@@ -40,6 +45,7 @@ vi.mock('@/lib/db', () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   mockSession = null;
+  mockDbError = null;
   mockDbAdmin = null;
 });
 
@@ -121,5 +127,29 @@ describe('requireAuth', () => {
       role: 'diretoria',
       mustChangePassword: true,
     });
+  });
+
+  it('logs a safe error and redirects when the DB query fails', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockSession = {
+      userId: 3,
+      name: 'Admin',
+      email: 'admin@asof.local',
+      role: 'admin',
+      mustChangePassword: false,
+      isLoggedIn: true,
+    };
+    mockDbError = Object.assign(new Error('email=user@example.com'), { code: 'E_DB' });
+
+    await expect(requireAuth()).rejects.toThrow('NEXT_REDIRECT:/login');
+    expect(consoleErrorSpy).toHaveBeenCalledWith('requireAuth DB query failed', {
+      error: {
+        kind: 'error',
+        name: 'Error',
+        code: 'E_DB',
+        digest: undefined,
+      },
+    });
+    consoleErrorSpy.mockRestore();
   });
 });

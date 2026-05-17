@@ -88,6 +88,14 @@ describe('getIntegrationConfig', () => {
     expect(config2.timestampToleranceSeconds).toBe(300);
   });
 
+  it('rejects non-decimal timestampToleranceSeconds encodings', () => {
+    const config = getIntegrationConfig({
+      ASOF_INTEGRATION_TIMESTAMP_TOLERANCE_SECONDS: '300abc',
+    } as unknown as NodeJS.ProcessEnv);
+
+    expect(config.timestampToleranceSeconds).toBe(300);
+  });
+
   it('accepts 0 as valid timestampToleranceSeconds', () => {
     const config = getIntegrationConfig({ ASOF_INTEGRATION_TIMESTAMP_TOLERANCE_SECONDS: '0' } as unknown as NodeJS.ProcessEnv);
     expect(config.timestampToleranceSeconds).toBe(0);

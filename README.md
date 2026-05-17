@@ -87,6 +87,8 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 As rotas versionadas atuais são `/api/v1/health`, `/api/v1/events` e `/api/v1/events/dispatch`. Elas suportam a fundação outbound-only: eventos são gravados em `domain_events`, subscriptions são gerenciadas internamente por admins em `/app/config/integracoes/webhooks`, dispatch manual é feito por `/api/v1/events`, e o dispatch agendado é feito pelo cron bearer-only configurado em `vercel.json`. Como o deploy usa o plano Free/Hobby da Vercel, o cron roda no máximo uma vez por dia (`0 3 * * *`). URLs de destino de webhooks devem ser HTTPS públicas; localhost, hostnames locais/internos e redes privadas/reservadas são rejeitados. Ainda não há endpoint inbound público.
 
+Para o primeiro go-live, integrações/webhooks não são obrigatórios e produção deve manter `ASOF_INTEGRATIONS_ENABLED=false`, salvo decisão separada. Notificações realtime também não bloqueiam go-live; login, dashboard, associados, jurídico e ofícios devem operar sem depender de Supabase Realtime.
+
 ---
 
 ## Banco de dados
@@ -95,6 +97,8 @@ O projeto usa PostgreSQL via Drizzle.
 
 - **Desenvolvimento local:** PostgreSQL via Homebrew. Use `DATABASE_URL=postgres://<user>@localhost:5432/asof_intranet` e a mesma URL para `DATABASE_MIGRATION_URL` (não há pooler local, então a URL direta serve para ambos).
 - **Produção / remoto:** Supabase. Use a URL do pooler de runtime em `DATABASE_URL` e a URL direta/non-pooling em `DATABASE_MIGRATION_URL`.
+- **Produção oficial:** Supabase `uftzjmmfkoqhjjwsiynk` (`db-intranet`).
+- **Staging / preview:** use um projeto Supabase separado; previews da Vercel não devem apontar para o banco de produção.
 
 ```bash
 npm run db:generate   # gera migrações a partir do schema

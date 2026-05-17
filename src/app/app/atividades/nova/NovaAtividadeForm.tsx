@@ -52,8 +52,7 @@ export function NovaAtividadeForm({
   });
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const reassignmentRequired = form.assigneeId !== currentUser.id;
-
+  const assigningAnotherUser = form.assigneeId !== currentUser.id;
   function update(patch: Partial<FormState>) {
     setForm((current) => ({ ...current, ...patch }));
   }
@@ -169,7 +168,7 @@ export function NovaAtividadeForm({
           style={{ borderColor: '#86efac', background: '#dcfce7', color: '#15803d' }}
         >
           <Check size={16} aria-hidden="true" />
-          Atividade criada{reassignmentRequired ? ' — solicitação de atribuição enviada.' : '.'}
+          Atividade criada com sucesso.
         </div>
       )}
 
@@ -365,7 +364,7 @@ export function NovaAtividadeForm({
               value={form.assigneeId}
               onChange={(assigneeId) => update({ assigneeId })}
             />
-            {reassignmentRequired && (
+            {assigningAnotherUser && (
               <div
                 className="flex gap-2 rounded-[8px] border p-3 text-xs leading-relaxed"
                 style={{ borderColor: '#e7c16b', background: '#fef9c3', color: '#5a3a08' }}
@@ -377,8 +376,7 @@ export function NovaAtividadeForm({
                   !
                 </span>
                 <span>
-                  Como você está atribuindo a outra pessoa, ela receberá uma{' '}
-                  <strong>solicitação de aceite</strong>.
+                  A atividade será criada já atribuída à pessoa selecionada.
                 </span>
               </div>
             )}

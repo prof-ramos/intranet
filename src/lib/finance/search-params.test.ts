@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseMonthlyPaymentsSearchParams,
+  parseMonthlyPaymentsPageSearchParams,
   buildMonthlyPaymentsSearchParams,
   buildAssociateNameSearchPattern,
 } from './search-params';
@@ -118,5 +119,54 @@ describe('buildAssociateNameSearchPattern', () => {
 
   it('handles empty query', () => {
     expect(buildAssociateNameSearchPattern('')).toBe('%%');
+  });
+});
+
+describe('parseMonthlyPaymentsPageSearchParams', () => {
+  it('parses valid year/month alongside filters', () => {
+    const now = new Date('2026-05-17T12:00:00Z');
+
+    expect(
+      parseMonthlyPaymentsPageSearchParams(
+        {
+          year: '2025',
+          month: '11',
+          q: 'silva',
+          status: 'pago',
+        },
+        now,
+      ),
+    ).toEqual({
+      year: 2025,
+      month: 11,
+      filters: {
+        q: 'silva',
+        status: 'pago',
+        page: 1,
+      },
+    });
+  });
+
+  it('falls back safely on invalid year/month values', () => {
+    const now = new Date('2026-05-17T12:00:00Z');
+
+    expect(
+      parseMonthlyPaymentsPageSearchParams(
+        {
+          year: '1800',
+          month: '99',
+          q: '  teste  ',
+          page: '2',
+        },
+        now,
+      ),
+    ).toEqual({
+      year: 2026,
+      month: 5,
+      filters: {
+        q: 'teste',
+        page: 2,
+      },
+    });
   });
 });

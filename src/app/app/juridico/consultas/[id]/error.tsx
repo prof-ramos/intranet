@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { MessageSquare, RotateCcw } from 'lucide-react';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 export default function ConsultaDetalheError({
   error,
@@ -11,7 +12,7 @@ export default function ConsultaDetalheError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Consulta detalhe error boundary caught:', error);
+    console.error('Consulta detalhe error boundary caught:', toSafeErrorLog(error));
   }, [error]);
 
   return (

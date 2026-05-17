@@ -6,7 +6,6 @@ import { useEffect, useRef } from 'react';
 import {
   buttonOutlineBorder,
   buttonOutlineHoverBg,
-  buttonPrimaryText,
   canvas,
   dangerText,
   drawerShadow,
@@ -15,9 +14,6 @@ import {
   inputBg,
   overlayScrim,
   priorityStyles,
-  reassignmentNotice,
-  successText,
-  successTextHover,
   textFaint,
   textMuted,
   textPrimary,
@@ -25,7 +21,13 @@ import {
 } from '@/lib/ui/tokens';
 import { columns } from './constants';
 import { Avatar } from './ActivityCard';
-import type { BoardActivity, BoardPerson, PendingReassignment, Priority, Status } from './types';
+import type {
+  ActivityTimelineItem,
+  BoardActivity,
+  BoardPerson,
+  Priority,
+  Status,
+} from './types';
 
 function isStatus(value: string): value is Status {
   return columns.some((column) => column.key === value);
@@ -39,7 +41,9 @@ export function Drawer({
   activity,
   people,
   peopleById,
-  pending,
+  timeline,
+  timelineLoading,
+  timelineError,
   onClose,
   onChange,
   onRequestReassign,
@@ -47,11 +51,11 @@ export function Drawer({
   activity: BoardActivity | null;
   people: BoardPerson[];
   peopleById: Map<number, BoardPerson>;
-  pending?: PendingReassignment;
+  timeline: ActivityTimelineItem[];
+  timelineLoading: boolean;
+  timelineError: string | null;
   onClose: () => void;
-  onChange: (
-    patch: Partial<BoardActivity> | { acceptReassign: string } | { rejectReassign: string },
-  ) => void;
+  onChange: (patch: Partial<BoardActivity>) => void;
   onRequestReassign: () => void;
 }) {
   const closeRef = useRef<HTMLButtonElement | null>(null);
@@ -151,63 +155,6 @@ export function Drawer({
             <X size={16} aria-hidden="true" />
           </button>
         </header>
-
-        {pending && (
-          <div
-            className="mx-7 mt-4 rounded-[8px] border p-3"
-            style={{ borderColor: reassignmentNotice.border, background: reassignmentNotice.bg }}
-          >
-            <p
-              className="m-0 text-[11px] font-bold tracking-[0.12em] uppercase"
-              style={{ color: reassignmentNotice.label }}
-            >
-              Reatribuição aguardando confirmação
-            </p>
-            <p
-              className="mt-1.5 text-[13px] leading-relaxed"
-              style={{ color: reassignmentNotice.text }}
-            >
-              <strong>{peopleById.get(pending.fromUserId)?.name ?? 'Outro usuário'}</strong> quer
-              atribuir esta atividade.
-            </p>
-            {pending.message && (
-              <p
-                className="mt-2 rounded-md bg-white/60 p-2.5 text-xs leading-relaxed italic"
-                style={{ color: reassignmentNotice.text }}
-              >
-                “{pending.message}”
-              </p>
-            )}
-            <div className="mt-2.5 flex gap-2">
-              <button
-                type="button"
-                onClick={() => onChange({ acceptReassign: pending.id })}
-                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[8px] px-4 h-11 text-sm font-semibold transition-colors hover:bg-[var(--activity-hover-bg)] lg:h-8 ${focusRingClass}`}
-                style={
-                  {
-                    background: successText,
-                    color: buttonPrimaryText,
-                    '--activity-hover-bg': successTextHover,
-                  } as CSSProperties
-                }
-              >
-                Aceitar
-              </button>
-              <button
-                type="button"
-                onClick={() => onChange({ rejectReassign: pending.id })}
-                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-[8px] border bg-white px-4 h-11 text-sm font-semibold transition-colors hover:bg-[var(--activity-hover-bg)] lg:h-8 ${focusRingClass}`}
-                style={{
-                  borderColor: buttonOutlineBorder,
-                  color: dangerText,
-                  ...hoverBgStyle,
-                }}
-              >
-                Recusar
-              </button>
-            </div>
-          </div>
-        )}
 
         <div className="flex-1 overflow-y-auto px-7 py-5">
           <dl className="grid grid-cols-[112px_1fr] gap-x-3 gap-y-3.5 text-[13px]">
@@ -327,7 +274,44 @@ export function Drawer({
             </p>
           </section>
 
-          {/* TODO: histórico de alterações — aguardando coluna de timeline no schema `activities` */}
+          <section className="mt-6">
+            <p className="m-0 text-[11px] font-bold tracking-[0.16em] uppercase" style={labelStyle}>
+              Histórico
+            </p>
+            {timelineLoading && (
+              <p className="mt-2 text-sm" style={{ color: textFaint }}>
+                Carregando histórico...
+              </p>
+            )}
+            {timelineError && (
+              <p className="mt-2 text-sm" style={{ color: dangerText }}>
+                {timelineError}
+              </p>
+            )}
+            {!timelineLoading && !timelineError && timeline.length === 0 && (
+              <p className="mt-2 text-sm" style={{ color: textFaint }}>
+                Sem alterações registradas ainda.
+              </p>
+            )}
+            {!timelineLoading && !timelineError && timeline.length > 0 && (
+              <ol className="mt-3 flex list-none flex-col gap-3 p-0">
+                {timeline.map((item) => (
+                  <li
+                    key={item.id}
+                    className="rounded-[8px] border px-3 py-2.5"
+                    style={{ borderColor: hairline, background: canvas }}
+                  >
+                    <p className="m-0 text-[12px] font-semibold" style={{ color: textPrimary }}>
+                      {item.summary}
+                    </p>
+                    <p className="mt-1 text-[11px]" style={{ color: textMuted }}>
+                      {item.actorName ?? 'Sistema'} · {new Date(item.createdAt).toLocaleString('pt-BR')}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
         </div>
       </aside>
     </>

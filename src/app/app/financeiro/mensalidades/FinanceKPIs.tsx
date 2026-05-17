@@ -1,5 +1,6 @@
 'use client';
 
+import { isExteriorCountry } from '@/lib/associates/location-country';
 import {
   textMuted,
   textPrimary,
@@ -31,8 +32,7 @@ export function FinanceKPIs({ payments }: FinanceKPIsProps) {
   const isentos = payments.filter((p) => p.paymentStatus === 'isento').length;
 
   const exterior = payments.filter((p) => {
-    const country = p.locationCountry?.toLowerCase() ?? '';
-    return country !== '' && country !== 'brasil' && country !== 'brazil';
+    return isExteriorCountry(p.locationCountry);
   }).length;
 
   const folha = payments.filter(

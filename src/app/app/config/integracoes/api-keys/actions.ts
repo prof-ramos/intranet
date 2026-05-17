@@ -13,8 +13,8 @@ import type { IntegrationScope } from '@/lib/integrations/keys/service';
 import { revalidatePath } from 'next/cache';
 
 export async function createApiKeyAction(name: string, scopes: string[]) {
-  await requireAuth();
-  requireRole(['admin', 'diretoria']);
+  const actor = await requireAuth();
+  await requireRole(['admin', 'diretoria']);
 
   if (!name || name.trim().length < 2) {
     return { error: 'Name must be at least 2 characters.' };
@@ -29,7 +29,7 @@ export async function createApiKeyAction(name: string, scopes: string[]) {
   }
 
   try {
-    const result = await createApiKeyService(name.trim(), validScopes, 1);
+    const result = await createApiKeyService(name.trim(), validScopes, actor.userId);
     revalidatePath('/app/config/integracoes');
     return { data: result };
   } catch (err) {
@@ -42,14 +42,14 @@ export async function createApiKeyAction(name: string, scopes: string[]) {
 
 export async function listApiKeysAction() {
   await requireAuth();
-  requireRole(['admin', 'diretoria']);
+  await requireRole(['admin', 'diretoria']);
 
   return listApiKeysService();
 }
 
 export async function revokeApiKeyAction(id: number) {
   await requireAuth();
-  requireRole(['admin', 'diretoria']);
+  await requireRole(['admin', 'diretoria']);
 
   const revoked = await revokeApiKeyService(id);
   if (!revoked) {
@@ -60,10 +60,10 @@ export async function revokeApiKeyAction(id: number) {
 }
 
 export async function rotateApiKeyAction(id: number) {
-  await requireAuth();
-  requireRole(['admin', 'diretoria']);
+  const actor = await requireAuth();
+  await requireRole(['admin', 'diretoria']);
 
-  const result = await rotateApiKeyService(id, 1);
+  const result = await rotateApiKeyService(id, actor.userId);
   if (!result) {
     return { error: 'API key not found or already revoked.' };
   }

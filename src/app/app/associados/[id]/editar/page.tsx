@@ -1,14 +1,15 @@
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/auth/authorization';
 import { getAssociateForEdit } from '@/lib/associates/service';
+import { parsePositiveIntParam } from '@/lib/routing/params';
 import { EditarAssociadoForm } from './EditarAssociadoForm';
 
 export default async function EditarAssociadoPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireRole(['admin', 'diretoria']);
   const { id } = await params;
-  const associateId = Number(id);
+  const associateId = parsePositiveIntParam(id);
 
-  if (!Number.isInteger(associateId) || associateId < 1) {
+  if (associateId == null) {
     notFound();
   }
 

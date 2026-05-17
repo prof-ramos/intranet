@@ -1,6 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Drizzle mock chains require any for self-referencing builders */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { mapActivityRowToBoardActivity, findActivities, findActiveAdmins, findActiveAssociates, insertActivity } from './repository';
+import {
+  mapActivityRowToBoardActivity,
+  findActivities,
+  findActiveAdmins,
+  findActiveAssociates,
+  insertActivity,
+  findActivityById,
+  updateActivityById,
+} from './repository';
 
 const { dbMock, MOCK_ACTIVITY, MOCK_ADMIN, MOCK_ASSOCIATE } = vi.hoisted(() => {
   const MOCK_ACTIVITY = {
@@ -38,11 +46,18 @@ const { dbMock, MOCK_ACTIVITY, MOCK_ADMIN, MOCK_ASSOCIATE } = vi.hoisted(() => {
   insertChain.values = vi.fn().mockReturnValue(insertChain);
   insertChain.returning = vi.fn().mockImplementation(() => Promise.resolve(_insertResult));
 
+  const updateChain: Record<string, any> = {};
+  updateChain.set = vi.fn().mockReturnValue(updateChain);
+  updateChain.where = vi.fn().mockReturnValue(updateChain);
+  updateChain.returning = vi.fn().mockImplementation(() => Promise.resolve(_insertResult));
+
   const dbMock = {
     select: vi.fn().mockReturnValue(selectChain),
     insert: vi.fn().mockReturnValue(insertChain),
+    update: vi.fn().mockReturnValue(updateChain),
     _selectChain: selectChain,
     _insertChain: insertChain,
+    _updateChain: updateChain,
     setSelectResult(val: any[]) { _selectResult = val; },
     setInsertResult(val: any[]) { _insertResult = val; },
   };
@@ -137,6 +152,29 @@ describe('activities repository', () => {
       });
       expect(result).toEqual(MOCK_ACTIVITY);
       expect(dbMock.insert).toHaveBeenCalled();
+    });
+  });
+
+  describe('findActivityById', () => {
+    it('returns a single activity or null', async () => {
+      dbMock.setSelectResult([MOCK_ACTIVITY]);
+      await expect(findActivityById(1)).resolves.toEqual(MOCK_ACTIVITY);
+
+      dbMock.setSelectResult([]);
+      await expect(findActivityById(2)).resolves.toBeNull();
+    });
+  });
+
+  describe('updateActivityById', () => {
+    it('updates the activity and returns the updated row', async () => {
+      dbMock.setInsertResult([{ ...MOCK_ACTIVITY, status: 'concluido' }]);
+
+      const result = await updateActivityById(1, { status: 'concluido' as any });
+
+      expect(result).toEqual({ ...MOCK_ACTIVITY, status: 'concluido' });
+      expect(dbMock.update).toHaveBeenCalled();
+      expect(dbMock._updateChain.set).toHaveBeenCalled();
+      expect(dbMock._updateChain.returning).toHaveBeenCalled();
     });
   });
 });

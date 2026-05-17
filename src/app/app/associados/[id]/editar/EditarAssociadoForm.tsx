@@ -5,6 +5,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { useState } from 'react';
 import { updateAssociate } from '@/app/app/associados/actions';
 import { focusRingClass } from '@/lib/ui/tokens';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 interface Props {
   associate: {
@@ -42,7 +43,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
     try {
       await updateAssociate(formData);
     } catch (e) {
-      console.error('[EditarAssociadoForm] update error:', e);
+      console.error('[EditarAssociadoForm] update error:', toSafeErrorLog(e));
       setError('Erro ao salvar. Verifique os dados e tente novamente.');
     } finally {
       setSaving(false);

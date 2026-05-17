@@ -50,6 +50,12 @@ export const monthlyPaymentsSearchParamsSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
 });
 
+export const juridicoConsultationsSearchParamsSchema = z.object({
+  q: z.string().optional(),
+  status: z.enum(LEGAL_CONSULTATION_STATUSES).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+});
+
 const validFunctionalStatuses = functionalStatus.enumValues;
 const validAssociationStatuses = associationStatus.enumValues;
 const validContributionStatuses = contributionStatus.enumValues;

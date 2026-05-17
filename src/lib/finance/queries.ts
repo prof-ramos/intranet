@@ -3,6 +3,22 @@ import { getAssociatesWithPayments, type MonthlyPaymentsFilters } from './reposi
 
 type PaymentsData = Awaited<ReturnType<typeof getAssociatesWithPayments>>;
 
+export function buildMonthlyPaymentsCacheKey(
+  year: number,
+  month: number,
+  filters?: MonthlyPaymentsFilters,
+) {
+  return [
+    'finance-monthly',
+    String(year),
+    String(month),
+    filters?.q?.trim() ?? '',
+    filters?.status ?? '',
+    filters?.method ?? '',
+    filters?.location ?? '',
+  ];
+}
+
 export const getMonthlyPaymentsData = (
   year: number,
   month: number,
@@ -15,15 +31,7 @@ export const getMonthlyPaymentsData = (
     throw new Error('Mês inválido.');
   }
 
-  const cacheKey = [
-    'finance-monthly',
-    String(year),
-    String(month),
-    filters?.q ?? '',
-    filters?.status ?? '',
-    filters?.method ?? '',
-    filters?.location ?? '',
-  ];
+  const cacheKey = buildMonthlyPaymentsCacheKey(year, month, filters);
 
   return unstable_cache(
     async () => getAssociatesWithPayments(year, month, filters),

@@ -21,10 +21,10 @@ function parseNotificationId(input: { id: string } | string | number) {
   }
 
   if (typeof input === 'string') {
-    return Number(input);
+    return /^\d+$/.test(input) ? Number.parseInt(input, 10) : Number.NaN;
   }
 
-  return Number(input.id);
+  return /^\d+$/.test(input.id) ? Number.parseInt(input.id, 10) : Number.NaN;
 }
 
 export async function listNotificationsAction(limit = 20) {

@@ -1,6 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Drizzle mock chains require any for self-referencing builders */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import type { SQL } from 'drizzle-orm';
 import { findMonthlyPayment, upsertMonthlyPayment, getAssociatesWithPayments } from './repository';
+
+function compileSql(fragment: SQL) {
+  return fragment.toQuery({
+    escapeName: (name: string) => `"${name}"`,
+    escapeParam: (_: unknown, index: number) => `$${index + 1}`,
+    escapeString: (value: string) => `'${value}'`,
+    casing: { getColumnCasing: (column: string) => column },
+    inlineParams: false,
+    paramStartIndex: { value: 0 },
+  } as never).sql;
+}
 
 const { dbMock, MOCK_PAYMENT } = vi.hoisted(() => {
   const MOCK_PAYMENT = {
@@ -95,12 +107,32 @@ describe('finance repository', () => {
       dbMock.setSelectResult([]);
       await getAssociatesWithPayments(2026, 5, { location: 'brasil' });
       expect(dbMock._selectChain.where).toHaveBeenCalled();
+      const whereClause = dbMock._selectChain.where.mock.calls.at(-1)?.[0];
+      const compiled = compileSql(whereClause);
+      expect(compiled).toContain(' is null');
+      expect(compiled).toContain("lower(btrim(");
+      expect(compiled).toContain("nullif(btrim(");
+      expect(compiled).toContain("in ('brasil', 'brazil')");
+    });
+
+    it('applies location filter for exterior as inverse of domestic aliases', async () => {
+      dbMock.setSelectResult([]);
+      await getAssociatesWithPayments(2026, 5, { location: 'exterior' });
+      expect(dbMock._selectChain.where).toHaveBeenCalled();
+      const whereClause = dbMock._selectChain.where.mock.calls.at(-1)?.[0];
+      const compiled = compileSql(whereClause);
+      expect(compiled).toContain('not (');
+      expect(compiled).toContain("in ('brasil', 'brazil')");
     });
 
     it('applies method filter', async () => {
       dbMock.setSelectResult([]);
       await getAssociatesWithPayments(2026, 5, { method: 'pix' });
       expect(dbMock._selectChain.where).toHaveBeenCalled();
+      const whereClause = dbMock._selectChain.where.mock.calls.at(-1)?.[0];
+      const compiled = compileSql(whereClause);
+      expect(compiled).toContain('coalesce(');
+      expect(compiled).toContain('= $');
     });
   });
 });

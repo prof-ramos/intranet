@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { parsePositiveIntParam } from '@/lib/routing/params';
 import { focusRingClass } from '@/lib/ui/tokens';
 
 export interface ReassignModalPerson {
@@ -19,7 +20,7 @@ interface ReassignModalProps {
   activity: ReassignModalActivity;
   people: ReassignModalPerson[];
   onClose: () => void;
-  onSubmit: (toUserId: number, message: string) => void;
+  onSubmit: (toUserId: number, message: string) => Promise<void>;
 }
 
 export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignModalProps) {
@@ -27,6 +28,7 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
   // Apenas o primeiro candidato válido, ou null
   const [toUserId, setToUserId] = useState<number | null>(candidates[0]?.id ?? null);
   const [message, setMessage] = useState('');
+  const [isPending, setIsPending] = useState(false);
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -70,7 +72,7 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
             Atribuir a
             <select
               value={toUserId?.toString() ?? ''}
-              onChange={(event) => setToUserId(event.target.value ? Number(event.target.value) : null)}
+              onChange={(event) => setToUserId(parsePositiveIntParam(event.target.value))}
               className={`h-10 w-full rounded-[8px] border border-[#e2e8f0] bg-white px-3 text-sm ${focusRingClass}`}
             >
               {candidates.map((person) => (
@@ -91,8 +93,7 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
             />
           </label>
           <p className="bg-[#f8fafc] text-[rgba(13,31,60,0.70)] m-0 rounded-[8px] p-3 text-xs leading-relaxed">
-            A pessoa precisa aceitar antes da atribuição mudar. A atividade fica marcada até a
-            confirmação.
+            A atividade será reatribuída imediatamente e o histórico ficará registrado.
           </p>
         </div>
         <footer className="flex justify-end gap-2 px-6 pb-5">
@@ -106,11 +107,15 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
           </button>
           <button
             type="button"
-            onClick={() => toUserId !== null && onSubmit(toUserId, message)}
+            onClick={() => {
+              if (toUserId === null || isPending) return;
+              setIsPending(true);
+              void onSubmit(toUserId, message).finally(() => setIsPending(false));
+            }}
             className={`inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-8 ${focusRingClass}`}
-            disabled={toUserId === null || !candidates.some((c) => c.id === toUserId)}
+            disabled={isPending || toUserId === null || !candidates.some((c) => c.id === toUserId)}
           >
-            Solicitar
+            {isPending ? 'Reatribuindo...' : 'Reatribuir'}
           </button>
         </footer>
       </div>

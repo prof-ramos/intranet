@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { env } from '@/lib/env';
 import { getSupabasePublishableKey, getSupabaseUrl } from '@/lib/supabase/config';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 export async function createServerSupabaseClient() {
   const cookieStore = await cookies();
@@ -22,7 +23,7 @@ export async function createServerSupabaseClient() {
           // Server Components cannot mutate cookies; the request proxy keeps them refreshed.
           if (env.NODE_ENV === 'development') {
             console.warn('[Supabase] Ignored cookie write in read-only server context.', {
-              error: error instanceof Error ? error.message : 'unknown',
+              error: toSafeErrorLog(error),
             });
           }
         }

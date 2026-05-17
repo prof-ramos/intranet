@@ -1,9 +1,9 @@
 'use client';
 
 import type { CSSProperties } from 'react';
-import { useMemo } from 'react';
 import { canvas, dangerText, focusRingClass, hairline, textSubtle } from '@/lib/ui/tokens';
-import type { BoardActivity, Status } from './types';
+import { summarizeActivities } from './helpers';
+import type { BoardActivity } from './types';
 
 export function SummaryStrip({
   activities,
@@ -12,23 +12,7 @@ export function SummaryStrip({
   activities: BoardActivity[];
   onLateClick: () => void;
 }) {
-  const counts = useMemo(() => {
-    const byStatus: Record<Status, number> = {
-      a_fazer: 0,
-      em_andamento: 0,
-      aguardando_terceiros: 0,
-      concluido: 0,
-    };
-    let late = 0;
-
-    for (const activity of activities) {
-      byStatus[activity.status] += 1;
-      const offset = activity.dueOffset;
-      if (offset !== null && offset < 0 && activity.status !== 'concluido') late += 1;
-    }
-
-    return { byStatus, late, total: activities.length };
-  }, [activities]);
+  const counts = summarizeActivities(activities);
 
   const items = [
     { value: counts.total, label: 'total', topColor: '#040920' },

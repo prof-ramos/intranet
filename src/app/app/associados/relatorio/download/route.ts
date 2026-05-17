@@ -5,6 +5,7 @@ import { generateReport } from '@/lib/reports/service';
 import { parseReportExportParams } from '@/lib/reports/export-filters';
 import { requireReportAccess } from '@/lib/reports/policy';
 import { consumeIpRateLimit } from '@/lib/rate-limit';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 export async function GET(request: NextRequest) {
   const clientIp =
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     const result = await generateReport(access.userId, filters, selectedKeys);
     csv = result.csv;
   } catch (error) {
-    console.error('[report-download] failed to generate CSV', { error });
+    console.error('[report-download] failed to generate CSV', { error: toSafeErrorLog(error) });
     return new Response('Falha ao gerar relatório.', { status: 500 });
   }
 

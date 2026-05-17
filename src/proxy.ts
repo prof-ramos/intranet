@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isSkipAuthEnabled } from '@/lib/auth/config';
 import { createProxySupabaseClient } from '@/lib/supabase/proxy';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 const PROTECTED_ROUTE_PREFIXES = ['/app', '/change-password'] as const;
 const AUTH_PAGES = ['/login'] as const;
@@ -24,7 +25,7 @@ export async function proxy(request: NextRequest) {
     user = result.data.user;
   } catch (error) {
     console.warn('[Auth proxy] Supabase user lookup failed.', {
-      error: error instanceof Error ? error.message : 'unknown',
+      error: toSafeErrorLog(error),
     });
   }
 

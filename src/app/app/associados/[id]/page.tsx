@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, ExternalLink, Pencil } from 'lucide-react';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { focusRingClass, hairline, infoNotice } from '@/lib/ui/tokens';
+import { parsePositiveIntParam } from '@/lib/routing/params';
 import {
   formatAssociateDate,
   getAssociateProfile,
@@ -101,9 +102,9 @@ const tocItems = [
 export default async function AssociadoPerfilPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireAuth();
   const { id } = await params;
-  const associateId = Number(id);
+  const associateId = parsePositiveIntParam(id);
 
-  if (!Number.isInteger(associateId) || associateId < 1) {
+  if (associateId == null) {
     notFound();
   }
 

@@ -1,6 +1,6 @@
 import {
   countActiveAssociates,
-  countPendingMigrationAssociates,
+  countActiveAssociatesByLocation,
   countContributionsOkAssociates,
   countOpenActivities,
   countOverdueActivities,
@@ -18,6 +18,11 @@ export interface DashboardStripeItem {
   value: string;
   label: string;
   tone?: 'neg' | 'pos';
+  segments?: {
+    id: string;
+    value: string;
+    label: string;
+  }[];
 }
 
 export interface DashboardStatusColumnCard {
@@ -61,7 +66,7 @@ export { formatShortDate as formatDashboardDueDate } from '@/lib/utils/date';
 export async function getDashboardViewModel(): Promise<DashboardViewModel> {
   const [
     activeAssociates,
-    pendingMigration,
+    activeAssociatesByLocation,
     contributionsOk,
     openActivities,
     overdueActivities,
@@ -71,7 +76,7 @@ export async function getDashboardViewModel(): Promise<DashboardViewModel> {
     kanbanCards,
   ] = await Promise.all([
     countActiveAssociates(),
-    countPendingMigrationAssociates(),
+    countActiveAssociatesByLocation(),
     countContributionsOkAssociates(),
     countOpenActivities(),
     countOverdueActivities(),
@@ -111,7 +116,23 @@ export async function getDashboardViewModel(): Promise<DashboardViewModel> {
         value: activeAssociates.toLocaleString('pt-BR'),
         label: 'associados ativos',
       },
-      { id: 'pending-migration', value: String(pendingMigration), label: 'pendentes de migração' },
+      {
+        id: 'associates-location',
+        value: '',
+        label: 'distribuição de associados',
+        segments: [
+          {
+            id: 'associates-brasil',
+            value: activeAssociatesByLocation.brasil.toLocaleString('pt-BR'),
+            label: 'associados brasil',
+          },
+          {
+            id: 'associates-exterior',
+            value: activeAssociatesByLocation.exterior.toLocaleString('pt-BR'),
+            label: 'associados exterior',
+          },
+        ],
+      },
       { id: 'open-activities', value: String(openActivities), label: 'atividades em aberto' },
       {
         id: 'overdue-activities',

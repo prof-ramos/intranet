@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { login } from '@/app/login/actions';
 
 let mockRateLimit = { allowed: true };
+let mockConsumeError: Error | null = null;
+let mockResetError: Error | null = null;
 let mockDbUser:
   | {
       id: number;
@@ -34,8 +36,10 @@ vi.mock('@/lib/db', () => ({
 
 vi.mock('@/lib/auth/login-rate-limit', () => ({
   loginRateLimiter: {
-    consume: vi.fn(() => Promise.resolve(mockRateLimit)),
-    reset: vi.fn(() => Promise.resolve()),
+    consume: vi.fn(() =>
+      mockConsumeError ? Promise.reject(mockConsumeError) : Promise.resolve(mockRateLimit),
+    ),
+    reset: vi.fn(() => (mockResetError ? Promise.reject(mockResetError) : Promise.resolve())),
   },
 }));
 
@@ -58,6 +62,8 @@ vi.mock('@/lib/supabase/server', () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   mockRateLimit = { allowed: true };
+  mockConsumeError = null;
+  mockResetError = null;
   mockDbUser = null;
   mockAuthUser = null;
   mockSignInError = null;
@@ -134,5 +140,56 @@ describe('login action', () => {
     formData.set('password', 'Senha-Forte-2026!');
 
     await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/change-password');
+  });
+
+  it('logs a safe error when the rate-limit check fails', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockConsumeError = Object.assign(new Error('email=user@example.com'), { code: 'E_RATE' });
+    const formData = new FormData();
+    formData.set('email', 'admin@asof.local');
+    formData.set('password', 'Senha-Forte-2026!');
+
+    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=rate-limit');
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[Login] Rate-limit check failed; denying login.',
+      {
+        error: {
+          kind: 'error',
+          name: 'Error',
+          code: 'E_RATE',
+          digest: undefined,
+        },
+      },
+    );
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('logs a safe warning when reset fails after successful login', async () => {
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockAuthUser = { email: 'admin@asof.local' };
+    mockDbUser = {
+      id: 1,
+      email: 'admin@asof.local',
+      isActive: true,
+      mustChangePassword: false,
+    };
+    mockResetError = Object.assign(new Error('cpf=12345678901'), { code: 'E_RESET' });
+    const formData = new FormData();
+    formData.set('email', 'admin@asof.local');
+    formData.set('password', 'Senha-Forte-2026!');
+
+    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/app');
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      '[Login] Rate-limit reset failed after successful login.',
+      {
+        error: {
+          kind: 'error',
+          name: 'Error',
+          code: 'E_RESET',
+          digest: undefined,
+        },
+      },
+    );
+    consoleWarnSpy.mockRestore();
   });
 });

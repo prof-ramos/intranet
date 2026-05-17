@@ -471,6 +471,8 @@ Se `/login` voltar a responder `404 NOT_FOUND`, conferir primeiro:
 3. `vercel alias list | rg 'intranet\.asof\.com\.br'` — deve apontar o domínio para o deployment esperado.
 4. `curl -sSI https://intranet.asof.com.br/next.svg` — se estático retorna `200` mas rotas Next retornam `404`, suspeite de output estático/Framework Preset errado.
 
+Validacao de 2026-05-17: o Project Setting remoto foi ajustado para `Framework Preset: Next.js`, `Build Command: npm run build` ou `next build`, e `Output Directory: Next.js default`. O dominio customizado respondeu com `/` -> `307 /app`, `/app` -> `307 /login` sem sessao, e `/login` -> `200` com cabecalho Next.js.
+
 ### 6.2 Variáveis de ambiente por ambiente
 
 #### Desenvolvimento local
@@ -487,6 +489,8 @@ Homebrew PostgreSQL usually creates a role matching the macOS username, not a `p
 
 #### Staging / Preview (Vercel)
 
+Staging/preview deve usar um projeto Supabase separado de produção. Previews não devem apontar para o banco de produção.
+
 | Variável | Origem / Dono |
 |---|---|
 | `DATABASE_URL` | Pooler de conexões do Supabase (porta 6543) |
@@ -496,7 +500,7 @@ Homebrew PostgreSQL usually creates a role matching the macOS username, not a `p
 
 #### Produção (Vercel)
 
-As mesmas variáveis do staging, apontando para o projeto Supabase de produção.
+As mesmas variáveis do staging, apontando para o projeto Supabase de produção. O projeto Supabase oficial de produção é `uftzjmmfkoqhjjwsiynk` (`db-intranet`). Qualquer referência a `vmohxhyfgywaqfuqeuom` deve ser tratada como drift até reconciliação explícita.
 
 > **Regra:** `DATABASE_MIGRATION_URL` nunca usa pooler (porta 6543). Migrations precisam de conexão direta.
 
@@ -515,20 +519,28 @@ Ordem para provisionar um novo ambiente do zero:
 
 Antes de promover staging → produção:
 
+- [ ] Supabase de produção oficial confirmado como `uftzjmmfkoqhjjwsiynk`
+- [ ] Staging/preview apontando para Supabase separado de produção
+- [ ] Projeto Vercel remoto com `Framework Preset: Next.js` e sem `Output Directory` estático (`public` ou `.`)
 - [ ] `npm run lint` — passou
 - [ ] `npm run typecheck` — passou
 - [ ] `npm run test` — passou (Vitest)
 - [ ] `npm run test:e2e` — passou (Playwright)
 - [ ] `npm run build` — passou (gera build de produção localmente)
-- [ ] Verificar se há migrações pendentes (`npx drizzle-kit migrate --dry-run` se suportado, ou comparar schema)
+- [ ] Banco remoto reconciliado com `drizzle.__drizzle_migrations`, `_journal.json`, tabelas, enums, índices e extensões esperadas (`pg_trgm`)
+- [ ] RLS habilitado e `FORCE ROW LEVEL SECURITY` aplicado no remoto correto; RLS restritiva por papel/sessão fica para a fase da issue #41, desde que não haja Data API/browser expondo tabelas sensíveis diretamente
 - [ ] Criar e validar backup/snapshot do banco de produção antes de aplicar migrações
-- [ ] Aplicar migrações na produção **antes** do deploy
+- [ ] Aplicar migrações na produção manualmente, com `DATABASE_MIGRATION_URL` direta/non-pooling, **antes** do deploy
 - [ ] Verificar env vars obrigatórias na produção
-- [ ] Smoke test pós-deploy: login, dashboard, associados, jurídico, CSV download
+- [ ] Plano explícito de rollback de deploy, migration e banco revisado antes da janela
+- [ ] Smoke test pós-deploy obrigatório: login, dashboard, associados, jurídico e ofícios
+- [ ] Financeiro validado apenas se houver dependência operacional no dia 1
+- [ ] Integrações/webhooks não obrigatórios no dia 1; produção inicial deve manter `ASOF_INTEGRATIONS_ENABLED=false`, salvo decisão separada
+- [ ] Notificações realtime não bloqueiam go-live; o fluxo principal deve operar sem depender de Supabase Realtime
 
 ### 6.5 CI/CD
 
-O repositório possui GitHub Actions em `.github/workflows/ci.yml` com lint, typecheck, testes unitários e build verification em `push`/`pull_request` para `main`. O deploy de produção é feito pela Vercel Git Integration em push para `main` ou manualmente por CLI:
+O repositório possui GitHub Actions em `.github/workflows/ci.yml` com lint, typecheck, testes unitários e build verification em `push`/`pull_request` para `main`. Para o primeiro go-live, deploy de produção e migrations são manuais após checklist e smoke. Push em `main` não deve ser tratado como autorização suficiente para publicar ou migrar produção.
 
 ```bash
 vercel deploy --prod --yes
@@ -536,8 +548,8 @@ vercel deploy --prod --yes
 
 **Recomendação futura:** adicionar GitHub Actions com:
 - Job `e2e` com Playwright + banco de testes
-- Job `migrate-staging` em merge para `main`
-- Job `migrate-prod` manual (triggered) antes de promote
+- Job `migrate-staging` manual para ambiente separado de produção
+- Job `migrate-prod` manual (triggered), com backup/snapshot e opt-in explícito antes de promote
 
 Monitoring & Logging: No dedicated monitoring stack is currently configured in code. Local diagnostics live in `scripts/run-dev-60s.sh`.
 

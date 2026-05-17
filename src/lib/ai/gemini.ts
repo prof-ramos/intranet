@@ -1,8 +1,18 @@
 import { GoogleGenAI } from '@google/genai';
 import { env } from '@/lib/env';
 
-const geminiApiKey = 'GEMINI_API_KEY' in env ? env.GEMINI_API_KEY : undefined;
-const ai = new GoogleGenAI({ apiKey: geminiApiKey || '' });
+let client: GoogleGenAI | null = null;
+
+function getGeminiClient(): GoogleGenAI {
+  const apiKey = 'GEMINI_API_KEY' in env ? env.GEMINI_API_KEY : undefined;
+
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY_NOT_CONFIGURED');
+  }
+
+  client ??= new GoogleGenAI({ apiKey });
+  return client;
+}
 
 export async function generateOfficialLetterContent(params: {
   recipient: string;
@@ -37,6 +47,7 @@ Retorne apenas o corpo do ofício.
 
   const timeoutMs = 15000;
   try {
+    const ai = getGeminiClient();
     const result = await Promise.race([
       ai.models.generateContent({
         model: 'gemini-2.5-flash',

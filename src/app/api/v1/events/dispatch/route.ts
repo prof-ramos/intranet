@@ -61,7 +61,10 @@ function parseLimit(request: Request) {
   if (!raw) {
     return DEFAULT_LIMIT;
   }
-  const parsed = Number(raw);
+  if (!/^\d+$/.test(raw)) {
+    return null;
+  }
+  const parsed = Number.parseInt(raw, 10);
   if (!Number.isInteger(parsed) || parsed < 1 || parsed > MAX_LIMIT) {
     return null;
   }

@@ -6,6 +6,14 @@ import { requireRole } from '@/lib/auth/authorization';
 import { db } from '@/lib/db';
 import { assignments, auditLogs } from '@/lib/db/schema';
 
+function parseAssignmentId(formData: FormData): number {
+  const raw = formData.get('id')?.toString() ?? '';
+  if (!/^\d+$/.test(raw)) {
+    return Number.NaN;
+  }
+  return Number.parseInt(raw, 10);
+}
+
 export async function createAssignment(
   _prevState: { success: boolean; message: string } | null,
   formData: FormData,
@@ -57,8 +65,7 @@ export async function updateAssignment(
 ): Promise<{ success: boolean; message: string }> {
   const actor = await requireRole(['admin', 'diretoria']);
 
-  const idRaw = formData.get('id');
-  const id = idRaw ? Number(idRaw) : NaN;
+  const id = parseAssignmentId(formData);
   const name = formData.get('name')?.toString().trim();
   const type = formData.get('type')?.toString();
 
@@ -121,8 +128,7 @@ export async function toggleAssignmentActive(
 ): Promise<{ success: boolean; message: string }> {
   const actor = await requireRole(['admin', 'diretoria']);
 
-  const idRaw = formData.get('id');
-  const id = idRaw ? Number(idRaw) : NaN;
+  const id = parseAssignmentId(formData);
 
   if (!Number.isInteger(id) || id < 1) {
     return { success: false, message: 'Lotação inválida.' };

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { db } from '@/lib/db';
 import {
+  claimDispatchableDomainEventById,
   getDomainEventById,
   getLastDeliveryAttemptForSubscription,
   insertWebhookDelivery,
@@ -190,17 +191,21 @@ async function deliverEventToSubscription(
 }
 
 export async function dispatchDomainEventById(eventId: number) {
-  const event = await getDomainEventById(eventId);
+  const event = await claimDispatchableDomainEventById(eventId);
   if (!event) {
-    return {
-      dispatched: false,
-      reason: 'not_found' as const,
-    };
+    const existing = await getDomainEventById(eventId);
+    return existing
+      ? {
+          dispatched: false,
+          reason: 'not_dispatchable' as const,
+        }
+      : {
+          dispatched: false,
+          reason: 'not_found' as const,
+        };
   }
 
   return db.transaction(async (tx) => {
-    await updateDomainEventDeliveryStatus(event.id, 'processing', tx);
-
     const bodyEnvelope = buildWebhookBody(event);
     const body = JSON.stringify(bodyEnvelope);
     const subscriptions = await listActiveWebhookSubscriptionsForEvent(event.eventType, tx);

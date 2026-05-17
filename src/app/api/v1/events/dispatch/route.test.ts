@@ -136,6 +136,20 @@ describe('/api/v1/events/dispatch route', () => {
     expect(mockDispatchPendingDomainEvents).not.toHaveBeenCalled();
   });
 
+  it('rejects non-decimal limit encodings', async () => {
+    const response = await GET(
+      new Request('https://asof.local/api/v1/events/dispatch?limit=1e2', {
+        headers: {
+          authorization: 'Bearer cron-secret',
+        },
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(mockDispatchPendingDomainEvents).not.toHaveBeenCalled();
+    expect(auditValues).not.toHaveBeenCalled();
+  });
+
   it('does not allow POST', async () => {
     const response = await POST(new Request('https://asof.local/api/v1/events/dispatch'));
     const body = await response.json();

@@ -22,6 +22,10 @@ function parseBoolean(value: string | undefined): boolean {
 function parseTimestampTolerance(value: string | undefined): number {
   if (!value) return DEFAULT_TIMESTAMP_TOLERANCE_SECONDS;
 
+  if (!/^\d+$/.test(value)) {
+    return DEFAULT_TIMESTAMP_TOLERANCE_SECONDS;
+  }
+
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed < 0) {
     return DEFAULT_TIMESTAMP_TOLERANCE_SECONDS;

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { getConsultationsPaginated } from '@/lib/juridico/queries';
+import { parseJuridicoConsultationsSearchParams } from '@/lib/juridico/search-params';
 import { formatDate, daysSince } from '@/lib/utils/date';
 import {
   getLegalConsultationStatusBadgeClass,
@@ -19,8 +20,8 @@ export default async function ConsultasPage({
   searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 }) {
   await requireAuth();
-  const { q, status, page: pageRaw } = await searchParams;
-  const page = Math.max(1, Number(pageRaw) || 1);
+  const currentFilters = parseJuridicoConsultationsSearchParams(await searchParams);
+  const { q, status, page } = currentFilters;
 
   const { rows, total } = await getConsultationsPaginated(page, PAGE_SIZE, {
     status: status || undefined,

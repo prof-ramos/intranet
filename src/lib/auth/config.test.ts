@@ -38,6 +38,15 @@ describe('auth config', () => {
     );
   });
 
+  it('rejects non-decimal development user ids', () => {
+    expect(() => getDevAuthUser({ SKIP_AUTH: 'true', DEV_USER_ID: '1e2' })).toThrow(
+      'DEV_USER_ID must be a positive integer when SKIP_AUTH=true.',
+    );
+    expect(() => getDevAuthUser({ SKIP_AUTH: 'true', DEV_USER_ID: '0x10' })).toThrow(
+      'DEV_USER_ID must be a positive integer when SKIP_AUTH=true.',
+    );
+  });
+
   it('ignores auth bypass in production', () => {
     expect(isSkipAuthEnabled({ SKIP_AUTH: 'true', NODE_ENV: 'production' })).toBe(false);
   });

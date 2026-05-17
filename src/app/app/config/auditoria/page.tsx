@@ -1,4 +1,5 @@
 import { requireRole } from '@/lib/auth/authorization';
+import { parseAuditSearchParams } from '@/lib/audit/search-params';
 import { db } from '@/lib/db';
 import { auditLogs, type AuditLog } from '@/lib/db/schema/audit';
 import { admins } from '@/lib/db/schema/admins';
@@ -43,12 +44,7 @@ export default async function AuditoriaPage({
 }) {
   await requireRole(['admin', 'diretoria']);
 
-  const params = await searchParams;
-  const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1);
-  const entityType = params.tipo ?? '';
-  const q = (params.q ?? '').trim().slice(0, 80);
-  const de = params.de ?? '';
-  const ate = params.ate ?? '';
+  const { page, entityType, q, de, ate } = parseAuditSearchParams(await searchParams);
 
   const filters: SQL[] = [];
 
@@ -249,17 +245,17 @@ export default async function AuditoriaPage({
         </span>
         {totalPages > 1 && (
           <div className="flex gap-2">
-            {page > 1 && (
+            {effectivePage > 1 && (
               <a
-                href={pageUrl(page - 1)}
+                href={pageUrl(effectivePage - 1)}
                 className={`flex h-8 items-center rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-xs text-[rgba(13,31,60,0.65)] transition-colors hover:bg-[rgba(13,31,60,0.04)] ${focusRingClass}`}
               >
                 ← Anterior
               </a>
             )}
-            {page < totalPages && (
+            {effectivePage < totalPages && (
               <a
-                href={pageUrl(page + 1)}
+                href={pageUrl(effectivePage + 1)}
                 className={`flex h-8 items-center rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-xs text-[rgba(13,31,60,0.65)] transition-colors hover:bg-[rgba(13,31,60,0.04)] ${focusRingClass}`}
               >
                 Próxima →

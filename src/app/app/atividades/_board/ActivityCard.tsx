@@ -7,7 +7,6 @@ import {
   buttonPrimaryText,
   canvas,
   dangerText,
-  floatingBadgeShadow,
   hairline,
   navy,
   priorityStyles,
@@ -41,12 +40,10 @@ export function ActivityCardContent({
   activity,
   peopleById,
   compact,
-  hasPending,
 }: {
   activity: BoardActivity;
   peopleById: Map<number, BoardPerson>;
   compact: boolean;
-  hasPending: boolean;
 }) {
   const dueOffset = activity.dueOffset;
   const isLate = dueOffset !== null && dueOffset < 0 && activity.status !== 'concluido';
@@ -64,17 +61,6 @@ export function ActivityCardContent({
         borderLeft: activity.status === 'concluido' ? '3px solid #94a3b8' : `3px solid ${priority.fg}`,
       }}
     >
-      {hasPending && (
-        <span
-          aria-label="Reatribuição pendente"
-          role="status"
-          className="absolute -top-1.5 -right-1.5 grid h-[18px] w-[18px] place-items-center rounded-full text-[10px] font-bold"
-          style={{ background: warningText, color: buttonPrimaryText, boxShadow: floatingBadgeShadow }}
-        >
-          <span aria-hidden="true">!</span>
-        </span>
-      )}
-
       <p
         className={`m-0 text-left leading-snug font-semibold [overflow-wrap:anywhere] ${
           compact ? 'text-[13px]' : 'text-sm'

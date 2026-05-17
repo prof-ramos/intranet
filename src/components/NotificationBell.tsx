@@ -62,6 +62,24 @@ function getSafeInternalHref(href: string | null) {
   return href;
 }
 
+export async function processNotificationClick(input: {
+  notificationId: number;
+  href: string | null;
+  markAsRead: (id: number) => Promise<void>;
+  navigate: (href: string) => void;
+  close: () => void;
+}): Promise<boolean> {
+  await input.markAsRead(input.notificationId);
+
+  const safeHref = getSafeInternalHref(input.href);
+  if (safeHref) {
+    input.navigate(safeHref);
+  }
+
+  input.close();
+  return Boolean(safeHref);
+}
+
 export function NotificationBell({ userId }: NotificationBellProps) {
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -114,14 +132,13 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     setPendingId(notificationId);
 
     try {
-      await markAsRead(notificationId);
-
-      const safeHref = getSafeInternalHref(href);
-      if (safeHref) {
-        router.push(safeHref);
-      }
-
-      setOpen(false);
+      await processNotificationClick({
+        notificationId,
+        href,
+        markAsRead,
+        navigate: (safeHref) => router.push(safeHref),
+        close: () => setOpen(false),
+      });
     } finally {
       setPendingId(null);
     }

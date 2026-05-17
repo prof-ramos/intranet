@@ -344,6 +344,23 @@ describe('verifyIntegrationRequest (dual-auth)', () => {
         expect(result.reason).toBe('timestamp_skew');
       }
     });
+
+    it('rejects non-decimal timestamp encodings', async () => {
+      const config = defaultConfig();
+      mockGetIntegrationConfig.mockReturnValue(config);
+      mockIsIntegrationAuthConfigured.mockReturnValue(true);
+
+      const rawTimestamp = `${NOW_SECONDS}abc`;
+      const signature = signRequest('GET', '/api/v1/events', rawTimestamp, '', TEST_HMAC_SECRET);
+      const request = makeRequest(TEST_API_KEY, rawTimestamp, signature);
+
+      const result = await verifyIntegrationRequest(request);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toBe('invalid_timestamp');
+      }
+    });
   });
 });
 

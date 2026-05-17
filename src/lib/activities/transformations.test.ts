@@ -141,6 +141,20 @@ describe('filterActivities', () => {
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe(1);
   });
+
+  it('does not treat non-decimal filter ids as valid matches', () => {
+    const activities = [
+      makeActivity({ id: 1, assigneeId: 100, associateId: 16 }),
+      makeActivity({ id: 2, assigneeId: 10, associateId: 20 }),
+    ];
+
+    expect(
+      filterActivities(activities, { ...defaultFilters, assignee: '1e2' }, 10),
+    ).toHaveLength(2);
+    expect(
+      filterActivities(activities, { ...defaultFilters, associate: '0x10' }, 10),
+    ).toHaveLength(2);
+  });
 });
 
 describe('groupActivitiesByStatus', () => {

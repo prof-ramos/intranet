@@ -28,7 +28,8 @@ function zodMessage(error: unknown, fallback: string) {
 }
 
 function parseId(formData: FormData) {
-  const id = Number(formData.get('id'));
+  const raw = formData.get('id')?.toString() ?? '';
+  const id = /^\d+$/.test(raw) ? Number.parseInt(raw, 10) : Number.NaN;
   if (!Number.isInteger(id) || id <= 0) {
     throw new Error('Webhook subscription inválida.');
   }

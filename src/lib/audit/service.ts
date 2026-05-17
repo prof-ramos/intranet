@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { auditLogs, type NewAuditLog } from '@/lib/db/schema/audit';
 import { sanitizePiiValue } from '@/lib/sanitize-pii';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 export interface LogAuditOptions {
   adminId: number;
@@ -29,7 +30,7 @@ export async function logAuditAction(options: LogAuditOptions): Promise<void> {
     console.error('[AUDIT_FAILURE]', {
       adminId: options.adminId,
       action: options.action,
-      error,
+      error: toSafeErrorLog(error),
     });
     // Não propaga o erro para não bloquear a operação principal
   }

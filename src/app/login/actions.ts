@@ -3,10 +3,11 @@
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { loginRateLimiter } from '@/lib/auth/login-rate-limit';
 import { loginSchema } from '@/lib/validation/schemas';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 function isTransientConnectionError(error: unknown) {
   if (!(error instanceof Error)) return false;
@@ -31,7 +32,9 @@ async function retryTransientConnection<T>(operation: () => Promise<T>): Promise
       throw error;
     }
 
-    console.warn('[Login] Retrying after transient database connection closure.');
+    console.warn('[Login] Retrying after transient database connection closure.', {
+      error: toSafeErrorLog(error),
+    });
     return operation();
   }
 }
@@ -53,7 +56,7 @@ export async function login(formData: FormData) {
     if (!rateLimit.allowed) redirect('/login?error=rate-limit');
   } catch (error) {
     console.error('[Login] Rate-limit check failed; denying login.', {
-      error: error instanceof Error ? 'rate_limiter_error' : 'unknown',
+      error: toSafeErrorLog(error),
     });
     redirect('/login?error=rate-limit');
   }
@@ -73,6 +76,8 @@ export async function login(formData: FormData) {
     redirect('/login?error=1');
   }
 
+  const normalizedAuthEmail = authUser.email.trim().toLowerCase();
+
   const [user] = await retryTransientConnection(() =>
     db
       .select({
@@ -82,7 +87,7 @@ export async function login(formData: FormData) {
         mustChangePassword: admins.mustChangePassword,
       })
       .from(admins)
-      .where(eq(admins.email, authUser.email!.toLowerCase()))
+      .where(sql`lower(${admins.email}) = ${normalizedAuthEmail}`)
       .limit(1),
   );
 
@@ -95,7 +100,7 @@ export async function login(formData: FormData) {
     await retryTransientConnection(() => loginRateLimiter.reset(email));
   } catch (error) {
     console.warn('[Login] Rate-limit reset failed after successful login.', {
-      error: error instanceof Error ? 'rate_limiter_error' : 'unknown',
+      error: toSafeErrorLog(error),
     });
   }
   redirect(user.mustChangePassword ? '/change-password' : '/app');

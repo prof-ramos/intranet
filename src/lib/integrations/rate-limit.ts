@@ -67,6 +67,16 @@ export function createIntegrationRateLimiter(
   options: IntegrationRateLimitOptions,
   store: IntegrationRateLimitStore = dbStore,
 ) {
+  if (!Number.isInteger(options.maxRequests) || options.maxRequests < 1) {
+    throw new Error('maxRequests must be a positive integer.');
+  }
+  if (!Number.isInteger(options.windowMs) || options.windowMs < 1) {
+    throw new Error('windowMs must be a positive integer.');
+  }
+  if (!options.scope.trim()) {
+    throw new Error('scope is required.');
+  }
+
   return {
     async consume(key: string, now = Date.now()): Promise<IntegrationRateLimitResult> {
       const { attempts, expiresAt } = await store.atomicIncrement(key, options.scope, now, options.windowMs);
@@ -75,7 +85,7 @@ export function createIntegrationRateLimiter(
         return {
           allowed: false,
           remaining: 0,
-          retryAfterMs: expiresAt - now,
+          retryAfterMs: Math.max(expiresAt - now, 0),
         };
       }
 

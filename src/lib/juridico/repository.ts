@@ -17,6 +17,8 @@ import {
 } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
+import { isSlaDueSoonSql } from './sla';
+import type { LegalConsultationStatus } from './status';
 
 export interface ConsultationListItem {
   id: number;
@@ -30,9 +32,16 @@ export interface ConsultationListItem {
 }
 
 export interface GetConsultationsFilters {
-  status?: string;
+  status?: LegalConsultationStatus;
   search?: string;
   staleDays?: number;
+}
+
+export function normalizeConsultationsPagination(page: number, pageSize: number) {
+  return {
+    page: Number.isInteger(page) && page > 0 ? page : 1,
+    pageSize: Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 20,
+  };
 }
 
 export async function countConsultationsByStatus(
@@ -58,14 +67,14 @@ export async function countConsultationsStale(days = 7): Promise<number> {
   return rows[0].count;
 }
 
-export async function countConsultationsSlaOverdue(): Promise<number> {
+export async function countConsultationsSlaDueSoon(days = 2): Promise<number> {
   const rows = await db
     .select({ count: count() })
     .from(legalConsultations)
     .where(
       and(
         ne(legalConsultations.status, 'arquivada'),
-        sql`${legalConsultations.slaDueDate} < now()`,
+        isSlaDueSoonSql(legalConsultations.slaDueDate, days),
       ),
     );
   return rows[0].count;
@@ -89,15 +98,11 @@ export async function getConsultationsPaginated(
   pageSize: number,
   filters: GetConsultationsFilters = {},
 ): Promise<{ rows: ConsultationListItem[]; total: number }> {
+  const normalized = normalizeConsultationsPagination(page, pageSize);
   const conditions = [];
 
   if (filters.status) {
-    conditions.push(
-      eq(
-        legalConsultations.status,
-        filters.status as (typeof legalConsultationStatus.enumValues)[number],
-      ),
-    );
+    conditions.push(eq(legalConsultations.status, filters.status));
   }
 
   if (filters.search) {
@@ -135,8 +140,8 @@ export async function getConsultationsPaginated(
       .leftJoin(associates, eq(legalConsultations.associateId, associates.id))
       .where(where)
       .orderBy(desc(legalConsultations.createdAt))
-      .limit(pageSize)
-      .offset((page - 1) * pageSize),
+      .limit(normalized.pageSize)
+      .offset((normalized.page - 1) * normalized.pageSize),
     db.select({ total: count() }).from(legalConsultations).where(where),
   ]);
 
@@ -286,8 +291,7 @@ export async function getPendingActions(): Promise<PendingAction[]> {
       .where(
         and(
           ne(legalConsultations.status, 'arquivada'),
-          sql`${legalConsultations.slaDueDate} < now() + interval '2 days'`,
-          sql`${legalConsultations.slaDueDate} >= now()`,
+          isSlaDueSoonSql(legalConsultations.slaDueDate),
         ),
       )
       .orderBy(asc(legalConsultations.slaDueDate))

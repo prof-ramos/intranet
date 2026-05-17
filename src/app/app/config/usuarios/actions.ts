@@ -24,14 +24,21 @@ function generateTemporaryPassword(): string {
   return base.slice(0, pos1) + sym + base.slice(pos1, pos2) + dig + base.slice(pos2);
 }
 
+function parseAdminId(formData: FormData): number {
+  const raw = formData.get('userId')?.toString() ?? '';
+  if (!/^\d+$/.test(raw)) {
+    return Number.NaN;
+  }
+  return Number.parseInt(raw, 10);
+}
+
 export async function resetUserPassword(
   _prevState: { success: boolean; message: string; tempPassword?: string } | null,
   formData: FormData,
 ): Promise<{ success: boolean; message: string; tempPassword?: string }> {
   const actor = await requireRole(['admin']);
 
-  const targetIdRaw = formData.get('userId');
-  const targetId = targetIdRaw ? Number(targetIdRaw) : NaN;
+  const targetId = parseAdminId(formData);
 
   if (!Number.isInteger(targetId) || targetId < 1) {
     return { success: false, message: 'Usuário inválido.' };
@@ -104,8 +111,7 @@ export async function toggleUserActive(
 ): Promise<{ success: boolean; message: string }> {
   const actor = await requireRole(['admin']);
 
-  const targetIdRaw = formData.get('userId');
-  const targetId = targetIdRaw ? Number(targetIdRaw) : NaN;
+  const targetId = parseAdminId(formData);
 
   if (!Number.isInteger(targetId) || targetId < 1) {
     return { success: false, message: 'Usuário inválido.' };

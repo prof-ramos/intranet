@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { dispatchDomainEventById, dispatchPendingDomainEvents } from '@/lib/integrations/webhooks/service';
 
 const mockGetDomainEventById = vi.fn();
+const mockClaimDispatchableDomainEventById = vi.fn();
 const mockListActiveWebhookSubscriptionsForEvent = vi.fn();
 const mockListWebhookDeliveriesForEvent = vi.fn();
 const mockInsertWebhookDelivery = vi.fn();
@@ -11,6 +12,7 @@ const mockRecoverStuckProcessingEvents = vi.fn();
 const mockLockAndFetchDispatchableEvents = vi.fn();
 
 vi.mock('@/lib/integrations/webhooks/repository', () => ({
+  claimDispatchableDomainEventById: (...args: unknown[]) => mockClaimDispatchableDomainEventById(...args),
   getDomainEventById: (...args: unknown[]) => mockGetDomainEventById(...args),
   listActiveWebhookSubscriptionsForEvent: (...args: unknown[]) =>
     mockListActiveWebhookSubscriptionsForEvent(...args),
@@ -47,6 +49,19 @@ describe('dispatchDomainEventById', () => {
     vi.clearAllMocks();
     vi.stubGlobal('fetch', vi.fn());
     mockDecryptWebhookSecret.mockReturnValue('webhook-secret');
+    mockClaimDispatchableDomainEventById.mockResolvedValue({
+      id: 99,
+      eventType: 'associate.updated',
+      occurredAt: new Date('2026-05-14T12:00:00.000Z'),
+      entityType: 'associate',
+      entityId: 10,
+      actorAdminId: 1,
+      payload: {
+        associateId: 10,
+        changedFields: ['assignment'],
+        links: { app: '/app/associados/10' },
+      },
+    });
     mockGetDomainEventById.mockResolvedValue({
       id: 99,
       eventType: 'associate.updated',
@@ -89,6 +104,22 @@ describe('dispatchDomainEventById', () => {
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockInsertWebhookDelivery).not.toHaveBeenCalled();
     expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'delivered', mockTx);
+  });
+
+  it('returns not_dispatchable when the event exists but cannot be claimed', async () => {
+    mockClaimDispatchableDomainEventById.mockResolvedValue(null);
+    mockGetDomainEventById.mockResolvedValue({
+      id: 99,
+      deliveryStatus: 'processing',
+    });
+
+    const result = await dispatchDomainEventById(99);
+
+    expect(result).toEqual({
+      dispatched: false,
+      reason: 'not_dispatchable',
+    });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
   it('waits until nextRetryAt before retrying scheduled failures', async () => {
@@ -230,7 +261,7 @@ describe('dispatchPendingDomainEvents', () => {
     };
 
     mockLockAndFetchDispatchableEvents.mockResolvedValue([event1, event2]);
-    mockGetDomainEventById.mockResolvedValueOnce({
+    mockClaimDispatchableDomainEventById.mockResolvedValueOnce({
       id: 1,
       eventType: 'associate.updated',
       occurredAt: new Date('2026-05-14T12:00:00.000Z'),
@@ -239,7 +270,7 @@ describe('dispatchPendingDomainEvents', () => {
       actorAdminId: 1,
       payload: { associateId: 10 },
     });
-    mockGetDomainEventById.mockResolvedValueOnce({
+    mockClaimDispatchableDomainEventById.mockResolvedValueOnce({
       id: 2,
       eventType: 'associate.updated',
       occurredAt: new Date('2026-05-14T12:01:00.000Z'),
@@ -255,8 +286,8 @@ describe('dispatchPendingDomainEvents', () => {
 
     expect(result.processed).toBe(2);
     expect(result.results).toHaveLength(2);
-    expect(mockGetDomainEventById).toHaveBeenCalledWith(1);
-    expect(mockGetDomainEventById).toHaveBeenCalledWith(2);
+    expect(mockClaimDispatchableDomainEventById).toHaveBeenCalledWith(1);
+    expect(mockClaimDispatchableDomainEventById).toHaveBeenCalledWith(2);
   });
 
   it('returns empty results when no events are dispatchable', async () => {
@@ -265,6 +296,6 @@ describe('dispatchPendingDomainEvents', () => {
     const result = await dispatchPendingDomainEvents();
 
     expect(result).toEqual({ processed: 0, results: [] });
-    expect(mockGetDomainEventById).not.toHaveBeenCalled();
+    expect(mockClaimDispatchableDomainEventById).not.toHaveBeenCalled();
   });
 });

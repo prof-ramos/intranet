@@ -12,6 +12,30 @@ Atualizacao de remediacao local: apos autorizacao separada, foram aplicadas corr
 - `src/lib/env.ts` deixou de exigir `SESSION_SECRET` e passou a tratar strings vazias de envs opcionais como ausentes.
 - Nenhuma mudanca foi aplicada no Supabase remoto, na Vercel remota ou em secrets.
 
+Atualizacao de decisao operacional em 2026-05-17:
+
+- O Supabase oficial de producao passa a ser `uftzjmmfkoqhjjwsiynk` (`db-intranet`).
+- `vmohxhyfgywaqfuqeuom` deve ser tratado como drift ate reconciliacao explicita.
+- Staging/preview deve usar Supabase separado de producao.
+- Primeiro go-live exige hardening operacional antes de producao, com migrations e deploy manuais.
+- RLS restritiva por papel/sessao nao bloqueia o primeiro go-live, desde que RLS esteja habilitado/forcado no remoto correto e nenhuma tabela sensivel seja exposta diretamente via Data API/browser.
+- Escopo bloqueante do dia 1: login, dashboard, associados, juridico e oficios.
+- Financeiro, integracoes/webhooks e notificacoes realtime nao bloqueiam o dia 1, salvo dependencia operacional separada.
+
+Atualizacao de remediacao Vercel em 2026-05-17:
+
+- O Project Setting remoto da Vercel foi ajustado via API para `framework=nextjs`.
+- `vercel project inspect asof-intranet` passou a mostrar `Framework Preset: Next.js`, `Build Command: npm run build` ou `next build`, e `Output Directory: Next.js default`.
+- Smoke do dominio customizado: `/` respondeu `307` para `/app`, `/app` respondeu `307` para `/login` sem sessao, e `/login` respondeu `200` com cabecalho Next.js.
+- O Browser interno em `http://localhost:3000/app` carregou o painel local (`ASOF Intranet`, `Painel da diretoria`) sem alertas de erro no DOM.
+
+Atualizacao de validacao E2E em 2026-05-17:
+
+- `npm run test:e2e` passou com `51 passed`.
+- Durante o bootstrap do banco de testes local, a migration `0037_add_notifications.sql` pode emitir warning `wal_level is insufficient to publish logical changes` ao tentar criar `supabase_realtime`.
+- Esse warning nao bloqueou migrations, seed nem os cenarios E2E. Ele indica apenas que o Postgres local nao esta configurado para logical replication/publications.
+- Como notificacoes realtime nao bloqueiam o primeiro go-live, esse warning local deve ser tratado como ruido operacional conhecido, nao como falha funcional do app.
+
 ## Resumo executivo
 
 A configuracao atual ainda tem divergencias criticas entre o repositorio, o banco local, o Supabase remoto e o projeto Vercel. O risco principal nao e apenas uma migration pendente: ha sinais de que o ambiente remoto atualmente configurado nao e o mesmo ambiente historicamente validado, nao tem historico Drizzle aplicado, esta sem RLS nas tabelas publicas e nao possui todo o schema esperado pelo codigo atual.
@@ -89,7 +113,7 @@ Pontos relevantes dessas fontes:
 
 | Severidade | Finding | Evidencia | Risco | Correcao futura recomendada |
 |---|---|---|---|---|
-| P0 | Supabase remoto configurado nao corresponde ao remoto historicamente validado | `.mcp.json` e envs locais apontam para `vmohxhyfgywaqfuqeuom`; memoria/documentacao anterior citava `uftzjmmfkoqhjjwsiynk` como `db-intranet` validado | Migrations e dados podem estar sendo aplicados/consultados no projeto errado | Escolher oficialmente o projeto Supabase alvo; alinhar `.mcp.json`, Vercel envs e docs; so depois aplicar migrations |
+| P0 | Supabase remoto configurado nao corresponde ao remoto oficialmente escolhido | `.mcp.json` e envs locais apontam para `vmohxhyfgywaqfuqeuom`; `uftzjmmfkoqhjjwsiynk` foi definido em 2026-05-17 como `db-intranet` de producao | Migrations e dados podem estar sendo aplicados/consultados no projeto errado | Alinhar `.mcp.json`, Vercel envs e docs ao alvo `uftzjmmfkoqhjjwsiynk`; so depois aplicar migrations |
 | P0 | Banco remoto atual esta sem historico Drizzle aplicado | Consulta metadata-only retornou `remoteMigrations=0` em `drizzle.__drizzle_migrations` | Deploy remoto pode rodar contra schema incompleto/desalinhado | Reconciliar o banco remoto correto com `_journal.json`; aplicar migrations na ordem correta usando URL non-pooling |
 | P0 | RLS desligado no remoto atual | Metadata remoto: tabelas publicas com `rls=false`, `policies=0`, incluindo `admins`, `associates`, `audit_logs`, `monthly_payments` | Se houver grants/Data API, dados LGPD podem ficar expostos; tambem contradiz docs internas | Habilitar RLS e policies no remoto correto; decidir se policies serao permissivas ou restritivas por role/contexto |
 | P0 | Schema remoto atual nao tem `oficios` e tem tabela extra `notes` | Metadata remoto lista `notes`, mas nao `oficios`; local tem `oficios` | Codigo atual de secretaria/oficios pode quebrar em producao; tabela extra sugere drift/manual change | Rodar diff controlado e decidir se `notes` deve ser removida/migrada; aplicar migration `0012` no remoto correto |
@@ -97,7 +121,7 @@ Pontos relevantes dessas fontes:
 | P1 | `npm run test:db` falhava no local por contrato desatualizado | Falhas em colunas, enums e indices: DB tinha `oficios`, `official_letter_status`, `audit_entity_type=official_letter`; teste nao esperava esses itens | O principal gate de schema ficava vermelho; futuras mudancas de DB ficavam sem sinal confiavel | Remediado localmente: contrato atualizado e `npm run test:db` passa |
 | P1 | `monthly_payments` estava sem RLS/policies no local | Metadata local inicial: `monthly_payments: rls=false force=false policies=0` | Tabela financeira sensivel sem defense-in-depth; contradizia padrao documentado de RLS | Remediado localmente em `0013_db_contract_hardening.sql`; pendente aplicar no remoto correto |
 | P1 | Script documentado `db:supabase:status` estava quebrado | `package.json` apontava `tsx scripts/supabase-status.ts`; arquivo nao existia; README/CLAUDE/CONTRIBUTING citavam o comando | Operacao remota sem UI ficava indisponivel; docs enganavam o operador | Remediado localmente com `scripts/supabase-status.ts` e teste unitario |
-| P1 | Vercel remoto ainda mostra Framework Preset `Other` | `vercel project inspect asof-intranet` retornou Framework Preset `Other`, Build Command custom/default e Output Directory `public` ou `.`; repo tem `vercel.json` com `"framework": "nextjs"` | Deploy pode voltar ao erro `404 NOT_FOUND` por output estatico | Corrigir Project Settings na Vercel e confirmar com `vercel inspect`/smoke; manter `vercel.json` |
+| P1 | Vercel remoto mostrava Framework Preset `Other` | Remediado em 2026-05-17: `vercel project inspect asof-intranet` passou a mostrar `Framework Preset: Next.js`, build Next.js e output default | Se o setting regredir, deploy pode voltar ao erro `404 NOT_FOUND` por output estatico | Manter `vercel.json`, revalidar `vercel project inspect` antes de go-live e confirmar smoke em `/`, `/app` e `/login` |
 | P1 | `.vercel/.env.production.local` contem segredos e valores vazios criticos | Arquivo ignorado pelo git existe localmente; contem chaves Supabase/Vercel; tambem `DATABASE_URL`, `SESSION_SECRET` e `POSTGRES_*` vazios | Risco de exposicao local e confusao operacional; build local com env de producao pode falhar | Remover arquivo local quando nao necessario; rotacionar segredos se houve qualquer exposicao; usar `vercel env pull` sob demanda |
 | P2 | `SESSION_SECRET` estava inconsistente entre codigo e docs | `src/lib/env.ts` exigia `SESSION_SECRET`; `CONTRIBUTING.md` e `CLAUDE.md` dizem para nao reintroduzir requisito de JWT customizado | Build/deploy exigia env obsoleta ou docs ficavam incorretas | Remediado localmente: `envSchema` nao exige `SESSION_SECRET` |
 | P2 | Env local/remoto tem nomes duplicados e prioridades perigosas | Runtime prefere `DATABASE_URL`; Vercel tem `DATABASE_URL` e `POSTGRES_*` vazios em alguns arquivos locais; `DATABASE_POSTGRES_URL` existe | Uma env vazia ou errada pode mascarar a URL correta em build/runtime | Parcialmente remediado localmente: `envSchema` trata strings vazias opcionais como ausentes; matriz remota ainda pendente |
@@ -233,9 +257,9 @@ Foram inspecionados nomes de variaveis e presenca/ausencia de valores, mas valor
 
 ## Plano de correcao futuro recomendado
 
-1. Congelar o alvo remoto
+1. Alinhar o alvo remoto oficial
 
-   Definir qual Supabase e o ambiente oficial da intranet: `vmohxhyfgywaqfuqeuom` ou `uftzjmmfkoqhjjwsiynk`. Depois disso, alinhar `.mcp.json`, Vercel envs, docs e comandos operacionais. Nao aplicar migrations enquanto o alvo estiver ambiguo.
+   O Supabase oficial da intranet e `uftzjmmfkoqhjjwsiynk` (`db-intranet`). Alinhar `.mcp.json`, Vercel envs, docs e comandos operacionais para esse alvo. Nao aplicar migrations enquanto qualquer ferramenta ainda apontar para `vmohxhyfgywaqfuqeuom` sem justificativa explicita.
 
 2. Recuperar o estado remoto
 
@@ -257,9 +281,9 @@ Foram inspecionados nomes de variaveis e presenca/ausencia de valores, mas valor
 
    Restaurar `scripts/supabase-status.ts` com saida metadata-only segura ou remover `db:supabase:status` de `package.json` e docs. Como a preferencia operacional e evitar UI, a recomendacao e restaurar o script.
 
-7. Corrigir Vercel
+7. Verificar Vercel
 
-   Ajustar o Project Setting remoto para Next.js, remover output estatico indevido e confirmar:
+   O Project Setting remoto foi ajustado em 2026-05-17 para Next.js. Antes do go-live, revalidar:
 
    ```bash
    vercel project inspect asof-intranet

@@ -1,5 +1,6 @@
 'use client';
 
+import { isDomesticCountry } from '@/lib/associates/location-country';
 import { useState, useMemo, useTransition, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -72,10 +73,7 @@ const methodConfig: Record<string, { label: string; short: string; group: string
 };
 
 const locationGroup = (country: string | null): 'brasil' | 'exterior' => {
-  if (!country) return 'brasil';
-  const c = country.toLowerCase();
-  if (c === 'brasil' || c === 'brazil') return 'brasil';
-  return 'exterior';
+  return isDomesticCountry(country) ? 'brasil' : 'exterior';
 };
 
 type PaymentMethod = Payment['defaultPaymentMethod'];

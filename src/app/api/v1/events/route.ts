@@ -5,6 +5,7 @@ import { auditLogs } from '@/lib/db/schema';
 import { jsonError, jsonMethodNotAllowed, jsonOk } from '@/lib/integrations/http';
 import { dispatchDomainEventById, dispatchPendingDomainEvents } from '@/lib/integrations/webhooks/service';
 import { getClientIp, integrationRateLimiter } from '@/lib/integrations/rate-limit';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,18 +24,26 @@ async function auditEventDispatch(input: {
   limit: number | null;
   result: unknown;
 }) {
-  await db.insert(auditLogs).values({
-    action: input.action,
-    entityType: 'domain_event',
-    entityId: input.eventId,
-    performedBy: input.performedBy,
-    changes: null,
-    metadata: {
+  try {
+    await db.insert(auditLogs).values({
+      action: input.action,
+      entityType: 'domain_event',
+      entityId: input.eventId,
+      performedBy: input.performedBy,
+      changes: null,
+      metadata: {
+        eventId: input.eventId,
+        limit: input.limit,
+        result: input.result,
+      },
+    });
+  } catch (error) {
+    console.error('[events-route] failed to persist audit log', {
+      action: input.action,
       eventId: input.eventId,
-      limit: input.limit,
-      result: input.result,
-    },
-  });
+      error: toSafeErrorLog(error),
+    });
+  }
 }
 
 function getOperatorId(authorization: Extract<Awaited<ReturnType<typeof authorizeIntegrationRequest>>, { ok: true }>) {

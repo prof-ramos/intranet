@@ -3,11 +3,16 @@
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { ArrowRight, ChevronDown, Clock, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { compactActionClass, focusRingClass } from '@/lib/ui/tokens';
+import {
+  createQuickActivityAction,
+  getActivityTimelineAction,
+  updateActivityAction,
+} from './actions';
 import { ActivityCardContent } from './_board/ActivityCard';
 import { columns, defaultFilters } from './_board/constants';
 import { Drawer } from './_board/Drawer';
@@ -15,12 +20,14 @@ import { FilterBar } from './_board/FilterBar';
 import { QuickAdd } from './_board/QuickAdd';
 import { SummaryStrip } from './_board/SummaryStrip';
 import { daysFromToday, filterActivities, groupActivitiesByStatus, normalizeActivity } from './_board/helpers';
+import { buildBoardUrl, hasOpenActivity, parseOpenActivityId } from './_board/url-state';
+import { parsePositiveIntParam } from '@/lib/routing/params';
 import type {
+  ActivityTimelineItem,
   BoardActivity,
   BoardAssociate,
   BoardPerson,
   Filters,
-  PendingReassignment,
   Status,
 } from '@/lib/activities/types';
 
@@ -43,30 +50,24 @@ export function AtividadesBoard({
   associates,
   currentUser,
 }: AtividadesBoardProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const openFromUrl = parseOpenActivityId(searchParams);
   const [items, setItems] = useState(() => initialActivities.map(normalizeActivity));
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [compact, setCompact] = useState(false);
   const [collapsedDone, setCollapsedDone] = useState(false);
-  const [drawerId, setDrawerId] = useState<number | null>(() => {
-    const openId = searchParams.get('open');
-    if (openId) {
-      const parsed = Number(openId);
-      if (Number.isInteger(parsed) && parsed > 0) {
-        return parsed;
-      }
-    }
-    return null;
-  });
+  const [isPersisting, startPersistTransition] = useTransition();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const drawerId = openFromUrl;
 
   const [reassignActivity, setReassignActivity] = useState<BoardActivity | null>(null);
-  const [pendings, setPendings] = useState<PendingReassignment[]>([]);
+  const [drawerTimeline, setDrawerTimeline] = useState<ActivityTimelineItem[]>([]);
+  const [loadedDrawerTimelineId, setLoadedDrawerTimelineId] = useState<number | null>(null);
+  const [drawerTimelineError, setDrawerTimelineError] = useState<string | null>(null);
 
   const peopleById = useMemo(() => new Map(people.map((person) => [person.id, person])), [people]);
-  const pendingByActivity = useMemo(
-    () => new Map(pendings.map((pending) => [pending.activityId, pending])),
-    [pendings],
-  );
 
   const filtered = useMemo(
     () => filterActivities(items, filters, currentUser.id),
@@ -78,6 +79,51 @@ export function AtividadesBoard({
   const drawerActivity = drawerId
     ? (items.find((activity) => activity.id === drawerId) ?? null)
     : null;
+  const drawerTimelineLoading =
+    drawerId !== null && drawerActivity !== null && loadedDrawerTimelineId !== drawerId && !drawerTimelineError;
+
+  const syncDrawerUrl = useCallback((nextDrawerId: number | null) => {
+    router.replace(buildBoardUrl(pathname, searchParams, nextDrawerId), { scroll: false });
+  }, [pathname, router, searchParams]);
+
+  async function loadDrawerTimeline(activityId: number) {
+    try {
+      const timeline = await getActivityTimelineAction(activityId);
+      setDrawerTimeline(timeline);
+      setLoadedDrawerTimelineId(activityId);
+      setDrawerTimelineError(null);
+    } catch {
+      setDrawerTimeline([]);
+      setLoadedDrawerTimelineId(activityId);
+      setDrawerTimelineError('Não foi possível carregar o histórico desta atividade.');
+    }
+  }
+
+  function openDrawer(activityId: number) {
+    setDrawerTimeline([]);
+    setLoadedDrawerTimelineId(null);
+    setDrawerTimelineError(null);
+    syncDrawerUrl(activityId);
+  }
+
+  useEffect(() => {
+    if (
+      drawerActivity
+      && drawerTimelineLoading
+      && drawerTimeline.length === 0
+      && !drawerTimelineError
+    ) {
+      queueMicrotask(() => {
+        void loadDrawerTimeline(drawerActivity.id);
+      });
+    }
+  }, [drawerActivity, drawerTimelineError, drawerTimelineLoading, drawerTimeline.length]);
+
+  useEffect(() => {
+    if (hasOpenActivity(drawerId, items)) return;
+
+    syncDrawerUrl(null);
+  }, [drawerId, items, syncDrawerUrl]);
 
   function updateActivity(id: number, patch: Partial<BoardActivity>) {
     setItems((activities) =>
@@ -92,40 +138,85 @@ export function AtividadesBoard({
     );
   }
 
-  function handleDrawerChange(
-    patch: Partial<BoardActivity> | { acceptReassign: string } | { rejectReassign: string },
+  function persistActivityPatch(
+    id: number,
+    previous: Pick<BoardActivity, 'status' | 'priority' | 'dueDate' | 'completedAt' | 'assigneeId'>,
+    patch: {
+      status?: Status;
+      priority?: BoardActivity['priority'];
+      dueDate?: string | null;
+      assigneeId?: number | null;
+      reassignmentMessage?: string | null;
+    },
   ) {
-    if ('acceptReassign' in patch) {
-      const pending = pendings.find((item) => item.id === patch.acceptReassign);
-      if (pending) {
-        updateActivity(pending.activityId, { assigneeId: pending.toUserId });
-        setPendings((current) => current.filter((item) => item.id !== patch.acceptReassign));
-      }
-      return;
-    }
+    setErrorMessage(null);
+    startPersistTransition(() => {
+      void updateActivityAction({
+        id,
+        status: patch.status,
+        priority: patch.priority,
+        dueDate: patch.dueDate,
+        assigneeId: patch.assigneeId,
+        reassignmentMessage: patch.reassignmentMessage,
+      })
+        .then((persisted) => {
+          updateActivity(id, {
+            ...persisted,
+            assigneeName:
+              persisted.assigneeId != null ? (peopleById.get(persisted.assigneeId)?.name ?? null) : null,
+          });
+          if (drawerId === id) {
+            setDrawerTimeline([]);
+            setLoadedDrawerTimelineId(null);
+            setDrawerTimelineError(null);
+          }
+        })
+        .catch(() => {
+          updateActivity(id, previous);
+          setErrorMessage('Não foi possível salvar a atividade. Tente novamente.');
+        });
+    });
+  }
 
-    if ('rejectReassign' in patch) {
-      setPendings((current) => current.filter((item) => item.id !== patch.rejectReassign));
-      return;
-    }
-
+  function handleDrawerChange(patch: Partial<BoardActivity>) {
     if (!drawerId) return;
     const current = items.find((activity) => activity.id === drawerId);
+    if (!current) return;
     const nextPatch = { ...patch };
     if (nextPatch.status === 'concluido' && current?.status !== 'concluido') {
       nextPatch.completedAt = new Date().toISOString().slice(0, 10);
     }
+    if (current.status === 'concluido' && nextPatch.status && nextPatch.status !== 'concluido') {
+      nextPatch.completedAt = null;
+    }
     updateActivity(drawerId, nextPatch);
+    persistActivityPatch(
+      drawerId,
+      {
+        status: current.status,
+        priority: current.priority,
+        dueDate: current.dueDate,
+        completedAt: current.completedAt,
+        assigneeId: current.assigneeId,
+      },
+      {
+        status: nextPatch.status,
+        priority: nextPatch.priority,
+        dueDate: nextPatch.dueDate,
+        assigneeId: nextPatch.assigneeId,
+      },
+    );
   }
 
   function handleDragEnd(result: DropResult) {
     if (!result.destination) return;
-    const id = Number(result.draggableId);
+    const id = parsePositiveIntParam(result.draggableId);
+    if (id == null) return;
     const newStatus = result.destination.droppableId as Status;
     if (result.source.droppableId === newStatus) return;
     const current = items.find((a) => a.id === id);
     if (!current) return;
-    updateActivity(id, {
+    const nextPatch = {
       status: newStatus,
       completedAt:
         newStatus === 'concluido'
@@ -133,29 +224,30 @@ export function AtividadesBoard({
           : current?.status === 'concluido'
             ? null
             : current?.completedAt ?? null,
-    });
+    } satisfies Partial<BoardActivity>;
+    updateActivity(id, nextPatch);
+    persistActivityPatch(
+      id,
+      {
+        status: current.status,
+        priority: current.priority,
+        dueDate: current.dueDate,
+        completedAt: current.completedAt,
+        assigneeId: current.assigneeId,
+      },
+      { status: newStatus },
+    );
   }
 
-  function handleAdd(title: string, status: Status) {
-    const id = Math.max(0, ...items.map((activity) => activity.id)) + 1;
-    setItems((activities) => [
-      ...activities,
-      {
-        id,
-        title,
-        status,
-        priority: 'normal',
-        dueDate: null,
-        completedAt: null,
-        assigneeId: currentUser.id,
-        assigneeName: currentUser.name,
-        associateId: null,
-        associateName: null,
-        tags: [],
-        description: null,
-        dueOffset: null,
-      },
-    ]);
+  async function handleAdd(title: string, status: Status) {
+    setErrorMessage(null);
+    try {
+      const created = await createQuickActivityAction({ title, status });
+      setItems((activities) => [...activities, normalizeActivity(created)]);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Não foi possível criar a atividade.');
+      throw error;
+    }
   }
 
   return (
@@ -179,7 +271,7 @@ export function AtividadesBoard({
       </div>
 
       <SummaryStrip
-        activities={items}
+        activities={filtered}
         onLateClick={() => setFilters({ ...filters, dueLate: true, dueWeek: false })}
       />
 
@@ -281,11 +373,11 @@ export function AtividadesBoard({
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
                                   style={{ marginBottom: 8, ...dragProvided.draggableProps.style }}
-                                  onClick={() => setDrawerId(activity.id)}
+                                  onClick={() => openDrawer(activity.id)}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                       e.preventDefault();
-                                      setDrawerId(activity.id);
+                                      openDrawer(activity.id);
                                     }
                                   }}
                                 >
@@ -293,7 +385,6 @@ export function AtividadesBoard({
                                     activity={activity}
                                     peopleById={peopleById}
                                     compact={compact}
-                                    hasPending={pendingByActivity.has(activity.id)}
                                   />
                                 </div>
                               )}
@@ -316,20 +407,32 @@ export function AtividadesBoard({
 
       <div className="text-[rgba(13,31,60,0.55)] mt-5 flex items-center gap-2 text-xs">
         <Clock size={14} aria-hidden="true" />
-        Reatribuições aparecem como pendentes até o destinatário aceitar.
+        Alterações no quadro são salvas imediatamente e entram no histórico da atividade.
         <ArrowRight size={14} aria-hidden="true" />
       </div>
+
+      {(isPersisting || errorMessage) && (
+        <div className="mt-3 text-xs">
+          {isPersisting && !errorMessage && (
+            <p className="m-0 text-[rgba(13,31,60,0.55)]">Salvando alterações da atividade...</p>
+          )}
+          {errorMessage && <p className="m-0 text-[#b42318]">{errorMessage}</p>}
+        </div>
+      )}
 
       <Drawer
         activity={drawerActivity}
         people={people}
         peopleById={peopleById}
-        pending={
-          drawerActivity && pendingByActivity.get(drawerActivity.id)?.toUserId === currentUser.id
-            ? pendingByActivity.get(drawerActivity.id)
-            : undefined
-        }
-        onClose={() => setDrawerId(null)}
+        timeline={drawerTimeline}
+        timelineLoading={drawerTimelineLoading}
+        timelineError={drawerTimelineError}
+        onClose={() => {
+          setDrawerTimeline([]);
+          setLoadedDrawerTimelineId(null);
+          setDrawerTimelineError(null);
+          syncDrawerUrl(null);
+        }}
         onChange={handleDrawerChange}
         onRequestReassign={() => {
           if (drawerActivity) setReassignActivity(drawerActivity);
@@ -341,18 +444,30 @@ export function AtividadesBoard({
           activity={reassignActivity}
           people={people}
           onClose={() => setReassignActivity(null)}
-          onSubmit={(toUserId, message) => {
-            setPendings((current) => [
-              ...current,
-              {
-                id: `pending-${Date.now()}`,
-                activityId: reassignActivity.id,
-                fromUserId: currentUser.id,
-                toUserId,
-                message,
-              },
-            ]);
+          onSubmit={async (toUserId, message) => {
+            const activity = reassignActivity;
+            if (!activity) return;
+            setErrorMessage(null);
+            const previous = {
+              status: activity.status,
+              priority: activity.priority,
+              dueDate: activity.dueDate,
+              completedAt: activity.completedAt,
+              assigneeId: activity.assigneeId,
+            } satisfies Pick<
+              BoardActivity,
+              'status' | 'priority' | 'dueDate' | 'completedAt' | 'assigneeId'
+            >;
+
+            updateActivity(activity.id, {
+              assigneeId: toUserId,
+              assigneeName: peopleById.get(toUserId)?.name ?? null,
+            });
             setReassignActivity(null);
+            persistActivityPatch(activity.id, previous, {
+              assigneeId: toUserId,
+              reassignmentMessage: message,
+            });
           }}
         />
       )}

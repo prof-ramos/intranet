@@ -196,6 +196,26 @@ export async function lockAndFetchDispatchableEvents(
   return rows as DomainEvent[];
 }
 
+export async function claimDispatchableDomainEventById(
+  id: number,
+  executor: typeof db = db,
+): Promise<DomainEvent | null> {
+  if (!Number.isInteger(id) || id < 1) {
+    throw new Error('id must be a positive integer.');
+  }
+
+  const rows = await executor.execute<DomainEvent>(sql`
+    UPDATE domain_events
+    SET delivery_status = 'processing',
+        updated_at = now()
+    WHERE id = ${id}
+      AND delivery_status IN ('pending', 'partially_delivered', 'failed')
+    RETURNING *
+  `);
+
+  return (rows as DomainEvent[])[0] ?? null;
+}
+
 /**
  * Retrieve domain events whose overall delivery status is "failed",
  * meaning all subscriptions have permanently failed (exhausted retries

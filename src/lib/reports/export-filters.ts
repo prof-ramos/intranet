@@ -1,6 +1,10 @@
 import type { getAssociatesForReport } from '@/lib/reports/queries';
+import { parsePositiveIntParam } from '@/lib/routing/params';
+import { ASSOCIATE_EXPORT_FIELDS } from '@/lib/associates/lgpd';
 
 export type ReportFilters = NonNullable<Parameters<typeof getAssociatesForReport>[0]>;
+
+const ALLOWED_EXPORT_FIELD_KEYS = new Set(ASSOCIATE_EXPORT_FIELDS.map((field) => field.key));
 
 function isFunctionalStatus(v: string): v is 'ativo' | 'aposentado' | 'cedido' | 'em_licenca' {
   return ['ativo', 'aposentado', 'cedido', 'em_licenca'].includes(v);
@@ -49,14 +53,18 @@ export function parseReportExportParams(searchParams: URLSearchParams): {
 
   const birthMonthParam = searchParams.get('birthMonth');
   if (birthMonthParam && birthMonthParam !== 'todos') {
-    const month = parseInt(birthMonthParam, 10);
-    if (month >= 1 && month <= 12) {
+    const month = parsePositiveIntParam(birthMonthParam);
+    if (month !== null && month <= 12) {
       filters.birthMonth = month;
     }
   }
 
   return {
     filters,
-    selectedKeys: searchParams.getAll('fields'),
+    selectedKeys: searchParams
+      .getAll('fields')
+      .filter((field, index, fields) =>
+        ALLOWED_EXPORT_FIELD_KEYS.has(field) && fields.indexOf(field) === index,
+      ),
   };
 }

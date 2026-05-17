@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 export default function AppError({
   error,
@@ -11,7 +12,7 @@ export default function AppError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('App error boundary caught:', error);
+    console.error('App error boundary caught:', toSafeErrorLog(error));
   }, [error]);
 
   return (

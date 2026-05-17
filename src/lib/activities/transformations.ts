@@ -1,5 +1,6 @@
 import { dateOnly, daysFromToday } from '@/lib/utils/date';
 import type { BoardActivity, Filters, Status } from './types';
+import { parsePositiveIntParam } from '@/lib/routing/params';
 
 export { dateOnly, daysFromToday };
 
@@ -25,14 +26,14 @@ export function filterActivities(
       return false;
     }
     if (filters.assignee) {
-      const assigneeId = Number(filters.assignee);
-      if (Number.isFinite(assigneeId) && activity.assigneeId !== assigneeId) return false;
+      const assigneeId = parsePositiveIntParam(filters.assignee);
+      if (assigneeId !== null && activity.assigneeId !== assigneeId) return false;
     }
     if (filters.priority && activity.priority !== filters.priority) return false;
     if (filters.associate === '__any' && activity.associateId == null) return false;
     if (filters.associate && filters.associate !== '__any') {
-      const associateId = Number(filters.associate);
-      if (Number.isFinite(associateId) && activity.associateId !== associateId) return false;
+      const associateId = parsePositiveIntParam(filters.associate);
+      if (associateId !== null && activity.associateId !== associateId) return false;
     }
     if (filters.dueWeek) {
       const offset = activity.dueOffset;
@@ -60,4 +61,28 @@ export function groupActivitiesByStatus(activities: BoardActivity[]): Record<Sta
     result[activity.status].push(activity);
   }
   return result;
+}
+
+export function summarizeActivities(activities: BoardActivity[]): {
+  byStatus: Record<Status, number>;
+  late: number;
+  total: number;
+} {
+  const byStatus: Record<Status, number> = {
+    a_fazer: 0,
+    em_andamento: 0,
+    aguardando_terceiros: 0,
+    concluido: 0,
+  };
+  let late = 0;
+
+  for (const activity of activities) {
+    byStatus[activity.status] += 1;
+    const offset = activity.dueOffset;
+    if (offset !== null && offset < 0 && activity.status !== 'concluido') {
+      late += 1;
+    }
+  }
+
+  return { byStatus, late, total: activities.length };
 }

@@ -46,7 +46,7 @@ export async function createNotification(input: NewNotification, tx: Notificatio
     .select()
     .from(notifications)
     .where(and(eq(notifications.userId, input.userId), eq(notifications.dedupeKey, input.dedupeKey)))
-    .orderBy(desc(notifications.createdAt))
+    .orderBy(desc(notifications.createdAt), desc(notifications.id))
     .limit(1);
 
   return existing ?? null;

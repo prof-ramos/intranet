@@ -3,6 +3,8 @@ import { requireRole } from '@/lib/auth/authorization';
 import { findOfficialLetterById } from '@/lib/oficios/repository';
 import { generateOfficialLetterPdf } from '@/lib/oficios/pdf';
 import { logAuditAction } from '@/lib/audit/service';
+import { toSafeErrorLog } from '@/lib/error-log';
+import { parsePositiveIntParam } from '@/lib/routing/params';
 
 const ALLOWED_ROLES = ['admin', 'diretoria', 'secretaria'] as const;
 
@@ -11,12 +13,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-
-  if (!/^\d+$/.test(id)) {
+  const officialLetterId = parsePositiveIntParam(id);
+  if (officialLetterId == null) {
     return new NextResponse('ID inválido', { status: 400 });
   }
-
-  const officialLetterId = parseInt(id);
   const user = await requireRole(ALLOWED_ROLES);
 
   let oficio: Awaited<ReturnType<typeof findOfficialLetterById>>;
@@ -31,7 +31,7 @@ export async function GET(
 
     pdfBytes = await generateOfficialLetterPdf(oficio);
   } catch (error) {
-    console.error('PDF download failed for oficio', officialLetterId, error);
+    console.error('PDF download failed for oficio', officialLetterId, toSafeErrorLog(error));
     return new NextResponse('Erro ao gerar PDF', { status: 500 });
   }
 

@@ -6,6 +6,7 @@ import * as repository from '@/lib/oficios/repository';
 import { generateOfficialLetterContent } from '@/lib/ai/gemini';
 import { officialLetterFormSchema, type OfficialLetterFormValues } from '@/lib/oficios/validations';
 import { revalidatePath } from 'next/cache';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 const ALLOWED_ROLES = ['admin', 'diretoria', 'secretaria'] as const;
 const MAX_OFFICIAL_LETTERS_LIMIT = 1000;
@@ -32,7 +33,7 @@ export async function generateAiTextAction(params: {
   try {
     return { success: true, text: await generateOfficialLetterContent(params) };
   } catch (error) {
-    console.error('AI Generation Error:', error);
+    console.error('AI Generation Error:', toSafeErrorLog(error));
     return { success: false, error: 'Falha ao gerar sugestão com IA.' };
   }
 }
@@ -47,7 +48,7 @@ export async function saveOfficialLetterAction(values: OfficialLetterFormValues)
     revalidatePath('/app/secretaria/oficios');
     return { success: true, data: result };
   } catch (error) {
-    console.error('Save Official Letter Error:', error);
+    console.error('Save Official Letter Error:', toSafeErrorLog(error));
     return { success: false, error: 'Falha ao salvar o ofício.' };
   }
 }
@@ -61,7 +62,7 @@ export async function updateOfficialLetterAction(id: number, values: Partial<Off
     revalidatePath(`/app/secretaria/oficios/${id}/editar`);
     return { success: true, data: result };
   } catch (error) {
-    console.error('Update Official Letter Error:', error);
+    console.error('Update Official Letter Error:', toSafeErrorLog(error));
     return { success: false, error: 'Falha ao atualizar o ofício.' };
   }
 }
@@ -74,7 +75,7 @@ export async function cancelOfficialLetterAction(id: number) {
     revalidatePath('/app/secretaria/oficios');
     return { success: true, data: result };
   } catch (error) {
-    console.error('Cancel Official Letter Error:', error);
+    console.error('Cancel Official Letter Error:', toSafeErrorLog(error));
     return { success: false, error: 'Falha ao cancelar o ofício.' };
   }
 }

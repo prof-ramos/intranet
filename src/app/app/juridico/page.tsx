@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { requireAuth } from '@/lib/auth/require-auth';
+import { buildJuridicoStatusSummary } from '@/lib/juridico/dashboard';
 import {
   countConsultationsByStatus,
   countConsultationsStale,
-  countConsultationsSlaOverdue,
+  countConsultationsSlaDueSoon,
   countConsultationsRespondedThisMonth,
   getPendingActions,
 } from '@/lib/juridico/queries';
@@ -42,6 +43,8 @@ export default async function JuridicoDashboardPage() {
   const [
     abertas,
     aguardandoEscritorio,
+    respondidasTotal,
+    arquivadas,
     semAtualizacao,
     slaVencendo,
     respondidasMes,
@@ -49,11 +52,20 @@ export default async function JuridicoDashboardPage() {
   ] = await Promise.all([
     countConsultationsByStatus('aberta'),
     countConsultationsByStatus('aguardando_escritorio'),
+    countConsultationsByStatus('respondida'),
+    countConsultationsByStatus('arquivada'),
     countConsultationsStale(7),
-    countConsultationsSlaOverdue(),
+    countConsultationsSlaDueSoon(),
     countConsultationsRespondedThisMonth(),
     getPendingActions(),
   ]);
+
+  const statusSummary = buildJuridicoStatusSummary({
+    aberta: abertas,
+    aguardando_escritorio: aguardandoEscritorio,
+    respondida: respondidasTotal,
+    arquivada: arquivadas,
+  });
 
   const cards = [
     { label: 'Consultas abertas', value: abertas, tone: 'neutral' as const },
@@ -209,25 +221,17 @@ export default async function JuridicoDashboardPage() {
             <h2 className="mb-3 font-serif text-lg font-bold">Status das consultas</h2>
             <ul className="flex flex-col gap-3">
               {Object.entries(LEGAL_CONSULTATION_STATUS_LABELS).map(([status, label]) => {
-                const countValue =
-                  status === 'aberta'
-                    ? abertas
-                    : status === 'aguardando_escritorio'
-                      ? aguardandoEscritorio
-                      : status === 'respondida'
-                        ? respondidasMes
-                        : 0;
                 return (
                   <li key={status} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span style={{ color: textSecondary }}>
                         {statusIcons[status as LegalConsultationStatus]}
                       </span>
-                      <p className="text-sm font-medium">
-                        {status === 'respondida' ? `${label} (este mês)` : label}
-                      </p>
+                      <p className="text-sm font-medium">{label}</p>
                     </div>
-                    <span className="font-sans text-sm font-bold">{countValue}</span>
+                    <span className="font-sans text-sm font-bold">
+                      {statusSummary[status as LegalConsultationStatus]}
+                    </span>
                   </li>
                 );
               })}

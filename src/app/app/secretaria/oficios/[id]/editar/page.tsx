@@ -2,6 +2,7 @@ import { OficioForm } from '../../_components/OficioForm';
 import { getOfficialLetterAction } from '../../actions';
 import { textMuted } from '@/lib/ui/tokens';
 import { notFound } from 'next/navigation';
+import { parsePositiveIntParam } from '@/lib/routing/params';
 
 export default async function EditarOficioPage({
   params,
@@ -9,9 +10,9 @@ export default async function EditarOficioPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const officialLetterId = parseInt(id);
+  const officialLetterId = parsePositiveIntParam(id);
 
-  if (isNaN(officialLetterId)) notFound();
+  if (officialLetterId == null) notFound();
 
   const oficio = await getOfficialLetterAction(officialLetterId);
   if (!oficio) notFound();

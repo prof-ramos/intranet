@@ -10,6 +10,22 @@ import {
 let adminClient: ReturnType<typeof createClient> | null = null;
 let anonClient: ReturnType<typeof createClient> | null = null;
 
+function getStorageClientOptions(accessToken?: string) {
+  return {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+    global: accessToken
+      ? {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      : undefined,
+  };
+}
+
 /**
  * SERVER-ONLY admin storage client. Uses the service-role key and bypasses RLS;
  * callers must enforce authorization before invoking storage operations.
@@ -19,12 +35,11 @@ export function getSupabaseAdminStorageClient() {
     throw new Error('Supabase admin client is server-only.');
   }
 
-  adminClient ??= createClient(getSupabaseUrl(), getSupabaseServiceRoleKey(), {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
+  adminClient ??= createClient(
+    getSupabaseUrl(),
+    getSupabaseServiceRoleKey(),
+    getStorageClientOptions(),
+  );
 
   return adminClient;
 }
@@ -35,10 +50,19 @@ export function getSupabaseAdminStorageClient() {
  * Pass accessToken (from session) so RLS policies can evaluate auth.uid().
  */
 export function getSupabaseAnonStorageClient(accessToken?: string) {
-  anonClient ??= createClient(getSupabaseUrl(), getSupabasePublishableKey());
   if (accessToken) {
-    anonClient.auth.setSession({ access_token: accessToken, refresh_token: '' });
+    return createClient(
+      getSupabaseUrl(),
+      getSupabasePublishableKey(),
+      getStorageClientOptions(accessToken),
+    );
   }
+
+  anonClient ??= createClient(
+    getSupabaseUrl(),
+    getSupabasePublishableKey(),
+    getStorageClientOptions(),
+  );
   return anonClient;
 }
 

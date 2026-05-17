@@ -1,6 +1,6 @@
-import { asc, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { activities, admins, associates } from '@/lib/db/schema';
+import { activities, admins, associates, auditLogs, type Activity } from '@/lib/db/schema';
 import type { BoardActivity, Priority, Status } from './types';
 
 const DEFAULT_ACTIVITY_LIMIT = 200;
@@ -135,4 +135,55 @@ export async function insertActivity(input: {
     })
     .returning();
   return row;
+}
+
+export async function findActivityById(id: number): Promise<Activity | null> {
+  const [row] = await db.select().from(activities).where(eq(activities.id, id)).limit(1);
+  return row ?? null;
+}
+
+export async function updateActivityById(
+  id: number,
+  patch: Partial<Pick<Activity, 'status' | 'priority' | 'dueDate' | 'completedAt' | 'assigneeId'>>,
+): Promise<Activity | null> {
+  const [row] = await db
+    .update(activities)
+    .set({
+      ...patch,
+      updatedAt: sql`now()`,
+    })
+    .where(eq(activities.id, id))
+    .returning();
+
+  return row ?? null;
+}
+
+interface ActivityTimelineRow {
+  id: number;
+  action: string;
+  actorName: string | null;
+  createdAt: Date;
+  changes: {
+    old: Record<string, unknown>;
+    new: Record<string, unknown>;
+  } | null;
+}
+
+export async function listActivityTimeline(
+  activityId: number,
+  limit = 10,
+): Promise<ActivityTimelineRow[]> {
+  return db
+    .select({
+      id: auditLogs.id,
+      action: auditLogs.action,
+      actorName: admins.name,
+      createdAt: auditLogs.createdAt,
+      changes: auditLogs.changes,
+    })
+    .from(auditLogs)
+    .leftJoin(admins, eq(auditLogs.performedBy, admins.id))
+    .where(and(eq(auditLogs.entityType, 'activity'), eq(auditLogs.entityId, activityId)))
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(Math.min(Math.max(limit, 1), 20)) as Promise<ActivityTimelineRow[]>;
 }

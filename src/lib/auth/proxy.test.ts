@@ -3,6 +3,7 @@ import { proxy } from '@/proxy';
 
 let skipAuth = false;
 let mockUser: { email?: string | null } | null = null;
+let mockGetUserError: Error | null = null;
 const mockNext = vi.fn(() => ({ type: 'next' }));
 const mockRedirect = vi.fn((url: URL) => ({ type: 'redirect', url: url.toString() }));
 const mockGetResponse = vi.fn(() => ({ type: 'response' }));
@@ -15,7 +16,11 @@ vi.mock('@/lib/supabase/proxy', () => ({
   createProxySupabaseClient: vi.fn(() => ({
     client: {
       auth: {
-        getUser: vi.fn(() => Promise.resolve({ data: { user: mockUser } })),
+        getUser: vi.fn(() =>
+          mockGetUserError
+            ? Promise.reject(mockGetUserError)
+            : Promise.resolve({ data: { user: mockUser } }),
+        ),
       },
     },
     getResponse: mockGetResponse,
@@ -44,6 +49,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   skipAuth = false;
   mockUser = null;
+  mockGetUserError = null;
 });
 
 describe('proxy', () => {
@@ -75,5 +81,24 @@ describe('proxy', () => {
 
     await expect(proxy(createRequest('/app/associados'))).resolves.toEqual({ type: 'response' });
     expect(mockGetResponse).toHaveBeenCalledOnce();
+  });
+
+  it('logs a safe warning when Supabase user lookup fails', async () => {
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockGetUserError = Object.assign(new Error('token=secret'), { code: 'E_AUTH' });
+
+    await expect(proxy(createRequest('/app'))).resolves.toEqual({
+      type: 'redirect',
+      url: 'http://localhost:3000/login',
+    });
+    expect(consoleWarnSpy).toHaveBeenCalledWith('[Auth proxy] Supabase user lookup failed.', {
+      error: {
+        kind: 'error',
+        name: 'Error',
+        code: 'E_AUTH',
+        digest: undefined,
+      },
+    });
+    consoleWarnSpy.mockRestore();
   });
 });

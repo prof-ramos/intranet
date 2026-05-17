@@ -37,7 +37,11 @@ export function isSkipAuthEnabled(env: AuthEnv = process.env): boolean {
 function parseDevUserId(value: string | undefined): number {
   if (!value) return DEFAULT_DEV_USER.userId;
 
-  const userId = Number(value);
+  if (!/^\d+$/.test(value)) {
+    throw new Error('DEV_USER_ID must be a positive integer when SKIP_AUTH=true.');
+  }
+
+  const userId = Number.parseInt(value, 10);
   if (!Number.isInteger(userId) || userId < 1) {
     throw new Error('DEV_USER_ID must be a positive integer when SKIP_AUTH=true.');
   }

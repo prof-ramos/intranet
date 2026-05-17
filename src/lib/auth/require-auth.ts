@@ -5,6 +5,7 @@ import { getSession } from '@/lib/auth/session';
 import { type AuthUser } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 export const requireAuth = cache(async (): Promise<AuthUser> => {
   const session = await getSession();
@@ -37,8 +38,8 @@ export const requireAuth = cache(async (): Promise<AuthUser> => {
       .where(eq(admins.id, session.userId))
       .limit(1);
     admin = result[0];
-  } catch {
-    console.error('requireAuth DB query failed');
+  } catch (error) {
+    console.error('requireAuth DB query failed', { error: toSafeErrorLog(error) });
     redirect('/login');
   }
 

@@ -1,5 +1,5 @@
-import { ACTIVITY_STATUSES } from './types';
-import type { Status } from './types';
+import { ACTIVITY_PRIORITIES, ACTIVITY_STATUSES } from './types';
+import type { Priority, Status } from './types';
 import { statusStyles } from '@/lib/ui/tokens';
 
 export const ACTIVITY_STATUS_LABELS: Record<Status, string> = {
@@ -17,6 +17,10 @@ export const ACTIVITY_STATUS_OPTIONS = ACTIVITY_STATUSES.map((value) => ({
 
 export function isActivityStatus(value: string): value is Status {
   return ACTIVITY_STATUSES.includes(value as Status);
+}
+
+export function isActivityPriority(value: string): value is Priority {
+  return ACTIVITY_PRIORITIES.includes(value as Priority);
 }
 
 export function getActivityStatusLabel(value: string): string {

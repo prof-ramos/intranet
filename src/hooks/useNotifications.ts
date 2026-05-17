@@ -7,19 +7,15 @@ import {
   markNotificationReadAction,
 } from '@/app/app/notifications/actions';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
-export interface NotificationItem {
-  id: number;
-  userId: number | null;
-  actorId: number | null;
-  type: string;
-  title: string;
-  message: string;
-  href: string | null;
-  entityType: string | null;
-  entityId: number | null;
-  readAt: string | null;
-  createdAt: string;
-}
+import {
+  countUnread,
+  extractNotifications,
+  normalizeNotification,
+  removeNotificationById,
+  type NotificationItem,
+  type NotificationLike,
+  upsertNotification,
+} from './notifications-normalize';
 
 interface UseNotificationsOptions {
   userId: number;
@@ -35,24 +31,6 @@ interface UseNotificationsResult {
   refresh: () => Promise<void>;
 }
 
-type NotificationLike = Partial<NotificationItem> & {
-  id?: string | number | null;
-  createdAt?: string | Date | null;
-  readAt?: string | Date | null;
-  userId?: string | number | null;
-  user_id?: string | number | null;
-  actorId?: string | number | null;
-  actor_id?: string | number | null;
-  entityType?: string | null;
-  entity_type?: string | null;
-  entityId?: string | number | null;
-  entity_id?: string | number | null;
-  href?: string | null;
-  title?: string | null;
-  message?: string | null;
-  type?: string | null;
-};
-
 type NotificationsListPayload =
   | NotificationLike[]
   | {
@@ -61,69 +39,6 @@ type NotificationsListPayload =
       data?: NotificationLike[];
       unreadCount?: number;
     };
-
-function toIsoString(value: string | Date | null | undefined): string | null {
-  if (!value) {
-    return null;
-  }
-
-  if (typeof value === 'string') {
-    return value;
-  }
-
-  return value.toISOString();
-}
-
-function toNumber(value: string | number | null | undefined): number | null {
-  if (value == null || value === '') {
-    return null;
-  }
-
-  const parsed = typeof value === 'number' ? value : Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function normalizeNotification(raw: NotificationLike): NotificationItem | null {
-  const id = toNumber(raw.id);
-
-  if (!id) {
-    return null;
-  }
-
-  const createdAt = toIsoString(raw.createdAt) ?? new Date().toISOString();
-
-  return {
-    id,
-    userId: toNumber(raw.userId ?? raw.user_id),
-    actorId: toNumber(raw.actorId ?? raw.actor_id),
-    type: raw.type ?? 'notification',
-    title: raw.title ?? 'Notificação',
-    message: raw.message ?? '',
-    href: raw.href ?? null,
-    entityType: raw.entityType ?? raw.entity_type ?? null,
-    entityId: toNumber(raw.entityId ?? raw.entity_id),
-    readAt: toIsoString(raw.readAt),
-    createdAt,
-  };
-}
-
-function sortNotifications(items: NotificationItem[]) {
-  return [...items].sort((left, right) => {
-    return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
-  });
-}
-
-function countUnread(items: NotificationItem[]) {
-  return items.reduce((count, item) => count + (item.readAt ? 0 : 1), 0);
-}
-
-function extractNotifications(payload: NotificationsListPayload): NotificationItem[] {
-  const rawItems = Array.isArray(payload)
-    ? payload
-    : payload.notifications ?? payload.items ?? payload.data ?? [];
-
-  return sortNotifications(rawItems.map(normalizeNotification).filter((item): item is NotificationItem => item !== null));
-}
 
 export function useNotifications({ userId }: UseNotificationsOptions): UseNotificationsResult {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -162,9 +77,10 @@ export function useNotifications({ userId }: UseNotificationsOptions): UseNotifi
     try {
       await markNotificationReadAction(id);
       setError(null);
-    } catch {
+    } catch (error) {
       setNotifications(previous);
       setError('Não foi possível marcar a notificação como lida.');
+      throw error;
     }
   }, [notifications]);
 
@@ -233,13 +149,41 @@ export function useNotifications({ userId }: UseNotificationsOptions): UseNotifi
             return;
           }
 
-          setNotifications((current) => {
-            if (current.some((item) => item.id === nextItem.id)) {
-              return current;
-            }
+          setNotifications((current) => upsertNotification(current, nextItem));
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${String(userId)}`,
+        },
+        (payload: { new: Record<string, unknown> }) => {
+          const nextItem = normalizeNotification(payload.new as NotificationLike);
+          if (!nextItem) {
+            return;
+          }
 
-            return sortNotifications([nextItem, ...current]);
-          });
+          setNotifications((current) => upsertNotification(current, nextItem));
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${String(userId)}`,
+        },
+        (payload: { old: Record<string, unknown> }) => {
+          const removedId = normalizeNotification(payload.old as NotificationLike)?.id;
+          if (removedId == null) {
+            return;
+          }
+
+          setNotifications((current) => removeNotificationById(current, removedId));
         },
       )
       .subscribe();

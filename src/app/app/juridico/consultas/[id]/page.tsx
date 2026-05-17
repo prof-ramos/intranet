@@ -11,6 +11,7 @@ import { updateConsultationStatusFromForm, addNote } from '@/app/app/juridico/ac
 import { formatDate, daysSince } from '@/lib/utils/date';
 import { ArrowLeft, Clock, FileText, MessageSquare, Send, User } from 'lucide-react';
 import { hairline, focusRingClass } from '@/lib/ui/tokens';
+import { parsePositiveIntParam } from '@/lib/routing/params';
 import { StatusUpdater } from './StatusUpdater';
 
 export default async function ConsultaDetalhePage({
@@ -20,9 +21,9 @@ export default async function ConsultaDetalhePage({
 }) {
   await requireAuth();
   const { id } = await params;
-  const consultationId = Number(id);
+  const consultationId = parsePositiveIntParam(id);
 
-  if (!Number.isInteger(consultationId) || consultationId < 1) {
+  if (consultationId == null) {
     notFound();
   }
 

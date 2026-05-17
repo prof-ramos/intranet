@@ -1,8 +1,10 @@
+import { isDomesticCountrySql, isExteriorCountrySql } from '@/lib/associates/location-country';
 import { db } from '@/lib/db';
 import { monthlyPayments, paymentStatus, type NewMonthlyPayment } from '@/lib/db/schema/finance';
 import { associates } from '@/lib/db/schema/associates';
 import { and, eq, ilike, sql } from 'drizzle-orm';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
+import { effectivePaymentMethodSql } from './effective-payment';
 
 export interface MonthlyPaymentsFilters {
   q?: string;
@@ -60,9 +62,9 @@ export async function getAssociatesWithPayments(
 
   if (filters?.location) {
     if (filters.location === 'brasil') {
-      conditions.push(eq(associates.locationCountry, 'Brasil'));
+      conditions.push(isDomesticCountrySql(associates.locationCountry));
     } else if (filters.location === 'exterior') {
-      conditions.push(sql`${associates.locationCountry} IS DISTINCT FROM 'Brasil'`);
+      conditions.push(isExteriorCountrySql(associates.locationCountry));
     }
   }
 
@@ -77,7 +79,12 @@ export async function getAssociatesWithPayments(
   }
 
   if (filters?.method) {
-    conditions.push(eq(monthlyPayments.paymentMethod, filters.method));
+    conditions.push(
+      eq(
+        effectivePaymentMethodSql(monthlyPayments.paymentMethod, associates.paymentMethod),
+        filters.method,
+      ),
+    );
   }
 
   return db

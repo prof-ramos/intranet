@@ -10,6 +10,26 @@ export interface MonthlyPaymentsSearchParams {
   page: number;
 }
 
+export interface MonthlyPaymentsPageSearchParams {
+  year: number;
+  month: number;
+  filters: MonthlyPaymentsSearchParams;
+}
+
+function parseBoundedInteger(
+  value: string | undefined,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  if (!value || !/^\d+$/.test(value)) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isInteger(parsed) || parsed < min || parsed > max) {
+    return fallback;
+  }
+  return parsed;
+}
+
 export function parseMonthlyPaymentsSearchParams(params: {
   q?: string;
   status?: string;
@@ -27,6 +47,25 @@ export function parseMonthlyPaymentsSearchParams(params: {
     method: parsed.data.method,
     location: parsed.data.location,
     page: parsed.data.page,
+  };
+}
+
+export function parseMonthlyPaymentsPageSearchParams(
+  params: {
+    year?: string;
+    month?: string;
+    q?: string;
+    status?: string;
+    method?: string;
+    location?: string;
+    page?: string;
+  },
+  now = new Date(),
+): MonthlyPaymentsPageSearchParams {
+  return {
+    year: parseBoundedInteger(params.year, now.getFullYear(), 1900, 2100),
+    month: parseBoundedInteger(params.month, now.getMonth() + 1, 1, 12),
+    filters: parseMonthlyPaymentsSearchParams(params),
   };
 }
 

@@ -59,6 +59,13 @@ function isTimestampWithinTolerance(
   timestamp: string,
   toleranceSeconds: number,
 ): Extract<IntegrationAuthResult, { ok: false }> | { ok: true } {
+  if (!/^\d+$/.test(timestamp)) {
+    return {
+      ok: false,
+      reason: 'invalid_timestamp',
+    };
+  }
+
   const parsed = Number.parseInt(timestamp, 10);
   if (!Number.isFinite(parsed)) {
     return {

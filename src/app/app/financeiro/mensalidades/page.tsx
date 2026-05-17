@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { textMuted, navy, hairline, focusRingClass, skyBlue, infoBg, info } from '@/lib/ui/tokens';
 import { requireRole } from '@/lib/auth/authorization';
 import {
-  parseMonthlyPaymentsSearchParams,
+  parseMonthlyPaymentsPageSearchParams,
   buildMonthlyPaymentsSearchParams,
 } from '@/lib/finance/search-params';
 
@@ -28,21 +28,11 @@ const monthNames = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
 
-function parseSearchInteger(value: string | undefined, fallback: number): number {
-  if (!value) return fallback;
-  if (!/^\d+$/.test(value)) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isNaN(parsed) ? fallback : parsed;
-}
-
 export default async function MensalidadesPage({ searchParams }: PageProps) {
   await requireRole(['admin', 'diretoria']);
 
-  const params = await searchParams;
-  const now = new Date();
-  const currentYear = parseSearchInteger(params.year, now.getFullYear());
-  const currentMonth = parseSearchInteger(params.month, now.getMonth() + 1);
-  const currentFilters = parseMonthlyPaymentsSearchParams(params);
+  const { year: currentYear, month: currentMonth, filters: currentFilters } =
+    parseMonthlyPaymentsPageSearchParams(await searchParams);
   const initializeCurrentMonthAction = initializeMonthAction.bind(null, currentYear, currentMonth);
 
   const data = await getMonthlyPaymentsData(currentYear, currentMonth, {

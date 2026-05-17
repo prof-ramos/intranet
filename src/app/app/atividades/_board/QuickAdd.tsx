@@ -19,22 +19,30 @@ export function QuickAdd({
   onAdd,
 }: {
   columnKey: Status;
-  onAdd: (title: string, status: Status) => void;
+  onAdd: (title: string, status: Status) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
+  const [isPending, setIsPending] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open]);
 
-  function submit() {
+  async function submit() {
     const trimmed = title.trim();
-    if (!trimmed) return;
-    onAdd(trimmed, columnKey);
-    setTitle('');
-    setOpen(false);
+    if (!trimmed || isPending) return;
+    setIsPending(true);
+    try {
+      await onAdd(trimmed, columnKey);
+      setTitle('');
+      setOpen(false);
+    } catch {
+      // Parent surface renders the error feedback; keep the editor open for retry.
+    } finally {
+      setIsPending(false);
+    }
   }
 
   if (!open) {
@@ -64,7 +72,7 @@ export function QuickAdd({
         onKeyDown={(event) => {
           if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
-            submit();
+            void submit();
           }
           if (event.key === 'Escape') {
             setOpen(false);
@@ -82,11 +90,12 @@ export function QuickAdd({
       <div className="mt-1 flex gap-1.5">
         <button
           type="button"
-          onClick={submit}
+          onClick={() => void submit()}
+          disabled={isPending}
           className={['min-h-10 flex-1 rounded-[8px] px-4 text-[13px] font-semibold', focusRingClass].join(' ')}
           style={{ background: navy, color: buttonPrimaryText }}
         >
-          Adicionar
+          {isPending ? 'Salvando...' : 'Adicionar'}
         </button>
         <button
           type="button"
@@ -94,6 +103,7 @@ export function QuickAdd({
             setOpen(false);
             setTitle('');
           }}
+          disabled={isPending}
           className={['min-h-10 rounded-[8px] border px-4 text-[13px] font-semibold', focusRingClass].join(' ')}
           style={{ color: textStrong, borderColor: borderMuted, background: inputBg }}
         >

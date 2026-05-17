@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getSupabaseServiceRoleKey, getSupabaseUrl } from '@/lib/supabase/config';
 import type { AuthRole } from '@/lib/auth/config';
 import { logAuditAction } from '@/lib/audit/service';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 interface EnsureAdminAuthUserInput {
   email: string;
@@ -125,7 +126,7 @@ export async function deleteAdminAuthUser(email: string, adminId?: number) {
         metadata: { targetEmail: email, targetUserId: user.id },
       });
     } catch (auditError) {
-      console.error('Audit logging failed for deleteAdminAuthUser:', auditError);
+      console.error('Audit logging failed for deleteAdminAuthUser:', toSafeErrorLog(auditError));
       // Audit failure does not block deletion, but it is logged.
     }
   }

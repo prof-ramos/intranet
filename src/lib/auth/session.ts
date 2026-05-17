@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getDevAuthUser, isAuthRole, isSkipAuthEnabled, type SessionData } from '@/lib/auth/config';
 
@@ -19,6 +19,8 @@ export async function getSession(): Promise<SessionData | null> {
     return null;
   }
 
+  const normalizedEmail = user.email.trim().toLowerCase();
+
   const [admin] = await db
     .select({
       id: admins.id,
@@ -29,7 +31,7 @@ export async function getSession(): Promise<SessionData | null> {
       mustChangePassword: admins.mustChangePassword,
     })
     .from(admins)
-    .where(eq(admins.email, user.email.toLowerCase()))
+    .where(sql`lower(${admins.email}) = ${normalizedEmail}`)
     .limit(1);
 
   if (!admin || !admin.isActive || !isAuthRole(admin.role)) {

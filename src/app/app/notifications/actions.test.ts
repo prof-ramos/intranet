@@ -71,6 +71,14 @@ describe('notification actions', () => {
     expect(markNotificationAsReadForUser).not.toHaveBeenCalled();
   });
 
+  it('rejects non-decimal notification id encodings', async () => {
+    await expect(markNotificationReadAction('1e2')).rejects.toThrow('Notificação inválida.');
+    await expect(markNotificationReadAction({ id: '0x10' })).rejects.toThrow(
+      'Notificação inválida.',
+    );
+    expect(markNotificationAsReadForUser).not.toHaveBeenCalled();
+  });
+
   it('marks all notifications as read for the authenticated user', async () => {
     markAllNotificationsAsReadForUser.mockResolvedValue(5);
 

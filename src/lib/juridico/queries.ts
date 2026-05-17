@@ -2,7 +2,7 @@ import { unstable_cache } from 'next/cache';
 import {
   countConsultationsByStatus as repoCountByStatus,
   countConsultationsStale as repoCountStale,
-  countConsultationsSlaOverdue as repoCountSlaOverdue,
+  countConsultationsSlaDueSoon as repoCountSlaDueSoon,
   countConsultationsRespondedThisMonth as repoCountResponded,
   getConsultationById as repoGetById,
   getNotesByEntity as repoGetNotes,
@@ -27,11 +27,12 @@ export const countConsultationsStale = (days = 7) =>
     { revalidate: TTL_VOLATILE, tags: ['legal', 'dashboard'] },
   )();
 
-export const countConsultationsSlaOverdue = unstable_cache(
-  repoCountSlaOverdue,
-  ['consultations-sla-overdue'],
-  { revalidate: TTL_VOLATILE, tags: ['legal', 'dashboard'] },
-);
+export const countConsultationsSlaDueSoon = (days = 2) =>
+  unstable_cache(
+    async () => repoCountSlaDueSoon(days),
+    ['consultations-sla-due-soon', String(days)],
+    { revalidate: TTL_VOLATILE, tags: ['legal', 'dashboard'] },
+  )();
 
 export const countConsultationsRespondedThisMonth = unstable_cache(
   repoCountResponded,

@@ -41,6 +41,18 @@ function assertSafePath(path: string): void {
   }
 }
 
+function assertPositiveInteger(value: number, label: string): void {
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`${label} must be a positive integer.`);
+  }
+}
+
+function assertNonNegativeInteger(value: number, label: string): void {
+  if (!Number.isInteger(value) || value < 0) {
+    throw new Error(`${label} must be a non-negative integer.`);
+  }
+}
+
 export async function uploadFile(
   bucket: string,
   path: string,
@@ -65,6 +77,7 @@ export async function getSignedUrl(
 ): Promise<string> {
   assertSafeBucket(bucket);
   assertSafePath(path);
+  assertPositiveInteger(expiresIn, 'expiresIn');
 
   const { data, error } = await getSupabaseAdminStorageClient()
     .storage.from(bucket)
@@ -104,10 +117,14 @@ export async function listFiles(
 ): Promise<StorageFileObject[]> {
   assertSafeBucket(bucket);
   if (folder) assertSafePath(folder);
+  const limit = options?.limit ?? 100;
+  const offset = options?.offset ?? 0;
+  assertPositiveInteger(limit, 'limit');
+  assertNonNegativeInteger(offset, 'offset');
 
   const { data, error } = await getSupabaseAdminStorageClient()
     .storage.from(bucket)
-    .list(folder, { limit: options?.limit ?? 100, offset: options?.offset ?? 0 });
+    .list(folder, { limit, offset });
 
   if (error) throw new Error('Storage list failed.');
   return data;
