@@ -11,21 +11,6 @@ export interface MonthlyPaymentsFilters {
   location?: 'brasil' | 'exterior';
 }
 
-export async function getMonthlyPaymentsByMonth(year: number, month: number) {
-  return db
-    .select({
-      id: monthlyPayments.id,
-      associateId: monthlyPayments.associateId,
-      fullName: associates.fullName,
-      paymentMethod: monthlyPayments.paymentMethod,
-      status: monthlyPayments.status,
-      paidAt: monthlyPayments.paidAt,
-    })
-    .from(monthlyPayments)
-    .innerJoin(associates, eq(monthlyPayments.associateId, associates.id))
-    .where(and(eq(monthlyPayments.year, year), eq(monthlyPayments.month, month)));
-}
-
 export async function findMonthlyPayment(associateId: number, year: number, month: number) {
   const rows = await db
     .select()
