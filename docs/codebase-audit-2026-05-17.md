@@ -25,6 +25,15 @@ Resultado do baseline mais recente:
 - `test:db` verde
 - `build` verde
 
+Publicacao em `main`:
+
+- commit publicado: `4e9adfa chore: harden intranet modules`
+- remoto: `origin/main` em `4e9adfa5cb938fb020c114292929d1053a953737`
+- validacoes executadas antes do push: `npm run typecheck`, `npm run test`, `npm run lint` e `npm run build`
+- o push em `main` atualiza o codigo no GitHub, mas nao autoriza nem executa deploy de producao, migrations remotas ou alteracoes de env/secrets
+
+Observacao: antes do push final, `origin/main` havia avancado com `171d5e8 docs: adiciona jornada da usuaria Bruna - Controle Financeiro`; o commit de hardening foi rebaseado sobre esse ponto e entao publicado.
+
 ## Frentes auditadas e endurecidas
 
 ### 1. Auth e sessão

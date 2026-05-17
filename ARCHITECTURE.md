@@ -542,6 +542,13 @@ Antes de promover staging → produção:
 
 O repositório possui GitHub Actions em `.github/workflows/ci.yml` com lint, typecheck, testes unitários e build verification em `push`/`pull_request` para `main`. Para o primeiro go-live, deploy de produção e migrations são manuais após checklist e smoke. Push em `main` não deve ser tratado como autorização suficiente para publicar ou migrar produção.
 
+Estado validado em 2026-05-17:
+
+- `origin/main` foi atualizado para `4e9adfa chore: harden intranet modules`.
+- Antes do push foram executados `npm run typecheck`, `npm run test`, `npm run lint` e `npm run build` com sucesso.
+- O commit inclui endurecimento de parsing, logs seguros, actions/rotas, notificações, jurídico, financeiro, storage, integrações e testes dedicados.
+- Essa atualização de código não alterou Supabase remoto, Vercel env vars, secrets ou migrations de produção.
+
 ```bash
 vercel deploy --prod --yes
 ```

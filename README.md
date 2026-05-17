@@ -212,3 +212,8 @@ Detalhes de arquitetura, fluxo de dados e decisões técnicas: [`ARCHITECTURE.md
 Design system, tokens de cor e tipografia: [`DESIGN.md`](./DESIGN.md).
 Contexto institucional e vocabulário do domínio: [`AGENTS.md`](./AGENTS.md).
 Deploy target, env vars e checklist de release: seção 6 de [`ARCHITECTURE.md`](./ARCHITECTURE.md#6-deployment--infrastructure).
+
+Auditoria técnica e status operacional de 2026-05-17:
+
+- [`docs/codebase-audit-2026-05-17.md`](./docs/codebase-audit-2026-05-17.md) registra o hardening publicado em `main`, as validações locais e os riscos remanescentes.
+- [`docs/dbsave.md`](./docs/dbsave.md) mantém o estado Supabase/Postgres/Vercel, incluindo o que ainda depende de migração ou configuração remota manual.

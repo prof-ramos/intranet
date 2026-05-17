@@ -36,6 +36,14 @@ Atualizacao de validacao E2E em 2026-05-17:
 - Esse warning nao bloqueou migrations, seed nem os cenarios E2E. Ele indica apenas que o Postgres local nao esta configurado para logical replication/publications.
 - Como notificacoes realtime nao bloqueiam o primeiro go-live, esse warning local deve ser tratado como ruido operacional conhecido, nao como falha funcional do app.
 
+Atualizacao de publicacao do codigo em 2026-05-17:
+
+- A `main` local foi rebaseada sobre `origin/main` apos o remoto avancar para `171d5e8`.
+- O commit `4e9adfa chore: harden intranet modules` foi publicado em `origin/main`.
+- Validacoes executadas antes da publicacao: `npm run typecheck`, `npm run test` (`100` arquivos, `731` testes), `npm run lint` e `npm run build`.
+- Esta publicacao nao aplicou migrations no Supabase remoto, nao alterou env vars/secrets na Vercel e nao executou deploy de producao.
+- O status operacional abaixo continua valido: reconciliacao do Supabase remoto correto, RLS/Data API, migrations remotas e go-live seguem como etapas manuais separadas.
+
 ## Resumo executivo
 
 A configuracao atual ainda tem divergencias criticas entre o repositorio, o banco local, o Supabase remoto e o projeto Vercel. O risco principal nao e apenas uma migration pendente: ha sinais de que o ambiente remoto atualmente configurado nao e o mesmo ambiente historicamente validado, nao tem historico Drizzle aplicado, esta sem RLS nas tabelas publicas e nao possui todo o schema esperado pelo codigo atual.
