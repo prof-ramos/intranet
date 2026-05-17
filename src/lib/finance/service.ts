@@ -3,6 +3,7 @@ import { logAuditAction } from '@/lib/audit/service';
 import { db } from '@/lib/db';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { monthlyPayments, type NewMonthlyPayment } from '@/lib/db/schema/finance';
+import { associates } from '@/lib/db/schema/associates';
 import { and, eq, sql } from 'drizzle-orm';
 
 export function validateYearMonth(year: number, month: number): void {
@@ -125,36 +126,50 @@ export async function updateMonthlyPayment(
 export async function initializeMonth(adminId: number, year: number, month: number) {
   validateYearMonth(year, month);
 
-  const associates = await repository.getAssociatesWithPayments(year, month);
+  const count = await db.transaction(async (tx) => {
+    // Read and write in the same transaction to prevent TOCTOU races
+    const rows = await tx
+      .select({
+        associateId: associates.id,
+        defaultPaymentMethod: associates.paymentMethod,
+        paymentId: monthlyPayments.id,
+      })
+      .from(associates)
+      .leftJoin(
+        monthlyPayments,
+        and(
+          eq(associates.id, monthlyPayments.associateId),
+          eq(monthlyPayments.year, year),
+          eq(monthlyPayments.month, month),
+        ),
+      )
+      .where(eq(associates.associationStatus, 'ativo'));
 
-  const updates: NewMonthlyPayment[] = associates
-    .filter(a => !a.paymentId)
-    .map(a => ({
-      associateId: a.associateId,
-      year,
-      month,
-      status: a.defaultPaymentMethod === 'folha' ? 'pago' : 'pendente',
-      paymentMethod: a.defaultPaymentMethod,
-      updatedBy: adminId,
-    }));
+    const updates: NewMonthlyPayment[] = rows
+      .filter(r => !r.paymentId)
+      .map(r => ({
+        associateId: r.associateId,
+        year,
+        month,
+        status: r.defaultPaymentMethod === 'folha' ? 'pago' : 'pendente',
+        paymentMethod: r.defaultPaymentMethod,
+        updatedBy: adminId,
+      }));
 
-  if (updates.length > 0) {
-    await db.transaction(async (tx) => {
+    if (updates.length > 0) {
       await Promise.all(updates.map((update) => repository.upsertMonthlyPayment(update, tx)));
-    });
-  }
+    }
 
-  await logAuditAction({
-    adminId,
-    action: 'initialize_month',
-    entityType: 'finance',
-    entityId: null,
-    metadata: {
-      year,
-      month,
-      count: updates.length,
-    },
+    await logAuditAction({
+      adminId,
+      action: 'initialize_month',
+      entityType: 'finance',
+      entityId: null,
+      metadata: { year, month, count: updates.length },
+    });
+
+    return updates.length;
   });
 
-  return updates.length;
+  return count;
 }

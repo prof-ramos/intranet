@@ -4,7 +4,7 @@ import { FinanceKPIs } from './FinanceKPIs';
 import { initializeMonthAction } from './actions';
 import { Calendar, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import Link from 'next/link';
-import { textMuted, navy, hairline, focusRingClass } from '@/lib/ui/tokens';
+import { textMuted, navy, hairline, focusRingClass, skyBlue, infoBg, info } from '@/lib/ui/tokens';
 import { requireRole } from '@/lib/auth/authorization';
 import {
   parseMonthlyPaymentsSearchParams,
@@ -79,7 +79,8 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
     return `/app/financeiro/mensalidades?${params.toString()}`;
   };
 
-  const hasNoData = data.every(p => !p.paymentId);
+  const hasActiveFilters = !!(currentFilters.q || currentFilters.status || currentFilters.method || currentFilters.location);
+  const hasNoData = !hasActiveFilters && data.every(p => !p.paymentId);
 
   return (
     <main className="mx-auto w-full max-w-[1400px] px-5 py-7 sm:px-8 lg:px-10">
@@ -108,7 +109,7 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
           </Link>
 
           <div className="flex items-center gap-2 px-4 text-sm font-semibold" style={{ color: textMuted, minWidth: 180, justifyContent: 'center' }}>
-            <Calendar size={16} style={{ color: '#76aeea' }} aria-hidden="true" />
+            <Calendar size={16} style={{ color: skyBlue }} aria-hidden="true" />
             <span>{monthNames[currentMonth - 1]} de {currentYear}</span>
           </div>
 
@@ -126,12 +127,12 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
       {hasNoData && (
         <div
           className="mb-6 flex items-center justify-between rounded-[10px] p-5"
-          style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe' }}
+          style={{ backgroundColor: infoBg, border: '1px solid #bfdbfe' }}
         >
           <div className="flex items-center gap-4">
             <div
               className="flex h-10 w-10 items-center justify-center rounded-full"
-              style={{ backgroundColor: '#dbeafe', color: '#2563eb' }}
+              style={{ backgroundColor: '#dbeafe', color: info }}
             >
               <Play size={20} aria-hidden="true" />
             </div>

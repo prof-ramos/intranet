@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Settings, Webhook } from 'lucide-react';
-import { focusRingClass } from '@/lib/ui/tokens';
+import type { CSSProperties } from 'react';
+import { focusRingClass, skyBlue, borderFaint } from '@/lib/ui/tokens';
 
 export default async function ConfigPage() {
   return (
@@ -15,7 +16,8 @@ export default async function ConfigPage() {
       <div className="mt-8 grid gap-4 md:grid-cols-2">
         <Link
           href="/app/config/integracoes/webhooks"
-          className={`rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white p-6 transition-colors hover:border-[#76AEEA] hover:bg-[rgba(118,174,234,0.05)] ${focusRingClass}`}
+          className={`rounded-[10px] border bg-white p-6 transition-colors hover:border-[var(--card-hover-border)] hover:bg-[rgba(118,174,234,0.05)] ${focusRingClass}`}
+          style={{ borderColor: borderFaint, '--card-hover-border': skyBlue } as CSSProperties}
         >
           <Webhook size={32} className="mb-4 text-[#0d3260]" aria-hidden="true" />
           <h2 className="font-serif text-xl font-bold text-[#040920]">Integrações e webhooks</h2>
