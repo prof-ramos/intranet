@@ -229,6 +229,7 @@ export default function MonthlyPaymentsTable({
             className="absolute left-3 top-1/2 -translate-y-1/2"
             size={16}
             style={{ color: textFaint }}
+            aria-hidden="true"
           />
           <input
             type="text"
@@ -250,7 +251,7 @@ export default function MonthlyPaymentsTable({
           <button
             onClick={() => updateFilter('status', undefined)}
             aria-pressed={statusFilter === 'all'}
-            className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors"
+            className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors ${focusRingClass}`}
             style={{
               backgroundColor: statusFilter === 'all' ? navy : canvas,
               color: statusFilter === 'all' ? '#fff' : textMuted,
@@ -267,14 +268,14 @@ export default function MonthlyPaymentsTable({
                 key={s.value}
                 onClick={() => updateFilter('status', active ? undefined : s.value)}
                 aria-pressed={active}
-                className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors"
+                className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors ${focusRingClass}`}
                 style={{
                   backgroundColor: active ? cfg.color : cfg.bg,
                   color: active ? '#fff' : cfg.color,
                   border: `1px solid ${active ? cfg.color : 'transparent'}`,
                 }}
               >
-                <cfg.icon size={12} />
+                <cfg.icon size={12} aria-hidden="true" />
                 {s.label}
               </button>
             );
@@ -290,14 +291,14 @@ export default function MonthlyPaymentsTable({
                 key={m.value}
                 onClick={() => updateFilter('method', active ? undefined : m.value)}
                 aria-pressed={active}
-                className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors"
+                className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors ${focusRingClass}`}
                 style={{
                   backgroundColor: active ? navy : canvas,
                   color: active ? '#fff' : textMuted,
                   border: `1px solid ${active ? navy : hairline}`,
                 }}
               >
-                <m.icon size={12} />
+                <m.icon size={12} aria-hidden="true" />
                 {m.label}
               </button>
             );
@@ -313,14 +314,14 @@ export default function MonthlyPaymentsTable({
                 key={l.value}
                 onClick={() => updateFilter('location', active ? undefined : l.value)}
                 aria-pressed={active}
-                className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors"
+                className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors ${focusRingClass}`}
                 style={{
                   backgroundColor: active ? navy : canvas,
                   color: active ? '#fff' : textMuted,
                   border: `1px solid ${active ? navy : hairline}`,
                 }}
               >
-                <l.icon size={12} />
+                <l.icon size={12} aria-hidden="true" />
                 {l.label}
               </button>
             );
@@ -329,7 +330,7 @@ export default function MonthlyPaymentsTable({
       </div>
 
       {isPending && (
-        <div className="text-xs font-medium" style={{ color: textMuted }}>
+        <div role="status" aria-live="polite" className="text-xs font-medium" style={{ color: textMuted }}>
           Atualizando...
         </div>
       )}
@@ -408,9 +409,9 @@ export default function MonthlyPaymentsTable({
                   <td className="px-5 py-3.5">
                     <div className="inline-flex items-center gap-1.5">
                       {locGroup === 'exterior' ? (
-                        <Globe size={12} style={{ color: textMuted }} />
+                        <Globe size={12} style={{ color: textMuted }} aria-hidden="true" />
                       ) : (
-                        <MapPin size={12} style={{ color: textMuted }} />
+                        <MapPin size={12} style={{ color: textMuted }} aria-hidden="true" />
                       )}
                       <span className="text-xs font-medium" style={{ color: textSecondary }}>
                         {p.locationCountry || 'Brasil'}
@@ -464,15 +465,15 @@ export default function MonthlyPaymentsTable({
                                 p.updatedAt,
                               )
                             }
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
+                            aria-label={s.label}
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-[6px] transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 active:scale-95 ${focusRingClass}`}
                             style={{
                               backgroundColor: isCurrent ? cfg.color : cfg.bg,
                               color: isCurrent ? '#fff' : cfg.color,
                               border: `1px solid ${isCurrent ? cfg.color : 'transparent'}`,
                             }}
-                            title={s.label}
                           >
-                            <cfg.icon size={14} />
+                            <cfg.icon size={14} aria-hidden="true" />
                           </button>
                         );
                       })}

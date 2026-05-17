@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react';
 import { KeyRound, Power, PowerOff, RotateCcw } from 'lucide-react';
+import { focusRingClass } from '@/lib/ui/tokens';
 import type { DomainEventType } from '@/lib/integrations/outbox';
 import {
   rotateWebhookSubscriptionSecret,
@@ -37,7 +38,7 @@ export function WebhookSubscriptionActions({
         <button
           type="button"
           onClick={() => setEditing((value) => !value)}
-          className="rounded-md border border-[rgba(4,9,32,0.1)] bg-white px-3 py-1.5 text-xs font-medium text-[#040920] transition-colors hover:bg-gray-50"
+          className={`rounded-md border border-[rgba(4,9,32,0.1)] bg-white px-3 py-1.5 text-xs font-medium text-[#040920] transition-colors hover:bg-gray-50 ${focusRingClass}`}
         >
           {editing ? 'Fechar edição' : 'Editar'}
         </button>
@@ -45,9 +46,9 @@ export function WebhookSubscriptionActions({
         <button
           type="button"
           onClick={() => setRotating((value) => !value)}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[rgba(4,9,32,0.1)] bg-white px-3 py-1.5 text-xs font-medium text-[#040920] transition-colors hover:bg-gray-50"
+          className={`inline-flex items-center gap-1.5 rounded-md border border-[rgba(4,9,32,0.1)] bg-white px-3 py-1.5 text-xs font-medium text-[#040920] transition-colors hover:bg-gray-50 ${focusRingClass}`}
         >
-          <KeyRound size={13} />
+          <KeyRound size={13} aria-hidden="true" />
           Rotacionar segredo
         </button>
 
@@ -61,9 +62,9 @@ export function WebhookSubscriptionActions({
               isActive
                 ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
                 : 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100'
-            }`}
+            } ${focusRingClass}`}
           >
-            {isActive ? <PowerOff size={13} /> : <Power size={13} />}
+            {isActive ? <PowerOff size={13} aria-hidden="true" /> : <Power size={13} aria-hidden="true" />}
             {isActive ? 'Desativar' : 'Ativar'}
           </button>
         </form>
@@ -106,9 +107,9 @@ export function WebhookSubscriptionActions({
           <button
             type="submit"
             disabled={isRotatePending}
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-amber-700 px-4 text-sm font-semibold text-white transition-colors hover:bg-amber-800 disabled:opacity-50"
+            className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-amber-700 px-4 text-sm font-semibold text-white transition-colors hover:bg-amber-800 disabled:opacity-50 ${focusRingClass}`}
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={14} aria-hidden="true" />
             {isRotatePending ? 'Rotacionando...' : 'Rotacionar'}
           </button>
           {rotateState?.success === false && <p className="text-sm text-red-600">{rotateState.message}</p>}

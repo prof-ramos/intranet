@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react';
 import { resetUserPassword, toggleUserActive } from './actions';
 import { KeyRound, UserX, UserCheck, Copy, Check } from 'lucide-react';
+import { focusRingClass } from '@/lib/ui/tokens';
 
 interface UserActionsPanelProps {
   userId: number;
@@ -46,11 +47,11 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
           </code>
           <button
             onClick={() => handleCopy(resetState.tempPassword!)}
-            className="text-green-600 hover:text-green-800 transition-colors"
-            title="Copiar senha"
+            className={`text-green-600 hover:text-green-800 transition-colors ${focusRingClass}`}
+            aria-label="Copiar senha"
             type="button"
           >
-            {copied ? <Check size={14} /> : <Copy size={14} />}
+            {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
           </button>
         </div>
         <p className="text-xs text-[rgba(13,31,60,0.45)]">Copie antes de fechar. Não será exibida novamente.</p>
@@ -72,9 +73,9 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
           onClick={() => setConfirmReset(true)}
           disabled={isResetting || !isActive}
           title={isActive ? 'Resetar senha' : 'Usuário inativo'}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[rgba(4,9,32,0.1)] bg-white px-3 py-1.5 text-xs font-medium text-[#040920] hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className={`inline-flex items-center gap-1.5 rounded-md border border-[rgba(4,9,32,0.1)] bg-white px-3 py-1.5 text-xs font-medium text-[#040920] hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${focusRingClass}`}
         >
-          <KeyRound size={13} />
+          <KeyRound size={13} aria-hidden="true" />
           Resetar senha
         </button>
       ) : (
@@ -84,14 +85,14 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
           <button
             type="submit"
             disabled={isResetting}
-            className="rounded-md bg-amber-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-amber-700 transition-colors disabled:opacity-50"
+            className={`rounded-md bg-amber-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-amber-700 transition-colors disabled:opacity-50 ${focusRingClass}`}
           >
             {isResetting ? 'Resetando…' : 'Confirmar'}
           </button>
           <button
             type="button"
             onClick={() => setConfirmReset(false)}
-            className="rounded-md border border-[rgba(4,9,32,0.1)] px-2.5 py-1 text-xs font-medium text-[rgba(13,31,60,0.6)] hover:bg-gray-50 transition-colors"
+            className={`rounded-md border border-[rgba(4,9,32,0.1)] px-2.5 py-1 text-xs font-medium text-[rgba(13,31,60,0.6)] hover:bg-gray-50 transition-colors ${focusRingClass}`}
           >
             Cancelar
           </button>
@@ -108,9 +109,9 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
             isActive
               ? 'border-[rgba(4,9,32,0.1)] bg-white text-[#040920] hover:bg-red-50 hover:border-red-200 hover:text-red-700'
               : 'border-[rgba(4,9,32,0.1)] bg-white text-[#040920] hover:bg-green-50 hover:border-green-200 hover:text-green-700'
-          }`}
+          } ${focusRingClass}`}
         >
-          {isActive ? <UserX size={13} /> : <UserCheck size={13} />}
+          {isActive ? <UserX size={13} aria-hidden="true" /> : <UserCheck size={13} aria-hidden="true" />}
           {isActive ? 'Desativar' : 'Ativar'}
         </button>
       ) : (
@@ -122,14 +123,14 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
             disabled={isToggling}
             className={`rounded-md px-2.5 py-1 text-xs font-semibold text-white transition-colors disabled:opacity-50 ${
               isActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
-            }`}
+            } ${focusRingClass}`}
           >
             {isToggling ? 'Aguarde…' : 'Confirmar'}
           </button>
           <button
             type="button"
             onClick={() => setConfirmToggle(false)}
-            className="rounded-md border border-[rgba(4,9,32,0.1)] px-2.5 py-1 text-xs font-medium text-[rgba(13,31,60,0.6)] hover:bg-gray-50 transition-colors"
+            className={`rounded-md border border-[rgba(4,9,32,0.1)] px-2.5 py-1 text-xs font-medium text-[rgba(13,31,60,0.6)] hover:bg-gray-50 transition-colors ${focusRingClass}`}
           >
             Cancelar
           </button>

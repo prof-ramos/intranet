@@ -102,7 +102,7 @@ export function FinanceKPIs({ payments }: FinanceKPIsProps) {
               className="flex h-7 w-7 items-center justify-center rounded-full"
               style={{ backgroundColor: item.bg }}
             >
-              <item.icon size={14} style={{ color: item.color }} />
+              <item.icon size={14} style={{ color: item.color }} aria-hidden="true" />
             </div>
           </div>
           <div

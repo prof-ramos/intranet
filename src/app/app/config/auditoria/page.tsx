@@ -4,6 +4,7 @@ import { auditLogs, type AuditLog } from '@/lib/db/schema/audit';
 import { admins } from '@/lib/db/schema/admins';
 import { desc, eq, and, gte, lt, ilike, count } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
+import { focusRingClass } from '@/lib/ui/tokens';
 
 const PAGE_SIZE = 50;
 
@@ -127,12 +128,14 @@ export default async function AuditoriaPage({
           type="search"
           defaultValue={q}
           placeholder="Filtrar por ação…"
-          className="h-9 w-[200px] rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-sm outline-none focus:border-[#76aeea] focus:ring-2 focus:ring-[rgba(118,174,234,0.2)]"
+          aria-label="Filtrar por ação"
+          className={`h-9 w-[200px] rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-sm ${focusRingClass}`}
         />
         <select
           name="tipo"
           defaultValue={entityType}
-          className="h-9 w-[190px] rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-sm outline-none focus:border-[#76aeea]"
+          aria-label="Tipo de entidade"
+          className={`h-9 w-[190px] rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-sm ${focusRingClass}`}
         >
           <option value="">Todos os tipos</option>
           {Object.entries(entityTypeLabels).map(([val, label]) => (
@@ -146,25 +149,25 @@ export default async function AuditoriaPage({
           type="date"
           defaultValue={de}
           aria-label="Data inicial"
-          className="h-9 rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-sm outline-none focus:border-[#76aeea]"
+          className={`h-9 rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-sm ${focusRingClass}`}
         />
         <input
           name="ate"
           type="date"
           defaultValue={ate}
           aria-label="Data final"
-          className="h-9 rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-sm outline-none focus:border-[#76aeea]"
+          className={`h-9 rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-sm ${focusRingClass}`}
         />
         <button
           type="submit"
-          className="h-9 rounded-[6px] bg-[#040920] px-4 text-sm font-medium text-white transition-colors hover:bg-[#0d3260]"
+          className={`h-9 rounded-[6px] bg-[#040920] px-4 text-sm font-medium text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
         >
           Filtrar
         </button>
         {hasFilters && (
           <a
             href="/app/config/auditoria"
-            className="flex h-9 items-center rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-4 text-sm text-[rgba(13,31,60,0.65)] transition-colors hover:bg-[rgba(13,31,60,0.04)]"
+            className={`flex h-9 items-center rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-4 text-sm text-[rgba(13,31,60,0.65)] transition-colors hover:bg-[rgba(13,31,60,0.04)] ${focusRingClass}`}
           >
             Limpar
           </a>
@@ -249,7 +252,7 @@ export default async function AuditoriaPage({
             {page > 1 && (
               <a
                 href={pageUrl(page - 1)}
-                className="flex h-8 items-center rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-xs text-[rgba(13,31,60,0.65)] transition-colors hover:bg-[rgba(13,31,60,0.04)]"
+                className={`flex h-8 items-center rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-xs text-[rgba(13,31,60,0.65)] transition-colors hover:bg-[rgba(13,31,60,0.04)] ${focusRingClass}`}
               >
                 ← Anterior
               </a>
@@ -257,7 +260,7 @@ export default async function AuditoriaPage({
             {page < totalPages && (
               <a
                 href={pageUrl(page + 1)}
-                className="flex h-8 items-center rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-xs text-[rgba(13,31,60,0.65)] transition-colors hover:bg-[rgba(13,31,60,0.04)]"
+                className={`flex h-8 items-center rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-xs text-[rgba(13,31,60,0.65)] transition-colors hover:bg-[rgba(13,31,60,0.04)] ${focusRingClass}`}
               >
                 Próxima →
               </a>

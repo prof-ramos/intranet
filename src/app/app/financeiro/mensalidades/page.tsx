@@ -4,7 +4,7 @@ import { FinanceKPIs } from './FinanceKPIs';
 import { initializeMonthAction } from './actions';
 import { Calendar, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import Link from 'next/link';
-import { textMuted, navy, hairline } from '@/lib/ui/tokens';
+import { textMuted, navy, hairline, focusRingClass } from '@/lib/ui/tokens';
 import { requireRole } from '@/lib/auth/authorization';
 import {
   parseMonthlyPaymentsSearchParams,
@@ -100,25 +100,25 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
         >
           <Link
             href={getPrevMonth()}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-[8px] transition-colors hover:bg-[rgba(4,9,32,0.04)]"
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-[8px] transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
             style={{ color: textMuted }}
             aria-label="Mês anterior"
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft size={18} aria-hidden="true" />
           </Link>
 
           <div className="flex items-center gap-2 px-4 text-sm font-semibold" style={{ color: textMuted, minWidth: 180, justifyContent: 'center' }}>
-            <Calendar size={16} style={{ color: '#76aeea' }} />
+            <Calendar size={16} style={{ color: '#76aeea' }} aria-hidden="true" />
             <span>{monthNames[currentMonth - 1]} de {currentYear}</span>
           </div>
 
           <Link
             href={getNextMonth()}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-[8px] transition-colors hover:bg-[rgba(4,9,32,0.04)]"
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-[8px] transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
             style={{ color: textMuted }}
             aria-label="Próximo mês"
           >
-            <ChevronRight size={18} />
+            <ChevronRight size={18} aria-hidden="true" />
           </Link>
         </div>
       </div>
@@ -133,7 +133,7 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
               className="flex h-10 w-10 items-center justify-center rounded-full"
               style={{ backgroundColor: '#dbeafe', color: '#2563eb' }}
             >
-              <Play size={20} />
+              <Play size={20} aria-hidden="true" />
             </div>
             <div>
               <h3 className="text-sm font-semibold" style={{ color: '#1e3a8a' }}>
@@ -147,7 +147,7 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
           <form action={initializeCurrentMonthAction}>
             <button
               type="submit"
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-[8px] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260]"
+              className={`inline-flex h-9 items-center justify-center gap-2 rounded-[8px] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
               style={{ backgroundColor: navy }}
             >
               Inicializar Mês
