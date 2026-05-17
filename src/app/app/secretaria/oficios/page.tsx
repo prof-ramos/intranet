@@ -1,14 +1,15 @@
 import Link from 'next/link';
 import { getOfficialLettersAction } from './actions';
 import { FilePlus, Download, Edit2, Ban, Search } from 'lucide-react';
-import { 
-  navy, 
-  textMuted, 
-  hairline, 
+import {
+  navy,
+  textMuted,
+  hairline,
   primaryContainerHover,
   success,
   error,
-  warning
+  warning,
+  focusRingClass
 } from '@/lib/ui/tokens';
 import { CSSProperties } from 'react';
 
@@ -28,19 +29,20 @@ export default async function OficiosPage() {
         </div>
         <Link
           href="/app/secretaria/oficios/novo"
-          className="inline-flex h-10 items-center gap-2 rounded-[8px] px-5 text-sm font-semibold text-white transition-colors hover:bg-[var(--primary-hover)]"
+          className={`inline-flex h-10 items-center gap-2 rounded-[8px] px-5 text-sm font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] ${focusRingClass}`}
           style={{ backgroundColor: navy, '--primary-hover': primaryContainerHover } as CSSProperties}
         >
-          <FilePlus size={18} /> Novo Ofício
+          <FilePlus size={18} aria-hidden="true" /> Novo Ofício
         </Link>
       </div>
 
       <div className="mb-6 flex items-center gap-3 rounded-[12px] border bg-white px-4 py-2" style={{ borderColor: hairline }}>
-        <Search size={18} style={{ color: textMuted }} />
-        <input 
-          type="text" 
-          placeholder="Buscar por número, destinatário ou assunto..." 
-          className="flex-1 text-sm outline-none"
+        <Search size={18} style={{ color: textMuted }} aria-hidden="true" />
+        <input
+          type="text"
+          placeholder="Buscar por número, destinatário ou assunto…"
+          aria-label="Buscar ofícios"
+          className={`flex-1 text-sm ${focusRingClass}`}
         />
       </div>
 
@@ -83,27 +85,31 @@ export default async function OficiosPage() {
                   <td className="px-6 py-4 text-sm max-w-[250px] truncate">{oficio.subject}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <Link 
+                      <Link
                         href={`/app/secretaria/oficios/${oficio.id}/editar`}
-                        className="p-1 text-slate-400 hover:text-navy transition-colors"
+                        className={`p-1 text-slate-400 hover:text-navy transition-colors ${focusRingClass}`}
                         title="Editar"
+                        aria-label="Editar ofício"
                       >
-                        <Edit2 size={18} />
+                        <Edit2 size={18} aria-hidden="true" />
                       </Link>
-                      <a 
+                      <a
                         href={`/api/oficios/${oficio.id}/download`}
-                        className="p-1 text-slate-400 hover:text-navy transition-colors"
+                        className={`p-1 text-slate-400 hover:text-navy transition-colors ${focusRingClass}`}
                         title="Download PDF"
+                        aria-label="Download PDF"
                         download
                       >
-                        <Download size={18} />
+                        <Download size={18} aria-hidden="true" />
                       </a>
                       {oficio.status !== 'cancelado' && (
-                        <button 
-                          className="p-1 text-slate-400 hover:text-error transition-colors"
+                        <button
+                          type="button"
+                          className={`p-1 text-slate-400 hover:text-error transition-colors ${focusRingClass}`}
                           title="Cancelar"
+                          aria-label="Cancelar ofício"
                         >
-                          <Ban size={18} />
+                          <Ban size={18} aria-hidden="true" />
                         </button>
                       )}
                     </div>
