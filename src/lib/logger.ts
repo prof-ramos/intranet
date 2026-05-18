@@ -29,7 +29,7 @@ const LEVELS: Record<LogLevel, number> = {
 };
 
 const PII_KEYS = new Set([
-  'cpf', 'siape', 'primaryEmail', 'phone', 'address', 'whatsapp',
+  'cpf', 'siape', 'email', 'primaryEmail', 'phone', 'address', 'whatsapp',
   'password', 'token', 'secret', 'apiKey', 'authorization',
 ]);
 
@@ -92,7 +92,7 @@ function shouldLog(level: LogLevel): boolean {
 
 function formatLog(entry: LogEntry): string {
   if (IS_PROD) {
-    return safeStringify(entry);
+    return safeStringify(redact(entry));
   }
 
   const colorMap: Record<LogLevel, string> = {
@@ -146,7 +146,12 @@ export class Logger {
       };
     }
 
-    console.log(formatLog(entry));
+    const output = formatLog(entry);
+    if (level === 'error' || level === 'warn') {
+      console.error(output);
+    } else {
+      console.log(output);
+    }
   }
 
   debug(message: string, context?: LogContext): void {

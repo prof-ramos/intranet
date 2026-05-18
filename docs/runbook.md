@@ -75,11 +75,13 @@ curl -sSI https://intranet.asof.com.br/
 curl -sSI https://intranet.asof.com.br/app
 curl -sSI https://intranet.asof.com.br/login
 
-# 2. Login
+# 2. Login (use variável de ambiente para evitar expor senha no shell history)
+read -s ADMIN_PASSWORD
 curl -sS -X POST https://intranet.asof.com.br/login \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "email=admin@asof.org.br" \
-  -d "password=<senha>"
+  -d "password=$ADMIN_PASSWORD"
+unset ADMIN_PASSWORD
 
 # 3. Health check da API
 curl -sS https://intranet.asof.com.br/api/v1/health
@@ -188,7 +190,7 @@ npm run db:supabase:status
 npm run db:studio
 ```
 
-## 7. Diagnóstico com Logger Estruturado
+## 8. Diagnóstico com Logger Estruturado
 
 O sistema usa `src/lib/logger.ts` para logs estruturados com redação automática de PII. Em produção, os logs são emitidos em formato JSON; em desenvolvimento, colorizados.
 
@@ -223,7 +225,7 @@ Formato colorizado com prefixo `[module] level: message`.
 
 ---
 
-## 8. Contatos e referências
+## 9. Contatos e referências
 
 - **Repositório:** https://github.com/prof-ramos/intranet
 - **Projeto Supabase:** `uftzjmmfkoqhjjwsiynk` (`db-intranet`)
