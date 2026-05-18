@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '@/lib/logger';
 import { proxy } from '@/proxy';
 
 let skipAuth = false;
@@ -84,21 +85,25 @@ describe('proxy', () => {
   });
 
   it('logs a safe warning when Supabase user lookup fails', async () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
     mockGetUserError = Object.assign(new Error('token=secret'), { code: 'E_AUTH' });
 
     await expect(proxy(createRequest('/app'))).resolves.toEqual({
       type: 'redirect',
       url: 'http://localhost:3000/login',
     });
-    expect(consoleWarnSpy).toHaveBeenCalledWith('[Auth proxy] Supabase user lookup failed.', {
-      error: {
-        kind: 'error',
-        name: 'Error',
-        code: 'E_AUTH',
-        digest: undefined,
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      '[Auth proxy] Supabase user lookup failed.',
+      {
+        error: {
+          kind: 'error',
+          name: 'Error',
+          code: 'E_AUTH',
+          digest: undefined,
+        },
       },
-    });
+      expect.any(Error),
+    );
     consoleWarnSpy.mockRestore();
   });
 });

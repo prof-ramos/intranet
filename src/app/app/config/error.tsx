@@ -3,7 +3,9 @@
 import { useEffect } from 'react';
 import { Settings, RotateCcw } from 'lucide-react';
 import { focusRingClass } from '@/lib/ui/tokens';
-import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('config:error');
 
 export default function ConfigError({
   error,
@@ -13,7 +15,7 @@ export default function ConfigError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Config error boundary caught:', toSafeErrorLog(error));
+    logger.error('Config error boundary caught', {}, error);
   }, [error]);
 
   return (

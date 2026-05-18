@@ -1,7 +1,7 @@
 # API Documentation — ASOF Intranet
 
-> Documentacao dos endpoints HTTP publicos atualmente expostos pela ASOF Intranet.
-> Ultima atualizacao: 2026-05-14
+> Documentação dos endpoints HTTP públicos atualmente expostos pela ASOF Intranet.
+> Última atualização: 2026-05-18
 
 ---
 
@@ -91,9 +91,13 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 | `diretoria` | acesso completo aos endpoints atuais |
 | `secretaria` | acesso ao download de oficios; sem acesso ao relatorio de associados |
 
-### Observacao importante
+### Logging e Observabilidade
 
-Nao existem hoje:
+Erros em endpoints HTTP são logados via `src/lib/logger.ts` com redação automática de PII. O logger estruturado emite JSON em produção e formato colorizado em desenvolvimento, com nível configurável via `LOG_LEVEL`.
+
+### Observação importante
+
+Não existem hoje:
 
 - OAuth de integracao
 - tokens de acesso pessoal

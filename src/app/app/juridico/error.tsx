@@ -2,7 +2,9 @@
 
 import { useEffect } from 'react';
 import { Scale, RotateCcw } from 'lucide-react';
-import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('juridico:error');
 
 export default function JuridicoError({
   error,
@@ -12,7 +14,7 @@ export default function JuridicoError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Jurídico error boundary caught:', toSafeErrorLog(error));
+    logger.error('Jurídico error boundary caught', {}, error);
   }, [error]);
 
   return (

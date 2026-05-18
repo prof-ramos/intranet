@@ -3,6 +3,9 @@
 import { useEffect } from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
 import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('error-boundary:global');
 
 export default function GlobalError({
   error,
@@ -12,7 +15,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Global error boundary caught:', toSafeErrorLog(error));
+    logger.error('Global error boundary caught', { error: toSafeErrorLog(error) });
   }, [error]);
 
   return (

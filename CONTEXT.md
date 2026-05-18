@@ -22,6 +22,86 @@ Saudação final obrigatória.
 
 ---
 
+### Associados e Cadastro
+
+#### Associado
+Membro da ASOF representado na tabela `associates`. Possui dados pessoais, funcionais e associativos.
+
+#### Lotação
+Posto ou órgão onde o servidor está em exercício (ex: "Embaixada em Paris", "SERE"). Campo: `assignment`.
+
+#### Posto
+Representação diplomática no exterior (embaixada, consulado) ou a SERE em Brasília.
+
+#### Padrão / Classe
+Nível na carreira: Classe A → B → C → Especial, cada uma com 5 padrões. Campo: `classPattern`.
+
+#### Situação Associativa
+Status do associado na ASOF: `ativo`, `inativo`. Campo: `associationStatus`.
+
+#### Situação Funcional
+Status no serviço público: `ativo`, `aposentado`, `cedido`, `em_licenca`. Campo: `functionalStatus`.
+
+#### Contribuição
+Status de pagamento da anuidade ASOF: `em_dia`, `inadimplente`, `pendente_migracao`. Campo: `contributionStatus`.
+
+#### SIAPE
+Número de matrícula do servidor federal. Campo: `siape`.
+
+---
+
+### Financeiro
+
+#### Mensalidade
+Registro mensal de pagamento de associado. Campo: `monthly_payments`.
+
+#### Método de Pagamento
+Forma de quitação da mensalidade: `boleto`, `transferencia`, `debito_automatico`, `folha`. Campo: `paymentMethod`.
+
+#### Status de Pagamento
+Situação da mensalidade: `em_dia`, `inadimplente`, `isento`. Campo: `paymentStatus`.
+
+#### Inicialização de Mês
+Processo de criar registros de mensalidade para todos os associados ativos de um determinado mês/ano. Disparado manualmente por admin/diretoria.
+
+---
+
+### Jurídico
+
+#### Consulta Jurídica
+Solicitação de atendimento jurídico feita por associado. Possui número interno sequencial, status, e histórico de notas.
+
+#### Processo Jurídico
+Caso jurídico mais estruturado (Fase 2 do módulo). Relaciona-se a pareceres e notas.
+
+#### Parecer
+Opinião jurídica formal emitida pela assessoria jurídica da ASOF. Pode ser vinculada a um processo.
+
+---
+
+### Atividades Administrativas
+
+#### Atividade (Kanban)
+Tarefa administrativa no board Kanban. Possui status (`a_fazer`, `em_andamento`, `pendente`, `concluida`, `arquivada`), prioridade, responsável e associado relacionado.
+
+#### Quick Add
+Criação rápida de atividade diretamente no board, sem abrir formulário completo.
+
+---
+
+### Notificações e Eventos
+
+#### Notificação
+Alerta em tempo real para o usuário sobre reatribuição de atividades ou atualização de consulta jurídica. Entregue via Supabase Realtime.
+
+#### Evento de Domínio
+Registro imutável de algo que aconteceu no sistema (`associate.updated`, `legal_consultation.created`, etc.). Persistido em `domain_events` e disponível para dispatch outbound via webhooks.
+
+#### Webhook Outbound
+Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado com HMAC SHA-256.
+
+---
+
 ## Regras de Negócio
 
 ### Módulo de Ofícios
@@ -29,3 +109,74 @@ Saudação final obrigatória.
 1. **Numeração Sequencial**: O número do ofício é sequencial e reinicia a cada ano civil (ex: 001/2026, 002/2026).
 2. **Imutabilidade de Identificação**: Uma vez gerado o número de um ofício, ele deve ser preservado. Se o ofício for cancelado, o número não deve ser reutilizado para evitar lacunas ou duplicidades na cronologia oficial.
 3. **Roles de Acesso**: Operado por `admin`, `diretoria` e `secretaria`.
+
+### Módulo Financeiro
+
+1. **Mensalidades por Mês/Ano**: Cada associado ativo deve ter um registro de mensalidade para cada mês/ano. O registro é criado via inicialização de mês.
+2. **Status Derivado**: O status de contribuição do associado (`contributionStatus`) é derivado a partir do histórico de mensalidades pagas/inadimplentes.
+3. **Inicialização Idempotente**: Inicializar um mês já existente não deve criar duplicatas.
+4. **Roles de Acesso**: `admin` e `diretoria` têm acesso completo; `secretaria` é redirecionada para o dashboard.
+
+### Módulo Jurídico
+
+1. **Número Interno Sequencial**: Consultas jurídicas recebem um número interno sequencial gerado atomicamente dentro de uma transação.
+2. **Status Flow**: Uma consulta pode transitar entre status definidos pelo enum `legal_consultation_status`.
+3. **Notas Vinculadas**: Cada interação (nota) deve atualizar o timestamp `last_interaction_at` da consulta/processos.
+4. **Roles de Acesso**: `admin` e `diretoria` têm acesso; `secretaria` é bloqueada no layout do módulo.
+
+### Módulo de Associados
+
+1. **PII Criptografada**: CPF, SIAPE, email, telefone, endereço e WhatsApp são criptografados em repouso (AES-256-GCM) com índices cegos HMAC-SHA-256 para busca.
+2. **Máscara por Role**: Campos sensíveis são descriptografados apenas para `admin` e `diretoria`; `secretaria` vê máscaras.
+3. **Importação em Lote**: Associados podem ser importados via CSV com upsert por CPF/SIAPE.
+
+### Autenticação e Autorização
+
+1. **Supabase Auth**: Sessão gerenciada por cookies server-side via `@supabase/ssr`.
+2. **Revalidação Local**: Após validação do Supabase, o sistema consulta a tabela `admins` para verificar `isActive` e `mustChangePassword`.
+3. **Rate Limit de Login**: 5 tentativas por email a cada 15 minutos, persistido em PostgreSQL.
+4. **Dev Bypass**: `SKIP_AUTH=true` permite desenvolvimento sem autenticação real, mas é ignorado em produção.
+
+### Auditoria e LGPD
+
+1. **Data Access Logging**: Cada acesso a dados PII (view, export, edit) é registrado em `audit_logs` para compliance com Art. 30/37 da LGPD.
+2. **Sanitização de PII**: Logs de erro e payloads de eventos passam por redação automática de dados sensíveis.
+3. **View PII-Safe**: `associates_list_view` exclui colunas criptografadas e de hash, fornecendo uma visão segura para listagens.
+
+---
+
+## Integrações
+
+### Autenticação M2M (Dual-Auth)
+
+O sistema suporta dois caminhos de autenticação para APIs:
+1. **Env-var Key**: `ASOF_INTEGRATION_API_KEY` + `ASOF_INTEGRATION_HMAC_SECRET` — acesso irrestrito.
+2. **Table-backed Key**: Chaves persistidas em `integration_api_keys` com escopos por endpoint — acesso restrito.
+
+O caminho env-var será deprecado assim que o table-backed for validado em produção.
+
+### Webhooks Outbound
+
+- Assinatura HMAC SHA-256 por subscription.
+- Secrets criptografados em repouso (`secret_ciphertext`).
+- Target URLs devem ser HTTPS públicos; localhost e redes privadas são rejeitados.
+- Dispatch agendado via Vercel Cron (1x ao dia no plano Free).
+
+---
+
+## Eventos de Domínio Suportados
+
+- `legal_consultation.created`
+- `legal_consultation.status_changed`
+- `associate.updated`
+- `monthly_payment.updated`
+- `official_letter.created`
+- `official_letter.published`
+
+---
+
+## Contato e Responsabilidades
+
+- **Diretoria Executiva**: Tomada de decisão estratégica, acesso a relatórios e jurídico.
+- **Secretaria**: Operação diária (ofícios, atividades, cadastro de associados).
+- **Administração TI**: Configuração de usuários, integrações, auditoria e infraestrutura.

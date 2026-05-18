@@ -2,7 +2,9 @@
 
 import { useEffect } from 'react';
 import { FilePlus, RotateCcw } from 'lucide-react';
-import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('juridico:consultas:nova:error');
 
 export default function NovaConsultaError({
   error,
@@ -12,7 +14,7 @@ export default function NovaConsultaError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Nova consulta error boundary caught:', toSafeErrorLog(error));
+    logger.error('Nova consulta error boundary caught', {}, error);
   }, [error]);
 
   return (

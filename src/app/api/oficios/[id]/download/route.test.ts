@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '@/lib/logger';
 import { GET } from './route';
 
 const requireRoleMock = vi.fn();
@@ -71,7 +72,7 @@ describe('oficio pdf download route', () => {
   });
 
   it('logs a safe error and returns 500 when PDF generation fails', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     generateOfficialLetterPdfMock.mockRejectedValue(
       Object.assign(new Error('email=user@example.com'), { code: 'E_PDF' }),
     );
@@ -84,13 +85,16 @@ describe('oficio pdf download route', () => {
     expect(await response.text()).toBe('Erro ao gerar PDF');
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       'PDF download failed for oficio',
-      1,
       {
-        kind: 'error',
-        name: 'Error',
-        code: 'E_PDF',
-        digest: undefined,
+        officialLetterId: 1,
+        error: {
+          kind: 'error',
+          name: 'Error',
+          code: 'E_PDF',
+          digest: undefined,
+        },
       },
+      expect.any(Error),
     );
     consoleErrorSpy.mockRestore();
   });

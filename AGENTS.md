@@ -83,6 +83,8 @@ npm run db:studio
 - Database access lives in `src/lib/db`, with Drizzle schema files in `src/lib/db/schema`.
 - Current Drizzle migrations are in `drizzle/postgres`.
 - The `@/*` import alias maps to `src/*`.
+- `src/lib/logger.ts` — structured logger with PII redaction. Use `createLogger('module-name')` instead of `console.*`.
+- `src/lib/sanitize-pii.ts` — shared PII sanitizer for audit logs and webhook outbox.
 
 ## Database Conventions
 
@@ -90,7 +92,7 @@ npm run db:studio
 - **Indexes**: Create partial indexes for queries with conditional `WHERE`. Use trigram GIN (`gin_trgm_ops`) for `LIKE '%term%'`. Use composite indexes matching `(filter, order)` patterns. Prefix custom indexes with `idx_`.
 - **Connection pool**: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'` in `src/lib/db/index.ts`.
 - **Transactions**: Multi-table operations MUST use `db.transaction()`. Pass the `tx` executor to repository functions that accept one.
-- **RLS**: Re-enabled in migration 0009 as defense-in-depth. All current policies are permissive (`FOR ALL TO PUBLIC`); auth is enforced server-side. If a Supabase client is ever exposed to the browser, RLS policies must be narrowed.
+- **RLS**: Hardened in migration 0023. All policies use `TO authenticated` (not `TO PUBLIC`) and `FORCE ROW LEVEL SECURITY` is applied on all 16 application tables. Auth is enforced server-side via `requireAuth()` and `requireRole()`. If a Supabase client is ever exposed to the browser, RLS policies must be narrowed to per-user or per-role predicates.
 - **Update safety**: `updateAssociateById` and similar functions must use typed interfaces, not `Record<string, unknown>`, to prevent unintended column overwrites.
 - **Migrations**: Name SQL files with zero-padded index + description (e.g., `0009_quality_improvements.sql`). Update `_journal.json` with the correct timestamp.
 - **Testing**: `npm run test:db` validates tables, columns, enums, indexes, extensions, and migration alignment against the live database.

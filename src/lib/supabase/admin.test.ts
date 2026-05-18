@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '@/lib/logger';
 import {
   deleteAdminAuthUser,
   ensureAdminPasswordAuthUser,
@@ -83,7 +84,7 @@ describe('supabase admin helpers', () => {
   });
 
   it('logs a safe audit error but still deletes the auth user', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     logAuditActionMock.mockRejectedValue(
       Object.assign(new Error('cpf=12345678901'), { code: 'E_AUDIT' }),
     );
@@ -92,12 +93,13 @@ describe('supabase admin helpers', () => {
 
     expect(deleteUserMock).toHaveBeenCalledWith('auth-1');
     expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Audit logging failed for deleteAdminAuthUser:',
+      '[deleteAdminAuthUser] audit logging failed',
       {
-        kind: 'error',
-        name: 'Error',
-        code: 'E_AUDIT',
-        digest: undefined,
+        error: expect.objectContaining({
+          kind: 'error',
+          name: 'Error',
+          code: 'E_AUDIT',
+        }),
       },
     );
     consoleErrorSpy.mockRestore();

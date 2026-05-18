@@ -2,7 +2,9 @@
 
 import { useEffect } from 'react';
 import { MessageSquare, RotateCcw } from 'lucide-react';
-import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('juridico:consultas:detalhe:error');
 
 export default function ConsultaDetalheError({
   error,
@@ -12,7 +14,7 @@ export default function ConsultaDetalheError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Consulta detalhe error boundary caught:', toSafeErrorLog(error));
+    logger.error('Consulta detalhe error boundary caught', {}, error);
   }, [error]);
 
   return (

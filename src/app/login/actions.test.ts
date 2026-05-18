@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '@/lib/logger';
 import { login } from '@/app/login/actions';
 
 let mockRateLimit = { allowed: true };
@@ -143,7 +144,7 @@ describe('login action', () => {
   });
 
   it('logs a safe error when the rate-limit check fails', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     mockConsumeError = Object.assign(new Error('email=user@example.com'), { code: 'E_RATE' });
     const formData = new FormData();
     formData.set('email', 'admin@asof.local');
@@ -160,12 +161,13 @@ describe('login action', () => {
           digest: undefined,
         },
       },
+      expect.any(Error),
     );
     consoleErrorSpy.mockRestore();
   });
 
   it('logs a safe warning when reset fails after successful login', async () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
     mockAuthUser = { email: 'admin@asof.local' };
     mockDbUser = {
       id: 1,
@@ -189,6 +191,7 @@ describe('login action', () => {
           digest: undefined,
         },
       },
+      expect.any(Error),
     );
     consoleWarnSpy.mockRestore();
   });

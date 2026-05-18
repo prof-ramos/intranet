@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '@/lib/logger';
 import { generateReport } from './service';
 
 const getAssociatesForReportMock = vi.fn();
@@ -40,7 +41,7 @@ describe('reports service', () => {
   });
 
   it('logs a safe warning when audit persistence fails', async () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
     auditReportDownloadMock.mockRejectedValue(
       Object.assign(new Error('email=user@example.com'), { code: 'E_AUDIT' }),
     );
@@ -62,7 +63,7 @@ describe('reports service', () => {
   });
 
   it('logs a safe warning when data access logging fails', async () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
     logDataAccessMock.mockRejectedValue({ name: 'AuditFailure', code: 'E_LOG', cpf: '123' });
 
     await generateReport(1, {}, ['fullName']);

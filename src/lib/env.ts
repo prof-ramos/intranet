@@ -39,6 +39,7 @@ export const envSchema = z
 
     NODE_ENV: optionalString,
     VERCEL_ENV: optionalString,
+    LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).optional(),
     CRON_SECRET: optionalNonEmptyString,
     ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY: optionalSecretString,
     ENCRYPTION_MASTER_KEY: optionalSecretString,

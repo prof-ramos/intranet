@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '@/lib/logger';
 import {
   cancelOfficialLetterAction,
   generateAiTextAction,
@@ -69,7 +70,7 @@ describe('secretaria oficios actions', () => {
   });
 
   it('logs a safe error when AI generation fails', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     generateOfficialLetterContentMock.mockRejectedValue(
       Object.assign(new Error('email=user@example.com'), { code: 'E_AI' }),
     );
@@ -83,17 +84,23 @@ describe('secretaria oficios actions', () => {
     });
 
     expect(result).toEqual({ success: false, error: 'Falha ao gerar sugestão com IA.' });
-    expect(consoleErrorSpy).toHaveBeenCalledWith('AI Generation Error:', {
-      kind: 'error',
-      name: 'Error',
-      code: 'E_AI',
-      digest: undefined,
-    });
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[generateAiTextAction] AI generation failed',
+      {
+        error: {
+          kind: 'error',
+          name: 'Error',
+          code: 'E_AI',
+          digest: undefined,
+        },
+      },
+      expect.any(Error),
+    );
     consoleErrorSpy.mockRestore();
   });
 
   it('logs a safe error when saving fails', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     saveOfficialLetterMock.mockRejectedValue({ name: 'SaveFailure', code: 'E_SAVE', cpf: '123' });
 
     const result = await saveOfficialLetterAction({
@@ -111,44 +118,62 @@ describe('secretaria oficios actions', () => {
     });
 
     expect(result).toEqual({ success: false, error: 'Falha ao salvar o ofício.' });
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Save Official Letter Error:', {
-      kind: 'non_error_thrown',
-      name: 'SaveFailure',
-      code: 'E_SAVE',
-      digest: undefined,
-    });
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[saveOfficialLetterAction] save failed',
+      {
+        error: {
+          kind: 'non_error_thrown',
+          name: 'SaveFailure',
+          code: 'E_SAVE',
+          digest: undefined,
+        },
+      },
+      expect.anything(),
+    );
     consoleErrorSpy.mockRestore();
   });
 
   it('logs a safe error when updating fails', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     updateOfficialLetterMock.mockRejectedValue(new Error('token=secret'));
 
     const result = await updateOfficialLetterAction(1, { subject: 'Novo assunto' });
 
     expect(result).toEqual({ success: false, error: 'Falha ao atualizar o ofício.' });
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Update Official Letter Error:', {
-      kind: 'error',
-      name: 'Error',
-      code: undefined,
-      digest: undefined,
-    });
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[updateOfficialLetterAction] update failed',
+      {
+        error: {
+          kind: 'error',
+          name: 'Error',
+          code: undefined,
+          digest: undefined,
+        },
+      },
+      expect.any(Error),
+    );
     consoleErrorSpy.mockRestore();
   });
 
   it('logs a safe error when canceling fails', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     cancelOfficialLetterMock.mockRejectedValue({ name: 'CancelFailure', code: 'E_CANCEL' });
 
     const result = await cancelOfficialLetterAction(1);
 
     expect(result).toEqual({ success: false, error: 'Falha ao cancelar o ofício.' });
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Cancel Official Letter Error:', {
-      kind: 'non_error_thrown',
-      name: 'CancelFailure',
-      code: 'E_CANCEL',
-      digest: undefined,
-    });
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[cancelOfficialLetterAction] cancel failed',
+      {
+        error: {
+          kind: 'non_error_thrown',
+          name: 'CancelFailure',
+          code: 'E_CANCEL',
+          digest: undefined,
+        },
+      },
+      expect.anything(),
+    );
     consoleErrorSpy.mockRestore();
   });
 });

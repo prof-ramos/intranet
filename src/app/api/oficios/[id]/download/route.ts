@@ -4,7 +4,10 @@ import { findOfficialLetterById } from '@/lib/oficios/repository';
 import { generateOfficialLetterPdf } from '@/lib/oficios/pdf';
 import { logAuditAction } from '@/lib/audit/service';
 import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
 import { parsePositiveIntParam } from '@/lib/routing/params';
+
+const logger = createLogger('api:oficios:download');
 
 const ALLOWED_ROLES = ['admin', 'diretoria', 'secretaria'] as const;
 
@@ -31,7 +34,7 @@ export async function GET(
 
     pdfBytes = await generateOfficialLetterPdf(oficio);
   } catch (error) {
-    console.error('PDF download failed for oficio', officialLetterId, toSafeErrorLog(error));
+    logger.error('PDF download failed for oficio', { officialLetterId, error: toSafeErrorLog(error) }, error as Error);
     return new NextResponse('Erro ao gerar PDF', { status: 500 });
   }
 

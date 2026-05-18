@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '@/lib/logger';
 import { emitActivityCompleted, emitEvent } from './events';
 
 const createNotificationFromEvent = vi.fn();
@@ -13,7 +14,7 @@ describe('events', () => {
   });
 
   it('emits activity.completed with sanitized log metadata only', async () => {
-    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    const infoSpy = vi.spyOn(Logger.prototype, 'info').mockImplementation(() => undefined);
 
     await emitEvent('activity.completed', {
       actorId: 1,
@@ -42,6 +43,7 @@ describe('events', () => {
       entityType: 'activity',
       entityId: 7,
     });
+    infoSpy.mockRestore();
   });
 
   it('rejects invalid ids before dispatch', async () => {

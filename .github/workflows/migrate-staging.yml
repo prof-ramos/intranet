@@ -1,0 +1,41 @@
+name: Migrate Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Digite MIGRATE-STAGING para confirmar'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Apply Migrations to Staging
+    runs-on: ubuntu-latest
+    environment: staging
+    if: github.event.inputs.confirm == 'MIGRATE-STAGING'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply migrations
+        run: npx drizzle-kit migrate
+        env:
+          DATABASE_MIGRATION_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
+
+      - name: Verify schema alignment
+        run: npm run test:db
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
+          DATABASE_MIGRATION_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
