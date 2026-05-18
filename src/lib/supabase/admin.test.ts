@@ -94,8 +94,13 @@ describe('supabase admin helpers', () => {
     expect(deleteUserMock).toHaveBeenCalledWith('auth-1');
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       '[deleteAdminAuthUser] audit logging failed',
-      {},
-      expect.any(Error),
+      {
+        error: expect.objectContaining({
+          kind: 'error',
+          name: 'Error',
+          code: 'E_AUDIT',
+        }),
+      },
     );
     consoleErrorSpy.mockRestore();
   });
