@@ -126,25 +126,6 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 
 The application is intentionally compact: the web UI and backend behavior live in one Next.js codebase. Server Components and Server Actions own most request-time work. `proxy.ts` performs coarse protected-route validation before the protected app renders. Database access is centralized through Drizzle.
 
-### 3.2.5. Notification System
-
-Name: Real-time Notification System
-
-Description: Provides in-app notifications for activity reassignments and legal consultation updates using Supabase realtime subscriptions. Notifications are created via repository methods, delivered through a client-side hook with optimistic UI updates, and marked as read individually or in bulk.
-
-Technologies: Supabase realtime (`@supabase/supabase-js`), React hooks, Server Actions.
-
-Key files:
-- `src/lib/notifications/repository.ts` — create, list, count unread, mark read, mark all read
-- `src/lib/notifications/service.ts` — business logic layer
-- `src/lib/events.ts` — in-process event bus used by notifications
-- `src/components/NotificationBell.tsx` — UI component with realtime subscription
-- `src/hooks/useNotifications.ts` — realtime subscription hook
-- `src/app/app/notifications/actions.ts` — Server Actions for notification mutations
-- `src/lib/supabase/client.ts` — Supabase client factory for realtime
-
-Required env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-
 ## 3. Core Components
 
 ### 3.1. Frontend
@@ -200,6 +181,25 @@ Description: Provides script-safe Supabase client factories for administrative c
 Technologies: `@supabase/supabase-js`.
 
 Deployment: Used only from server/script contexts. Service-role keys must never be exposed to client components.
+
+### 3.2.5. Notification System
+
+Name: Real-time Notification System
+
+Description: Provides in-app notifications for activity reassignments and legal consultation updates using Supabase realtime subscriptions. Notifications are created via repository methods, delivered through a client-side hook with optimistic UI updates, and marked as read individually or in bulk.
+
+Technologies: Supabase realtime (`@supabase/supabase-js`), React hooks, Server Actions.
+
+Key files:
+- `src/lib/notifications/repository.ts` — create, list, count unread, mark read, mark all read
+- `src/lib/notifications/service.ts` — business logic layer
+- `src/lib/events.ts` — in-process event bus used by notifications
+- `src/components/NotificationBell.tsx` — UI component with realtime subscription
+- `src/hooks/useNotifications.ts` — realtime subscription hook
+- `src/app/app/notifications/actions.ts` — Server Actions for notification mutations
+- `src/lib/supabase/client.ts` — Supabase client factory for realtime
+
+Required env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 ## 4. Data Stores
 
@@ -351,7 +351,7 @@ Transactions are used where data consistency across multiple tables is required:
 
 - `pg_stat_statements` is installed (migration 0009) for query profiling.
 - No slow-query logging threshold is configured in Postgres.
-- Application-level monitoring: none currently. Consider `pglite` or Supabase observability dashboard for production.
+- Application-level logging: structured logger (`src/lib/logger.ts`) with PII redaction, configurable `LOG_LEVEL`, and JSON output in production. No external APM (Sentry, Datadog) is currently configured.
 - RLS monitoring should flag direct connections whose `application_name` is missing or differs from `asof-intranet`, especially before enabling any browser-side Supabase feature.
 
 ## 5. External Integrations / APIs
@@ -538,11 +538,34 @@ Antes de promover staging → produção:
 
 ### 6.5 CI/CD
 
-O repositório possui GitHub Actions em `.github/workflows/ci.yml` com lint, typecheck, testes unitários e build verification em `push`/`pull_request` para `main`. Para o primeiro go-live, deploy de produção e migrations são manuais após checklist e smoke. Push em `main` não deve ser tratado como autorização suficiente para publicar ou migrar produção.
+**Estado atual (`.github/workflows/ci.yml`):**
 
-Estado validado em 2026-05-17:
+| Job | Trigger | O que faz |
+|---|---|---|
+| `validate` | push/PR para `main` | lint, typecheck, unit tests (`npm run test`) |
+| `build` | needs: validate | build verification (`npm run build`) |
+| `database-contract` | push/PR para `main` | sobe PostgreSQL 16 em container, aplica migrations, roda `npm run test:db` |
+| `e2e` | needs: validate | sobe PostgreSQL 16 em container, instala Playwright Chromium, roda `npm run test:e2e` |
 
-- `origin/main` foi atualizado para `4e9adfa chore: harden intranet modules`.
+**Workflows auxiliares:**
+
+| Workflow | Trigger | O que faz |
+|---|---|---|
+| `migrate-staging.yml` | `workflow_dispatch` | aplica migrations em ambiente de staging com confirmação manual (`MIGRATE-STAGING`) |
+
+**Limitações atuais:**
+- Sem job `migrate-prod` automatizado — deploys e migrations de produção são manuais
+- Sem notificação/alerta de falha de CI além do status do PR
+
+**Recomendações futuras:**
+- Job `migrate-prod` manual (triggered), com backup/snapshot e opt-in explícito antes de promote
+- Alerta de falha de CI para canal de comunicação da equipe
+
+**Política de deploy:** push em `main` não autoriza deploy de produção. Deploy é manual após checklist de release (6.4) e smoke test.
+
+**Estado validado em 2026-05-18:**
+
+- `origin/main` inclui logger estruturado, CI com E2E, workflow de migration staging e runbook operacional.
 - Antes do push foram executados `npm run typecheck`, `npm run test`, `npm run lint` e `npm run build` com sucesso.
 - O commit inclui endurecimento de parsing, logs seguros, actions/rotas, notificações, jurídico, financeiro, storage, integrações e testes dedicados.
 - Essa atualização de código não alterou Supabase remoto, Vercel env vars, secrets ou migrations de produção.
@@ -551,12 +574,7 @@ Estado validado em 2026-05-17:
 vercel deploy --prod --yes
 ```
 
-**Recomendação futura:** adicionar GitHub Actions com:
-- Job `e2e` com Playwright + banco de testes
-- Job `migrate-staging` manual para ambiente separado de produção
-- Job `migrate-prod` manual (triggered), com backup/snapshot e opt-in explícito antes de promote
-
-Monitoring & Logging: No dedicated monitoring stack is currently configured in code. Local diagnostics live in `scripts/run-dev-60s.sh`.
+Monitoring & Logging: Structured logger (`src/lib/logger.ts`) with PII redaction, configurable levels, and JSON output in production. No dedicated external monitoring stack (Sentry, Datadog) is currently configured. Local diagnostics live in `scripts/run-dev-60s.sh`.
 
 ### 6.6 Git hygiene para deploys Vercel
 
@@ -683,11 +701,11 @@ Runtime Notes:
 - ~~Transaction wrapping for multi-table operations.~~ ✅ Done — `dispatchDomainEventById`, `initializeMonth`, `rotateApiKey`.
 - Add integration tests for login/session cookies, protected routes, and high-risk server actions.
 - Implement JWT-based RLS policies for critical tables (deferred — W3.0).
-- Decide and document production hosting, observability, backup, and incident-response practices.
+- Add external observability (Sentry/Datadog) for production error tracking and performance monitoring.
 - Keep `README.md`, `AGENTS.md`, `DESIGN.md`, `CLAUDE.md`, `API.md`, `CONTRIBUTING.md`, and this file synchronized when runtime or architecture decisions change.
 - Implement Fase 2 do módulo jurídico: processos, pareceres, biblioteca de pareceres, anexos.
 - Deprecate env-var integration API key path (Phase 2 of dual-auth transition).
-- Drop plaintext PII columns after backfill verification (migration 0019b / sunset timeline).
+- Drop plaintext PII columns after backfill verification (migration pending — backfill script `scripts/backfill-pii-encryption.ts` exists; plaintext columns still in schema with per-column fallback).
 - Evaluate formal API documentation (OpenAPI/Swagger) if REST endpoints grow.
 
 ## 10. Project Identification
@@ -698,7 +716,7 @@ Repository URL: https://github.com/prof-ramos/intranet.git
 
 Primary Contact/Team: ASOF / Prof. Ramos development workflow
 
-Date of Last Update: 2026-05-15
+Date of Last Update: 2026-05-18
 
 ## 11. Glossary / Acronyms
 

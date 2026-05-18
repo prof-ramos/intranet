@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '@/lib/logger';
 import { changePassword } from '@/app/change-password/actions';
 
 const requireAuthMock = vi.fn();
@@ -122,7 +123,7 @@ describe('change password action', () => {
   });
 
   it('logs safe errors when both the database write and rollback fail', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     updateWhereMock.mockRejectedValueOnce(Object.assign(new Error('db failed cpf=123'), { code: 'E_DB' }));
     updateUserMock
       .mockResolvedValueOnce({ error: null })
@@ -144,6 +145,7 @@ describe('change password action', () => {
           digest: undefined,
         },
       },
+      expect.any(Error),
     );
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       '[change-password] failed to persist new password hash',
@@ -155,6 +157,7 @@ describe('change password action', () => {
           digest: undefined,
         },
       },
+      expect.any(Error),
     );
     consoleErrorSpy.mockRestore();
   });

@@ -3,7 +3,10 @@ import { generateCsv } from './csv';
 import { auditReportDownload } from './audit';
 import { logDataAccess } from '@/lib/audit/service';
 import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
 import type { ReportFilters } from './export-filters';
+
+const logger = createLogger('reports');
 
 export interface ReportResult {
   csv: string;
@@ -21,7 +24,7 @@ export async function generateReport(
   try {
     await auditReportDownload(userId, filters, selectedKeys, rows.length);
   } catch (error) {
-    console.warn('[report-service] failed to persist audit log', { error: toSafeErrorLog(error) });
+    logger.warn('[report-service] failed to persist audit log', { error: toSafeErrorLog(error) });
   }
 
   try {
@@ -33,7 +36,7 @@ export async function generateReport(
       metadata: { format: 'csv', fieldCount: selectedKeys.length, rowCount: rows.length },
     });
   } catch (error) {
-    console.warn('[report-service] failed to persist data access log', {
+    logger.warn('[report-service] failed to persist data access log', {
       error: toSafeErrorLog(error),
     });
   }

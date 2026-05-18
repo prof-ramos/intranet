@@ -4,6 +4,9 @@ import { useEffect } from 'react';
 import { Users, RotateCcw } from 'lucide-react';
 import { focusRingClass } from '@/lib/ui/tokens';
 import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('error-boundary:associados');
 
 export default function AssociadosError({
   error,
@@ -13,7 +16,7 @@ export default function AssociadosError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Associados error boundary caught:', toSafeErrorLog(error));
+    logger.error('Associados error boundary caught', { error: toSafeErrorLog(error) });
   }, [error]);
 
   return (

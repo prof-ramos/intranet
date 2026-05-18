@@ -5,6 +5,9 @@ import type { PgTransaction } from 'drizzle-orm/pg-core';
 import type { PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
 import * as schema from './schema';
 import { env } from '@/lib/env';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('db');
 
 // databaseUrl intentionally prefers DATABASE_URL for runtime connections.
 // Falls back to Supabase Vercel integration var names (POSTGRES_URL, POSTGRES_PRISMA_URL).
@@ -19,7 +22,7 @@ if (!databaseUrl) {
 }
 
 if (env.DATABASE_URL && env.DATABASE_POSTGRES_URL) {
-  console.warn(
+  logger.warn(
     'Both DATABASE_URL and DATABASE_POSTGRES_URL are set; databaseUrl uses DATABASE_URL.',
   );
 }

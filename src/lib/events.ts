@@ -1,5 +1,8 @@
 import type { NotificationsTx } from '@/lib/notifications/repository';
 import { createNotificationFromEvent } from '@/lib/notifications/service';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('events');
 
 export const NOTIFICATION_EVENT_TYPES = ['activity.completed', 'legal_consultation.answered'] as const;
 
@@ -46,7 +49,7 @@ export async function emitEvent(
 ) {
   assertValidPayload(type, payload);
 
-  console.info('[emitEvent]', {
+  logger.info('[emitEvent]', {
     type,
     actorId: payload.actorId,
     recipientId: payload.recipientId,

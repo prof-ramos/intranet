@@ -43,6 +43,21 @@ npm run db:supabase:status
 Run a single test file: `npx vitest run src/lib/auth/password.test.ts`
 Run a single test: `npx vitest run -t "test name"`
 
+**Integration tests (real PostgreSQL):**
+
+Requires a dedicated test database (never dev/prod). Configure in `.env.test.local`:
+
+```bash
+DATABASE_URL=postgres://<user>@localhost:5432/asof_intranet_test
+DATABASE_MIGRATION_URL=postgres://<user>@localhost:5432/asof_intranet_test
+```
+
+```bash
+createdb asof_intranet_test
+DATABASE_MIGRATION_URL=postgres://<user>@localhost:5432/asof_intranet_test npm run db:migrate
+npx vitest run --config vitest.integration.config.ts
+```
+
 **E2E environment:** Playwright uses `http://localhost:3001`, not the regular
 dev server on `3000`. `e2e/global-setup.ts` creates/migrates/seeds `asof_test`
 and starts its own Next.js server on `127.0.0.1:3001` with `DATABASE_URL`
@@ -92,7 +107,7 @@ Server Components fetch data directly from the database. The juridico module has
 - `src/lib/associates/queries.ts` — Associate list/pagination
 - `src/lib/associates/search-params.ts` — URL search-params parsing for the associates list (filters, pagination)
 - `src/lib/reports/queries.ts` + `src/lib/reports/csv.ts` — Report generation
-- `src/lib/finance/queries.ts` — Financial dashboard and monthly payments
+- `src/lib/finance/queries.ts` — Financial dashboard and monthly payments (repository + service in `src/lib/finance/repository.ts` / `service.ts`; `effective-payment.ts` has domain logic for contribution status derivation)
 - `src/lib/juridico/repository.ts` + `service.ts` + `queries.ts` — Legal consultations (full service layer). `queries.ts` wraps repository calls with module-level `unstable_cache`; Server Actions call `revalidateTag` on mutations.
 - `src/lib/oficios/repository.ts` + `service.ts` — Official letters (repository + service). `findOfficialLetters` has a default LIMIT 100; Server Actions cap at 1000.
 - `src/lib/associates/repository.ts` — Associate data access. Uses HMAC blind indexes (`cpfHash`, `siapeHash`, `primaryEmailHash`) for PII lookups, never plaintext comparisons.
@@ -190,7 +205,7 @@ Set `SKIP_AUTH=true` in `.env.local` (ignored in production). Configures dev use
 - **CSV injection prevention:** Cells starting with `-`, `=`, `+`, `@`, or tab are prefixed with `\t` and quoted.
 - **LIKE query safety:** Escape `%` and `_` to prevent wildcard injection.
 - **PII sanitization:** `src/lib/sanitize-pii.ts` provides shared `sanitizePiiValue()` used by both audit service and webhook outbox. Never log or store plaintext PII in audit logs or domain event payloads.
-- **PII encryption sunset:** Plaintext PII columns have a 2-week sunset after deploy. After backfill completes and ciphertext is verified, code reads from ciphertext columns with per-column fallback to plaintext. Final migration drops plaintext columns.
+- **PII encryption sunset:** Backfill script `scripts/backfill-pii-encryption.ts` exists. Code reads from ciphertext columns with per-column fallback to plaintext. Migration to drop plaintext columns is pending (plaintext columns still in schema).
 - **Key rotation:** Encryption uses V2 format `enc:v2:{keyId}.{iv}.{authTag}.{ciphertext}` supporting zero-downtime key rotation. Decryption tries all known keys; encryption uses the active key.
 - **Rate limiting:** PostgreSQL-backed rate limiter at `/api/v1/events` and `/api/v1/health` (60 req/15min/IP). Login rate limiting per email via `login_attempts` table.
 - **Data access logging:** `logDataAccess()` in `src/lib/audit/service.ts` records PII view events for LGPD Art. 30/37 compliance.
@@ -402,3 +417,7 @@ Single-context repo — `CONTEXT.md` at root + `docs/adr/` for architectural dec
 - ARCHITECTURE.md — System diagram, deployment notes, glossary
 - DESIGN.md — Visual design system
 - AGENTS.md — Institutional context, domain vocabulary (sourced into this file)
+- CONTEXT.md — Single-context repository overview
+- API.md — API surface documentation
+- CONTRIBUTING.md — Contribution guidelines and conventions
+- vitest.integration.config.ts — Integration test configuration (real PostgreSQL)

@@ -1,7 +1,7 @@
 # Guia do Desenvolvedor — ASOF Intranet
 
 > Documentação para contribuidores e desenvolvedores da ASOF Intranet.
-> Última atualização: 2026-05-10
+> Última atualização: 2026-05-18
 
 ---
 
@@ -119,16 +119,22 @@ src/
 
   lib/                      # Código de negócio e infraestrutura
     auth/                   # Supabase session lookup, login, guards, rate limit
+    crypto/                 # Criptografia de PII (AES-256-GCM, HKDF, HMAC blind indexes)
     db/                     # Cliente Drizzle + schema
     juridico/               # Repository, service, queries do módulo jurídico
-    associates/             # Queries e helpers de associados
+    finance/                # Repository, service, queries do módulo financeiro
+    oficios/                # Repository, service, validations do módulo de ofícios
+    notifications/          # Repository, service, event bus de notificações
+    integrations/           # Auth M2M, webhooks outbound, rate limiting de API
+    associates/             # Queries, repository, PII masking e helpers de associados
     dashboard/              # Queries de agregação
     reports/                # Geração de CSV e queries de relatório
+    sanitize-pii.ts         # Sanitização de PII para logs e webhooks
+    logger.ts               # Logger estruturado com redação de PII
     supabase/               # Clientes Supabase (server/admin)
     ui/                     # Design tokens
     env.ts                  # Validação de variáveis de ambiente (Zod)
     events.ts               # Event bus em processo para notificações
-    rate-limit.ts           # Rate limiting por IP
 
   proxy.ts                  # Guarda de autenticação (Next.js 16)
 
@@ -284,7 +290,18 @@ O schema está dividido por domínio em `src/lib/db/schema/`:
 | `legal-processes.ts` | Processos jurídicos |
 | `legal-notes.ts` | Notas/histórico |
 | `legal-opinions.ts` | Pareceres e tags |
+| `legal-processes.ts` | Processos jurídicos (Fase 2) |
+| `monthly-payments.ts` | Mensalidades e pagamentos |
+| `oficios.ts` | Ofícios oficiais |
 | `rate-limits.ts` | Rate limiting por IP |
+| `domain-events.ts` | Outbox de eventos de domínio |
+| `webhook-subscriptions.ts` | Subscriptions de webhooks outbound |
+| `webhook-deliveries.ts` | Tentativas de entrega de webhooks |
+| `integration-api-keys.ts` | Chaves de API M2M com escopos |
+| `notifications.ts` | Notificações em tempo real |
+| `assignments.ts` | Lotações/postos |
+| `enums.ts` | Enums compartilhados |
+| `views.ts` | Views PII-safe (`associates_list_view`)
 
 ### Comandos úteis
 
@@ -395,11 +412,7 @@ Usuário → /login → Server Action: login()
 
 ### Build falha com "Invalid environment variables"
 
-`SESSION_SECRET` não é mais usado pela autenticação atual, que roda em
-Supabase Auth. Se o build exigir `SESSION_SECRET`, o deploy está usando uma
-versão antiga de `src/lib/env.ts` ou algum código reintroduziu validação de JWT
-customizada. Atualize a branch/deploy e verifique `src/lib/env.ts` antes de
-adicionar variáveis obsoletas ao Vercel.
+Verifique `src/lib/env.ts` para identificar variáveis obrigatórias. `SESSION_SECRET` não é mais usado desde a migração para Supabase Auth. Se o build exigir variáveis inesperadas, confira se o código reintroduziu validação customizada obsoleta.
 
 ### Typecheck falha com "Range out of order in character class"
 
@@ -533,9 +546,22 @@ Em vez de memória (Redis), o rate limit usa PostgreSQL para:
 
 ---
 
+### Por que logger estruturado em vez de `console.*`?
+
+O projeto usa `src/lib/logger.ts` para centralizar logs com:
+- Níveis configuráveis via `LOG_LEVEL` (`trace`, `debug`, `info`, `warn`, `error`, `fatal`)
+- Redação automática de PII (CPF, SIAPE, email, tokens, secrets) antes de logar
+- Formato JSON em produção e colorizado em desenvolvimento
+- Identificação de módulo via `createLogger('nome-do-modulo')`
+
+Nunca use `console.error`, `console.warn` ou `console.log` diretamente em código de produção. Sempre importe `createLogger` e chame `logger.error()`, `logger.warn()`, etc.
+
+---
+
 ## Recursos
 
 - [`API.md`](./API.md) — Documentação de endpoints e Server Actions
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — Diagramas e decisões técnicas
 - [`DESIGN.md`](./DESIGN.md) — Design system, tokens e tipografia
 - [`AGENTS.md`](./AGENTS.md) — Contexto institucional e vocabulário do domínio
+- [`docs/runbook.md`](./docs/runbook.md) — Procedimentos operacionais (deploy, backup, rollback, smoke test)

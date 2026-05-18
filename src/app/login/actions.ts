@@ -8,6 +8,9 @@ import { loginRateLimiter } from '@/lib/auth/login-rate-limit';
 import { loginSchema } from '@/lib/validation/schemas';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('login');
 
 function isTransientConnectionError(error: unknown) {
   if (!(error instanceof Error)) return false;
@@ -32,9 +35,7 @@ async function retryTransientConnection<T>(operation: () => Promise<T>): Promise
       throw error;
     }
 
-    console.warn('[Login] Retrying after transient database connection closure.', {
-      error: toSafeErrorLog(error),
-    });
+    logger.warn('[Login] Retrying after transient database connection closure.', { error: toSafeErrorLog(error) }, error as Error);
     return operation();
   }
 }
@@ -55,9 +56,7 @@ export async function login(formData: FormData) {
     const rateLimit = await retryTransientConnection(() => loginRateLimiter.consume(email));
     if (!rateLimit.allowed) redirect('/login?error=rate-limit');
   } catch (error) {
-    console.error('[Login] Rate-limit check failed; denying login.', {
-      error: toSafeErrorLog(error),
-    });
+    logger.error('[Login] Rate-limit check failed; denying login.', { error: toSafeErrorLog(error) }, error as Error);
     redirect('/login?error=rate-limit');
   }
 
@@ -99,9 +98,7 @@ export async function login(formData: FormData) {
   try {
     await retryTransientConnection(() => loginRateLimiter.reset(email));
   } catch (error) {
-    console.warn('[Login] Rate-limit reset failed after successful login.', {
-      error: toSafeErrorLog(error),
-    });
+    logger.warn('[Login] Rate-limit reset failed after successful login.', { error: toSafeErrorLog(error) }, error as Error);
   }
   redirect(user.mustChangePassword ? '/change-password' : '/app');
 }

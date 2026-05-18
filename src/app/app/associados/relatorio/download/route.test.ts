@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '@/lib/logger';
 import { GET } from './route';
 
 const consumeIpRateLimitMock = vi.fn();
@@ -41,7 +42,7 @@ describe('report download route', () => {
   });
 
   it('logs a safe error when report generation fails', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     generateReportMock.mockRejectedValue(
       Object.assign(new Error('email=user@example.com'), { code: 'E_REPORT' }),
     );
@@ -52,14 +53,18 @@ describe('report download route', () => {
 
     expect(response.status).toBe(500);
     expect(await response.text()).toBe('Falha ao gerar relatório.');
-    expect(consoleErrorSpy).toHaveBeenCalledWith('[report-download] failed to generate CSV', {
-      error: {
-        kind: 'error',
-        name: 'Error',
-        code: 'E_REPORT',
-        digest: undefined,
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[report-download] failed to generate CSV',
+      {
+        error: {
+          kind: 'error',
+          name: 'Error',
+          code: 'E_REPORT',
+          digest: undefined,
+        },
       },
-    });
+      expect.any(Error),
+    );
     consoleErrorSpy.mockRestore();
   });
 });

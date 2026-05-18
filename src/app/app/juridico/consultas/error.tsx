@@ -2,7 +2,9 @@
 
 import { useEffect } from 'react';
 import { FileText, RotateCcw } from 'lucide-react';
-import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('juridico:consultas:error');
 
 export default function ConsultasError({
   error,
@@ -12,7 +14,7 @@ export default function ConsultasError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Consultas error boundary caught:', toSafeErrorLog(error));
+    logger.error('Consultas error boundary caught', {}, error);
   }, [error]);
 
   return (

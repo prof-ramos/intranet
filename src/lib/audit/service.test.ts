@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Logger } from '@/lib/logger';
 import { logAuditAction, logDataAccess } from './service';
 
 // Use vi.hoisted to ensure mockInsert is available when vi.mock callbacks run
@@ -89,7 +90,7 @@ describe('logAuditAction', () => {
   });
 
   it('does not throw on DB error (logs and swallows)', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     mockInsert.mockReturnValue({
       values: vi.fn().mockRejectedValue(new Error('DB connection failed')),
     });
@@ -109,6 +110,7 @@ describe('logAuditAction', () => {
         adminId: 1,
         action: 'update',
       }),
+      expect.any(Error),
     );
     consoleErrorSpy.mockRestore();
   });

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '@/lib/logger';
 import { DELETE, GET, PATCH, POST, PUT } from './route';
 
 const mockAuthorizeIntegrationRequest = vi.fn();
@@ -112,7 +113,7 @@ describe('/api/v1/events route', () => {
   });
 
   it('logs a safe audit error without failing dispatch', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     auditValues.mockRejectedValue(Object.assign(new Error('email=user@example.com'), { code: 'E_AUDIT' }));
 
     const response = await POST(

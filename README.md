@@ -72,6 +72,12 @@ Acesse [http://localhost:3000](http://localhost:3000).
 | `DEV_USER_ROLE`                 | `admin`          | `admin` \| `diretoria` \| `secretaria`     |
 | `DEV_USER_MUST_CHANGE_PASSWORD` | `false`          | Simula fluxo de troca de senha             |
 
+### Logging
+
+| Variável   | Padrão  | Descrição                                                                   |
+| ---------- | ------- | --------------------------------------------------------------------------- |
+| `LOG_LEVEL` | `info`  | Nível mínimo de log: `trace`, `debug`, `info`, `warn`, `error`, `fatal`. Em produção, o logger emite JSON; em desenvolvimento, formato colorizado. |
+
 > `SKIP_AUTH=true` é **ignorado em `NODE_ENV=production`** — o proxy rejeita a flag mesmo que esteja definida.
 
 ### Integrações e webhooks outbound
@@ -123,6 +129,7 @@ npm run lint          # ESLint
 npm run typecheck     # TypeScript sem emitir arquivos
 npm run format:check  # valida formatação
 npm run test          # Vitest (testes unitários)
+npm run test:db       # Schema contract contra PostgreSQL real
 npm run test:e2e      # Playwright (testes end-to-end)
 npm run test:e2e:ui   # Playwright modo interativo
 npm run audit         # npm audit
@@ -211,6 +218,8 @@ scripts/          # seed, diagnóstico e status Supabase
 Detalhes de arquitetura, fluxo de dados e decisões técnicas: [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 Design system, tokens de cor e tipografia: [`DESIGN.md`](./DESIGN.md).
 Contexto institucional e vocabulário do domínio: [`AGENTS.md`](./AGENTS.md).
+Guia do desenvolvedor: [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+Procedimentos operacionais (deploy, backup, rollback): [`docs/runbook.md`](./docs/runbook.md).
 Deploy target, env vars e checklist de release: seção 6 de [`ARCHITECTURE.md`](./ARCHITECTURE.md#6-deployment--infrastructure).
 
 Auditoria técnica e status operacional de 2026-05-17:

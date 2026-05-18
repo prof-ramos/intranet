@@ -11,6 +11,9 @@ import { firstZodError } from '@/lib/server-actions/utils';
 import { changePasswordSchema } from '@/lib/validation/schemas';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('auth:change-password');
 
 function changePasswordError(message: string): never {
   redirect(`/change-password?error=${encodeURIComponent(message)}`);
@@ -82,14 +85,14 @@ export async function changePassword(formData: FormData) {
     });
 
     if (rollbackError) {
-      console.error('[change-password] failed to rollback auth password after DB write failure', {
+      logger.error('[change-password] failed to rollback auth password after DB write failure', {
         error: toSafeErrorLog(rollbackError),
-      });
+      }, rollbackError as Error);
     }
 
-    console.error('[change-password] failed to persist new password hash', {
+    logger.error('[change-password] failed to persist new password hash', {
       error: toSafeErrorLog(error),
-    });
+    }, error as Error);
     changePasswordError('Não foi possível concluir a alteração de senha.');
   }
 

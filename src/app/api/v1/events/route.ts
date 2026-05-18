@@ -6,6 +6,9 @@ import { jsonError, jsonMethodNotAllowed, jsonOk } from '@/lib/integrations/http
 import { dispatchDomainEventById, dispatchPendingDomainEvents } from '@/lib/integrations/webhooks/service';
 import { getClientIp, integrationRateLimiter } from '@/lib/integrations/rate-limit';
 import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('api:events');
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +41,7 @@ async function auditEventDispatch(input: {
       },
     });
   } catch (error) {
-    console.error('[events-route] failed to persist audit log', {
+    logger.error('[events-route] failed to persist audit log', {
       action: input.action,
       eventId: input.eventId,
       error: toSafeErrorLog(error),

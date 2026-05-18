@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '@/lib/logger';
 import { requireAuth } from '@/lib/auth/require-auth';
 
 let mockSession: import('@/lib/auth/config').SessionData | null = null;
@@ -130,7 +131,7 @@ describe('requireAuth', () => {
   });
 
   it('logs a safe error and redirects when the DB query fails', async () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     mockSession = {
       userId: 3,
       name: 'Admin',
@@ -142,14 +143,18 @@ describe('requireAuth', () => {
     mockDbError = Object.assign(new Error('email=user@example.com'), { code: 'E_DB' });
 
     await expect(requireAuth()).rejects.toThrow('NEXT_REDIRECT:/login');
-    expect(consoleErrorSpy).toHaveBeenCalledWith('requireAuth DB query failed', {
-      error: {
-        kind: 'error',
-        name: 'Error',
-        code: 'E_DB',
-        digest: undefined,
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'requireAuth DB query failed',
+      {
+        error: {
+          kind: 'error',
+          name: 'Error',
+          code: 'E_DB',
+          digest: undefined,
+        },
       },
-    });
+      expect.any(Error),
+    );
     consoleErrorSpy.mockRestore();
   });
 });
