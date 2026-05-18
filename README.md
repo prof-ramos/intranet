@@ -76,7 +76,7 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 | Variável   | Padrão  | Descrição                                                                   |
 | ---------- | ------- | --------------------------------------------------------------------------- |
-| `LOG_LEVEL` | `info`  | Nível mínimo de log: `trace`, `debug`, `info`, `warn`, `error`, `fatal`. Em produção, o logger emite JSON; em desenvolvimento, formato colorizado. |
+| `LOG_LEVEL` | `info`  | Nível mínimo de log: `debug`, `info`, `warn`, `error`. Em produção, o logger emite JSON; em desenvolvimento, formato colorizado. |
 
 > `SKIP_AUTH=true` é **ignorado em `NODE_ENV=production`** — o proxy rejeita a flag mesmo que esteja definida.
 

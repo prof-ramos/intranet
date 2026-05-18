@@ -7,15 +7,15 @@ on:
         description: 'Digite MIGRATE-STAGING para confirmar'
         required: true
         type: string
-      database_migration_url:
-        description: 'DATABASE_MIGRATION_URL para o ambiente de staging'
-        required: true
-        type: string
+
+permissions:
+  contents: read
 
 jobs:
   migrate:
     name: Apply Migrations to Staging
     runs-on: ubuntu-latest
+    environment: staging
     if: github.event.inputs.confirm == 'MIGRATE-STAGING'
     steps:
       - uses: actions/checkout@v4
@@ -32,10 +32,10 @@ jobs:
       - name: Apply migrations
         run: npx drizzle-kit migrate
         env:
-          DATABASE_MIGRATION_URL: ${{ github.event.inputs.database_migration_url }}
+          DATABASE_MIGRATION_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
 
       - name: Verify schema alignment
         run: npm run test:db
         env:
-          DATABASE_URL: ${{ github.event.inputs.database_migration_url }}
-          DATABASE_MIGRATION_URL: ${{ github.event.inputs.database_migration_url }}
+          DATABASE_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
+          DATABASE_MIGRATION_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
