@@ -43,6 +43,7 @@ describe('events', () => {
       entityType: 'activity',
       entityId: 7,
     });
+    infoSpy.mockRestore();
   });
 
   it('rejects invalid ids before dispatch', async () => {

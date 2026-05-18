@@ -290,7 +290,6 @@ O schema está dividido por domínio em `src/lib/db/schema/`:
 | `legal-processes.ts` | Processos jurídicos |
 | `legal-notes.ts` | Notas/histórico |
 | `legal-opinions.ts` | Pareceres e tags |
-| `legal-processes.ts` | Processos jurídicos (Fase 2) |
 | `monthly-payments.ts` | Mensalidades e pagamentos |
 | `oficios.ts` | Ofícios oficiais |
 | `rate-limits.ts` | Rate limiting por IP |

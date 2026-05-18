@@ -232,7 +232,7 @@ Formal, institutional interface. See `DESIGN.md` for full specification.
 - **Webpack is default.** Turbopack (`*:turbo` scripts) is for explicit diagnostics only due to prior Tailwind resolution issues on memory-constrained machines.
 - **No `middleware.ts`.** Next.js 16 renamed middleware to `proxy.ts`.
 - **No API routes for data fetching.** Server Components query Drizzle directly. Exception: `src/app/app/associados/relatorio/download/route.ts` is a Route Handler used for CSV file streaming — not a data-fetch endpoint.
-- **PII encryption at rest.** All sensitive fields (CPF, SIAPE, email, phone, address, WhatsApp) use AES-256-GCM with HKDF key derivation and HMAC-SHA-256 blind indexes. Per-column fallback supports incremental backfill. Plaintext columns have a 2-week sunset timeline.
+- **PII encryption at rest.** All sensitive fields (CPF, SIAPE, email, phone, address, WhatsApp) use AES-256-GCM with HKDF key derivation and HMAC-SHA-256 blind indexes. Per-column fallback supports incremental backfill. Plaintext columns sunset is pending until the drop migration is applied.
 - **Dual-auth transition.** Integration auth supports both env-var API keys (unrestricted) and table-backed API keys (scoped). Env-var path will be deprecated once table auth is verified in production.
 - **Shared PII sanitization.** `src/lib/sanitize-pii.ts` is the single source of truth for redacting sensitive values. Used by both audit service and webhook outbox.
 - **Error boundaries are not global.** Exist: `src/app/app/error.tsx` (generic app-level), `src/app/app/juridico/error.tsx` (juridico module), `src/app/app/juridico/consultas/error.tsx` (consultas sub-route). Not every route has one.
