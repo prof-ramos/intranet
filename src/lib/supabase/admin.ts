@@ -2,6 +2,7 @@ import 'server-only';
 
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseServiceRoleKey, getSupabaseUrl } from '@/lib/supabase/config';
+import { getNodeRealtimeOptions } from '@/lib/supabase/node-ws';
 import type { AuthRole } from '@/lib/auth/config';
 import { logAuditAction } from '@/lib/audit/service';
 import { createLogger } from '@/lib/logger';
@@ -26,6 +27,7 @@ function _getSupabaseAdminClient() {
       autoRefreshToken: false,
       persistSession: false,
     },
+    realtime: getNodeRealtimeOptions(),
   });
 
   return adminClient;
