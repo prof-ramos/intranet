@@ -138,7 +138,13 @@ export async function generatePasswordResetLink(email: string): Promise<string> 
   if (error) {
     throw error;
   }
-  return data.properties?.action_link ?? data.properties?.hashed_token ?? '';
+  const link = data.properties?.action_link ?? data.properties?.hashed_token;
+  if (!link) {
+    throw new Error(
+      `generatePasswordResetLink: no action_link or hashed_token returned for ${email}`,
+    );
+  }
+  return link;
 }
 
 export async function deleteAdminAuthUser(email: string, adminId?: number) {
