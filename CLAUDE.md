@@ -38,6 +38,12 @@ npm run db:migrate       # drizzle-kit migrate
 npm run db:seed          # seed admin user only (seed-associados.ts removed)
 npm run db:studio        # Drizzle Studio
 npm run db:supabase:status
+
+# Validation & checks
+npm run validate:quick     # typecheck + lint + unit tests
+npm run validate:full      # quick validation + DB tests + build
+npm run scope:check        # check changed file scope (strict)
+npm run pr:check           # PR readiness checks
 ```
 
 Run a single test file: `npx vitest run src/lib/auth/password.test.ts`
@@ -77,14 +83,14 @@ the result becomes `/login?error=rate-limit`.
 
 - `src/proxy.ts` — Next.js 16 proxy (replaces `middleware.ts`). Coarse Supabase user lookup for `/app/:path*` routes. Redirects to `/login` if missing/invalid. No Drizzle queries here; full user revalidation happens in `requireAuth()` inside `src/app/app/layout.tsx`.
 - `src/app/app/layout.tsx` — Authenticated shell. Calls `requireAuth()`, renders sidebar.
-- `src/app/app/config/auditoria/page.tsx`, `src/app/app/config/page.tsx`, `src/app/app/config/usuarios/page.tsx` — Thin configuration modules. Audit is read-only; users has admin-only actions.
+- `src/app/app/config/auditoria/page.tsx`, `src/app/app/config/page.tsx`, `src/app/app/config/usuarios/page.tsx`, `src/app/app/config/integracoes/page.tsx`, `src/app/app/config/lotacoes/page.tsx` — Thin configuration modules. Audit is read-only; users has admin-only actions.
 - `src/app/login/actions.ts` — Server Action for login. Rate-limited (5 attempts / 15 min), bcrypt with dummy hash for timing attack protection.
 - `src/app/change-password/` — Required password-change flow for `mustChangePassword=true`.
 
 ### Database Layer
 
 - `src/lib/db/index.ts` — Drizzle client. Prefers `DATABASE_URL`, falls back to `DATABASE_POSTGRES_URL`. Auto-detects transaction pooler (pgbouncer/port 6543) and sets `prepare: false` accordingly.
-- `src/lib/db/schema/` — Drizzle schemas: `admins`, `associates`, `activities`, `audit_logs`, `login_attempts`, `rate_limits`, `legal_consultations`, `legal_notes`, `legal_processes`, `legal_opinions`, `monthly_payments`, `oficios`, `assignments`, `domain_events`, `webhook_subscriptions`, `webhook_deliveries`, `integration_api_keys`, `notifications`.
+- `src/lib/db/schema/` — Drizzle schemas: `admins`, `associates`, `activities`, `audit`, `finance`, `login_attempts`, `rate_limits`, `legal_consultations`, `legal_notes`, `legal_processes`, `legal_opinions`, `monthly_payments`, `oficios`, `assignments`, `domain_events`, `webhook_subscriptions`, `webhook_deliveries`, `integration_api_keys`, `notifications`.
 - `drizzle.config.ts` — Targets PostgreSQL, writes migrations to `drizzle/postgres/`. **Rejects pooled URLs** — migrations require direct/non-pooling connection.
 - **Migrations:** Use `DATABASE_MIGRATION_URL` or `DATABASE_POSTGRES_URL_NON_POOLING`.
 
@@ -122,6 +128,23 @@ All PII fields (CPF, SIAPE, email, phone, address, WhatsApp) are encrypted at re
 - **Role-based masking**: `canViewSensitiveFields(role)` determines PII visibility. `getAssociateForEdit` decrypts for admin/diretoria, masks for secretaria.
 - `src/lib/associates/lgpd.ts` — `SENSITIVE_FIELDS` set drives PII masking; includes `sourcePayload`, `primaryEmail`, and all ciphertext columns.
 - `scripts/backfill-pii-encryption.ts` — Idempotent backfill script. Uses `Buffer` for key material with `buffer.fill(0)` after use.
+
+### Application Modules
+
+- `src/lib/activities/` — Activity (board) CRUD, assignments, workflows
+- `src/lib/associates/` — Associate search, filters, repository
+- `src/lib/audit/` — Audit log queries and helpers
+- `src/lib/finance/` — Monthly payments, contributions
+- `src/lib/integrations/` — API keys, webhooks, rate limits
+- `src/lib/juridico/` — Legal consultations, processes, opinions, notes, SLA tracking
+- `src/lib/notifications/` — Realtime notifications via Supabase
+- `src/lib/oficios/` — Official letter (ofício) generation and management
+- `src/lib/reports/` — CSV export, audit reports
+- `src/lib/ai/` — Gemini integration
+- `src/lib/dashboard/` — Dashboard queries and view-models
+- `src/lib/routing/` — Navigation and route helpers
+- `src/lib/server-actions/` — Shared server action utilities
+- `src/lib/validation/` — Shared validation schemas
 
 ### Integration Auth (Dual-Auth)
 
@@ -382,6 +405,7 @@ git diff --cached --name-status
 - `src/lib/crypto/index.ts` — HKDF key derivation, V2 encryption format
 - `src/lib/crypto/pii.ts` — PII encrypt/decrypt/blind-index functions
 - `src/lib/sanitize-pii.ts` — Shared PII sanitizer for audit logs and webhooks
+- `src/lib/logger.ts` — Structured logger with PII redaction (`createLogger("module-name")`)
 - `src/lib/db/index.ts` — Database client
 - `src/lib/db/schema/views.ts` — PII-safe `associates_list_view`
 - `src/lib/db/schema/enums.ts` — Shared enums (`paymentMethod`, `legalSatisfaction`)
