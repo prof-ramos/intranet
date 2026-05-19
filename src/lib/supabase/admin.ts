@@ -118,19 +118,25 @@ export function getSupabaseAdminClient() {
 }
 
 /**
- * Send a password reset email to the given address via the Supabase admin client.
- * Uses generateLink({ type: 'recovery' }) to create a recovery link, which
- * Supabase delivers to the user's inbox through its built-in email service.
+ * Generate a password recovery link for the given address via the Supabase admin client.
+ *
+ * IMPORTANT: This function only generates a recovery link using generateLink().
+ * It does NOT send an email. The caller is responsible for delivering the link
+ * to the user (e.g., via an email provider such as Mailjet/Resend/SendGrid).
+ *
+ * If you want Supabase to send the email automatically, use
+ * supabase.auth.resetPasswordForEmail() on the client side instead.
  */
-export async function sendPasswordResetEmail(email: string) {
+export async function generatePasswordResetLink(email: string): Promise<string> {
   const supabase = _getSupabaseAdminClient();
-  const { error } = await supabase.auth.admin.generateLink({
+  const { data, error } = await supabase.auth.admin.generateLink({
     type: 'recovery',
     email,
   });
   if (error) {
     throw error;
   }
+  return data.properties?.action_link ?? data.properties?.hashed_token ?? '';
 }
 
 export async function deleteAdminAuthUser(email: string, adminId?: number) {

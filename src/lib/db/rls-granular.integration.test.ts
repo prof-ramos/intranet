@@ -9,8 +9,9 @@
  */
 import { afterAll, describe, expect, it } from 'vitest';
 import postgres from 'postgres';
+import { env } from '@/lib/env';
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = env.DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error('DATABASE_URL must be set for RLS granular integration tests.');

@@ -16,13 +16,13 @@ const logger = createLogger('ip');
  */
 export function getTrustedProxyCount(): number {
   const raw = env.TRUSTED_PROXY_COUNT;
-  if (raw === undefined || raw === '') return 1; // sensible default: 1 proxy
-  const n = Number(raw);
-  if (!Number.isInteger(n) || n < 0) {
+  // raw is number | undefined (z.preprocess(emptyStringToUndefined, z.coerce.number()) in env schema)
+  if (raw === undefined) return 1; // sensible default: 1 proxy
+  if (!Number.isInteger(raw) || raw < 0) {
     logger.warn('[ip] TRUSTED_PROXY_COUNT is invalid; falling back to 1', { value: raw });
     return 1;
   }
-  return n;
+  return raw;
 }
 
 /**

@@ -19,7 +19,7 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
 
   if (resetState?.success) {
     return (
-      <div className="inline-flex items-center gap-1.5">
+      <div className="inline-flex items-center gap-1.5" role="status" aria-live="polite">
         <MailCheck size={14} className="text-green-600" aria-hidden="true" />
         <p className="text-xs text-green-700 font-medium">{resetState.message}</p>
       </div>
@@ -29,7 +29,7 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
   return (
     <div className="inline-flex items-center gap-2">
       {(resetState?.success === false || toggleState?.success === false) && (
-        <span className="text-xs text-red-600">
+        <span className="text-xs text-red-600" role="alert">
           {resetState?.success === false ? resetState.message : toggleState?.message}
         </span>
       )}

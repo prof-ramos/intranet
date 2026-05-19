@@ -133,30 +133,24 @@ describe('VULN-001: Migration 0039 granular RLS policies', () => {
   });
 
   it('no new USING(true) permissive policies are created', () => {
-    // Count CREATE POLICY statements that use USING (true)
-    const createPolicyLines = sql
-      .split('\n')
-      .filter((line) => line.trim().startsWith('CREATE POLICY'));
+    // Use a global regex that matches across line boundaries to detect
+    // CREATE POLICY ... USING (true) even when split across multiple lines.
+    const permissiveMatches = [
+      ...sql.matchAll(/CREATE\s+POLICY[\s\S]*?USING\s*\(\s*true\s*\)/gi),
+    ].map((m) => m[0].replace(/\n/g, ' ').trim());
 
-    const permissiveUsingTrue = createPolicyLines.filter((line) =>
-      /USING\s*\(\s*true\s*\)/.test(line),
-    );
-
-    // The only legitimate USING(true) should be for rate_limits update and login_attempts update
-    // which need to allow all authenticated users to update their own rate-limit counters
-    const legitimatePermissive = permissiveUsingTrue.filter((line) =>
-      line.includes('rate_limits') || line.includes('login_attempts'),
-    );
-
-    // All USING(true) policies must be for rate-limit tables only
-    const illegitimatePermissive = permissiveUsingTrue.filter(
-      (line) =>
-        !line.includes('rate_limits') && !line.includes('login_attempts'),
+    // login_attempts_insert uses WITH CHECK (true) for INSERT, which is legitimate
+    // (rate-limit counters need to be insertable by any authenticated user).
+    // No policy should have USING (true) for SELECT/UPDATE/DELETE.
+    const illegitimatePermissive = permissiveMatches.filter(
+      (match) =>
+        !match.includes('login_attempts_insert') &&
+        !match.includes('rate_limits_insert'),
     );
 
     expect(
       illegitimatePermissive,
-      `Found non-rate-limit policies with USING(true): ${illegitimatePermissive.join('; ')}`,
+      `Found policies with USING(true): ${illegitimatePermissive.join('; ')}`,
     ).toEqual([]);
   });
 

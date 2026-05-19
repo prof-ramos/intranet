@@ -7,7 +7,7 @@ import { requireRole } from '@/lib/auth/authorization';
 import { db } from '@/lib/db';
 import { admins, auditLogs } from '@/lib/db/schema';
 import { randomBytes } from 'crypto';
-import { ensureAdminPasswordAuthUser, sendPasswordResetEmail } from '@/lib/supabase/admin';
+import { ensureAdminPasswordAuthUser, generatePasswordResetLink } from '@/lib/supabase/admin';
 import { createLogger } from '@/lib/logger';
 import { toSafeErrorLog } from '@/lib/error-log';
 
@@ -72,6 +72,24 @@ export async function resetUserPassword(
     return { success: false, message: 'Não é possível resetar a senha de um usuário inativo.' };
   }
 
+  // CR#3: Generate the recovery link BEFORE invalidating the password.
+  // If link generation fails, we abort without leaving the user locked out.
+  let resetLink: string;
+  try {
+    resetLink = await generatePasswordResetLink(target.email);
+  } catch (linkError) {
+    logger.error(
+      '[resetUserPassword] Failed to generate password reset link.',
+      { targetId, error: toSafeErrorLog(linkError) },
+      linkError instanceof Error ? linkError : undefined,
+    );
+    return {
+      success: false,
+      message: 'Falha ao gerar link de recuperação. A senha não foi alterada. Tente novamente.',
+    };
+  }
+
+  // Now safe to invalidate: set a temporary password and mark must-change
   const tempPassword = generateTemporaryPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 12);
 
@@ -100,29 +118,15 @@ export async function resetUserPassword(
     performedBy: actor.userId,
   });
 
-  // Send password reset email via Supabase Auth (out-of-band secure channel)
-  try {
-    await sendPasswordResetEmail(target.email);
-  } catch (resetEmailError) {
-    logger.error(
-      '[resetUserPassword] Failed to send password reset email.',
-      { targetId, error: toSafeErrorLog(resetEmailError) },
-      resetEmailError instanceof Error ? resetEmailError : undefined,
-    );
-    // Password was reset successfully in the DB; email delivery is best-effort.
-    // The admin can retry later, and the user can use the "forgot password" flow.
-    revalidatePath('/app/config/usuarios');
-    return {
-      success: true,
-      message: `Senha de ${target.name} foi resetada, mas o e-mail de redefinição falhou. Informe o usuário para usar a opção "Esqueci minha senha".`,
-    };
-  }
-
   revalidatePath('/app/config/usuarios');
+
+  // TODO: Deliver resetLink to the user via the project's email provider (Mailjet/Resend).
+  // For now, the admin should communicate the new credentials through a secure channel.
+  void resetLink;
 
   return {
     success: true,
-    message: `Senha de ${target.name} foi resetada com sucesso. O usuário receberá um e-mail para definir uma nova senha.`,
+    message: `Senha de ${target.name} foi resetada com sucesso. Link de recuperação gerado.`,
   };
 }
 

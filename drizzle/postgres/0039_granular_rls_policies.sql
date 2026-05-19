@@ -32,6 +32,7 @@ CREATE OR REPLACE FUNCTION get_current_admin_role()
 RETURNS TEXT
 LANGUAGE sql
 STABLE
+SECURITY DEFINER
 AS $$
   SELECT a.role
   FROM admins a
@@ -46,6 +47,7 @@ CREATE OR REPLACE FUNCTION get_current_admin_id()
 RETURNS BIGINT
 LANGUAGE sql
 STABLE
+SECURITY DEFINER
 AS $$
   SELECT a.id
   FROM admins a
@@ -284,7 +286,8 @@ CREATE POLICY oficios_delete ON oficios
 -- --------------------------------------------------------------------------
 -- login_attempts: internal rate-limit table
 --   read: admin only
---   insert/update: all authenticated (needed for rate-limit logic)
+--   insert: all authenticated (server-side via postgres role bypasses RLS)
+--   update: own email only or admin
 -- --------------------------------------------------------------------------
 CREATE POLICY login_attempts_select ON login_attempts
   FOR SELECT TO authenticated
@@ -296,8 +299,10 @@ CREATE POLICY login_attempts_insert ON login_attempts
 
 CREATE POLICY login_attempts_update ON login_attempts
   FOR UPDATE TO authenticated
-  USING (true)
-  WITH CHECK (true);
+  USING (lower(email) = lower(auth.jwt() ->> 'email') OR is_admin_role())
+  WITH CHECK (lower(email) = lower(auth.jwt() ->> 'email') OR is_admin_role());
+
+
 
 CREATE POLICY login_attempts_delete ON login_attempts
   FOR DELETE TO authenticated
@@ -306,7 +311,8 @@ CREATE POLICY login_attempts_delete ON login_attempts
 -- --------------------------------------------------------------------------
 -- rate_limits: internal rate-limit table (same pattern as login_attempts)
 --   read: admin only
---   insert/update: all authenticated (needed for rate-limit logic)
+--   insert: all authenticated (server-side via postgres role bypasses RLS)
+--   update: admin only (server-side rate-limit ops use postgres role)
 -- --------------------------------------------------------------------------
 CREATE POLICY rate_limits_select ON rate_limits
   FOR SELECT TO authenticated
@@ -318,8 +324,8 @@ CREATE POLICY rate_limits_insert ON rate_limits
 
 CREATE POLICY rate_limits_update ON rate_limits
   FOR UPDATE TO authenticated
-  USING (true)
-  WITH CHECK (true);
+  USING (is_admin_role())
+  WITH CHECK (is_admin_role());
 
 CREATE POLICY rate_limits_delete ON rate_limits
   FOR DELETE TO authenticated

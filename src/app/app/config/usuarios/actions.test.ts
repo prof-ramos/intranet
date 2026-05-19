@@ -4,7 +4,7 @@ import { resetUserPassword, toggleUserActive } from './actions';
 const {
   requireRoleMock,
   ensureAdminPasswordAuthUserMock,
-  sendPasswordResetEmailMock,
+  generatePasswordResetLinkMock,
   hashMock,
   revalidatePathMock,
   selectQueue,
@@ -15,7 +15,7 @@ const {
 } = vi.hoisted(() => ({
   requireRoleMock: vi.fn(),
   ensureAdminPasswordAuthUserMock: vi.fn(),
-  sendPasswordResetEmailMock: vi.fn(),
+  generatePasswordResetLinkMock: vi.fn(),
   hashMock: vi.fn(),
   revalidatePathMock: vi.fn(),
   selectQueue: [] as unknown[][],
@@ -37,7 +37,7 @@ vi.mock('@/lib/auth/authorization', () => ({
 
 vi.mock('@/lib/supabase/admin', () => ({
   ensureAdminPasswordAuthUser: (...args: unknown[]) => ensureAdminPasswordAuthUserMock(...args),
-  sendPasswordResetEmail: (...args: unknown[]) => sendPasswordResetEmailMock(...args),
+  generatePasswordResetLink: (...args: unknown[]) => generatePasswordResetLinkMock(...args),
 }));
 
 vi.mock('@/lib/logger', () => ({
@@ -84,13 +84,13 @@ describe('config usuarios actions', () => {
     insertQueue.length = 0;
     requireRoleMock.mockResolvedValue({ userId: 7 });
     ensureAdminPasswordAuthUserMock.mockResolvedValue({ userId: 'auth-1', created: false });
-    sendPasswordResetEmailMock.mockResolvedValue(undefined);
+    generatePasswordResetLinkMock.mockResolvedValue('https://supabase.co/recovery?token=abc');
     hashMock.mockResolvedValue('hashed-password');
     mockLimit.mockImplementation(async () => selectQueue.shift() ?? []);
     mockInsertValues.mockImplementation(() => insertQueue.shift());
   });
 
-  it('resets another active user password, syncs supabase auth, sends reset email, audits, and revalidates', async () => {
+  it('generates reset link before invalidating password, then syncs supabase auth, audits, and revalidates', async () => {
     selectQueue.push([
       {
         id: 10,
@@ -108,8 +108,10 @@ describe('config usuarios actions', () => {
     const result = await resetUserPassword(null, formData);
 
     expect(result.success).toBe(true);
-    expect(result.message).toBe('Senha de Maria foi resetada com sucesso. O usuário receberá um e-mail para definir uma nova senha.');
+    expect(result.message).toContain('Link de recuperação gerado');
     expect('tempPassword' in result).toBe(false);
+    // Link generated BEFORE password invalidation
+    expect(generatePasswordResetLinkMock).toHaveBeenCalledWith('maria@asof.local');
     expect(hashMock).toHaveBeenCalledWith(expect.any(String), 12);
     expect(ensureAdminPasswordAuthUserMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -120,7 +122,6 @@ describe('config usuarios actions', () => {
         resetPassword: true,
       }),
     );
-    expect(sendPasswordResetEmailMock).toHaveBeenCalledWith('maria@asof.local');
     expect(mockUpdateWhere).toHaveBeenCalledTimes(1);
     expect(mockInsertValues).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -133,7 +134,7 @@ describe('config usuarios actions', () => {
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/usuarios');
   });
 
-  it('returns degraded success when reset email fails', async () => {
+  it('aborts without invalidating password when link generation fails', async () => {
     selectQueue.push([
       {
         id: 10,
@@ -143,17 +144,18 @@ describe('config usuarios actions', () => {
         isActive: true,
       },
     ]);
-    insertQueue.push(undefined);
-    sendPasswordResetEmailMock.mockRejectedValue(new Error('SMTP failed'));
+    generatePasswordResetLinkMock.mockRejectedValue(new Error('generateLink failed'));
 
     const formData = new FormData();
     formData.set('userId', '10');
 
     const result = await resetUserPassword(null, formData);
 
-    expect(result.success).toBe(true);
-    expect(result.message).toContain('e-mail de redefinição falhou');
-    expect('tempPassword' in result).toBe(false);
+    expect(result.success).toBe(false);
+    expect(result.message).toContain('Falha ao gerar link de recuperação');
+    // Password should NOT have been invalidated
+    expect(ensureAdminPasswordAuthUserMock).not.toHaveBeenCalled();
+    expect(mockUpdateWhere).not.toHaveBeenCalled();
   });
 
   it('rejects password reset for the current actor', async () => {
