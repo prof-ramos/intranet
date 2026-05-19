@@ -1,3 +1,4 @@
+import { isPublicWebhookUrl } from '@/lib/validation/schemas';
 import { randomUUID } from 'node:crypto';
 import { db } from '@/lib/db';
 import {
@@ -104,6 +105,26 @@ async function deliverEventToSubscription(
   attempt: number,
   executor: Pick<import('@/lib/db').Tx, 'insert' | 'update' | 'select' | 'execute'>,
 ) {
+  // F-001 fix: Re-validate webhook target URL at dispatch time to prevent SSRF
+  // if the URL was modified in the database after creation.
+  if (!isPublicWebhookUrl(subscription.targetUrl)) {
+    const failureReason = `Webhook target URL failed security validation: ${subscription.targetUrl}`;
+    console.error('[webhook] ' + failureReason);
+    await insertWebhookDelivery({
+      domainEventId: eventId,
+      webhookSubscriptionId: subscription.id,
+      attempt,
+      requestId: `ssrf-blocked-${subscription.id}`,
+      idempotencyKey: `ssrf-blocked-${eventId}:${subscription.id}`,
+      status: 'failed',
+      statusCode: null,
+      responseExcerpt: null,
+      failedAt: new Date(),
+      failureReason,
+    }, executor);
+    return 'failed' as const;
+  }
+
   const idempotencyKey = `${eventId}:${subscription.id}`;
   const timestamp = String(Math.floor(Date.now() / 1000));
   const requestId = randomUUID();

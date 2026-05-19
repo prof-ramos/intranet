@@ -4,6 +4,7 @@ import { requireRole } from '@/lib/auth/authorization';
 import * as service from '@/lib/oficios/service';
 import * as repository from '@/lib/oficios/repository';
 import { generateOfficialLetterContent } from '@/lib/ai/gemini';
+import { env } from '@/lib/env';
 import { officialLetterFormSchema, type OfficialLetterFormValues } from '@/lib/oficios/validations';
 import { revalidatePath } from 'next/cache';
 import { toSafeErrorLog } from '@/lib/error-log';
@@ -33,6 +34,9 @@ export async function generateAiTextAction(params: {
   instruction: string;
 }) {
   await requireRole(ALLOWED_ROLES);
+  if (!env.NEXT_PUBLIC_AI_ENABLED) {
+    return { success: false, error: 'Funcionalidade de IA não está disponível.' };
+  }
   try {
     return { success: true, text: await generateOfficialLetterContent(params) };
   } catch (error) {

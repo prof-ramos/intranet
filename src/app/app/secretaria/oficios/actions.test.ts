@@ -7,14 +7,27 @@ import {
   updateOfficialLetterAction,
 } from './actions';
 
-const requireRoleMock = vi.fn();
-const findOfficialLettersMock = vi.fn();
-const findOfficialLetterByIdMock = vi.fn();
-const generateOfficialLetterContentMock = vi.fn();
-const saveOfficialLetterMock = vi.fn();
-const updateOfficialLetterMock = vi.fn();
-const cancelOfficialLetterMock = vi.fn();
-const revalidatePathMock = vi.fn();
+const {
+  requireRoleMock,
+  findOfficialLettersMock,
+  findOfficialLetterByIdMock,
+  generateOfficialLetterContentMock,
+  saveOfficialLetterMock,
+  updateOfficialLetterMock,
+  cancelOfficialLetterMock,
+  revalidatePathMock,
+  envMock,
+} = vi.hoisted(() => ({
+  requireRoleMock: vi.fn(),
+  findOfficialLettersMock: vi.fn(),
+  findOfficialLetterByIdMock: vi.fn(),
+  generateOfficialLetterContentMock: vi.fn(),
+  saveOfficialLetterMock: vi.fn(),
+  updateOfficialLetterMock: vi.fn(),
+  cancelOfficialLetterMock: vi.fn(),
+  revalidatePathMock: vi.fn(),
+  envMock: { NEXT_PUBLIC_AI_ENABLED: true as boolean },
+}));
 
 vi.mock('@/lib/auth/authorization', () => ({
   requireRole: (...args: unknown[]) => requireRoleMock(...args),
@@ -41,6 +54,10 @@ vi.mock('@/lib/oficios/validations', () => ({
   },
 }));
 
+vi.mock('@/lib/env', () => ({
+  env: envMock,
+}));
+
 vi.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => revalidatePathMock(...args),
 }));
@@ -55,6 +72,7 @@ describe('secretaria oficios actions', () => {
     saveOfficialLetterMock.mockResolvedValue({ id: 1 });
     updateOfficialLetterMock.mockResolvedValue({ id: 1 });
     cancelOfficialLetterMock.mockResolvedValue({ id: 1 });
+    envMock.NEXT_PUBLIC_AI_ENABLED = true;
   });
 
   it('returns AI suggestion on success', async () => {
@@ -67,6 +85,21 @@ describe('secretaria oficios actions', () => {
     });
 
     expect(result).toEqual({ success: true, text: 'texto gerado' });
+  });
+
+  it('returns disabled error when AI is not enabled', async () => {
+    envMock.NEXT_PUBLIC_AI_ENABLED = false;
+
+    const result = await generateAiTextAction({
+      recipient: 'Maria',
+      recipientRole: 'Presidente',
+      subject: 'Assunto',
+      itamaratySector: 'SGP',
+      instruction: 'Escreva um ofício',
+    });
+
+    expect(result).toEqual({ success: false, error: 'Funcionalidade de IA não está disponível.' });
+    expect(generateOfficialLetterContentMock).not.toHaveBeenCalled();
   });
 
   it('logs a safe error when AI generation fails', async () => {

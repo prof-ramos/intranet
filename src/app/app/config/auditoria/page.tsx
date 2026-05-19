@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { auditLogs, type AuditLog } from '@/lib/db/schema/audit';
 import { admins } from '@/lib/db/schema/admins';
 import { desc, eq, and, gte, lt, ilike, count } from 'drizzle-orm';
+import { escapeLikePattern } from '@/lib/db/like-pattern';
 import type { SQL } from 'drizzle-orm';
 import { focusRingClass } from '@/lib/ui/tokens';
 
@@ -52,7 +53,7 @@ export default async function AuditoriaPage({
     filters.push(eq(auditLogs.entityType, entityType as AuditLog['entityType']));
   }
   if (q) {
-    filters.push(ilike(auditLogs.action, `%${q}%`));
+    filters.push(ilike(auditLogs.action, `%${escapeLikePattern(q)}%`));
   }
   // BRT = UTC-3, fixed offset since Brazil eliminated DST in 2019.
   // new Date('YYYY-MM-DDT00:00:00-03:00') gives the correct São Paulo midnight in UTC.

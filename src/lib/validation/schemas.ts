@@ -4,7 +4,7 @@ import { paymentStatus } from '@/lib/db/schema/finance';
 import { functionalStatus, associationStatus, contributionStatus } from '@/lib/db/schema/associates';
 import { domainEventType } from '@/lib/db/schema/integrations';
 
-const PRIVATE_IPV4_RANGES = [
+export const PRIVATE_IPV4_RANGES = [
   /^10\./,
   /^127\./,
   /^169\.254\./,
@@ -86,7 +86,7 @@ function cpfValidator(cpf: string | null) {
   return check === parseInt(digits[10]);
 }
 
-function isPublicWebhookUrl(value: string): boolean {
+export function isPublicWebhookUrl(value: string): boolean {
   let url: URL;
   try {
     url = new URL(value);

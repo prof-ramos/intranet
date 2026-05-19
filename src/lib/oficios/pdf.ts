@@ -4,6 +4,62 @@ import { type OfficialLetter } from '@/lib/db/schema/oficios';
 // Conversions
 const CM_TO_PT = 28.3465;
 
+/** Split a paragraph into lines that fit within maxWidth, using the given font/size. */
+function wrapText(
+  text: string,
+  font: { widthOfTextAtSize: (text: string, size: number) => number },
+  size: number,
+  maxWidth: number,
+): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+
+  const lines: string[] = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    const testLine = `${currentLine} ${words[i]}`;
+    if (font.widthOfTextAtSize(testLine, size) <= maxWidth) {
+      currentLine = testLine;
+    } else {
+      lines.push(currentLine);
+      currentLine = words[i];
+    }
+  }
+  lines.push(currentLine);
+  return lines;
+}
+
+/**
+ * Draw a paragraph with automatic line wrapping.
+ * Returns the Y position after the last drawn line.
+ */
+function drawWrappedText(
+  page: ReturnType<PDFDocument['addPage']>,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  font: { widthOfTextAtSize: (text: string, size: number) => number },
+  size: number,
+  lineHeight: number,
+  options?: { color?: ReturnType<typeof rgb>; font?: Parameters<typeof page.drawText>[1] extends { font?: infer F } ? F : never },
+): number {
+  const lines = wrapText(text, font, size, maxWidth);
+  for (const line of lines) {
+    if (y < 50) break; // page boundary guard
+    page.drawText(line, {
+      x,
+      y,
+      size,
+      lineHeight,
+      ...options,
+    });
+    y -= lineHeight;
+  }
+  return y;
+}
+
 export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   const pdfDoc = await PDFDocument.create();
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -15,25 +71,16 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   const marginLeft = 3 * CM_TO_PT;
   const marginRight = 1.5 * CM_TO_PT;
   const marginTop = 2 * CM_TO_PT;
-  const marginBottom = 2 * CM_TO_PT;
   const contentWidth = width - marginLeft - marginRight;
   
   let currentY = height - marginTop;
   
-  // 1. Cabeçalho (Area of 5cm)
-  // We'll skip the Brasão for now as we don't have the asset, but we'll reserve the space
-  currentY -= 1 * CM_TO_PT; // Brasão space
-  
-  page.drawText('ASSOCIAÇÃO NACIONAL DOS OFICIAIS DE CHANCELARIA', {
-    x: width / 2,
-    y: currentY,
-    size: 10,
-    font: fontBold,
-    color: rgb(0, 0, 0),
-  });
-  // Need to center text manually in pdf-lib if not using a high-level lib
-  const header1Width = fontBold.widthOfTextAtSize('ASSOCIAÇÃO NACIONAL DOS OFICIAIS DE CHANCELARIA', 10);
-  page.drawText('ASSOCIAÇÃO NACIONAL DOS OFICIAIS DE CHANCELARIA', {
+  // 1. Header (5cm area)
+  currentY -= 1 * CM_TO_PT; // reserved for Brasão
+
+  const header1 = 'ASSOCIAÇÃO NACIONAL DOS OFICIAIS DE CHANCERLARIA';
+  const header1Width = fontBold.widthOfTextAtSize(header1, 10);
+  page.drawText(header1, {
     x: (width - header1Width) / 2,
     y: currentY,
     size: 10,
@@ -52,27 +99,15 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   
   currentY = height - 5 * CM_TO_PT; // Start after 5cm header area
   
-  // 2. Identificação do Expediente (Left Aligned)
-  page.drawText(oficio.number, {
-    x: marginLeft,
-    y: currentY,
-    size: 12,
-    font,
-  });
+  // 2. Number (left) and Date (right)
+  page.drawText(oficio.number, { x: marginLeft, y: currentY, size: 12, font });
   
-  // 3. Local e Data (Right Aligned)
-  const dateText = oficio.letterDate;
-  const dateWidth = font.widthOfTextAtSize(dateText, 12);
-  page.drawText(dateText, {
-    x: width - marginRight - dateWidth,
-    y: currentY,
-    size: 12,
-    font,
-  });
+  const dateWidth = font.widthOfTextAtSize(oficio.letterDate, 12);
+  page.drawText(oficio.letterDate, { x: width - marginRight - dateWidth, y: currentY, size: 12, font });
   
   currentY -= 40;
   
-  // 4. Endereçamento (Left Aligned)
+  // 3. Addressing block
   page.drawText(oficio.vocativo, { x: marginLeft, y: currentY, size: 12, font });
   currentY -= 15;
   page.drawText(oficio.recipient, { x: marginLeft, y: currentY, size: 12, font: fontBold });
@@ -85,76 +120,50 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   
   currentY -= 40;
   
-  // 5. Assunto (Bold, Left Aligned)
-  const subjectLabel = 'Assunto: ';
-  const subjectText = oficio.subject;
-  page.drawText(subjectLabel + subjectText, {
-    x: marginLeft,
-    y: currentY,
-    size: 12,
-    font: fontBold,
-  });
+  // 4. Subject (bold)
+  const subjectLine = `Assunto: ${oficio.subject}`;
+  currentY = drawWrappedText(
+    page, subjectLine, marginLeft, currentY,
+    contentWidth, fontBold, 12, 16,
+  );
   
-  currentY -= 40;
+  currentY -= 30;
   
-  // 6. Texto do Documento
-  const paragraphs = oficio.bodyPlainText.split('\n').filter(p => p.trim() !== '');
+  // 5. Body — with proper line wrapping
+  const bodyIndent = 2.5 * CM_TO_PT;
+  const bodyMaxWidth = contentWidth - bodyIndent;
+  const paragraphs = oficio.bodyPlainText.split('\n').filter((p) => p.trim() !== '');
   const useNumbering = paragraphs.length >= 3;
   
   for (let i = 0; i < paragraphs.length; i++) {
     const pText = useNumbering ? `${i + 1}. ${paragraphs[i]}` : paragraphs[i];
     
-    page.drawText(pText, {
-      x: marginLeft + 2.5 * CM_TO_PT,
-      y: currentY,
-      size: 12,
-      font,
-      maxWidth: contentWidth - 2.5 * CM_TO_PT,
-      lineHeight: 16,
-    });
+    currentY = drawWrappedText(
+      page, pText, marginLeft + bodyIndent, currentY,
+      bodyMaxWidth, font, 12, 16,
+    );
     
-    // Estimate height (this is crude, pdf-lib doesn't give wrapped height easily)
-    const lines = Math.ceil(font.widthOfTextAtSize(pText, 12) / (contentWidth - 2.5 * CM_TO_PT)) + 1;
-    currentY -= lines * 16 + 6; // 6pt after
+    currentY -= 6; // spacing between paragraphs
     
-    if (currentY < marginBottom + 50) {
-      // Very basic page break handling (would need more logic for real robust use)
-      break; 
-    }
+    // Simple page break: if we're near the bottom, stop
+    if (currentY < marginTop + 50) break;
   }
   
   currentY -= 20;
   
-  // 7. Fecho
-  page.drawText(oficio.closure, {
-    x: marginLeft + 2.5 * CM_TO_PT,
-    y: currentY,
-    size: 12,
-    font,
-  });
+  // 6. Closure
+  page.drawText(oficio.closure, { x: marginLeft + bodyIndent, y: currentY, size: 12, font });
   
   currentY -= 60;
   
-  // 8. Identificação do Signatário (Centered)
+  // 7. Signatory (centered)
   const sigName = oficio.signatoryName.toUpperCase();
-  const sigRole = oficio.signatoryRole;
-  
   const sigNameWidth = font.widthOfTextAtSize(sigName, 12);
-  const sigRoleWidth = font.widthOfTextAtSize(sigRole, 12);
+  page.drawText(sigName, { x: (width - sigNameWidth) / 2, y: currentY, size: 12, font });
   
-  page.drawText(sigName, {
-    x: (width - sigNameWidth) / 2,
-    y: currentY,
-    size: 12,
-    font,
-  });
   currentY -= 15;
-  page.drawText(sigRole, {
-    x: (width - sigRoleWidth) / 2,
-    y: currentY,
-    size: 12,
-    font,
-  });
+  const sigRoleWidth = font.widthOfTextAtSize(oficio.signatoryRole, 12);
+  page.drawText(oficio.signatoryRole, { x: (width - sigRoleWidth) / 2, y: currentY, size: 12, font });
   
   return pdfDoc.save();
 }

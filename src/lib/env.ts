@@ -30,6 +30,8 @@ export const envSchema = z
     MAILJET_SENDER_NAME: optionalString.default('ASOF Intranet'),
     GEMINI_API_KEY: optionalString.describe('Gemini API key for AI features'),
 
+    NEXT_PUBLIC_AI_ENABLED: z.preprocess(emptyStringToUndefined, z.enum(["true", "false"]).default("false")).transform(v => v === "true"),
+
     SKIP_AUTH: optionalString.default('false'),
     DEV_USER_ID: optionalString,
     DEV_USER_NAME: optionalString,
