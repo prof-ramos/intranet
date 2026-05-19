@@ -42,7 +42,7 @@ test.describe('Secretaria — Ofícios', () => {
   test('cancel button is present for generated ofícios', async ({ page, loginAsAdmin }) => {
     await loginAsAdmin();
     await page.goto('/app/secretaria/oficios');
-    const cancelButton = page.locator('tr:has-text("OFÍCIO No 001/2026/ASOF") button[title="Cancelar"]');
+    const cancelButton = page.locator('tr:has-text("OFÍCIO No 001/2026/ASOF")').getByRole('button', { name: 'Cancelar ofício' });
     await expect(cancelButton).toBeVisible();
   });
 

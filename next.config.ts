@@ -29,7 +29,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  distDir: isE2E ? '.next-e2E' : '.next',
+  distDir: isE2E ? '.next-e2e' : '.next',
   allowedDevOrigins: ['127.0.0.1'],
   turbopack: {
     root: projectRoot,

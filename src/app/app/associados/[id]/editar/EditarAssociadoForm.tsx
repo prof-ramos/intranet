@@ -46,6 +46,14 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
     try {
       await updateAssociate(formData);
     } catch (e) {
+      const err = e instanceof Error ? e : null;
+      const digest =
+        err && 'digest' in err && typeof (err as { digest?: string }).digest === 'string'
+          ? (err as { digest?: string }).digest
+          : undefined;
+      if (digest?.startsWith('NEXT_REDIRECT') || err?.message?.startsWith('NEXT_REDIRECT')) {
+        throw e;
+      }
       logger.error('[EditarAssociadoForm] update error', { error: toSafeErrorLog(e) });
       setError('Erro ao salvar. Verifique os dados e tente novamente.');
     } finally {

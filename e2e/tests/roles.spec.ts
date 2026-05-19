@@ -94,6 +94,7 @@ test.describe('Config sidebar navigation', () => {
     const configButton = page.getByRole('button', { name: 'Configurações' });
     await expect(configButton).toBeVisible();
     await configButton.click();
+    await page.waitForTimeout(100);
     await expect(page.getByRole('link', { name: 'Usuários' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Lotações' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Auditoria' })).toBeVisible();

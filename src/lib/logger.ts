@@ -1,5 +1,3 @@
-import { env } from '@/lib/env';
-
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogContext {
@@ -78,13 +76,13 @@ function safeStringify(obj: unknown): string {
 }
 
 function getLogLevel(): LogLevel {
-  const level = env.LOG_LEVEL?.toLowerCase() as LogLevel | undefined;
+  const level = process.env.LOG_LEVEL?.toLowerCase() as LogLevel | undefined;
   if (level && level in LEVELS) return level;
-  return env.NODE_ENV === 'production' ? 'info' : 'debug';
+  return process.env.NODE_ENV === 'production' ? 'info' : 'debug';
 }
 
 const CURRENT_LEVEL = getLogLevel();
-const IS_PROD = env.NODE_ENV === 'production';
+const IS_PROD = process.env.NODE_ENV === 'production';
 
 function shouldLog(level: LogLevel): boolean {
   return LEVELS[level] >= LEVELS[CURRENT_LEVEL];
