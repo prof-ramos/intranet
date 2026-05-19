@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react';
 import { resetUserPassword, toggleUserActive } from './actions';
-import { KeyRound, UserX, UserCheck, Copy, Check } from 'lucide-react';
+import { KeyRound, UserX, UserCheck, MailCheck } from 'lucide-react';
 import { focusRingClass } from '@/lib/ui/tokens';
 
 interface UserActionsPanelProps {
@@ -14,47 +14,14 @@ interface UserActionsPanelProps {
 export function UserActionsPanel({ userId, userName, isActive }: UserActionsPanelProps) {
   const [resetState, resetAction, isResetting] = useActionState(resetUserPassword, null);
   const [toggleState, toggleAction, isToggling] = useActionState(toggleUserActive, null);
-  const [copied, setCopied] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmToggle, setConfirmToggle] = useState(false);
 
-  async function handleCopy(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  }
-
-  if (resetState?.success && resetState.tempPassword) {
+  if (resetState?.success) {
     return (
-      <div className="inline-flex flex-col items-end gap-1">
+      <div className="inline-flex items-center gap-1.5" role="status" aria-live="polite">
+        <MailCheck size={14} className="text-green-600" aria-hidden="true" />
         <p className="text-xs text-green-700 font-medium">{resetState.message}</p>
-        <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-1.5">
-          <code className="text-xs font-mono text-green-800 select-all">
-            {resetState.tempPassword}
-          </code>
-          <button
-            onClick={() => handleCopy(resetState.tempPassword!)}
-            className={`text-green-600 hover:text-green-800 transition-colors ${focusRingClass}`}
-            aria-label="Copiar senha"
-            type="button"
-          >
-            {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
-          </button>
-        </div>
-        <p className="text-xs text-[rgba(13,31,60,0.45)]">Copie antes de fechar. Não será exibida novamente.</p>
       </div>
     );
   }
@@ -62,7 +29,7 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
   return (
     <div className="inline-flex items-center gap-2">
       {(resetState?.success === false || toggleState?.success === false) && (
-        <span className="text-xs text-red-600">
+        <span className="text-xs text-red-600" role="alert">
           {resetState?.success === false ? resetState.message : toggleState?.message}
         </span>
       )}

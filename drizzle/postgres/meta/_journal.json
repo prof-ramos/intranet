@@ -260,6 +260,27 @@
       "when": 1779532800002,
       "tag": "0038_harden_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1779619200000,
+      "tag": "0039a_rls_helpers",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1779619200001,
+      "tag": "0039b_rls_core_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1779619200002,
+      "tag": "0039c_rls_aux_tables",
+      "breakpoints": true
     }
   ]
 }

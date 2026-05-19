@@ -1,6 +1,29 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createIntegrationRateLimiter, getClientIp } from './rate-limit';
 
+// Mock the ip module to control getTrustedClientIp behavior
+vi.mock('@/lib/ip', () => ({
+  getTrustedClientIp: vi.fn((headers: Headers): string => {
+    // Replicate the trusted-proxy logic for testing
+    const forwarded = headers.get('x-forwarded-for');
+    if (forwarded) {
+      const entries = forwarded
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+      if (entries.length > 0) {
+        // Default TRUSTED_PROXY_COUNT=1: client index = entries.length - 2
+        const clientIndex = Math.max(0, entries.length - 2);
+        const ip = entries[clientIndex];
+        if (ip) return ip;
+      }
+    }
+    const realIp = headers.get('x-real-ip');
+    if (realIp?.trim()) return realIp.trim();
+    return 'unknown';
+  }),
+}));
+
 describe('integration rate limiter', () => {
   it('rejects invalid limiter options', () => {
     expect(() =>
@@ -78,26 +101,26 @@ describe('integration rate limiter', () => {
 });
 
 describe('getClientIp', () => {
-  it('prefers the first x-forwarded-for entry', () => {
+  it('delegates to getTrustedClientIp for IP extraction', () => {
+    // Verify getClientIp delegates to the shared getTrustedClientIp
     const request = new Request('https://asof.local', {
       headers: {
         'x-forwarded-for': '203.0.113.1, 10.0.0.1',
-        'x-real-ip': '198.51.100.2',
       },
     });
 
     expect(getClientIp(request)).toBe('203.0.113.1');
   });
 
-  it('falls back to x-real-ip and then unknown', () => {
-    const withRealIp = new Request('https://asof.local', {
-      headers: {
-        'x-real-ip': '198.51.100.2',
-      },
-    });
-    const unknown = new Request('https://asof.local');
+  it('falls back gracefully when no headers are present', () => {
+    const request = new Request('https://asof.local');
+    expect(getClientIp(request)).toBe('unknown');
+  });
 
-    expect(getClientIp(withRealIp)).toBe('198.51.100.2');
-    expect(getClientIp(unknown)).toBe('unknown');
+  it('respects x-real-ip as a fallback', () => {
+    const request = new Request('https://asof.local', {
+      headers: { 'x-real-ip': '198.51.100.2' },
+    });
+    expect(getClientIp(request)).toBe('198.51.100.2');
   });
 });

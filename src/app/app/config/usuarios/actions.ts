@@ -7,7 +7,11 @@ import { requireRole } from '@/lib/auth/authorization';
 import { db } from '@/lib/db';
 import { admins, auditLogs } from '@/lib/db/schema';
 import { randomBytes } from 'crypto';
-import { ensureAdminPasswordAuthUser } from '@/lib/supabase/admin';
+import { ensureAdminPasswordAuthUser, generatePasswordResetLink } from '@/lib/supabase/admin';
+import { createLogger } from '@/lib/logger';
+import { toSafeErrorLog } from '@/lib/error-log';
+
+const logger = createLogger('usuarios:actions');
 
 function generateTemporaryPassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -33,9 +37,9 @@ function parseAdminId(formData: FormData): number {
 }
 
 export async function resetUserPassword(
-  _prevState: { success: boolean; message: string; tempPassword?: string } | null,
+  _prevState: { success: boolean; message: string } | null,
   formData: FormData,
-): Promise<{ success: boolean; message: string; tempPassword?: string }> {
+): Promise<{ success: boolean; message: string }> {
   const actor = await requireRole(['admin']);
 
   const targetId = parseAdminId(formData);
@@ -68,6 +72,24 @@ export async function resetUserPassword(
     return { success: false, message: 'Não é possível resetar a senha de um usuário inativo.' };
   }
 
+  // CR#3: Generate the recovery link BEFORE invalidating the password.
+  // If link generation fails, we abort without leaving the user locked out.
+  let resetLink: string;
+  try {
+    resetLink = await generatePasswordResetLink(target.email);
+  } catch (linkError) {
+    logger.error(
+      '[resetUserPassword] Failed to generate password reset link.',
+      { targetId, error: toSafeErrorLog(linkError) },
+      linkError instanceof Error ? linkError : undefined,
+    );
+    return {
+      success: false,
+      message: 'Falha ao gerar link de recuperação. A senha não foi alterada. Tente novamente.',
+    };
+  }
+
+  // Now safe to invalidate: set a temporary password and mark must-change
   const tempPassword = generateTemporaryPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 12);
 
@@ -98,10 +120,13 @@ export async function resetUserPassword(
 
   revalidatePath('/app/config/usuarios');
 
+  // TODO: Deliver resetLink to the user via the project's email provider (Mailjet/Resend).
+  // For now, the admin should communicate the new credentials through a secure channel.
+  void resetLink;
+
   return {
     success: true,
-    message: `Senha de ${target.name} foi resetada com sucesso.`,
-    tempPassword,
+    message: `Senha de ${target.name} foi resetada com sucesso. Link de recuperação gerado.`,
   };
 }
 

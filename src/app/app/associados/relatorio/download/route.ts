@@ -5,16 +5,14 @@ import { generateReport } from '@/lib/reports/service';
 import { parseReportExportParams } from '@/lib/reports/export-filters';
 import { requireReportAccess } from '@/lib/reports/policy';
 import { consumeIpRateLimit } from '@/lib/rate-limit';
+import { getTrustedClientIp } from '@/lib/ip';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('reports:download');
 
 export async function GET(request: NextRequest) {
-  const clientIp =
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    request.headers.get('x-real-ip') ??
-    'unknown';
+  const clientIp = getTrustedClientIp(request.headers);
 
   const rateLimit = await consumeIpRateLimit(clientIp, 'report_download', {
     windowMs: 60 * 1000,

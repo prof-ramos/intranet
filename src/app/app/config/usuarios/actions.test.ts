@@ -4,6 +4,7 @@ import { resetUserPassword, toggleUserActive } from './actions';
 const {
   requireRoleMock,
   ensureAdminPasswordAuthUserMock,
+  generatePasswordResetLinkMock,
   hashMock,
   revalidatePathMock,
   selectQueue,
@@ -14,6 +15,7 @@ const {
 } = vi.hoisted(() => ({
   requireRoleMock: vi.fn(),
   ensureAdminPasswordAuthUserMock: vi.fn(),
+  generatePasswordResetLinkMock: vi.fn(),
   hashMock: vi.fn(),
   revalidatePathMock: vi.fn(),
   selectQueue: [] as unknown[][],
@@ -35,6 +37,20 @@ vi.mock('@/lib/auth/authorization', () => ({
 
 vi.mock('@/lib/supabase/admin', () => ({
   ensureAdminPasswordAuthUser: (...args: unknown[]) => ensureAdminPasswordAuthUserMock(...args),
+  generatePasswordResetLink: (...args: unknown[]) => generatePasswordResetLinkMock(...args),
+}));
+
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
+
+vi.mock('@/lib/error-log', () => ({
+  toSafeErrorLog: (err: unknown) => String(err),
 }));
 
 vi.mock('next/cache', () => ({
@@ -68,12 +84,13 @@ describe('config usuarios actions', () => {
     insertQueue.length = 0;
     requireRoleMock.mockResolvedValue({ userId: 7 });
     ensureAdminPasswordAuthUserMock.mockResolvedValue({ userId: 'auth-1', created: false });
+    generatePasswordResetLinkMock.mockResolvedValue('https://supabase.co/recovery?token=abc');
     hashMock.mockResolvedValue('hashed-password');
     mockLimit.mockImplementation(async () => selectQueue.shift() ?? []);
     mockInsertValues.mockImplementation(() => insertQueue.shift());
   });
 
-  it('resets another active user password, syncs supabase auth, audits, and revalidates', async () => {
+  it('generates reset link before invalidating password, then syncs supabase auth, audits, and revalidates', async () => {
     selectQueue.push([
       {
         id: 10,
@@ -91,10 +108,11 @@ describe('config usuarios actions', () => {
     const result = await resetUserPassword(null, formData);
 
     expect(result.success).toBe(true);
-    expect(result.message).toBe('Senha de Maria foi resetada com sucesso.');
-    expect(result.tempPassword).toBeTypeOf('string');
-    expect(result.tempPassword).toHaveLength(8);
-    expect(hashMock).toHaveBeenCalledWith(result.tempPassword, 12);
+    expect(result.message).toContain('Link de recuperação gerado');
+    expect('tempPassword' in result).toBe(false);
+    // Link generated BEFORE password invalidation
+    expect(generatePasswordResetLinkMock).toHaveBeenCalledWith('maria@asof.local');
+    expect(hashMock).toHaveBeenCalledWith(expect.any(String), 12);
     expect(ensureAdminPasswordAuthUserMock).toHaveBeenCalledWith(
       expect.objectContaining({
         email: 'maria@asof.local',
@@ -102,7 +120,6 @@ describe('config usuarios actions', () => {
         role: 'secretaria',
         mustChangePassword: true,
         resetPassword: true,
-        password: result.tempPassword,
       }),
     );
     expect(mockUpdateWhere).toHaveBeenCalledTimes(1);
@@ -115,6 +132,30 @@ describe('config usuarios actions', () => {
       }),
     );
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/usuarios');
+  });
+
+  it('aborts without invalidating password when link generation fails', async () => {
+    selectQueue.push([
+      {
+        id: 10,
+        name: 'Maria',
+        email: 'maria@asof.local',
+        role: 'secretaria',
+        isActive: true,
+      },
+    ]);
+    generatePasswordResetLinkMock.mockRejectedValue(new Error('generateLink failed'));
+
+    const formData = new FormData();
+    formData.set('userId', '10');
+
+    const result = await resetUserPassword(null, formData);
+
+    expect(result.success).toBe(false);
+    expect(result.message).toContain('Falha ao gerar link de recuperação');
+    // Password should NOT have been invalidated
+    expect(ensureAdminPasswordAuthUserMock).not.toHaveBeenCalled();
+    expect(mockUpdateWhere).not.toHaveBeenCalled();
   });
 
   it('rejects password reset for the current actor', async () => {
