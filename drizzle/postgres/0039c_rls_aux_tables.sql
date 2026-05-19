@@ -1,15 +1,18 @@
--- Migration 0039c: Granular RLS policies for auxiliary tables (add-before-drop)
+-- Migration 0039c: Granular RLS policies for auxiliary tables
 -- Fix VULN-001: Authenticated = Full Access
 --
 -- Auxiliary tables: monthly_payments, oficios, domain_events,
 --                    webhook_subscriptions, webhook_deliveries,
 --                    integration_api_keys, login_attempts, rate_limits
 --
--- Strategy: CREATE new policies first, then DROP old permissive ones.
 -- login_attempts_update uses get_jwt_email() helper instead of inline auth.jwt().
+--
+-- NOTE: Some policies in this migration replace existing ones from earlier
+-- migrations (0013 oficios_update, 0015 webhook_*_all, integration_api_keys_all).
+-- We DROP IF EXISTS first for those, then CREATE.
 
 -- ============================================================================
--- 1. monthly_payments
+-- 1. monthly_payments (new policies)
 -- ============================================================================
 CREATE POLICY monthly_payments_select ON monthly_payments
   FOR SELECT TO authenticated
@@ -23,8 +26,11 @@ CREATE POLICY monthly_payments_manage ON monthly_payments
 DROP POLICY IF EXISTS monthly_payments_all ON monthly_payments;
 
 -- ============================================================================
--- 2. oficios
+-- 2. oficios (replace existing policies from 0013)
 -- ============================================================================
+DROP POLICY IF EXISTS oficios_all ON oficios;
+DROP POLICY IF EXISTS oficios_update ON oficios;
+
 CREATE POLICY oficios_select ON oficios
   FOR SELECT TO authenticated
   USING (is_staff_role());
@@ -42,10 +48,8 @@ CREATE POLICY oficios_delete ON oficios
   FOR DELETE TO authenticated
   USING (is_privileged_role());
 
-DROP POLICY IF EXISTS oficios_all ON oficios;
-
 -- ============================================================================
--- 3. domain_events
+-- 3. domain_events (new policies)
 -- ============================================================================
 CREATE POLICY domain_events_select ON domain_events
   FOR SELECT TO authenticated
@@ -67,37 +71,37 @@ CREATE POLICY domain_events_delete ON domain_events
 DROP POLICY IF EXISTS domain_events_all ON domain_events;
 
 -- ============================================================================
--- 4. webhook_subscriptions
+-- 4. webhook_subscriptions (replace existing policy from 0015)
 -- ============================================================================
+DROP POLICY IF EXISTS webhook_subscriptions_all ON webhook_subscriptions;
+
 CREATE POLICY webhook_subscriptions_all ON webhook_subscriptions
   FOR ALL TO authenticated
   USING (is_admin_role())
   WITH CHECK (is_admin_role());
 
-DROP POLICY IF EXISTS webhook_subscriptions_all ON webhook_subscriptions;
+-- ============================================================================
+-- 5. webhook_deliveries (replace existing policy from 0015)
+-- ============================================================================
+DROP POLICY IF EXISTS webhook_deliveries_all ON webhook_deliveries;
 
--- ============================================================================
--- 5. webhook_deliveries
--- ============================================================================
 CREATE POLICY webhook_deliveries_all ON webhook_deliveries
   FOR ALL TO authenticated
   USING (is_admin_role())
   WITH CHECK (is_admin_role());
 
-DROP POLICY IF EXISTS webhook_deliveries_all ON webhook_deliveries;
+-- ============================================================================
+-- 6. integration_api_keys (replace existing policy from 0015)
+-- ============================================================================
+DROP POLICY IF EXISTS integration_api_keys_all ON integration_api_keys;
 
--- ============================================================================
--- 6. integration_api_keys
--- ============================================================================
 CREATE POLICY integration_api_keys_all ON integration_api_keys
   FOR ALL TO authenticated
   USING (is_admin_role())
   WITH CHECK (is_admin_role());
 
-DROP POLICY IF EXISTS integration_api_keys_all ON integration_api_keys;
-
 -- ============================================================================
--- 7. login_attempts
+-- 7. login_attempts (new policies)
 -- ============================================================================
 CREATE POLICY login_attempts_select ON login_attempts
   FOR SELECT TO authenticated
@@ -119,7 +123,7 @@ CREATE POLICY login_attempts_delete ON login_attempts
 DROP POLICY IF EXISTS login_attempts_all ON login_attempts;
 
 -- ============================================================================
--- 8. rate_limits
+-- 8. rate_limits (new policies)
 -- ============================================================================
 CREATE POLICY rate_limits_select ON rate_limits
   FOR SELECT TO authenticated
