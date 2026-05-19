@@ -498,7 +498,7 @@ Staging/preview deve usar um projeto Supabase separado de produção. Previews n
 
 #### Produção (Vercel)
 
-As mesmas variáveis do staging, apontando para o projeto Supabase de produção. O projeto Supabase oficial de produção é `uftzjmmfkoqhjjwsiynk` (`db-intranet`). Qualquer referência a `vmohxhyfgywaqfuqeuom` deve ser tratada como drift até reconciliação explícita.
+As mesmas variáveis do staging, apontando para o projeto Supabase de produção. O projeto Supabase oficial de produção é `vmohxhyfgywaqfuqeuom` (`db-intranet`).
 
 > **Regra:** `DATABASE_MIGRATION_URL` nunca usa pooler (porta 6543). Migrations precisam de conexão direta.
 
@@ -517,7 +517,7 @@ Ordem para provisionar um novo ambiente do zero:
 
 Antes de promover staging → produção:
 
-- [ ] Supabase de produção oficial confirmado como `uftzjmmfkoqhjjwsiynk`
+- [ ] Supabase de produção oficial confirmado como `vmohxhyfgywaqfuqeuom`
 - [ ] Staging/preview apontando para Supabase separado de produção
 - [ ] Projeto Vercel remoto com `Framework Preset: Next.js` e sem `Output Directory` estático (`public` ou `.`)
 - [ ] `npm run lint` — passou

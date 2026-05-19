@@ -53,7 +53,7 @@ Todas as branches antigas foram removidas:
 
 ### Fase 3 - Banco E Supabase
 
-- [ ] Confirmar alvo oficial de producao Supabase: `uftzjmmfkoqhjjwsiynk` (`db-intranet`).
+- [ ] Confirmar alvo oficial de producao Supabase: `vmohxhyfgywaqfuqeuom` (`db-intranet`).
 - [ ] Confirmar que previews/staging usam Supabase separado e nunca o banco de producao.
 - [ ] Fazer backup/snapshot antes de qualquer migration.
 - [ ] Conferir drift remoto: tabelas esperadas, ausencia de tabelas extras indevidas, extensoes e enums.
@@ -103,7 +103,7 @@ Todas as branches antigas foram removidas:
 - [ ] **Configurar alertas criticos** (error rate > 5%, p95 latency > 2s, RLS violations) antes do go-live.
 - [ ] Criar issues separadas para Listmonk, webhooks, dashboards adicionais e UX pendente.
 - [ ] Remover branches/worktrees restantes apos o periodo de estabilizacao.
-- [ ] Atualizar `README.md`, `docs/runbook.md` e `docs/dbsave.md` se algum passo operacional mudou.
+- [ ] Atualizar `README.md` e `docs/runbook.md` se algum passo operacional mudou.
 
 ## Comandos De Apoio
 

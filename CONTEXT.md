@@ -150,10 +150,12 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 ### Autenticação M2M (Dual-Auth)
 
 O sistema suporta dois caminhos de autenticação para APIs:
-1. **Env-var Key**: `ASOF_INTEGRATION_API_KEY` + `ASOF_INTEGRATION_HMAC_SECRET` — acesso irrestrito.
-2. **Table-backed Key**: Chaves persistidas em `integration_api_keys` com escopos por endpoint — acesso restrito.
-
-O caminho env-var será deprecado assim que o table-backed for validado em produção.
+1. **Env-var Key (Depreciado)**: `ASOF_INTEGRATION_API_KEY` + `ASOF_INTEGRATION_HMAC_SECRET`. O uso deste caminho gera logs de aviso estruturados (`logger.warn`) contendo `User-Agent`, método, rota e `requestId` (com omissão de credenciais). A desativação definitiva ocorre assim que o administrador remover as variáveis de ambiente do painel da Vercel.
+2. **Table-backed Key**: Chaves persistidas em `integration_api_keys` com escopos por endpoint.
+   - **GET /api/v1/events**: Exige o escopo `events:read`.
+   - **POST /api/v1/events**: Exige o escopo `events:write`.
+   - **GET /api/v1/health**: Não exige escopo específico, necessitando apenas de uma chave ativa.
+   - **Validação de Cadastro**: A criação ou rotação de chaves via `createApiKeyAction` exige obrigatoriamente a seleção de pelo menos um escopo válido.
 
 ### Webhooks Outbound
 

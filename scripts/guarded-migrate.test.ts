@@ -19,7 +19,7 @@ describe('guarded migrate', () => {
   it('blocks the known production Supabase project without explicit opt-in', () => {
     expect(() =>
       assertMigrationAllowed({
-        DATABASE_MIGRATION_URL: 'postgres://postgres.uftzjmmfkoqhjjwsiynk:secret@aws-0-sa-east-1.pooler.supabase.com:5432/postgres',
+        DATABASE_MIGRATION_URL: 'postgres://postgres.vmohxhyfgywaqfuqeuom:secret@aws-0-sa-east-1.pooler.supabase.com:5432/postgres',
       }),
     ).toThrow(/Refusing to run db:migrate/);
   });
@@ -42,7 +42,7 @@ describe('guarded migrate', () => {
 
   it('allows production migrations only with explicit opt-in', () => {
     const env = {
-      DATABASE_MIGRATION_URL: 'postgres://user:secret@db.uftzjmmfkoqhjjwsiynk.supabase.co:5432/postgres',
+      DATABASE_MIGRATION_URL: 'postgres://user:secret@db.vmohxhyfgywaqfuqeuom.supabase.co:5432/postgres',
       ALLOW_PRODUCTION_MIGRATIONS: 'true',
     };
     const resolved = assertMigrationAllowed(env);

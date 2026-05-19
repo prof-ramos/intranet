@@ -63,6 +63,7 @@ export async function GET(request: Request) {
 
   const authorization = await authorizeIntegrationRequest(request, {
     allowSessionRoles: ['admin'],
+    requiredScopes: ['events:read'],
   });
 
   if (!authorization.ok) {
@@ -92,6 +93,7 @@ export async function POST(request: Request) {
 
   const authorization = await authorizeIntegrationRequest(request, {
     allowSessionRoles: ['admin'],
+    requiredScopes: ['events:write'],
   });
 
   if (!authorization.ok) {

@@ -16,6 +16,9 @@ function hashKey(rawKey: string): string {
 }
 
 function validateScopes(scopes: string[]): IntegrationScope[] {
+  if (!scopes || scopes.length === 0) {
+    throw new Error('At least one scope must be selected.');
+  }
   for (const scope of scopes) {
     if (!VALID_SCOPES.includes(scope as IntegrationScope)) {
       throw new Error(`Invalid scope: "${scope}". Valid scopes: ${VALID_SCOPES.join(', ')}`);

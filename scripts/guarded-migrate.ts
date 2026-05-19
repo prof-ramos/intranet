@@ -9,7 +9,7 @@ const MIGRATION_URL_ENV_NAMES = [
   'DATABASE_URL',
 ] as const;
 
-const PRODUCTION_SUPABASE_PROJECT_REFS = ['uftzjmmfkoqhjjwsiynk'] as const;
+const PRODUCTION_SUPABASE_PROJECT_REFS = ['vmohxhyfgywaqfuqeuom'] as const;
 
 type MigrationUrlEnvName = (typeof MIGRATION_URL_ENV_NAMES)[number];
 type EnvMap = Record<string, string | undefined>;

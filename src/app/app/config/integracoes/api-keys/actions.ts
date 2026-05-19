@@ -20,6 +20,10 @@ export async function createApiKeyAction(name: string, scopes: string[]) {
     return { error: 'Name must be at least 2 characters.' };
   }
 
+  if (!scopes || scopes.length === 0) {
+    return { error: 'At least one scope must be selected.' };
+  }
+
   const validScopes: IntegrationScope[] = [];
   for (const scope of scopes) {
     if (!VALID_SCOPES.includes(scope as IntegrationScope)) {

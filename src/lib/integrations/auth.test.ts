@@ -2,14 +2,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHash, createHmac } from 'node:crypto';
 
 // --- Hoisted mocks (available inside vi.mock factories) ---
-const { mockGetIntegrationConfig, mockIsIntegrationAuthConfigured, mockFindActiveApiKeyByHash, mockUpdateApiKeyLastUsed } = vi.hoisted(() => ({
+const { mockGetIntegrationConfig, mockIsIntegrationAuthConfigured, mockFindActiveApiKeyByHash, mockUpdateApiKeyLastUsed, mockLoggerWarn } = vi.hoisted(() => ({
   mockGetIntegrationConfig: vi.fn(),
   mockIsIntegrationAuthConfigured: vi.fn(),
   mockFindActiveApiKeyByHash: vi.fn(),
   mockUpdateApiKeyLastUsed: vi.fn(),
+  mockLoggerWarn: vi.fn(),
 }));
 
 // --- Mocks ---
+
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => ({
+    warn: mockLoggerWarn,
+    info: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
 
 vi.mock('server-only', () => ({}));
 
@@ -139,6 +149,14 @@ describe('verifyIntegrationRequest (dual-auth)', () => {
           expect(result.principal.scopes).toBeUndefined();
         }
       }
+      expect(mockLoggerWarn).toHaveBeenCalledWith(
+        expect.stringContaining('DEPRECATED'),
+        expect.objectContaining({
+          requestId: 'test-request-id',
+          method: 'GET',
+          path: '/api/v1/events',
+        }),
+      );
     });
 
     it('rejects an invalid env-var API key when no table key matches', async () => {

@@ -9,7 +9,7 @@ Procedimentos operacionais para deploy, backup, rollback e verificação de saú
 ### 1.1 Supabase (produção/remoto)
 
 Via Dashboard:
-1. Acesse o projeto Supabase (`uftzjmmfkoqhjjwsiynk`)
+1. Acesse o projeto Supabase (`vmohxhyfgywaqfuqeuom`)
 2. Database → Backups → Trigger new backup
 3. Aguarde confirmação (geralmente < 5 min para bancos < 5 GB)
 
@@ -228,7 +228,7 @@ Formato colorizado com prefixo `[module] level: message`.
 ## 9. Contatos e referências
 
 - **Repositório:** https://github.com/prof-ramos/intranet
-- **Projeto Supabase:** `uftzjmmfkoqhjjwsiynk` (`db-intranet`)
+- **Projeto Supabase:** `vmohxhyfgywaqfuqeuom` (`db-intranet`)
 - **Domínio:** `https://intranet.asof.com.br`
 - **Checklist de release:** ARCHITECTURE.md §6.4
 - **CI/CD:** ARCHITECTURE.md §6.5
