@@ -12,13 +12,14 @@ const MIGRATION_URL_ENV_NAMES = [
 const PRODUCTION_SUPABASE_PROJECT_REFS = ['uftzjmmfkoqhjjwsiynk'] as const;
 
 type MigrationUrlEnvName = (typeof MIGRATION_URL_ENV_NAMES)[number];
+type EnvMap = Record<string, string | undefined>;
 
 interface ResolvedMigrationUrl {
   envName: MigrationUrlEnvName;
   url: URL;
 }
 
-export function resolveMigrationUrl(env: NodeJS.ProcessEnv): ResolvedMigrationUrl | null {
+export function resolveMigrationUrl(env: EnvMap): ResolvedMigrationUrl | null {
   for (const envName of MIGRATION_URL_ENV_NAMES) {
     const value = env[envName];
     if (!value) continue;
@@ -41,7 +42,7 @@ export function isKnownProductionDatabaseUrl(url: URL): boolean {
   return PRODUCTION_SUPABASE_PROJECT_REFS.some((projectRef) => inspected.includes(projectRef));
 }
 
-export function shouldBlockMigration(env: NodeJS.ProcessEnv, resolved: ResolvedMigrationUrl): boolean {
+export function shouldBlockMigration(env: EnvMap, resolved: ResolvedMigrationUrl): boolean {
   if (env.ALLOW_PRODUCTION_MIGRATIONS === 'true') return false;
 
   if (env.DATABASE_MIGRATION_ENV === 'production') return true;
@@ -51,7 +52,7 @@ export function shouldBlockMigration(env: NodeJS.ProcessEnv, resolved: ResolvedM
   return isKnownProductionDatabaseUrl(resolved.url);
 }
 
-export function assertMigrationAllowed(env: NodeJS.ProcessEnv): ResolvedMigrationUrl {
+export function assertMigrationAllowed(env: EnvMap): ResolvedMigrationUrl {
   const resolved = resolveMigrationUrl(env);
   if (!resolved) {
     throw new Error(
