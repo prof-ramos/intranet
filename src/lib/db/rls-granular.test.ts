@@ -43,6 +43,24 @@ describe('VULN-001: Migration 0039 granular RLS policies', () => {
     expect(helpersSql).toContain('CREATE OR REPLACE FUNCTION is_staff_role()');
   });
 
+  it('SECURITY DEFINER functions have SET search_path to prevent privilege escalation', () => {
+    const definerFunctions = [
+      'get_jwt_email',
+      'get_current_admin_role',
+      'get_current_admin_id',
+    ];
+
+    for (const fn of definerFunctions) {
+      const pattern = new RegExp(
+        `CREATE OR REPLACE FUNCTION ${fn}\\(\\)[\\s\\S]*?SECURITY DEFINER[\\s\\S]*?SET search_path = ''`,
+      );
+      expect(
+        helpersSql,
+        `${fn} should have SECURITY DEFINER with SET search_path = ''`,
+      ).toMatch(pattern);
+    }
+  });
+
   it('helpers use to_regprocedure for environment detection, never auth.jwt() stub', () => {
     // Must detect auth.jwt() dynamically
     expect(helpersSql).toContain("to_regprocedure('auth.jwt()')");

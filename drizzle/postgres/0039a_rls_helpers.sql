@@ -25,6 +25,7 @@ RETURNS TEXT
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 BEGIN
   -- Supabase environment: auth.jwt() is cryptographically verified
@@ -54,6 +55,7 @@ RETURNS TEXT
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
+SET search_path = ''
 AS $$
   SELECT a.role
   FROM admins a
@@ -67,6 +69,7 @@ RETURNS BIGINT
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
+SET search_path = ''
 AS $$
   SELECT a.id
   FROM admins a

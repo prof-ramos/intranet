@@ -134,14 +134,14 @@ describe('VULN-001: Granular RLS policies', () => {
     expect(functionNames).toContain('is_staff_role');
   });
 
-  it('get_current_admin_role() references auth.jwt() for JWT-based role resolution', async () => {
+  it('get_current_admin_role() references get_jwt_email() for JWT-based role resolution', async () => {
     const rows = await db<{ prosrc: string }[]>
       `select prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and proname = 'get_current_admin_role'`;
 
     expect(rows).toHaveLength(1);
     const source = rows[0].prosrc;
-    // Must reference auth.jwt() — the Supabase JWT extraction function
-    expect(source).toContain('auth.jwt()');
+    // Must reference get_jwt_email() — the helper that resolves JWT claims
+    expect(source).toContain('get_jwt_email()');
     // Must reference the admins table for role lookup
     expect(source).toContain('admins');
     expect(source).toContain('role');
