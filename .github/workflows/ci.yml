@@ -125,9 +125,11 @@ jobs:
       ENCRYPTION_MASTER_KEY: e2e-encryption-master-key-at-least-32-chars
       SESSION_SECRET: e2e-session-secret-at-least-32-characters-long
       SKIP_AUTH: false
-      NEXT_PUBLIC_SUPABASE_URL: https://e2e-test.supabase.co
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: e2e-test-publishable-key
-      SUPABASE_SERVICE_ROLE_KEY: e2e-test-service-role-key
+      # Real Supabase credentials for E2E auth user creation.
+      # These GitHub secrets must be configured in repo Settings > Secrets.
+      NEXT_PUBLIC_DATABASE_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+      NEXT_PUBLIC_DATABASE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.E2E_SUPABASE_PUBLISHABLE_KEY }}
+      DATABASE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@v4
 
