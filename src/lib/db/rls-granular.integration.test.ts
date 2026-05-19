@@ -88,6 +88,7 @@ describe('VULN-001: Granular RLS policies', () => {
       'legal_opinion_tags',
       'assignments',
       'monthly_payments',
+      'oficios',
       'domain_events',
       'webhook_subscriptions',
       'webhook_deliveries',
