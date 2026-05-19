@@ -2,6 +2,7 @@ import { closeDb, db, truncateAll } from '../e2e/helpers/db';
 import { admins, associates, monthlyPayments, oficios } from '@/lib/db/schema';
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
+import { getNodeRealtimeOptions } from '../src/lib/supabase/node-ws';
 
 const E2E_ADMIN_PASSWORD = 'Senha-Forte-2026!';
 
@@ -55,6 +56,7 @@ async function main() {
   if (supabaseUrl && supabaseServiceKey) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
+      realtime: getNodeRealtimeOptions(),
     });
 
     const { data: listData, error: listError } = await supabase.auth.admin.listUsers({

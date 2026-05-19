@@ -52,11 +52,11 @@ describe('VULN-001: Migration 0039 granular RLS policies', () => {
 
     for (const fn of definerFunctions) {
       const pattern = new RegExp(
-        `CREATE OR REPLACE FUNCTION ${fn}\\(\\)[\\s\\S]*?SECURITY DEFINER[\\s\\S]*?SET search_path = ''`,
+        `CREATE OR REPLACE FUNCTION ${fn}\\(\\)[\\s\\S]*?SECURITY DEFINER[\\s\\S]*?SET search_path = pg_catalog, public`,
       );
       expect(
         helpersSql,
-        `${fn} should have SECURITY DEFINER with SET search_path = ''`,
+        `${fn} should have SECURITY DEFINER with SET search_path = pg_catalog, public`,
       ).toMatch(pattern);
     }
   });

@@ -15,6 +15,10 @@
 --   is_privileged_role() / is_staff_role(), which in turn call
 --   get_current_admin_role(). Changing these to SECURITY INVOKER would cause
 --   infinite recursion on RLS-protected tables.
+--
+--   SET search_path = pg_catalog, public prevents search-path injection while
+--   allowing the functions to resolve pg_catalog system objects (to_regprocedure,
+--   current_setting) and public schema objects (admins, helper functions).
 
 -- ============================================================================
 -- 1. Environment detection + email extraction helper
@@ -25,7 +29,7 @@ RETURNS TEXT
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
-SET search_path = ''
+SET search_path = pg_catalog, public
 AS $$
 BEGIN
   -- Supabase environment: auth.jwt() is cryptographically verified
@@ -55,7 +59,7 @@ RETURNS TEXT
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = ''
+SET search_path = pg_catalog, public
 AS $$
   SELECT a.role
   FROM admins a
@@ -69,7 +73,7 @@ RETURNS BIGINT
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = ''
+SET search_path = pg_catalog, public
 AS $$
   SELECT a.id
   FROM admins a
