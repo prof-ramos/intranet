@@ -108,10 +108,17 @@ O projeto usa PostgreSQL via Drizzle.
 
 ```bash
 npm run db:generate   # gera migrações a partir do schema
-npm run db:migrate    # aplica migrações pendentes
+npm run db:migrate    # aplica migrações pendentes com guardrail contra produção
+npm run db:migrate:unsafe # chama drizzle-kit migrate diretamente; use só em diagnóstico controlado
 npm run db:seed       # insere admin inicial
 npm run db:supabase:status # consulta status/totais via Supabase SDK
 npm run db:studio     # abre Drizzle Studio no browser
+```
+
+`npm run db:migrate` bloqueia automaticamente o Supabase de produção conhecido (`uftzjmmfkoqhjjwsiynk`), `DATABASE_MIGRATION_ENV=production`, `VERCEL_ENV=production` e alvos remotos quando `NODE_ENV=production`. Para uma migration manual de produção, execute somente depois de backup/snapshot, janela aprovada e plano de rollback documentado:
+
+```bash
+ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
 ```
 
 As migrações PostgreSQL atuais ficam em `drizzle/postgres/`. O schema está em `src/lib/db/schema/`.
