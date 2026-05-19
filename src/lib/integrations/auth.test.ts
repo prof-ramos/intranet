@@ -157,6 +157,13 @@ describe('verifyIntegrationRequest (dual-auth)', () => {
           path: '/api/v1/events',
         }),
       );
+
+      // Ensure secrets are not leaked in the log message or its metadata
+      for (const call of mockLoggerWarn.mock.calls) {
+        const logContent = JSON.stringify(call);
+        expect(logContent).not.toContain(TEST_API_KEY);
+        expect(logContent).not.toContain(TEST_HMAC_SECRET);
+      }
     });
 
     it('rejects an invalid env-var API key when no table key matches', async () => {

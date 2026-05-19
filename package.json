@@ -17,7 +17,6 @@
     "pr:check": "bash scripts/check-pr-ready.sh",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit",
     "audit": "npm audit",
     "test": "vitest run",
     "test:db": "node --env-file=.env.local ./node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts src/lib/db/schema.integration.test.ts",

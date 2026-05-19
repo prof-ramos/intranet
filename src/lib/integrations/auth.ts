@@ -189,12 +189,13 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
 
     const requestId = getRequestId(request);
     const userAgent = request.headers.get('user-agent') || 'unknown';
+    const url = new URL(request.url);
     logger.warn(
       'DEPRECATED: Request authorized using legacy ASOF_INTEGRATION_API_KEY environment variable. Client should migrate to table-backed API keys.',
       {
         requestId,
         method: request.method,
-        path: getPathWithQuery(request),
+        path: url.pathname,
         userAgent,
       },
     );
