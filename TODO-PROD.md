@@ -66,13 +66,12 @@ Todas as branches antigas foram removidas:
 
 - [ ] Revisar env vars obrigatorias na Vercel: banco, Supabase, auth/session, Mailjet se usado, integracoes desligadas por padrao.
 - [ ] **ADICIONAR env vars faltantes em producao** (identificado na revisao G003):
-  - `ENCRYPTION_MASTER_KEY` — obrigatorio para PII encryption
-  - `NEXT_PUBLIC_SUPABASE_URL` — obrigatorio para notificacoes realtime
-  - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — obrigatorio para notificacoes realtime
-  - `SUPABASE_SERVICE_ROLE_KEY` — obrigatorio para admin auth
-  - `MAILJET_API_KEY` + `MAILJET_SECRET_KEY` — obrigatorio para reset de senha por email
-  - `CRON_SECRET` — obrigatorio para production cron dispatch
-  - `TRUSTED_PROXY_COUNT` — recomendado para rate limiting correto
+  - `ENCRYPTION_MASTER_KEY` — obrigatorio para PII encryption (gerar com `openssl rand -hex 32`)
+  - `MAILJET_API_KEY` + `MAILJET_SECRET_KEY` — obrigatorio para reset de senha por email (obter em app.mailjet.com)
+  - `CRON_SECRET` — obrigatorio para production cron dispatch (gerar com `openssl rand -hex 32`)
+  - `TRUSTED_PROXY_COUNT=1` — recomendado para rate limiting correto (Vercel tem 1 proxy)
+  - **NOTA**: Supabase vars NAO estao faltando — `getSupabaseUrl()`, `getSupabasePublishableKey()` e `getSupabaseServiceRoleKey()` tem fallbacks que ja estao em producao (`DATABASE_SUPABASE_*` e `NEXT_PUBLIC_DATABASE_SUPABASE_*`)
+  - Executar `bash scripts/setup-production-env.sh` para adicionar as vars auto-geradas
 - [ ] Garantir `ASOF_INTEGRATIONS_ENABLED=false` para o primeiro go-live, salvo decisao explicita.
 - [ ] Confirmar `SKIP_AUTH` desligado em producao.
 - [ ] Conferir que previews nao usam secrets de producao.
