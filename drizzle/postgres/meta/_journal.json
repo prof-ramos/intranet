@@ -260,6 +260,13 @@
       "when": 1779532800002,
       "tag": "0038_harden_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1779619200000,
+      "tag": "0039_granular_rls_policies",
+      "breakpoints": true
     }
   ]
 }

@@ -7,7 +7,11 @@ import { requireRole } from '@/lib/auth/authorization';
 import { db } from '@/lib/db';
 import { admins, auditLogs } from '@/lib/db/schema';
 import { randomBytes } from 'crypto';
-import { ensureAdminPasswordAuthUser } from '@/lib/supabase/admin';
+import { ensureAdminPasswordAuthUser, sendPasswordResetEmail } from '@/lib/supabase/admin';
+import { createLogger } from '@/lib/logger';
+import { toSafeErrorLog } from '@/lib/error-log';
+
+const logger = createLogger('usuarios:actions');
 
 function generateTemporaryPassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -33,9 +37,9 @@ function parseAdminId(formData: FormData): number {
 }
 
 export async function resetUserPassword(
-  _prevState: { success: boolean; message: string; tempPassword?: string } | null,
+  _prevState: { success: boolean; message: string } | null,
   formData: FormData,
-): Promise<{ success: boolean; message: string; tempPassword?: string }> {
+): Promise<{ success: boolean; message: string }> {
   const actor = await requireRole(['admin']);
 
   const targetId = parseAdminId(formData);
@@ -96,12 +100,29 @@ export async function resetUserPassword(
     performedBy: actor.userId,
   });
 
+  // Send password reset email via Supabase Auth (out-of-band secure channel)
+  try {
+    await sendPasswordResetEmail(target.email);
+  } catch (resetEmailError) {
+    logger.error(
+      '[resetUserPassword] Failed to send password reset email.',
+      { targetId, error: toSafeErrorLog(resetEmailError) },
+      resetEmailError instanceof Error ? resetEmailError : undefined,
+    );
+    // Password was reset successfully in the DB; email delivery is best-effort.
+    // The admin can retry later, and the user can use the "forgot password" flow.
+    revalidatePath('/app/config/usuarios');
+    return {
+      success: true,
+      message: `Senha de ${target.name} foi resetada, mas o e-mail de redefinição falhou. Informe o usuário para usar a opção "Esqueci minha senha".`,
+    };
+  }
+
   revalidatePath('/app/config/usuarios');
 
   return {
     success: true,
-    message: `Senha de ${target.name} foi resetada com sucesso.`,
-    tempPassword,
+    message: `Senha de ${target.name} foi resetada com sucesso. O usuário receberá um e-mail para definir uma nova senha.`,
   };
 }
 

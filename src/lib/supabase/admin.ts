@@ -20,7 +20,7 @@ const logger = createLogger('supabase:admin');
 
 let adminClient: ReturnType<typeof createClient> | null = null;
 
-function getSupabaseAdminClient() {
+function _getSupabaseAdminClient() {
   adminClient ??= createClient(getSupabaseUrl(), getSupabaseServiceRoleKey(), {
     auth: {
       autoRefreshToken: false,
@@ -32,7 +32,7 @@ function getSupabaseAdminClient() {
 }
 
 async function findAuthUserByEmail(email: string) {
-  const supabase = getSupabaseAdminClient();
+  const supabase = _getSupabaseAdminClient();
   const normalizedEmail = email.toLowerCase();
   let page = 1;
 
@@ -72,7 +72,7 @@ export async function ensureAdminPasswordAuthUser({
   mustChangePassword,
   resetPassword = false,
 }: EnsureAdminAuthUserInput): Promise<EnsureResult> {
-  const supabase = getSupabaseAdminClient();
+  const supabase = _getSupabaseAdminClient();
   const existingUser = await findAuthUserByEmail(email);
   const metadataAttributes = {
     email,
@@ -113,8 +113,28 @@ export async function ensureAdminPasswordAuthUser({
   return { userId: data.user.id, created: true };
 }
 
+export function getSupabaseAdminClient() {
+  return _getSupabaseAdminClient();
+}
+
+/**
+ * Send a password reset email to the given address via the Supabase admin client.
+ * Uses generateLink({ type: 'recovery' }) to create a recovery link, which
+ * Supabase delivers to the user's inbox through its built-in email service.
+ */
+export async function sendPasswordResetEmail(email: string) {
+  const supabase = _getSupabaseAdminClient();
+  const { error } = await supabase.auth.admin.generateLink({
+    type: 'recovery',
+    email,
+  });
+  if (error) {
+    throw error;
+  }
+}
+
 export async function deleteAdminAuthUser(email: string, adminId?: number) {
-  const supabase = getSupabaseAdminClient();
+  const supabase = _getSupabaseAdminClient();
   const user = await findAuthUserByEmail(email);
   if (!user) return;
 

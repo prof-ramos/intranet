@@ -22,6 +22,10 @@ vi.mock('@/lib/rate-limit', () => ({
   consumeIpRateLimit: (...args: unknown[]) => consumeIpRateLimitMock(...args),
 }));
 
+vi.mock('@/lib/ip', () => ({
+  getTrustedClientIp: vi.fn(() => '127.0.0.1'),
+}));
+
 vi.mock('@/lib/auth/authorization', () => ({
   requireRole: (...args: unknown[]) => requireRoleMock(...args),
 }));
@@ -47,9 +51,7 @@ vi.mock('next/navigation', () => ({
 describe('juridico actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    headersMock.mockResolvedValue({
-      get: (name: string) => (name === 'x-forwarded-for' ? '127.0.0.1' : null),
-    });
+    headersMock.mockResolvedValue(new Headers());
     consumeIpRateLimitMock.mockResolvedValue({ allowed: true });
     requireRoleMock.mockResolvedValue({ userId: 7 });
     createConsultationServiceMock.mockResolvedValue({ id: 15 });

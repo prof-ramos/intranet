@@ -10,6 +10,7 @@ import {
 } from '@/lib/juridico/service';
 import { requireRole } from '@/lib/auth/authorization';
 import { consumeIpRateLimit } from '@/lib/rate-limit';
+import { getTrustedClientIp } from '@/lib/ip';
 import { formDataToRecord, firstZodError } from '@/lib/server-actions/utils';
 import {
   createConsultationSchema,
@@ -19,7 +20,7 @@ import {
 
 async function checkJuridicoRateLimit() {
   const h = await headers();
-  const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? h.get('x-real-ip') ?? 'unknown';
+  const ip = getTrustedClientIp(h);
   const result = await consumeIpRateLimit(ip, 'juridico_action', {
     windowMs: 60 * 1000,
     maxRequests: 30,

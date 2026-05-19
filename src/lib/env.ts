@@ -43,6 +43,7 @@ export const envSchema = z
     CRON_SECRET: optionalNonEmptyString,
     ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY: optionalSecretString,
     ENCRYPTION_MASTER_KEY: optionalSecretString,
+    TRUSTED_PROXY_COUNT: z.preprocess(emptyStringToUndefined, z.coerce.number().int().min(0).optional()),
 
     // ─── Supabase ───────────────────────────────────────────────────────────────
     NEXT_PUBLIC_SUPABASE_URL: optionalUrl,
