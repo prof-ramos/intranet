@@ -245,9 +245,38 @@ describe('VULN-001: Migration 0039 granular RLS policies', () => {
     expect(tags).not.toContain('0039_granular_rls_policies');
   });
 
-  it('notifications table is NOT affected by this migration', () => {
+  it('notifications table is NOT affected by the 0039 migrations', () => {
     const combinedSql = helpersSql + coreTablesSql + auxTablesSql;
     expect(combinedSql).not.toContain('DROP POLICY IF EXISTS notifications_');
     expect(combinedSql).not.toContain('CREATE POLICY notifications_');
+  });
+});
+
+describe('Migration 0040: FORCE ROW LEVEL SECURITY on notifications', () => {
+  const forceRlsFile = path.join(migrationDir, '0040_force_rls_notifications.sql');
+
+  it('migration file exists', () => {
+    expect(fs.existsSync(forceRlsFile)).toBe(true);
+  });
+
+  it('applies FORCE ROW LEVEL SECURITY on notifications', () => {
+    const sql = fs.readFileSync(forceRlsFile, 'utf8');
+    expect(sql).toContain('ALTER TABLE notifications FORCE ROW LEVEL SECURITY');
+  });
+
+  it('does not alter any other table', () => {
+    const sql = fs.readFileSync(forceRlsFile, 'utf8');
+    const forceRlsMatches = sql.match(/ALTER TABLE \w+ FORCE ROW LEVEL SECURITY/g) ?? [];
+    expect(forceRlsMatches).toHaveLength(1);
+    expect(forceRlsMatches[0]).toBe('ALTER TABLE notifications FORCE ROW LEVEL SECURITY');
+  });
+
+  it('journal has entry for 0040_force_rls_notifications', () => {
+    const journal = JSON.parse(
+      fs.readFileSync(journalFile, 'utf8'),
+    ) as { entries: Array<{ tag: string }> };
+
+    const tags = journal.entries.map((e) => e.tag);
+    expect(tags).toContain('0040_force_rls_notifications');
   });
 });
