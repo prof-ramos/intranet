@@ -28,7 +28,7 @@ const LEVELS: Record<LogLevel, number> = {
 
 const PII_KEYS = new Set([
   'cpf', 'siape', 'email', 'primaryEmail', 'phone', 'address', 'whatsapp',
-  'password', 'token', 'secret', 'apiKey', 'authorization',
+  'password', 'token', 'secret', 'apiKey', 'authorization', 'resetlink', 'reset_link', 'recoverylink', 'recovery_link',
 ]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -55,7 +55,11 @@ function redact(value: unknown, depth = 0): unknown {
         key.includes('password') ||
         key.includes('token') ||
         key.includes('secret') ||
-        key.includes('ciphertext')
+        key.includes('ciphertext') ||
+        lowerKey.includes('resetlink') ||
+        lowerKey.includes('reset_link') ||
+        lowerKey.includes('recoverylink') ||
+        lowerKey.includes('recovery_link')
       ) {
         result[key] = '[REDACTED]';
       } else {

@@ -108,8 +108,9 @@ describe('config usuarios actions', () => {
     const result = await resetUserPassword(null, formData);
 
     expect(result.success).toBe(true);
-    expect(result.message).toContain('Link de recuperação gerado');
-    expect('tempPassword' in result).toBe(false);
+    expect(result.message).toContain('foi resetada com sucesso');
+    expect(result.resetLink).toBe('https://supabase.co/recovery?token=abc');
+    expect(result.tempPassword).toEqual(expect.any(String));
     // Link generated BEFORE password invalidation
     expect(generatePasswordResetLinkMock).toHaveBeenCalledWith('maria@asof.local');
     expect(hashMock).toHaveBeenCalledWith(expect.any(String), 12);

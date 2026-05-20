@@ -7,16 +7,22 @@ Este documento descreve os termos de domínio e regras de negócio da Intranet d
 ### Secretaria e Documentação
 
 #### Ofício
+
 Documento oficial de comunicação institucional seguindo o **Padrão Ofício** (Manual de Redação da Presidência da República). Utilizado para comunicações formais entre a ASOF e órgãos externos (MRE, Embaixadas, etc).
+
 - **Identificação**: Composta por `NOME DO DOCUMENTO No [número]/[ano]/[setor]`.
 - **Partes**: Cabeçalho, Identificação, Local/Data, Endereçamento (Destinatário, Cargo, Vocativo), Assunto, Texto (Introdução, Desenvolvimento, Conclusão), Fecho e Identificação do Signatário.
 
 #### Signatário
+
 A autoridade que assina e expede o documento.
+
 - **Campos**: Nome (em maiúsculas) e Cargo (apenas iniciais maiúsculas).
 
 #### Fecho (Closure)
+
 Saudação final obrigatória.
+
 - **Respeitosamente**: Para autoridades de hierarquia superior.
 - **Atenciosamente**: Para autoridades de mesma hierarquia ou inferior.
 
@@ -25,27 +31,35 @@ Saudação final obrigatória.
 ### Associados e Cadastro
 
 #### Associado
+
 Membro da ASOF representado na tabela `associates`. Possui dados pessoais, funcionais e associativos.
 
 #### Lotação
+
 Posto ou órgão onde o servidor está em exercício (ex: "Embaixada em Paris", "SERE"). Campo: `assignment`.
 
 #### Posto
+
 Representação diplomática no exterior (embaixada, consulado) ou a SERE em Brasília.
 
 #### Padrão / Classe
+
 Nível na carreira: Classe A → B → C → Especial, cada uma com 5 padrões. Campo: `classPattern`.
 
 #### Situação Associativa
+
 Status do associado na ASOF: `ativo`, `inativo`. Campo: `associationStatus`.
 
 #### Situação Funcional
+
 Status no serviço público: `ativo`, `aposentado`, `cedido`, `em_licenca`. Campo: `functionalStatus`.
 
 #### Contribuição
+
 Status de pagamento da anuidade ASOF: `em_dia`, `inadimplente`, `pendente_migracao`. Campo: `contributionStatus`.
 
 #### SIAPE
+
 Número de matrícula do servidor federal. Campo: `siape`.
 
 ---
@@ -53,15 +67,19 @@ Número de matrícula do servidor federal. Campo: `siape`.
 ### Financeiro
 
 #### Mensalidade
+
 Registro mensal de pagamento de associado. Campo: `monthly_payments`.
 
 #### Método de Pagamento
+
 Forma de quitação da mensalidade: `boleto`, `transferencia`, `debito_automatico`, `folha`. Campo: `paymentMethod`.
 
 #### Status de Pagamento
+
 Situação da mensalidade: `em_dia`, `inadimplente`, `isento`. Campo: `paymentStatus`.
 
 #### Inicialização de Mês
+
 Processo de criar registros de mensalidade para todos os associados ativos de um determinado mês/ano. Disparado manualmente por admin/diretoria.
 
 ---
@@ -69,12 +87,15 @@ Processo de criar registros de mensalidade para todos os associados ativos de um
 ### Jurídico
 
 #### Consulta Jurídica
+
 Solicitação de atendimento jurídico feita por associado. Possui número interno sequencial, status, e histórico de notas.
 
 #### Processo Jurídico
+
 Caso jurídico mais estruturado (Fase 2 do módulo). Relaciona-se a pareceres e notas.
 
 #### Parecer
+
 Opinião jurídica formal emitida pela assessoria jurídica da ASOF. Pode ser vinculada a um processo.
 
 ---
@@ -82,9 +103,11 @@ Opinião jurídica formal emitida pela assessoria jurídica da ASOF. Pode ser vi
 ### Atividades Administrativas
 
 #### Atividade (Kanban)
+
 Tarefa administrativa no board Kanban. Possui status (`a_fazer`, `em_andamento`, `pendente`, `concluida`, `arquivada`), prioridade, responsável e associado relacionado.
 
 #### Quick Add
+
 Criação rápida de atividade diretamente no board, sem abrir formulário completo.
 
 ---
@@ -92,12 +115,15 @@ Criação rápida de atividade diretamente no board, sem abrir formulário compl
 ### Notificações e Eventos
 
 #### Notificação
+
 Alerta em tempo real para o usuário sobre reatribuição de atividades ou atualização de consulta jurídica. Entregue via Supabase Realtime.
 
 #### Evento de Domínio
+
 Registro imutável de algo que aconteceu no sistema (`associate.updated`, `legal_consultation.created`, etc.). Persistido em `domain_events` e disponível para dispatch outbound via webhooks.
 
 #### Webhook Outbound
+
 Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado com HMAC SHA-256.
 
 ---
@@ -136,6 +162,7 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 2. **Revalidação Local**: Após validação do Supabase, o sistema consulta a tabela `admins` para verificar `isActive` e `mustChangePassword`.
 3. **Rate Limit de Login**: 5 tentativas por email a cada 15 minutos, persistido em PostgreSQL.
 4. **Dev Bypass**: `SKIP_AUTH=true` permite desenvolvimento sem autenticação real, mas é ignorado em produção.
+5. **Redefinição de Senha**: Administradores podem resetar a senha de outros usuários. A exposição temporária de credenciais geradas no painel administrativo é tratada como um débito técnico documentado no [ADR 005](file:///Users/gabrielramos/projetos/ASOF/intranet/docs/adr/005-temporary-manual-password-reset.md). Como política de segurança de dados, senhas temporárias e links/tokens de recuperação nunca devem ser salvos em logs ou registros de auditoria. A visibilidade do administrador deve ser limitada, a médio prazo, a um token ou link de uso único enviado diretamente por e-mail.
 
 ### Auditoria e LGPD
 
@@ -150,6 +177,7 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 ### Autenticação M2M (Dual-Auth)
 
 O sistema suporta dois caminhos de autenticação para APIs:
+
 1. **Env-var Key (Depreciado)**: `ASOF_INTEGRATION_API_KEY` + `ASOF_INTEGRATION_HMAC_SECRET`. O uso deste caminho gera logs de aviso estruturados (`logger.warn`) contendo `User-Agent`, método, rota e `requestId` (com omissão de credenciais). A desativação definitiva ocorre assim que o administrador remover as variáveis de ambiente do painel da Vercel.
 2. **Table-backed Key**: Chaves persistidas em `integration_api_keys` com escopos por endpoint.
    - **GET /api/v1/events**: Exige o escopo `events:read`.

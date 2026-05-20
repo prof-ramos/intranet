@@ -7,7 +7,7 @@
  */
 
 export const SENSITIVE_KEY_PATTERN =
-  /cpf|siape|email|address|endereco|phone|telefone|whatsapp|secret|token|password|sourcePayload|primaryEmail/i;
+  /cpf|siape|email|address|endereco|phone|telefone|whatsapp|secret|token|password|sourcePayload|primaryEmail|reset_?link|recovery_?link/i;
 
 /**
  * Recursively sanitize an arbitrary value by redacting string values

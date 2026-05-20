@@ -36,10 +36,17 @@ function parseAdminId(formData: FormData): number {
   return Number.parseInt(raw, 10);
 }
 
+export interface ResetUserPasswordResult {
+  success: boolean;
+  message: string;
+  resetLink?: string;
+  tempPassword?: string;
+}
+
 export async function resetUserPassword(
-  _prevState: { success: boolean; message: string } | null,
+  _prevState: ResetUserPasswordResult | null,
   formData: FormData,
-): Promise<{ success: boolean; message: string }> {
+): Promise<ResetUserPasswordResult> {
   const actor = await requireRole(['admin']);
 
   const targetId = parseAdminId(formData);
@@ -122,11 +129,11 @@ export async function resetUserPassword(
 
   // TODO: Deliver resetLink to the user via the project's email provider (Mailjet/Resend).
   // For now, the admin should communicate the new credentials through a secure channel.
-  void resetLink;
-
   return {
     success: true,
-    message: `Senha de ${target.name} foi resetada com sucesso. Link de recuperação gerado.`,
+    message: `Senha de ${target.name} foi resetada com sucesso.`,
+    resetLink,
+    tempPassword,
   };
 }
 

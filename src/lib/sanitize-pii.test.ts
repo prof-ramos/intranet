@@ -34,6 +34,20 @@ describe('SENSITIVE_KEY_PATTERN', () => {
     expect(SENSITIVE_KEY_PATTERN.test('password')).toBe(true);
   });
 
+  it('matches resetLink and reset_link', () => {
+    expect(SENSITIVE_KEY_PATTERN.test('resetLink')).toBe(true);
+    expect(SENSITIVE_KEY_PATTERN.test('reset_link')).toBe(true);
+  });
+
+  it('matches recoveryLink and recovery_link', () => {
+    expect(SENSITIVE_KEY_PATTERN.test('recoveryLink')).toBe(true);
+    expect(SENSITIVE_KEY_PATTERN.test('recovery_link')).toBe(true);
+  });
+
+  it('does not match structural links key', () => {
+    expect(SENSITIVE_KEY_PATTERN.test('links')).toBe(false);
+  });
+
   it('does not match non-sensitive keys', () => {
     expect(SENSITIVE_KEY_PATTERN.test('name')).toBe(false);
     expect(SENSITIVE_KEY_PATTERN.test('id')).toBe(false);
