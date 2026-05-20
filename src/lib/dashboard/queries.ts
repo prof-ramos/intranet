@@ -16,6 +16,12 @@ const TTL_REALTIME = 15; // 15s — dados altamente voláteis
 
 const MAX_CACHE_ENTRIES = 10;
 
+/** Strips the year from a date string. "1985-03-15" → "15/03" */
+function formatDayMonth(dateStr: string): string {
+  const [, month, day] = dateStr.split('-');
+  return `${day}/${month}`;
+}
+
 function setWithLimit<K, V>(map: Map<K, V>, key: K, value: V) {
   if (map.size >= MAX_CACHE_ENTRIES && !map.has(key)) {
     const firstKey = map.keys().next().value;
@@ -183,7 +189,8 @@ export interface BirthdayItem {
   id: number;
   fullName: string;
   assignment: string | null;
-  birthDate: string;
+  /** Day/month only, formatted as "dd/mm" (year stripped for PII minimization) */
+  birthDayMonth: string;
 }
 
 const TTL_BIRTHDAY = 3600; // 1h — birthday list changes rarely during the day
@@ -212,7 +219,7 @@ export const getBirthdaysThisMonth = (limit = 10): Promise<BirthdayItem[]> => {
         id: r.id,
         fullName: r.fullName,
         assignment: r.assignment,
-        birthDate: r.birthDate as string,
+        birthDayMonth: formatDayMonth(r.birthDate as string),
       }));
     },
     ['birthdays-this-month', String(limit)],

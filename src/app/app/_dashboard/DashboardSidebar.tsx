@@ -30,11 +30,7 @@ interface DashboardSidebarProps {
   };
 }
 
-function formatBirthday(birthDate: string): string {
-  // birthDate is stored as a date string e.g. "1985-03-15"
-  const [, month, day] = birthDate.split('-');
-  return `${day}/${month}`;
-}
+
 
 export function DashboardSidebar({ topRegions, urgentActivities, birthdaysThisMonth, user }: DashboardSidebarProps) {
   return (
@@ -163,7 +159,7 @@ export function DashboardSidebar({ topRegions, urgentActivities, birthdaysThisMo
                   {associate.fullName}
                 </p>
                 <p className="mt-0.5 text-xs leading-relaxed" style={{ color: textSubtle }}>
-                  {associate.assignment ?? 'Sem lotação'} · {formatBirthday(associate.birthDate)}
+                  {associate.assignment ?? 'Sem lotação'} · {associate.birthDayMonth}
                 </p>
               </li>
             ))}
