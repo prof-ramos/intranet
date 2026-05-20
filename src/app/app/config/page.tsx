@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Settings, Webhook } from 'lucide-react';
+import { KeyRound, Settings, Webhook } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { focusRingClass, skyBlue, borderFaint } from '@/lib/ui/tokens';
 
@@ -23,6 +23,18 @@ export default async function ConfigPage() {
           <h2 className="font-serif text-xl font-bold text-[#040920]">Integrações e webhooks</h2>
           <p className="mt-2 text-sm leading-6 text-[rgba(13,31,60,0.55)]">
             Gerencie destinos HTTP para automações externas e entregas outbound assinadas.
+          </p>
+        </Link>
+
+        <Link
+          href="/app/config/integracoes/api-keys"
+          className={`rounded-[10px] border bg-white p-6 transition-colors hover:border-[var(--card-hover-border)] hover:bg-[rgba(118,174,234,0.05)] ${focusRingClass}`}
+          style={{ borderColor: borderFaint, '--card-hover-border': skyBlue } as CSSProperties}
+        >
+          <KeyRound size={32} className="mb-4 text-[#0d3260]" aria-hidden="true" />
+          <h2 className="font-serif text-xl font-bold text-[#040920]">Chaves de API</h2>
+          <p className="mt-2 text-sm leading-6 text-[rgba(13,31,60,0.55)]">
+            Crie e gerencie chaves de acesso para integrações externas com escopos restritos.
           </p>
         </Link>
       </div>
