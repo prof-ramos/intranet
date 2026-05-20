@@ -36,6 +36,19 @@ vi.mock('@/lib/audit/service', () => ({
   logDataAccess: (...args: unknown[]) => mockLogDataAccess(...args),
 }));
 
+vi.mock('@/lib/audit/queries', () => ({
+  getAssociateAuditHistory: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('@/lib/finance/repository', () => ({
+  getPaymentHistoryForAssociate: vi.fn().mockResolvedValue([]),
+  getPaymentHistoryForAssociateQuery: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('@/lib/juridico/repository', () => ({
+  getConsultationsByAssociate: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock('./lgpd', () => ({
   toAssociateProfileDTO: (a: unknown) => a,
   toActivityDTO: (a: unknown) => a,
@@ -112,7 +125,7 @@ describe('getAssociatesListPage', () => {
 
     const result = await getAssociatesListPage(1, 20, 'Alice');
     expect(result).toEqual(expected);
-    expect(mockFindAssociatesPaginated).toHaveBeenCalledWith(1, 20, 'Alice');
+    expect(mockFindAssociatesPaginated).toHaveBeenCalledWith(1, 20, 'Alice', undefined);
   });
 });
 

@@ -85,7 +85,7 @@ describe('config integracoes api key actions', () => {
   it('lists api keys after auth and role checks', async () => {
     const result = await listApiKeysAction();
 
-    expect(result).toEqual([{ id: 1, name: 'Existing' }]);
+    expect(result).toEqual({ data: [{ id: 1, name: 'Existing' }] });
     expect(listApiKeysServiceMock).toHaveBeenCalledTimes(1);
   });
 

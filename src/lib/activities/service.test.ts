@@ -14,6 +14,7 @@ vi.mock('@/lib/audit/service', () => ({
 
 vi.mock('@/lib/events', () => ({
   emitActivityCompleted: vi.fn().mockResolvedValue(undefined),
+  emitActivityAssigned: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe('activities service', () => {
