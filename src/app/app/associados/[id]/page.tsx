@@ -122,6 +122,8 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
     location,
     showSensitive,
     timeline,
+    paymentHistory,
+    consultationCount,
   } = profile;
 
   return (
@@ -320,7 +322,10 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
             </div>
           </SectionCard>
 
-          <SectionCard id="associacao" title="Associação · Histórico">
+          <SectionCard
+            id="associacao"
+            title={`Associação · Histórico${consultationCount > 0 ? ` · ${consultationCount} consulta${consultationCount === 1 ? '' : 's'} jurídica${consultationCount === 1 ? '' : 's'}` : ''}`}
+          >
             <ol className="m-0 flex list-none flex-col p-0">
               {timeline.map((item, index, arr) => {
                 const color =
@@ -362,6 +367,33 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
               })}
             </ol>
           </SectionCard>
+
+          {paymentHistory.length > 0 && (
+            <SectionCard id="mensalidades" title="Histórico de Mensalidades">
+              <div className="flex flex-wrap gap-1.5">
+                {paymentHistory.map((p) => {
+                  const mm = p.month.toString().padStart(2, '0');
+                  const chipColors: Record<string, [string, string]> = {
+                    pago: ['#15803d', '#dcfce7'],
+                    atrasado: ['#b91c1c', '#fee2e2'],
+                    pendente: ['#a16207', '#fef9c3'],
+                    isento: ['rgba(13,31,60,0.45)', '#f1f5f9'],
+                  };
+                  const [color, background] = chipColors[p.status] ?? chipColors['isento'];
+                  return (
+                    <span
+                      key={`${p.year}-${p.month}`}
+                      title={p.status}
+                      className="inline-flex items-center rounded px-2 py-1 text-[11px] font-bold tabular-nums"
+                      style={{ color, background }}
+                    >
+                      {mm}/{p.year}
+                    </span>
+                  );
+                })}
+              </div>
+            </SectionCard>
+          )}
 
           <SectionCard id="observacoes" title="Observações internas" action={<EditLink href={`/app/associados/${id}/editar`} />}>
             <p className="text-base-content/75 m-0 text-sm leading-relaxed whitespace-pre-wrap">

@@ -2,9 +2,45 @@ import { isDomesticCountrySql, isExteriorCountrySql } from '@/lib/associates/loc
 import { db } from '@/lib/db';
 import { monthlyPayments, paymentStatus, type NewMonthlyPayment } from '@/lib/db/schema/finance';
 import { associates } from '@/lib/db/schema/associates';
-import { and, eq, ilike, lt, or, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, lt, or, sql } from 'drizzle-orm';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
 import { effectivePaymentMethodSql } from './effective-payment';
+
+export interface PaymentHistoryItem {
+  year: number;
+  month: number;
+  status: string;
+  paymentMethod: string | null;
+  paidAt: Date | null;
+  updatedAt: Date;
+}
+
+export async function getPaymentHistoryForAssociate(
+  associateId: number,
+): Promise<PaymentHistoryItem[]> {
+  const rows = await db
+    .select({
+      year: monthlyPayments.year,
+      month: monthlyPayments.month,
+      status: monthlyPayments.status,
+      paymentMethod: monthlyPayments.paymentMethod,
+      paidAt: monthlyPayments.paidAt,
+      updatedAt: monthlyPayments.updatedAt,
+    })
+    .from(monthlyPayments)
+    .where(eq(monthlyPayments.associateId, associateId))
+    .orderBy(desc(monthlyPayments.year), desc(monthlyPayments.month))
+    .limit(24);
+
+  return rows.map((r) => ({
+    year: r.year,
+    month: r.month,
+    status: r.status,
+    paymentMethod: r.paymentMethod ?? null,
+    paidAt: r.paidAt ?? null,
+    updatedAt: r.updatedAt,
+  }));
+}
 
 export interface MonthlyPaymentsFilters {
   q?: string;

@@ -353,6 +353,42 @@ export async function getPendingActions(): Promise<PendingAction[]> {
   return actions.slice(0, 10);
 }
 
+export interface ConsultationSummary {
+  id: number;
+  internalNumber: string;
+  title: string;
+  status: string;
+  createdAt: Date;
+  lastInteractionAt: Date | null;
+}
+
+export async function getConsultationsByAssociate(
+  associateId: number,
+): Promise<ConsultationSummary[]> {
+  const rows = await db
+    .select({
+      id: legalConsultations.id,
+      internalNumber: legalConsultations.internalNumber,
+      title: legalConsultations.title,
+      status: legalConsultations.status,
+      createdAt: legalConsultations.createdAt,
+      lastInteractionAt: legalConsultations.lastInteractionAt,
+    })
+    .from(legalConsultations)
+    .where(eq(legalConsultations.associateId, associateId))
+    .orderBy(desc(legalConsultations.createdAt))
+    .limit(10);
+
+  return rows.map((r) => ({
+    id: r.id,
+    internalNumber: r.internalNumber,
+    title: r.title,
+    status: r.status,
+    createdAt: r.createdAt,
+    lastInteractionAt: r.lastInteractionAt ?? null,
+  }));
+}
+
 export async function insertConsultation(
   values: {
     internalNumber: string;
