@@ -12,10 +12,10 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 
 - Repositorio local: `/Users/gabrielramos/projetos/ASOF/intranet`
 - Branch local: `main`
-- HEAD local: `98e0012`
+- HEAD local: `3157453` (`chore(prod): harden go-live readiness`)
 - Worktrees ativos: somente o checkout principal.
 - PRs abertos no GitHub: nenhum no momento da verificacao local.
-- Estado do working tree: ha correcoes locais nao commitadas, relacionadas a autorizacao de API keys, Mailjet/reset de senha, SLA juridico, financeiro e `vercel.json`. Elas precisam ser revisadas, commitadas e integradas antes de qualquer deploy de producao.
+- Estado do working tree apos esta continuidade: somente `TODO-PROD.md` modificado. A branch local esta `ahead 1` de `origin/main`; o commit local `3157453` e esta atualizacao documental precisam ser publicados/integrados ou o deploy precisa apontar explicitamente para o SHA correto antes de producao.
 - Stack verificada localmente: Next.js `16.2.6`, npm, App Router em `src/app`, Drizzle/PostgreSQL em `src/lib/db` e `drizzle/postgres`, deploy Vercel com `vercel.json`.
 - Migrations Drizzle existentes ate `0042_add_sla_warning_notification_type.sql`.
 - Rotas API verificadas: `oficios/[id]/download`, `v1/events`, `v1/events/dispatch`, `v1/health`, `v1/juridico/sla-warnings`.
@@ -38,25 +38,17 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 - [x] Runbook operacional existe em `docs/runbook.md` com deploy, backup, smoke test e rollback.
 - [x] Webhooks/outbox tem modulos dedicados em `src/lib/integrations`, com HMAC, API keys, rate limit, criptografia de secret e despacho por cron.
 - [x] Reset de senha usa link de recuperacao por email Mailjet quando configurado e fallback de exibicao/copia quando email nao e entregue.
-- [x] API keys de integracao foram ajustadas localmente para ficarem alinhadas ao gate admin da pagina.
-- [x] Falhas Mailjet foram ajustadas localmente para nao registrar corpo bruto de resposta do provedor.
-- [x] SLA juridico foi movido localmente para rota agendada `GET /api/v1/juridico/sla-warnings`, protegida por `CRON_SECRET`.
-- [x] `vercel.json` foi ajustado localmente para agendar `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings`.
-- [x] Transicao automatica financeira de `pendente` para `atrasado` foi ajustada localmente para gerar trilha auditavel/eventos.
+- [x] `MAILJET_API_KEY` e `MAILJET_SECRET_KEY` existem no Vercel Production, configuradas via `vercel env add` em 2026-05-20.
+- [x] API keys de integracao exigem `requireAuth()` + `requireRole(['admin'])` antes de chamadas ao service.
+- [x] Falhas Mailjet nao registram corpo bruto de resposta do provedor; o erro exposto fica limitado a codigo/status.
+- [x] Templates de email escapam `resetLink` em `href` e corpo HTML.
+- [x] SLA juridico tem rota agendada `GET /api/v1/juridico/sla-warnings`, protegida por `CRON_SECRET`.
+- [x] `vercel.json` agenda `/api/v1/events/dispatch` (`0 3 * * *`) e `/api/v1/juridico/sla-warnings` (`0 4 * * *`).
+- [x] Transicao automatica financeira de `pendente` para `atrasado` gera auditoria e evento de dominio em transacao.
 
 ## Pendente Bloqueante Para Producao
 
-- [ ] Fechar o working tree local antes de deploy: revisar, commitar e integrar as correcoes locais abaixo, sem usar `git add .`:
-  - `src/app/app/config/integracoes/api-keys/actions.ts`
-  - `src/app/app/config/usuarios/actions.ts`
-  - `src/app/app/juridico/page.tsx`
-  - `src/app/api/v1/juridico/sla-warnings/route.ts`
-  - `src/lib/email/index.ts`
-  - `src/lib/email/templates.ts`
-  - `src/lib/finance/repository.ts`
-  - `src/lib/finance/service.ts`
-  - `src/lib/juridico/sla-notifications.ts`
-  - testes relacionados e `vercel.json`
+- [ ] Integrar o commit local `3157453` e esta atualizacao de `TODO-PROD.md` antes do deploy Git-based da Vercel: fazer commit/push/PR/merge para `origin/main`, ou registrar decisao explicita de deploy manual a partir do SHA correto.
 - [ ] Rodar a readiness completa apos o commit final: `npm run pr:check` ou, se houver limitacao de ambiente, registrar separadamente `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:db` e `npm run build`.
 - [ ] Validar que `vercel.json` publicado contem ambos os crons:
   - `/api/v1/events/dispatch` em janela diaria.
@@ -64,17 +56,19 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 - [ ] Confirmar no Vercel Production as env vars obrigatorias:
   - `DATABASE_URL`
   - `DATABASE_MIGRATION_URL` ou URL direta equivalente apenas para migration controlada
-  - `NEXT_PUBLIC_SUPABASE_URL` ou fallback documentado em `README.md`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` ou fallback documentado em `README.md`
-  - `SUPABASE_SERVICE_ROLE_KEY` ou fallback documentado em `README.md`
+  - `DATABASE_SUPABASE_URL` ou `NEXT_PUBLIC_DATABASE_SUPABASE_URL`
+  - `DATABASE_SUPABASE_PUBLISHABLE_KEY` ou `NEXT_PUBLIC_DATABASE_SUPABASE_PUBLISHABLE_KEY`
+  - `DATABASE_SUPABASE_ANON_KEY` ou `NEXT_PUBLIC_DATABASE_SUPABASE_ANON_KEY`, se o alvo ainda usar anon key legada
+  - `DATABASE_SUPABASE_SERVICE_ROLE_KEY` ou `SUPABASE_SERVICE_ROLE_KEY`
   - `ENCRYPTION_MASTER_KEY`
   - `CRON_SECRET`
   - `TRUSTED_PROXY_COUNT=1`
   - `SKIP_AUTH` ausente ou `false`
   - `ASOF_INTEGRATIONS_ENABLED=false`, salvo decisao explicita de ativar integracoes no dia 1
 - [ ] Confirmar Mailjet em producao:
-  - se email automatico for requisito do go-live, `MAILJET_API_KEY` e `MAILJET_SECRET_KEY` precisam existir e deve haver smoke test real de envio de reset;
-  - se Mailjet nao estiver configurado, validar o fallback operacional de reset link na UI admin e documentar que ele sera usado no dia 1.
+  - `MAILJET_API_KEY` e `MAILJET_SECRET_KEY` ja existem no Vercel Production;
+  - ainda falta smoke test real de envio de reset por Mailjet em ambiente deployado;
+  - se o smoke falhar no dia 1, validar o fallback operacional de reset link na UI admin e documentar o uso temporario.
 - [ ] Confirmar que secrets nao vazaram antes do go-live: revisar historico Git, logs de CI/CD, logs Vercel e canais de compartilhamento. Rotacionar qualquer segredo exposto ou com mais de 90 dias.
 - [ ] Executar migration em staging antes de producao:
   - backup/snapshot antes da migration;
@@ -117,10 +111,9 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 
 ## Pendente Recomendado Antes Do Go-Live
 
-- [ ] Atualizar `README.md` e `API.md` para documentar que `CRON_SECRET` protege tambem `/api/v1/juridico/sla-warnings`, nao apenas `/api/v1/events/dispatch`.
+- [ ] Atualizar `README.md` e `API.md` para documentar que `CRON_SECRET` protege tambem `/api/v1/juridico/sla-warnings`, nao apenas `/api/v1/events/dispatch`. Evidencia local: `README.md` ainda lista somente tres rotas versionadas e `API.md` ainda diz "5 endpoints" com ultima atualizacao `2026-05-18`.
 - [ ] Atualizar `docs/runbook.md` com smoke test explicito para SLA juridico, Mailjet/fallback de reset, API keys admin-only e webhooks/outbox.
 - [ ] Revisar usos de `logger.*(..., error)` em fluxos sensiveis alem do Mailjet, especialmente auth/reset/change-password, para evitar `error.message` com PII ou tokens.
-- [ ] Escapar atributos dinamicos em templates de email, incluindo `resetLink` em `href`, mesmo sendo link gerado por Supabase.
 - [ ] Rodar `npm audit` e registrar decisao para cada achado relevante.
 - [ ] Rodar `npm run format:check` ou documentar por que o projeto nao exige formatação bloqueante.
 - [ ] Rodar `npm run test:e2e` em ambiente local limpo ou staging, usando o banco `asof_test`/setup proprio do Playwright.
@@ -161,21 +154,45 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 ### Executados nesta verificacao local
 
 - `git status --short --branch`
-  - resultado: `main...origin/main` com mudancas locais nao commitadas nos modulos de API keys, reset/Mailjet, SLA juridico, financeiro, testes relacionados e `vercel.json`.
+  - resultado inicial: `## main...origin/main [ahead 1]`, sem arquivos modificados, staged ou untracked. Resultado apos esta edicao: `M TODO-PROD.md`.
 - `git rev-parse --short HEAD`
-  - resultado: `98e0012`.
+  - resultado: `3157453`.
+- `git log -1 --oneline`
+  - resultado: `3157453 chore(prod): harden go-live readiness`.
 - `git worktree list --porcelain`
   - resultado: somente `/Users/gabrielramos/projetos/ASOF/intranet`, branch `refs/heads/main`.
 - `gh pr list --state open --json number,title,headRefName,baseRefName`
   - resultado: `[]`.
 - `sed -n '1,260p' TODO-PROD.md`
-  - resultado: conteudo anterior estava obsoleto, com snapshot de `feature/m2m-auth-and-docs-cleanup`, PRs #55-#57 e reset manual antigo.
+  - resultado: conteudo anterior desta rodada ainda descrevia mudancas locais nao commitadas e HEAD `98e0012`, contradizendo `git status` e `git rev-parse`.
 - `find drizzle/postgres -maxdepth 1 -type f | sort | tail -12`
   - resultado: migrations ate `0042_add_sla_warning_notification_type.sql`.
 - `find src/app/api -maxdepth 5 -type f | sort`
   - resultado: rotas API atuais incluem `v1/events`, `v1/events/dispatch`, `v1/health`, `v1/juridico/sla-warnings` e download de oficios.
 - `find .github/workflows -maxdepth 1 -type f -print | sort`
   - resultado: `ci.yml` e `migrate-staging.yml`.
+- `cat vercel.json`
+  - resultado: `framework: nextjs` e crons para `/api/v1/events/dispatch` (`0 3 * * *`) e `/api/v1/juridico/sla-warnings` (`0 4 * * *`).
+- `rg -n "sla-warnings|events/dispatch|CRON_SECRET|5 endpoints|Última atualização" API.md README.md docs/runbook.md TODO-PROD.md`
+  - resultado: `README.md` e `API.md` ainda documentam `CRON_SECRET`/rotas versionadas sem incluir a rota de SLA juridico.
+- `sed -n '1,260p' src/lib/env.ts`
+  - resultado: schema aceita as variaveis Supabase atuais e exige `CRON_SECRET` quando `VERCEL_ENV=production`.
+- `sed -n '1,240p' src/app/api/v1/events/dispatch/route.ts` e `sed -n '1,220p' src/app/api/v1/juridico/sla-warnings/route.ts`
+  - resultado: ambas as rotas exigem `Authorization: Bearer <CRON_SECRET>`, usam `safeCompare` e rejeitam metodos diferentes de `GET`.
+- `sed -n '1,240p' src/app/app/config/integracoes/api-keys/actions.ts`
+  - resultado: actions de API key exigem `requireAuth()` e `requireRole(['admin'])`.
+- `sed -n '1,340p' src/app/app/config/usuarios/actions.ts`, `sed -n '1,260p' src/lib/email/index.ts` e `sed -n '1,220p' src/lib/email/templates.ts`
+  - resultado: reset gera link antes de invalidar senha, tenta Mailjet quando configurado, retorna fallback operacional se email falhar e evita logar corpo bruto do provedor; template escapa o `href`.
+- `sed -n '1,260p' src/lib/finance/service.ts`, `sed -n '1,240p' src/lib/finance/repository.ts` e `sed -n '1,300p' src/lib/juridico/sla-notifications.ts`
+  - resultado: financeiro automatico registra auditoria/evento, e SLA juridico emite notificacoes com resumo de execucao.
+- `printf <redacted> | vercel env add MAILJET_API_KEY production`
+  - resultado: `Added Environment Variable MAILJET_API_KEY to Project asof-intranet`.
+- `printf <redacted> | vercel env add MAILJET_SECRET_KEY production`
+  - resultado: `Added Environment Variable MAILJET_SECRET_KEY to Project asof-intranet`.
+- `vercel env ls | rg 'MAILJET_(API_KEY|SECRET_KEY)'`
+  - resultado: `MAILJET_API_KEY` e `MAILJET_SECRET_KEY` aparecem como `Encrypted` em `Production`.
+- `git diff --check -- TODO-PROD.md`
+  - resultado: sem erros de whitespace no documento alterado.
 
 ### Verificacoes locais usadas como evidencia de codigo
 
@@ -202,15 +219,10 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 - `src/lib/auth`, `src/lib/integrations`, `src/lib/notifications`, `src/lib/juridico`, `src/lib/finance`, `src/lib/email`
   - confirmam os modulos criticos citados nesta checklist.
 
-### Validações recentes nesta sessao antes desta edicao documental
+### Validacoes recentes registradas no commit local
 
-- `npm run typecheck` passou.
-- `npm run lint` passou.
-- `npm run test` passou com 105 arquivos e 793 testes.
-- `npm run build` passou.
-- `git diff --check` passou.
-
-Esses comandos validaram as correcoes locais de codigo antes da atualizacao deste documento. A edicao atual alterou apenas `TODO-PROD.md`; reexecutar a readiness completa continua sendo bloqueante antes de producao porque o working tree ainda nao esta commitado.
+- O commit local `3157453` registra a frente `chore(prod): harden go-live readiness`. Nesta rodada de continuidade, a verificacao de testes foi documental/estatica e nao reexecutou a suite completa; `git diff --check -- TODO-PROD.md` passou.
+- Antes de producao, reexecutar `npm run pr:check` continua bloqueante porque o commit `3157453` ainda esta apenas local (`ahead 1`) e a checklist canonica foi editada novamente em `TODO-PROD.md`.
 
 ### Nao executados nesta verificacao e motivo
 
@@ -227,8 +239,8 @@ Esses comandos validaram as correcoes locais de codigo antes da atualizacao dest
 
 ## Definicao De Pronto Para Go-Live
 
-- Working tree limpo ou contendo apenas mudancas explicitamente fora de escopo e documentadas.
-- Correcoes locais criticas integradas em `main`.
+- Working tree limpo apos commit/stash intencional desta atualizacao documental.
+- Commit local `3157453` e a atualizacao de `TODO-PROD.md` integrados em `origin/main` ou deployment registrado explicitamente no SHA correto.
 - `npm run pr:check` aprovado, ou comandos equivalentes registrados com resultados.
 - Staging migrado e validado com `npm run test:db` e smoke/E2E.
 - Secrets e env vars de producao conferidos no Vercel.
