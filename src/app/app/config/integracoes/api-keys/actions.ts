@@ -48,7 +48,12 @@ export async function listApiKeysAction() {
   await requireAuth();
   await requireRole(['admin', 'diretoria']);
 
-  return listApiKeysService();
+  try {
+    const data = await listApiKeysService();
+    return { data };
+  } catch (err) {
+    return { error: 'Failed to list API keys.' };
+  }
 }
 
 export async function revokeApiKeyAction(id: number) {

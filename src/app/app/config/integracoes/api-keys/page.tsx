@@ -25,7 +25,7 @@ function formatDate(date: Date | null): string {
 export default async function ApiKeysPage() {
   await requireRole(['admin']);
   const result = await listApiKeysAction();
-  const apiKeys = 'data' in result ? result.data : [];
+  const apiKeys = ('data' in result && result.data) ? result.data : [];
 
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">

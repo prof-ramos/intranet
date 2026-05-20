@@ -99,7 +99,7 @@ export function ApiKeyCreateForm() {
     startTransition(async () => {
       const result = await createApiKeyAction(name, selectedScopes);
       if ('error' in result) {
-        setError(result.error);
+        setError(result.error ?? 'Erro ao criar chave.');
       } else {
         setNewKey(result.data.key);
       }

@@ -79,7 +79,7 @@ export function ApiKeyActionsPanel({ id, isActive: initialIsActive }: ApiKeyActi
     startRevokeTransition(async () => {
       const result = await revokeApiKeyAction(id);
       if ('error' in result) {
-        setRevokeError(result.error);
+        setRevokeError(result.error ?? 'Erro ao revogar chave.');
       } else {
         setIsActive(false);
         setConfirmRevoke(false);
@@ -93,7 +93,7 @@ export function ApiKeyActionsPanel({ id, isActive: initialIsActive }: ApiKeyActi
     startRotateTransition(async () => {
       const result = await rotateApiKeyAction(id);
       if ('error' in result) {
-        setRotateError(result.error);
+        setRotateError(result.error ?? 'Erro ao rotacionar chave.');
       } else {
         setRotatedKey(result.data.key);
       }
