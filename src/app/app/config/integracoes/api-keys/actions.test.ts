@@ -65,6 +65,14 @@ describe('config integracoes api key actions', () => {
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
+  it('rejects empty scopes before touching the service', async () => {
+    const result = await createApiKeyAction('Valid name', []);
+
+    expect(result).toEqual({ error: 'At least one scope must be selected.' });
+    expect(createApiKeyServiceMock).not.toHaveBeenCalled();
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
   it('maps duplicate-name failures to a friendly message', async () => {
     createApiKeyServiceMock.mockRejectedValue(new Error('unique constraint violation'));
 

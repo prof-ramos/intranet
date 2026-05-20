@@ -16,6 +16,9 @@ import {
   type IntegrationSignatureInput,
   type RequestPrincipal,
 } from '@/lib/integrations/types';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('integrations:auth');
 
 function sha256Hex(value: string): string {
   return createHash('sha256').update(value).digest('hex');
@@ -183,6 +186,19 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
         reason: 'invalid_signature',
       };
     }
+
+    const requestId = getRequestId(request);
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+    const url = new URL(request.url);
+    logger.warn(
+      'DEPRECATED: Request authorized using legacy ASOF_INTEGRATION_API_KEY environment variable. Client should migrate to table-backed API keys.',
+      {
+        requestId,
+        method: request.method,
+        path: url.pathname,
+        userAgent,
+      },
+    );
 
     // Env-var keys have full access (no scopes restriction).
     updateApiKeyLastUsed(sha256Hex(key)).catch(() => {});

@@ -41,8 +41,8 @@ const dbStore: IntegrationRateLimitStore = {
       .onConflictDoUpdate({
         target: [rateLimits.key, rateLimits.scope],
         set: {
-          attempts: sql`CASE WHEN ${rateLimits.expiresAt} <= ${nowDate} THEN 1 ELSE ${rateLimits.attempts} + 1 END`,
-          expiresAt: sql`CASE WHEN ${rateLimits.expiresAt} <= ${nowDate} THEN ${expiresAt} ELSE ${rateLimits.expiresAt} END`,
+          attempts: sql`CASE WHEN ${rateLimits.expiresAt} <= ${nowDate.toISOString()} THEN 1 ELSE ${rateLimits.attempts} + 1 END`,
+          expiresAt: sql`CASE WHEN ${rateLimits.expiresAt} <= ${nowDate.toISOString()} THEN ${expiresAt.toISOString()} ELSE ${rateLimits.expiresAt} END`,
           updatedAt: new Date(),
         },
       })

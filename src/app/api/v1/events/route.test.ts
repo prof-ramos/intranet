@@ -64,6 +64,13 @@ describe('/api/v1/events route', () => {
         requestId: 'events-request',
       },
     });
+    expect(mockAuthorizeIntegrationRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      expect.objectContaining({
+        allowSessionRoles: ['admin'],
+        requiredScopes: ['events:read'],
+      }),
+    );
   });
 
   it('dispatches a single event on POST with eventId', async () => {
@@ -81,6 +88,13 @@ describe('/api/v1/events route', () => {
     expect(mockDispatchDomainEventById).toHaveBeenCalledWith(99);
     expect(body.data.mode).toBe('single');
     expect(body.data.result).toEqual({ dispatched: false, reason: 'not_dispatchable' });
+    expect(mockAuthorizeIntegrationRequest).toHaveBeenCalledWith(
+      expect.any(Request),
+      expect.objectContaining({
+        allowSessionRoles: ['admin'],
+        requiredScopes: ['events:write'],
+      }),
+    );
   });
 
   it('dispatches a batch when no eventId is provided', async () => {

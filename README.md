@@ -103,7 +103,7 @@ O projeto usa PostgreSQL via Drizzle.
 
 - **Desenvolvimento local:** PostgreSQL via Homebrew. Use `DATABASE_URL=postgres://<user>@localhost:5432/asof_intranet` e a mesma URL para `DATABASE_MIGRATION_URL` (não há pooler local, então a URL direta serve para ambos).
 - **Produção / remoto:** Supabase. Use a URL do pooler de runtime em `DATABASE_URL` e a URL direta/non-pooling em `DATABASE_MIGRATION_URL`.
-- **Produção oficial:** Supabase `uftzjmmfkoqhjjwsiynk` (`db-intranet`).
+- **Produção oficial:** Supabase `vmohxhyfgywaqfuqeuom` (`db-intranet`).
 - **Staging / preview:** use um projeto Supabase separado; previews da Vercel não devem apontar para o banco de produção.
 
 ```bash
@@ -115,7 +115,7 @@ npm run db:supabase:status # consulta status/totais via Supabase SDK
 npm run db:studio     # abre Drizzle Studio no browser
 ```
 
-`npm run db:migrate` bloqueia automaticamente o Supabase de produção conhecido (`uftzjmmfkoqhjjwsiynk`), `DATABASE_MIGRATION_ENV=production`, `VERCEL_ENV=production` e alvos remotos quando `NODE_ENV=production`. Para uma migration manual de produção, execute somente depois de backup/snapshot, janela aprovada e plano de rollback documentado:
+`npm run db:migrate` bloqueia automaticamente o Supabase de produção conhecido (`vmohxhyfgywaqfuqeuom`), `DATABASE_MIGRATION_ENV=production`, `VERCEL_ENV=production` e alvos remotos quando `NODE_ENV=production`. Para uma migration manual de produção, execute somente depois de backup/snapshot, janela aprovada e plano de rollback documentado:
 
 ```bash
 ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
@@ -228,8 +228,3 @@ Contexto institucional e vocabulário do domínio: [`AGENTS.md`](./AGENTS.md).
 Guia do desenvolvedor: [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 Procedimentos operacionais (deploy, backup, rollback): [`docs/runbook.md`](./docs/runbook.md).
 Deploy target, env vars e checklist de release: seção 6 de [`ARCHITECTURE.md`](./ARCHITECTURE.md#6-deployment--infrastructure).
-
-Auditoria técnica e status operacional de 2026-05-17:
-
-- [`docs/codebase-audit-2026-05-17.md`](./docs/codebase-audit-2026-05-17.md) registra o hardening publicado em `main`, as validações locais e os riscos remanescentes.
-- [`docs/dbsave.md`](./docs/dbsave.md) mantém o estado Supabase/Postgres/Vercel, incluindo o que ainda depende de migração ou configuração remota manual.

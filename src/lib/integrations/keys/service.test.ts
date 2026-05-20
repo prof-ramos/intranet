@@ -85,6 +85,10 @@ describe('integration API key service', () => {
       await expect(createApiKey('Test', ['invalid:scope'], 1)).rejects.toThrow('Invalid scope');
     });
 
+    it('rejects empty scopes', async () => {
+      await expect(createApiKey('Test', [], 1)).rejects.toThrow('At least one scope must be selected.');
+    });
+
     it('generates different keys for each call', async () => {
       createMockExecutor();
       createMockExecutor();

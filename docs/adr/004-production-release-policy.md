@@ -2,7 +2,7 @@
 
 Status: accepted
 
-Para o primeiro go-live, producao usa o Supabase `uftzjmmfkoqhjjwsiynk` (`db-intranet`), staging/preview deve apontar para um Supabase separado, e migrations/deploy de producao sao manuais depois de checklist, backup/snapshot e smoke test. A decisao evita que previews, merges em `main` ou automacoes imaturas alterem banco de producao enquanto ainda ha risco operacional em RLS, drift de schema, Vercel project settings e dados LGPD.
+Para o primeiro go-live, producao usa o Supabase `vmohxhyfgywaqfuqeuom` (`db-intranet`), staging/preview deve apontar para um Supabase separado, e migrations/deploy de producao sao manuais depois de checklist, backup/snapshot e smoke test. A decisao evita que previews, merges em `main` ou automacoes imaturas alterem banco de producao enquanto ainda ha risco operacional em RLS, drift de schema, Vercel project settings e dados LGPD.
 
 ## Considered Options
 
@@ -16,7 +16,7 @@ Para o primeiro go-live, producao usa o Supabase `uftzjmmfkoqhjjwsiynk` (`db-int
 O escopo bloqueante do dia 1 fica em login, dashboard, associados, juridico e oficios. Financeiro so bloqueia se houver dependencia operacional imediata. Integracoes/webhooks e notificacoes realtime nao sao obrigatorios no dia 1; a aplicacao deve operar sem depender de cron, destinos externos, auth M2M ou Supabase Realtime.
 
 `npm run db:migrate` passa por `scripts/guarded-migrate.ts`. O wrapper bloqueia
-o Supabase de producao conhecido (`uftzjmmfkoqhjjwsiynk`), ambientes marcados
+o Supabase de producao conhecido (`vmohxhyfgywaqfuqeuom`), ambientes marcados
 como producao e alvos remotos sob `NODE_ENV=production` sem
 `ALLOW_PRODUCTION_MIGRATIONS=true`. Esse opt-in so deve ser usado depois de
 backup/snapshot, janela operacional aprovada e plano de rollback documentado.

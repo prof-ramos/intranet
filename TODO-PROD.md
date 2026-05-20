@@ -9,16 +9,17 @@ Levar o app para producao com uma fila limpa de PRs/branches, sem frentes abando
 ## Snapshot Atual
 
 - Repositorio: `prof-ramos/intranet`
-- Branch local atual: `main` (limpo apos cleanup)
+- Branch local atual: `feature/m2m-auth-and-docs-cleanup` (contendo a implementação do reset de senha e novos testes E2E)
 - PRs merged: #55, #56, #57 (todas em main)
 - Worktrees: somente `main` (worktrees antigos removidos)
 - Branches limpas: 11 branches e 3 worktrees antigos deletados
 - Guarded-migrate.ts salvo do worktree issue-41-hardening e commitado
+- Reset de Senha: Implementado com modal de visualização única no painel do administrador, validado com testes E2E e documentado no ADR-005
 
 ## Triagem De PRs
 
 | PR | Branch | Estado | Acao |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | #57 | `fix/followup-security-hardening` | Merged 2026-05-19 | ✅ Branch remota/local deletada |
 | #56 | `fix-e2e-websocket-node20` | Merged 2026-05-19 | ✅ Branch remota/local deletada |
 | #55 | `fix-security-medium-issues` | Merged 2026-05-19 | ✅ Branch remota/local deletada |
@@ -26,6 +27,7 @@ Levar o app para producao com uma fila limpa de PRs/branches, sem frentes abando
 ## Triagem De Branches — CONCLUIDO
 
 Todas as branches antigas foram removidas:
+
 - ✅ `dev/feature-delivery`, `docs/feature-docs`, `review/feature-review`, `test/feature-tests` (mesmo commit antigo 7b3777f)
 - ✅ `worktree-db-quality-improvements`, `worktree-docs-improve-architecture`
 - ✅ `docs/security-audit-2026-05-19`, `feat/listmonk-integration`, `feat/webhook-secrets-hardening`
@@ -53,7 +55,7 @@ Todas as branches antigas foram removidas:
 
 ### Fase 3 - Banco E Supabase
 
-- [ ] Confirmar alvo oficial de producao Supabase: `uftzjmmfkoqhjjwsiynk` (`db-intranet`).
+- [ ] Confirmar alvo oficial de producao Supabase: `vmohxhyfgywaqfuqeuom` (`db-intranet`).
 - [ ] Confirmar que previews/staging usam Supabase separado e nunca o banco de producao.
 - [ ] Fazer backup/snapshot antes de qualquer migration.
 - [ ] Conferir drift remoto: tabelas esperadas, ausencia de tabelas extras indevidas, extensoes e enums.
@@ -67,7 +69,7 @@ Todas as branches antigas foram removidas:
 - [ ] Revisar env vars obrigatorias na Vercel: banco, Supabase, auth/session, Mailjet se usado, integracoes desligadas por padrao.
 - [ ] **ADICIONAR env vars faltantes em producao** (identificado na revisao G003):
   - `ENCRYPTION_MASTER_KEY` — obrigatorio para PII encryption (gerar com `openssl rand -hex 32`)
-  - `MAILJET_API_KEY` + `MAILJET_SECRET_KEY` — obrigatorio para reset de senha por email (obter em app.mailjet.com)
+  - [x] `MAILJET_API_KEY` + `MAILJET_SECRET_KEY` — Opcional/Não obrigatória no Dia 1 devido ao bypass manual (ADR-005)
   - `CRON_SECRET` — obrigatorio para production cron dispatch (gerar com `openssl rand -hex 32`)
   - `TRUSTED_PROXY_COUNT=1` — recomendado para rate limiting correto (Vercel tem 1 proxy)
   - **NOTA**: Supabase vars NAO estao faltando — `getSupabaseUrl()`, `getSupabasePublishableKey()` e `getSupabaseServiceRoleKey()` tem fallbacks que ja estao em producao (`DATABASE_SUPABASE_*` e `NEXT_PUBLIC_DATABASE_SUPABASE_*`)
@@ -89,7 +91,7 @@ Todas as branches antigas foram removidas:
 - [ ] Validar login real com usuario admin/diretoria/secretaria.
 - [ ] **Testar RLS com usuario comum** tentando acessar via API dados de outro usuario — verificar resposta 403 ou vazia.
 - [ ] **Testar autorizacao**: tentar acessar rotas de admin com usuario `secretaria` e confirmar bloqueio.
-- [ ] **Testar recuperacao de senha end-to-end** com envio de email real.
+- [x] **Testar recuperação de senha end-to-end** usando o fluxo de credenciais manual temporário (Opção A) exibido em modal de visualização única (validado por testes E2E).
 - [ ] Confirmar que dados LGPD nao aparecem em logs, erros de API ou respostas publicas. Verificar especificamente: CPF (padrao XXX.XXX.XXX-XX), email completo, telefone, endereco completo, hashes/senhas e tokens de sessao completos. Registrar queries e resultados como evidencia.
 - [ ] Confirmar download de oficio e rotas protegidas sem vazamento de detalhe sensivel.
 - [ ] Conferir logs Vercel e Supabase por erros de auth, migration, RLS e timeout.
@@ -103,7 +105,7 @@ Todas as branches antigas foram removidas:
 - [ ] **Configurar alertas criticos** (error rate > 5%, p95 latency > 2s, RLS violations) antes do go-live.
 - [ ] Criar issues separadas para Listmonk, webhooks, dashboards adicionais e UX pendente.
 - [ ] Remover branches/worktrees restantes apos o periodo de estabilizacao.
-- [ ] Atualizar `README.md`, `docs/runbook.md` e `docs/dbsave.md` se algum passo operacional mudou.
+- [ ] Atualizar `README.md` e `docs/runbook.md` se algum passo operacional mudou.
 
 ## Comandos De Apoio
 
