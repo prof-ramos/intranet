@@ -25,7 +25,9 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
   if (resetState !== lastResetState) {
     setLastResetState(resetState);
     if (resetState?.success) {
-      setShowCredentialsModal(true);
+      if (resetState.resetLink || resetState.tempPassword) {
+        setShowCredentialsModal(true);
+      }
       setConfirmReset(false);
     }
   }
@@ -76,13 +78,19 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
       {resetState?.success && (
         <div className="inline-flex items-center gap-1.5" role="status" aria-live="polite">
           <MailCheck size={14} className="text-green-600" aria-hidden="true" />
-          <button
-            type="button"
-            onClick={() => setShowCredentialsModal(true)}
-            className="text-xs text-green-700 font-semibold hover:underline"
-          >
-            Ver credenciais resetadas
-          </button>
+          {resetState.resetLink || resetState.tempPassword ? (
+            <button
+              type="button"
+              onClick={() => setShowCredentialsModal(true)}
+              className="text-xs text-green-700 font-semibold hover:underline"
+            >
+              Ver credenciais resetadas
+            </button>
+          ) : (
+            <span className="text-xs text-green-700 font-medium">
+              {resetState.message}
+            </span>
+          )}
         </div>
       )}
 

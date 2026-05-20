@@ -157,6 +157,7 @@ export async function resetUserPassword(
       ? `Senha resetada. Email de recuperação enviado para ${target.email}.`
       : `Senha resetada. Comunique o link de recuperação ao usuário por canal seguro.`,
     resetLink: emailDelivered ? undefined : resetLink,
+    tempPassword: emailDelivered ? undefined : tempPassword,
   };
 }
 
