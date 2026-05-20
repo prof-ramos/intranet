@@ -2,14 +2,19 @@ import {
   countActiveAssociates,
   countActiveAssociatesByLocation,
   countContributionsOkAssociates,
+  countInadimplentesAssociates,
   countOpenActivities,
   countOverdueActivities,
   getActivitiesByStatus,
+  getBirthdaysThisMonth,
   getTopRegions,
   getUrgentActivities,
   getKanbanCards,
+  type BirthdayItem,
   type KanbanCard,
 } from '@/lib/dashboard/queries';
+
+export type { BirthdayItem };
 import { initialsFromName } from '@/lib/utils/initials';
 import { statusStyles } from '@/lib/ui/tokens';
 
@@ -59,6 +64,8 @@ export interface DashboardViewModel {
   statusColumns: DashboardStatusColumn[];
   topRegions: DashboardTopRegion[];
   urgentActivities: DashboardUrgentActivity[];
+  birthdaysThisMonth: BirthdayItem[];
+  inadimplentesCount: number;
 }
 
 export { formatShortDate as formatDashboardDueDate } from '@/lib/utils/date';
@@ -68,22 +75,26 @@ export async function getDashboardViewModel(): Promise<DashboardViewModel> {
     activeAssociates,
     activeAssociatesByLocation,
     contributionsOk,
+    inadimplentesCount,
     openActivities,
     overdueActivities,
     activitiesByStatus,
     topRegions,
     urgentActivities,
     kanbanCards,
+    birthdaysThisMonth,
   ] = await Promise.all([
     countActiveAssociates(),
     countActiveAssociatesByLocation(),
     countContributionsOkAssociates(),
+    countInadimplentesAssociates(),
     countOpenActivities(),
     countOverdueActivities(),
     getActivitiesByStatus(),
     getTopRegions(),
     getUrgentActivities(),
     getKanbanCards(),
+    getBirthdaysThisMonth(),
   ]);
 
   const contributionRate =
@@ -159,6 +170,8 @@ export async function getDashboardViewModel(): Promise<DashboardViewModel> {
       priority: activity.priority,
       dueDate: activity.dueDate,
     })),
+    birthdaysThisMonth,
+    inadimplentesCount,
   };
 }
 

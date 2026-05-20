@@ -1,4 +1,4 @@
-import { AlertTriangle, Clock, Globe, Mail, Megaphone } from 'lucide-react';
+import { AlertTriangle, Cake, Clock, Globe, Mail, Megaphone } from 'lucide-react';
 import {
   borderSubtle,
   dangerText,
@@ -14,6 +14,7 @@ import {
 } from '@/lib/ui/tokens';
 import {
   formatDashboardDueDate,
+  type BirthdayItem,
   type DashboardTopRegion,
   type DashboardUrgentActivity,
 } from '@/lib/dashboard/view-model';
@@ -22,13 +23,20 @@ import type { AuthRole } from '@/lib/auth/config';
 interface DashboardSidebarProps {
   topRegions: DashboardTopRegion[];
   urgentActivities: DashboardUrgentActivity[];
+  birthdaysThisMonth: BirthdayItem[];
   user: {
     name: string;
     role: AuthRole;
   };
 }
 
-export function DashboardSidebar({ topRegions, urgentActivities, user }: DashboardSidebarProps) {
+function formatBirthday(birthDate: string): string {
+  // birthDate is stored as a date string e.g. "1985-03-15"
+  const [, month, day] = birthDate.split('-');
+  return `${day}/${month}`;
+}
+
+export function DashboardSidebar({ topRegions, urgentActivities, birthdaysThisMonth, user }: DashboardSidebarProps) {
   return (
     <aside className="flex w-full min-w-0 flex-col gap-5">
       <div className="rounded-[16px] bg-white p-5" style={{ border: `1px solid ${hairline}` }}>
@@ -129,6 +137,38 @@ export function DashboardSidebar({ topRegions, urgentActivities, user }: Dashboa
             </li>
           ))}
         </ul>
+      </div>
+
+      <div className="rounded-[16px] bg-white p-5" style={{ border: `1px solid ${hairline}` }}>
+        <div className="mb-4 flex items-center gap-2">
+          <Cake size={20} style={{ color: skyBlue }} aria-hidden="true" />
+          <h2 className="font-serif text-lg leading-tight font-bold">Aniversariantes do Mês</h2>
+        </div>
+        {birthdaysThisMonth.length === 0 ? (
+          <p className="text-sm" style={{ color: textSubtle }}>
+            Nenhum aniversariante este mês.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {birthdaysThisMonth.map((associate, index) => (
+              <li
+                key={associate.id}
+                className="pb-3"
+                style={{
+                  borderBottom:
+                    index === birthdaysThisMonth.length - 1 ? 'none' : `1px solid ${hairline}`,
+                }}
+              >
+                <p className="text-sm leading-snug font-semibold [overflow-wrap:anywhere]">
+                  {associate.fullName}
+                </p>
+                <p className="mt-0.5 text-xs leading-relaxed" style={{ color: textSubtle }}>
+                  {associate.assignment ?? 'Sem lotação'} · {formatBirthday(associate.birthDate)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <p className="text-[11px] leading-relaxed" style={{ color: textMuted }}>
