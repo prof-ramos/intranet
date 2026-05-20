@@ -96,6 +96,38 @@ describe('config integracoes api key actions', () => {
     expect(listApiKeysServiceMock).not.toHaveBeenCalled();
   });
 
+  it.each([
+    {
+      name: 'create',
+      action: () => createApiKeyAction('Valid name', ['events:read']),
+      service: createApiKeyServiceMock,
+    },
+    {
+      name: 'list',
+      action: () => listApiKeysAction(),
+      service: listApiKeysServiceMock,
+    },
+    {
+      name: 'revoke',
+      action: () => revokeApiKeyAction(1),
+      service: revokeApiKeyServiceMock,
+    },
+    {
+      name: 'rotate',
+      action: () => rotateApiKeyAction(1),
+      service: rotateApiKeyServiceMock,
+    },
+  ])('requires admin before $name api key service calls', async ({ action, service }) => {
+    requireRoleMock.mockImplementationOnce(async (roles: string[]) => {
+      if (roles.length === 1 && roles[0] === 'admin') {
+        throw new Error('NEXT_REDIRECT:/app');
+      }
+    });
+
+    await expect(action()).rejects.toThrow('NEXT_REDIRECT:/app');
+    expect(service).not.toHaveBeenCalled();
+  });
+
   it('returns a typed error when revoking a missing key', async () => {
     revokeApiKeyServiceMock.mockResolvedValue(false);
 

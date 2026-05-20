@@ -14,7 +14,7 @@ import { revalidatePath } from 'next/cache';
 
 export async function createApiKeyAction(name: string, scopes: string[]) {
   const actor = await requireAuth();
-  await requireRole(['admin', 'diretoria']);
+  await requireRole(['admin']);
 
   if (!name || name.trim().length < 2) {
     return { error: 'Name must be at least 2 characters.' };
@@ -46,19 +46,19 @@ export async function createApiKeyAction(name: string, scopes: string[]) {
 
 export async function listApiKeysAction() {
   await requireAuth();
-  await requireRole(['admin', 'diretoria']);
+  await requireRole(['admin']);
 
   try {
     const data = await listApiKeysService();
     return { data };
-  } catch (err) {
+  } catch {
     return { error: 'Failed to list API keys.' };
   }
 }
 
 export async function revokeApiKeyAction(id: number) {
   await requireAuth();
-  await requireRole(['admin', 'diretoria']);
+  await requireRole(['admin']);
 
   const revoked = await revokeApiKeyService(id);
   if (!revoked) {
@@ -70,7 +70,7 @@ export async function revokeApiKeyAction(id: number) {
 
 export async function rotateApiKeyAction(id: number) {
   const actor = await requireAuth();
-  await requireRole(['admin', 'diretoria']);
+  await requireRole(['admin']);
 
   const result = await rotateApiKeyService(id, actor.userId);
   if (!result) {

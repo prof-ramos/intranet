@@ -8,6 +8,17 @@ export interface EmailMessage {
   textBody: string
 }
 
+export class MailjetSendError extends Error {
+  readonly code = 'MAILJET_SEND_FAILED'
+  readonly status: number
+
+  constructor(status: number) {
+    super(`Mailjet send failed with status ${status}`)
+    this.name = 'MailjetSendError'
+    this.status = status
+  }
+}
+
 export async function sendEmail(message: EmailMessage): Promise<void> {
   const response = await fetch('https://api.mailjet.com/v3.1/send', {
     method: 'POST',
@@ -34,7 +45,7 @@ export async function sendEmail(message: EmailMessage): Promise<void> {
   })
 
   if (!response.ok) {
-    const body = await response.text()
-    throw new Error(`Mailjet error ${response.status}: ${body}`)
+    await response.text().catch(() => undefined)
+    throw new MailjetSendError(response.status)
   }
 }

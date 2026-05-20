@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Drizzle mock chains require any for self-referencing builders */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { SQL } from 'drizzle-orm';
-import { findMonthlyPayment, upsertMonthlyPayment, getAssociatesWithPayments } from './repository';
+import {
+  findMonthlyPayment,
+  getAssociatesWithPayments,
+  markOverduePaymentsForAudit,
+  upsertMonthlyPayment,
+} from './repository';
 
 function compileSql(fragment: SQL) {
   return fragment.toQuery({
@@ -45,13 +50,22 @@ const { dbMock, MOCK_PAYMENT } = vi.hoisted(() => {
   insertChain.onConflictDoUpdate = vi.fn().mockReturnValue(insertChain);
   insertChain.returning = vi.fn().mockImplementation(() => Promise.resolve(_insertResult));
 
+  let _updateResult: any[] = [];
+  const updateChain: Record<string, any> = {};
+  updateChain.set = vi.fn().mockReturnValue(updateChain);
+  updateChain.where = vi.fn().mockReturnValue(updateChain);
+  updateChain.returning = vi.fn().mockImplementation(() => Promise.resolve(_updateResult));
+
   const dbMock = {
     select: vi.fn().mockReturnValue(selectChain),
     insert: vi.fn().mockReturnValue(insertChain),
+    update: vi.fn().mockReturnValue(updateChain),
     _selectChain: selectChain,
     _insertChain: insertChain,
+    _updateChain: updateChain,
     setSelectResult(val: any[]) { _selectResult = val; },
     setInsertResult(val: any[]) { _insertResult = val; },
+    setUpdateResult(val: any[]) { _updateResult = val; },
   };
 
   return { dbMock, MOCK_PAYMENT };
@@ -64,6 +78,7 @@ describe('finance repository', () => {
     vi.clearAllMocks();
     dbMock.setSelectResult([MOCK_PAYMENT]);
     dbMock.setInsertResult([MOCK_PAYMENT]);
+    dbMock.setUpdateResult([]);
   });
 
   describe('findMonthlyPayment', () => {
@@ -86,6 +101,43 @@ describe('finance repository', () => {
       await upsertMonthlyPayment(MOCK_PAYMENT as any);
       expect(dbMock.insert).toHaveBeenCalled();
       expect(dbMock._insertChain.onConflictDoUpdate).toHaveBeenCalled();
+    });
+  });
+
+  describe('markOverduePaymentsForAudit', () => {
+    it('marks overdue payments with a system actor and returns auditable rows', async () => {
+      const transitionedPayment = {
+        id: 5,
+        associateId: 10,
+        year: 2026,
+        month: 4,
+        status: 'atrasado',
+        paymentMethod: 'boleto',
+        paidAt: null,
+      };
+      dbMock.setUpdateResult([transitionedPayment]);
+
+      const result = await markOverduePaymentsForAudit();
+
+      expect(result).toEqual([transitionedPayment]);
+      expect(dbMock.update).toHaveBeenCalled();
+      expect(dbMock._updateChain.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'atrasado',
+          updatedBy: null,
+        }),
+      );
+      expect(dbMock._updateChain.returning).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: expect.anything(),
+          associateId: expect.anything(),
+          year: expect.anything(),
+          month: expect.anything(),
+          status: expect.anything(),
+          paymentMethod: expect.anything(),
+          paidAt: expect.anything(),
+        }),
+      );
     });
   });
 

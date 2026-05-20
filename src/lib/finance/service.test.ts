@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { updateMonthlyPayment } from './service';
+import { autoMarkOverduePaymentsService, updateMonthlyPayment } from './service';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { logAuditAction } from '@/lib/audit/service';
 
@@ -11,6 +11,8 @@ const transactionMock = vi.hoisted(() => ({
     where: vi.fn(),
     limit: vi.fn(),
     insert: vi.fn(),
+    insertValues: vi.fn(),
+    update: vi.fn(),
   },
 }));
 
@@ -19,6 +21,7 @@ vi.mock('@/lib/db', () => ({
     transaction: vi.fn(async (callback: (tx: typeof transactionMock.tx) => Promise<unknown>) =>
       callback(transactionMock.tx),
     ),
+    update: vi.fn(),
   },
 }));
 
@@ -42,9 +45,16 @@ describe('finance service', () => {
     const onConflictDoUpdate = vi.fn(() => ({ returning }));
     const values = vi.fn(() => ({ onConflictDoUpdate }));
     const insert = vi.fn(() => ({ values }));
+    const insertValues = values;
+    const updateReturning = vi.fn();
+    const updateWhere = vi.fn(() => ({ returning: updateReturning }));
+    const updateSet = vi.fn(() => ({ where: updateWhere }));
+    const update = vi.fn(() => ({ set: updateSet }));
 
     transactionMock.tx.select = select;
     transactionMock.tx.insert = insert;
+    transactionMock.tx.insertValues = insertValues;
+    transactionMock.tx.update = update;
 
     limit.mockResolvedValue([
       {
@@ -61,6 +71,75 @@ describe('finance service', () => {
         id: 5,
       },
     ]);
+
+    updateReturning.mockResolvedValue([
+      {
+        id: 5,
+        associateId: 10,
+        year: 2026,
+        month: 4,
+        status: 'atrasado',
+        paymentMethod: 'boleto',
+        paidAt: null,
+      },
+    ]);
+  });
+
+  it('audits and emits system domain events for automatic overdue transitions', async () => {
+    const count = await autoMarkOverduePaymentsService();
+
+    expect(count).toBe(1);
+    expect(transactionMock.tx.update).toHaveBeenCalled();
+    expect(transactionMock.tx.insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        performedBy: null,
+        action: 'auto_mark_overdue',
+        entityType: 'monthly_payment',
+        entityId: 5,
+        changes: {
+          old: {
+            status: 'pendente',
+          },
+          new: {
+            status: 'atrasado',
+          },
+        },
+        metadata: {
+          actorType: 'system',
+          associateId: 10,
+          year: 2026,
+          month: 4,
+        },
+      }),
+    );
+    expect(emitDomainEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'monthly_payment.updated',
+        entityType: 'monthly_payment',
+        entityId: 5,
+        actorAdminId: null,
+        payload: {
+          associateId: 10,
+          year: 2026,
+          month: 4,
+          previousStatus: 'pendente',
+          status: 'atrasado',
+          paymentMethod: 'boleto',
+          paidAt: null,
+          links: {
+            app: '/app/financeiro/mensalidades?year=2026&month=4',
+          },
+        },
+      }),
+      transactionMock.tx,
+    );
+    expect(logAuditAction).not.toHaveBeenCalled();
+    expect(JSON.stringify(transactionMock.tx.insertValues.mock.calls[0][0])).not.toMatch(
+      /cpf|siape|address/i,
+    );
+    expect(JSON.stringify(vi.mocked(emitDomainEvent).mock.calls[0][0])).not.toMatch(
+      /cpf|siape|address/i,
+    );
   });
 
   it('emits a domain event when the payment status changes', async () => {

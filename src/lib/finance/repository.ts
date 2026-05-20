@@ -1,6 +1,11 @@
 import { isDomesticCountrySql, isExteriorCountrySql } from '@/lib/associates/location-country';
-import { db } from '@/lib/db';
-import { monthlyPayments, paymentStatus, type NewMonthlyPayment } from '@/lib/db/schema/finance';
+import { db, type Tx } from '@/lib/db';
+import {
+  monthlyPayments,
+  paymentStatus,
+  type MonthlyPayment,
+  type NewMonthlyPayment,
+} from '@/lib/db/schema/finance';
 import { associates } from '@/lib/db/schema/associates';
 import { and, desc, eq, ilike, lt, or, sql } from 'drizzle-orm';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
@@ -82,14 +87,32 @@ export async function upsertMonthlyPayment(payment: NewMonthlyPayment, executor:
 }
 
 export async function markOverduePayments(): Promise<number> {
+  const rows = await markOverduePaymentsForAudit();
+  return rows.length;
+}
+
+export interface OverduePaymentTransition {
+  id: number;
+  associateId: number;
+  year: number;
+  month: number;
+  status: 'atrasado';
+  paymentMethod: MonthlyPayment['paymentMethod'];
+  paidAt: Date | null;
+}
+
+export async function markOverduePaymentsForAudit(
+  executor: Pick<Tx, 'update'> = db,
+): Promise<OverduePaymentTransition[]> {
   const now = new Date();
   const thisYear = now.getFullYear();
   const thisMonth = now.getMonth() + 1; // getMonth() is 0-indexed
 
-  const rows = await db
+  return executor
     .update(monthlyPayments)
     .set({
       status: 'atrasado',
+      updatedBy: null,
       updatedAt: sql`now()`,
     })
     .where(
@@ -104,9 +127,15 @@ export async function markOverduePayments(): Promise<number> {
         ),
       ),
     )
-    .returning({ id: monthlyPayments.id });
-
-  return rows.length;
+    .returning({
+      id: monthlyPayments.id,
+      associateId: monthlyPayments.associateId,
+      year: monthlyPayments.year,
+      month: monthlyPayments.month,
+      status: monthlyPayments.status,
+      paymentMethod: monthlyPayments.paymentMethod,
+      paidAt: monthlyPayments.paidAt,
+    }) as Promise<OverduePaymentTransition[]>;
 }
 
 function buildNamePattern(query: string): string {

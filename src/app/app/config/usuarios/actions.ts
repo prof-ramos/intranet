@@ -16,6 +16,15 @@ import { passwordResetEmailHtml, passwordResetEmailText } from '@/lib/email/temp
 
 const logger = createLogger('usuarios:actions');
 
+function toSafeEmailDeliveryErrorLog(error: unknown): ReturnType<typeof toSafeErrorLog> & { status?: number } {
+  const safeError = toSafeErrorLog(error);
+  const status = typeof (error as { status?: unknown } | null)?.status === 'number'
+    ? (error as { status: number }).status
+    : undefined;
+
+  return status === undefined ? safeError : { ...safeError, status };
+}
+
 function generateTemporaryPassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   const symbols = '@#$%&!';
@@ -144,8 +153,7 @@ export async function resetUserPassword(
     } catch (emailError) {
       logger.error(
         '[resetUserPassword] Failed to deliver password reset email.',
-        { targetId, error: toSafeErrorLog(emailError) },
-        emailError instanceof Error ? emailError : undefined,
+        { targetId, error: toSafeEmailDeliveryErrorLog(emailError) },
       );
       // Email delivery failure should not block the password reset
     }
@@ -154,7 +162,7 @@ export async function resetUserPassword(
   return {
     success: true,
     message: emailDelivered
-      ? `Senha resetada. Email de recuperação enviado para ${target.email}.`
+      ? `Senha resetada. Email de recuperação enviado ao usuário.`
       : `Senha resetada. Comunique o link de recuperação ao usuário por canal seguro.`,
     resetLink: emailDelivered ? undefined : resetLink,
     tempPassword: emailDelivered ? undefined : tempPassword,

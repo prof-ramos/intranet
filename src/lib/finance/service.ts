@@ -1,23 +1,86 @@
 import * as repository from './repository';
-import { markOverduePayments } from './repository';
+import { markOverduePaymentsForAudit, type OverduePaymentTransition } from './repository';
 import { logAuditAction } from '@/lib/audit/service';
 import { db } from '@/lib/db';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { monthlyPayments, type NewMonthlyPayment } from '@/lib/db/schema/finance';
+import { auditLogs, type NewAuditLog } from '@/lib/db/schema/audit';
 import { associates } from '@/lib/db/schema/associates';
 import { and, eq, sql } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
+import { sanitizePiiValue } from '@/lib/sanitize-pii';
 
 const logger = createLogger('finance:service');
 
 export async function autoMarkOverduePaymentsService(): Promise<number> {
-  const count = await markOverduePayments();
+  const rows = await db.transaction(async (tx) => {
+    const transitioned = await markOverduePaymentsForAudit(tx);
+
+    for (const payment of transitioned) {
+      await logSystemOverdueTransition(payment, tx);
+      await emitDomainEvent(
+        {
+          type: 'monthly_payment.updated',
+          entityType: 'monthly_payment',
+          entityId: payment.id,
+          actorAdminId: null,
+          payload: {
+            associateId: payment.associateId,
+            year: payment.year,
+            month: payment.month,
+            previousStatus: 'pendente',
+            status: 'atrasado',
+            paymentMethod: payment.paymentMethod,
+            paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
+            links: {
+              app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
+            },
+          },
+        },
+        tx,
+      );
+    }
+
+    return transitioned;
+  });
+
+  const count = rows.length;
 
   if (count > 0) {
     logger.info('[autoMarkOverdue] Transitioned payments pendente → atrasado', { count });
   }
 
   return count;
+}
+
+async function logSystemOverdueTransition(
+  payment: OverduePaymentTransition,
+  executor: Pick<import('@/lib/db').Tx, 'insert'>,
+) {
+  const changes = {
+    old: {
+      status: 'pendente',
+    },
+    new: {
+      status: 'atrasado',
+    },
+  } satisfies NonNullable<NewAuditLog['changes']>;
+
+  const metadata = {
+    actorType: 'system',
+    associateId: payment.associateId,
+    year: payment.year,
+    month: payment.month,
+  };
+
+  await executor.insert(auditLogs).values({
+    performedBy: null,
+    action: 'auto_mark_overdue',
+    entityType: 'monthly_payment',
+    entityId: payment.id,
+    changes: sanitizePiiValue(changes) as NewAuditLog['changes'],
+    metadata: sanitizePiiValue(metadata) as NewAuditLog['metadata'],
+  });
 }
 
 export function validateYearMonth(year: number, month: number): void {

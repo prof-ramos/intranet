@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetUserPassword, toggleUserActive } from './actions';
+import { passwordResetEmailHtml } from '@/lib/email/templates';
 
 const {
   requireRoleMock,
@@ -12,12 +13,21 @@ const {
   mockLimit,
   mockInsertValues,
   mockUpdateWhere,
+  sendEmailMock,
+  loggerErrorMock,
+  envMock,
 } = vi.hoisted(() => ({
   requireRoleMock: vi.fn(),
   ensureAdminPasswordAuthUserMock: vi.fn(),
   generatePasswordResetLinkMock: vi.fn(),
   hashMock: vi.fn(),
   revalidatePathMock: vi.fn(),
+  sendEmailMock: vi.fn(),
+  loggerErrorMock: vi.fn(),
+  envMock: {
+    MAILJET_API_KEY: undefined as string | undefined,
+    MAILJET_SECRET_KEY: undefined as string | undefined,
+  },
   selectQueue: [] as unknown[][],
   insertQueue: [] as unknown[],
   mockLimit: vi.fn(async () => selectQueue.shift() ?? []),
@@ -44,17 +54,37 @@ vi.mock('@/lib/logger', () => ({
   createLogger: () => ({
     info: vi.fn(),
     warn: vi.fn(),
-    error: vi.fn(),
+    error: loggerErrorMock,
     debug: vi.fn(),
   }),
 }));
 
 vi.mock('@/lib/error-log', () => ({
-  toSafeErrorLog: (err: unknown) => String(err),
+  toSafeErrorLog: (err: unknown) => {
+    if (!(err instanceof Error)) {
+      return { kind: 'non_error_thrown' };
+    }
+
+    const errorWithMetadata = err as Error & { code?: unknown; status?: unknown };
+    return {
+      kind: 'error',
+      name: err.name,
+      code: typeof errorWithMetadata.code === 'string' ? errorWithMetadata.code : undefined,
+      status: typeof errorWithMetadata.status === 'number' ? errorWithMetadata.status : undefined,
+    };
+  },
 }));
 
 vi.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => revalidatePathMock(...args),
+}));
+
+vi.mock('@/lib/env', () => ({
+  env: envMock,
+}));
+
+vi.mock('@/lib/email', () => ({
+  sendEmail: (...args: unknown[]) => sendEmailMock(...args),
 }));
 
 vi.mock('@/lib/db', () => ({
@@ -86,6 +116,9 @@ describe('config usuarios actions', () => {
     ensureAdminPasswordAuthUserMock.mockResolvedValue({ userId: 'auth-1', created: false });
     generatePasswordResetLinkMock.mockResolvedValue('https://supabase.co/recovery?token=abc');
     hashMock.mockResolvedValue('hashed-password');
+    sendEmailMock.mockResolvedValue(undefined);
+    envMock.MAILJET_API_KEY = undefined;
+    envMock.MAILJET_SECRET_KEY = undefined;
     mockLimit.mockImplementation(async () => selectQueue.shift() ?? []);
     mockInsertValues.mockImplementation(() => insertQueue.shift());
   });
@@ -133,6 +166,122 @@ describe('config usuarios actions', () => {
       }),
     );
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/usuarios');
+  });
+
+  it('sends configured Mailjet reset email without returning fallback secrets or target email', async () => {
+    envMock.MAILJET_API_KEY = 'mailjet-key';
+    envMock.MAILJET_SECRET_KEY = 'mailjet-secret';
+    selectQueue.push([
+      {
+        id: 10,
+        name: 'Maria',
+        email: 'maria@asof.local',
+        role: 'secretaria',
+        isActive: true,
+      },
+    ]);
+    insertQueue.push(undefined);
+
+    const formData = new FormData();
+    formData.set('userId', '10');
+
+    const result = await resetUserPassword(null, formData);
+
+    expect(sendEmailMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'maria@asof.local',
+        toName: 'Maria',
+        subject: 'Redefinição de senha — ASOF Intranet',
+      }),
+    );
+    expect(result).toEqual({
+      success: true,
+      message: 'Senha resetada. Email de recuperação enviado ao usuário.',
+      resetLink: undefined,
+      tempPassword: undefined,
+    });
+  });
+
+  it('returns fallback secrets when configured Mailjet delivery fails without logging raw response body', async () => {
+    envMock.MAILJET_API_KEY = 'mailjet-key';
+    envMock.MAILJET_SECRET_KEY = 'mailjet-secret';
+    selectQueue.push([
+      {
+        id: 10,
+        name: 'Maria',
+        email: 'maria@asof.local',
+        role: 'secretaria',
+        isActive: true,
+      },
+    ]);
+    insertQueue.push(undefined);
+    const mailjetError = new Error(
+      'Mailjet error 400: {"Messages":[{"To":[{"Email":"maria@asof.local"}],"Errors":[{"ErrorMessage":"https://supabase.co/recovery?token=abc"}]}]}',
+    ) as Error & { code: string; status: number };
+    mailjetError.code = 'MAILJET_SEND_FAILED';
+    mailjetError.status = 400;
+    sendEmailMock.mockRejectedValue(mailjetError);
+
+    const formData = new FormData();
+    formData.set('userId', '10');
+
+    const result = await resetUserPassword(null, formData);
+
+    expect(result.success).toBe(true);
+    expect(result.message).toBe('Senha resetada. Comunique o link de recuperação ao usuário por canal seguro.');
+    expect(result.resetLink).toBe('https://supabase.co/recovery?token=abc');
+    expect(result.tempPassword).toEqual(expect.any(String));
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      '[resetUserPassword] Failed to deliver password reset email.',
+      {
+        targetId: 10,
+        error: {
+          kind: 'error',
+          name: 'Error',
+          code: 'MAILJET_SEND_FAILED',
+          status: 400,
+        },
+      },
+    );
+    const loggedArgs = JSON.stringify(loggerErrorMock.mock.calls);
+    expect(loggedArgs).not.toContain('maria@asof.local');
+    expect(loggedArgs).not.toContain('supabase.co/recovery');
+    expect(loggedArgs).not.toContain('Messages');
+  });
+
+  it('throws sanitized Mailjet errors without raw response body', async () => {
+    envMock.MAILJET_API_KEY = 'mailjet-key';
+    envMock.MAILJET_SECRET_KEY = 'mailjet-secret';
+    const rawResponseBody = '{"Messages":[{"To":[{"Email":"maria@asof.local"}]}]}';
+    const { sendEmail } = await vi.importActual<typeof import('@/lib/email')>('@/lib/email');
+    const fetchMock = vi.fn(async () => new Response(rawResponseBody, { status: 400 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    try {
+      await expect(
+        sendEmail({
+          to: 'maria@asof.local',
+          toName: 'Maria',
+          subject: 'Redefinição de senha — ASOF Intranet',
+          htmlBody: '<p>reset</p>',
+          textBody: 'reset',
+        }),
+      ).rejects.toMatchObject({
+        name: 'MailjetSendError',
+        message: 'Mailjet send failed with status 400',
+        code: 'MAILJET_SEND_FAILED',
+        status: 400,
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('escapes reset link in password reset email href attributes', () => {
+    const html = passwordResetEmailHtml('Maria', 'https://asof.local/reset?token="abc"&next=<script>');
+
+    expect(html).toContain('href="https://asof.local/reset?token=&quot;abc&quot;&amp;next=&lt;script&gt;"');
+    expect(html).not.toContain('href="https://asof.local/reset?token="abc"&next=<script>"');
   });
 
   it('aborts without invalidating password when link generation fails', async () => {

@@ -1,4 +1,6 @@
 export function passwordResetEmailHtml(name: string, resetLink: string): string {
+  const escapedResetLink = escapeHtmlAttribute(resetLink)
+
   return `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -8,7 +10,7 @@ export function passwordResetEmailHtml(name: string, resetLink: string): string 
   <p>Um administrador solicitou a redefinição da sua senha no sistema interno da ASOF.</p>
   <p>Clique no botão abaixo para definir uma nova senha:</p>
   <p style="margin: 32px 0;">
-    <a href="${resetLink}"
+    <a href="${escapedResetLink}"
        style="background-color: #06284f; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
       Redefinir minha senha
     </a>
@@ -41,4 +43,8 @@ function escapeHtml(str: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+function escapeHtmlAttribute(str: string): string {
+  return escapeHtml(str).replace(/'/g, '&#39;')
 }
