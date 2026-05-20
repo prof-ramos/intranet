@@ -22,7 +22,7 @@ if (!databaseUrl) {
 }
 
 if (env.DATABASE_URL && env.DATABASE_POSTGRES_URL) {
-  logger.warn(
+  logger.info(
     'Both DATABASE_URL and DATABASE_POSTGRES_URL are set; databaseUrl uses DATABASE_URL.',
   );
 }
