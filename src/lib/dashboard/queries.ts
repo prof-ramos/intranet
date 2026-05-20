@@ -16,6 +16,12 @@ const TTL_REALTIME = 15; // 15s — dados altamente voláteis
 
 const MAX_CACHE_ENTRIES = 10;
 
+/** Strips the year from a date string. "1985-03-15" → "15/03" */
+function formatDayMonth(dateStr: string): string {
+  const [, month, day] = dateStr.split('-');
+  return `${day}/${month}`;
+}
+
 function setWithLimit<K, V>(map: Map<K, V>, key: K, value: V) {
   if (map.size >= MAX_CACHE_ENTRIES && !map.has(key)) {
     const firstKey = map.keys().next().value;
@@ -178,6 +184,66 @@ export const getUrgentActivities = (limit = 4): Promise<UrgentActivity[]> => {
   setWithLimit(urgentActivitiesCache, limit, created);
   return created();
 };
+
+export interface BirthdayItem {
+  id: number;
+  fullName: string;
+  assignment: string | null;
+  /** Day/month only, formatted as "dd/mm" (year stripped for PII minimization) */
+  birthDayMonth: string;
+}
+
+const TTL_BIRTHDAY = 3600; // 1h — birthday list changes rarely during the day
+
+export const getBirthdaysThisMonth = (limit = 10): Promise<BirthdayItem[]> => {
+  const created = unstable_cache(
+    async (): Promise<BirthdayItem[]> => {
+      const rows = await db
+        .select({
+          id: associates.id,
+          fullName: associates.fullName,
+          assignment: associates.assignment,
+          birthDate: associates.birthDate,
+        })
+        .from(associates)
+        .where(
+          and(
+            eq(associates.associationStatus, 'ativo'),
+            sql`${associates.birthDate} IS NOT NULL`,
+            sql`EXTRACT(MONTH FROM ${associates.birthDate}::date) = EXTRACT(MONTH FROM CURRENT_DATE)`,
+          ),
+        )
+        .orderBy(sql`EXTRACT(DAY FROM ${associates.birthDate}::date) ASC`)
+        .limit(limit);
+      return rows.map((r) => ({
+        id: r.id,
+        fullName: r.fullName,
+        assignment: r.assignment,
+        birthDayMonth: formatDayMonth(r.birthDate as string),
+      }));
+    },
+    ['birthdays-this-month', String(limit)],
+    { revalidate: TTL_BIRTHDAY, tags: ['dashboard'] },
+  );
+  return created();
+};
+
+export const countInadimplentesAssociates = unstable_cache(
+  async (): Promise<number> => {
+    const rows = await db
+      .select({ count: count() })
+      .from(associates)
+      .where(
+        and(
+          eq(associates.associationStatus, 'ativo'),
+          eq(associates.contributionStatus, 'inadimplente'),
+        ),
+      );
+    return rows[0].count;
+  },
+  ['inadimplentes-count'],
+  { revalidate: TTL_MODERATE, tags: ['dashboard'] },
+);
 
 export interface KanbanCard {
   id: number;

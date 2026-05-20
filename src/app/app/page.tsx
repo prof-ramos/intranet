@@ -46,13 +46,14 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <DashboardIndicators stripe={data.stripe} />
+      <DashboardIndicators stripe={data.stripe} inadimplentesCount={data.inadimplentesCount} />
 
       <section className="grid items-start gap-7 xl:grid-cols-[minmax(0,1fr)_280px]">
         <DashboardActivitiesOverview statusColumns={data.statusColumns} />
         <DashboardSidebar
           topRegions={data.topRegions}
           urgentActivities={data.urgentActivities}
+          birthdaysThisMonth={data.birthdaysThisMonth}
           user={sidebarUser}
         />
       </section>
