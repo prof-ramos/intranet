@@ -40,6 +40,8 @@ export const changePasswordSchema = z.object({
 export const associateSearchParamsSchema = z.object({
   q: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
+  contributionStatus: z.enum(contributionStatus.enumValues).optional(),
+  functionalStatus: z.enum(functionalStatus.enumValues).optional(),
 });
 
 export const monthlyPaymentsSearchParamsSchema = z.object({

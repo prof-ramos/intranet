@@ -12,6 +12,7 @@ import {
   findLinkedActivities,
   updateAssociateById,
   type UpdateAssociateValues,
+  type AssociatesFilters,
 } from './repository';
 import { db } from '@/lib/db';
 import { functionalStatus as fsEnum, associationStatus as asEnum, contributionStatus as csEnum } from '@/lib/db/schema';
@@ -99,8 +100,9 @@ export async function getAssociatesListPage(
   page: number,
   pageSize: number,
   searchQuery?: string,
+  filters?: AssociatesFilters,
 ) {
-  return findAssociatesPaginated(page, pageSize, searchQuery);
+  return findAssociatesPaginated(page, pageSize, searchQuery, filters);
 }
 
 export async function getAssociateForEdit(
