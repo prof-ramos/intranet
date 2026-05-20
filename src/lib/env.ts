@@ -27,6 +27,8 @@ export const envSchema = z
     DB_SSL: optionalString,
     USE_PGBOUNCER: optionalString,
 
+    MAILJET_API_KEY: z.string().optional(),
+    MAILJET_SECRET_KEY: z.string().optional(),
     MAILJET_SENDER_NAME: optionalString.default('ASOF Intranet'),
     GEMINI_API_KEY: optionalString.describe('Gemini API key for AI features'),
 
