@@ -10,6 +10,9 @@ import { randomBytes } from 'crypto';
 import { ensureAdminPasswordAuthUser, generatePasswordResetLink } from '@/lib/supabase/admin';
 import { createLogger } from '@/lib/logger';
 import { toSafeErrorLog } from '@/lib/error-log';
+import { env } from '@/lib/env';
+import { sendEmail } from '@/lib/email';
+import { passwordResetEmailHtml, passwordResetEmailText } from '@/lib/email/templates';
 
 const logger = createLogger('usuarios:actions');
 
@@ -127,13 +130,34 @@ export async function resetUserPassword(
 
   revalidatePath('/app/config/usuarios');
 
-  // TODO: Deliver resetLink to the user via the project's email provider (Mailjet/Resend).
-  // For now, the admin should communicate the new credentials through a secure channel.
+  let emailDelivered = false;
+  if (env.MAILJET_API_KEY && env.MAILJET_SECRET_KEY) {
+    try {
+      await sendEmail({
+        to: target.email,
+        toName: target.name,
+        subject: 'Redefinição de senha — ASOF Intranet',
+        htmlBody: passwordResetEmailHtml(target.name, resetLink),
+        textBody: passwordResetEmailText(target.name, resetLink),
+      });
+      emailDelivered = true;
+    } catch (emailError) {
+      logger.error(
+        '[resetUserPassword] Failed to deliver password reset email.',
+        { targetId, error: toSafeErrorLog(emailError) },
+        emailError instanceof Error ? emailError : undefined,
+      );
+      // Email delivery failure should not block the password reset
+    }
+  }
+
   return {
     success: true,
-    message: `Senha de ${target.name} foi resetada com sucesso.`,
-    resetLink,
-    tempPassword,
+    message: emailDelivered
+      ? `Senha resetada. Email de recuperação enviado para ${target.email}.`
+      : `Senha resetada. Comunique o link de recuperação ao usuário por canal seguro.`,
+    resetLink: emailDelivered ? undefined : resetLink,
+    tempPassword: emailDelivered ? undefined : tempPassword,
   };
 }
 
