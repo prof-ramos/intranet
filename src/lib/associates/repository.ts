@@ -14,17 +14,30 @@ export interface AssociateListItem {
   classPattern: string | null;
   primaryEmail: string | null;
   functionalStatus: string | null;
+  contributionStatus: string | null;
+}
+
+export interface AssociatesFilters {
+  contributionStatus?: 'em_dia' | 'inadimplente' | 'pendente_migracao';
+  functionalStatus?: 'ativo' | 'aposentado' | 'cedido' | 'em_licenca';
 }
 
 export async function findAssociatesPaginated(
   page: number,
   pageSize: number,
   searchQuery?: string,
+  filters?: AssociatesFilters,
 ): Promise<{ rows: AssociateListItem[]; total: number }> {
   const baseWhere = and(
     eq(associates.associationStatus, 'ativo'),
     searchQuery
       ? sql`${associates.fullName} like ${buildAssociateNameSearchPattern(searchQuery)} escape '\\'`
+      : undefined,
+    filters?.contributionStatus
+      ? eq(associates.contributionStatus, filters.contributionStatus)
+      : undefined,
+    filters?.functionalStatus
+      ? eq(associates.functionalStatus, filters.functionalStatus)
       : undefined,
   );
 
@@ -37,6 +50,7 @@ export async function findAssociatesPaginated(
         classPattern: associates.classPattern,
         primaryEmail: associates.primaryEmail,
         functionalStatus: associates.functionalStatus,
+        contributionStatus: associates.contributionStatus,
       })
       .from(associates)
       .where(baseWhere)
