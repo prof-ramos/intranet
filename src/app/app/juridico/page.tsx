@@ -14,6 +14,7 @@ import {
 } from '@/lib/juridico/status';
 import { AlertTriangle, Clock, FileQuestion, MessageSquare, Plus, Scale } from 'lucide-react';
 import { type CSSProperties } from 'react';
+import { checkAndEmitSlaWarnings } from '@/lib/juridico/sla-notifications';
 import {
   hairline,
   navy,
@@ -39,6 +40,7 @@ const statusIcons: Record<LegalConsultationStatus, React.ReactNode> = {
 
 export default async function JuridicoDashboardPage() {
   await requireAuth();
+  await checkAndEmitSlaWarnings();
 
   const [
     abertas,
