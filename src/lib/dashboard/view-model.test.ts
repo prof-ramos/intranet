@@ -4,9 +4,11 @@ const queriesMock = vi.hoisted(() => ({
   countActiveAssociates: vi.fn(),
   countActiveAssociatesByLocation: vi.fn(),
   countContributionsOkAssociates: vi.fn(),
+  countInadimplentesAssociates: vi.fn(),
   countOpenActivities: vi.fn(),
   countOverdueActivities: vi.fn(),
   getActivitiesByStatus: vi.fn(),
+  getBirthdaysThisMonth: vi.fn(),
   getTopRegions: vi.fn(),
   getUrgentActivities: vi.fn(),
   getKanbanCards: vi.fn(),
@@ -16,9 +18,11 @@ vi.mock('@/lib/dashboard/queries', () => ({
   countActiveAssociates: queriesMock.countActiveAssociates,
   countActiveAssociatesByLocation: queriesMock.countActiveAssociatesByLocation,
   countContributionsOkAssociates: queriesMock.countContributionsOkAssociates,
+  countInadimplentesAssociates: queriesMock.countInadimplentesAssociates,
   countOpenActivities: queriesMock.countOpenActivities,
   countOverdueActivities: queriesMock.countOverdueActivities,
   getActivitiesByStatus: queriesMock.getActivitiesByStatus,
+  getBirthdaysThisMonth: queriesMock.getBirthdaysThisMonth,
   getTopRegions: queriesMock.getTopRegions,
   getUrgentActivities: queriesMock.getUrgentActivities,
   getKanbanCards: queriesMock.getKanbanCards,
@@ -58,6 +62,7 @@ describe('getDashboardViewModel', () => {
       exterior: 481,
     });
     queriesMock.countContributionsOkAssociates.mockResolvedValue(700);
+    queriesMock.countInadimplentesAssociates.mockResolvedValue(63);
     queriesMock.countOpenActivities.mockResolvedValue(12);
     queriesMock.countOverdueActivities.mockResolvedValue(3);
     queriesMock.getActivitiesByStatus.mockResolvedValue([
@@ -70,6 +75,7 @@ describe('getDashboardViewModel', () => {
       { country: 'Brasil', total: 282 },
       { country: 'França', total: 40 },
     ]);
+    queriesMock.getBirthdaysThisMonth.mockResolvedValue([]);
     queriesMock.getUrgentActivities.mockResolvedValue([
       { id: 1, title: 'Cobrar retorno', priority: 'urgente', dueDate: '2026-05-20' },
     ]);

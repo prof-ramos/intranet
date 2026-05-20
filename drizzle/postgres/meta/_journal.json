@@ -288,6 +288,20 @@
       "when": 1779705600000,
       "tag": "0040_force_rls_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1779792000000,
+      "tag": "0041_add_activity_assigned_notification_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1779792000001,
+      "tag": "0042_add_sla_warning_notification_type",
+      "breakpoints": true
     }
   ]
 }

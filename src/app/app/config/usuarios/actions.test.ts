@@ -108,7 +108,7 @@ describe('config usuarios actions', () => {
     const result = await resetUserPassword(null, formData);
 
     expect(result.success).toBe(true);
-    expect(result.message).toContain('foi resetada com sucesso');
+    expect(result.message).toContain('Senha resetada');
     expect(result.resetLink).toBe('https://supabase.co/recovery?token=abc');
     expect(result.tempPassword).toEqual(expect.any(String));
     // Link generated BEFORE password invalidation
