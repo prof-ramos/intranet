@@ -179,6 +179,65 @@ export const getUrgentActivities = (limit = 4): Promise<UrgentActivity[]> => {
   return created();
 };
 
+export interface BirthdayItem {
+  id: number;
+  fullName: string;
+  assignment: string | null;
+  birthDate: string;
+}
+
+const TTL_BIRTHDAY = 3600; // 1h — birthday list changes rarely during the day
+
+export const getBirthdaysThisMonth = (limit = 10): Promise<BirthdayItem[]> => {
+  const created = unstable_cache(
+    async (): Promise<BirthdayItem[]> => {
+      const rows = await db
+        .select({
+          id: associates.id,
+          fullName: associates.fullName,
+          assignment: associates.assignment,
+          birthDate: associates.birthDate,
+        })
+        .from(associates)
+        .where(
+          and(
+            eq(associates.associationStatus, 'ativo'),
+            sql`${associates.birthDate} IS NOT NULL`,
+            sql`EXTRACT(MONTH FROM ${associates.birthDate}::date) = EXTRACT(MONTH FROM CURRENT_DATE)`,
+          ),
+        )
+        .orderBy(sql`EXTRACT(DAY FROM ${associates.birthDate}::date) ASC`)
+        .limit(limit);
+      return rows.map((r) => ({
+        id: r.id,
+        fullName: r.fullName,
+        assignment: r.assignment,
+        birthDate: r.birthDate as string,
+      }));
+    },
+    ['birthdays-this-month', String(limit)],
+    { revalidate: TTL_BIRTHDAY, tags: ['dashboard'] },
+  );
+  return created();
+};
+
+export const countInadimplentesAssociates = unstable_cache(
+  async (): Promise<number> => {
+    const rows = await db
+      .select({ count: count() })
+      .from(associates)
+      .where(
+        and(
+          eq(associates.associationStatus, 'ativo'),
+          eq(associates.contributionStatus, 'inadimplente'),
+        ),
+      );
+    return rows[0].count;
+  },
+  ['inadimplentes-count'],
+  { revalidate: TTL_MODERATE, tags: ['dashboard'] },
+);
+
 export interface KanbanCard {
   id: number;
   title: string;
