@@ -1,10 +1,16 @@
 import type { NotificationsTx } from '@/lib/notifications/repository';
+import { createNotification } from '@/lib/notifications/repository';
 import { createNotificationFromEvent } from '@/lib/notifications/service';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('events');
 
-export const NOTIFICATION_EVENT_TYPES = ['activity.completed', 'legal_consultation.answered'] as const;
+export const NOTIFICATION_EVENT_TYPES = [
+  'activity.completed',
+  'legal_consultation.answered',
+  'activity.assigned',
+  'legal_consultation.sla_warning',
+] as const;
 
 export type NotificationEventType = (typeof NOTIFICATION_EVENT_TYPES)[number];
 export type NotificationEntity = 'activity' | 'legal_consultation';
@@ -37,9 +43,14 @@ interface ActivityCompletedPayload {
 }
 
 const eventHandlers: Record<NotificationEventType, EventHandler> = {
-  'activity.completed': (payload, options) => createNotificationFromEvent('activity.completed', payload, options.tx),
+  'activity.completed': (payload, options) =>
+    createNotificationFromEvent('activity.completed', payload, options.tx),
   'legal_consultation.answered': (payload, options) =>
     createNotificationFromEvent('legal_consultation.answered', payload, options.tx),
+  'activity.assigned': (payload, options) =>
+    createNotificationFromEvent('activity.assigned', payload, options.tx),
+  'legal_consultation.sla_warning': (payload, options) =>
+    createNotificationFromEvent('legal_consultation.sla_warning', payload, options.tx),
 };
 
 export async function emitEvent(
@@ -85,6 +96,83 @@ export async function emitActivityCompleted(
       dedupeKey: `activity.completed:${payload.activityId}:${payload.createdBy}`,
     },
     options,
+  );
+}
+
+interface ActivityAssignedPayload {
+  activityId: number;
+  title: string;
+  actorId: number;
+  newAssigneeId: number;
+  previousAssigneeId: number | null;
+}
+
+export async function emitActivityAssigned(
+  payload: ActivityAssignedPayload,
+  options: EmitEventOptions = {},
+) {
+  // Do NOT notify if assigning to yourself
+  if (payload.newAssigneeId === payload.actorId) return;
+
+  return emitEvent(
+    'activity.assigned',
+    {
+      actorId: payload.actorId,
+      recipientId: payload.newAssigneeId,
+      entityType: 'activity',
+      entityId: payload.activityId,
+      title: 'Atividade atribuída a você',
+      message: `A atividade "${payload.title.trim()}" foi atribuída a você.`,
+      href: '/app/atividades',
+      metadata: {
+        activityId: payload.activityId,
+        previousAssigneeId: payload.previousAssigneeId,
+      },
+      dedupeKey: `activity.assigned:${payload.activityId}:${payload.newAssigneeId}`,
+    },
+    options,
+  );
+}
+
+interface SlaWarningPayload {
+  consultationId: number;
+  internalNumber: string;
+  title: string;
+  slaDueDate: string;
+  recipientId: number;
+}
+
+export async function emitSlaWarning(
+  payload: SlaWarningPayload,
+  options: EmitEventOptions = {},
+) {
+  const dateSlug = payload.slaDueDate.slice(0, 10);
+
+  logger.info('[emitSlaWarning]', {
+    consultationId: payload.consultationId,
+    recipientId: payload.recipientId,
+    dateSlug,
+  });
+
+  // SLA warnings are system-generated: actor === recipient is intentional.
+  // Call createNotification directly to bypass the service-layer self-notification guard.
+  return createNotification(
+    {
+      userId: payload.recipientId,
+      actorId: null,
+      type: 'legal_consultation.sla_warning',
+      title: 'SLA de consulta jurídica prestes a vencer',
+      message: `A consulta "${payload.title}" (${payload.internalNumber}) vence em ${dateSlug}.`,
+      href: `/app/juridico/consultas/${payload.consultationId}`,
+      entityType: 'legal_consultation',
+      entityId: payload.consultationId,
+      metadata: {
+        consultationId: payload.consultationId,
+        slaDueDate: payload.slaDueDate,
+      },
+      dedupeKey: `sla_warning:${payload.consultationId}:${dateSlug}`,
+    },
+    options.tx,
   );
 }
 

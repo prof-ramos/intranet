@@ -2,7 +2,7 @@ import { isActivityPriority, isActivityStatus } from './status';
 import type { Priority, Status } from './types';
 import { findActivityById, insertActivity, updateActivityById } from './repository';
 import { logAuditAction } from '@/lib/audit/service';
-import { emitActivityCompleted } from '@/lib/events';
+import { emitActivityAssigned, emitActivityCompleted } from '@/lib/events';
 
 interface CreateActivityInput {
   title: string;
@@ -189,6 +189,21 @@ export async function updateActivityService(input: UpdateActivityInput) {
       assigneeId: updated.assigneeId,
       associateId: updated.associateId,
       completedAt: updated.completedAt?.toISOString() ?? new Date().toISOString(),
+    });
+  }
+
+  const assigneeChanged =
+    input.assigneeId !== undefined &&
+    input.assigneeId !== null &&
+    input.assigneeId !== current.assigneeId;
+
+  if (assigneeChanged) {
+    await emitActivityAssigned({
+      activityId: updated.id,
+      title: updated.title,
+      actorId: input.actorId,
+      newAssigneeId: input.assigneeId!,
+      previousAssigneeId: current.assigneeId,
     });
   }
 
