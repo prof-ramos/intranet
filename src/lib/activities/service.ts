@@ -197,7 +197,10 @@ export async function updateActivityService(input: UpdateActivityInput) {
     input.assigneeId !== null &&
     input.assigneeId !== current.assigneeId;
 
-  if (assigneeChanged) {
+  // Skip notification for self-assignment — the user already knows
+  const isSelfAssign = input.assigneeId === input.actorId;
+
+  if (assigneeChanged && !isSelfAssign) {
     await emitActivityAssigned({
       activityId: updated.id,
       title: updated.title,
