@@ -56,7 +56,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo $STDIN_JSON | jq -r '.tool_input.file_path // \"\"); CONTENT=$(echo $STDIN_JSON | jq -r '.tool_input.content // \"\"); if [[ \"$FILE\" =~ \\.(js|jsx|ts|tsx)$ ]] && echo \"$CONTENT\" | grep -q 'console\\.log'; then echo 'Warning: console.log statements should be removed before committing' >&2; exit 2; fi"
+            "command": "INPUT=$(cat); FILE=$(printf '%s' \"$INPUT\" | jq -r '.tool_input.file_path // \"\"'); CONTENT=$(printf '%s' \"$INPUT\" | jq -r '.tool_input.content // \"\"'); case \"$FILE\" in *.js|*.jsx|*.ts|*.tsx) if printf '%s' \"$CONTENT\" | grep -qF 'console.log'; then echo 'Warning: console.log statements should be removed before committing' >&2; exit 2; fi ;; esac",
+            "shell": "bash"
           }
         ]
       },
@@ -65,8 +66,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo $STDIN_JSON | jq -r '.tool_input.file_path // \"\"'); if [[ \"$FILE\" == \"package.json\" ]]; then echo 'Checking for vulnerable dependencies...'; npm audit --audit-level=moderate; fi",
-            "timeout": 60
+            "command": "INPUT=$(cat); FILE=$(printf '%s' \"$INPUT\" | jq -r '.tool_input.file_path // \"\"'); if [ \"$FILE\" = \"package.json\" ]; then echo 'Checking for vulnerable dependencies...'; npm audit --audit-level=moderate; fi",
+            "timeout": 60,
+            "shell": "bash"
           }
         ]
       }
@@ -77,8 +79,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo $STDIN_JSON | jq -r '.tool_input.file_path // \"\"'); if [[ \"$FILE\" =~ \\.(js|jsx|ts|tsx)$ ]]; then npx prettier --write \"$FILE\"; fi",
-            "timeout": 30
+            "command": "INPUT=$(cat); FILE=$(printf '%s' \"$INPUT\" | jq -r '.tool_input.file_path // \"\"'); case \"$FILE\" in *.js|*.jsx|*.ts|*.tsx) npx prettier --write \"$FILE\" 2>/dev/null || true ;; esac",
+            "timeout": 30,
+            "shell": "bash"
           }
         ]
       },
@@ -87,7 +90,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo $STDIN_JSON | jq -r '.tool_input.file_path // \"\"'); if [[ \"$FILE\" =~ \\.(js|jsx|ts|tsx)$ ]] && grep -q 'import \\* from' \"$FILE\"; then echo 'Warning: Avoid wildcard imports for better tree-shaking' >&2; exit 2; fi"
+            "command": "INPUT=$(cat); FILE=$(printf '%s' \"$INPUT\" | jq -r '.tool_input.file_path // \"\"'); case \"$FILE\" in *.js|*.jsx|*.ts|*.tsx) if grep -qF 'import * from' \"$FILE\" 2>/dev/null; then echo 'Warning: Avoid wildcard imports for better tree-shaking' >&2; exit 2; fi ;; esac",
+            "shell": "bash"
           }
         ]
       },
@@ -96,8 +100,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo $STDIN_JSON | jq -r '.tool_input.file_path // \"\"'); if [[ \"$FILE\" =~ \\.(js|jsx|ts|tsx)$ && \"$FILE\" != *\".test.\"* && \"$FILE\" != *\".spec.\"* ]]; then DIR=$(dirname \"$FILE\"); BASENAME=$(basename \"$FILE\" | sed -E 's/\\.(js|jsx|ts|tsx)$//'); for TEST_FILE in \"$DIR/$BASENAME.test.\"* \"$DIR/$BASENAME.spec.\"*; do if [ -f \"$TEST_FILE\" ]; then echo \"Running tests for $TEST_FILE...\"; if command -v jest >/dev/null 2>&1; then npx jest \"$TEST_FILE\" --passWithNoTests; elif command -v vitest >/dev/null 2>&1; then npx vitest run \"$TEST_FILE\"; fi; break; fi; done; fi",
-            "timeout": 60
+            "command": "INPUT=$(cat); FILE=$(printf '%s' \"$INPUT\" | jq -r '.tool_input.file_path // \"\"'); case \"$FILE\" in *.test.*|*.spec.*) ;; *.js|*.jsx|*.ts|*.tsx) DIR=$(dirname \"$FILE\"); BASE=$(basename \"$FILE\" | sed 's/\\.[^.]*$//'); for T in \"$DIR/$BASE.test.js\" \"$DIR/$BASE.test.jsx\" \"$DIR/$BASE.test.ts\" \"$DIR/$BASE.test.tsx\" \"$DIR/$BASE.spec.js\" \"$DIR/$BASE.spec.ts\"; do if [ -f \"$T\" ]; then echo \"Running tests for $T...\"; if command -v jest >/dev/null 2>&1; then npx jest \"$T\" --passWithNoTests; elif command -v vitest >/dev/null 2>&1; then npx vitest run \"$T\"; fi; break; fi; done ;; esac",
+            "timeout": 60,
+            "shell": "bash"
           }
         ]
       }
@@ -119,8 +124,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [[ -f package.json && $(git status --porcelain | grep -E '\\.js$|\\.jsx$|\\.ts$|\\.tsx$') ]]; then echo 'Running linter on changed files...'; npx eslint $(git diff --name-only --diff-filter=ACMR | grep -E '\\.js$|\\.jsx$|\\.ts$|\\.tsx$'); fi",
-            "timeout": 60
+            "command": "if [ -f package.json ] && git status --porcelain 2>/dev/null | grep -qE '\\.(js|jsx|ts|tsx)$'; then echo 'Running linter on changed files...'; CHANGED=$(git diff --name-only --diff-filter=ACMR 2>/dev/null | grep -E '\\.(js|jsx|ts|tsx)$' | tr '\\n' ' '); if [ -n \"$CHANGED\" ]; then npx eslint $CHANGED 2>&1; fi; fi",
+            "timeout": 60,
+            "shell": "bash"
           }
         ]
       },
@@ -129,8 +135,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [[ -f package.json && $(git status --porcelain | grep -E '\\.js$|\\.jsx$|\\.ts$|\\.tsx$') ]]; then echo 'Analyzing bundle size impact...'; if command -v bundlesize >/dev/null 2>&1; then npx bundlesize; elif npm list webpack-bundle-analyzer >/dev/null 2>&1; then echo 'Use: npx webpack-bundle-analyzer build/static/js/*.js'; else echo 'No bundle analysis tool found'; fi; fi",
-            "timeout": 60
+            "command": "if [ -f package.json ] && git status --porcelain 2>/dev/null | grep -qE '\\.(js|jsx|ts|tsx)$'; then echo 'Analyzing bundle size impact...'; if command -v bundlesize >/dev/null 2>&1; then npx bundlesize; elif npm list webpack-bundle-analyzer >/dev/null 2>&1; then echo 'Use: npx webpack-bundle-analyzer build/static/js/*.js'; else echo 'No bundle analysis tool found'; fi; fi",
+            "timeout": 60,
+            "shell": "bash"
           }
         ]
       }
@@ -138,6 +145,6 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bash -c 'input=$(cat); MODEL=$(echo \"$input\" | jq -r \".model.display_name\"); DIR=$(echo \"$input\" | jq -r \".workspace.current_dir\"); BRANCH=\"\"; if git rev-parse --git-dir >/dev/null 2>&1; then BRANCH=\" | 🌿 $(git branch --show-current 2>/dev/null)\"; fi; echo \"[$MODEL] 📁 ${DIR##*/}$BRANCH\"'"
+    "command": "bash -c 'input=$(cat); MODEL=$(echo \"$input\" | jq -r \".model.display_name\"); DIR=$(echo \"$input\" | jq -r \".workspace.current_dir\"); BRANCH=\"\"; if git rev-parse --git-dir >/dev/null 2>&1; then BRANCH=\" | $(git branch --show-current 2>/dev/null)\"; fi; echo \"[$MODEL] ${DIR##*/}$BRANCH\"'"
   }
 }
