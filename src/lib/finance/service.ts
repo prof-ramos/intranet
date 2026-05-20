@@ -1,10 +1,24 @@
 import * as repository from './repository';
+import { markOverduePayments } from './repository';
 import { logAuditAction } from '@/lib/audit/service';
 import { db } from '@/lib/db';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { monthlyPayments, type NewMonthlyPayment } from '@/lib/db/schema/finance';
 import { associates } from '@/lib/db/schema/associates';
 import { and, eq, sql } from 'drizzle-orm';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('finance:service');
+
+export async function autoMarkOverduePaymentsService(): Promise<number> {
+  const count = await markOverduePayments();
+
+  if (count > 0) {
+    logger.info('[autoMarkOverdue] Transitioned payments pendente → atrasado', { count });
+  }
+
+  return count;
+}
 
 export function validateYearMonth(year: number, month: number): void {
   if (!Number.isInteger(year) || year < 1900 || year > 2100) {

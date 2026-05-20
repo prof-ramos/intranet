@@ -2,7 +2,7 @@ import { isDomesticCountrySql, isExteriorCountrySql } from '@/lib/associates/loc
 import { db } from '@/lib/db';
 import { monthlyPayments, paymentStatus, type NewMonthlyPayment } from '@/lib/db/schema/finance';
 import { associates } from '@/lib/db/schema/associates';
-import { and, eq, ilike, sql } from 'drizzle-orm';
+import { and, eq, ilike, lt, or, sql } from 'drizzle-orm';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
 import { effectivePaymentMethodSql } from './effective-payment';
 
@@ -43,6 +43,34 @@ export async function upsertMonthlyPayment(payment: NewMonthlyPayment, executor:
       },
     })
     .returning();
+}
+
+export async function markOverduePayments(): Promise<number> {
+  const now = new Date();
+  const thisYear = now.getFullYear();
+  const thisMonth = now.getMonth() + 1; // getMonth() is 0-indexed
+
+  const rows = await db
+    .update(monthlyPayments)
+    .set({
+      status: 'atrasado',
+      updatedAt: sql`now()`,
+    })
+    .where(
+      and(
+        eq(monthlyPayments.status, 'pendente'),
+        or(
+          lt(monthlyPayments.year, thisYear),
+          and(
+            eq(monthlyPayments.year, thisYear),
+            lt(monthlyPayments.month, thisMonth),
+          ),
+        ),
+      ),
+    )
+    .returning({ id: monthlyPayments.id });
+
+  return rows.length;
 }
 
 function buildNamePattern(query: string): string {
