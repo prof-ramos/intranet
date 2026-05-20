@@ -15,6 +15,8 @@ import { admins } from './admins';
 export const notificationType = pgEnum('notification_type', [
   'activity.completed',
   'legal_consultation.answered',
+  'activity.assigned',
+  'legal_consultation.sla_warning',
 ]);
 
 export const notificationEntityType = pgEnum('notification_entity_type', [
