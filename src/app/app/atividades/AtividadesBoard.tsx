@@ -20,7 +20,7 @@ import { FilterBar } from './_board/FilterBar';
 import { QuickAdd } from './_board/QuickAdd';
 import { SummaryStrip } from './_board/SummaryStrip';
 import { daysFromToday, filterActivities, groupActivitiesByStatus, normalizeActivity } from './_board/helpers';
-import { buildBoardUrl, hasOpenActivity, parseFiltersFromUrl, parseOpenActivityId, serializeFiltersToUrl } from './_board/url-state';
+import { buildBoardUrl, hasOpenActivity, parseFiltersFromUrl, parseOpenActivityId } from './_board/url-state';
 import { useBoardPreferences } from './_board/useBoardPreferences';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 import type {
