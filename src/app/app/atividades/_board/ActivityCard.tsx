@@ -1,9 +1,11 @@
 'use client';
 
-import { Calendar, Check } from 'lucide-react';
+import type { CSSProperties } from 'react';
+import { AlertTriangle, Calendar, Check } from 'lucide-react';
 import {
   borderMuted,
   borderSoft,
+  buttonOutlineHoverBg,
   buttonPrimaryText,
   canvas,
   dangerText,
@@ -47,19 +49,20 @@ export function ActivityCardContent({
 }) {
   const dueOffset = activity.dueOffset;
   const isLate = dueOffset !== null && dueOffset < 0 && activity.status !== 'concluido';
-  const isSoon =
-    dueOffset !== null && dueOffset >= 0 && dueOffset <= 3 && activity.status !== 'concluido';
+  const isUrgent = dueOffset === 0 && activity.status !== 'concluido';
+  const isSoon = dueOffset !== null && dueOffset > 0 && dueOffset <= 3 && activity.status !== 'concluido';
   const priority = priorityStyles[activity.priority] ?? priorityStyles.normal;
 
   return (
     <div
-      className={`relative flex flex-col rounded-[8px] bg-white transition ${
+      className={`relative flex flex-col rounded-[8px] bg-white transition-colors cursor-pointer hover:bg-[var(--card-hover-bg)] ${
         compact ? 'gap-2 p-3' : 'gap-2.5 p-3.5'
       }`}
       style={{
         border: `1px solid ${hairline}`,
         borderLeft: activity.status === 'concluido' ? '3px solid #94a3b8' : `3px solid ${priority.fg}`,
-      }}
+        '--card-hover-bg': buttonOutlineHoverBg,
+      } as CSSProperties}
     >
       <p
         className={`m-0 text-left leading-snug font-semibold [overflow-wrap:anywhere] ${
@@ -111,9 +114,18 @@ export function ActivityCardContent({
           {activity.dueDate && !activity.completedAt && (
             <span
               className="inline-flex items-center gap-1 text-[11px] font-medium"
-              style={{ color: isLate ? dangerText : isSoon ? warningText : slateText }}
+              style={{ color: isLate || isUrgent ? dangerText : isSoon ? warningText : slateText }}
             >
-              <Calendar size={14} aria-hidden="true" />
+              {isUrgent ? (
+                <AlertTriangle
+                  size={14}
+                  className="motion-safe:animate-pulse"
+                  style={{ color: dangerText }}
+                  aria-label="Vence hoje"
+                />
+              ) : (
+                <Calendar size={14} aria-hidden="true" />
+              )}
               {formatDueDate(activity.dueDate)}
             </span>
           )}
