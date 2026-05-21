@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { officialLetterFormSchema, type OfficialLetterFormValues } from '@/lib/oficios/validations';
 import { saveOfficialLetterAction, updateOfficialLetterAction, generateAiTextAction } from '../actions';
@@ -10,6 +10,7 @@ import { Sparkles, Save, X, Loader2 } from 'lucide-react';
 import { PremiumLoader } from '@/components/PremiumLoader';
 import { navy, primaryContainerHover, hairline, focusRingClass } from '@/lib/ui/tokens';
 import { CSSProperties } from 'react';
+import { RichTextEditor } from './RichTextEditor';
 
 interface OficioFormProps {
   initialData?: Partial<OfficialLetterFormValues>;
@@ -27,6 +28,23 @@ const defaultFormValues: Partial<OfficialLetterFormValues> = {
   bodyPlainText: '',
 };
 
+function textToParagraphHtml(text: string) {
+  const escapeHtml = (value: string) =>
+    value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+
+  return text
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, '<br>')}</p>`)
+    .join('');
+}
+
 export function OficioForm({ initialData, id }: OficioFormProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
@@ -43,10 +61,11 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isAiModalOpen]);
 
-  const { register, handleSubmit, setValue, getValues, formState: { errors } } = useForm<OfficialLetterFormValues>({
+  const { register, handleSubmit, setValue, getValues, control, formState: { errors } } = useForm<OfficialLetterFormValues>({
     resolver: zodResolver(officialLetterFormSchema),
     defaultValues: { ...defaultFormValues, ...initialData },
   });
+  const bodyRichText = useWatch({ control, name: 'bodyRichText' }) ?? '';
 
   const onSubmit = async (values: OfficialLetterFormValues) => {
     setIsPending(true);
@@ -79,8 +98,8 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
 
     const res = await generateAiTextAction(params);
     if (res.success && res.text) {
-      setValue('bodyPlainText', res.text);
-      setValue('bodyRichText', res.text); // Sync for now
+      setValue('bodyPlainText', res.text, { shouldDirty: true, shouldValidate: true });
+      setValue('bodyRichText', textToParagraphHtml(res.text), { shouldDirty: true, shouldValidate: true });
       setIsAiModalOpen(false);
       setAiInstruction('');
     } else {
@@ -177,15 +196,17 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
             </button>
           </div>
 
-          <textarea
-            {...register('bodyPlainText')}
-            className={`min-h-[300px] w-full rounded-lg border p-4 text-sm font-sans leading-relaxed ${focusRingClass}`}
-            placeholder="Escreva aqui o conteúdo do ofício..."
-            onChange={(e) => {
-              register('bodyPlainText').onChange(e);
-              setValue('bodyRichText', e.target.value);
+          <input type="hidden" {...register('bodyRichText')} />
+          <input type="hidden" {...register('bodyPlainText')} />
+          <RichTextEditor
+            valueHtml={bodyRichText}
+            error={errors.bodyPlainText?.message ?? errors.bodyRichText?.message}
+            onChange={({ html, text }) => {
+              setValue('bodyRichText', html, { shouldDirty: true, shouldValidate: true });
+              setValue('bodyPlainText', text, { shouldDirty: true, shouldValidate: true });
             }}
           />
+          {errors.bodyRichText && <p className="mt-1 text-xs text-error">{errors.bodyRichText.message}</p>}
           {errors.bodyPlainText && <p className="mt-1 text-xs text-error">{errors.bodyPlainText.message}</p>}
         </div>
 

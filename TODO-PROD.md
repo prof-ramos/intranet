@@ -48,6 +48,7 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 - [x] `vercel.json` agenda `/api/v1/events/dispatch` (`0 3 * * *`) e `/api/v1/juridico/sla-warnings` (`0 4 * * *`).
 - [x] Transicao automatica financeira de `pendente` para `atrasado` gera auditoria e evento de dominio em transacao.
 - [x] Cancelamento financeiro dedicado existe para mensalidades, com status `cancelado`, data/motivo/operador persistidos, auditoria before/after e evento de dominio sem apagar historico.
+- [x] Ofícios usam editor rich-text client-only com Tiptap, toolbar básica, HTML em `bodyRichText`, texto plano em `bodyPlainText` e conversao simplificada de HTML para PDF.
 
 ## Pendente Bloqueante Para Producao
 
@@ -190,6 +191,20 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
   - resultado da frente #50: migration local aplicada com sucesso pelo guardrail.
 - `npm run test:db`
   - resultado da frente #50: 1 arquivo passou, 7 testes passaram contra o banco local migrado.
+- Context7 `/ueberdosis/tiptap-docs`
+  - resultado da frente #24: documentacao confirmou `useEditor({ immediatelyRender: false })` para SSR/Next.js, comandos de toolbar e extensoes `TextAlign`, `TextStyle`/`FontSize`.
+- `npm install @tiptap/react @tiptap/starter-kit @tiptap/extension-text-align`
+  - resultado da frente #24: 49 pacotes adicionados.
+- `npm install @tiptap/extension-text-style`
+  - resultado da frente #24: 1 pacote adicionado para `TextStyle`/`FontSize`.
+- `npm run test -- src/lib/oficios src/app/app/secretaria/oficios/actions.test.ts`
+  - resultado da frente #24: 5 arquivos passaram, 33 testes passaram.
+- `npm run typecheck`
+  - resultado da frente #24: passou.
+- `npm run lint`
+  - resultado da frente #24: passou sem warnings apos trocar `watch()` por `useWatch()`.
+- `npm run build`
+  - resultado da frente #24: build Next.js passou e confirmou renderizacao SSR/build das rotas, incluindo `/app/secretaria/oficios/novo` e `/app/secretaria/oficios/[id]/editar`.
 - `npm run test -- scripts/guarded-migrate.test.ts src/lib/db/rls-granular.test.ts`
   - resultado da frente #41: 2 arquivos passaram, 24 testes passaram.
 - `npm run test:db`

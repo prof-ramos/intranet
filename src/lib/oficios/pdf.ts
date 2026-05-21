@@ -60,6 +60,36 @@ function drawWrappedText(
   return y;
 }
 
+function decodeHtmlEntities(value: string) {
+  return value
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&#(\d+);/g, (_match, code) => String.fromCharCode(Number(code)));
+}
+
+export function htmlToPlainText(html: string) {
+  if (!html.trim()) return '';
+
+  return decodeHtmlEntities(
+    html
+      .replace(/<\s*script[\s\S]*?<\s*\/\s*script\s*>/gi, '')
+      .replace(/<\s*style[\s\S]*?<\s*\/\s*style\s*>/gi, '')
+      .replace(/<\s*br\s*\/?\s*>/gi, '\n')
+      .replace(/<\s*li[^>]*>/gi, '\n- ')
+      .replace(/<\s*\/\s*li\s*>/gi, '')
+      .replace(/<\s*\/\s*(p|div|h[1-6]|blockquote)\s*>/gi, '\n\n')
+      .replace(/<\s*(p|div|h[1-6]|blockquote)[^>]*>/gi, '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim(),
+  );
+}
+
 export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   const pdfDoc = await PDFDocument.create();
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -132,7 +162,10 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   // 5. Body — with proper line wrapping
   const bodyIndent = 2.5 * CM_TO_PT;
   const bodyMaxWidth = contentWidth - bodyIndent;
-  const paragraphs = oficio.bodyPlainText.split('\n').filter((p) => p.trim() !== '');
+  const bodyText = oficio.bodyRichText?.trim()
+    ? htmlToPlainText(oficio.bodyRichText)
+    : oficio.bodyPlainText;
+  const paragraphs = bodyText.split('\n').filter((p) => p.trim() !== '');
   const useNumbering = paragraphs.length >= 3;
   
   for (let i = 0; i < paragraphs.length; i++) {

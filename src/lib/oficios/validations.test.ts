@@ -37,6 +37,24 @@ describe('officialLetterFormSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  it('rejects rich-text html without visible text', () => {
+    const result = officialLetterFormSchema.safeParse({
+      ...validData,
+      bodyRichText: '<p><br></p>',
+      bodyPlainText: '   ',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts rich-text html with formatting tags', () => {
+    const result = officialLetterFormSchema.safeParse({
+      ...validData,
+      bodyRichText: '<p><strong>Corpo</strong> do <em>ofício</em></p><ul><li>Item</li></ul>',
+      bodyPlainText: 'Corpo do ofício\nItem',
+    });
+    expect(result.success).toBe(true);
+  });
+
   it('rejects invalid closure enum values', () => {
     const result = officialLetterFormSchema.safeParse({
       ...validData,
