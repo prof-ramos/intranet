@@ -132,6 +132,55 @@ vercel alias list | rg 'intranet\.asof\.com\.br'
 # Correção: verificar se vercel.json tem "framework": "nextjs"
 ```
 
+### 4.3 Smoke Realtime de notificações com dois usuários
+
+Este smoke valida o que os testes unitários não provam: Supabase Realtime no ambiente alvo, publication `supabase_realtime`, RLS por usuário e isolamento entre sessões.
+
+Pré-requisitos:
+
+1. Dois usuários de teste sem PII real: `realtime-a@asof.org.br` e `realtime-b@asof.org.br`.
+2. Ambos devem existir no Supabase Auth e em `admins`, ativos, com roles operacionais adequados.
+3. O operador precisa de URL SQL direta/non-pooling do ambiente alvo ou acesso equivalente ao SQL Editor Supabase.
+
+Consultas SQL no alvo:
+
+```sql
+select pubname
+from pg_publication
+where pubname = 'supabase_realtime';
+
+select schemaname, tablename
+from pg_publication_tables
+where pubname = 'supabase_realtime'
+  and tablename = 'notifications';
+
+select relrowsecurity, relforcerowsecurity
+from pg_class
+where relname = 'notifications';
+
+select policyname, permissive, roles, cmd, qual
+from pg_policies
+where tablename = 'notifications'
+order by policyname;
+```
+
+Resultado esperado:
+
+- `supabase_realtime` existe.
+- `notifications` está na publication.
+- `relrowsecurity=true` e `relforcerowsecurity=true`.
+- política `notifications_select_own` presente para `SELECT`.
+
+Checklist manual:
+
+1. Abrir sessão A com `realtime-a@asof.org.br`.
+2. Abrir sessão B com `realtime-b@asof.org.br` em outro navegador/perfil.
+3. Criar uma notificação para o admin da sessão A por fluxo real do sistema ou insert controlado.
+4. Confirmar que A lista/recebe a notificação no sino.
+5. Confirmar que B não lista nem recebe a notificação de A.
+6. Confirmar que B não consegue marcar a notificação de A como lida, nem por ação individual nem por "marcar todas".
+7. Registrar horário, ambiente, commit SHA, IDs dos usuários de teste e prints/logs sem expor tokens.
+
 ---
 
 ## 5. Verificação de saúde

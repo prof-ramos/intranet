@@ -90,6 +90,7 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
   - politicas `TO authenticated`, sem politicas amplas acidentais;
   - `notifications` coberta por RLS e sem vazamento entre usuarios;
   - acesso browser/Supabase anon nao consegue ler dados de outro usuario.
+  - bloqueio atual da frente #51: Vercel Production nao expôs `DATABASE_URL`/`DATABASE_MIGRATION_URL` no `vercel env pull`, e os usuarios `realtime-a@asof.org.br`/`realtime-b@asof.org.br` ainda nao existem no Supabase Auth; sem esses dados nao foi possivel fechar o smoke operacional de Realtime no ambiente alvo.
 - [ ] Executar smoke test autenticado em producao ou staging final:
   - login admin, diretoria e secretaria;
   - bloqueio de secretaria em rotas admin;
@@ -205,6 +206,16 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
   - resultado da frente #24: passou sem warnings apos trocar `watch()` por `useWatch()`.
 - `npm run build`
   - resultado da frente #24: build Next.js passou e confirmou renderizacao SSR/build das rotas, incluindo `/app/secretaria/oficios/novo` e `/app/secretaria/oficios/[id]/editar`.
+- Supabase changelog/docs
+  - resultado da frente #51: changelog Realtime consultado; nao foram identificadas mudancas que dispensassem publication/RLS ou o smoke com usuarios autenticados.
+- `vercel env pull <tmp> --environment=production --yes` + inspeção redigida de envs
+  - resultado da frente #51: Production tem Supabase URL e service-role key, mas nao tem `DATABASE_URL`, `DATABASE_MIGRATION_URL` nem `CRON_SECRET` expostos nesse pull; arquivo temporario foi removido.
+- Supabase Admin API com service-role temporaria
+  - resultado da frente #51: 5 usuarios escaneados; `realtime-a@asof.org.br` e `realtime-b@asof.org.br` ausentes.
+- Consulta SQL local via `node --env-file=.env.local`
+  - resultado da frente #51: `supabase_realtime` local existe, `notifications` esta na publication local, `relrowsecurity=true`, `relforcerowsecurity=true`, e existe politica `notifications_select_own` para `SELECT`.
+- `npm run test -- src/lib/notifications src/hooks/notifications-normalize.test.ts src/components/NotificationBell.test.ts src/app/app/notifications/actions.test.ts src/lib/events.test.ts src/lib/db/rls-granular.test.ts`
+  - resultado da frente #51: 7 arquivos passaram, 51 testes passaram.
 - `npm run test -- scripts/guarded-migrate.test.ts src/lib/db/rls-granular.test.ts`
   - resultado da frente #41: 2 arquivos passaram, 24 testes passaram.
 - `npm run test:db`
@@ -287,9 +298,9 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 - Verificacao Vercel Production de env vars, crons e logs
   - nao executada porque depende de acesso externo/credenciais Vercel.
 - Verificacao Supabase Production de migrations, RLS e backups
-  - nao executada porque depende de acesso externo/credenciais Supabase e janela aprovada.
+  - parcialmente bloqueada na frente #51: ha Supabase URL/service-role no Vercel, mas falta URL SQL direta/non-pooling ou acesso ao SQL Editor para consultar `pg_publication`, `pg_publication_tables`, `pg_class` e `pg_policies` no alvo.
 - Smoke test real em producao
-  - nao executado porque depende de deployment aprovado, usuarios reais de teste e janela operacional.
+  - nao executado para Realtime porque depende dos usuarios de teste `realtime-a@asof.org.br` e `realtime-b@asof.org.br`, hoje ausentes no Supabase Auth, e de duas sessoes autenticadas no ambiente alvo.
 
 ## Definicao De Pronto Para Go-Live
 
