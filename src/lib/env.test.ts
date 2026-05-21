@@ -101,4 +101,13 @@ describe('envSchema', () => {
       expect(result.data.DEV_USER_MUST_CHANGE_PASSWORD).toBe('false');
     }
   });
+
+  test('aplica remetente Mailjet validado por padrão', () => {
+    const result = envSchema.safeParse(validEnv);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.MAILJET_SENDER_EMAIL).toBe('gabriel@asof.org.br');
+      expect(result.data.MAILJET_SENDER_NAME).toBe('ASOF Intranet');
+    }
+  });
 });

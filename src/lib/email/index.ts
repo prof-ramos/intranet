@@ -32,7 +32,7 @@ export async function sendEmail(message: EmailMessage): Promise<void> {
       Messages: [
         {
           From: {
-            Email: 'noreply@asof.org.br',
+            Email: env.MAILJET_SENDER_EMAIL,
             Name: env.MAILJET_SENDER_NAME,
           },
           To: [{ Email: message.to, Name: message.toName }],

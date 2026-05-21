@@ -29,6 +29,7 @@ export const envSchema = z
 
     MAILJET_API_KEY: z.string().optional(),
     MAILJET_SECRET_KEY: z.string().optional(),
+    MAILJET_SENDER_EMAIL: optionalString.default('gabriel@asof.org.br'),
     MAILJET_SENDER_NAME: optionalString.default('ASOF Intranet'),
     GEMINI_API_KEY: optionalString.describe('Gemini API key for AI features'),
 
