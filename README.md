@@ -138,12 +138,19 @@ npm run build         # build de produção (Webpack)
 npm run build:turbo   # build de produção (Turbopack — diagnóstico)
 npm run lint          # ESLint
 npm run typecheck     # TypeScript sem emitir arquivos
+npm run format        # formata código com Prettier
 npm run format:check  # valida formatação
 npm run test          # Vitest (testes unitários)
+npm run test:watch    # Vitest em modo watch
 npm run test:db       # Schema contract contra PostgreSQL real
 npm run test:e2e      # Playwright (testes end-to-end)
 npm run test:e2e:ui   # Playwright modo interativo
+npm run test:e2e:debug # Playwright modo debug
 npm run audit         # npm audit
+npm run validate:quick  # typecheck + lint + testes unitários
+npm run validate:full   # quick validation + testes de DB + build
+npm run scope:check   # verifica escopo de arquivos alterados
+npm run pr:check      # verificações de prontidão para PR
 ```
 
 ### Testes E2E com Playwright
@@ -212,14 +219,38 @@ npx vitest run --config vitest.integration.config.ts
 src/
   app/
     app/          # área autenticada (/app/*)
+      associados/           # CRUD de associados + relatórios
+      atividades/            # Kanban de atividades administrativas
+      config/                # configurações, auditoria, usuários, integrações, lotações
+      financeiro/mensalidades/ # mensalidades e dashboard financeiro
+      juridico/              # consultas, processos, pareceres e notas jurídicas
+      notifications/         # actions de notificação
+      search/                # busca global
+      secretaria/oficios/    # gestão de ofícios
+    change-password/         # fluxo de troca de senha obrigatória
     login/        # página e actions de autenticação
     layout.tsx    # layout raiz (fontes, tema)
   components/     # componentes compartilhados (Sidebar, NavLink…)
   lib/
-    auth/         # Supabase session lookup, requireAuth, config
+    activities/   # Activity (board) CRUD, assignments
+    ai/           # integração Gemini
+    associates/   # queries, repository, PII masking
+    auth/         # Supabase session lookup, requireAuth, config, rate limit
+    crypto/       # criptografia PII (AES-256-GCM, HKDF, HMAC blind indexes)
+    dashboard/    # queries de agregação
     db/           # cliente Drizzle/PostgreSQL + schema
+    email/        # envio de email (Mailjet)
+    finance/      # repository, service, queries do módulo financeiro
     integrations/ # auth M2M, envelopes JSON, outbox e webhooks outbound
+    juridico/     # repository, service, queries do módulo jurídico
+    notifications/ # repository, service, event bus de notificações
+    oficios/      # repository, service, PDF, validações
+    reports/      # geração de CSV e queries de relatório
+    sanitize-pii.ts # sanitização de PII para logs e webhooks
+    search/       # queries de busca
+    storage/      # Supabase Storage
     supabase/     # helpers Supabase SDK server/admin
+    ui/           # design tokens
 
 proxy.ts          # proxy de autenticação (Next.js 16 — substitui middleware.ts)
 drizzle/postgres/ # migrações PostgreSQL geradas

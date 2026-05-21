@@ -12,6 +12,7 @@ colors:
   on-secondary: "#040920"
   tertiary: "#e7c16b"
   on-tertiary: "#4f3308"
+  # Note: on-tertiary is not yet implemented in tokens.ts. Components use warningText: '#a16207' instead.
   background: "#f8fafc"
   on-background: "#0d1f3c"
   surface: "#ffffff"
@@ -25,18 +26,18 @@ colors:
   outline-variant: "#dde3ec"
   inverse-surface: "#0d1f3c"
   inverse-on-surface: "#ffffff"
-  success: "#15803d"
+  success: "#22c55e"
   on-success: "#ffffff"
   success-container: "#dcfce7"
   success-accent: "#86efac"
-  warning: "#a16207"
+  warning: "#eab308"
   on-warning: "#ffffff"
-  warning-container: "#f4ddb1"
+  warning-container: "#fef3c7"
   warning-accent: "#e7c16b"
-  error: "#b91c1c"
+  error: "#ef4444"
   on-error: "#ffffff"
   error-container: "#fee2e2"
-  information: "#76aeea"
+  information: "#2563eb"
   status-todo: "#94a3b8"
   status-progress: "#76aeea"
   status-waiting: "#e7c16b"
@@ -154,6 +155,7 @@ elevation:
   button: "0 4px 0 #0409201f"
   drawer: "-12px 0 30px #0409201f"
   modal: "0 24px 60px #04092040"
+  # Note: tokens.ts currently exports only cardShadow, drawerShadow, and badgeShadow (floatingBadgeShadow). The card shadow value in tokens.ts (0 1px 3px rgba(4,9,32,0.08), 0 1px 2px rgba(4,9,32,0.04)) differs from the design spec. Components use Tailwind defaults (shadow-sm, shadow-xl) or inline values. The remaining elevation levels (popover, button, modal, flat) are not yet exported as tokens.
 motion:
   duration-fast: 120ms
   duration-base: 150ms
@@ -257,6 +259,7 @@ components:
     rounded: "{rounded.md}"
     height: 48px
     padding: "0 12px"
+    # Note: Custom input components (e.g., NovaConsultaForm) use h-10 (40px), while DaisyUI inputs default to ~48px. The design system specifies 48px but migrated components use 40px.
   textarea:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.on-surface}"
@@ -383,6 +386,8 @@ components:
 
 # ASOF Intranet Design System
 
+> **Note:** DaisyUI component classes are being phased out. New and refactored UI uses explicit design tokens from `tokens.ts` and Tailwind arbitrary values. Legacy DaisyUI classes (`input input-bordered`, `drawer-toggle`, `drawer-side`, etc.) remain in `EditarAssociadoForm.tsx`, the sidebar layout, and `LogoutButton.tsx`.
+
 ## Overview
 
 The interface is an institutional operations room for a professional association. It should feel formal, composed, and trustworthy, but not ceremonial to the point of slowing work down. The visual identity blends diplomatic restraint with a quiet editorial quality: large serif headings, compact administrative controls, navy actions, and light blue-gray work surfaces.
@@ -402,6 +407,8 @@ The palette is light and cool. The main canvas is a very pale blue-gray, content
 
 Avoid large saturated color blocks in the main work area. Most screens should be white panels and pale blue-gray containers with small color markers carrying status.
 
+> **Note:** `tokens.ts` exports approximately 35 named values. Many component tokens defined in this document (`on-primary`, `on-background`, `on-surface`, `surface` variants, `tertiary`, `outline`, `inverse-surface`, and composite tokens like `divider`, `tooltip`, `kanban-column`, etc.) are not yet exported and are used as inline values or Tailwind arbitrary values in components.
+
 ## Typography
 
 Typography carries most of the brand personality. Page titles and section titles use **Playfair Display** to create an editorial, official tone. Body text, labels, tables, buttons, and controls use **Google Sans** for clarity and administrative efficiency.
@@ -409,6 +416,8 @@ Typography carries most of the brand personality. Page titles and section titles
 Headlines should be large, dark navy, and tight. They should not be all caps. Eyebrows and field labels may be uppercase with generous letter spacing, giving screens the rhythm of a formal dossier. Metrics and numeric values use **Google Sans** for tabular clarity; the serif is reserved for text headings only.
 
 Body copy should stay compact. The interface works best at 12px to 16px for operational text, with only page titles and major metrics breaking that density.
+
+> **Note:** Italic font variants (`Playfair-Italic-Variable.woff2`, `GoogleSans-Italic-Variable.woff2`) exist in the fonts directory but are not loaded in `layout.tsx`. Text using `font-style: italic` falls back to browser-synthesized italic.
 
 ## Layout
 

@@ -26,6 +26,14 @@ Saudação final obrigatória.
 - **Respeitosamente**: Para autoridades de hierarquia superior.
 - **Atenciosamente**: Para autoridades de mesma hierarquia ou inferior.
 
+#### Status de Ofício
+
+Status do ofício no ciclo de vida: `gerado`, `cancelado`, `rascunho`. Campo: `officialLetterStatus`.
+
+#### Tipo de Lotação
+
+Classificação do posto: `domestic` (Brasília/SERE) ou `abroad` (posto no exterior). Campo: `assignmentType`. Tabela: `assignments`.
+
 ---
 
 ### Associados e Cadastro
@@ -72,11 +80,13 @@ Registro mensal de pagamento de associado. Campo: `monthly_payments`.
 
 #### Método de Pagamento
 
-Forma de quitação da mensalidade: `boleto`, `transferencia`, `debito_automatico`, `folha`. Campo: `paymentMethod`.
+Forma de quitação da mensalidade: `folha`, `boleto`, `pix`, `transferencia`, `outros`. Campo: `paymentMethod`.
 
 #### Status de Pagamento
 
-Situação da mensalidade: `em_dia`, `inadimplente`, `isento`. Campo: `paymentStatus`.
+Situação da mensalidade: `pago`, `pendente`, `atrasado`, `isento`, `cancelado`. Campo: `paymentStatus`.
+
+Nota: não confundir com `contributionStatus` (campo `contribution_status` na tabela `associates`), que representa o status derivado de contribuição do associado: `em_dia`, `inadimplente`, `pendente_migracao`.
 
 #### Inicialização de Mês
 
@@ -94,6 +104,14 @@ Solicitação de atendimento jurídico feita por associado. Possui número inter
 
 Caso jurídico mais estruturado (Fase 2 do módulo). Relaciona-se a pareceres e notas.
 
+- **Status** (`legalProcessStatus`): `ativo`, `concluido`, `suspenso`.
+- **Tipo** (`legalProcessType`): `judicial`, `administrativo`.
+- **Subtipo** (`legalProcessSubtype`): `justica_federal`, `stf`, `mre`, `cgu`, `tcu`.
+
+#### Status de Consulta Jurídica
+
+Ciclo de vida da consulta: `aberta`, `aguardando_escritorio`, `respondida`, `arquivada`. Campo: `legal_consultation_status`.
+
 #### Parecer
 
 Opinião jurídica formal emitida pela assessoria jurídica da ASOF. Pode ser vinculada a um processo.
@@ -104,7 +122,7 @@ Opinião jurídica formal emitida pela assessoria jurídica da ASOF. Pode ser vi
 
 #### Atividade (Kanban)
 
-Tarefa administrativa no board Kanban. Possui status (`a_fazer`, `em_andamento`, `pendente`, `concluida`, `arquivada`), prioridade, responsável e associado relacionado.
+Tarefa administrativa no board Kanban. Possui status (`a_fazer`, `em_andamento`, `aguardando_terceiros`, `concluido`), prioridade, responsável e associado relacionado.
 
 #### Quick Add
 
@@ -116,7 +134,7 @@ Criação rápida de atividade diretamente no board, sem abrir formulário compl
 
 #### Notificação
 
-Alerta em tempo real para o usuário sobre reatribuição de atividades ou atualização de consulta jurídica. Entregue via Supabase Realtime.
+Alerta em tempo real para o usuário sobre reatribuição de atividades ou atualização de consulta jurídica. Entregue via Supabase Realtime. Tipos (`notificationType`): `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`.
 
 #### Evento de Domínio
 
@@ -146,7 +164,7 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 ### Módulo Jurídico
 
 1. **Número Interno Sequencial**: Consultas jurídicas recebem um número interno sequencial gerado atomicamente dentro de uma transação.
-2. **Status Flow**: Uma consulta pode transitar entre status definidos pelo enum `legal_consultation_status`.
+2. **Status Flow**: Uma consulta pode transitar entre status definidos pelo enum `legal_consultation_status` (`aberta`, `aguardando_escritorio`, `respondida`, `arquivada`).
 3. **Notas Vinculadas**: Cada interação (nota) deve atualizar o timestamp `last_interaction_at` da consulta/processos.
 4. **Roles de Acesso**: `admin` e `diretoria` têm acesso; `secretaria` é bloqueada no layout do módulo.
 
@@ -178,11 +196,13 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 
 O sistema suporta dois caminhos de autenticação para APIs:
 
-1. **Env-var Key (Depreciado)**: `ASOF_INTEGRATION_API_KEY` + `ASOF_INTEGRATION_HMAC_SECRET`. O uso deste caminho gera logs de aviso estruturados (`logger.warn`) contendo `User-Agent`, método, rota e `requestId` (com omissão de credenciais). A desativação definitiva ocorre assim que o administrador remover as variáveis de ambiente do painel da Vercel.
+1. **Env-var Key (Depreciado)**: `ASOF_INTEGRATION_API_KEY` + `ASOF_INTEGRATION_HMAC_SECRET`. Estas variáveis são lidas diretamente de `process.env` em `integrations/config.ts` e não são validadas pelo schema Zod em `env.ts`. O uso deste caminho gera logs de aviso estruturados (`logger.warn`) contendo `User-Agent`, método, rota e `requestId` (com omissão de credenciais). A desativação definitiva ocorre assim que o administrador remover as variáveis de ambiente do painel da Vercel.
 2. **Table-backed Key**: Chaves persistidas em `integration_api_keys` com escopos por endpoint.
    - **GET /api/v1/events**: Exige o escopo `events:read`.
    - **POST /api/v1/events**: Exige o escopo `events:write`.
-   - **GET /api/v1/health**: Não exige escopo específico, necessitando apenas de uma chave ativa.
+   - **Gerenciamento de Webhooks**: Exige o escopo `webhooks:manage`.
+   - **Administração**: Exige o escopo `admin`.
+   - **GET /api/v1/health**: Não exige escopo específico, necessitando apenas de uma chave ativa. Aceita também autenticação de sessão com roles `admin` e `diretoria`.
    - **Validação de Cadastro**: A criação ou rotação de chaves via `createApiKeyAction` exige obrigatoriamente a seleção de pelo menos um escopo válido.
 
 ### Webhooks Outbound
@@ -190,7 +210,7 @@ O sistema suporta dois caminhos de autenticação para APIs:
 - Assinatura HMAC SHA-256 por subscription.
 - Secrets criptografados em repouso (`secret_ciphertext`).
 - Target URLs devem ser HTTPS públicos; localhost e redes privadas são rejeitados.
-- Dispatch agendado via Vercel Cron (1x ao dia no plano Free).
+- Dispatch agendado via Vercel Cron: eventos em `/api/v1/events/dispatch` (diário às 03:00 UTC) e alertas de SLA em `/api/v1/juridico/sla-warnings` (diário às 04:00 UTC).
 
 ---
 
@@ -202,6 +222,16 @@ O sistema suporta dois caminhos de autenticação para APIs:
 - `monthly_payment.updated`
 - `official_letter.created`
 - `official_letter.published`
+
+---
+
+## Módulos de Suporte
+
+Além dos módulos de domínio listados acima, o sistema inclui módulos auxiliares em `src/lib/`:
+
+- **`email/`** — Envio de e-mail via Mailjet (index.ts, templates.ts).
+- **`search/`** — Busca de associados e atividades (queries.ts).
+- **`storage/`** — Operações de Supabase Storage para upload de PDFs de ofícios (client.ts, index.ts).
 
 ---
 

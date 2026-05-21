@@ -53,7 +53,7 @@ O caminho M2M principal usa chaves persistidas em `integration_api_keys`, criada
 
 - `events:read` para `GET /api/v1/events`
 - `events:write` para `POST /api/v1/events`
-- `webhooks:manage` para futuras operacoes administrativas de webhooks por API
+- `webhooks:manage` para operacoes administrativas de webhooks por API
 - `admin` reservado para acesso completo futuro
 
 O fluxo M2M usa:
@@ -61,7 +61,7 @@ O fluxo M2M usa:
 - `ASOF_INTEGRATIONS_ENABLED=true` para habilitar a verificacao M2M
 - `ASOF_INTEGRATION_HMAC_SECRET` como segredo server-side de assinatura
 - `ASOF_INTEGRATION_TIMESTAMP_TOLERANCE_SECONDS` para janela de tolerancia; default `300`
-- `ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY` para criptografar secrets de subscriptions outbound
+- `ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY` apenas para decriptografar secrets legados V1; novos secrets usam `ENCRYPTION_MASTER_KEY` com formato V2 (HKDF com separação de domínio)
 - `CRON_SECRET` para autorizar os endpoints agendados `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings`
 - `ASOF_INTEGRATION_API_KEY` apenas como compatibilidade legada para chave global sem escopos; nao configurar em producao nova sem excecao registrada
 
@@ -118,11 +118,11 @@ A fundacao `/api/v1/*` existe para padronizar autenticacao e envelopes JSON, mas
 
 ### Seguranca dos webhooks outbound
 
-Webhooks outbound sao assinados com HMAC SHA-256 usando o secret da subscription. O secret fica persistido como `secret_ciphertext` e deve ser gerado por `encryptWebhookSecret()`, que usa AES-256-GCM com chave derivada de `ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY`.
+Webhooks outbound sao assinados com HMAC SHA-256 usando o secret da subscription. O secret fica persistido como `secret_ciphertext` e deve ser gerado por `encryptWebhookSecret()`, que usa AES-256-GCM com HKDF (formato V2 `enc:v2:{keyId}.{iv}.{authTag}.{ciphertext}`) derivado de `ENCRYPTION_MASTER_KEY`. A funcao `decryptWebhookSecret()` suporta V2 (HKDF com `ENCRYPTION_MASTER_KEY`) e V1 legado (SHA-256 com `ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY`).
 
 Subscriptions aceitam apenas `targetUrl` HTTPS e publico. O schema de entrada rejeita HTTP, localhost, hostnames locais/internos e faixas IPv4/IPv6 privadas, loopback, link-local ou reservadas para reduzir risco de SSRF. Para testes locais, use um endpoint publico controlado ou tunnel temporario.
 
-Durante a transicao, secrets legados sem prefixo `enc:v1:` ainda sao aceitos pelo dispatcher para evitar quebra de entregas existentes. Essa compatibilidade deve ser removida em **2026-08-31**; apos essa data, subscriptions com secret em texto puro devem falhar ate que o segredo seja rotacionado. O fluxo de migracao e: acessar `/app/config/integracoes/webhooks`, usar "Rotacionar segredo" para gerar um novo valor com pelo menos 32 caracteres, e confirmar que `secret_ciphertext` passou a usar o prefixo `enc:v1:`. Operadores `admin` devem revisar subscriptions legadas antes da data de corte e notificar os responsaveis pelos destinos externos quando o secret for alterado.
+Secrets sem prefixo de criptografia (`enc:v1:` ou `enc:v2:`) sao rejeitados com erro pela funcao `decryptWebhookSecret()`. Nao existe compatibilidade com texto puro — todo webhook secret deve estar criptografado com V1 ou V2. O fluxo de migracao para V2 e: acessar `/app/config/integracoes/webhooks`, usar "Rotacionar segredo" para gerar um novo valor com pelo menos 32 caracteres; o novo secret sera criptografado automaticamente no formato V2 (`enc:v2:`). Operadores `admin` devem revisar subscriptions com secrets V1 e rotaciona-los para migrar para V2.
 
 Os payloads do outbox passam por allowlist por tipo de evento antes de persistir em `domain_events.payload`. Antes do envio HTTP, o dispatcher aplica sanitizacao defensiva adicional em chaves sensiveis como CPF, SIAPE, email, endereco, telefone, tokens e secrets.
 
@@ -321,7 +321,16 @@ Retorna um envelope JSON padronizado confirmando que a superficie versionada de 
 #### Autorizacao
 
 - aceita assinatura M2M valida
-- ou sessao humana com role `admin` ou `diretoria`
+- ou sessao humana com role `admin` ou `diretoria` (rate-limited: 60 req/15 min por IP)
+
+#### Respostas de erro
+
+| Status | Quando ocorre |
+|---|---|
+| `401 Unauthorized` | headers M2M ausentes/invalidos e sem sessao autorizada |
+| `403 Forbidden` | sessao humana existe, mas sem role permitida |
+| `429 Too Many Requests` | limite de 60 requisicoes por 15 minutos por IP excedido (`rate_limit_exceeded`) |
+| `503 Service Unavailable` | integracoes habilitadas sem configuracao completa |
 
 #### Resposta de sucesso
 
@@ -518,15 +527,13 @@ Authorization: Bearer <CRON_SECRET>
   "data": {
     "mode": "scheduled",
     "result": {
-      "processed": 1,
-      "results": [
-        {
-          "dispatched": true,
-          "eventId": 123,
-          "subscriptions": 1,
-          "results": ["delivered"]
-        }
-      ]
+      "scanned": 5,
+      "eligible": 3,
+      "emitted": 3,
+      "skipped": 2,
+      "failed": 0,
+      "limit": 50,
+      "failures": []
     }
   },
   "meta": {

@@ -16,8 +16,8 @@ A ASOF (Associação Nacional dos Oficiais de Chancelaria do Serviço Exterior B
 | **Contribuição** | Status de pagamento da anuidade ASOF: `em_dia`, `inadimplente`, `pendente_migracao` | `contributionStatus` |
 | **Mensalidade** | Registro mensal de pagamento de associado | `monthly_payments` |
 | **Ofício** | Documento oficial gerado pelo sistema | `oficios` |
-| **Método de pagamento** | Forma de quitação da mensalidade: `boleto`, `transferencia`, `debito_automatico` | `paymentMethod` |
-| **Status de pagamento** | Situação da mensalidade: `em_dia`, `inadimplente`, `isento` | `paymentStatus` |
+| **Método de pagamento** | Forma de quitação da mensalidade: `folha`, `boleto`, `pix`, `transferencia`, `outros` | `paymentMethod` |
+| **Status de pagamento** | Situação da mensalidade: `pago`, `pendente`, `atrasado`, `isento`, `cancelado` | `paymentStatus` |
 
 ## Roles do sistema
 
@@ -92,9 +92,9 @@ npm run db:studio
 - **Indexes**: Create partial indexes for queries with conditional `WHERE`. Use trigram GIN (`gin_trgm_ops`) for `LIKE '%term%'`. Use composite indexes matching `(filter, order)` patterns. Prefix custom indexes with `idx_`.
 - **Connection pool**: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'` in `src/lib/db/index.ts`.
 - **Transactions**: Multi-table operations MUST use `db.transaction()`. Pass the `tx` executor to repository functions that accept one.
-- **RLS**: Hardened in migration 0023. All policies use `TO authenticated` (not `TO PUBLIC`) and `FORCE ROW LEVEL SECURITY` is applied on all 16 application tables. Auth is enforced server-side via `requireAuth()` and `requireRole()`. If a Supabase client is ever exposed to the browser, RLS policies must be narrowed to per-user or per-role predicates.
+- **RLS**: Hardened in migration 0023. All policies use `TO authenticated` (not `TO PUBLIC`) and `FORCE ROW LEVEL SECURITY` is applied on all 19 application tables. Auth is enforced server-side via `requireAuth()` and `requireRole()`. If a Supabase client is ever exposed to the browser, RLS policies must be narrowed to per-user or per-role predicates.
 - **Update safety**: `updateAssociateById` and similar functions must use typed interfaces, not `Record<string, unknown>`, to prevent unintended column overwrites.
-- **Migrations**: Name SQL files with zero-padded index + description (e.g., `0009_quality_improvements.sql`). Update `_journal.json` with the correct timestamp.
+- **Migrations**: Name SQL files with zero-padded index + description (e.g., `0009_quality_improvements.sql`). Update `meta/_journal.json` with the correct timestamp.
 - **Testing**: `npm run test:db` validates tables, columns, enums, indexes, extensions, and migration alignment against the live database.
 
 ## Database
@@ -117,7 +117,7 @@ npm run db:studio
 ## Testing And Validation
 
 - Vitest runs Node-environment tests matching `src/**/*.test.{ts,tsx}`.
-- `npm run test:db` runs the PostgreSQL schema contract tests against `.env.local`; it validates tables, columns, enums, indexes, `pg_trgm`, migration SQL files, `_journal.json`, and `drizzle.__drizzle_migrations`.
+- `npm run test:db` runs the PostgreSQL schema contract tests against `.env.local`; it validates tables, columns, enums, indexes, `pg_trgm`, migration SQL files, `meta/_journal.json`, and `drizzle.__drizzle_migrations`.
 - E2E tests must be run with `npm run test:e2e` unless explicitly diagnosing a different server. Playwright is configured for `http://localhost:3001`, and `e2e/global-setup.ts` creates/migrates/seeds `asof_test` before starting its own Next.js dev server on `127.0.0.1:3001`.
 - The E2E server sets `NEXT_E2E=1`; `next.config.ts` then uses `distDir: ".next-e2e"` so Next.js has a separate dev lock/cache from the regular `.next/dev` server on `3000`.
 - Do not point E2E tests at an existing `npm run dev` server on `http://localhost:3000` unless that server's database has been intentionally seeded for E2E. The normal dev server uses `.env.local` (`asof_intranet` locally), so E2E logins can fail with `/login?error=1`; repeated failures can persist in `login_attempts` and become `/login?error=rate-limit`.
@@ -163,6 +163,7 @@ Este projeto usa um padrão padronizado de **git worktrees** combinado com **sub
 ```
 
 **Comandos:**
+
 ```bash
 # Criar worktree para uma feature
 git worktree add -b feature/nome .worktrees/feature-nome
@@ -199,20 +200,24 @@ Maestro (terminal principal)
 ### Fluxo de Orquestração
 
 **Passo 1 — Decomposição (Maestro)**
+
 - Analisa a feature e divide em tarefas com fronteiras claras (nenhuma tarefa deve editar os mesmos arquivos que outra).
 - Cria um plano de dependências: o que pode ser paralelo vs. o que precisa ser sequencial.
 
 **Passo 2 — Alocação (Maestro)**
+
 - Cria worktrees: `git worktree add -b feature/<nome> .worktrees/<nome>`
 - Recruta subagentes no Maestri (um por worktree).
 - Conecta notes de contexto a cada subagente.
 
 **Passo 3 — Execução Paralela (Subagentes)**
+
 - Cada subagente implementa sua tarefa no próprio worktree.
 - Reporta progresso via `maestri note write` a cada checkpoint.
 - Sinaliza conclusão ao Maestro.
 
 **Passo 4 — Integração (Maestro)**
+
 - Revisa cada branch individualmente (code review via `maestri ask`).
 - Resolve conflitos de merge se necessário.
 - Faz squash/merge para `main` na ordem correta (respeitando dependências).
@@ -235,11 +240,13 @@ Maestro
 ```
 
 **Dependências:**
+
 - A → B (API depende do schema)
 - B → C (UI depende da API)
 - D pode rodar em paralelo, mas precisa do schema de A
 
 **Orquestração:**
+
 1. Maestro lança A primeiro.
 2. Quando A termina, Maestro faz merge do schema e lança B e D em paralelo.
 3. Quando B termina, Maestro lança C.

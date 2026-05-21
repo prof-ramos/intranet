@@ -49,7 +49,7 @@ Edite `.env.local` conforme o modo de desenvolvimento:
 #### Modo de desenvolvimento com bypass de auth (recomendado para iniciar)
 
 ```bash
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/asof
+DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet
 SKIP_AUTH=true
 DEV_USER_ID=1
 DEV_USER_NAME="Desenvolvedor"
@@ -63,7 +63,7 @@ DEV_USER_MUST_CHANGE_PASSWORD=false
 #### Modo de desenvolvimento com auth real (recomendado para testar login)
 
 ```bash
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/asof
+DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet
 INITIAL_ADMIN_EMAIL=admin@asof.local
 INITIAL_ADMIN_PASSWORD=SenhaSegura123!
 ```
@@ -72,12 +72,12 @@ INITIAL_ADMIN_PASSWORD=SenhaSegura123!
 
 ```bash
 # Criar banco (se necessário)
-createdb asof
+createdb asof_intranet
 
 # Aplicar migrações
 npm run db:migrate
 
-# Popular dados iniciais (admin + associados de exemplo)
+# Popular dados iniciais (admin user only — seed-associados.ts was removed)
 npm run db:seed
 ```
 
@@ -91,6 +91,33 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 > `npm run dev` usa Webpack por padrão. Turbopack (`npm run dev:turbo`) está disponível mas é tratado como modo de diagnóstico — houve problemas de resolução do Tailwind em máquinas com 8 GB RAM.
 
+### 5. Referência de Scripts
+
+| Script | Descrição |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento (Webpack) |
+| `npm run dev:turbo` | Servidor de desenvolvimento (Turbopack, diagnóstico) |
+| `npm run build` | Build de produção |
+| `npm run start` | Inicia servidor de produção |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | Verificação de tipos (`tsc --noEmit`) |
+| `npm run test` | Roda testes unitários (Vitest) |
+| `npm run test:watch` | Testes em modo watch |
+| `npm run test:db` | Schema contract contra PostgreSQL real |
+| `npm run test:e2e` | Testes end-to-end (Playwright) |
+| `npm run test:e2e:ui` | Playwright com UI |
+| `npm run test:e2e:debug` | Playwright em modo debug |
+| `npm run format` | Formata código com Prettier |
+| `npm run format:check` | Verifica formatação |
+| `npm run audit` | npm audit de segurança |
+| `npm run validate:quick` | typecheck + lint + testes unitários |
+| `npm run validate:full` | quick validation + testes de DB + build |
+| `npm run scope:check` | Verifica escopo de arquivos alterados (strict) |
+| `npm run pr:check` | Verificações de prontidão para PR |
+| `npm run db:migrate:unsafe` | drizzle-kit migrate direto (diagnóstico controlado) |
+| `npm run db:supabase:status` | Consulta status/totais via Supabase SDK |
+| `npm run db:studio` | Abre Drizzle Studio no browser |
+
 ---
 
 ## Visão Geral da Estrutura
@@ -102,7 +129,11 @@ src/
       associados/           # CRUD de associados + relatórios
       atividades/           # Kanban de atividades administrativas
       config/               # Configurações, auditoria, usuários, integrações e lotações
+      financeiro/mensalidades/ # Mensalidades e dashboard financeiro
       juridico/             # Módulo jurídico (consultas, processos)
+      notifications/        # Actions de notificação
+      search/               # Busca global
+      secretaria/oficios/   # Gestão de ofícios
       layout.tsx            # Layout com sidebar
       page.tsx              # Dashboard
       error.tsx             # Error boundary global
@@ -118,17 +149,25 @@ src/
     LogoutButton.tsx        # Botão de logout com action
 
   lib/                      # Código de negócio e infraestrutura
+    activities/             # Activity (board) CRUD, assignments
+    ai/                     # Integração Gemini
+    associates/             # Queries, repository, PII masking e helpers de associados
     auth/                   # Supabase session lookup, login, guards, rate limit
     crypto/                 # Criptografia de PII (AES-256-GCM, HKDF, HMAC blind indexes)
-    db/                     # Cliente Drizzle + schema
-    juridico/               # Repository, service, queries do módulo jurídico
-    finance/                # Repository, service, queries do módulo financeiro
-    oficios/                # Repository, service, validations do módulo de ofícios
-    notifications/          # Repository, service, event bus de notificações
-    integrations/           # Auth M2M, webhooks outbound, rate limiting de API
-    associates/             # Queries, repository, PII masking e helpers de associados
     dashboard/              # Queries de agregação
+    db/                     # Cliente Drizzle + schema
+    email/                  # Envio de email (Mailjet)
+    finance/                # Repository, service, queries do módulo financeiro
+    integrations/           # Auth M2M, webhooks outbound, rate limiting de API
+    juridico/               # Repository, service, queries do módulo jurídico
+    notifications/          # Repository, service, event bus de notificações
+    oficios/                # Repository, service, PDF, validations do módulo de ofícios
     reports/                # Geração de CSV e queries de relatório
+    routing/                # Helpers de navegação e rotas (entry: params.ts)
+    search/                 # Queries de busca de associados e atividades
+    server-actions/         # Utilitários compartilhados de Server Actions (entry: utils.ts)
+    storage/                # Supabase Storage (buckets de ofícios, documentos)
+    validation/             # Schemas de validação compartilhados (entry: schemas.ts)
     sanitize-pii.ts         # Sanitização de PII para logs e webhooks
     logger.ts               # Logger estruturado com redação de PII
     supabase/               # Clientes Supabase (server/admin)
@@ -244,13 +283,17 @@ export async function minhaAction(formData: FormData) {
 1. **Edite o schema** em `src/lib/db/schema/nova-tabela.ts`
 2. **Exporte** em `src/lib/db/schema/index.ts`
 3. **Gere a migração**:
+
    ```bash
    npm run db:generate
    ```
+
 4. **Aplique localmente**:
+
    ```bash
    npm run db:migrate
    ```
+
 5. **Aplique em produção** via Vercel (ou manualmente via Drizzle Kit)
 
 > **Nunca** edite arquivos em `drizzle/postgres/` manualmente. Sempre regenere via `drizzle-kit generate`.
@@ -290,13 +333,10 @@ O schema está dividido por domínio em `src/lib/db/schema/`:
 | `legal-processes.ts` | Processos jurídicos |
 | `legal-notes.ts` | Notas/histórico |
 | `legal-opinions.ts` | Pareceres e tags |
-| `monthly-payments.ts` | Mensalidades e pagamentos |
+| `finance.ts` | Mensalidades e pagamentos |
 | `oficios.ts` | Ofícios oficiais |
 | `rate-limits.ts` | Rate limiting por IP |
-| `domain-events.ts` | Outbox de eventos de domínio |
-| `webhook-subscriptions.ts` | Subscriptions de webhooks outbound |
-| `webhook-deliveries.ts` | Tentativas de entrega de webhooks |
-| `integration-api-keys.ts` | Chaves de API M2M com escopos |
+| `integrations.ts` | Eventos de domínio, webhooks outbound e chaves de API M2M |
 | `notifications.ts` | Notificações em tempo real |
 | `assignments.ts` | Lotações/postos |
 | `enums.ts` | Enums compartilhados |
@@ -320,6 +360,7 @@ npm run db:supabase:status
 ### Conexão
 
 O cliente Drizzle detecta automaticamente:
+
 - **Pooler** (`port 6543` ou hostname com `pooler`): desabilita `prepare`
 - **SSL**: ativado em produção ou quando `DB_SSL=true`
 
@@ -357,7 +398,6 @@ src/
       service.test.ts            # Testes de regras de negócio
     associates/
       search-params.test.ts      # Testes de helpers
-  smoke.test.ts                  # Smoke test geral
 ```
 
 ### Escrevendo um teste
@@ -387,7 +427,7 @@ describe('minhaFuncao', () => {
 
 ```
 Usuário → /login → Server Action: login()
-  → bcrypt.compare() → Supabase Auth session
+  → Supabase Auth signInWithPassword → session
   → Redirect /app (ou /change-password se mustChangePassword=true)
 ```
 
@@ -418,12 +458,13 @@ Verifique `src/lib/env.ts` para identificar variáveis obrigatórias. `SESSION_S
 **Sintoma:** Regex inválida com range de caracteres.
 
 **Solução:** Em character classes `[]`, o hífen `-` deve ser escapado ou colocado no início/fim:
+
 ```ts
 // ❌ Inválido
-/^[=-+@	]/
+/^[=-+@ ]/
 
 // ✅ Correto
-/^[-=+@	]/
+/^[-=+@ ]/
 ```
 
 ### "Event handlers cannot be passed to Client Component props"
@@ -431,6 +472,7 @@ Verifique `src/lib/env.ts` para identificar variáveis obrigatórias. `SESSION_S
 **Sintoma:** Next.js rejeita `onChange` passado de Server para Client Component.
 
 **Solução:** Extrair o `<select onChange>` para um Client Component separado:
+
 ```tsx
 // StatusUpdater.tsx
 'use client';
@@ -448,6 +490,7 @@ export function StatusUpdater({ defaultValue, children }) {
 **Sintoma:** `?error=rate-limit` após várias tentativas.
 
 **Solução:**
+
 ```bash
 # No Drizzle Studio ou SQL:
 DELETE FROM login_attempts WHERE email = 'seu-email@asof.local';
@@ -458,6 +501,7 @@ DELETE FROM login_attempts WHERE email = 'seu-email@asof.local';
 **Sintoma:** Classes Tailwind não carregam ou builds demoram.
 
 **Solução:** Use Webpack (padrão):
+
 ```bash
 npm run dev        # ✅ Webpack
 npm run dev:turbo  # ⚠️ Apenas diagnóstico
@@ -468,6 +512,7 @@ npm run dev:turbo  # ⚠️ Apenas diagnóstico
 **Sintoma:** Import alias `@/` não resolve.
 
 **Solução:** Verifique `tsconfig.json` e `next.config.ts`:
+
 ```json
 // tsconfig.json
 {
@@ -484,11 +529,14 @@ npm run dev:turbo  # ⚠️ Apenas diagnóstico
 **Sintoma:** Tabela inexistente após deploy.
 
 **Solução:**
+
 1. Verifique se `DATABASE_MIGRATION_URL` ou `DATABASE_POSTGRES_URL_NON_POOLING` está configurado
 2. Aplique manualmente:
+
    ```bash
    DATABASE_MIGRATION_URL="postgres://..." npx drizzle-kit migrate
    ```
+
 3. Ou execute o SQL da migration diretamente no Supabase SQL Editor
 
 ### CSV gerado com caracteres estranhos no Excel
@@ -502,6 +550,7 @@ npm run dev:turbo  # ⚠️ Apenas diagnóstico
 **Sintoma:** Build falha com erro de conexão ao banco.
 
 **Solução:** Use importação tardia em Route Handlers:
+
 ```ts
 const { db } = await import('@/lib/db');
 ```
@@ -519,6 +568,7 @@ Next.js 16 renomeou `middleware.ts` para `proxy.ts`. O arquivo `src/proxy.ts` fa
 ### Por que não há API routes REST?
 
 O projeto segue o padrão **Server Component + Server Action** do Next.js App Router:
+
 - **Leitura**: Server Components consultam o banco diretamente
 - **Escrita**: Server Actions recebem `FormData` e executam mutações
 - **Downloads**: Route Handlers para casos específicos (CSV)
@@ -532,6 +582,7 @@ Turbopack apresentou problemas de resolução do Tailwind CSS em máquinas com 8
 ### Por que repository pattern no jurídico?
 
 O módulo jurídico usa repository pattern para:
+
 - Isolar SQL em um único lugar
 - Facilitar testes sem mockar o banco
 - Permitir troca futura de ORM
@@ -539,6 +590,7 @@ O módulo jurídico usa repository pattern para:
 ### Por que rate limit no PostgreSQL?
 
 Em vez de memória (Redis), o rate limit usa PostgreSQL para:
+
 - Consistência entre múltiplas instâncias (serverless)
 - Persistência entre deploys
 - Simplicidade (uma tecnologia a menos)
@@ -548,6 +600,7 @@ Em vez de memória (Redis), o rate limit usa PostgreSQL para:
 ### Por que logger estruturado em vez de `console.*`?
 
 O projeto usa `src/lib/logger.ts` para centralizar logs com:
+
 - Níveis configuráveis via `LOG_LEVEL` (`trace`, `debug`, `info`, `warn`, `error`, `fatal`)
 - Redação automática de PII (CPF, SIAPE, email, tokens, secrets) antes de logar
 - Formato JSON em produção e colorizado em desenvolvimento

@@ -84,13 +84,15 @@ the result becomes `/login?error=rate-limit`.
 - `src/proxy.ts` — Next.js 16 proxy (replaces `middleware.ts`). Coarse Supabase user lookup for `/app/:path*` routes. Redirects to `/login` if missing/invalid. No Drizzle queries here; full user revalidation happens in `requireAuth()` inside `src/app/app/layout.tsx`.
 - `src/app/app/layout.tsx` — Authenticated shell. Calls `requireAuth()`, renders sidebar.
 - `src/app/app/config/auditoria/page.tsx`, `src/app/app/config/page.tsx`, `src/app/app/config/usuarios/page.tsx`, `src/app/app/config/integracoes/page.tsx`, `src/app/app/config/lotacoes/page.tsx` — Thin configuration modules. Audit is read-only; users has admin-only actions.
-- `src/app/login/actions.ts` — Server Action for login. Rate-limited (5 attempts / 15 min), bcrypt with dummy hash for timing attack protection.
+- `src/app/app/secretaria/oficios/` — Ofício management UI (create, edit, list)
+- `src/app/app/financeiro/mensalidades/` — Monthly payments management
+- `src/app/login/actions.ts` — Server Action for login. Rate-limited (5 attempts / 15 min), Supabase Auth `signInWithPassword` for credential validation.
 - `src/app/change-password/` — Required password-change flow for `mustChangePassword=true`.
 
 ### Database Layer
 
 - `src/lib/db/index.ts` — Drizzle client. Prefers `DATABASE_URL`, falls back to `DATABASE_POSTGRES_URL`. Auto-detects transaction pooler (pgbouncer/port 6543) and sets `prepare: false` accordingly.
-- `src/lib/db/schema/` — Drizzle schemas: `admins`, `associates`, `activities`, `audit`, `finance`, `login_attempts`, `rate_limits`, `legal_consultations`, `legal_notes`, `legal_processes`, `legal_opinions`, `monthly_payments`, `oficios`, `assignments`, `domain_events`, `webhook_subscriptions`, `webhook_deliveries`, `integration_api_keys`, `notifications`.
+- `src/lib/db/schema/` — Drizzle schemas: `admins`, `associates`, `activities`, `audit` (table `audit_logs`), `finance`, `login_attempts`, `rate_limits`, `legal_consultations`, `legal_notes`, `legal_processes`, `legal_opinions`, `legal_opinion_tags`, `monthly_payments`, `oficios`, `assignments`, `domain_events`, `webhook_subscriptions`, `webhook_deliveries`, `integration_api_keys`, `notifications`.
 - `drizzle.config.ts` — Targets PostgreSQL, writes migrations to `drizzle/postgres/`. **Rejects pooled URLs** — migrations require direct/non-pooling connection.
 - **Migrations:** Use `DATABASE_MIGRATION_URL` or `DATABASE_POSTGRES_URL_NON_POOLING`.
 
@@ -100,15 +102,16 @@ the result becomes `/login?error=rate-limit`.
 - **Indexes**: Create partial indexes for queries with conditional `WHERE`. Use trigram GIN (`extensions.gin_trgm_ops` on Supabase) for `LIKE '%term%'`. Use composite indexes matching `(filter, order)` patterns. Prefix custom indexes with `idx_`. Each `CREATE INDEX CONCURRENTLY` must be in its own migration file (Drizzle/Supabase wrap migrations in transactions).
 - **Connection pool**: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'` in `src/lib/db/index.ts`. Pool config values are validated via Zod in `src/lib/env.ts`.
 - **Transactions**: Multi-table operations MUST use `db.transaction()`. Pass the `tx` executor to repository functions that accept one. This includes `initializeMonth`, `dispatchDomainEventById`, and `rotateApiKey`.
-- **RLS**: Hardened in migration 0023 — all policies use `TO authenticated` (not `TO PUBLIC`) and `FORCE ROW LEVEL SECURITY` is applied on all 16 application tables. JWT-based RLS policies are deferred; auth is enforced server-side.
+- **RLS**: Hardened in migration 0023 — all policies use `TO authenticated` (not `TO PUBLIC`) and `FORCE ROW LEVEL SECURITY` is applied on all 19 application tables. JWT-based RLS policies are deferred; auth is enforced server-side.
 - **Update safety**: `updateAssociateById` and similar functions must use typed interfaces, not `Record<string, unknown>`, to prevent unintended column overwrites.
-- **Migrations**: Name SQL files with zero-padded index + description (e.g., `0009_quality_improvements.sql`). Update `_journal.json` with the correct timestamp. `CREATE INDEX CONCURRENTLY` and `ALTER COLUMN TYPE ... USING` require manual migration SQL (Drizzle doesn't generate these).
+- **Migrations**: Name SQL files with zero-padded index + description (e.g., `0009_quality_improvements.sql`). Update `meta/_journal.json` with the correct timestamp. `CREATE INDEX CONCURRENTLY` and `ALTER COLUMN TYPE ... USING` require manual migration SQL (Drizzle doesn't generate these).
 - **Testing**: `npm run test:db` validates tables, columns, enums, indexes, extensions, and migration alignment against the live database.
 - **CHECK constraints**: Use table-level `check()` (3rd argument of `pgTable`), not column-level `.check()` — Drizzle doesn't support column-level `.check()`. `pgEnum` already enforces enum values so CHECK constraints are only needed for range constraints.
 
 ### Data Access Pattern
 
 Server Components fetch data directly from the database. The juridico module has a full repository/service layer; others are query-only:
+
 - `src/lib/dashboard/queries.ts` — Dashboard aggregations
 - `src/lib/associates/queries.ts` — Associate list/pagination
 - `src/lib/associates/search-params.ts` — URL search-params parsing for the associates list (filters, pagination)
@@ -118,11 +121,13 @@ Server Components fetch data directly from the database. The juridico module has
 - `src/lib/oficios/repository.ts` + `service.ts` — Official letters (repository + service). `findOfficialLetters` has a default LIMIT 100; Server Actions cap at 1000.
 - `src/lib/associates/repository.ts` — Associate data access. Uses HMAC blind indexes (`cpfHash`, `siapeHash`, `primaryEmailHash`) for PII lookups, never plaintext comparisons.
 - `src/app/app/associados/actions.ts` — Server Actions for associate mutations (create/update). `[id]/editar/` is the edit route; `[id]/editar/EditarAssociadoForm.tsx` is the client form.
+- `src/app/app/search/actions.ts` — Global search Server Action
 
 ### PII Encryption
 
 All PII fields (CPF, SIAPE, email, phone, address, WhatsApp) are encrypted at rest using AES-256-GCM with HKDF key derivation:
-- `src/lib/crypto/index.ts` — `deriveKey(masterKey, context)` uses `crypto.hkdfSync('sha256', ...)` with domain-separated contexts (`pii-encryption`, `pii-search`, `webhook-secrets`). Supports V2 format `enc:v2:{keyId}.{iv}.{authTag}.{ciphertext}` for key rotation.
+
+- `src/lib/crypto/index.ts` — `hkdfDeriveKey(masterKey, context)` uses `crypto.hkdfSync('sha256', ...)` with domain-separated contexts (`pii-encryption`, `pii-search`, `webhook-secrets`). Supports V2 format `enc:v2:{keyId}.{iv}.{authTag}.{ciphertext}` for key rotation.
 - `src/lib/crypto/pii.ts` — `encryptPii`, `decryptPii`, `piiBlindIndex`, `decryptPiiField`. Blind indexes use HMAC-SHA-256 (not plain SHA-256) to prevent offline enumeration.
 - **Per-column fallback**: `decryptPiiField(row.cpfCiphertext, row.cpf)` — decrypts ciphertext if present, falls back to plaintext column. This supports incremental backfill.
 - **Role-based masking**: `canViewSensitiveFields(role)` determines PII visibility. `getAssociateForEdit` decrypts for admin/diretoria, masks for secretaria.
@@ -141,14 +146,17 @@ All PII fields (CPF, SIAPE, email, phone, address, WhatsApp) are encrypted at re
 - `src/lib/oficios/` — Official letter (ofício) generation and management
 - `src/lib/reports/` — CSV export, audit reports
 - `src/lib/ai/` — Gemini integration
+- `src/lib/email/` — Email message interface and sending (Mailjet)
+- `src/lib/search/` — Associate and activity search queries
 - `src/lib/dashboard/` — Dashboard queries and view-models
-- `src/lib/routing/` — Navigation and route helpers
-- `src/lib/server-actions/` — Shared server action utilities
-- `src/lib/validation/` — Shared validation schemas
+- `src/lib/routing/` — Navigation and route helpers (entry: `params.ts`)
+- `src/lib/server-actions/` — Shared server action utilities (entry: `utils.ts`)
+- `src/lib/validation/` — Shared validation schemas (entry: `schemas.ts`)
 
 ### Integration Auth (Dual-Auth)
 
 `src/lib/integrations/auth.ts` supports two authentication paths with OR logic:
+
 1. **Env-var key**: `ASOF_INTEGRATION_API_KEY` + `ASOF_INTEGRATION_HMAC_SECRET`. Env-var keys have full access (no scope restriction).
 2. **Table-backed key**: `integration_api_keys` table with HMAC-SHA-256 hashed keys and scope arrays. Table keys are validated with scope checks per endpoint.
 
@@ -165,6 +173,7 @@ All PII fields (CPF, SIAPE, email, phone, address, WhatsApp) are encrypted at re
 ### Notifications
 
 Real-time notification system for activities and legal consultations:
+
 - `src/lib/notifications/repository.ts` — create, list, count unread, mark read, mark all read
 - `src/lib/notifications/service.ts` — business logic layer
 - `src/lib/events.ts` — in-process event bus used by notifications
@@ -172,7 +181,7 @@ Real-time notification system for activities and legal consultations:
 - `src/hooks/useNotifications.ts` — realtime subscription hook
 - `src/app/app/notifications/actions.ts` — Server Actions for notification mutations
 
-Required env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+Required env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
 ### Auth & Authorization
 
@@ -236,6 +245,7 @@ Set `SKIP_AUTH=true` in `.env.local` (ignored in production). Configures dev use
 ## Design System
 
 Formal, institutional interface. See `DESIGN.md` for full specification.
+
 - **DaisyUI being phased out.** New/refactored UI uses explicit `DESIGN.md` tokens (colors, borders, radii) instead of DaisyUI utility classes (`btn btn-primary`, `input input-bordered`). Prefer explicit inline `style={{}}` or Tailwind arbitrary values matching the design system.
 - **Primary:** Navy `#040920` · **Sidebar:** `#06284f` · **Accent:** Sky blue `#76aeea`
 - **Typography:** Playfair Display (headings only) + Google Sans (numeric metrics, body, controls)
@@ -313,23 +323,28 @@ Maestro
 ### Fluxo de Orquestração
 
 **1. Decomposição (Maestro)**
+
 - Divide a feature em tarefas com fronteiras claras.
 - Garante que nenhuma tarefa edite os mesmos arquivos que outra.
 - Define plano de dependências: paralelo vs. sequencial.
 
 **2. Alocação (Maestro)**
+
 ```bash
 git worktree add -b feature/nome .worktrees/feature-nome
 ```
+
 - Recruta subagentes no Maestri (um por worktree).
 - Conecta notes de contexto a cada subagente.
 
 **3. Execução Paralela (Subagentes)**
+
 - Cada subagente implementa sua tarefa no próprio worktree.
 - Reporta progresso via `maestri note write` a cada checkpoint.
 - Sinaliza conclusão ao Maestro.
 
 **4. Integração (Maestro)**
+
 - Revisa cada branch individualmente.
 - Resolve conflitos de merge se necessário.
 - Faz squash/merge para `main` na ordem correta (respeitando dependências).
@@ -352,6 +367,7 @@ Maestro
 **Dependências:** A → B → C (sequencial), D roda em paralelo com B/C mas depende de A.
 
 **Orquestração:**
+
 1. Maestro lança A primeiro.
 2. Quando A termina, Maestro faz merge do schema e lança B e D em paralelo.
 3. Quando B termina, Maestro lança C.

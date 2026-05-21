@@ -13,7 +13,13 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 │   │   │   ├── atividades/          # Kanban board and new activity form
 │   │   │   ├── config/              # Configuration modules (users, assignments, audit, webhooks)
 │   │   │   ├── financeiro/          # Monthly payments and financial dashboard
+│   │   │   │   └── mensalidades/    # Monthly payment list and management
 │   │   │   ├── juridico/            # Legal consultations and notes (Fase 1)
+│   │   │   ├── notifications/       # Notification actions
+│   │   │   ├── search/              # Global search
+│   │   │   ├── secretaria/oficios/  # Ofício management UI
+│   │   │   ├── error.tsx            # App-level error boundary
+│   │   │   ├── loading.tsx          # App-level loading state
 │   │   │   ├── layout.tsx           # Authenticated app shell
 │   │   │   └── page.tsx             # Dashboard
 │   │   ├── change-password/         # Required password-change flow
@@ -23,18 +29,22 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 │   │   └── page.tsx                 # Root redirect entrypoint
 │   ├── components/                  # Shared UI shell components
 │   └── lib/
+│       ├── activities/              # Activity (board) CRUD, assignments, SLA tracking
+│       ├── ai/                      # Gemini integration (gemini.ts)
 │       ├── associates/              # Search parameter parsing + repository queries + PII masking
 │       ├── auth/                    # Auth config, sessions, guards, password logic, rate limiting
 │       ├── crypto/                  # HKDF key derivation, AES-256-GCM encryption, PII blind indexes
+│       ├── dashboard/               # Dashboard aggregation queries
 │       ├── db/                      # Drizzle client and schema exports
 │       │   └── schema/              # admins, associates, activities, assignments, audit_logs, login_attempts,
 │       │                            # legal_consultations, legal_processes, legal_notes, legal_opinions,
 │       │                            # legal_opinion_tags, monthly_payments, oficios, rate_limits,
 │       │                            # domain_events, webhook_subscriptions, webhook_deliveries,
 │       │                            # integration_api_keys, enums, views
-│       ├── dashboard/               # Dashboard aggregation queries
+│       ├── email/                   # Mailjet email sending (index.ts, templates.ts)
 │       ├── env.ts                   # Zod-validated environment variables
 │       ├── events.ts                # In-process domain event bus
+│       ├── finance/                 # Monthly payments, contributions, effective payment status
 │       ├── integrations/            # Versioned integration auth, JSON envelopes, rate limiting, and route helpers
 │       │   ├── auth.ts              # Dual-auth (env-var OR table-backed API keys with scopes)
 │       │   ├── config.ts            # Integration environment configuration
@@ -45,12 +55,21 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 │       │   ├── types.ts             # Shared integration types (scopes, auth results, signatures)
 │       │   └── webhooks/            # Webhook dispatch, subscription management, secrets
 │       ├── juridico/                # Repository, service, queries, formatters
+│       ├── logger.ts               # Structured logger with PII redaction
 │       ├── notifications/           # Real-time notification system (repository, service, events)
-│       ├── oficios/                 # Official letters repository + service
+│       ├── oficios/                 # Official letters repository, service, PDF generation, validations
 │       ├── sanitize-pii.ts         # Shared PII sanitizer for audit logs and webhooks
+│       ├── search/                 # Associate and activity search queries
+│       ├── storage/                 # Supabase Storage (oficios, documents, uploads buckets)
 │       ├── reports/                # Report queries and CSV serialization
 │       ├── supabase/                # Supabase SDK factories for script/server use
-│       │   └── client.ts            # Supabase realtime client for notifications
+│       │   ├── admin.ts            # Supabase admin client (service-role)
+│       │   ├── admin.test.ts       # Admin client tests
+│       │   ├── client.ts            # Supabase realtime client for notifications
+│       │   ├── config.ts            # Supabase configuration
+│       │   ├── node-ws.ts           # Node.js WebSocket transport for realtime
+│       │   ├── proxy.ts             # Supabase proxy helpers
+│       │   └── server.ts            # Supabase server-side client
 │       └── ui/                      # Shared UI tokens/helpers
 ├── drizzle/
 │   └── postgres/                    # Current PostgreSQL migrations
@@ -134,7 +153,7 @@ Name: ASOF Intranet Web App
 
 Description: Internal web interface for ASOF administrative staff and leadership. It currently supports an authenticated dashboard, associates list, associate profile view, activity kanban, new activity form, finance, legal consultations, official letters, configuration screens, login, and forced password-change flow. The root configuration screen still has a small placeholder area for future operational preferences.
 
-Technologies: Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, DaisyUI, Lucide React, `@hello-pangea/dnd` (kanban drag-and-drop), local Playfair and Google Sans fonts.
+Technologies: Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, DaisyUI, Lucide React, `@hello-pangea/dnd` (kanban drag-and-drop), local Playfair and Google Sans fonts. **DaisyUI is being phased out** in favor of explicit `DESIGN.md` design tokens (colors, borders, radii) — new and refactored UI uses inline `style={{}}` or Tailwind arbitrary values matching the design system rather than DaisyUI utility classes.
 
 **Atividades board DTO design:** `BoardActivity` carries `assigneeName`/`associateName` alongside `assigneeId`/`associateId`. These fields are optimistic-render fallbacks for items created via QuickAdd before the next data sync; `peopleById` (built from the `people` prop) is the authoritative name source. UI code must always prefer the map lookup and fall back to the DTO field, not the reverse.
 
@@ -191,6 +210,7 @@ Description: Provides in-app notifications for activity reassignments and legal 
 Technologies: Supabase realtime (`@supabase/supabase-js`), React hooks, Server Actions.
 
 Key files:
+
 - `src/lib/notifications/repository.ts` — create, list, count unread, mark read, mark all read
 - `src/lib/notifications/service.ts` — business logic layer
 - `src/lib/events.ts` — in-process event bus used by notifications
@@ -199,7 +219,7 @@ Key files:
 - `src/app/app/notifications/actions.ts` — Server Actions for notification mutations
 - `src/lib/supabase/client.ts` — Supabase client factory for realtime
 
-Required env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+Required env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
 ## 4. Data Stores
 
@@ -216,6 +236,7 @@ Key Schemas/Tables:
 - `admins` — administrative users
 - `associates` — ASOF members (PII fields encrypted at rest with AES-256-GCM; HMAC blind indexes for searchable fields)
 - `activities` — administrative workflow records (`position` column is `integer`, not `real`)
+- `assignments` — lotação options (`assignment_type`: `domestic`, `abroad`)
 - `audit_logs` — LGPD accountability trail + data access logging (`access_type: 'view' | 'export' | 'edit'`)
 - `login_attempts` — per-email login rate limiting (email stored as HMAC-SHA-256 hash)
 - `legal_consultations` — legal member consultations
@@ -277,11 +298,21 @@ Current indexes by table:
 | `oficios` | 3 | DESC on created_at, B-tree on year, unique on year+sequence |
 | `login_attempts` / `rate_limits` | 2 each | B-tree on lookup key and expiry; rate_limits has unique index on (key, scope) |
 | `domain_events` | 8 | Event type, entity lookup, actor, status, occurred_at, partial for pending, retention expiry |
+
+#### API Routes
+
+| Route | Method | Purpose |
+|---|---|---|
+| `/api/v1/health` | GET | Authenticated health check |
+| `/api/v1/events` | GET | Operator event dispatch (bearer auth) |
+| `/api/v1/events/dispatch` | GET | Scheduled batch dispatch (Vercel Cron, bearer-only) |
+| `/api/v1/juridico/sla-warnings` | GET | Scheduled SLA warning dispatch (Vercel Cron, bearer-only) |
+| `/api/oficios/[id]/download` | GET | Oficio PDF download (session auth) |
 | `webhook_subscriptions` | 6 | Name uniqueness, target URL, partial for active, creator, subscribed event lookup |
 | `webhook_deliveries` | 6 | Request id uniqueness, event/subscription lookup, status/retry, idempotency key uniqueness |
 | `integration_api_keys` | 3 | HMAC hash for lookup, partial for active keys |
 
-> **Nota:** As contagens acima são informativas. A fonte canônica de verdade para o schema e índices são os arquivos em `src/lib/db/schema/` e as migrações em `drizzle/postgres/`. O comando `npm run verify:indexes` (script `scripts/verify-indexes.ts`) valida periodicamente se os índices no banco batem com os padrões documentados.
+> **Nota:** As contagens acima são informativas. A fonte canônica de verdade para o schema e índices são os arquivos em `src/lib/db/schema/` e as migrações em `drizzle/postgres/`. Use `npm run test:db` para validar esquemas, enums, índices e extensões contra o banco real.
 
 #### 4.2.3. Enum Usage
 
@@ -308,6 +339,10 @@ PostgreSQL enums are preferred over free-text columns for status and type fields
 | `domain_event_delivery_status` | `domain_events.delivery_status` | ✅ Correct |
 | `webhook_delivery_status` | `webhook_deliveries.status` | ✅ Correct |
 | `payment_method` | `monthly_payments.method` | ✅ Correct (shared, in `enums.ts`) |
+| `notification_type` | `notifications.type` | ✅ Correct (`activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`) |
+| `notification_entity_type` | `notifications.entity_type` | ✅ Correct (`consultation`, `process`) |
+| `official_letter_status` | `oficios.status` | ✅ Correct (`gerado`, `cancelado`, `rascunho`) |
+| `payment_status` | `monthly_payments.status` | ✅ Correct (`pago`, `pendente`, `atrasado`, `isento`, `cancelado`) |
 
 **Principle:** Any column representing a bounded set of states MUST use a PostgreSQL enum. Text-only columns exist for unbounded data (names, emails, notes). Cross-file shared enums (`payment_method`, `legal_satisfaction`) are centralized in `src/lib/db/schema/enums.ts`.
 
@@ -315,11 +350,12 @@ PostgreSQL enums are preferred over free-text columns for status and type fields
 
 RLS was enabled in migration 0000, removed in migration 0001, reinstated in migration 0009, and hardened in migration 0023.
 
-**Current state:** All 16 application tables have `FORCE ROW LEVEL SECURITY` applied and all policies use `TO authenticated` (not `TO PUBLIC`). This blocks anonymous (`anon`) database access while allowing authenticated connections.
+**Current state:** All 19 application tables have `FORCE ROW LEVEL SECURITY` applied and all policies use `TO authenticated` (not `TO PUBLIC`). This blocks anonymous (`anon`) database access while allowing authenticated connections.
 
 **Rationale:** All database access goes through the Next.js server layer (Server Components / Server Actions). No Supabase client is exposed to the browser for direct database writes. Auth is enforced via `requireAuth()` (Supabase session lookup + DB admin lookup) and `requireRole()` (role-based guards).
 
 **LGPD Security & RLS Hardening:**
+
 1. **Authenticated-only policies:** Migration 0023 changed all policies from `TO PUBLIC` to `TO authenticated` and applied `FORCE ROW LEVEL SECURITY`. This blocks `anon` role at the DB level.
 2. **Monitoring:** Recomenda-se monitorar conexões diretas ao banco que não utilizem `application_name='asof-intranet'`.
 3. **Session Context:** Futuras iterações devem adotar predicados RLS que referenciem o estado da sessão, como `current_setting('app.user_id')`, fornecendo uma trava adicional no nível do banco (deferred — W3.0).
@@ -531,7 +567,7 @@ Antes de promover staging → produção:
 - [ ] `npm run test` — passou (Vitest)
 - [ ] `npm run test:e2e` — passou (Playwright)
 - [ ] `npm run build` — passou (gera build de produção localmente)
-- [ ] Banco remoto reconciliado com `drizzle.__drizzle_migrations`, `_journal.json`, tabelas, enums, índices e extensões esperadas (`pg_trgm`)
+- [ ] Banco remoto reconciliado com `drizzle.__drizzle_migrations`, `meta/_journal.json`, tabelas, enums, índices e extensões esperadas (`pg_trgm`)
 - [ ] RLS habilitado e `FORCE ROW LEVEL SECURITY` aplicado no remoto correto; políticas atuais devem permanecer `TO authenticated`, sem Data API/browser expondo tabelas sensíveis diretamente, e qualquer narrowing por sessão/papel deve ser acompanhado de teste de contrato (`npm run test:db`)
 - [ ] Criar e validar backup/snapshot do banco de produção antes de aplicar migrações
 - [ ] Aplicar migrações na produção manualmente, com `DATABASE_MIGRATION_URL` direta/non-pooling, **antes** do deploy
@@ -560,10 +596,12 @@ Antes de promover staging → produção:
 | `migrate-staging.yml` | `workflow_dispatch` | aplica migrations em ambiente de staging com confirmação manual (`MIGRATE-STAGING`) |
 
 **Limitações atuais:**
+
 - Sem job `migrate-prod` automatizado — deploys e migrations de produção são manuais
 - Sem notificação/alerta de falha de CI além do status do PR
 
 **Recomendações futuras:**
+
 - Job `migrate-prod` manual (triggered), com backup/snapshot e opt-in explícito antes de promote
 - Alerta de falha de CI para canal de comunicação da equipe
 
@@ -680,7 +718,7 @@ npm run db:studio
 Testing Frameworks: Vitest for unit tests; Playwright for E2E tests. Integration tests with real PostgreSQL run via `vitest.integration.config.ts` and require `DATABASE_URL`.
 
 - Unit tests: `npx vitest run` — auth, password, authorization, login rate limiting, PII encryption, HKDF key derivation, HMAC blind indexes, integration auth (dual-path), API key CRUD, webhook dispatch, rate limiting, associate search params, juridico service validation, oficios, finance, validation schemas, env config, sanitize-pii.
-- Database schema contract tests: `npm run test:db` — validates the real PostgreSQL database against the expected tables, columns, enums, indexes, `pg_trgm`, migration SQL files, `_journal.json`, and `drizzle.__drizzle_migrations`.
+- Database schema contract tests: `npm run test:db` — validates the real PostgreSQL database against the expected tables, columns, enums, indexes, `pg_trgm`, migration SQL files, `meta/_journal.json`, and `drizzle.__drizzle_migrations`.
 - Integration tests: `npx vitest run --config vitest.integration.config.ts` — juridico service with DB insertion, login rate limiter with PostgreSQL store. Requires a dedicated test database (never dev/prod). Set `DATABASE_URL` via `.env.test.local` or shell export; create the test DB and run migrations before first use.
 - E2E tests: `npm run test:e2e` — Playwright with authentication fixtures.
 

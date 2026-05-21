@@ -87,6 +87,7 @@ react-kanban-kit@0.0.2-beta.7
 **Status**: ✅ Substituído por `@hello-pangea/dnd` em `src/app/app/atividades/AtividadesBoard.tsx`.
 
 **Problemas originais**:
+
 - Versão beta (`0.0.2-beta.7`) sem garantia de estabilidade
 - Traz `vite-plugin-dts` como **dependency** (deveria ser devDependency ou peerDependency)
 - `vite-plugin-dts` traz `vue-tsc` e `@microsoft/api-extractor` com vulnerabilidades
@@ -108,6 +109,7 @@ O pacote foi uma dependência legada do SQLite/libSQL usada apenas pelo script `
 ### 3. `daisyui` — Risco: BAIXO
 
 **Problemas**:
+
 - O projeto está **fazendo transição para tokens de design próprios** (`src/lib/ui/tokens.ts`)
 - DaisyUI está sendo gradualmente removido (vide `CLAUDE.md`)
 - Classes como `btn btn-primary` estão sendo substituídas por utilitários Tailwind + tokens
@@ -127,6 +129,7 @@ O pacote foi uma dependência legada do SQLite/libSQL usada apenas pelo script `
 ```
 
 **Problemas**:
+
 - **esbuild 0.28.0**: Versão pinada. Esbuild é uma dependência transitiva de Next.js e Vite. Fixar uma versão específica pode causar incompatibilidades com novas versões do Next.js.
 - **postcss 8.5.14**: Versão pinada. Tailwind CSS 4 já inclui PostCSS internamente. Este override pode ser desnecessário.
 
@@ -203,14 +206,17 @@ npm update tailwindcss @tailwindcss/postcss
 ### Prioridade 1: Segurança (HIGH)
 
 1. **Substituir `react-kanban-kit`** ✅ Concluído
+
    ```bash
    npm uninstall react-kanban-kit
    npm install @hello-pangea/dnd
    ```
+
    - `src/app/app/atividades/AtividadesBoard.tsx` refatorado para `@hello-pangea/dnd`
    - Drag-and-drop validado com build e testes
 
 2. **Verificar se vulnerabilidades foram eliminadas** ✅ Concluído
+
    ```bash
    npm audit
    # Resultado: found 0 vulnerabilities
@@ -218,25 +224,28 @@ npm update tailwindcss @tailwindcss/postcss
 
 ### Prioridade 2: Limpeza (MEDIUM)
 
-3. **Mover `@libsql/client` para devDependencies** ✅ Concluído
+1. **Mover `@libsql/client` para devDependencies** ✅ Concluído
+
    ```bash
    npm uninstall @libsql/client
    npm install --save-dev @libsql/client
    ```
+
    - Pacote ainda necessário para `scripts/seed-associados.ts` (fonte SQLite legada)
 
-4. **Atualizar Tailwind CSS** ⏳ Pendente
+2. **Atualizar Tailwind CSS** ⏳ Pendente
+
    ```bash
    npm update tailwindcss @tailwindcss/postcss
    ```
 
 ### Prioridade 3: Manutenção (LOW)
 
-5. **Revisar overrides de `esbuild` e `postcss`**
+1. **Revisar overrides de `esbuild` e `postcss`**
    - Testar build sem overrides
    - Se tudo funcionar, remover do `package.json`
 
-6. **Planejar remoção do `daisyui`**
+2. **Planejar remoção do `daisyui`**
    - Identificar todas as classes DaisyUI em uso
    - Substituir por tokens do design system ou utilitários Tailwind
    - Remover quando todas as telas forem migradas
