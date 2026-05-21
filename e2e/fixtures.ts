@@ -11,12 +11,32 @@ export const e2eUsers: Record<string, TestUser> = {
   secretaria: { email: 'e2e-secretaria@asof.local', password: 'Senha-Forte-2026!' },
 };
 
-async function loginAs(page: Page, user: TestUser) {
+async function loginAs(page: Page, user: TestUser, maxAttempts = 3) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    await page.goto('/login');
+    await page.fill('input[name="email"]', user.email);
+    await page.fill('input[name="password"]', user.password);
+    await page.click('button[type="submit"]');
+
+    // Wait for navigation to either /app (success) or /login?error (failure)
+    await page.waitForURL(/\/(app|login)/, { timeout: 15000 });
+
+    if (page.url().includes('/app')) {
+      return;
+    }
+
+    // Login failed (redirected to /login?error=...), retry after a brief pause
+    if (attempt < maxAttempts) {
+      await page.waitForTimeout(500 * attempt);
+    }
+  }
+
+  // Final attempt — let waitForURL throw if it still fails
   await page.goto('/login');
   await page.fill('input[name="email"]', user.email);
   await page.fill('input[name="password"]', user.password);
   await page.click('button[type="submit"]');
-  await page.waitForURL('/app');
+  await page.waitForURL('/app', { timeout: 15000 });
 }
 
 export const test = base.extend<{

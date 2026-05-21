@@ -14,7 +14,7 @@ test.describe('Secretaria — Ofícios', () => {
   test('search input is present', async ({ page, loginAsAdmin }) => {
     await loginAsAdmin();
     await page.goto('/app/secretaria/oficios');
-    await expect(page.locator('input[placeholder*="Buscar"]')).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Buscar ofícios' })).toBeVisible();
   });
 
   test('ofício status badge is visible', async ({ page, loginAsAdmin }) => {
@@ -54,7 +54,7 @@ test.describe('Secretaria — Ofícios', () => {
     await expect(page.locator('h1')).toContainText('Gerar Novo Ofício');
     await expect(page.locator('input[name="recipient"]')).toBeVisible();
     await expect(page.locator('input[name="subject"]')).toBeVisible();
-    await expect(page.locator('textarea[name="bodyPlainText"]')).toBeVisible();
+    await expect(page.locator('[aria-label="Corpo do ofício"]')).toBeVisible();
   });
 
   test('diretoria can access secretaria', async ({ page, loginAsDiretoria }) => {
