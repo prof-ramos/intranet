@@ -1,6 +1,7 @@
 import { Menu } from 'lucide-react';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { Sidebar } from '@/components/Sidebar';
+import { GlobalSearch } from '@/components/GlobalSearch';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireAuth();
@@ -17,14 +18,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <input id="app-drawer" type="checkbox" className="drawer-toggle" aria-hidden="true" />
 
       <div id="main-content" className="drawer-content flex min-h-screen flex-col bg-[#f8fafc]">
-        <header className="flex min-h-14 items-center justify-between border-b border-[rgba(4,9,32,0.05)] bg-white px-5 sm:px-8 md:hidden">
+        <header className="sticky top-0 z-30 flex min-h-14 items-center gap-3 border-b border-[rgba(4,9,32,0.05)] bg-white px-5 sm:px-8">
           <label
             htmlFor="app-drawer"
             aria-label="Abrir menu de navegação"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-[8px] transition-colors hover:bg-[rgba(4,9,32,0.04)]"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] transition-colors hover:bg-[rgba(4,9,32,0.04)] md:hidden"
           >
             <Menu size={22} aria-hidden="true" />
           </label>
+          <div className="min-w-0 flex-1 md:max-w-lg">
+            <GlobalSearch />
+          </div>
         </header>
 
         {children}
