@@ -63,6 +63,28 @@ Drizzle não tem rollback automático. Procedimento manual:
 
 > **Prevenção:** sempre teste migrations em staging antes de produção.
 
+### 3.1 Índices grandes e `CREATE INDEX CONCURRENTLY`
+
+O fluxo `npm run db:migrate` aplica migrations Drizzle versionadas e deve ser tratado como fluxo transacional. PostgreSQL não permite `CREATE INDEX CONCURRENTLY` ou `DROP INDEX CONCURRENTLY` dentro de um bloco transacional; portanto, essas operações não entram em `drizzle/postgres/*.sql` nem devem ser executadas pelo migrator.
+
+Procedimento para índices grandes em produção:
+
+1. Confirmar necessidade com `EXPLAIN (ANALYZE, BUFFERS)` em staging ou réplica.
+2. Criar backup/snapshot antes da janela.
+3. Testar o SQL em staging usando a URL direta/non-pooling.
+4. Executar em produção via `psql`, com `ON_ERROR_STOP=1`, fora do `npm run db:migrate`.
+5. Validar `pg_indexes`, consultas críticas e `npm run test:db` contra o alvo migrado.
+6. Registrar no release log: operador, horário, commit, SQL executado e plano de rollback.
+
+Exemplo:
+
+```bash
+psql "$DATABASE_MIGRATION_URL" -v ON_ERROR_STOP=1 \
+  -c "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_table_column ON table_name (column_name);"
+```
+
+Se a mudança precisar de alteração de schema além do índice, separe em duas etapas: primeiro a migration Drizzle transacional, depois o índice concorrente manual.
+
 ---
 
 ## 4. Smoke test pós-deploy

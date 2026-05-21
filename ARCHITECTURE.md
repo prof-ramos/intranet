@@ -327,7 +327,13 @@ RLS was enabled in migration 0000, removed in migration 0001, reinstated in migr
 5. **Narrowing:** Caso um cliente Supabase seja exposto ao browser, as políticas devem ser imediatamente restritas para `per-user` ou `per-role`.
 6. **Verification:** `npm run test:db` must include explicit checks for `relrowsecurity` and `pg_policies` on LGPD-sensitive tables whenever migrations change RLS, enums, FKs, or indexes.
 
-#### 4.2.5. Transaction Boundaries
+#### 4.2.5. Migration and Index Strategy
+
+Drizzle migrations live in `drizzle/postgres/` and are applied through `npm run db:migrate`, which is guarded by `scripts/guarded-migrate.ts` for production targets. Production execution requires an approved window, backup/snapshot, a direct/non-pooling `DATABASE_MIGRATION_URL`, and explicit `ALLOW_PRODUCTION_MIGRATIONS=true`.
+
+Schema changes that PostgreSQL requires outside a transaction, especially `CREATE INDEX CONCURRENTLY` and `DROP INDEX CONCURRENTLY`, are operational migrations. They must not be added to the Drizzle migration stream. The operational path is documented in `docs/runbook.md`: validate in staging, execute with `psql "$DATABASE_MIGRATION_URL"` outside the migrator, then confirm `pg_indexes`, critical query plans, and `npm run test:db`.
+
+#### 4.2.6. Transaction Boundaries
 
 Transactions are used where data consistency across multiple tables is required:
 
@@ -342,7 +348,7 @@ Transactions are used where data consistency across multiple tables is required:
 | `rotateApiKey` | ✅ Yes | `db.transaction()` creates new key and revokes old atomically |
 | Bulk associate import | ❌ No | Each row is upserted individually (future work) |
 
-#### 4.2.6. Known N+1 Patterns
+#### 4.2.7. Known N+1 Patterns
 
 - `findLinkedActivities` is called per-associate in profile view. With ~763 associates and a covering index `(associate_id, due_date, id)`, each query is a fast index-only scan. Acceptable at current scale.
 - Dashboard aggregates run 3+ `count()` queries in parallel via `Promise.all`. Acceptable.
@@ -526,7 +532,7 @@ Antes de promover staging → produção:
 - [ ] `npm run test:e2e` — passou (Playwright)
 - [ ] `npm run build` — passou (gera build de produção localmente)
 - [ ] Banco remoto reconciliado com `drizzle.__drizzle_migrations`, `_journal.json`, tabelas, enums, índices e extensões esperadas (`pg_trgm`)
-- [ ] RLS habilitado e `FORCE ROW LEVEL SECURITY` aplicado no remoto correto; RLS restritiva por papel/sessão fica para a fase da issue #41, desde que não haja Data API/browser expondo tabelas sensíveis diretamente
+- [ ] RLS habilitado e `FORCE ROW LEVEL SECURITY` aplicado no remoto correto; políticas atuais devem permanecer `TO authenticated`, sem Data API/browser expondo tabelas sensíveis diretamente, e qualquer narrowing por sessão/papel deve ser acompanhado de teste de contrato (`npm run test:db`)
 - [ ] Criar e validar backup/snapshot do banco de produção antes de aplicar migrações
 - [ ] Aplicar migrações na produção manualmente, com `DATABASE_MIGRATION_URL` direta/non-pooling, **antes** do deploy
 - [ ] Verificar env vars obrigatórias na produção

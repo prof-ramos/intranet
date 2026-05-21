@@ -2,7 +2,7 @@
 
 Checklist canonica de go-live da intranet ASOF.
 
-Atualizado em 2026-05-20 a partir de verificacao local do repositorio, docs, CI, scripts, migrations, env validation, rotas/API/server actions e modulos criticos em `src/lib`.
+Atualizado em 2026-05-21 a partir de verificacao local do repositorio, docs, CI, scripts, migrations, env validation, rotas/API/server actions e modulos criticos em `src/lib`.
 
 ## Objetivo
 
@@ -12,10 +12,10 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 
 - Repositorio local: `/Users/gabrielramos/projetos/ASOF/intranet`
 - Branch local: `main`
-- HEAD local: `3157453` (`chore(prod): harden go-live readiness`)
+- HEAD local no inicio da frente #41: `d849fdb` (`docs: add open issues resolution plan`)
 - Worktrees ativos: somente o checkout principal.
 - PRs abertos no GitHub: nenhum no momento da verificacao local.
-- Estado do working tree apos esta continuidade: somente `TODO-PROD.md` modificado. A branch local esta `ahead 1` de `origin/main`; o commit local `3157453` e esta atualizacao documental precisam ser publicados/integrados ou o deploy precisa apontar explicitamente para o SHA correto antes de producao.
+- Estado do working tree no inicio da frente #41: limpo e `main...origin/main [ahead 1]` por causa do commit local do plano. As mudancas documentais da #41 precisam ser commitadas e publicadas antes de fechar a issue.
 - Stack verificada localmente: Next.js `16.2.6`, npm, App Router em `src/app`, Drizzle/PostgreSQL em `src/lib/db` e `drizzle/postgres`, deploy Vercel com `vercel.json`.
 - Migrations Drizzle existentes ate `0042_add_sla_warning_notification_type.sql`.
 - Rotas API verificadas: `oficios/[id]/download`, `v1/events`, `v1/events/dispatch`, `v1/health`, `v1/juridico/sla-warnings`.
@@ -36,6 +36,7 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 - [x] Script de setup de secrets de producao existe em `scripts/setup-production-env.sh`.
 - [x] Guardrail de migration de producao existe em `scripts/guarded-migrate.ts` e exige `ALLOW_PRODUCTION_MIGRATIONS=true`.
 - [x] Runbook operacional existe em `docs/runbook.md` com deploy, backup, smoke test e rollback.
+- [x] Politica de migration para indices concorrentes documentada: `CREATE INDEX CONCURRENTLY`/`DROP INDEX CONCURRENTLY` ficam fora de `npm run db:migrate` e devem ser executados via `psql` com backup, staging e validacao posterior.
 - [x] Webhooks/outbox tem modulos dedicados em `src/lib/integrations`, com HMAC, API keys, rate limit, criptografia de secret e despacho por cron.
 - [x] Reset de senha usa link de recuperacao por email Mailjet quando configurado e fallback de exibicao/copia quando email nao e entregue.
 - [x] `MAILJET_API_KEY` e `MAILJET_SECRET_KEY` existem no Vercel Production, configuradas via `vercel env add` em 2026-05-20.
@@ -48,7 +49,7 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 
 ## Pendente Bloqueante Para Producao
 
-- [ ] Integrar o commit local `3157453` e esta atualizacao de `TODO-PROD.md` antes do deploy Git-based da Vercel: fazer commit/push/PR/merge para `origin/main`, ou registrar decisao explicita de deploy manual a partir do SHA correto.
+- [ ] Integrar os commits locais da resolucao das issues antes do deploy Git-based da Vercel: fazer commit/push/PR/merge para `origin/main`, ou registrar decisao explicita de deploy manual a partir do SHA correto.
 - [ ] Rodar a readiness completa apos o commit final: `npm run pr:check` ou, se houver limitacao de ambiente, registrar separadamente `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:db` e `npm run build`.
 - [ ] Validar que `vercel.json` publicado contem ambos os crons:
   - `/api/v1/events/dispatch` em janela diaria.
@@ -154,11 +155,21 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 ### Executados nesta verificacao local
 
 - `git status --short --branch`
-  - resultado inicial: `## main...origin/main [ahead 1]`, sem arquivos modificados, staged ou untracked. Resultado apos esta edicao: `M TODO-PROD.md`.
+  - resultado inicial da frente #41: `## main...origin/main [ahead 1]`, sem arquivos modificados, staged ou untracked.
+- `git log --oneline -5`
+  - resultado inicial da frente #41: `d849fdb docs: add open issues resolution plan`, seguido de `2e39e52 fix(email): use verified Mailjet sender`.
+- `rg -n "CONCURRENTLY|ALLOW_PRODUCTION_MIGRATIONS|FORCE ROW LEVEL SECURITY" README.md ARCHITECTURE.md docs scripts drizzle/postgres src/lib/db`
+  - resultado: guardrail de producao existe em `scripts/guarded-migrate.ts`, RLS endurecida existe em migrations/tests, e faltava documentacao explicita para `CREATE INDEX CONCURRENTLY` fora do migrator Drizzle.
+- `gh issue view 41 --json number,title,body,comments,state,url`
+  - resultado: comentarios da issue indicavam RLS resolvida por PR/migrations anteriores; pendencias remanescentes eram estrategia de indices concorrentes e guardrails de migration de producao.
+- `npm run test -- scripts/guarded-migrate.test.ts src/lib/db/rls-granular.test.ts`
+  - resultado da frente #41: 2 arquivos passaram, 24 testes passaram.
+- `npm run test:db`
+  - resultado da frente #41: 1 arquivo passou, 7 testes passaram contra o banco configurado em `.env.local`.
 - `git rev-parse --short HEAD`
-  - resultado: `3157453`.
+  - resultado anterior desta checklist canonica: `3157453`; valor obsoleto substituido pelo snapshot da frente #41.
 - `git log -1 --oneline`
-  - resultado: `3157453 chore(prod): harden go-live readiness`.
+  - resultado inicial da frente #41: `d849fdb docs: add open issues resolution plan`.
 - `git worktree list --porcelain`
   - resultado: somente `/Users/gabrielramos/projetos/ASOF/intranet`, branch `refs/heads/main`.
 - `gh pr list --state open --json number,title,headRefName,baseRefName`
@@ -219,10 +230,10 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 - `src/lib/auth`, `src/lib/integrations`, `src/lib/notifications`, `src/lib/juridico`, `src/lib/finance`, `src/lib/email`
   - confirmam os modulos criticos citados nesta checklist.
 
-### Validacoes recentes registradas no commit local
+### Validacoes recentes registradas nesta frente
 
-- O commit local `3157453` registra a frente `chore(prod): harden go-live readiness`. Nesta rodada de continuidade, a verificacao de testes foi documental/estatica e nao reexecutou a suite completa; `git diff --check -- TODO-PROD.md` passou.
-- Antes de producao, reexecutar `npm run pr:check` continua bloqueante porque o commit `3157453` ainda esta apenas local (`ahead 1`) e a checklist canonica foi editada novamente em `TODO-PROD.md`.
+- A frente #41 atualizou `README.md`, `ARCHITECTURE.md`, `docs/runbook.md` e este `TODO-PROD.md` para remover texto obsoleto sobre RLS e documentar a politica de indices concorrentes fora do migrator Drizzle.
+- Antes de producao, reexecutar `npm run pr:check` continua bloqueante apos a resolucao completa das issues abertas, porque esta checklist acompanha o estado do repositorio e nao substitui validacao de CI.
 
 ### Nao executados nesta verificacao e motivo
 

@@ -121,6 +121,8 @@ npm run db:studio     # abre Drizzle Studio no browser
 ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
 ```
 
+As migrações versionadas em `drizzle/postgres/` são tratadas como migrations transacionais. Operações PostgreSQL que exigem execução fora de transação, como `CREATE INDEX CONCURRENTLY` ou `DROP INDEX CONCURRENTLY`, não devem ser incluídas no fluxo `npm run db:migrate`. Para esses casos, use o procedimento operacional em `docs/runbook.md`: backup/snapshot, teste em staging, execução direta via `psql "$DATABASE_MIGRATION_URL"` em janela aprovada e validação posterior com `npm run test:db`.
+
 As migrações PostgreSQL atuais ficam em `drizzle/postgres/`. O schema está em `src/lib/db/schema/`.
 
 ---
