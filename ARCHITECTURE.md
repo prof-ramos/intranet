@@ -350,13 +350,13 @@ PostgreSQL enums are preferred over free-text columns for status and type fields
 
 RLS was enabled in migration 0000, removed in migration 0001, reinstated in migration 0009, and hardened in migration 0023.
 
-**Current state:** All 19 application tables have `FORCE ROW LEVEL SECURITY` applied and all policies use `TO authenticated` (not `TO PUBLIC`). This blocks anonymous (`anon`) database access while allowing authenticated connections.
+**Current state:** All 19 application tables have `FORCE ROW LEVEL SECURITY` applied and all policies use `TO authenticated` (not `TO PUBLIC`). Migration 0023 hardened 18 tables; migration 0044 brought `notifications` in line (replacing the last `TO PUBLIC` outlier with `TO authenticated` + `get_current_admin_id()`). This blocks anonymous (`anon`) database access while allowing authenticated connections.
 
 **Rationale:** All database access goes through the Next.js server layer (Server Components / Server Actions). No Supabase client is exposed to the browser for direct database writes. Auth is enforced via `requireAuth()` (Supabase session lookup + DB admin lookup) and `requireRole()` (role-based guards).
 
 **LGPD Security & RLS Hardening:**
 
-1. **Authenticated-only policies:** Migration 0023 changed all policies from `TO PUBLIC` to `TO authenticated` and applied `FORCE ROW LEVEL SECURITY`. This blocks `anon` role at the DB level.
+1. **Authenticated-only policies:** Migration 0023 changed 18 of 19 tables from `TO PUBLIC` to `TO authenticated` and applied `FORCE ROW LEVEL SECURITY`. Migration 0044 aligned `notifications` (the last `TO PUBLIC` outlier) to `TO authenticated` with `get_current_admin_id()`.
 2. **Monitoring:** Recomenda-se monitorar conexões diretas ao banco que não utilizem `application_name='asof-intranet'`.
 3. **Session Context:** Futuras iterações devem adotar predicados RLS que referenciem o estado da sessão, como `current_setting('app.user_id')`, fornecendo uma trava adicional no nível do banco (deferred — W3.0).
 4. **Service-role Keys:** As chaves de serviço do Supabase (`service_role`) possuem privilégios totais e **devem** ser rotacionadas periodicamente, nunca commitadas e auditadas.
@@ -739,7 +739,7 @@ Runtime Notes:
 - ~~Keep PostgreSQL/Supabase documentation aligned with code; remove or archive stale SQLite/libSQL references.~~ ✅ SQLite/libSQL references removidos.
 - ~~Encrypt PII at rest (CPF, SIAPE).~~ ✅ Done — AES-256-GCM with HKDF key derivation and HMAC-SHA-256 blind indexes.
 - ~~Add integration API keys with scoped access.~~ ✅ Done — table-backed keys are the production-default path; env-var global key is deprecated compatibility.
-- ~~RLS hardening from `TO PUBLIC` to `TO authenticated`.~~ ✅ Done — migration 0023.
+- ~~RLS hardening from `TO PUBLIC` to `TO authenticated`.~~ ✅ Done — migration 0023 (18 tables) + migration 0044 (notifications, the last outlier).
 - ~~PII sanitization in audit logs and domain events.~~ ✅ Done — shared `sanitize-pii.ts`.
 - ~~Rate limiting for public API endpoints.~~ ✅ Done — PostgreSQL-backed limiter at 60 req/15min per API-key hash, falling back to IP when no key is present.
 - ~~Transaction wrapping for multi-table operations.~~ ✅ Done — `dispatchDomainEventById`, `initializeMonth`, `rotateApiKey`.

@@ -178,7 +178,7 @@ src/
   proxy.ts                  # Guarda de autenticação (Next.js 16)
 
 drizzle/postgres/           # Migrações geradas pelo Drizzle Kit
-scripts/                    # Seed, diagnóstico, status Supabase
+scripts/                    # Seed, diagnóstico, status Supabase, smoke test Realtime
 ```
 
 ### Padrões de Arquitetura

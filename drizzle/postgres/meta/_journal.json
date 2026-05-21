@@ -309,6 +309,13 @@
       "when": 1779878400000,
       "tag": "0043_add_monthly_payment_cancellation_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1779964800000,
+      "tag": "0044_notifications_rls_to_authenticated",
+      "breakpoints": true
     }
   ]
 }

@@ -254,7 +254,7 @@ src/
 
 proxy.ts          # proxy de autenticação (Next.js 16 — substitui middleware.ts)
 drizzle/postgres/ # migrações PostgreSQL geradas
-scripts/          # seed, diagnóstico e status Supabase
+scripts/          # seed, diagnóstico, status Supabase, smoke test Realtime
 ```
 
 Detalhes de arquitetura, fluxo de dados e decisões técnicas: [`ARCHITECTURE.md`](./ARCHITECTURE.md).

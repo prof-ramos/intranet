@@ -55,18 +55,12 @@ export const notifications = pgTable(
     uniqueIndex('idx_notifications_user_dedupe_key')
       .on(table.userId, table.dedupeKey)
       .where(sql`${table.dedupeKey} is not null`),
-    pgPolicy('notifications_select_own', {
+    // Server-side writes bypass RLS via superuser connection (src/lib/db/index.ts)
+    pgPolicy('notifications_select_authenticated', {
       as: 'restrictive',
       for: 'select',
-      to: 'public',
-      using: sql`
-        exists (
-          select 1
-          from ${admins}
-          where ${admins.id} = ${table.userId}
-            and lower(${admins.email}) = lower(auth.jwt() ->> 'email')
-        )
-      `,
+      to: 'authenticated',
+      using: sql`${table.userId} = get_current_admin_id()`,
     }),
   ],
 ).enableRLS();

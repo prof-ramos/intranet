@@ -169,7 +169,7 @@ Resultado esperado:
 - `supabase_realtime` existe.
 - `notifications` está na publication.
 - `relrowsecurity=true` e `relforcerowsecurity=true`.
-- política `notifications_select_own` presente para `SELECT`.
+- política `notifications_select_authenticated` presente para `SELECT` (migration 0044).
 
 Checklist manual:
 
