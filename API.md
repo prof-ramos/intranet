@@ -1,7 +1,7 @@
 # API Documentation — ASOF Intranet
 
 > Documentação dos endpoints HTTP públicos atualmente expostos pela ASOF Intranet.
-> Última atualização: 2026-05-18
+> Última atualização: 2026-05-21
 
 ---
 
@@ -9,7 +9,7 @@
 
 A superficie HTTP publica atual da ASOF Intranet e pequena e intencionalmente restrita.
 
-Hoje existem **5 endpoints HTTP expostos**, mas apenas **3** deles executam trabalho de negocio real:
+Hoje existem **6 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
 
 | Metodo | Rota | Finalidade |
 |---|---|---|
@@ -18,6 +18,7 @@ Hoje existem **5 endpoints HTTP expostos**, mas apenas **3** deles executam trab
 | `GET` | `/api/v1/health` | Healthcheck autenticado da fundacao de integracoes |
 | `GET`, `POST` | `/api/v1/events` | Superficie administrativa para dispatch outbound-only; sem ingestao inbound |
 | `GET` | `/api/v1/events/dispatch` | Dispatch agendado por cron bearer para pendencias e retries outbound |
+| `GET` | `/api/v1/juridico/sla-warnings` | Job agendado por cron bearer para emitir notificacoes de SLA juridico |
 
 ### O que esta fora deste documento
 
@@ -48,14 +49,23 @@ As rotas versionadas novas aceitam **uma de duas formas de autenticacao**:
 1. assinatura M2M por headers (`x-asof-key`, `x-asof-timestamp`, `x-asof-signature`)
 2. fallback de sessao humana autorizada, apenas para operadores internos, exceto `/api/v1/events/dispatch`, que e bearer-only para evitar dispatch por navegacao/CSRF
 
-O fluxo M2M atual usa:
+O caminho M2M principal usa chaves persistidas em `integration_api_keys`, criadas por admin em `/app/config/integracoes/api-keys`. Essas chaves sao exibidas uma unica vez na criacao, armazenadas como hash, rate-limited por hash do token quando `x-asof-key` esta presente (fallback por IP quando nao ha token) e avaliadas por escopo:
 
-- `ASOF_INTEGRATIONS_ENABLED=true` para habilitar a verificacao
-- `ASOF_INTEGRATION_API_KEY` como identificador compartilhado da integracao
-- `ASOF_INTEGRATION_HMAC_SECRET` como segredo de assinatura
+- `events:read` para `GET /api/v1/events`
+- `events:write` para `POST /api/v1/events`
+- `webhooks:manage` para futuras operacoes administrativas de webhooks por API
+- `admin` reservado para acesso completo futuro
+
+O fluxo M2M usa:
+
+- `ASOF_INTEGRATIONS_ENABLED=true` para habilitar a verificacao M2M
+- `ASOF_INTEGRATION_HMAC_SECRET` como segredo server-side de assinatura
 - `ASOF_INTEGRATION_TIMESTAMP_TOLERANCE_SECONDS` para janela de tolerancia; default `300`
 - `ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY` para criptografar secrets de subscriptions outbound
-- `CRON_SECRET` para autorizar o endpoint agendado `/api/v1/events/dispatch`
+- `CRON_SECRET` para autorizar os endpoints agendados `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings`
+- `ASOF_INTEGRATION_API_KEY` apenas como compatibilidade legada para chave global sem escopos; nao configurar em producao nova sem excecao registrada
+
+Quando a chave global legada autoriza uma request, o servidor emite `logger.warn` estruturado com `requestId`, metodo, path e user-agent, sem registrar a chave nem o HMAC secret.
 
 Headers esperados:
 
@@ -469,6 +479,37 @@ GET /api/v1/events/dispatch?limit=20 HTTP/1.1
 Authorization: Bearer <CRON_SECRET>
 ```
 
+---
+
+### 6. Avisos Agendados de SLA Juridico
+
+**Metodo:** `GET`
+**Rota:** `/api/v1/juridico/sla-warnings`
+
+#### Descricao
+
+Executa o job de verificacao de consultas/processos juridicos com SLA proximo do vencimento e emite notificacoes internas. A rota e bearer-only e foi criada para Vercel Cron.
+
+#### Autorizacao
+
+- `Authorization: Bearer <CRON_SECRET>` para chamadas agendadas
+- sessao humana nao e aceita nesta rota
+- se um bearer token for enviado e estiver incorreto, a rota retorna `401`
+- se `CRON_SECRET` nao estiver configurado, a rota retorna `503`
+
+#### Query Parameters
+
+| Parametro | Tipo | Obrigatorio | Descricao |
+|---|---|---|---|
+| `limit` | `number` | Nao | Tamanho do lote entre `1` e `100`; default `50` |
+
+#### Exemplo de solicitacao
+
+```http
+GET /api/v1/juridico/sla-warnings?limit=50 HTTP/1.1
+Authorization: Bearer <CRON_SECRET>
+```
+
 #### Resposta de sucesso
 
 ```json
@@ -534,6 +575,7 @@ Usado por:
 - `/api/v1/health`
 - `/api/v1/events`
 - `/api/v1/events/dispatch`
+- `/api/v1/juridico/sla-warnings`
 
 Caracteristicas:
 
@@ -605,7 +647,7 @@ curl -L \
 - A API HTTP atual nao e uma API REST completa
 - Nao existe documentacao OpenAPI/Swagger
 - Nao existem endpoints JSON publicos amplos de consulta ou mutacao de dominio
-- A fundacao M2M atual e minima e restrita a `/api/v1/health`, `/api/v1/events` e `/api/v1/events/dispatch`
+- A fundacao M2M atual e minima e restrita a `/api/v1/health` e `/api/v1/events`; os crons `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings` usam bearer `CRON_SECRET`
 - Nao existe OAuth de integracao
 - Nao existe endpoint inbound publico para receber eventos de terceiros
 - Nao existe ingestao inbound de eventos
@@ -623,9 +665,11 @@ Parcialmente iniciado no codigo:
 
 - endpoints versionados minimos em `/api/v1/...`
 - autenticacao M2M por API key/HMAC/timestamp
+- chaves M2M table-backed com escopos em `integration_api_keys`
 - outbox de `domain_events`
 - dispatch outbound por `/api/v1/events`
 - dispatch agendado por `/api/v1/events/dispatch`
+- avisos agendados de SLA juridico por `/api/v1/juridico/sla-warnings`
 - `webhook_subscriptions.secret_ciphertext` para secrets de webhooks
 - auditoria de dispatch manual de eventos
 - auditoria de subscription CRUD/rotacao de segredo

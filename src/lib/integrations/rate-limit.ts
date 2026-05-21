@@ -1,7 +1,9 @@
+import { createHash } from 'node:crypto';
 import { db } from '@/lib/db';
 import { rateLimits } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
 import { getTrustedClientIp } from '@/lib/ip';
+import { INTEGRATION_HEADER_NAMES } from '@/lib/integrations/types';
 
 export interface IntegrationRateLimitOptions {
   maxRequests: number;
@@ -110,4 +112,14 @@ export const integrationRateLimiter = createIntegrationRateLimiter({
 
 export function getClientIp(request: Request): string {
   return getTrustedClientIp(request.headers);
+}
+
+export function getIntegrationRateLimitKey(request: Request): string {
+  const apiKey = request.headers.get(INTEGRATION_HEADER_NAMES.key)?.trim();
+  if (apiKey) {
+    const keyHash = createHash('sha256').update(apiKey).digest('hex');
+    return `api-key:${keyHash}`;
+  }
+
+  return `ip:${getClientIp(request)}`;
 }

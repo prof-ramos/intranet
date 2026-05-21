@@ -41,6 +41,7 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 - [x] Reset de senha usa link de recuperacao por email Mailjet quando configurado e fallback de exibicao/copia quando email nao e entregue.
 - [x] `MAILJET_API_KEY` e `MAILJET_SECRET_KEY` existem no Vercel Production, configuradas via `vercel env add` em 2026-05-20.
 - [x] API keys de integracao exigem `requireAuth()` + `requireRole(['admin'])` antes de chamadas ao service.
+- [x] Documentacao M2M atualizada para chaves table-backed com escopos como caminho principal; `ASOF_INTEGRATION_API_KEY` fica descrita como compatibilidade legada sem escopos.
 - [x] Falhas Mailjet nao registram corpo bruto de resposta do provedor; o erro exposto fica limitado a codigo/status.
 - [x] Templates de email escapam `resetLink` em `href` e corpo HTML.
 - [x] SLA juridico tem rota agendada `GET /api/v1/juridico/sla-warnings`, protegida por `CRON_SECRET`.
@@ -112,7 +113,7 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 
 ## Pendente Recomendado Antes Do Go-Live
 
-- [ ] Atualizar `README.md` e `API.md` para documentar que `CRON_SECRET` protege tambem `/api/v1/juridico/sla-warnings`, nao apenas `/api/v1/events/dispatch`. Evidencia local: `README.md` ainda lista somente tres rotas versionadas e `API.md` ainda diz "5 endpoints" com ultima atualizacao `2026-05-18`.
+- [x] Atualizar `README.md` e `API.md` para documentar que `CRON_SECRET` protege tambem `/api/v1/juridico/sla-warnings`, nao apenas `/api/v1/events/dispatch`. Concluido na frente #58.
 - [ ] Atualizar `docs/runbook.md` com smoke test explicito para SLA juridico, Mailjet/fallback de reset, API keys admin-only e webhooks/outbox.
 - [ ] Revisar usos de `logger.*(..., error)` em fluxos sensiveis alem do Mailjet, especialmente auth/reset/change-password, para evitar `error.message` com PII ou tokens.
 - [ ] Rodar `npm audit` e registrar decisao para cada achado relevante.
@@ -162,6 +163,20 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
   - resultado: guardrail de producao existe em `scripts/guarded-migrate.ts`, RLS endurecida existe em migrations/tests, e faltava documentacao explicita para `CREATE INDEX CONCURRENTLY` fora do migrator Drizzle.
 - `gh issue view 41 --json number,title,body,comments,state,url`
   - resultado: comentarios da issue indicavam RLS resolvida por PR/migrations anteriores; pendencias remanescentes eram estrategia de indices concorrentes e guardrails de migration de producao.
+- `gh issue view 58 --json number,title,body,comments,state,url`
+  - resultado: a issue pede M2M table-backed com escopos, deprecacao do caminho legado por env vars e consolidacao de documentacao de producao.
+- `vercel env ls | rg 'ASOF_INTEGRATION_(API_KEY|HMAC_SECRET)|ASOF_INTEGRATIONS_ENABLED' || true`
+  - resultado da frente #58: Vercel CLI retornou env vars do projeto, mas o filtro nao encontrou chave global legada, HMAC M2M nem flag de integracoes; producao atual nao esta configurada para usar o caminho legado.
+- `find src/app/api -maxdepth 5 -type f | sort`
+  - resultado da frente #58: rotas documentadas incluem `v1/health`, `v1/events`, `v1/events/dispatch`, `v1/juridico/sla-warnings` e download de oficios.
+- `sed -n` em `src/lib/integrations/auth.ts`, `src/lib/integrations/keys/service.ts`, `src/app/api/v1/events/route.ts` e `src/app/api/v1/juridico/sla-warnings/route.ts`
+  - resultado da frente #58: codigo confirma chaves table-backed com escopos, aviso estruturado para chave global legada, `events:read`/`events:write` na rota de eventos e bearer `CRON_SECRET` na rota de SLA juridico.
+- `sed -n` em `src/lib/integrations/rate-limit.ts`
+  - resultado da frente #58: rate limit de integracoes usa hash de `x-asof-key` quando o token existe, com fallback por IP quando nao ha token.
+- `npm run test -- src/lib/integrations/auth.test.ts src/lib/integrations/keys/service.test.ts src/app/app/config/integracoes/api-keys/actions.test.ts src/app/api/v1/events/route.test.ts src/lib/integrations/rate-limit.test.ts src/app/api/v1/health/route.test.ts`
+  - resultado da frente #58: 6 arquivos passaram, 57 testes passaram.
+- `npm run pr:check`
+  - resultado antes do commit da frente #58: falhou corretamente no gate de working tree limpo, listando apenas os arquivos modificados desta frente; deve ser reexecutado apos commit.
 - `npm run test -- scripts/guarded-migrate.test.ts src/lib/db/rls-granular.test.ts`
   - resultado da frente #41: 2 arquivos passaram, 24 testes passaram.
 - `npm run test:db`

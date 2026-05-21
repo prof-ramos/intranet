@@ -1,11 +1,11 @@
 import { authorizeIntegrationRequest } from '@/lib/integrations/auth';
 import { jsonError, jsonOk } from '@/lib/integrations/http';
-import { getClientIp, integrationRateLimiter } from '@/lib/integrations/rate-limit';
+import { getIntegrationRateLimitKey, integrationRateLimiter } from '@/lib/integrations/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  const rateLimitResult = await integrationRateLimiter.consume(getClientIp(request));
+  const rateLimitResult = await integrationRateLimiter.consume(getIntegrationRateLimitKey(request));
   if (!rateLimitResult.allowed) {
     return jsonError(429, 'rate_limit_exceeded', 'Too many requests. Please try again later.', {
       details: { retryAfterMs: rateLimitResult.retryAfterMs },

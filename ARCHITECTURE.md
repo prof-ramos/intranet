@@ -166,11 +166,11 @@ Deployment: Server-side only. Migrations require a direct/non-pooling PostgreSQL
 
 Name: Versioned Integration Helpers
 
-Description: Provides the `/api/v1/*` groundwork for outbound integrations and inbound API access. The foundation includes: shared JSON envelopes, request ID propagation, dual-auth API key verification (env-var OR table-backed with scopes), HMAC-SHA-256 timestamp verification, PostgreSQL-backed rate limiting (60 req/15min/IP), an authenticated health route, an operator-facing `/api/v1/events` route, and a bearer-only cron `/api/v1/events/dispatch` route. Outbound webhook dispatch uses `Promise.allSettled()` for parallel delivery with deterministic idempotency keys (`{eventId}:{subscriptionId}`). Event payloads are persisted through an outbox (`domain_events`) with event-type allowlists, PII sanitization via shared `sanitize-pii.ts`, and 90-day retention (`expiresAt`). Failed deliveries are tracked with `failureReason` column. Webhook subscription secrets are stored as `secret_ciphertext` encrypted with HKDF-derived keys.
+Description: Provides the `/api/v1/*` groundwork for outbound integrations and inbound API access. The foundation includes: shared JSON envelopes, request ID propagation, table-backed API key verification with scopes, deprecated env-var compatibility for the old unrestricted global key, HMAC-SHA-256 timestamp verification, PostgreSQL-backed rate limiting (60 req/15min per API-key hash, falling back to IP when no key is present), an authenticated health route, an operator-facing `/api/v1/events` route, and bearer-only cron routes for `/api/v1/events/dispatch` and `/api/v1/juridico/sla-warnings`. Outbound webhook dispatch uses `Promise.allSettled()` for parallel delivery with deterministic idempotency keys (`{eventId}:{subscriptionId}`). Event payloads are persisted through an outbox (`domain_events`) with event-type allowlists, PII sanitization via shared `sanitize-pii.ts`, and 90-day retention (`expiresAt`). Failed deliveries are tracked with `failureReason` column. Webhook subscription secrets are stored as `secret_ciphertext` encrypted with HKDF-derived keys.
 
 Technologies: Next.js Route Handlers, Web `Request`/`Response`, Node `crypto`, Drizzle ORM, PostgreSQL.
 
-Deployment: Server-side only. Integration auth supports two paths: (1) env-var keys (`ASOF_INTEGRATION_API_KEY` + `ASOF_INTEGRATION_HMAC_SECRET`) with unrestricted access, and (2) table-backed API keys (`integration_api_keys`) with per-key scope arrays. Table-backed keys use HMAC-SHA-256 for key hashing and scope validation per endpoint. Scheduled dispatch uses Vercel Cron in `vercel.json` and validates `Authorization: Bearer $CRON_SECRET`.
+Deployment: Server-side only. The production-default M2M path is table-backed API keys (`integration_api_keys`) with per-key scope arrays. Table-backed keys use HMAC-SHA-256 for key hashing and scope validation per endpoint. `ASOF_INTEGRATION_API_KEY` remains as deprecated compatibility for the old unrestricted global key and should be absent in new production environments unless an exception is documented. Scheduled jobs use Vercel Cron in `vercel.json` and validate `Authorization: Bearer $CRON_SECRET`.
 
 #### 3.2.4. Supabase SDK Tooling
 
@@ -612,8 +612,8 @@ Key Security Tools/Practices:
 
 - `SKIP_AUTH=true` works only outside production.
 - Service-role Supabase keys are server/script-only.
-- **Dual-auth integration:** API endpoints accept both env-var API keys (unrestricted) and table-backed API keys (scoped) via `src/lib/integrations/auth.ts`. Table keys use HMAC-SHA-256 hashing and per-endpoint scope validation.
-- Integration signing is HMAC-SHA256 over method, path+query, timestamp, and body hash. The versioned surface covers `/api/v1/health`, `/api/v1/events`, and `/api/v1/events/dispatch`.
+- **M2M integration:** API endpoints use table-backed API keys (scoped) via `src/lib/integrations/auth.ts`. The deprecated env-var global API key path remains only as compatibility and emits a structured warning when used.
+- Integration signing is HMAC-SHA256 over method, path+query, timestamp, and body hash. The versioned M2M surface covers `/api/v1/health` and `/api/v1/events`; cron-only routes `/api/v1/events/dispatch` and `/api/v1/juridico/sla-warnings` use `Authorization: Bearer $CRON_SECRET`.
 - Outbound event payloads must stay within the allowlists in `src/lib/integrations/outbox.ts`. PII (CPF, SIAPE, email, phone, address, tokens, secrets, etc.) is sanitized via `src/lib/sanitize-pii.ts` before storage in `domain_events.payload` or `audit_logs.changes`.
 - Webhook delivery uses `Promise.allSettled()` for parallel dispatch with deterministic idempotency keys. Failed deliveries record `failureReason` for dead-letter analysis.
 - Sensitive ASOF data such as CPF, SIAPE, email, address, and functional data must not be logged or exposed in public responses.
@@ -700,17 +700,17 @@ Runtime Notes:
 - ~~Expand explicit role guards for administrative routes and actions.~~ ✅ `requireRole()` ativo em `/app/juridico`.
 - ~~Keep PostgreSQL/Supabase documentation aligned with code; remove or archive stale SQLite/libSQL references.~~ ✅ SQLite/libSQL references removidos.
 - ~~Encrypt PII at rest (CPF, SIAPE).~~ ✅ Done — AES-256-GCM with HKDF key derivation and HMAC-SHA-256 blind indexes.
-- ~~Add integration API keys with scoped access.~~ ✅ Done — dual-auth with env-var and table-backed keys.
+- ~~Add integration API keys with scoped access.~~ ✅ Done — table-backed keys are the production-default path; env-var global key is deprecated compatibility.
 - ~~RLS hardening from `TO PUBLIC` to `TO authenticated`.~~ ✅ Done — migration 0023.
 - ~~PII sanitization in audit logs and domain events.~~ ✅ Done — shared `sanitize-pii.ts`.
-- ~~Rate limiting for public API endpoints.~~ ✅ Done — PostgreSQL-backed limiter at 60 req/15min/IP.
+- ~~Rate limiting for public API endpoints.~~ ✅ Done — PostgreSQL-backed limiter at 60 req/15min per API-key hash, falling back to IP when no key is present.
 - ~~Transaction wrapping for multi-table operations.~~ ✅ Done — `dispatchDomainEventById`, `initializeMonth`, `rotateApiKey`.
 - Add integration tests for login/session cookies, protected routes, and high-risk server actions.
 - Implement JWT-based RLS policies for critical tables (deferred — W3.0).
 - Add external observability (Sentry/Datadog) for production error tracking and performance monitoring.
 - Keep `README.md`, `AGENTS.md`, `DESIGN.md`, `CLAUDE.md`, `API.md`, `CONTRIBUTING.md`, and this file synchronized when runtime or architecture decisions change.
 - Implement Fase 2 do módulo jurídico: processos, pareceres, biblioteca de pareceres, anexos.
-- Deprecate env-var integration API key path (Phase 2 of dual-auth transition).
+- Remove deprecated env-var integration API key compatibility after confirming no production client still depends on it.
 - Drop plaintext PII columns after backfill verification (migration pending — backfill script `scripts/backfill-pii-encryption.ts` exists; plaintext columns still in schema with per-column fallback).
 - Evaluate formal API documentation (OpenAPI/Swagger) if REST endpoints grow.
 

@@ -84,14 +84,16 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 | Variável | Padrão | Descrição |
 | --- | --- | --- |
-| `ASOF_INTEGRATIONS_ENABLED` | `false` | Habilita autenticação M2M para `/api/v1/*` |
-| `ASOF_INTEGRATION_API_KEY` | — | Chave compartilhada enviada em `x-asof-key` |
-| `ASOF_INTEGRATION_HMAC_SECRET` | — | Segredo usado para validar `x-asof-signature` |
+| `ASOF_INTEGRATIONS_ENABLED` | `false` | Habilita autenticação M2M para `/api/v1/*`; mantenha `false` no primeiro go-live, salvo decisão operacional explícita |
+| `ASOF_INTEGRATION_HMAC_SECRET` | — | Segredo server-side usado para validar `x-asof-signature` quando M2M estiver ativo |
 | `ASOF_INTEGRATION_TIMESTAMP_TOLERANCE_SECONDS` | `300` | Janela máxima de diferença para `x-asof-timestamp` |
 | `ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY` | — | Chave usada para criptografar/decriptografar `webhook_subscriptions.secret_ciphertext` |
-| `CRON_SECRET` | — | Segredo bearer enviado pelo Vercel Cron para `/api/v1/events/dispatch` |
+| `CRON_SECRET` | — | Segredo bearer enviado pelo Vercel Cron para `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings` |
+| `ASOF_INTEGRATION_API_KEY` | — | Compatibilidade legada para chave global sem escopos; não configurar em produção nova sem exceção registrada |
 
-As rotas versionadas atuais são `/api/v1/health`, `/api/v1/events` e `/api/v1/events/dispatch`. Elas suportam a fundação outbound-only: eventos são gravados em `domain_events`, subscriptions são gerenciadas internamente por admins em `/app/config/integracoes/webhooks`, dispatch manual é feito por `/api/v1/events`, e o dispatch agendado é feito pelo cron bearer-only configurado em `vercel.json`. Como o deploy usa o plano Free/Hobby da Vercel, o cron roda no máximo uma vez por dia (`0 3 * * *`). URLs de destino de webhooks devem ser HTTPS públicas; localhost, hostnames locais/internos e redes privadas/reservadas são rejeitados. Ainda não há endpoint inbound público.
+O caminho M2M principal usa chaves persistidas em `integration_api_keys`, criadas por admin em `/app/config/integracoes/api-keys`, com escopos como `events:read`, `events:write`, `webhooks:manage` e `admin`. As chamadas usam `x-asof-key`, `x-asof-timestamp` e `x-asof-signature`; a chave global `ASOF_INTEGRATION_API_KEY` existe apenas como compatibilidade de transição, gera log de depreciação e tem acesso irrestrito quando configurada.
+
+As rotas versionadas atuais são `/api/v1/health`, `/api/v1/events`, `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings`. Elas suportam a fundação outbound-only: eventos são gravados em `domain_events`, subscriptions são gerenciadas internamente por admins em `/app/config/integracoes/webhooks`, dispatch manual é feito por `/api/v1/events`, e os jobs agendados são feitos por rotas bearer-only configuradas em `vercel.json`. Como o deploy usa o plano Free/Hobby da Vercel, cada cron roda no máximo uma vez por dia (`0 3 * * *` para eventos e `0 4 * * *` para SLA jurídico). URLs de destino de webhooks devem ser HTTPS públicas; localhost, hostnames locais/internos e redes privadas/reservadas são rejeitados. Ainda não há endpoint inbound público.
 
 Para o primeiro go-live, integrações/webhooks não são obrigatórios e produção deve manter `ASOF_INTEGRATIONS_ENABLED=false`, salvo decisão separada. Notificações realtime também não bloqueiam go-live; login, dashboard, associados, jurídico e ofícios devem operar sem depender de Supabase Realtime.
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createIntegrationRateLimiter, getClientIp } from './rate-limit';
+import { createIntegrationRateLimiter, getClientIp, getIntegrationRateLimitKey } from './rate-limit';
 
 // Mock the ip module to control getTrustedClientIp behavior
 vi.mock('@/lib/ip', () => ({
@@ -122,5 +122,32 @@ describe('getClientIp', () => {
       headers: { 'x-real-ip': '198.51.100.2' },
     });
     expect(getClientIp(request)).toBe('198.51.100.2');
+  });
+});
+
+describe('getIntegrationRateLimitKey', () => {
+  it('uses a hash of x-asof-key when present', () => {
+    const request = new Request('https://asof.local', {
+      headers: {
+        'x-asof-key': 'asof_test_secret',
+        'x-forwarded-for': '203.0.113.1, 10.0.0.1',
+      },
+    });
+
+    const key = getIntegrationRateLimitKey(request);
+
+    expect(key).toMatch(/^api-key:[0-9a-f]{64}$/);
+    expect(key).not.toContain('asof_test_secret');
+    expect(key).not.toContain('203.0.113.1');
+  });
+
+  it('falls back to client IP when no API key header exists', () => {
+    const request = new Request('https://asof.local', {
+      headers: {
+        'x-real-ip': '198.51.100.2',
+      },
+    });
+
+    expect(getIntegrationRateLimitKey(request)).toBe('ip:198.51.100.2');
   });
 });

@@ -13,7 +13,7 @@ vi.mock('@/lib/integrations/auth', () => ({
 }));
 
 vi.mock('@/lib/integrations/rate-limit', () => ({
-  getClientIp: () => '127.0.0.1',
+  getIntegrationRateLimitKey: () => 'ip:127.0.0.1',
   integrationRateLimiter: {
     consume: (...args: unknown[]) => mockConsume(...args),
   },
@@ -71,6 +71,7 @@ describe('/api/v1/events route', () => {
         requiredScopes: ['events:read'],
       }),
     );
+    expect(mockConsume).toHaveBeenCalledWith('ip:127.0.0.1');
   });
 
   it('dispatches a single event on POST with eventId', async () => {

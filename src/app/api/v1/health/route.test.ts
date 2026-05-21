@@ -9,7 +9,7 @@ vi.mock('@/lib/integrations/auth', () => ({
 }));
 
 vi.mock('@/lib/integrations/rate-limit', () => ({
-  getClientIp: () => '127.0.0.1',
+  getIntegrationRateLimitKey: () => 'ip:127.0.0.1',
   integrationRateLimiter: {
     consume: (...args: unknown[]) => mockConsume(...args),
   },
@@ -31,6 +31,7 @@ describe('/api/v1/health route', () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
+    expect(mockConsume).toHaveBeenCalledWith('ip:127.0.0.1');
     expect(body).toMatchObject({
       ok: true,
       data: {

@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { auditLogs } from '@/lib/db/schema';
 import { jsonError, jsonMethodNotAllowed, jsonOk } from '@/lib/integrations/http';
 import { dispatchDomainEventById, dispatchPendingDomainEvents } from '@/lib/integrations/webhooks/service';
-import { getClientIp, integrationRateLimiter } from '@/lib/integrations/rate-limit';
+import { getIntegrationRateLimitKey, integrationRateLimiter } from '@/lib/integrations/rate-limit';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 
@@ -54,7 +54,7 @@ function getOperatorId(authorization: Extract<Awaited<ReturnType<typeof authoriz
 }
 
 export async function GET(request: Request) {
-  const rateLimitResult = await integrationRateLimiter.consume(getClientIp(request));
+  const rateLimitResult = await integrationRateLimiter.consume(getIntegrationRateLimitKey(request));
   if (!rateLimitResult.allowed) {
     return jsonError(429, 'rate_limit_exceeded', 'Too many requests. Please try again later.', {
       details: { retryAfterMs: rateLimitResult.retryAfterMs },
@@ -84,7 +84,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const rateLimitResult = await integrationRateLimiter.consume(getClientIp(request));
+  const rateLimitResult = await integrationRateLimiter.consume(getIntegrationRateLimitKey(request));
   if (!rateLimitResult.allowed) {
     return jsonError(429, 'rate_limit_exceeded', 'Too many requests. Please try again later.', {
       details: { retryAfterMs: rateLimitResult.retryAfterMs },
