@@ -1,4 +1,4 @@
-import { db, type Tx } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import {
   domainEvents,
   domainEventEntityType,
@@ -89,7 +89,7 @@ export interface EmitDomainEventInput<T extends DomainEventType = DomainEventTyp
 
 export async function emitDomainEvent(
   input: EmitDomainEventInput,
-  executor: Pick<Tx, 'insert'> = db,
+  executor: DbExecutor = db,
 ) {
   const payload = payloadSchemaByEventType[input.type].parse(
     sanitizePiiValue(input.payload),

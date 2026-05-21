@@ -2,7 +2,7 @@ import 'server-only';
 
 import { createHash, randomBytes } from 'node:crypto';
 import { eq, and } from 'drizzle-orm';
-import { db, type Tx } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import { integrationApiKeys } from '@/lib/db/schema/integrations';
 
 const VALID_SCOPES = ['events:read', 'events:write', 'webhooks:manage', 'admin'] as const;
@@ -50,7 +50,7 @@ export async function createApiKey(
   name: string,
   scopes: string[],
   createdBy: number,
-  executor: Pick<Tx, 'insert'> = db,
+  executor: DbExecutor = db,
 ): Promise<CreateApiKeyResult> {
   const validatedScopes = validateScopes(scopes);
   const rawKey = `${KEY_PREFIX}${randomBytes(KEY_BYTES).toString('base64url')}`;
@@ -77,7 +77,7 @@ export async function createApiKey(
   };
 }
 
-export async function listApiKeys(executor: { select: Tx['select'] } = db): Promise<ApiKeyListItem[]> {
+export async function listApiKeys(executor: DbExecutor = db): Promise<ApiKeyListItem[]> {
   const rows = await executor
     .select({
       id: integrationApiKeys.id,
@@ -98,7 +98,7 @@ export async function listApiKeys(executor: { select: Tx['select'] } = db): Prom
 
 export async function revokeApiKey(
   id: number,
-  executor: Pick<Tx, 'update'> = db,
+  executor: DbExecutor = db,
 ): Promise<boolean> {
   const [updated] = await executor
     .update(integrationApiKeys)

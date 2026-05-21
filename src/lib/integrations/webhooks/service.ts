@@ -1,6 +1,6 @@
 import { isPublicWebhookUrl } from '@/lib/validation/schemas';
 import { randomUUID } from 'node:crypto';
-import { db } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import {
   claimDispatchableDomainEventById,
   getDomainEventById,
@@ -103,7 +103,7 @@ async function deliverEventToSubscription(
   subscription: Awaited<ReturnType<typeof listActiveWebhookSubscriptionsForEvent>>[number],
   body: string,
   attempt: number,
-  executor: Pick<import('@/lib/db').Tx, 'insert' | 'update' | 'select' | 'execute'>,
+  executor: DbExecutor,
 ) {
   // F-001 fix: Re-validate webhook target URL at dispatch time to prevent SSRF
   // if the URL was modified in the database after creation.

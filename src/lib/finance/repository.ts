@@ -1,5 +1,5 @@
 import { isDomesticCountrySql, isExteriorCountrySql } from '@/lib/associates/location-country';
-import { db, type Tx } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import {
   monthlyPayments,
   paymentStatus,
@@ -78,7 +78,7 @@ export async function findMonthlyPayment(associateId: number, year: number, mont
   return rows[0] ?? null;
 }
 
-export async function upsertMonthlyPayment(payment: NewMonthlyPayment, executor: Pick<import('@/lib/db').Tx, 'insert'> = db) {
+export async function upsertMonthlyPayment(payment: NewMonthlyPayment, executor: DbExecutor = db) {
   return executor
     .insert(monthlyPayments)
     .values(payment)
@@ -117,7 +117,7 @@ export interface OverduePaymentTransition {
 }
 
 export async function markOverduePaymentsForAudit(
-  executor: Pick<Tx, 'update'> = db,
+  executor: DbExecutor = db,
 ): Promise<OverduePaymentTransition[]> {
   const now = new Date();
   const thisYear = now.getFullYear();

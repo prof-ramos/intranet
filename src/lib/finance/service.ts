@@ -1,7 +1,7 @@
 import * as repository from './repository';
 import { markOverduePaymentsForAudit, type OverduePaymentTransition } from './repository';
 import { logAuditAction } from '@/lib/audit/service';
-import { db, type Tx } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { monthlyPayments, type MonthlyPayment, type NewMonthlyPayment } from '@/lib/db/schema/finance';
 import { auditLogs, type NewAuditLog } from '@/lib/db/schema/audit';
@@ -55,7 +55,7 @@ export async function autoMarkOverduePaymentsService(): Promise<number> {
 
 async function logSystemOverdueTransition(
   payment: OverduePaymentTransition,
-  executor: Pick<Tx, 'insert'>,
+  executor: DbExecutor,
 ) {
   const changes = {
     old: {

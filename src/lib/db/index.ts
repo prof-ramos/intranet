@@ -58,3 +58,6 @@ export const db = drizzle(client, { schema });
 export type Tx =
   | typeof db
   | PgTransaction<PostgresJsQueryResultHKT, typeof schema, ExtractTablesWithRelations<typeof schema>>;
+
+/** Uniform executor type for all repository functions. Satisfied by both `db` and any `tx`. */
+export type DbExecutor = Tx;

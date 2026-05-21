@@ -1,4 +1,4 @@
-import { db, type Tx } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import { associates, activities, functionalStatus, associationStatus, contributionStatus } from '@/lib/db/schema';
 import { eq, and, count, asc, sql } from 'drizzle-orm';
 import { buildAssociateNameSearchPattern } from './search-params';
@@ -63,7 +63,7 @@ export async function findAssociatesPaginated(
   return { rows, total };
 }
 
-export async function findAssociateById(id: number, executor: Pick<Tx, 'select'> = db) {
+export async function findAssociateById(id: number, executor: DbExecutor = db) {
   const [row] = await executor.select().from(associates).where(eq(associates.id, id)).limit(1);
   return row ?? null;
 }
@@ -126,7 +126,7 @@ export interface UpdateAssociateValues {
 export async function updateAssociateById(
   id: number,
   values: UpdateAssociateValues,
-  executor: Pick<Tx, 'update'> = db,
+  executor: DbExecutor = db,
 ) {
   await executor
     .update(associates)
@@ -136,7 +136,7 @@ export async function updateAssociateById(
 
 export async function findAssociateByCpfHash(
   cpfHash: string,
-  executor: Pick<Tx, 'select'> = db,
+  executor: DbExecutor = db,
 ) {
   const [row] = await executor
     .select()
@@ -148,7 +148,7 @@ export async function findAssociateByCpfHash(
 
 export async function findAssociateBySiapeHash(
   siapeHash: string,
-  executor: Pick<Tx, 'select'> = db,
+  executor: DbExecutor = db,
 ) {
   const [row] = await executor
     .select()
@@ -160,7 +160,7 @@ export async function findAssociateBySiapeHash(
 
 export async function findAssociateByPrimaryEmailHash(
   primaryEmailHash: string,
-  executor: Pick<Tx, 'select'> = db,
+  executor: DbExecutor = db,
 ) {
   const [row] = await executor
     .select()

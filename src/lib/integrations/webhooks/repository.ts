@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, inArray, lt, sql } from 'drizzle-orm';
-import { db, type Tx } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import {
   domainEvents,
   webhookDeliveries,
@@ -14,10 +14,8 @@ import type { DomainEventType } from '@/lib/integrations/outbox';
 /** Default retention period for delivered webhook records before cleanup. */
 const DELIVERED_RECORD_RETENTION_DAYS = 30;
 
-type ReadExecutor = Pick<typeof db, 'select'>;
-type WriteExecutor = Pick<Tx, 'insert' | 'update' | 'execute'>;
 
-export async function getDomainEventById(id: number, executor: ReadExecutor = db): Promise<DomainEvent | null> {
+export async function getDomainEventById(id: number, executor: DbExecutor = db): Promise<DomainEvent | null> {
   const [event] = await executor
     .select()
     .from(domainEvents)
@@ -28,7 +26,7 @@ export async function getDomainEventById(id: number, executor: ReadExecutor = db
 
 export async function listDispatchableDomainEvents(
   limit = 20,
-  executor: ReadExecutor = db,
+  executor: DbExecutor = db,
 ): Promise<DomainEvent[]> {
   if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
     throw new Error('limit must be an integer between 1 and 1000.');
@@ -44,7 +42,7 @@ export async function listDispatchableDomainEvents(
 
 export async function listActiveWebhookSubscriptionsForEvent(
   eventType: DomainEventType,
-  executor: ReadExecutor = db,
+  executor: DbExecutor = db,
 ): Promise<WebhookSubscription[]> {
   return executor
     .select()
@@ -56,7 +54,7 @@ export async function listActiveWebhookSubscriptionsForEvent(
 }
 
 export async function listWebhookSubscriptions(
-  executor: ReadExecutor = db,
+  executor: DbExecutor = db,
 ): Promise<WebhookSubscription[]> {
   return executor
     .select()
@@ -66,7 +64,7 @@ export async function listWebhookSubscriptions(
 
 export async function getWebhookSubscriptionById(
   id: number,
-  executor: ReadExecutor = db,
+  executor: DbExecutor = db,
 ): Promise<WebhookSubscription | null> {
   const [subscription] = await executor
     .select()
@@ -78,7 +76,7 @@ export async function getWebhookSubscriptionById(
 
 export async function insertWebhookSubscription(
   values: NewWebhookSubscription,
-  executor: WriteExecutor = db,
+  executor: DbExecutor = db,
 ) {
   const [subscription] = await executor.insert(webhookSubscriptions).values(values).returning();
   return subscription;
@@ -87,7 +85,7 @@ export async function insertWebhookSubscription(
 export async function updateWebhookSubscriptionById(
   id: number,
   values: Partial<Pick<WebhookSubscription, 'name' | 'targetUrl' | 'subscribedEvents' | 'isActive' | 'secretCiphertext'>>,
-  executor: WriteExecutor = db,
+  executor: DbExecutor = db,
 ) {
   const [subscription] = await executor
     .update(webhookSubscriptions)
@@ -99,7 +97,7 @@ export async function updateWebhookSubscriptionById(
 
 export async function listWebhookDeliveriesForEvent(
   domainEventId: number,
-  executor: ReadExecutor = db,
+  executor: DbExecutor = db,
 ): Promise<WebhookDelivery[]> {
   return executor
     .select()
@@ -110,7 +108,7 @@ export async function listWebhookDeliveriesForEvent(
 
 export async function insertWebhookDelivery(
   values: typeof webhookDeliveries.$inferInsert,
-  executor: WriteExecutor = db,
+  executor: DbExecutor = db,
 ) {
   const [delivery] = await executor.insert(webhookDeliveries).values(values).returning();
   return delivery;
@@ -119,7 +117,7 @@ export async function insertWebhookDelivery(
 export async function updateDomainEventDeliveryStatus(
   id: number,
   status: DomainEvent['deliveryStatus'],
-  executor: WriteExecutor = db,
+  executor: DbExecutor = db,
 ) {
   await executor
     .update(domainEvents)
@@ -146,7 +144,7 @@ export function getLastDeliveryAttemptForSubscription(
  */
 export async function recoverStuckProcessingEvents(
   stuckThresholdMinutes = 10,
-  executor: WriteExecutor = db,
+  executor: DbExecutor = db,
 ) {
   const cutoff = new Date(Date.now() - stuckThresholdMinutes * 60 * 1000);
   return executor
@@ -171,7 +169,7 @@ export async function recoverStuckProcessingEvents(
  */
 export async function lockAndFetchDispatchableEvents(
   limit = 20,
-  executor: typeof db = db,
+  executor: DbExecutor = db,
 ): Promise<DomainEvent[]> {
   if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
     throw new Error('limit must be an integer between 1 and 1000.');
@@ -198,7 +196,7 @@ export async function lockAndFetchDispatchableEvents(
 
 export async function claimDispatchableDomainEventById(
   id: number,
-  executor: typeof db = db,
+  executor: DbExecutor = db,
 ): Promise<DomainEvent | null> {
   if (!Number.isInteger(id) || id < 1) {
     throw new Error('id must be a positive integer.');
@@ -224,7 +222,7 @@ export async function claimDispatchableDomainEventById(
  */
 export async function getFailedEvents(
   limit = 50,
-  executor: ReadExecutor = db,
+  executor: DbExecutor = db,
 ): Promise<DomainEvent[]> {
   if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
     throw new Error('limit must be an integer between 1 and 1000.');
@@ -248,7 +246,7 @@ export async function getFailedEvents(
  */
 export async function cleanUpOldDeliveries(
   retentionDays: number = DELIVERED_RECORD_RETENTION_DAYS,
-  executor: Pick<typeof db, 'delete'> = db,
+  executor: DbExecutor = db,
 ): Promise<number> {
   if (!Number.isInteger(retentionDays) || retentionDays < 1) {
     throw new Error('retentionDays must be a positive integer.');

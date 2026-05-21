@@ -1,4 +1,4 @@
-import { db, type Tx } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import {
   legalConsultations,
   legalNotes,
@@ -175,11 +175,9 @@ export interface ConsultationDetail {
   createdBy: { id: number; name: string };
 }
 
-export type ReadExecutor = Pick<typeof db, 'select'>;
-
 export async function getConsultationById(
   id: number,
-  executor: ReadExecutor = db,
+  executor: DbExecutor = db,
 ): Promise<ConsultationDetail | null> {
   const answeredByAdmin = alias(admins, 'answered_by_admin');
   const createdByAdmin = alias(admins, 'created_by_admin');
@@ -400,7 +398,7 @@ export async function insertConsultation(
     createdBy: number;
     lastInteractionAt: Date;
   },
-  executor: WriteExecutor = db,
+  executor: DbExecutor = db,
 ) {
   const [inserted] = await executor
     .insert(legalConsultations)
@@ -423,7 +421,7 @@ export async function updateConsultationStatus(
   id: number,
   status: (typeof legalConsultationStatus.enumValues)[number],
   lastInteractionAt?: Date,
-  executor: Pick<Tx, 'update'> = db,
+  executor: DbExecutor = db,
 ) {
   const set: Record<string, unknown> = {
     status,
@@ -436,16 +434,13 @@ export async function updateConsultationStatus(
   await executor.update(legalConsultations).set(set).where(eq(legalConsultations.id, id));
 }
 
-/** Write-only executor for insert/update operations. */
-export type WriteExecutor = Pick<typeof db, 'insert' | 'update'>;
-
 export async function insertNote(values: {
   entityType: 'consultation' | 'process';
   entityId: number;
   content: string;
   createdBy: number;
   isEscritorioResponse: boolean;
-}, executor: WriteExecutor = db) {
+}, executor: DbExecutor = db) {
   await executor.insert(legalNotes).values({
     entityType: values.entityType,
     entityId: values.entityId,
@@ -455,7 +450,7 @@ export async function insertNote(values: {
   });
 }
 
-export async function touchConsultationInteraction(entityId: number, executor: WriteExecutor = db) {
+export async function touchConsultationInteraction(entityId: number, executor: DbExecutor = db) {
   await executor
     .update(legalConsultations)
     .set({ lastInteractionAt: new Date(), updatedAt: new Date() })
