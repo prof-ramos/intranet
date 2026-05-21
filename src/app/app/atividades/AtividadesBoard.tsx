@@ -14,13 +14,14 @@ import {
   updateActivityAction,
 } from './actions';
 import { ActivityCardContent } from './_board/ActivityCard';
-import { columns, defaultFilters } from './_board/constants';
+import { columns } from './_board/constants';
 import { Drawer } from './_board/Drawer';
 import { FilterBar } from './_board/FilterBar';
 import { QuickAdd } from './_board/QuickAdd';
 import { SummaryStrip } from './_board/SummaryStrip';
 import { daysFromToday, filterActivities, groupActivitiesByStatus, normalizeActivity } from './_board/helpers';
-import { buildBoardUrl, hasOpenActivity, parseOpenActivityId } from './_board/url-state';
+import { buildBoardUrl, hasOpenActivity, parseFiltersFromUrl, parseOpenActivityId, serializeFiltersToUrl } from './_board/url-state';
+import { useBoardPreferences } from './_board/useBoardPreferences';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 import type {
   ActivityTimelineItem,
@@ -55,9 +56,8 @@ export function AtividadesBoard({
   const searchParams = useSearchParams();
   const openFromUrl = parseOpenActivityId(searchParams);
   const [items, setItems] = useState(() => initialActivities.map(normalizeActivity));
-  const [filters, setFilters] = useState<Filters>(defaultFilters);
-  const [compact, setCompact] = useState(false);
-  const [collapsedDone, setCollapsedDone] = useState(false);
+  const [filters, setFilters] = useState<Filters>(() => parseFiltersFromUrl(searchParams));
+  const { compact, collapsedDone, setCompact, setCollapsedDone } = useBoardPreferences();
   const [isPersisting, startPersistTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const drawerId = openFromUrl;
@@ -83,8 +83,13 @@ export function AtividadesBoard({
     drawerId !== null && drawerActivity !== null && loadedDrawerTimelineId !== drawerId && !drawerTimelineError;
 
   const syncDrawerUrl = useCallback((nextDrawerId: number | null) => {
-    router.replace(buildBoardUrl(pathname, searchParams, nextDrawerId), { scroll: false });
-  }, [pathname, router, searchParams]);
+    router.replace(buildBoardUrl(pathname, searchParams, nextDrawerId, filters), { scroll: false });
+  }, [filters, pathname, router, searchParams]);
+
+  useEffect(() => {
+    const url = buildBoardUrl(pathname, new URLSearchParams(), null, filters);
+    router.replace(url, { scroll: false });
+  }, [filters, pathname, router]);
 
   async function loadDrawerTimeline(activityId: number) {
     try {
@@ -358,6 +363,7 @@ export function AtividadesBoard({
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
+                        role="list"
                         className="flex min-w-0 flex-col"
                       >
                         {!isCollapsed &&
@@ -372,6 +378,9 @@ export function AtividadesBoard({
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
+                                  role="listitem"
+                                  aria-roledescription="atividade arrastável"
+                                  aria-label={activity.title}
                                   style={{ marginBottom: 8, ...dragProvided.draggableProps.style }}
                                   onClick={() => openDrawer(activity.id)}
                                   onKeyDown={(e) => {
