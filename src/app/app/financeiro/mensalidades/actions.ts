@@ -2,7 +2,7 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireRole } from '@/lib/auth/authorization';
-import { updateMonthlyPayment, initializeMonth, validateYearMonth } from '@/lib/finance/service';
+import { cancelMonthlyPayment, updateMonthlyPayment, initializeMonth, validateYearMonth } from '@/lib/finance/service';
 import { type NewMonthlyPayment } from '@/lib/db/schema/finance';
 
 const validPaymentStatuses = ['pago', 'pendente', 'atrasado', 'isento'] as const;
@@ -42,12 +42,39 @@ export async function initializeMonthAction(year: number, month: number) {
   revalidatePath('/app/financeiro/mensalidades');
 }
 
+export async function cancelPaymentAction(input: {
+  paymentId: number;
+  year: number;
+  month: number;
+  reason: string;
+}) {
+  const user = await requireRole(['admin', 'diretoria']);
+  validateYearMonth(input.year, input.month);
+
+  try {
+    await cancelMonthlyPayment(user.userId, input.paymentId, input.reason);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'PAYMENT_NOT_FOUND') {
+      return { success: false, error: 'PAYMENT_NOT_FOUND' } as const;
+    }
+    if (error instanceof Error && error.message === 'PAYMENT_ALREADY_CANCELLED') {
+      return { success: false, error: 'PAYMENT_ALREADY_CANCELLED' } as const;
+    }
+    throw error;
+  }
+
+  revalidateTag(`finance-monthly-${input.year}-${input.month}`, 'max');
+  revalidatePath('/app/financeiro/mensalidades');
+
+  return { success: true } as const;
+}
+
 function validatePaymentInput(payment: Omit<NewMonthlyPayment, 'updatedBy' | 'updatedAt'>): void {
   validateYearMonth(payment.year, payment.month);
   if (!Number.isInteger(payment.associateId) || payment.associateId <= 0) {
     throw new Error('Associado inválido.');
   }
-  if (!payment.status || !validPaymentStatuses.includes(payment.status)) {
+  if (!payment.status || !validPaymentStatuses.includes(payment.status as typeof validPaymentStatuses[number])) {
     throw new Error('Status de pagamento inválido.');
   }
   if (!payment.paymentMethod || !validPaymentMethods.includes(payment.paymentMethod)) {

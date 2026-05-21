@@ -28,6 +28,9 @@ const { dbMock, MOCK_PAYMENT } = vi.hoisted(() => {
     status: 'pago',
     paymentMethod: 'folha',
     paidAt: new Date('2026-05-10'),
+    cancelledAt: null,
+    cancellationReason: null,
+    cancelledBy: null,
     updatedBy: 1,
     updatedAt: new Date('2026-05-10'),
   };
@@ -114,6 +117,9 @@ describe('finance repository', () => {
         status: 'atrasado',
         paymentMethod: 'boleto',
         paidAt: null,
+        cancelledAt: null,
+        cancellationReason: null,
+        cancelledBy: null,
       };
       dbMock.setUpdateResult([transitionedPayment]);
 
@@ -136,6 +142,9 @@ describe('finance repository', () => {
           status: expect.anything(),
           paymentMethod: expect.anything(),
           paidAt: expect.anything(),
+          cancelledAt: expect.anything(),
+          cancellationReason: expect.anything(),
+          cancelledBy: expect.anything(),
         }),
       );
     });

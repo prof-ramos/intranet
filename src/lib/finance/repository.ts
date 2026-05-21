@@ -17,6 +17,9 @@ export interface PaymentHistoryItem {
   status: string;
   paymentMethod: string | null;
   paidAt: Date | null;
+  cancelledAt: Date | null;
+  cancellationReason: string | null;
+  cancelledBy: number | null;
   updatedAt: Date;
 }
 
@@ -30,6 +33,9 @@ export async function getPaymentHistoryForAssociate(
       status: monthlyPayments.status,
       paymentMethod: monthlyPayments.paymentMethod,
       paidAt: monthlyPayments.paidAt,
+      cancelledAt: monthlyPayments.cancelledAt,
+      cancellationReason: monthlyPayments.cancellationReason,
+      cancelledBy: monthlyPayments.cancelledBy,
       updatedAt: monthlyPayments.updatedAt,
     })
     .from(monthlyPayments)
@@ -43,6 +49,9 @@ export async function getPaymentHistoryForAssociate(
     status: r.status,
     paymentMethod: r.paymentMethod ?? null,
     paidAt: r.paidAt ?? null,
+    cancelledAt: r.cancelledAt ?? null,
+    cancellationReason: r.cancellationReason ?? null,
+    cancelledBy: r.cancelledBy ?? null,
     updatedAt: r.updatedAt,
   }));
 }
@@ -79,6 +88,9 @@ export async function upsertMonthlyPayment(payment: NewMonthlyPayment, executor:
         status: payment.status,
         paymentMethod: payment.paymentMethod,
         paidAt: payment.paidAt,
+        cancelledAt: payment.cancelledAt ?? null,
+        cancellationReason: payment.cancellationReason ?? null,
+        cancelledBy: payment.cancelledBy ?? null,
         updatedBy: payment.updatedBy,
         updatedAt: sql`now()`,
       },
@@ -99,6 +111,9 @@ export interface OverduePaymentTransition {
   status: 'atrasado';
   paymentMethod: MonthlyPayment['paymentMethod'];
   paidAt: Date | null;
+  cancelledAt: Date | null;
+  cancellationReason: string | null;
+  cancelledBy: number | null;
 }
 
 export async function markOverduePaymentsForAudit(
@@ -135,6 +150,9 @@ export async function markOverduePaymentsForAudit(
       status: monthlyPayments.status,
       paymentMethod: monthlyPayments.paymentMethod,
       paidAt: monthlyPayments.paidAt,
+      cancelledAt: monthlyPayments.cancelledAt,
+      cancellationReason: monthlyPayments.cancellationReason,
+      cancelledBy: monthlyPayments.cancelledBy,
     }) as Promise<OverduePaymentTransition[]>;
 }
 
@@ -194,6 +212,9 @@ export async function getAssociatesWithPayments(
       paymentStatus: monthlyPayments.status,
       monthPaymentMethod: monthlyPayments.paymentMethod,
       updatedAt: monthlyPayments.updatedAt,
+      cancelledAt: monthlyPayments.cancelledAt,
+      cancellationReason: monthlyPayments.cancellationReason,
+      cancelledBy: monthlyPayments.cancelledBy,
     })
     .from(associates)
     .leftJoin(

@@ -11,10 +11,10 @@ import {
   hairline,
   canvas,
 } from '@/lib/ui/tokens';
-import { DollarSign, CheckCircle, Clock, AlertCircle, Ban } from 'lucide-react';
+import { DollarSign, CheckCircle, Clock, AlertCircle, Ban, XCircle } from 'lucide-react';
 
 interface Payment {
-  paymentStatus: 'pago' | 'pendente' | 'atrasado' | 'isento' | null;
+  paymentStatus: 'pago' | 'pendente' | 'atrasado' | 'isento' | 'cancelado' | null;
   monthPaymentMethod: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros' | null;
   defaultPaymentMethod: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros';
   locationCountry: string | null;
@@ -30,6 +30,7 @@ export function FinanceKPIs({ payments }: FinanceKPIsProps) {
   const pendentes = payments.filter((p) => p.paymentStatus === 'pendente' || !p.paymentStatus).length;
   const atrasados = payments.filter((p) => p.paymentStatus === 'atrasado').length;
   const isentos = payments.filter((p) => p.paymentStatus === 'isento').length;
+  const cancelados = payments.filter((p) => p.paymentStatus === 'cancelado').length;
 
   const exterior = payments.filter((p) => {
     return isExteriorCountry(p.locationCountry);
@@ -81,10 +82,17 @@ export function FinanceKPIs({ payments }: FinanceKPIsProps) {
       color: '#59677a',
       bg: '#f8fafc',
     },
+    {
+      label: 'Cancelados',
+      value: cancelados,
+      icon: XCircle,
+      color: '#7f1d1d',
+      bg: '#fef2f2',
+    },
   ];
 
   return (
-    <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="Indicadores financeiros">
+    <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6" aria-label="Indicadores financeiros">
       {kpiItems.map((item) => (
         <div
           key={item.label}

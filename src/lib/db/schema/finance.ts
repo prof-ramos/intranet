@@ -1,10 +1,10 @@
-import { bigint, check, index, integer, pgEnum, pgTable, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { bigint, check, index, integer, pgEnum, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { associates } from './associates';
 import { paymentMethod } from './enums';
 import { admins } from './admins';
 
-export const paymentStatus = pgEnum('payment_status', ['pago', 'pendente', 'atrasado', 'isento']);
+export const paymentStatus = pgEnum('payment_status', ['pago', 'pendente', 'atrasado', 'isento', 'cancelado']);
 
 export const monthlyPayments = pgTable(
   'monthly_payments',
@@ -18,6 +18,9 @@ export const monthlyPayments = pgTable(
     status: paymentStatus('status').notNull().default('pendente'),
     paymentMethod: paymentMethod('payment_method').notNull().default('folha'),
     paidAt: timestamp('paid_at', { withTimezone: true }),
+    cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+    cancellationReason: text('cancellation_reason'),
+    cancelledBy: bigint('cancelled_by', { mode: 'number' }).references(() => admins.id, { onDelete: 'set null' }),
     updatedBy: bigint('updated_by', { mode: 'number' }).references(() => admins.id),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
@@ -32,6 +35,7 @@ export const monthlyPayments = pgTable(
     index('idx_monthly_payments_year_month_status').on(table.year, table.month, table.status),
     index('idx_monthly_payments_year_month_method').on(table.year, table.month, table.paymentMethod),
     index('idx_monthly_payments_associate_id').on(table.associateId),
+    index('idx_monthly_payments_cancelled_at').on(table.cancelledAt).where(sql`${table.cancelledAt} IS NOT NULL`),
     check('chk_monthly_payments_month', sql`${table.month} between 1 and 12`),
     check('chk_monthly_payments_year', sql`${table.year} between 2000 and 2100`),
   ],

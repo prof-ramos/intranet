@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { autoMarkOverduePaymentsService, updateMonthlyPayment } from './service';
+import { autoMarkOverduePaymentsService, cancelMonthlyPayment, updateMonthlyPayment } from './service';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { logAuditAction } from '@/lib/audit/service';
 
@@ -59,9 +59,15 @@ describe('finance service', () => {
     limit.mockResolvedValue([
       {
         id: 5,
+        associateId: 10,
+        year: 2026,
+        month: 5,
         status: 'pendente',
         paymentMethod: 'boleto',
         paidAt: null,
+        cancelledAt: null,
+        cancellationReason: null,
+        cancelledBy: null,
         updatedAt: new Date('2026-05-13T00:00:00.000Z'),
       },
     ]);
@@ -159,16 +165,16 @@ describe('finance service', () => {
         entityType: 'monthly_payment',
         entityId: 5,
         changes: {
-          old: {
+          old: expect.objectContaining({
             status: 'pendente',
             paymentMethod: 'boleto',
             paidAt: null,
-          },
-          new: {
+          }),
+          new: expect.objectContaining({
             status: 'pago',
             paymentMethod: 'boleto',
             paidAt: new Date('2026-05-13T12:00:00.000Z'),
-          },
+          }),
         },
         metadata: {
           associateId: 10,
@@ -268,5 +274,95 @@ describe('finance service', () => {
       }),
     );
     expect(emitDomainEvent).not.toHaveBeenCalled();
+  });
+
+  it('cancels a payment with before/after audit and domain event', async () => {
+    const cancelledAt = new Date('2026-05-21T12:00:00.000Z');
+    vi.useFakeTimers();
+    vi.setSystemTime(cancelledAt);
+
+    const updateReturning = vi.fn().mockResolvedValue([
+      {
+        id: 5,
+        associateId: 10,
+        year: 2026,
+        month: 5,
+        status: 'cancelado',
+        paymentMethod: 'boleto',
+        paidAt: null,
+        cancelledAt,
+        cancellationReason: 'Lançamento em duplicidade',
+        cancelledBy: 1,
+      },
+    ]);
+    const updateWhere = vi.fn(() => ({ returning: updateReturning }));
+    const updateSet = vi.fn(() => ({ where: updateWhere }));
+    transactionMock.tx.update = vi.fn(() => ({ set: updateSet }));
+
+    await cancelMonthlyPayment(1, 5, ' Lançamento em duplicidade ');
+
+    expect(updateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'cancelado',
+        paidAt: null,
+        cancelledAt,
+        cancellationReason: 'Lançamento em duplicidade',
+        cancelledBy: 1,
+        updatedBy: 1,
+      }),
+    );
+    expect(transactionMock.tx.insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        performedBy: 1,
+        action: 'cancel',
+        entityType: 'monthly_payment',
+        entityId: 5,
+        changes: {
+          old: expect.objectContaining({
+            status: 'pendente',
+            paymentMethod: 'boleto',
+            paidAt: null,
+          }),
+          new: expect.objectContaining({
+            status: 'cancelado',
+            cancelledAt: '2026-05-21T12:00:00.000Z',
+            cancellationReason: 'Lançamento em duplicidade',
+            cancelledBy: 1,
+          }),
+        },
+        metadata: {
+          associateId: 10,
+          year: 2026,
+          month: 5,
+          cancellationReason: 'Lançamento em duplicidade',
+        },
+      }),
+    );
+    expect(emitDomainEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'monthly_payment.updated',
+        entityType: 'monthly_payment',
+        entityId: 5,
+        actorAdminId: 1,
+        payload: expect.objectContaining({
+          associateId: 10,
+          year: 2026,
+          month: 5,
+          previousStatus: 'pendente',
+          status: 'cancelado',
+          paidAt: null,
+          cancelledAt: '2026-05-21T12:00:00.000Z',
+          cancellationReason: 'Lançamento em duplicidade',
+        }),
+      }),
+      transactionMock.tx,
+    );
+
+    vi.useRealTimers();
+  });
+
+  it('rejects cancellation without a reason', async () => {
+    await expect(cancelMonthlyPayment(1, 5, '  ')).rejects.toThrow('Motivo de cancelamento obrigatório.');
+    expect(transactionMock.tx.update).not.toHaveBeenCalled();
   });
 });

@@ -217,6 +217,9 @@ const expectedColumns = {
     'status:payment_status:NO',
     'payment_method:payment_method:NO',
     'paid_at:timestamptz:YES',
+    'cancelled_at:timestamptz:YES',
+    'cancellation_reason:text:YES',
+    'cancelled_by:int8:YES',
     'updated_by:int8:YES',
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
@@ -323,7 +326,7 @@ const expectedEnums = {
   legal_note_entity_type: ['consultation', 'process'],
   official_letter_status: ['gerado', 'cancelado', 'rascunho'],
   payment_method: ['folha', 'boleto', 'pix', 'transferencia', 'outros'],
-  payment_status: ['pago', 'pendente', 'atrasado', 'isento'],
+  payment_status: ['pago', 'pendente', 'atrasado', 'isento', 'cancelado'],
   webhook_delivery_status: ['pending', 'delivered', 'failed', 'retry_scheduled'],
 } as const;
 
@@ -437,6 +440,7 @@ const expectedIndexes = {
   ],
   monthly_payments: [
     'idx_monthly_payments_associate_id',
+    'idx_monthly_payments_cancelled_at',
     'idx_monthly_payments_status',
     'idx_monthly_payments_unique',
     'idx_monthly_payments_updated_by',

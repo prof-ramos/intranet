@@ -9,12 +9,13 @@ import {
   Clock,
   AlertCircle,
   Ban,
+  XCircle,
   Globe,
   MapPin,
   UserCheck,
   CreditCard,
 } from 'lucide-react';
-import { updatePaymentAction } from './actions';
+import { cancelPaymentAction, updatePaymentAction } from './actions';
 import {
   hairline,
   navy,
@@ -42,7 +43,7 @@ interface Payment {
   fullName: string;
   defaultPaymentMethod: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros';
   paymentId: number | null;
-  paymentStatus: 'pago' | 'pendente' | 'atrasado' | 'isento' | null;
+  paymentStatus: 'pago' | 'pendente' | 'atrasado' | 'isento' | 'cancelado' | null;
   monthPaymentMethod: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros' | null;
   locationCountry: string | null;
   locationCity: string | null;
@@ -62,6 +63,7 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle2; c
   pendente: { label: 'Pendente', icon: Clock, color: warning, bg: warningBg },
   atrasado: { label: 'Atrasado', icon: AlertCircle, color: error, bg: errorBg },
   isento: { label: 'Isento', icon: Ban, color: '#59677a', bg: canvas },
+  cancelado: { label: 'Cancelado', icon: XCircle, color: '#7f1d1d', bg: '#fef2f2' },
 };
 
 const methodConfig: Record<string, { label: string; short: string; group: string }> = {
@@ -193,12 +195,63 @@ export default function MonthlyPaymentsTable({
     }
   };
 
+  const handleCancelPayment = async (
+    associateId: number,
+    paymentId: number | null,
+    associateName: string,
+  ) => {
+    if (!paymentId) {
+      setErrorMessage('Inicialize a mensalidade antes de cancelar.');
+      return;
+    }
+
+    const reason = window.prompt(`Motivo do cancelamento de ${associateName}`);
+    if (reason === null) return;
+    if (reason.trim().length < 3) {
+      setErrorMessage('Informe um motivo de cancelamento com ao menos 3 caracteres.');
+      return;
+    }
+    if (!window.confirm('Confirmar cancelamento desta mensalidade?')) return;
+
+    setUpdatingId(associateId);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    try {
+      const result = await cancelPaymentAction({
+        paymentId,
+        year,
+        month,
+        reason,
+      });
+
+      if (result && !result.success) {
+        if (result.error === 'PAYMENT_NOT_FOUND') {
+          setErrorMessage('Mensalidade não encontrada. Recarregue a página.');
+        } else if (result.error === 'PAYMENT_ALREADY_CANCELLED') {
+          setErrorMessage('Esta mensalidade já está cancelada.');
+        } else {
+          setErrorMessage('Erro ao cancelar mensalidade. Tente novamente.');
+        }
+        return;
+      }
+
+      setSuccessMessage('Mensalidade cancelada com registro de auditoria.');
+      window.setTimeout(() => setSuccessMessage(null), 3000);
+    } catch {
+      setErrorMessage('Erro ao cancelar mensalidade. Tente novamente.');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const statusOptions = [
     { value: 'pago', label: 'Pago' },
     { value: 'pendente', label: 'Pendente' },
     { value: 'atrasado', label: 'Atrasado' },
     { value: 'isento', label: 'Isento' },
+    { value: 'cancelado', label: 'Cancelado' },
   ];
+  const actionStatusOptions = statusOptions.filter((status) => status.value !== 'cancelado');
 
   const methodOptions = [
     { value: 'all', label: 'Todos', icon: CreditCard },
@@ -448,7 +501,7 @@ export default function MonthlyPaymentsTable({
                   </td>
                   <td className="px-5 py-3.5 text-right">
                     <div className="inline-flex items-center gap-1">
-                      {statusOptions.map((s) => {
+                      {actionStatusOptions.map((s) => {
                         const cfg = statusConfig[s.value];
                         const isCurrent = currentStatus === s.value;
                         return (
@@ -475,6 +528,19 @@ export default function MonthlyPaymentsTable({
                           </button>
                         );
                       })}
+                      <button
+                        disabled={updatingId === p.associateId || currentStatus === 'cancelado'}
+                        onClick={() => handleCancelPayment(p.associateId, p.paymentId, p.fullName)}
+                        aria-label="Cancelar mensalidade"
+                        className={`inline-flex h-7 w-7 items-center justify-center rounded-[6px] transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 active:scale-95 ${focusRingClass}`}
+                        style={{
+                          backgroundColor: currentStatus === 'cancelado' ? statusConfig.cancelado.color : statusConfig.cancelado.bg,
+                          color: currentStatus === 'cancelado' ? '#fff' : statusConfig.cancelado.color,
+                          border: `1px solid ${currentStatus === 'cancelado' ? statusConfig.cancelado.color : 'transparent'}`,
+                        }}
+                      >
+                        <XCircle size={14} aria-hidden="true" />
+                      </button>
                     </div>
                   </td>
                 </tr>

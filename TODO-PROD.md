@@ -17,7 +17,7 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 - PRs abertos no GitHub: nenhum no momento da verificacao local.
 - Estado do working tree no inicio da frente #41: limpo e `main...origin/main [ahead 1]` por causa do commit local do plano. As mudancas documentais da #41 precisam ser commitadas e publicadas antes de fechar a issue.
 - Stack verificada localmente: Next.js `16.2.6`, npm, App Router em `src/app`, Drizzle/PostgreSQL em `src/lib/db` e `drizzle/postgres`, deploy Vercel com `vercel.json`.
-- Migrations Drizzle existentes ate `0042_add_sla_warning_notification_type.sql`.
+- Migrations Drizzle existentes ate `0043_add_monthly_payment_cancellation_fields.sql`.
 - Rotas API verificadas: `oficios/[id]/download`, `v1/events`, `v1/events/dispatch`, `v1/health`, `v1/juridico/sla-warnings`.
 
 ## Concluido / Base Existente
@@ -47,6 +47,7 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
 - [x] SLA juridico tem rota agendada `GET /api/v1/juridico/sla-warnings`, protegida por `CRON_SECRET`.
 - [x] `vercel.json` agenda `/api/v1/events/dispatch` (`0 3 * * *`) e `/api/v1/juridico/sla-warnings` (`0 4 * * *`).
 - [x] Transicao automatica financeira de `pendente` para `atrasado` gera auditoria e evento de dominio em transacao.
+- [x] Cancelamento financeiro dedicado existe para mensalidades, com status `cancelado`, data/motivo/operador persistidos, auditoria before/after e evento de dominio sem apagar historico.
 
 ## Pendente Bloqueante Para Producao
 
@@ -177,6 +178,18 @@ Levar a intranet ASOF para producao com estado de codigo, banco, seguranca, depl
   - resultado da frente #58: 6 arquivos passaram, 57 testes passaram.
 - `npm run pr:check`
   - resultado antes do commit da frente #58: falhou corretamente no gate de working tree limpo, listando apenas os arquivos modificados desta frente; deve ser reexecutado apos commit.
+- `gh issue view 50 --json number,title,body,comments,state,url`
+  - resultado: a issue pede acao dedicada de cancelamento de mensalidade, motivo/observacao, `audit_logs` before/after e teste cobrindo cancelamento.
+- `rg -n "monthlyPayments|paymentStatus|cancel|audit|updateMonthlyPayment" src/lib/db/schema/finance.ts src/lib/finance src/app/app/financeiro/mensalidades`
+  - resultado da frente #50: nao havia acao dedicada de cancelamento nem status `cancelado` antes desta implementacao.
+- `npm run test -- src/lib/finance src/app/app/financeiro/mensalidades/actions.test.ts src/lib/integrations/outbox.test.ts`
+  - resultado da frente #50: 7 arquivos passaram, 42 testes passaram.
+- `npm run typecheck`
+  - resultado da frente #50: passou.
+- `set -a; source .env.local; set +a; npm run db:migrate`
+  - resultado da frente #50: migration local aplicada com sucesso pelo guardrail.
+- `npm run test:db`
+  - resultado da frente #50: 1 arquivo passou, 7 testes passaram contra o banco local migrado.
 - `npm run test -- scripts/guarded-migrate.test.ts src/lib/db/rls-granular.test.ts`
   - resultado da frente #41: 2 arquivos passaram, 24 testes passaram.
 - `npm run test:db`

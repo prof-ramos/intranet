@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { initializeMonthAction, updatePaymentAction } from './actions';
+import { cancelPaymentAction, initializeMonthAction, updatePaymentAction } from './actions';
 
 const requireRoleMock = vi.fn();
 const updateMonthlyPaymentMock = vi.fn();
+const cancelMonthlyPaymentMock = vi.fn();
 const initializeMonthMock = vi.fn();
 const validateYearMonthMock = vi.fn();
 const revalidatePathMock = vi.fn();
@@ -14,6 +15,7 @@ vi.mock('@/lib/auth/authorization', () => ({
 
 vi.mock('@/lib/finance/service', () => ({
   updateMonthlyPayment: (...args: unknown[]) => updateMonthlyPaymentMock(...args),
+  cancelMonthlyPayment: (...args: unknown[]) => cancelMonthlyPaymentMock(...args),
   initializeMonth: (...args: unknown[]) => initializeMonthMock(...args),
   validateYearMonth: (...args: unknown[]) => validateYearMonthMock(...args),
 }));
@@ -28,6 +30,7 @@ describe('financeiro mensalidades actions', () => {
     vi.clearAllMocks();
     requireRoleMock.mockResolvedValue({ userId: 7 });
     updateMonthlyPaymentMock.mockResolvedValue(undefined);
+    cancelMonthlyPaymentMock.mockResolvedValue(undefined);
     initializeMonthMock.mockResolvedValue(12);
     validateYearMonthMock.mockImplementation(() => {});
   });
@@ -115,5 +118,34 @@ describe('financeiro mensalidades actions', () => {
     expect(initializeMonthMock).toHaveBeenCalledWith(7, 2026, 5);
     expect(revalidateTagMock).toHaveBeenCalledWith('finance-monthly-2026-5', 'max');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/financeiro/mensalidades');
+  });
+
+  it('cancels a payment and revalidates caches', async () => {
+    const result = await cancelPaymentAction({
+      paymentId: 99,
+      year: 2026,
+      month: 5,
+      reason: 'Lançamento em duplicidade',
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(cancelMonthlyPaymentMock).toHaveBeenCalledWith(7, 99, 'Lançamento em duplicidade');
+    expect(revalidateTagMock).toHaveBeenCalledWith('finance-monthly-2026-5', 'max');
+    expect(revalidatePathMock).toHaveBeenCalledWith('/app/financeiro/mensalidades');
+  });
+
+  it('returns a typed result when cancelling an already cancelled payment', async () => {
+    cancelMonthlyPaymentMock.mockRejectedValue(new Error('PAYMENT_ALREADY_CANCELLED'));
+
+    const result = await cancelPaymentAction({
+      paymentId: 99,
+      year: 2026,
+      month: 5,
+      reason: 'Duplicidade',
+    });
+
+    expect(result).toEqual({ success: false, error: 'PAYMENT_ALREADY_CANCELLED' });
+    expect(revalidateTagMock).not.toHaveBeenCalled();
+    expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 });

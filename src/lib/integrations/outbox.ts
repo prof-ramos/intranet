@@ -56,11 +56,13 @@ const payloadSchemaByEventType = {
       year: z.number().int().positive(),
       month: z.number().int().min(1).max(12),
       previousStatus: z.string().min(1),
-      status: z.string().min(1),
-      paymentMethod: z.string().min(1),
-      paidAt: z.string().datetime().nullable(),
-      links: linksSchema,
-    })
+	      status: z.string().min(1),
+	      paymentMethod: z.string().min(1),
+	      paidAt: z.string().datetime().nullable(),
+	      cancelledAt: z.string().datetime().nullable().optional(),
+	      cancellationReason: z.string().min(1).optional(),
+	      links: linksSchema,
+	    })
     .strict(),
   'official_letter.published': z
     .object({

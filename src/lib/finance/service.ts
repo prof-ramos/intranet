@@ -1,9 +1,9 @@
 import * as repository from './repository';
 import { markOverduePaymentsForAudit, type OverduePaymentTransition } from './repository';
 import { logAuditAction } from '@/lib/audit/service';
-import { db } from '@/lib/db';
+import { db, type Tx } from '@/lib/db';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
-import { monthlyPayments, type NewMonthlyPayment } from '@/lib/db/schema/finance';
+import { monthlyPayments, type MonthlyPayment, type NewMonthlyPayment } from '@/lib/db/schema/finance';
 import { auditLogs, type NewAuditLog } from '@/lib/db/schema/audit';
 import { associates } from '@/lib/db/schema/associates';
 import { and, eq, sql } from 'drizzle-orm';
@@ -55,7 +55,7 @@ export async function autoMarkOverduePaymentsService(): Promise<number> {
 
 async function logSystemOverdueTransition(
   payment: OverduePaymentTransition,
-  executor: Pick<import('@/lib/db').Tx, 'insert'>,
+  executor: Pick<Tx, 'insert'>,
 ) {
   const changes = {
     old: {
@@ -81,6 +81,28 @@ async function logSystemOverdueTransition(
     changes: sanitizePiiValue(changes) as NewAuditLog['changes'],
     metadata: sanitizePiiValue(metadata) as NewAuditLog['metadata'],
   });
+}
+
+function getPaymentAuditState(payment: MonthlyPayment) {
+  return {
+    status: payment.status,
+    paymentMethod: payment.paymentMethod,
+    paidAt: payment.paidAt,
+    cancelledAt: payment.cancelledAt,
+    cancellationReason: payment.cancellationReason,
+    cancelledBy: payment.cancelledBy,
+  };
+}
+
+function validateCancellationReason(reason: string): string {
+  const trimmed = reason.trim();
+  if (trimmed.length < 3) {
+    throw new Error('Motivo de cancelamento obrigatório.');
+  }
+  if (trimmed.length > 500) {
+    throw new Error('Motivo de cancelamento deve ter no máximo 500 caracteres.');
+  }
+  return trimmed;
 }
 
 export function validateYearMonth(year: number, month: number): void {
@@ -120,11 +142,7 @@ export async function updateMonthlyPayment(
     }
 
     const oldState = current
-      ? {
-          status: current.status,
-          paymentMethod: current.paymentMethod,
-          paidAt: current.paidAt,
-        }
+      ? getPaymentAuditState(current)
       : null;
 
     const upserted = await tx
@@ -139,6 +157,9 @@ export async function updateMonthlyPayment(
           status: payment.status,
           paymentMethod: payment.paymentMethod,
           paidAt: payment.paidAt,
+          cancelledAt: null,
+          cancellationReason: null,
+          cancelledBy: null,
           updatedBy: adminId,
           updatedAt: sql`now()`,
         },
@@ -161,6 +182,9 @@ export async function updateMonthlyPayment(
           status: payment.status,
           paymentMethod: payment.paymentMethod,
           paidAt: payment.paidAt,
+          cancelledAt: null,
+          cancellationReason: null,
+          cancelledBy: null,
         },
       },
       metadata: {
@@ -198,6 +222,94 @@ export async function updateMonthlyPayment(
   });
 
   return result;
+}
+
+export async function cancelMonthlyPayment(adminId: number, paymentId: number, reason: string) {
+  if (!Number.isInteger(paymentId) || paymentId <= 0) {
+    throw new Error('Mensalidade inválida.');
+  }
+
+  const cancellationReason = validateCancellationReason(reason);
+
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .select()
+      .from(monthlyPayments)
+      .where(eq(monthlyPayments.id, paymentId))
+      .limit(1);
+
+    const current = rows[0] ?? null;
+    if (!current) {
+      throw new Error('PAYMENT_NOT_FOUND');
+    }
+    if (current.status === 'cancelado') {
+      throw new Error('PAYMENT_ALREADY_CANCELLED');
+    }
+
+    const cancelledAt = new Date();
+    const oldState = getPaymentAuditState(current);
+    const [updatedPayment] = await tx
+      .update(monthlyPayments)
+      .set({
+        status: 'cancelado',
+        paidAt: null,
+        cancelledAt,
+        cancellationReason,
+        cancelledBy: adminId,
+        updatedBy: adminId,
+        updatedAt: sql`now()`,
+      })
+      .where(eq(monthlyPayments.id, paymentId))
+      .returning();
+
+    if (!updatedPayment) {
+      throw new Error('Falha ao cancelar mensalidade.');
+    }
+
+    const newState = getPaymentAuditState(updatedPayment);
+    await tx.insert(auditLogs).values({
+      performedBy: adminId,
+      action: 'cancel',
+      entityType: 'monthly_payment',
+      entityId: updatedPayment.id,
+      changes: sanitizePiiValue({
+        old: oldState,
+        new: newState,
+      }) as NewAuditLog['changes'],
+      metadata: sanitizePiiValue({
+        associateId: updatedPayment.associateId,
+        year: updatedPayment.year,
+        month: updatedPayment.month,
+        cancellationReason,
+      }) as NewAuditLog['metadata'],
+    });
+
+    await emitDomainEvent(
+      {
+        type: 'monthly_payment.updated',
+        entityType: 'monthly_payment',
+        entityId: updatedPayment.id,
+        actorAdminId: adminId,
+        payload: {
+          associateId: updatedPayment.associateId,
+          year: updatedPayment.year,
+          month: updatedPayment.month,
+          previousStatus: oldState.status,
+          status: 'cancelado',
+          paymentMethod: updatedPayment.paymentMethod,
+          paidAt: null,
+          cancelledAt: cancelledAt.toISOString(),
+          cancellationReason,
+          links: {
+            app: `/app/financeiro/mensalidades?year=${updatedPayment.year}&month=${updatedPayment.month}`,
+          },
+        },
+      },
+      tx,
+    );
+
+    return updatedPayment;
+  });
 }
 
 export async function initializeMonth(adminId: number, year: number, month: number) {
