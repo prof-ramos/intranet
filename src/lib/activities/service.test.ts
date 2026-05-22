@@ -345,4 +345,33 @@ describe('activities service', () => {
       }),
     ).rejects.toThrow('Atividade não encontrada.');
   });
+
+  it('rejects updates when optimistic concurrency detects a stale activity', async () => {
+    const repository = await import('./repository');
+    vi.mocked(repository.findActivityById).mockResolvedValue({
+      id: 10,
+      title: 'Conferir ata',
+      description: null,
+      status: 'a_fazer',
+      priority: 'normal',
+      assigneeId: null,
+      associateId: null,
+      dueDate: null,
+      tags: [],
+      createdBy: 1,
+      createdAt: new Date('2026-05-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-05-01T00:00:00.000Z'),
+      completedAt: null,
+      position: 1000,
+    });
+    vi.mocked(repository.updateActivityById).mockResolvedValue(null);
+
+    await expect(
+      updateActivityService({
+        id: 10,
+        actorId: 1,
+        status: 'em_andamento',
+      }),
+    ).rejects.toThrow('CONCURRENCY_CONFLICT');
+  });
 });

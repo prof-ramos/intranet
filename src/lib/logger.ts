@@ -1,3 +1,5 @@
+import { PII_TEXT_PATTERNS } from '@/lib/sanitize-pii';
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogContext {
@@ -88,23 +90,13 @@ function getLogLevel(): LogLevel {
 const CURRENT_LEVEL = getLogLevel();
 const IS_PROD = process.env.NODE_ENV === 'production';
 
-// Patterns that may appear inside error message strings from providers or
-// internal code that include PII (email, CPF, reset links, tokens).
-const ERROR_MESSAGE_PII_PATTERNS: Array<[RegExp, string]> = [
-  [/\b[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\b/g, '[email]'],
-  [/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, '[cpf]'],
-  [/https?:\/\/\S+/g, '[url]'],
-  [/Bearer\s+\S+/gi, 'Bearer [token]'],
-];
-
 function sanitizeErrorMessage(message: string): string {
   let safe = message;
-  for (const [pattern, replacement] of ERROR_MESSAGE_PII_PATTERNS) {
+  for (const [pattern, replacement] of PII_TEXT_PATTERNS) {
     safe = safe.replace(pattern, replacement);
   }
   return safe;
 }
-
 
 function shouldLog(level: LogLevel): boolean {
   return LEVELS[level] >= LEVELS[CURRENT_LEVEL];

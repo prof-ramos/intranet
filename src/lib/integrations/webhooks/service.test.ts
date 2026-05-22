@@ -272,6 +272,8 @@ describe('dispatchPendingDomainEvents', () => {
       { dispatched: true, eventId: 2, subscriptions: 0, results: [] },
     ]);
     expect(mockClaimDispatchableDomainEventById).not.toHaveBeenCalled();
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenCalledWith(1, 'delivered', mockTx);
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenCalledWith(2, 'delivered', mockTx);
   });
 
   it('returns empty results when no events are dispatchable', async () => {

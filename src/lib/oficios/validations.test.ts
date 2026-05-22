@@ -55,6 +55,22 @@ describe('officialLetterFormSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('sanitizes numeric-entity encoded javascript and data URLs', () => {
+    const result = officialLetterFormSchema.safeParse({
+      ...validData,
+      bodyRichText: '<p><a href="&#x6a;avascript:alert(1)">link</a><img src="&#100;ata:text/html,boom"></p>',
+      bodyPlainText: 'link',
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.bodyRichText).toContain('href="#"');
+      expect(result.data.bodyRichText).toContain('src=""');
+      expect(result.data.bodyRichText).not.toContain('javascript:');
+      expect(result.data.bodyRichText).not.toContain('data:text/html');
+    }
+  });
+
   it('rejects invalid closure enum values', () => {
     const result = officialLetterFormSchema.safeParse({
       ...validData,

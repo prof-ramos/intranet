@@ -22,6 +22,7 @@ const RESPONSE_EXCERPT_LIMIT = 500;
 const WEBHOOK_TIMEOUT_MS = 10_000;
 
 type DispatchDomainEventResult = Awaited<ReturnType<typeof dispatchDomainEventById>>;
+type DomainEventForDispatch = NonNullable<Awaited<ReturnType<typeof getDomainEventById>>>;
 
 function buildWebhookBody(event: Awaited<ReturnType<typeof getDomainEventById>>) {
   if (!event) {
@@ -232,6 +233,69 @@ async function deliverEventToSubscription(
   return shouldRetry ? ('retry_scheduled' as const) : ('failed' as const);
 }
 
+async function dispatchEventToSubscriptions(
+  event: DomainEventForDispatch,
+  executor: DbExecutor,
+) {
+  const bodyEnvelope = buildWebhookBody(event);
+  const body = JSON.stringify(bodyEnvelope);
+  const subscriptions = await listActiveWebhookSubscriptionsForEvent(event.eventType, executor);
+  const previousDeliveries = await listWebhookDeliveriesForEvent(event.id, executor);
+
+  if (subscriptions.length === 0) {
+    await updateDomainEventDeliveryStatus(event.id, 'delivered', executor);
+    return {
+      dispatched: true as const,
+      eventId: event.id,
+      subscriptions: 0,
+      results: [] as Array<'delivered' | 'retry_scheduled' | 'failed'>,
+    };
+  }
+
+  const dispatchPromises = subscriptions.map(async (subscription) => {
+    const previous = getLastDeliveryAttemptForSubscription(previousDeliveries, subscription.id);
+    if (previous?.status === 'delivered') {
+      return 'delivered' as const;
+    }
+
+    if (
+      previous?.status === 'retry_scheduled' &&
+      previous.nextRetryAt &&
+      previous.nextRetryAt.getTime() > Date.now()
+    ) {
+      return 'retry_scheduled' as const;
+    }
+
+    if (previous?.status === 'failed' && previous.attempt >= MAX_WEBHOOK_ATTEMPTS) {
+      return 'failed' as const;
+    }
+
+    const attempt = (previous?.attempt ?? 0) + 1;
+    return deliverEventToSubscription(
+      event.id,
+      event.eventType,
+      subscription,
+      body,
+      attempt,
+      executor,
+    );
+  });
+
+  const settled = await Promise.allSettled(dispatchPromises);
+  const results = settled.map((outcome) =>
+    outcome.status === 'fulfilled' ? outcome.value : ('failed' as const),
+  );
+
+  await updateDomainEventDeliveryStatus(event.id, getOverallEventStatus(results), executor);
+
+  return {
+    dispatched: true as const,
+    eventId: event.id,
+    subscriptions: subscriptions.length,
+    results,
+  };
+}
+
 export async function dispatchDomainEventById(eventId: number) {
   const event = await claimDispatchableDomainEventById(eventId);
   if (!event) {
@@ -247,122 +311,11 @@ export async function dispatchDomainEventById(eventId: number) {
         };
   }
 
-  return db.transaction(async (tx) => {
-    const bodyEnvelope = buildWebhookBody(event);
-    const body = JSON.stringify(bodyEnvelope);
-    const subscriptions = await listActiveWebhookSubscriptionsForEvent(event.eventType, tx);
-    const previousDeliveries = await listWebhookDeliveriesForEvent(event.id, tx);
-
-    if (subscriptions.length === 0) {
-      await updateDomainEventDeliveryStatus(event.id, 'delivered', tx);
-      return {
-        dispatched: true as const,
-        eventId: event.id,
-        subscriptions: 0,
-        results: [] as Array<'delivered' | 'retry_scheduled' | 'failed'>,
-      };
-    }
-
-    const dispatchPromises = subscriptions.map(async (subscription) => {
-      const previous = getLastDeliveryAttemptForSubscription(previousDeliveries, subscription.id);
-      if (previous?.status === 'delivered') {
-        return 'delivered' as const;
-      }
-
-      if (
-        previous?.status === 'retry_scheduled' &&
-        previous.nextRetryAt &&
-        previous.nextRetryAt.getTime() > Date.now()
-      ) {
-        return 'retry_scheduled' as const;
-      }
-
-      if (previous?.status === 'failed' && previous.attempt >= MAX_WEBHOOK_ATTEMPTS) {
-        return 'failed' as const;
-      }
-
-      const attempt = (previous?.attempt ?? 0) + 1;
-      return deliverEventToSubscription(
-        event.id,
-        event.eventType,
-        subscription,
-        body,
-        attempt,
-        tx,
-      );
-    });
-
-    const settled = await Promise.allSettled(dispatchPromises);
-    const results = settled.map((outcome) =>
-      outcome.status === 'fulfilled' ? outcome.value : ('failed' as const),
-    );
-
-    await updateDomainEventDeliveryStatus(event.id, getOverallEventStatus(results), tx);
-
-    return {
-      dispatched: true as const,
-      eventId: event.id,
-      subscriptions: subscriptions.length,
-      results,
-    };
-  });
+  return db.transaction((tx) => dispatchEventToSubscriptions(event, tx));
 }
 
-/**
- * Dispatch an already-claimed event (in 'processing' status) to its subscriptions.
- * Used by the batch dispatcher to avoid the double-claim bug.
- */
-async function dispatchClaimedEvent(
-  event: Awaited<ReturnType<typeof lockAndFetchDispatchableEvents>>[number],
-) {
-  return db.transaction(async (tx) => {
-    const bodyEnvelope = buildWebhookBody(event);
-    const body = JSON.stringify(bodyEnvelope);
-    const subscriptions = await listActiveWebhookSubscriptionsForEvent(event.eventType, tx);
-    const previousDeliveries = await listWebhookDeliveriesForEvent(event.id, tx);
-
-    if (subscriptions.length === 0) {
-      await updateDomainEventDeliveryStatus(event.id, 'delivered', tx);
-      return {
-        dispatched: true as const,
-        eventId: event.id,
-        subscriptions: 0,
-        results: [] as Array<'delivered' | 'retry_scheduled' | 'failed'>,
-      };
-    }
-
-    const dispatchPromises = subscriptions.map(async (subscription) => {
-      const previous = getLastDeliveryAttemptForSubscription(previousDeliveries, subscription.id);
-      if (previous?.status === 'delivered') return 'delivered' as const;
-      if (
-        previous?.status === 'retry_scheduled' &&
-        previous.nextRetryAt &&
-        previous.nextRetryAt.getTime() > Date.now()
-      ) {
-        return 'retry_scheduled' as const;
-      }
-      if (previous?.status === 'failed' && previous.attempt >= MAX_WEBHOOK_ATTEMPTS) {
-        return 'failed' as const;
-      }
-
-      const attempt = (previous?.attempt ?? 0) + 1;
-      return deliverEventToSubscription(event.id, event.eventType, subscription, body, attempt, tx);
-    });
-
-    const settled = await Promise.allSettled(dispatchPromises);
-    const results = settled.map((outcome) =>
-      outcome.status === 'fulfilled' ? outcome.value : ('failed' as const),
-    );
-
-    await updateDomainEventDeliveryStatus(event.id, getOverallEventStatus(results), tx);
-
-    return {
-      dispatched: true as const,
-      eventId: event.id,
-      subscriptions: subscriptions.length,
-      results,
-    };
-  });
+async function dispatchClaimedEvent(event: Awaited<ReturnType<typeof lockAndFetchDispatchableEvents>>[number]) {
+  return db.transaction((tx) => dispatchEventToSubscriptions(event, tx));
 }
 
 export async function dispatchPendingDomainEvents(limit = 20) {

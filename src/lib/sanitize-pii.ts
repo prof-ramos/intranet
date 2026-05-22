@@ -9,6 +9,13 @@
 export const SENSITIVE_KEY_PATTERN =
   /cpf|siape|email|address|endereco|phone|telefone|whatsapp|secret|token|password|sourcePayload|primaryEmail|reset_?link|recovery_?link/i;
 
+export const PII_TEXT_PATTERNS: Array<[RegExp, string]> = [
+  [/\b[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\b/g, '[email]'],
+  [/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, '[cpf]'],
+  [/https?:\/\/\S+/g, '[url]'],
+  [/Bearer\s+\S+/gi, 'Bearer [token]'],
+];
+
 /**
  * Recursively sanitize an arbitrary value by redacting string values
  * whose keys match `SENSITIVE_KEY_PATTERN`.

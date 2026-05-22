@@ -11,6 +11,24 @@ import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('auth:require-auth');
 
+function pathnameFromHeaders(reqHeaders: Headers): string {
+  const explicitPathname = reqHeaders.get('x-pathname');
+  if (explicitPathname) {
+    return explicitPathname;
+  }
+
+  const nextUrl = reqHeaders.get('next-url');
+  if (!nextUrl) {
+    return '';
+  }
+
+  try {
+    return new URL(nextUrl).pathname;
+  } catch {
+    return '';
+  }
+}
+
 export const requireAuth = cache(async (): Promise<AuthUser> => {
   const session = await getSession();
   if (!session?.isLoggedIn) {
@@ -53,7 +71,7 @@ export const requireAuth = cache(async (): Promise<AuthUser> => {
 
   if (admin.mustChangePassword) {
     const reqHeaders = await headers();
-    const pathname = reqHeaders.get('x-pathname') ?? reqHeaders.get('next-url') ?? '';
+    const pathname = pathnameFromHeaders(reqHeaders);
     if (!pathname.startsWith('/change-password')) {
       redirect('/change-password');
     }

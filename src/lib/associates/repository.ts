@@ -7,6 +7,15 @@ type FunctionalStatusEnum = (typeof functionalStatus.enumValues)[number];
 type AssociationStatusEnum = (typeof associationStatus.enumValues)[number];
 type ContributionStatusEnum = (typeof contributionStatus.enumValues)[number];
 
+const publicAssociateListColumns = {
+  id: associates.id,
+  fullName: associates.fullName,
+  assignment: associates.assignment,
+  classPattern: associates.classPattern,
+  functionalStatus: associates.functionalStatus,
+  contributionStatus: associates.contributionStatus,
+};
+
 export interface AssociateListItem {
   id: number;
   fullName: string;
@@ -44,15 +53,11 @@ export async function findAssociatesPaginated(
 
   const [rows, [{ total }]] = await Promise.all([
     db
-      .select({
-        id: associates.id,
-        fullName: associates.fullName,
-        assignment: associates.assignment,
-        classPattern: associates.classPattern,
-        primaryEmail: associates.primaryEmail,
-        functionalStatus: associates.functionalStatus,
-        contributionStatus: associates.contributionStatus,
-      })
+      .select(
+        includeEmail
+          ? { ...publicAssociateListColumns, primaryEmail: associates.primaryEmail }
+          : publicAssociateListColumns,
+      )
       .from(associates)
       .where(baseWhere)
       .orderBy(asc(associates.fullName), asc(associates.id))
@@ -62,9 +67,9 @@ export async function findAssociatesPaginated(
   ]);
 
   return {
-    rows: rows.map((r) => ({
-      ...r,
-      primaryEmail: includeEmail ? r.primaryEmail : null,
+    rows: rows.map((row) => ({
+      ...row,
+      primaryEmail: includeEmail && 'primaryEmail' in row ? (row.primaryEmail ?? null) : null,
     })),
     total,
   };
