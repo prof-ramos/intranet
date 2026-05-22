@@ -4,18 +4,22 @@ import path from 'path';
 const DEV_SERVER_PID_FILE = path.resolve(process.cwd(), '.next-e2e/e2e-dev-server.pid');
 
 function killE2EServer(pid: number, signal: NodeJS.Signals) {
+  let signaled = false;
   try {
     process.kill(-pid, signal);
-    return;
+    signaled = true;
   } catch {
     // Fall back to killing the direct process on platforms/shells without groups.
   }
 
   try {
     process.kill(pid, signal);
+    signaled = true;
   } catch {
     // Process already exited.
   }
+
+  return signaled;
 }
 
 export default async function globalTeardown() {
@@ -36,6 +40,8 @@ export default async function globalTeardown() {
       const pid = Number(readFileSync(DEV_SERVER_PID_FILE, 'utf8'));
       if (Number.isInteger(pid) && pid > 0) {
         killE2EServer(pid, 'SIGTERM');
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        killE2EServer(pid, 'SIGKILL');
       }
       unlinkSync(DEV_SERVER_PID_FILE);
     }
