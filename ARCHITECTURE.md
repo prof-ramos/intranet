@@ -145,6 +145,54 @@ This document is the living architecture map for the ASOF Intranet. Keep it upda
 
 The application is intentionally compact: the web UI and backend behavior live in one Next.js codebase. Server Components and Server Actions own most request-time work. `proxy.ts` performs coarse protected-route validation before the protected app renders. Database access is centralized through Drizzle.
 
+### 2.1. Domain Module and Caller Map
+
+Use this section as the first map when entering an unfamiliar area of the codebase. The project follows a consistent module shape:
+
+```text
+src/app/app/<area>/page.tsx and actions.ts
+  -> src/lib/<domain>/{service,repository,queries,search-params}.ts
+  -> src/lib/db/schema/<domain>.ts
+  -> PostgreSQL / Supabase
+```
+
+For mutations, the usual flow is:
+
+```text
+Server Action / Route Handler
+  -> requireAuth() or requireRole()
+  -> Zod validation in src/lib/validation/schemas.ts or domain validations
+  -> domain service
+  -> repository/query
+  -> audit log, notification, or domain event when the action has side effects
+```
+
+| Domain area | Product route / caller | Domain module | Canonical tables / views | Domain vocabulary and notes |
+|---|---|---|---|---|
+| Dashboard | `/app` | `src/lib/dashboard` | `associates`, `activities`, `legal_consultations`, `monthly_payments` | Aggregates the operational state of associados, atividades, jurídico, and financeiro for the authenticated user. |
+| Associados | `/app/associados`, `/app/associados/[id]`, `/app/associados/[id]/editar` | `src/lib/associates` | `associates`, `associates_list_view`, `audit_logs` | Source of truth for associados and their lotação/posto (`assignment`), localidade (`locationCity`, `locationCountry`), padrão/classe (`classPattern`), situação associativa, situação funcional, SIAPE, contribuição, and método de pagamento. CPF, SIAPE, email, telefone, endereço, and WhatsApp are LGPD-sensitive and must not be exposed in logs, public API responses, or unredacted errors. |
+| Relatórios de associados | `/app/associados/relatorio`, `/app/associados/relatorio/download` | `src/lib/reports` | `associates`, `audit_logs` | Exports filtered associate data. Access is restricted to `admin` and `diretoria`, and exports should be audited as data access. |
+| Atividades | `/app/atividades`, `/app/atividades/nova` | `src/lib/activities` | `activities`, `admins`, `associates`, `notifications` | Kanban of administrative tasks. `assigneeId` links to the responsible admin; `associateId` links to the related associado. `BoardActivity.assigneeName` and `BoardActivity.associateName` are optimistic render fallbacks only; the `peopleById` map is authoritative for names. |
+| Jurídico | `/app/juridico`, `/app/juridico/consultas`, `/app/juridico/consultas/[id]`, `/app/juridico/consultas/nova` | `src/lib/juridico` | `legal_consultations`, `legal_notes`, `legal_processes`, `legal_opinions`, `associates`, `notifications` | Handles consulta jurídica lifecycle, número interno, SLA, notes, escritório responses, and future processo/parecer records. Status values live in the `legal_consultation_status` enum. SLA warning dispatch is scheduled through `/api/v1/juridico/sla-warnings`. |
+| Secretaria / Ofícios | `/app/secretaria/oficios`, `/app/secretaria/oficios/novo`, `/api/oficios/[id]/download` | `src/lib/oficios` | `oficios`, `audit_logs`, `domain_events` | Manages official ASOF documents. Ofício numbering is sequential by year and must not be reused after cancellation. PDF generation is performed server-side from stored rich text/plain text fields. |
+| Financeiro / Mensalidades | `/app/financeiro/mensalidades` | `src/lib/finance` | `monthly_payments`, `associates`, `audit_logs`, `domain_events` | Monthly payment control for associados. Do not confuse `monthly_payments.status` (`paymentStatus`: `pago`, `pendente`, `atrasado`, `isento`, `cancelado`) with `associates.contributionStatus` (`em_dia`, `inadimplente`, `pendente_migracao`). |
+| Configuração de usuários | `/app/config/usuarios` | `src/lib/auth`, direct admin actions | `admins`, `audit_logs` | Admin user management. Roles are `admin`, `diretoria`, and `secretaria`; access is guarded by `requireRole()`. |
+| Configuração de lotações | `/app/config/lotacoes` | direct assignment actions | `assignments`, `audit_logs` | Manages lotação/posto options. `assignment_type` distinguishes `domestic` (SERE/Brasília) from `abroad` (posto no exterior). |
+| Auditoria | `/app/config/auditoria` | `src/lib/audit` and direct queries | `audit_logs`, `admins` | LGPD accountability trail for data access, exports, edits, configuration changes, and integration operations. |
+| Integrações / API keys / Webhooks | `/app/config/integracoes/api-keys`, `/app/config/integracoes/webhooks`, `/api/v1/*` | `src/lib/integrations` | `integration_api_keys`, `domain_events`, `webhook_subscriptions`, `webhook_deliveries`, `rate_limits`, `audit_logs` | Outbound-only integration foundation. Domain services emit sanitized events into `domain_events`; dispatch routes deliver signed webhook POSTs and record delivery attempts. There is no public inbound webhook endpoint yet. |
+| Notificações | `NotificationBell`, `/app/notifications/actions` | `src/lib/notifications`, `src/lib/events.ts` | `notifications`, `activities`, `legal_consultations` | In-app notification layer for activity assignment/completion and legal consultation/SLA events. This is separate from outbound webhooks. |
+| Busca global | Header `GlobalSearch`, `/app/search/actions` | `src/lib/search` | `associates`, `activities` | Authenticated search across associados and atividades. It should use PII-safe projections and must respect the role-based masking rules of the associated domain. |
+
+Cross-cutting modules:
+
+- `src/lib/auth` owns session revalidation, `requireAuth()`, and `requireRole()`.
+- `src/lib/validation/schemas.ts` centralizes shared Zod validation for login, associados, financeiro filters, jurídico, and webhook subscription input.
+- `src/lib/logger.ts`, `src/lib/error-log.ts`, and `src/lib/sanitize-pii.ts` are the safe logging and redaction boundary for LGPD-sensitive data.
+- `src/lib/crypto` owns AES-256-GCM encryption, HKDF key derivation, safe comparisons, and HMAC blind indexes for searchable PII.
+- `src/lib/db/schema/index.ts` is the schema export surface; individual schema files are the canonical source for table, enum, FK, index, and check-constraint definitions.
+- `src/lib/integrations/outbox.ts` is the boundary for external event payloads. Payloads must be minimized and sanitized before persistence.
+- `src/lib/events.ts` is the in-process notification event bus. It is used for user-facing notifications, not external webhook delivery.
+
 ## 3. Core Components
 
 ### 3.1. Frontend

@@ -5,7 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { db, type DbExecutor } from '@/lib/db';
 import { integrationApiKeys } from '@/lib/db/schema/integrations';
 
-const VALID_SCOPES = ['events:read', 'events:write', 'webhooks:manage', 'admin'] as const;
+const VALID_SCOPES = ['events:read', 'events:write', 'webhooks:manage', 'health:read', 'admin'] as const;
 export type IntegrationScope = (typeof VALID_SCOPES)[number];
 
 const KEY_PREFIX = 'asof_';

@@ -5,23 +5,25 @@ function createMemoryStore(): RateLimitStore {
   const entries = new Map<string, { attempts: number; expiresAt: number }>();
 
   return {
-    async getEntry(key: string, now: number, windowMs: number) {
-      const entry = entries.get(key);
-      if (!entry) {
-        const next = { attempts: 0, expiresAt: now + windowMs };
-        entries.set(key, next);
-        return { attempts: next.attempts, expiresAt: next.expiresAt };
+    async consume(key: string, now: number, windowMs: number, maxAttempts: number) {
+      const existing = entries.get(key);
+      let attempts: number;
+      let expiresAt: number;
+
+      if (!existing || existing.expiresAt <= now) {
+        attempts = 1;
+        expiresAt = now + windowMs;
+      } else {
+        attempts = existing.attempts + 1;
+        expiresAt = existing.expiresAt;
       }
-      if (entry.expiresAt <= now) {
-        const next = { attempts: 0, expiresAt: now + windowMs };
-        entries.set(key, next);
-        return { attempts: next.attempts, expiresAt: next.expiresAt };
+
+      entries.set(key, { attempts, expiresAt });
+
+      if (attempts > maxAttempts) {
+        return { allowed: false, remaining: 0, retryAfterMs: expiresAt - now };
       }
-      return { attempts: entry.attempts, expiresAt: entry.expiresAt };
-    },
-    async incrementAttempts(key: string) {
-      const entry = entries.get(key);
-      if (entry) entry.attempts += 1;
+      return { allowed: true, remaining: Math.max(0, maxAttempts - attempts) };
     },
     async reset(key: string) {
       entries.delete(key);
@@ -63,7 +65,7 @@ describe('login rate limiter', () => {
     limiter.dispose();
   });
 
-  it('cleans up expired entries', async () => {
+  it('cleans up expired entries and resets window', async () => {
     const limiter = createLoginRateLimiter(
       { maxAttempts: 1, windowMs: 1_000 },
       createMemoryStore(),
@@ -86,23 +88,21 @@ describe('login rate limiter', () => {
     limiter.dispose();
   });
 
-  it('allows all attempts when store returns null', async () => {
-    const nullStore: RateLimitStore = {
-      async getEntry() {
-        return null;
-      },
-      async incrementAttempts() {},
-      async reset() {},
-      async cleanup() {},
-    };
-
+  it('resets window automatically when entry is expired', async () => {
     const limiter = createLoginRateLimiter(
-      { maxAttempts: 3, windowMs: 60_000 },
-      nullStore,
+      { maxAttempts: 3, windowMs: 1_000 },
+      createMemoryStore(),
     );
 
-    const result = await limiter.consume('user@example.com');
-    expect(result).toEqual({ allowed: true, remaining: 3 });
+    // Consume all attempts
+    await limiter.consume('user@example.com', 0);
+    await limiter.consume('user@example.com', 0);
+    await limiter.consume('user@example.com', 0);
+    expect(await limiter.consume('user@example.com', 0)).toMatchObject({ allowed: false });
+
+    // After window expires, should allow again (window reset)
+    const result = await limiter.consume('user@example.com', 2_000);
+    expect(result).toEqual({ allowed: true, remaining: 2 });
     limiter.dispose();
   });
 });

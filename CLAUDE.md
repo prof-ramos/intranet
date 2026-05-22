@@ -241,6 +241,7 @@ Set `SKIP_AUTH=true` in `.env.local` (ignored in production). Configures dev use
 - **Key rotation:** Encryption uses V2 format `enc:v2:{keyId}.{iv}.{authTag}.{ciphertext}` supporting zero-downtime key rotation. Decryption tries all known keys; encryption uses the active key.
 - **Rate limiting:** PostgreSQL-backed rate limiter at `/api/v1/events` and `/api/v1/health` (60 req/15min/IP). Login rate limiting per email via `login_attempts` table.
 - **Data access logging:** `logDataAccess()` in `src/lib/audit/service.ts` records PII view events for LGPD Art. 30/37 compliance.
+- **Security audit false positives:** Record relevant false positives in vulnerability reports to avoid rediscovery in future reviews.
 
 ## Design System
 

@@ -11,6 +11,10 @@ const optionalSecretString = z.preprocess(
   z.string().min(32).optional(),
 );
 const optionalUrl = z.preprocess(emptyStringToUndefined, z.string().url().optional());
+const optionalBooleanString = z.preprocess(
+  emptyStringToUndefined,
+  z.enum(['true', 'false']).optional(),
+);
 
 export const envSchema = z
   .object({
@@ -31,6 +35,8 @@ export const envSchema = z
     MAILJET_SECRET_KEY: z.string().optional(),
     MAILJET_SENDER_EMAIL: optionalString.default('gabriel@asof.org.br'),
     MAILJET_SENDER_NAME: optionalString.default('ASOF Intranet'),
+    MAILJET_SENDER_VALIDATED: optionalBooleanString.default('false').transform((v) => v === 'true'),
+    ASOF_INTRANET_URL: optionalUrl,
     GEMINI_API_KEY: optionalString.describe('Gemini API key for AI features'),
 
     NEXT_PUBLIC_AI_ENABLED: z.preprocess(emptyStringToUndefined, z.enum(["true", "false"]).default("false")).transform(v => v === "true"),
@@ -96,6 +102,18 @@ export const envSchema = z
     {
       message: 'CRON_SECRET is required for production Vercel cron dispatch.',
       path: ['CRON_SECRET'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.VERCEL_ENV === 'production') {
+        return !!data.ASOF_INTRANET_URL;
+      }
+      return true;
+    },
+    {
+      message: 'ASOF_INTRANET_URL is required for production password recovery links.',
+      path: ['ASOF_INTRANET_URL'],
     },
   );
 

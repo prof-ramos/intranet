@@ -148,6 +148,7 @@ async function deliverEventToSubscription(
   try {
     const response = await fetch(subscription.targetUrl, {
       method: 'POST',
+      redirect: 'manual',
       headers: {
         'content-type': 'application/json; charset=utf-8',
         'user-agent': 'asof-intranet-webhooks/1.0',
@@ -160,6 +161,26 @@ async function deliverEventToSubscription(
       body,
       signal: abortController.signal,
     });
+
+    // Reject redirects to prevent SSRF via redirect chains or DNS rebinding.
+    if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+      statusCode = response.status;
+      responseExcerpt = 'Redirect blocked for security reasons.';
+      const failureReason = `Webhook redirect blocked: HTTP ${response.status}`;
+      await insertWebhookDelivery({
+        domainEventId: eventId,
+        webhookSubscriptionId: subscription.id,
+        attempt,
+        requestId,
+        idempotencyKey,
+        status: 'failed',
+        statusCode,
+        responseExcerpt,
+        failedAt: new Date(),
+        failureReason,
+      }, executor);
+      return 'failed' as const;
+    }
 
     statusCode = response.status;
     responseExcerpt = sanitizeResponseExcerpt(await response.text());
@@ -287,6 +308,63 @@ export async function dispatchDomainEventById(eventId: number) {
   });
 }
 
+/**
+ * Dispatch an already-claimed event (in 'processing' status) to its subscriptions.
+ * Used by the batch dispatcher to avoid the double-claim bug.
+ */
+async function dispatchClaimedEvent(
+  event: Awaited<ReturnType<typeof lockAndFetchDispatchableEvents>>[number],
+) {
+  return db.transaction(async (tx) => {
+    const bodyEnvelope = buildWebhookBody(event);
+    const body = JSON.stringify(bodyEnvelope);
+    const subscriptions = await listActiveWebhookSubscriptionsForEvent(event.eventType, tx);
+    const previousDeliveries = await listWebhookDeliveriesForEvent(event.id, tx);
+
+    if (subscriptions.length === 0) {
+      await updateDomainEventDeliveryStatus(event.id, 'delivered', tx);
+      return {
+        dispatched: true as const,
+        eventId: event.id,
+        subscriptions: 0,
+        results: [] as Array<'delivered' | 'retry_scheduled' | 'failed'>,
+      };
+    }
+
+    const dispatchPromises = subscriptions.map(async (subscription) => {
+      const previous = getLastDeliveryAttemptForSubscription(previousDeliveries, subscription.id);
+      if (previous?.status === 'delivered') return 'delivered' as const;
+      if (
+        previous?.status === 'retry_scheduled' &&
+        previous.nextRetryAt &&
+        previous.nextRetryAt.getTime() > Date.now()
+      ) {
+        return 'retry_scheduled' as const;
+      }
+      if (previous?.status === 'failed' && previous.attempt >= MAX_WEBHOOK_ATTEMPTS) {
+        return 'failed' as const;
+      }
+
+      const attempt = (previous?.attempt ?? 0) + 1;
+      return deliverEventToSubscription(event.id, event.eventType, subscription, body, attempt, tx);
+    });
+
+    const settled = await Promise.allSettled(dispatchPromises);
+    const results = settled.map((outcome) =>
+      outcome.status === 'fulfilled' ? outcome.value : ('failed' as const),
+    );
+
+    await updateDomainEventDeliveryStatus(event.id, getOverallEventStatus(results), tx);
+
+    return {
+      dispatched: true as const,
+      eventId: event.id,
+      subscriptions: subscriptions.length,
+      results,
+    };
+  });
+}
+
 export async function dispatchPendingDomainEvents(limit = 20) {
   // Recover events stuck in "processing" status (e.g. if a dispatcher crashed)
   await recoverStuckProcessingEvents();
@@ -297,7 +375,10 @@ export async function dispatchPendingDomainEvents(limit = 20) {
   const results: DispatchDomainEventResult[] = [];
 
   for (const event of pendingEvents) {
-    results.push(await dispatchDomainEventById(event.id));
+    // F-006: dispatch already-claimed events directly to avoid the double-claim bug.
+    // Previously this called dispatchDomainEventById(event.id), which tried to
+    // re-claim the already-'processing' event and always returned 'not_dispatchable'.
+    results.push(await dispatchClaimedEvent(event));
   }
 
   return {

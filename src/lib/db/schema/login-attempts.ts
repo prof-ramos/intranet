@@ -1,4 +1,4 @@
-import { bigint, index, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { bigint, index, integer, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const loginAttempts = pgTable(
   'login_attempts',
@@ -12,7 +12,7 @@ export const loginAttempts = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    index('idx_login_attempts_email').on(table.email),
+    uniqueIndex('idx_login_attempts_email_unique').on(table.email),
     index('idx_login_attempts_email_hash').on(table.emailHash),
     index('idx_login_attempts_expires_at').on(table.expiresAt),
   ],

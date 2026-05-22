@@ -35,6 +35,8 @@ Associados servem na SERE (Brasília) ou em ~220 postos no exterior. Cerca de 63
 
 CPF, SIAPE, email, endereço e dados funcionais são informações protegidas pela LGPD. Não expor em logs, respostas de API públicas ou mensagens de erro.
 
+Em auditorias de segurança, documentar falsos positivos relevantes para evitar redescoberta em rodadas futuras.
+
 Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de renderização otimista (usados antes de o mapa `peopleById` ser atualizado); não são a fonte canônica de nomes. O mapa `peopleById` é autoritativo. Não remover esses campos sob o argumento de desnormalização de PII.
 
 ---

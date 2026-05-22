@@ -258,6 +258,7 @@ describe('activities service', () => {
         priority: 'alta',
         dueDate: null,
       }),
+      new Date('2026-05-01T00:00:00.000Z'),
     );
     expect(events.emitActivityCompleted).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -319,6 +320,7 @@ describe('activities service', () => {
     expect(repository.updateActivityById).toHaveBeenCalledWith(
       9,
       expect.objectContaining({ assigneeId: 12 }),
+      new Date('2026-05-01T00:00:00.000Z'),
     );
     expect(audit.logAuditAction).toHaveBeenCalledWith(
       expect.objectContaining({

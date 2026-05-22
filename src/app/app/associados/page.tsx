@@ -17,7 +17,9 @@ export default async function AssociadosPage({
   const user = await requireAuth();
   const { q, page, contributionStatus, functionalStatus } = parseAssociatesSearchParams(await searchParams);
 
-  const { rows, total } = await getAssociatesListPage(page, PAGE_SIZE, q, { contributionStatus, functionalStatus });
+  const { rows, total } = await getAssociatesListPage(page, PAGE_SIZE, q, { contributionStatus, functionalStatus }, user.role);
+
+  const showEmail = user.role === 'admin' || user.role === 'diretoria';
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const from = total === 0 ? 0 : Math.min((page - 1) * PAGE_SIZE + 1, total);
@@ -167,7 +169,9 @@ export default async function AssociadosPage({
                   <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Nome</th>
                   <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Lotação</th>
                   <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Posto</th>
-                  <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Email</th>
+                  {showEmail && (
+                    <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Email</th>
+                  )}
                   <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Situação</th>
                   <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Contribuição</th>
                   <th scope="col" className="w-10 px-4 py-3 text-center" aria-label="Ações" />
@@ -190,7 +194,9 @@ export default async function AssociadosPage({
                       </td>
                       <td className="px-4 py-3">{row.assignment ?? '—'}</td>
                       <td className="px-4 py-3">{row.classPattern ?? '—'}</td>
-                      <td className="px-4 py-3">{row.primaryEmail ?? '—'}</td>
+                      {showEmail && (
+                        <td className="px-4 py-3">{row.primaryEmail ?? '—'}</td>
+                      )}
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold tracking-[0.06em] uppercase ${

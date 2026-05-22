@@ -1,5 +1,6 @@
 import { cache } from 'react';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { eq } from 'drizzle-orm';
 import { getSession } from '@/lib/auth/session';
 import { type AuthUser } from '@/lib/auth/config';
@@ -48,6 +49,14 @@ export const requireAuth = cache(async (): Promise<AuthUser> => {
 
   if (!admin || !admin.isActive) {
     redirect('/login');
+  }
+
+  if (admin.mustChangePassword) {
+    const reqHeaders = await headers();
+    const pathname = reqHeaders.get('x-pathname') ?? reqHeaders.get('next-url') ?? '';
+    if (!pathname.startsWith('/change-password')) {
+      redirect('/change-password');
+    }
   }
 
   return {

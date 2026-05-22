@@ -145,14 +145,19 @@ export async function findActivityById(id: number): Promise<Activity | null> {
 export async function updateActivityById(
   id: number,
   patch: Partial<Pick<Activity, 'status' | 'priority' | 'dueDate' | 'completedAt' | 'assigneeId'>>,
+  expectedUpdatedAt?: Date | null,
 ): Promise<Activity | null> {
+  const whereClause = expectedUpdatedAt
+    ? and(eq(activities.id, id), sql`${activities.updatedAt} = ${expectedUpdatedAt}`)
+    : eq(activities.id, id);
+
   const [row] = await db
     .update(activities)
     .set({
       ...patch,
       updatedAt: sql`now()`,
     })
-    .where(eq(activities.id, id))
+    .where(whereClause)
     .returning();
 
   return row ?? null;

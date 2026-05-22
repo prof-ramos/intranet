@@ -27,6 +27,7 @@ export async function findAssociatesPaginated(
   pageSize: number,
   searchQuery?: string,
   filters?: AssociatesFilters,
+  includeEmail = false,
 ): Promise<{ rows: AssociateListItem[]; total: number }> {
   const baseWhere = and(
     eq(associates.associationStatus, 'ativo'),
@@ -60,8 +61,15 @@ export async function findAssociatesPaginated(
     db.select({ total: count() }).from(associates).where(baseWhere),
   ]);
 
-  return { rows, total };
+  return {
+    rows: rows.map((r) => ({
+      ...r,
+      primaryEmail: includeEmail ? r.primaryEmail : null,
+    })),
+    total,
+  };
 }
+
 
 export async function findAssociateById(id: number, executor: DbExecutor = db) {
   const [row] = await executor.select().from(associates).where(eq(associates.id, id)).limit(1);

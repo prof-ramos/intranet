@@ -37,7 +37,8 @@ export async function updateAssociate(formData: FormData) {
     functionalStatus: data.functionalStatus ?? null,
     associationStatus: data.associationStatus ?? null,
     contributionStatus: data.contributionStatus ?? null,
-    internalNotes: data.internalNotes ?? null,
+    // internalNotes is admin-only: diretoria submissions have this field stripped.
+    internalNotes: actor.role === 'admin' ? (data.internalNotes ?? null) : undefined,
     updatedBy: actor.userId,
   });
 

@@ -4,6 +4,11 @@ import { requireAuth } from '@/lib/auth/require-auth';
 
 let mockSession: import('@/lib/auth/config').SessionData | null = null;
 let mockDbError: Error | null = null;
+const mockHeaders = new Map<string, string>();
+
+vi.mock('next/headers', () => ({
+  headers: vi.fn(() => Promise.resolve(mockHeaders)),
+}));
 let mockDbAdmin: {
   id: number;
   name: string;
@@ -48,6 +53,7 @@ beforeEach(() => {
   mockSession = null;
   mockDbError = null;
   mockDbAdmin = null;
+  mockHeaders.clear();
 });
 
 describe('requireAuth', () => {
@@ -118,8 +124,58 @@ describe('requireAuth', () => {
       email: 'updated@asof.local',
       role: 'diretoria',
       isActive: true,
+      mustChangePassword: false,
+    };
+
+    await expect(requireAuth()).resolves.toEqual({
+      userId: 7,
+      name: 'Updated Name',
+      email: 'updated@asof.local',
+      role: 'diretoria',
+      mustChangePassword: false,
+    });
+  });
+
+  it('redirects to /change-password when user must change password and not on change page', async () => {
+    mockSession = {
+      userId: 7,
+      name: 'Updated Name',
+      email: 'updated@asof.local',
+      role: 'diretoria',
+      mustChangePassword: false,
+      isLoggedIn: true,
+    };
+    mockDbAdmin = {
+      id: 7,
+      name: 'Updated Name',
+      email: 'updated@asof.local',
+      role: 'diretoria',
+      isActive: true,
       mustChangePassword: true,
     };
+    mockHeaders.set('x-pathname', '/app/dashboard');
+
+    await expect(requireAuth()).rejects.toThrow('NEXT_REDIRECT:/change-password');
+  });
+
+  it('allows access to /change-password when user must change password', async () => {
+    mockSession = {
+      userId: 7,
+      name: 'Updated Name',
+      email: 'updated@asof.local',
+      role: 'diretoria',
+      mustChangePassword: false,
+      isLoggedIn: true,
+    };
+    mockDbAdmin = {
+      id: 7,
+      name: 'Updated Name',
+      email: 'updated@asof.local',
+      role: 'diretoria',
+      isActive: true,
+      mustChangePassword: true,
+    };
+    mockHeaders.set('x-pathname', '/change-password');
 
     await expect(requireAuth()).resolves.toEqual({
       userId: 7,

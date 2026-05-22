@@ -316,6 +316,13 @@
       "when": 1779964800000,
       "tag": "0044_notifications_rls_to_authenticated",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1779964800001,
+      "tag": "0045_login_attempts_unique_email",
+      "breakpoints": true
     }
   ]
 }

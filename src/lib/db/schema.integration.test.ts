@@ -433,8 +433,8 @@ const expectedIndexes = {
     'legal_processes_pkey',
   ],
   login_attempts: [
-    'idx_login_attempts_email',
     'idx_login_attempts_email_hash',
+    'idx_login_attempts_email_unique',
     'idx_login_attempts_expires_at',
     'login_attempts_pkey',
   ],
