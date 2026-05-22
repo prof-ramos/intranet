@@ -1,0 +1,76 @@
+import { requireAuth } from '@/lib/auth/require-auth';
+import { requestDataDownload, requestAccountDeletion } from './actions';
+import { focusRingClass, textPrimary, textMuted, hairline, navy, primaryContainerHover } from '@/lib/ui/tokens';
+import { Download, Trash2, ShieldAlert } from 'lucide-react';
+
+export const metadata = {
+  title: 'Privacidade e LGPD - ASOF',
+};
+
+export default async function PrivacidadePage() {
+  await requireAuth();
+
+  return (
+    <main className="mx-auto flex w-full max-w-[800px] flex-1 flex-col px-5 py-7 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+      <div className="mb-8">
+        <h1 className="font-serif text-3xl leading-none font-bold md:text-4xl" style={{ color: textPrimary }}>
+          Privacidade e Transparência
+        </h1>
+        <p className="mt-3" style={{ color: textMuted }}>
+          Gerencie seus dados pessoais em conformidade com a Lei Geral de Proteção de Dados (LGPD).
+        </p>
+      </div>
+
+      <section className="mb-10 rounded-xl border bg-white p-6 shadow-sm sm:p-8" style={{ borderColor: hairline }}>
+        <h2 className="mb-4 text-xl font-bold" style={{ color: textPrimary }}>Direito de Acesso e Portabilidade</h2>
+        <p className="mb-6 text-sm leading-relaxed" style={{ color: textMuted }}>
+          Você tem o direito de solicitar uma cópia de todos os seus dados pessoais e transacionais
+          armazenados pela ASOF. Ao solicitar, a Secretaria irá compilar um relatório estruturado
+          contendo suas informações cadastrais, histórico de contribuições e demais registros vinculados
+          ao seu titular, e os enviará para o seu e-mail cadastrado.
+        </p>
+        <form action={requestDataDownload}>
+          <button
+            type="submit"
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold text-white transition-colors ${focusRingClass}`}
+            style={{ backgroundColor: navy }}
+            onMouseOver={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = primaryContainerHover; }}
+            onMouseOut={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = navy; }}
+          >
+            <Download size={16} aria-hidden="true" />
+            Solicitar meus dados
+          </button>
+        </form>
+      </section>
+
+      <section className="rounded-xl border border-red-100 bg-red-50/30 p-6 shadow-sm sm:p-8">
+        <div className="mb-4 flex items-center gap-2 text-red-700">
+          <ShieldAlert size={24} />
+          <h2 className="text-xl font-bold">Direito ao Esquecimento</h2>
+        </div>
+        <p className="mb-4 text-sm leading-relaxed" style={{ color: textMuted }}>
+          Você tem o direito de solicitar a exclusão ou anonimização permanente da sua conta e de seus
+          dados sensíveis. No entanto, este direito não é absoluto.
+        </p>
+
+        <div className="mb-6 rounded-md bg-red-50 p-4 text-sm text-red-800 border border-red-100">
+          <strong>Atenção ao Estatuto Social (Art. 14):</strong> Sua solicitação será analisada pela
+          Secretaria. A desfiliação e o apagamento dos dados só podem ser efetuados caso você{' '}
+          <strong>não possua débitos ou processos em andamento</strong> com a Associação. A ASOF
+          reserva-se o direito de manter os dados (LGPD Art. 16) necessários ao exercício regular
+          em processos judiciais ou financeiros.
+        </div>
+
+        <form action={requestAccountDeletion}>
+          <button
+            type="submit"
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 hover:border-red-300 ${focusRingClass}`}
+          >
+            <Trash2 size={16} aria-hidden="true" />
+            Solicitar Exclusão
+          </button>
+        </form>
+      </section>
+    </main>
+  );
+}

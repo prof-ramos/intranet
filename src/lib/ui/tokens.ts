@@ -100,3 +100,12 @@ export const infoNotice = {
   iconBg: info,
   text: '#1e40af',
 };
+
+// File icon color tokens (used in DocumentList and similar components)
+export const fileIconPdf = '#ef4444';
+export const fileIconSpreadsheet = '#16a34a';
+export const fileIconImage = '#3b82f6';
+export const fileIconArchive = '#d97706';
+export const fileIconCode = '#a855f7';
+export const fileIconDefault = '#94a3b8';
+
