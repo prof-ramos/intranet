@@ -23,7 +23,12 @@ interface AtomicIncrementResult {
 }
 
 export interface IntegrationRateLimitStore {
-  atomicIncrement(key: string, scope: string, now: number, windowMs: number): Promise<AtomicIncrementResult>;
+  atomicIncrement(
+    key: string,
+    scope: string,
+    now: number,
+    windowMs: number,
+  ): Promise<AtomicIncrementResult>;
   cleanup(now: number): Promise<void>;
 }
 
@@ -82,7 +87,12 @@ export function createIntegrationRateLimiter(
 
   return {
     async consume(key: string, now = Date.now()): Promise<IntegrationRateLimitResult> {
-      const { attempts, expiresAt } = await store.atomicIncrement(key, options.scope, now, options.windowMs);
+      const { attempts, expiresAt } = await store.atomicIncrement(
+        key,
+        options.scope,
+        now,
+        options.windowMs,
+      );
 
       if (attempts > options.maxRequests) {
         return {

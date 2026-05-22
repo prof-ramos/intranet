@@ -1,6 +1,4 @@
-export type PasswordValidationResult =
-  | { valid: true }
-  | { valid: false; message: string };
+export type PasswordValidationResult = { valid: true } | { valid: false; message: string };
 
 export function validateNewPassword(password: string): PasswordValidationResult {
   if (password.length < 8) {

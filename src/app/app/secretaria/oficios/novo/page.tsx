@@ -8,9 +8,7 @@ export default function NovoOficioPage() {
         <p className="text-[11px] tracking-[0.18em] uppercase" style={{ color: textMuted }}>
           Ofícios
         </p>
-        <h1 className="mt-2 font-serif text-4xl font-bold md:text-[3rem]">
-          Gerar Novo Ofício
-        </h1>
+        <h1 className="mt-2 font-serif text-4xl font-bold md:text-[3rem]">Gerar Novo Ofício</h1>
       </div>
 
       <OficioForm />

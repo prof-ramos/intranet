@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { autoMarkOverduePaymentsService, cancelMonthlyPayment, updateMonthlyPayment } from './service';
+import {
+  autoMarkOverduePaymentsService,
+  cancelMonthlyPayment,
+  updateMonthlyPayment,
+} from './service';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { logAuditAction } from '@/lib/audit/service';
 
@@ -362,7 +366,9 @@ describe('finance service', () => {
   });
 
   it('rejects cancellation without a reason', async () => {
-    await expect(cancelMonthlyPayment(1, 5, '  ')).rejects.toThrow('Motivo de cancelamento obrigatório.');
+    await expect(cancelMonthlyPayment(1, 5, '  ')).rejects.toThrow(
+      'Motivo de cancelamento obrigatório.',
+    );
     expect(transactionMock.tx.update).not.toHaveBeenCalled();
   });
 });

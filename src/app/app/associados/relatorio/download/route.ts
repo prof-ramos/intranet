@@ -41,7 +41,11 @@ export async function GET(request: NextRequest) {
     const result = await generateReport(access.userId, filters, selectedKeys);
     csv = result.csv;
   } catch (error) {
-    logger.error('[report-download] failed to generate CSV', { error: toSafeErrorLog(error) }, error as Error);
+    logger.error(
+      '[report-download] failed to generate CSV',
+      { error: toSafeErrorLog(error) },
+      error as Error,
+    );
     return new Response('Falha ao gerar relatório.', { status: 500 });
   }
 

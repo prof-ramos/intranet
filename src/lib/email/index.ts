@@ -1,21 +1,21 @@
-import { env } from '@/lib/env'
+import { env } from '@/lib/env';
 
 export interface EmailMessage {
-  to: string
-  toName: string
-  subject: string
-  htmlBody: string
-  textBody: string
+  to: string;
+  toName: string;
+  subject: string;
+  htmlBody: string;
+  textBody: string;
 }
 
 export class MailjetSendError extends Error {
-  readonly code = 'MAILJET_SEND_FAILED'
-  readonly status: number
+  readonly code = 'MAILJET_SEND_FAILED';
+  readonly status: number;
 
   constructor(status: number) {
-    super(`Mailjet send failed with status ${status}`)
-    this.name = 'MailjetSendError'
-    this.status = status
+    super(`Mailjet send failed with status ${status}`);
+    this.name = 'MailjetSendError';
+    this.status = status;
   }
 }
 
@@ -42,10 +42,10 @@ export async function sendEmail(message: EmailMessage): Promise<void> {
         },
       ],
     }),
-  })
+  });
 
   if (!response.ok) {
-    await response.text().catch(() => undefined)
-    throw new MailjetSendError(response.status)
+    await response.text().catch(() => undefined);
+    throw new MailjetSendError(response.status);
   }
 }

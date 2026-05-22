@@ -19,7 +19,9 @@ export async function proxy(request: NextRequest) {
   const isProtectedRoute = PROTECTED_ROUTE_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
-  const isAuthPage = AUTH_PAGES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+  const isAuthPage = AUTH_PAGES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
 
   const { client, getResponse } = createProxySupabaseClient(request);
   let user = null;
@@ -27,7 +29,11 @@ export async function proxy(request: NextRequest) {
     const result = await client.auth.getUser();
     user = result.data.user;
   } catch (error) {
-    logger.warn('[Auth proxy] Supabase user lookup failed.', { error: toSafeErrorLog(error) }, error as Error);
+    logger.warn(
+      '[Auth proxy] Supabase user lookup failed.',
+      { error: toSafeErrorLog(error) },
+      error as Error,
+    );
   }
 
   if (!user && isProtectedRoute) {

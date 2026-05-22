@@ -31,7 +31,7 @@ export function SummaryStrip({
 
   return (
     <section
-      className="rounded-[16px] mb-4 grid overflow-hidden bg-white sm:grid-cols-3 xl:grid-cols-6"
+      className="mb-4 grid overflow-hidden rounded-[16px] bg-white sm:grid-cols-3 xl:grid-cols-6"
       style={{ border: `1px solid ${hairline}` }}
       aria-label="Resumo de atividades"
     >
@@ -59,7 +59,7 @@ export function SummaryStrip({
               type="button"
               key={item.label}
               onClick={item.action}
-              className={`hover:bg-[var(--summary-hover-bg)] flex flex-col px-5 py-4 text-left ${focusRingClass}`}
+              className={`flex flex-col px-5 py-4 text-left hover:bg-[var(--summary-hover-bg)] ${focusRingClass}`}
               style={
                 {
                   borderTop: `3px solid ${item.topColor}`,

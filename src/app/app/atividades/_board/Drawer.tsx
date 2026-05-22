@@ -21,13 +21,7 @@ import {
 } from '@/lib/ui/tokens';
 import { columns } from './constants';
 import { Avatar } from './ActivityCard';
-import type {
-  ActivityTimelineItem,
-  BoardActivity,
-  BoardPerson,
-  Priority,
-  Status,
-} from './types';
+import type { ActivityTimelineItem, BoardActivity, BoardPerson, Priority, Status } from './types';
 
 function isStatus(value: string): value is Status {
   return columns.some((column) => column.key === value);
@@ -112,7 +106,10 @@ export function Drawer({
   const priority = priorityStyles[activity.priority] ?? priorityStyles.normal;
   const labelStyle = { color: textMuted };
   const inputStyle = { borderColor: hairline, background: inputBg, color: textPrimary };
-  const inputClass = ['min-h-10 rounded-[8px] border px-2 text-[13px] lg:min-h-8', focusRingClass].join(' ');
+  const inputClass = [
+    'min-h-10 rounded-[8px] border px-2 text-[13px] lg:min-h-8',
+    focusRingClass,
+  ].join(' ');
   const hoverBgStyle = { '--activity-hover-bg': buttonOutlineHoverBg } as CSSProperties;
 
   return (
@@ -140,7 +137,10 @@ export function Drawer({
             <p className="m-0 text-[11px] tracking-[0.16em] uppercase" style={labelStyle}>
               Atividade #{activity.id}
             </p>
-            <h2 id="activity-details-title" className="mt-1.5 font-serif text-[26px] leading-tight font-bold">
+            <h2
+              id="activity-details-title"
+              className="mt-1.5 font-serif text-[26px] leading-tight font-bold"
+            >
               {activity.title}
             </h2>
           </div>
@@ -229,7 +229,7 @@ export function Drawer({
               <button
                 type="button"
                 onClick={onRequestReassign}
-                className={`inline-flex ml-auto items-center justify-center gap-2 rounded-[8px] border bg-white px-4 h-10 text-sm font-semibold transition-colors hover:bg-[var(--activity-hover-bg)] lg:h-8 ${focusRingClass}`}
+                className={`ml-auto inline-flex h-10 items-center justify-center gap-2 rounded-[8px] border bg-white px-4 text-sm font-semibold transition-colors hover:bg-[var(--activity-hover-bg)] lg:h-8 ${focusRingClass}`}
                 style={{ borderColor: buttonOutlineBorder, color: textPrimary, ...hoverBgStyle }}
                 disabled={people.length < 2}
                 aria-disabled={people.length < 2}
@@ -305,7 +305,8 @@ export function Drawer({
                       {item.summary}
                     </p>
                     <p className="mt-1 text-[11px]" style={{ color: textMuted }}>
-                      {item.actorName ?? 'Sistema'} · {new Date(item.createdAt).toLocaleString('pt-BR')}
+                      {item.actorName ?? 'Sistema'} ·{' '}
+                      {new Date(item.createdAt).toLocaleString('pt-BR')}
                     </p>
                   </li>
                 ))}

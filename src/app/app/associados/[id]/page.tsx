@@ -81,7 +81,7 @@ function EditLink({ href, children = 'Editar' }: { href: string; children?: Reac
   return (
     <Link
       href={href}
-      className="inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-10 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76aeea] focus-visible:ring-offset-1 lg:h-8"
+      className="inline-flex h-10 items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] focus-visible:ring-2 focus-visible:ring-[#76aeea] focus-visible:ring-offset-1 focus-visible:outline-none lg:h-8"
     >
       <Pencil size={13} aria-hidden="true" />
       {children}
@@ -177,7 +177,8 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
                     {isAssociationActive ? 'Associado ativo' : 'Inativo'}
                   </Pill>
                   <Pill tone={isFunctionalActive ? 'success' : 'neutral'}>
-                    {getAssociateStatusLabel(associate.functionalStatus) ?? 'Situação funcional pendente'}
+                    {getAssociateStatusLabel(associate.functionalStatus) ??
+                      'Situação funcional pendente'}
                   </Pill>
                   {associate.classPattern && <Pill>{associate.classPattern}</Pill>}
                 </div>
@@ -185,13 +186,13 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
               <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
                 <button
                   type="button"
-                  className={`inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-11 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-10 lg:min-h-10 ${focusRingClass}`}
+                  className={`inline-flex h-11 items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-10 lg:min-h-10 ${focusRingClass}`}
                 >
                   Imprimir ficha
                 </button>
                 <Link
                   href={`/app/associados/${id}/editar`}
-                  className={`inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-10 lg:min-h-10 ${focusRingClass}`}
+                  className={`inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-10 lg:min-h-10 ${focusRingClass}`}
                 >
                   Editar dados
                 </Link>
@@ -260,8 +261,8 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
                 i
               </span>
               <p className="m-0 text-sm leading-relaxed" style={{ color: infoNotice.text }}>
-                <strong>Visualização limitada.</strong> Dados pessoais sensíveis estão
-                mascarados conforme política de privacidade (LGPD).
+                <strong>Visualização limitada.</strong> Dados pessoais sensíveis estão mascarados
+                conforme política de privacidade (LGPD).
               </p>
             </div>
           )}
@@ -278,7 +279,11 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
             </div>
           )}
 
-          <SectionCard id="identificacao" title="Identificação" action={<EditLink href={`/app/associados/${id}/editar`} />}>
+          <SectionCard
+            id="identificacao"
+            title="Identificação"
+            action={<EditLink href={`/app/associados/${id}/editar`} />}
+          >
             <dl className="m-0">
               <Row label="Nome completo" value={associate.fullName} />
               <Row label="CPF" value={associate.cpf} mono />
@@ -291,20 +296,37 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
             </dl>
           </SectionCard>
 
-          <SectionCard id="endereco" title="Endereço" action={<EditLink href={`/app/associados/${id}/editar`} />}>
+          <SectionCard
+            id="endereco"
+            title="Endereço"
+            action={<EditLink href={`/app/associados/${id}/editar`} />}
+          >
             <dl className="m-0">
               <Row label="Endereço" value={associate.address} />
               <Row label="Cidade / País" value={location} />
             </dl>
           </SectionCard>
 
-          <SectionCard id="administrativo" title="Administrativo" action={<EditLink href={`/app/associados/${id}/editar`} />}>
+          <SectionCard
+            id="administrativo"
+            title="Administrativo"
+            action={<EditLink href={`/app/associados/${id}/editar`} />}
+          >
             <dl className="m-0">
-              <Row label="Situação funcional" value={getAssociateStatusLabel(associate.functionalStatus)} />
+              <Row
+                label="Situação funcional"
+                value={getAssociateStatusLabel(associate.functionalStatus)}
+              />
               <Row label="Classe / Padrão" value={associate.classPattern} />
               <Row label="Categoria" value={associate.associationCategory} />
-              <Row label="Contribuição" value={getAssociateStatusLabel(associate.contributionStatus)} />
-              <Row label="Início da lotação" value={formatAssociateDate(associate.assignmentStartDate)} />
+              <Row
+                label="Contribuição"
+                value={getAssociateStatusLabel(associate.contributionStatus)}
+              />
+              <Row
+                label="Início da lotação"
+                value={formatAssociateDate(associate.assignmentStartDate)}
+              />
             </dl>
             <div className="mt-4 rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-[#f8fafc] p-4">
               <p className="text-base-content/55 m-0 text-[11px] font-bold tracking-[0.10em] uppercase">
@@ -395,7 +417,11 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
             </SectionCard>
           )}
 
-          <SectionCard id="observacoes" title="Observações internas" action={<EditLink href={`/app/associados/${id}/editar`} />}>
+          <SectionCard
+            id="observacoes"
+            title="Observações internas"
+            action={<EditLink href={`/app/associados/${id}/editar`} />}
+          >
             <p className="text-base-content/75 m-0 text-sm leading-relaxed whitespace-pre-wrap">
               {associate.internalNotes || 'Nenhuma observação interna registrada.'}
             </p>

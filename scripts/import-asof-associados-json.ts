@@ -68,16 +68,18 @@ function timestampValue(value: unknown) {
 }
 
 function addressValue(row: RawAssociate) {
-  return [
-    stringValue(row.endereco),
-    stringValue(row.bairro),
-    stringValue(row.cidade),
-    stringValue(row.uf_endereco),
-    stringValue(row.cep),
-    stringValue(row.pais),
-  ]
-    .filter(Boolean)
-    .join(' · ') || null;
+  return (
+    [
+      stringValue(row.endereco),
+      stringValue(row.bairro),
+      stringValue(row.cidade),
+      stringValue(row.uf_endereco),
+      stringValue(row.cep),
+      stringValue(row.pais),
+    ]
+      .filter(Boolean)
+      .join(' · ') || null
+  );
 }
 
 function functionalStatus(row: RawAssociate): FunctionalStatus {
@@ -171,7 +173,9 @@ async function main() {
   const shouldReplace = process.argv.includes('--replace');
 
   if (!sourcePath) {
-    throw new Error('Uso: npx tsx scripts/import-asof-associados-json.ts <arquivo.json> [--apply] [--replace]');
+    throw new Error(
+      'Uso: npx tsx scripts/import-asof-associados-json.ts <arquivo.json> [--apply] [--replace]',
+    );
   }
 
   const databaseUrl = process.env.DATABASE_URL ?? process.env.DATABASE_POSTGRES_URL;
@@ -230,7 +234,9 @@ async function main() {
 
   try {
     const before = await sql<{ count: string }[]>`select count(*)::text as count from associates`;
-    const activities = await sql<{ count: string }[]>`select count(*)::text as count from activities`;
+    const activities = await sql<
+      { count: string }[]
+    >`select count(*)::text as count from activities`;
     const activityCount = Number(activities[0]?.count ?? 0);
 
     if (shouldReplace && activityCount > 0) {
@@ -272,12 +278,16 @@ async function main() {
       for (let index = 0; index < rows.length; index += BATCH_SIZE) {
         const batch = rows.slice(index, index + BATCH_SIZE);
         await transaction`insert into associates ${transaction(batch, columns)}`;
-        console.log(`Inserido lote ${Math.floor(index / BATCH_SIZE) + 1}/${Math.ceil(rows.length / BATCH_SIZE)}`);
+        console.log(
+          `Inserido lote ${Math.floor(index / BATCH_SIZE) + 1}/${Math.ceil(rows.length / BATCH_SIZE)}`,
+        );
       }
     });
 
     const after = await sql<{ count: string }[]>`select count(*)::text as count from associates`;
-    console.log(`Associados antes: ${before[0]?.count ?? '0'}. Associados depois: ${after[0]?.count ?? '0'}.`);
+    console.log(
+      `Associados antes: ${before[0]?.count ?? '0'}. Associados depois: ${after[0]?.count ?? '0'}.`,
+    );
   } finally {
     await sql.end();
   }

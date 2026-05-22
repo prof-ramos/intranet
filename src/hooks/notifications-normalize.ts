@@ -120,7 +120,7 @@ export function extractNotifications(
 ): NotificationItem[] {
   const rawItems = Array.isArray(payload)
     ? payload
-    : payload.notifications ?? payload.items ?? payload.data ?? [];
+    : (payload.notifications ?? payload.items ?? payload.data ?? []);
 
   return sortNotifications(
     rawItems.map(normalizeNotification).filter((item): item is NotificationItem => item !== null),

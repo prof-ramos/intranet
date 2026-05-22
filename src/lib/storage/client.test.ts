@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  getSupabaseAdminStorageClient,
-  getSupabaseAnonStorageClient,
-} from './client';
+import { getSupabaseAdminStorageClient, getSupabaseAnonStorageClient } from './client';
 
 const createClientMock = vi.fn();
 

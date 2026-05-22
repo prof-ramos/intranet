@@ -3,49 +3,49 @@ version: alpha
 name: ASOF Intranet
 description: Institutional operations interface for ASOF, combining diplomatic formality with dense administrative workflows.
 colors:
-  primary: "#040920"
-  on-primary: "#ffffff"
-  primary-container: "#06284f"
-  primary-container-hover: "#0d3260"
-  primary-container-active: "#123d73"
-  secondary: "#76aeea"
-  on-secondary: "#040920"
-  tertiary: "#e7c16b"
-  on-tertiary: "#4f3308"
+  primary: '#040920'
+  on-primary: '#ffffff'
+  primary-container: '#06284f'
+  primary-container-hover: '#0d3260'
+  primary-container-active: '#123d73'
+  secondary: '#76aeea'
+  on-secondary: '#040920'
+  tertiary: '#e7c16b'
+  on-tertiary: '#4f3308'
   # Note: on-tertiary is not yet implemented in tokens.ts. Components use warningText: '#a16207' instead.
-  background: "#f8fafc"
-  on-background: "#0d1f3c"
-  surface: "#ffffff"
-  surface-container-low: "#f8fafc"
-  surface-container: "#eef1f6"
-  surface-container-high: "#e7edf4"
-  surface-container-highest: "#dde3ec"
-  on-surface: "#0d1f3c"
-  on-surface-variant: "#59677a"
-  outline: "#c9d2df"
-  outline-variant: "#dde3ec"
-  inverse-surface: "#0d1f3c"
-  inverse-on-surface: "#ffffff"
-  success: "#22c55e"
-  on-success: "#ffffff"
-  success-container: "#dcfce7"
-  success-accent: "#86efac"
-  warning: "#eab308"
-  on-warning: "#ffffff"
-  warning-container: "#fef3c7"
-  warning-accent: "#e7c16b"
-  error: "#ef4444"
-  on-error: "#ffffff"
-  error-container: "#fee2e2"
-  information: "#2563eb"
-  status-todo: "#94a3b8"
-  status-progress: "#76aeea"
-  status-waiting: "#e7c16b"
-  status-done: "#86efac"
-  priority-low: "rgba(13,31,60,0.50)"
-  priority-normal: "rgba(13,31,60,0.70)"
-  priority-high: "#a16207"
-  priority-urgent: "#b91c1c"
+  background: '#f8fafc'
+  on-background: '#0d1f3c'
+  surface: '#ffffff'
+  surface-container-low: '#f8fafc'
+  surface-container: '#eef1f6'
+  surface-container-high: '#e7edf4'
+  surface-container-highest: '#dde3ec'
+  on-surface: '#0d1f3c'
+  on-surface-variant: '#59677a'
+  outline: '#c9d2df'
+  outline-variant: '#dde3ec'
+  inverse-surface: '#0d1f3c'
+  inverse-on-surface: '#ffffff'
+  success: '#22c55e'
+  on-success: '#ffffff'
+  success-container: '#dcfce7'
+  success-accent: '#86efac'
+  warning: '#eab308'
+  on-warning: '#ffffff'
+  warning-container: '#fef3c7'
+  warning-accent: '#e7c16b'
+  error: '#ef4444'
+  on-error: '#ffffff'
+  error-container: '#fee2e2'
+  information: '#2563eb'
+  status-todo: '#94a3b8'
+  status-progress: '#76aeea'
+  status-waiting: '#e7c16b'
+  status-done: '#86efac'
+  priority-low: 'rgba(13,31,60,0.50)'
+  priority-normal: 'rgba(13,31,60,0.70)'
+  priority-high: '#a16207'
+  priority-urgent: '#b91c1c'
 typography:
   display:
     fontFamily: Playfair Display
@@ -148,13 +148,13 @@ spacing:
   sidebar-width: 288px
   nav-item-height: 58px
 elevation:
-  flat: "0 0 0 #00000000"
-  hairline: "0 1px 0 #0409200d"
-  popover: "0 8px 20px #04092014"
-  card: "0 12px 30px #04092014"
-  button: "0 4px 0 #0409201f"
-  drawer: "-12px 0 30px #0409201f"
-  modal: "0 24px 60px #04092040"
+  flat: '0 0 0 #00000000'
+  hairline: '0 1px 0 #0409200d'
+  popover: '0 8px 20px #04092014'
+  card: '0 12px 30px #04092014'
+  button: '0 4px 0 #0409201f'
+  drawer: '-12px 0 30px #0409201f'
+  modal: '0 24px 60px #04092040'
   # Note: tokens.ts currently exports only cardShadow, drawerShadow, and badgeShadow (floatingBadgeShadow). The card shadow value in tokens.ts (0 1px 3px rgba(4,9,32,0.08), 0 1px 2px rgba(4,9,32,0.04)) differs from the design spec. Components use Tailwind defaults (shadow-sm, shadow-xl) or inline values. The remaining elevation levels (popover, button, modal, flat) are not yet exported as tokens.
 motion:
   duration-fast: 120ms
@@ -164,224 +164,224 @@ motion:
   easing-emphasized: cubic-bezier(0.2, 0, 0, 1)
 components:
   app-background:
-    backgroundColor: "{colors.background}"
-    textColor: "{colors.on-background}"
+    backgroundColor: '{colors.background}'
+    textColor: '{colors.on-background}'
   divider:
-    backgroundColor: "{colors.outline-variant}"
+    backgroundColor: '{colors.outline-variant}'
     size: 1px
   border-strong:
-    backgroundColor: "{colors.outline}"
+    backgroundColor: '{colors.outline}'
     size: 1px
   focus-ring:
-    backgroundColor: "{colors.secondary}"
-    textColor: "{colors.on-secondary}"
+    backgroundColor: '{colors.secondary}'
+    textColor: '{colors.on-secondary}'
     size: 2px
   tooltip:
-    backgroundColor: "{colors.inverse-surface}"
-    textColor: "{colors.inverse-on-surface}"
-    typography: "{typography.body-sm}"
-    rounded: "{rounded.md}"
-    padding: "8px 10px"
+    backgroundColor: '{colors.inverse-surface}'
+    textColor: '{colors.inverse-on-surface}'
+    typography: '{typography.body-sm}'
+    rounded: '{rounded.md}'
+    padding: '8px 10px'
   sidebar:
-    backgroundColor: "{colors.primary-container}"
-    textColor: "{colors.on-primary}"
-    width: "{spacing.sidebar-width}"
+    backgroundColor: '{colors.primary-container}'
+    textColor: '{colors.on-primary}'
+    width: '{spacing.sidebar-width}'
   sidebar-item:
-    textColor: "{colors.on-primary}"
-    typography: "{typography.body-md}"
-    height: "{spacing.nav-item-height}"
-    padding: "0 36px"
-    rounded: "{rounded.none}"
+    textColor: '{colors.on-primary}'
+    typography: '{typography.body-md}'
+    height: '{spacing.nav-item-height}'
+    padding: '0 36px'
+    rounded: '{rounded.none}'
   sidebar-item-hover:
-    backgroundColor: "{colors.primary-container-hover}"
-    textColor: "{colors.on-primary}"
+    backgroundColor: '{colors.primary-container-hover}'
+    textColor: '{colors.on-primary}'
   sidebar-item-active:
-    backgroundColor: "{colors.primary-container-active}"
-    textColor: "{colors.on-primary}"
+    backgroundColor: '{colors.primary-container-active}'
+    textColor: '{colors.on-primary}'
     size: 6px
   page-eyebrow:
-    textColor: "{colors.on-surface-variant}"
-    typography: "{typography.eyebrow}"
+    textColor: '{colors.on-surface-variant}'
+    typography: '{typography.eyebrow}'
   page-title:
-    textColor: "{colors.primary}"
-    typography: "{typography.headline-lg}"
+    textColor: '{colors.primary}'
+    typography: '{typography.headline-lg}'
   empty-state:
-    backgroundColor: "{colors.surface-container-low}"
-    textColor: "{colors.on-surface-variant}"
-    rounded: "{rounded.lg}"
-    padding: "{spacing.xl}"
+    backgroundColor: '{colors.surface-container-low}'
+    textColor: '{colors.on-surface-variant}'
+    rounded: '{rounded.lg}'
+    padding: '{spacing.xl}'
   card:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.on-surface}"
-    rounded: "{rounded.box}"
-    padding: "{spacing.card-padding}"
+    backgroundColor: '{colors.surface}'
+    textColor: '{colors.on-surface}'
+    rounded: '{rounded.box}'
+    padding: '{spacing.card-padding}'
   card-hover:
-    backgroundColor: "{colors.surface-container-high}"
-    textColor: "{colors.on-surface}"
+    backgroundColor: '{colors.surface-container-high}'
+    textColor: '{colors.on-surface}'
   card-emphasis:
-    backgroundColor: "{colors.surface-container-highest}"
-    textColor: "{colors.on-surface}"
-    rounded: "{rounded.box}"
-    padding: "{spacing.card-padding}"
+    backgroundColor: '{colors.surface-container-highest}'
+    textColor: '{colors.on-surface}'
+    rounded: '{rounded.box}'
+    padding: '{spacing.card-padding}'
   form-card:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.on-surface}"
-    rounded: "{rounded.box}"
-    padding: "{spacing.form-card-padding}"
+    backgroundColor: '{colors.surface}'
+    textColor: '{colors.on-surface}'
+    rounded: '{rounded.box}'
+    padding: '{spacing.form-card-padding}'
   kanban-column:
-    backgroundColor: "{colors.surface-container}"
-    textColor: "{colors.on-surface}"
-    rounded: "{rounded.box}"
-    padding: "{spacing.md}"
+    backgroundColor: '{colors.surface-container}'
+    textColor: '{colors.on-surface}'
+    rounded: '{rounded.box}'
+    padding: '{spacing.md}'
   kanban-card:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.on-surface}"
-    rounded: "{rounded.md}"
-    padding: "{spacing.md}"
+    backgroundColor: '{colors.surface}'
+    textColor: '{colors.on-surface}'
+    rounded: '{rounded.md}'
+    padding: '{spacing.md}'
   button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.on-primary}"
-    typography: "{typography.label-md}"
-    rounded: "{rounded.md}"
+    backgroundColor: '{colors.primary}'
+    textColor: '{colors.on-primary}'
+    typography: '{typography.label-md}'
+    rounded: '{rounded.md}'
     height: 40px
-    padding: "0 20px"
+    padding: '0 20px'
   button-secondary:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.primary}"
-    typography: "{typography.label-md}"
-    rounded: "{rounded.md}"
+    backgroundColor: '{colors.surface}'
+    textColor: '{colors.primary}'
+    typography: '{typography.label-md}'
+    rounded: '{rounded.md}'
     height: 40px
-    padding: "0 16px"
+    padding: '0 16px'
   input-field:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.on-surface}"
-    typography: "{typography.body-md}"
-    rounded: "{rounded.md}"
+    backgroundColor: '{colors.surface}'
+    textColor: '{colors.on-surface}'
+    typography: '{typography.body-md}'
+    rounded: '{rounded.md}'
     height: 48px
-    padding: "0 12px"
+    padding: '0 12px'
     # Note: Custom input components (e.g., NovaConsultaForm) use h-10 (40px), while DaisyUI inputs default to ~48px. The design system specifies 48px but migrated components use 40px.
   textarea:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.on-surface}"
-    typography: "{typography.body-md}"
-    rounded: "{rounded.md}"
-    padding: "{spacing.md}"
+    backgroundColor: '{colors.surface}'
+    textColor: '{colors.on-surface}'
+    typography: '{typography.body-md}'
+    rounded: '{rounded.md}'
+    padding: '{spacing.md}'
   badge:
-    typography: "{typography.label-sm}"
-    rounded: "{rounded.full}"
-    padding: "4px 10px"
+    typography: '{typography.label-sm}'
+    rounded: '{rounded.full}'
+    padding: '4px 10px'
   badge-success:
-    backgroundColor: "{colors.success-container}"
-    textColor: "{colors.success}"
-    typography: "{typography.label-sm}"
-    rounded: "{rounded.full}"
-    padding: "4px 10px"
+    backgroundColor: '{colors.success-container}'
+    textColor: '{colors.success}'
+    typography: '{typography.label-sm}'
+    rounded: '{rounded.full}'
+    padding: '4px 10px'
   badge-warning:
-    backgroundColor: "{colors.warning-container}"
-    textColor: "{colors.on-tertiary}"
-    typography: "{typography.label-sm}"
-    rounded: "{rounded.full}"
-    padding: "4px 10px"
+    backgroundColor: '{colors.warning-container}'
+    textColor: '{colors.on-tertiary}'
+    typography: '{typography.label-sm}'
+    rounded: '{rounded.full}'
+    padding: '4px 10px'
   badge-error:
-    backgroundColor: "{colors.error-container}"
-    textColor: "{colors.error}"
-    typography: "{typography.label-sm}"
-    rounded: "{rounded.full}"
-    padding: "4px 10px"
+    backgroundColor: '{colors.error-container}'
+    textColor: '{colors.error}'
+    typography: '{typography.label-sm}'
+    rounded: '{rounded.full}'
+    padding: '4px 10px'
   alert-success:
-    backgroundColor: "{colors.success-container}"
-    textColor: "{colors.success}"
-    rounded: "{rounded.lg}"
-    padding: "{spacing.lg}"
+    backgroundColor: '{colors.success-container}'
+    textColor: '{colors.success}'
+    rounded: '{rounded.lg}'
+    padding: '{spacing.lg}'
   alert-warning:
-    backgroundColor: "{colors.warning-container}"
-    textColor: "{colors.on-tertiary}"
-    rounded: "{rounded.lg}"
-    padding: "{spacing.lg}"
+    backgroundColor: '{colors.warning-container}'
+    textColor: '{colors.on-tertiary}'
+    rounded: '{rounded.lg}'
+    padding: '{spacing.lg}'
   alert-error:
-    backgroundColor: "{colors.error-container}"
-    textColor: "{colors.error}"
-    rounded: "{rounded.lg}"
-    padding: "{spacing.lg}"
+    backgroundColor: '{colors.error-container}'
+    textColor: '{colors.error}'
+    rounded: '{rounded.lg}'
+    padding: '{spacing.lg}'
   action-success:
-    backgroundColor: "{colors.success}"
-    textColor: "{colors.on-success}"
-    typography: "{typography.label-md}"
-    rounded: "{rounded.md}"
+    backgroundColor: '{colors.success}'
+    textColor: '{colors.on-success}'
+    typography: '{typography.label-md}'
+    rounded: '{rounded.md}'
     height: 36px
-    padding: "0 14px"
+    padding: '0 14px'
   action-warning:
-    backgroundColor: "{colors.warning}"
-    textColor: "{colors.on-warning}"
-    typography: "{typography.label-md}"
-    rounded: "{rounded.md}"
+    backgroundColor: '{colors.warning}'
+    textColor: '{colors.on-warning}'
+    typography: '{typography.label-md}'
+    rounded: '{rounded.md}'
     height: 36px
-    padding: "0 14px"
+    padding: '0 14px'
   action-error:
-    backgroundColor: "{colors.error}"
-    textColor: "{colors.on-error}"
-    typography: "{typography.label-md}"
-    rounded: "{rounded.md}"
+    backgroundColor: '{colors.error}'
+    textColor: '{colors.on-error}'
+    typography: '{typography.label-md}'
+    rounded: '{rounded.md}'
     height: 36px
-    padding: "0 14px"
+    padding: '0 14px'
   status-dot:
-    rounded: "{rounded.xs}"
+    rounded: '{rounded.xs}'
     size: 8px
   status-dot-todo:
-    backgroundColor: "{colors.status-todo}"
-    rounded: "{rounded.xs}"
+    backgroundColor: '{colors.status-todo}'
+    rounded: '{rounded.xs}'
     size: 8px
   status-dot-progress:
-    backgroundColor: "{colors.status-progress}"
-    rounded: "{rounded.xs}"
+    backgroundColor: '{colors.status-progress}'
+    rounded: '{rounded.xs}'
     size: 8px
   status-dot-waiting:
-    backgroundColor: "{colors.status-waiting}"
-    rounded: "{rounded.xs}"
+    backgroundColor: '{colors.status-waiting}'
+    rounded: '{rounded.xs}'
     size: 8px
   status-dot-done:
-    backgroundColor: "{colors.status-done}"
-    rounded: "{rounded.xs}"
+    backgroundColor: '{colors.status-done}'
+    rounded: '{rounded.xs}'
     size: 8px
   success-dot:
-    backgroundColor: "{colors.success-accent}"
-    rounded: "{rounded.xs}"
+    backgroundColor: '{colors.success-accent}'
+    rounded: '{rounded.xs}'
     size: 8px
   warning-dot:
-    backgroundColor: "{colors.warning-accent}"
-    rounded: "{rounded.xs}"
+    backgroundColor: '{colors.warning-accent}'
+    rounded: '{rounded.xs}'
     size: 8px
   priority-low:
-    textColor: "{colors.priority-low}"
-    typography: "{typography.label-sm}"
+    textColor: '{colors.priority-low}'
+    typography: '{typography.label-sm}'
   priority-normal:
-    textColor: "{colors.priority-normal}"
-    typography: "{typography.label-sm}"
+    textColor: '{colors.priority-normal}'
+    typography: '{typography.label-sm}'
   priority-high:
-    textColor: "{colors.priority-high}"
-    typography: "{typography.label-sm}"
+    textColor: '{colors.priority-high}'
+    typography: '{typography.label-sm}'
   priority-urgent:
-    textColor: "{colors.priority-urgent}"
-    typography: "{typography.label-sm}"
+    textColor: '{colors.priority-urgent}'
+    typography: '{typography.label-sm}'
   legal-tag:
-    backgroundColor: "{colors.tertiary}"
-    textColor: "{colors.on-tertiary}"
-    typography: "{typography.label-sm}"
-    rounded: "{rounded.sm}"
-    padding: "2px 6px"
+    backgroundColor: '{colors.tertiary}'
+    textColor: '{colors.on-tertiary}'
+    typography: '{typography.label-sm}'
+    rounded: '{rounded.sm}'
+    padding: '2px 6px'
   info-tag:
-    backgroundColor: "{colors.information}"
-    textColor: "{colors.on-secondary}"
-    typography: "{typography.label-sm}"
-    rounded: "{rounded.sm}"
-    padding: "2px 6px"
+    backgroundColor: '{colors.information}'
+    textColor: '{colors.on-secondary}'
+    typography: '{typography.label-sm}'
+    rounded: '{rounded.sm}'
+    padding: '2px 6px'
   tag-neutral:
-    backgroundColor: "{colors.surface-container-low}"
-    textColor: "{colors.on-surface-variant}"
-    borderColor: "{colors.outline-variant}"
-    typography: "10px semibold"
-    rounded: "{rounded.full}"
-    padding: "2px 8px"
+    backgroundColor: '{colors.surface-container-low}'
+    textColor: '{colors.on-surface-variant}'
+    borderColor: '{colors.outline-variant}'
+    typography: '10px semibold'
+    rounded: '{rounded.full}'
+    padding: '2px 8px'
 ---
 
 # ASOF Intranet Design System

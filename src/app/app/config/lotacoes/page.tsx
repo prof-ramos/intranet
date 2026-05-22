@@ -24,12 +24,10 @@ export default async function LotacoesPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
-      <p className="text-[rgba(13,31,60,0.55)] text-[11px] tracking-[0.18em] uppercase">
+      <p className="text-[11px] tracking-[0.18em] text-[rgba(13,31,60,0.55)] uppercase">
         Configurações · Lotações
       </p>
-      <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
-        Lotações
-      </h1>
+      <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">Lotações</h1>
 
       <div className="mt-8 rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white p-6">
         <h2 className="mb-4 text-sm font-semibold text-[#040920]">Nova lotação</h2>
@@ -50,7 +48,7 @@ export default async function LotacoesPage() {
             {items.map((item) => (
               <tr
                 key={item.id}
-                className="border-b border-[rgba(4,9,32,0.05)] last:border-0 hover:bg-[rgba(13,31,60,0.015)] transition-colors"
+                className="border-b border-[rgba(4,9,32,0.05)] transition-colors last:border-0 hover:bg-[rgba(13,31,60,0.015)]"
               >
                 <td className="px-6 py-4 font-medium text-[#040920]">{item.name}</td>
                 <td className="px-6 py-4 text-[rgba(13,31,60,0.65)]">
@@ -67,9 +65,7 @@ export default async function LotacoesPage() {
                 <td className="px-6 py-4">
                   <span
                     className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                      item.isActive
-                        ? 'bg-green-50 text-green-700'
-                        : 'bg-red-50 text-red-600'
+                      item.isActive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
                     }`}
                   >
                     {item.isActive ? 'Ativo' : 'Inativo'}

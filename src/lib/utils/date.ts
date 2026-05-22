@@ -83,7 +83,9 @@ export function formatShortDate(value: string | Date | null | undefined): string
 export function formatDueDate(value: string | null | undefined): string | null {
   const date = dateFromValue(value);
   if (!date) return null;
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' }).replace('.', '');
+  return date
+    .toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' })
+    .replace('.', '');
 }
 
 /**

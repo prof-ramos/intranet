@@ -14,8 +14,10 @@ import type { DomainEventType } from '@/lib/integrations/outbox';
 /** Default retention period for delivered webhook records before cleanup. */
 const DELIVERED_RECORD_RETENTION_DAYS = 30;
 
-
-export async function getDomainEventById(id: number, executor: DbExecutor = db): Promise<DomainEvent | null> {
+export async function getDomainEventById(
+  id: number,
+  executor: DbExecutor = db,
+): Promise<DomainEvent | null> {
   const [event] = await executor
     .select()
     .from(domainEvents)
@@ -84,7 +86,12 @@ export async function insertWebhookSubscription(
 
 export async function updateWebhookSubscriptionById(
   id: number,
-  values: Partial<Pick<WebhookSubscription, 'name' | 'targetUrl' | 'subscribedEvents' | 'isActive' | 'secretCiphertext'>>,
+  values: Partial<
+    Pick<
+      WebhookSubscription,
+      'name' | 'targetUrl' | 'subscribedEvents' | 'isActive' | 'secretCiphertext'
+    >
+  >,
   executor: DbExecutor = db,
 ) {
   const [subscription] = await executor
@@ -132,7 +139,9 @@ export function getLastDeliveryAttemptForSubscription(
   deliveries: WebhookDelivery[],
   webhookSubscriptionId: number,
 ): WebhookDelivery | null {
-  const matching = deliveries.filter((delivery) => delivery.webhookSubscriptionId === webhookSubscriptionId);
+  const matching = deliveries.filter(
+    (delivery) => delivery.webhookSubscriptionId === webhookSubscriptionId,
+  );
   return matching.at(-1) ?? null;
 }
 
@@ -150,12 +159,7 @@ export async function recoverStuckProcessingEvents(
   return executor
     .update(domainEvents)
     .set({ deliveryStatus: 'pending', updatedAt: new Date() })
-    .where(
-      and(
-        eq(domainEvents.deliveryStatus, 'processing'),
-        lt(domainEvents.updatedAt, cutoff),
-      ),
-    );
+    .where(and(eq(domainEvents.deliveryStatus, 'processing'), lt(domainEvents.updatedAt, cutoff)));
 }
 
 /**
@@ -256,12 +260,7 @@ export async function cleanUpOldDeliveries(
 
   const result = await executor
     .delete(webhookDeliveries)
-    .where(
-      and(
-        eq(webhookDeliveries.status, 'delivered'),
-        lt(webhookDeliveries.createdAt, cutoff),
-      ),
-    )
+    .where(and(eq(webhookDeliveries.status, 'delivered'), lt(webhookDeliveries.createdAt, cutoff)))
     .returning({ id: webhookDeliveries.id });
 
   return result.length;

@@ -9,11 +9,13 @@ Procedimentos operacionais para deploy, backup, rollback e verificação de saú
 ### 1.1 Supabase (produção/remoto)
 
 Via Dashboard:
+
 1. Acesse o projeto Supabase (`vmohxhyfgywaqfuqeuom`)
 2. Database → Backups → Trigger new backup
 3. Aguarde confirmação (geralmente < 5 min para bancos < 5 GB)
 
 Via CLI (se configurado):
+
 ```bash
 supabase db dump --data-only --db-url "$DATABASE_MIGRATION_URL" > backup-$(date +%Y%m%d-%H%M%S).sql
 ```
@@ -246,12 +248,14 @@ DATABASE_URL=<produção> npm run test:db
 **Causa:** Projeto configurado na Vercel como `Framework Preset: Other` com `Output Directory: public`.
 
 **Correção:**
+
 1. `vercel.json` deve ter `"framework": "nextjs"`
 2. Project Settings → Framework Preset → Next.js
 3. Output Directory → Next.js default (não `public` ou `.`)
 4. Redeploy: `vercel deploy --prod --yes`
 
 **Validação:**
+
 ```bash
 curl -sSI https://intranet.asof.com.br/
 # Esperado: 307 → /app
@@ -294,14 +298,14 @@ O sistema usa `src/lib/logger.ts` para logs estruturados com redação automáti
 
 ### Níveis de log
 
-| Nível | Uso |
-|-------|-----|
+| Nível   | Uso                                |
+| ------- | ---------------------------------- |
 | `trace` | Rastreamento detalhado de execução |
-| `debug` | Informações de depuração |
-| `info` | Eventos normais do sistema |
-| `warn` | Condições anômalas não críticas |
-| `error` | Falhas que requerem atenção |
-| `fatal` | Erros irrecuperáveis |
+| `debug` | Informações de depuração           |
+| `info`  | Eventos normais do sistema         |
+| `warn`  | Condições anômalas não críticas    |
+| `error` | Falhas que requerem atenção        |
+| `fatal` | Erros irrecuperáveis               |
 
 Configuração via env var `LOG_LEVEL` (padrão: `info`).
 

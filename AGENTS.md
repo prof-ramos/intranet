@@ -1,31 +1,32 @@
 <!-- BEGIN:nextjs-agent-rules -->
+
 # Contexto Institucional
 
 A ASOF (Associação Nacional dos Oficiais de Chancelaria do Serviço Exterior Brasileiro) é uma associação civil sem fins lucrativos fundada em 1991, com ~763 associados. Representa a carreira de Oficial de Chancelaria do Ministério das Relações Exteriores (Itamaraty/MRE) — servidores de nível superior responsáveis pela gestão administrativa da política externa brasileira.
 
 ## Vocabulário do domínio → campos do banco
 
-| Termo | Significado | Campo DB |
-|---|---|---|
-| **Lotação** | Posto ou órgão onde o servidor está em exercício (ex: "Embaixada em Paris", "SERE") | `assignment` |
-| **Posto** | Representação diplomática no exterior (embaixada, consulado) ou a SERE em Brasília | `assignment` |
-| **Padrão / Classe** | Nível na carreira: Classe A → B → C → Especial, cada uma com 5 padrões | `classPattern` |
-| **Situação associativa** | Status do associado na ASOF: `ativo`, `inativo` | `associationStatus` |
-| **Situação funcional** | Status no serviço público: `ativo`, `aposentado`, `cedido`, `em_licenca` | `functionalStatus` |
-| **SIAPE** | Número de matrícula do servidor federal | `siape` |
-| **Contribuição** | Status de pagamento da anuidade ASOF: `em_dia`, `inadimplente`, `pendente_migracao` | `contributionStatus` |
-| **Mensalidade** | Registro mensal de pagamento de associado | `monthly_payments` |
-| **Ofício** | Documento oficial gerado pelo sistema | `oficios` |
-| **Método de pagamento** | Forma de quitação da mensalidade: `folha`, `boleto`, `pix`, `transferencia`, `outros` | `paymentMethod` |
-| **Status de pagamento** | Situação da mensalidade: `pago`, `pendente`, `atrasado`, `isento`, `cancelado` | `paymentStatus` |
+| Termo                    | Significado                                                                           | Campo DB             |
+| ------------------------ | ------------------------------------------------------------------------------------- | -------------------- |
+| **Lotação**              | Posto ou órgão onde o servidor está em exercício (ex: "Embaixada em Paris", "SERE")   | `assignment`         |
+| **Posto**                | Representação diplomática no exterior (embaixada, consulado) ou a SERE em Brasília    | `assignment`         |
+| **Padrão / Classe**      | Nível na carreira: Classe A → B → C → Especial, cada uma com 5 padrões                | `classPattern`       |
+| **Situação associativa** | Status do associado na ASOF: `ativo`, `inativo`                                       | `associationStatus`  |
+| **Situação funcional**   | Status no serviço público: `ativo`, `aposentado`, `cedido`, `em_licenca`              | `functionalStatus`   |
+| **SIAPE**                | Número de matrícula do servidor federal                                               | `siape`              |
+| **Contribuição**         | Status de pagamento da anuidade ASOF: `em_dia`, `inadimplente`, `pendente_migracao`   | `contributionStatus` |
+| **Mensalidade**          | Registro mensal de pagamento de associado                                             | `monthly_payments`   |
+| **Ofício**               | Documento oficial gerado pelo sistema                                                 | `oficios`            |
+| **Método de pagamento**  | Forma de quitação da mensalidade: `folha`, `boleto`, `pix`, `transferencia`, `outros` | `paymentMethod`      |
+| **Status de pagamento**  | Situação da mensalidade: `pago`, `pendente`, `atrasado`, `isento`, `cancelado`        | `paymentStatus`      |
 
 ## Roles do sistema
 
-| Role DB | Quem é |
-|---|---|
-| `admin` | Coordenador administrativo da ASOF (equipe interna) |
-| `diretoria` | Membros da Diretoria Executiva (presidente, VP, diretores) |
-| `secretaria` | Auxiliar administrativo / secretaria |
+| Role DB      | Quem é                                                     |
+| ------------ | ---------------------------------------------------------- |
+| `admin`      | Coordenador administrativo da ASOF (equipe interna)        |
+| `diretoria`  | Membros da Diretoria Executiva (presidente, VP, diretores) |
+| `secretaria` | Auxiliar administrativo / secretaria                       |
 
 ## Contexto geográfico
 
@@ -44,6 +45,7 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+
 <!-- END:nextjs-agent-rules -->
 
 # Project Notes
@@ -185,7 +187,7 @@ Quando uma feature é grande o suficiente, o Maestro decompõe em tarefas indepe
 Maestro (terminal principal)
 ├── Agente A — worktree: feature-auth-refactor
 │   └── Responsabilidade: refatorar middleware de auth
-├── Agente B — worktree: feature-new-dashboard  
+├── Agente B — worktree: feature-new-dashboard
 │   └── Responsabilidade: criar componentes do dashboard
 └── Agente C — worktree: fix-login-race
     └── Responsabilidade: corrigir race condition no login

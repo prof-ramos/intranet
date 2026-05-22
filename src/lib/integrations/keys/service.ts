@@ -96,10 +96,7 @@ export async function listApiKeys(executor: DbExecutor = db): Promise<ApiKeyList
   }));
 }
 
-export async function revokeApiKey(
-  id: number,
-  executor: DbExecutor = db,
-): Promise<boolean> {
+export async function revokeApiKey(id: number, executor: DbExecutor = db): Promise<boolean> {
   const [updated] = await executor
     .update(integrationApiKeys)
     .set({ isActive: false, updatedAt: new Date() })
@@ -115,7 +112,11 @@ export async function rotateApiKey(
 ): Promise<CreateApiKeyResult | null> {
   return db.transaction(async (tx) => {
     const [existing] = await tx
-      .select({ name: integrationApiKeys.name, scopes: integrationApiKeys.scopes, isActive: integrationApiKeys.isActive })
+      .select({
+        name: integrationApiKeys.name,
+        scopes: integrationApiKeys.scopes,
+        isActive: integrationApiKeys.isActive,
+      })
       .from(integrationApiKeys)
       .where(eq(integrationApiKeys.id, id))
       .limit(1);

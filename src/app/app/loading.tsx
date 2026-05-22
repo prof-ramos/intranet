@@ -5,7 +5,7 @@ export default function AppLoading() {
 
       <div className="drawer-content flex flex-col">
         <header className="flex items-center justify-between border-b border-[rgba(4,9,32,0.05)] bg-white md:hidden">
-          <div className="inline-flex h-11 w-11 items-center justify-center rounded-full animate-pulse bg-[#f8fafc]" />
+          <div className="inline-flex h-11 w-11 animate-pulse items-center justify-center rounded-full bg-[#f8fafc]" />
         </header>
 
         <div className="mx-auto w-full max-w-[1180px] flex-1 px-5 py-7 sm:px-8 lg:px-10">
@@ -14,7 +14,7 @@ export default function AppLoading() {
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className="rounded-[16px] min-h-[104px] animate-pulse border border-[rgba(4,9,32,0.05)] bg-white px-4 py-3"
+                className="min-h-[104px] animate-pulse rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white px-4 py-3"
               >
                 <div className="mb-2 h-3 w-20 rounded bg-[#f8fafc]" />
                 <div className="h-8 w-16 rounded bg-[#f8fafc]" />

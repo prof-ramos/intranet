@@ -11,14 +11,14 @@ A superficie HTTP publica atual da ASOF Intranet e pequena e intencionalmente re
 
 Hoje existem **6 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
 
-| Metodo | Rota | Finalidade |
-|---|---|---|
-| `GET` | `/app/associados/relatorio/download` | Exportar associados filtrados em CSV |
-| `GET` | `/api/oficios/[id]/download` | Gerar e baixar PDF de um oficio |
-| `GET` | `/api/v1/health` | Healthcheck autenticado da fundacao de integracoes |
-| `GET`, `POST` | `/api/v1/events` | Superficie administrativa para dispatch outbound-only; sem ingestao inbound |
-| `GET` | `/api/v1/events/dispatch` | Dispatch agendado por cron bearer para pendencias e retries outbound |
-| `GET` | `/api/v1/juridico/sla-warnings` | Job agendado por cron bearer para emitir notificacoes de SLA juridico |
+| Metodo        | Rota                                 | Finalidade                                                                  |
+| ------------- | ------------------------------------ | --------------------------------------------------------------------------- |
+| `GET`         | `/app/associados/relatorio/download` | Exportar associados filtrados em CSV                                        |
+| `GET`         | `/api/oficios/[id]/download`         | Gerar e baixar PDF de um oficio                                             |
+| `GET`         | `/api/v1/health`                     | Healthcheck autenticado da fundacao de integracoes                          |
+| `GET`, `POST` | `/api/v1/events`                     | Superficie administrativa para dispatch outbound-only; sem ingestao inbound |
+| `GET`         | `/api/v1/events/dispatch`            | Dispatch agendado por cron bearer para pendencias e retries outbound        |
+| `GET`         | `/api/v1/juridico/sla-warnings`      | Job agendado por cron bearer para emitir notificacoes de SLA juridico       |
 
 ### O que esta fora deste documento
 
@@ -29,9 +29,9 @@ Hoje existem **6 endpoints HTTP expostos**, com superficie publica intencionalme
 
 ### Padrao arquitetural atual
 
-| Superficie | Uso | Localizacao |
-|---|---|---|
-| `Route Handlers` | Endpoints HTTP publicos | `src/app/**/route.ts` |
+| Superficie       | Uso                                        | Localizacao             |
+| ---------------- | ------------------------------------------ | ----------------------- |
+| `Route Handlers` | Endpoints HTTP publicos                    | `src/app/**/route.ts`   |
 | `Server Actions` | Mutacoes internas disparadas pela UI React | `src/app/**/actions.ts` |
 
 ---
@@ -95,10 +95,10 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 
 ### Roles
 
-| Role | Acesso |
-|---|---|
-| `admin` | acesso completo aos endpoints atuais |
-| `diretoria` | acesso completo aos endpoints atuais |
+| Role         | Acesso                                                               |
+| ------------ | -------------------------------------------------------------------- |
+| `admin`      | acesso completo aos endpoints atuais                                 |
+| `diretoria`  | acesso completo aos endpoints atuais                                 |
 | `secretaria` | acesso ao download de oficios; sem acesso ao relatorio de associados |
 
 ### Logging e Observabilidade
@@ -147,13 +147,13 @@ Gera um arquivo CSV UTF-8 com BOM contendo associados filtrados. O endpoint cons
 
 #### Query Parameters
 
-| Parametro | Tipo | Obrigatorio | Valores aceitos | Descricao |
-|---|---|---|---|---|
-| `fields` | `string[]` | Nao | ver lista abaixo | Campos a incluir no CSV; se omitido, exporta todos |
-| `functionalStatus` | `string` | Nao | `ativo`, `aposentado`, `cedido`, `em_licenca`, `todos` | Filtra pela situacao funcional |
-| `associationStatus` | `string` | Nao | `ativo`, `inativo`, `todos` | Filtra pela situacao associativa |
-| `contributionStatus` | `string` | Nao | `em_dia`, `inadimplente`, `pendente_migracao`, `todos` | Filtra pela contribuicao |
-| `birthMonth` | `number` | Nao | `1` a `12`, `todos` | Filtra pelo mes de aniversario |
+| Parametro            | Tipo       | Obrigatorio | Valores aceitos                                        | Descricao                                          |
+| -------------------- | ---------- | ----------- | ------------------------------------------------------ | -------------------------------------------------- |
+| `fields`             | `string[]` | Nao         | ver lista abaixo                                       | Campos a incluir no CSV; se omitido, exporta todos |
+| `functionalStatus`   | `string`   | Nao         | `ativo`, `aposentado`, `cedido`, `em_licenca`, `todos` | Filtra pela situacao funcional                     |
+| `associationStatus`  | `string`   | Nao         | `ativo`, `inativo`, `todos`                            | Filtra pela situacao associativa                   |
+| `contributionStatus` | `string`   | Nao         | `em_dia`, `inadimplente`, `pendente_migracao`, `todos` | Filtra pela contribuicao                           |
+| `birthMonth`         | `number`   | Nao         | `1` a `12`, `todos`                                    | Filtra pelo mes de aniversario                     |
 
 #### Campos disponiveis em `fields`
 
@@ -190,11 +190,11 @@ Exemplo ilustrativo:
 
 #### Respostas de erro
 
-| Status | Quando ocorre | Observacoes |
-|---|---|---|
-| `403 Forbidden` | sessao ausente ou role sem permissao | hoje o helper retorna `403` sem distinguir claramente nao autenticado de nao autorizado |
-| `429 Too Many Requests` | limite de 10 requisicoes/minuto por IP excedido | retorna header `Retry-After` |
-| `500 Internal Server Error` | falha ao consultar dados ou gerar o CSV | corpo: `Falha ao gerar relatório.` |
+| Status                      | Quando ocorre                                   | Observacoes                                                                             |
+| --------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `403 Forbidden`             | sessao ausente ou role sem permissao            | hoje o helper retorna `403` sem distinguir claramente nao autenticado de nao autorizado |
+| `429 Too Many Requests`     | limite de 10 requisicoes/minuto por IP excedido | retorna header `Retry-After`                                                            |
+| `500 Internal Server Error` | falha ao consultar dados ou gerar o CSV         | corpo: `Falha ao gerar relatório.`                                                      |
 
 #### Exemplo de uso
 
@@ -244,9 +244,9 @@ Busca um oficio pelo ID numerico, gera o PDF sob demanda e devolve o arquivo com
 
 #### Path Parameters
 
-| Parametro | Tipo | Obrigatorio | Descricao |
-|---|---|---|---|
-| `id` | `number` | Sim | ID numerico do oficio |
+| Parametro | Tipo     | Obrigatorio | Descricao             |
+| --------- | -------- | ----------- | --------------------- |
+| `id`      | `number` | Sim         | ID numerico do oficio |
 
 #### Formato da solicitacao
 
@@ -272,12 +272,12 @@ Content-Disposition: attachment; filename="OF_CIO_No_001_2026_ASOF.pdf"
 
 #### Respostas de erro
 
-| Status | Quando ocorre | Observacoes |
-|---|---|---|
-| `400 Bad Request` | `id` nao e numerico | corpo: `ID inválido` |
-| `404 Not Found` | oficio inexistente | corpo: `Ofício não encontrado` |
-| `307 Temporary Redirect` | sessao ausente ou role sem permissao | via `requireRole()`: sem sessao redireciona para `/login`; role invalida redireciona para `/app` |
-| `500 Internal Server Error` | falha ao buscar o oficio ou gerar o PDF | corpo: `Erro ao gerar PDF` |
+| Status                      | Quando ocorre                           | Observacoes                                                                                      |
+| --------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `400 Bad Request`           | `id` nao e numerico                     | corpo: `ID inválido`                                                                             |
+| `404 Not Found`             | oficio inexistente                      | corpo: `Ofício não encontrado`                                                                   |
+| `307 Temporary Redirect`    | sessao ausente ou role sem permissao    | via `requireRole()`: sem sessao redireciona para `/login`; role invalida redireciona para `/app` |
+| `500 Internal Server Error` | falha ao buscar o oficio ou gerar o PDF | corpo: `Erro ao gerar PDF`                                                                       |
 
 #### Exemplo de uso
 
@@ -325,12 +325,12 @@ Retorna um envelope JSON padronizado confirmando que a superficie versionada de 
 
 #### Respostas de erro
 
-| Status | Quando ocorre |
-|---|---|
-| `401 Unauthorized` | headers M2M ausentes/invalidos e sem sessao autorizada |
-| `403 Forbidden` | sessao humana existe, mas sem role permitida |
-| `429 Too Many Requests` | limite de 60 requisicoes por 15 minutos por IP excedido (`rate_limit_exceeded`) |
-| `503 Service Unavailable` | integracoes habilitadas sem configuracao completa |
+| Status                    | Quando ocorre                                                                   |
+| ------------------------- | ------------------------------------------------------------------------------- |
+| `401 Unauthorized`        | headers M2M ausentes/invalidos e sem sessao autorizada                          |
+| `403 Forbidden`           | sessao humana existe, mas sem role permitida                                    |
+| `429 Too Many Requests`   | limite de 60 requisicoes por 15 minutos por IP excedido (`rate_limit_exceeded`) |
+| `503 Service Unavailable` | integracoes habilitadas sem configuracao completa                               |
 
 #### Resposta de sucesso
 
@@ -362,11 +362,11 @@ Retorna um envelope JSON padronizado confirmando que a superficie versionada de 
 
 #### Respostas de erro
 
-| Status | Quando ocorre |
-|---|---|
-| `401 Unauthorized` | headers M2M ausentes/invalidos e sem sessao autorizada |
-| `403 Forbidden` | sessao humana existe, mas sem role permitida |
-| `503 Service Unavailable` | integracoes habilitadas sem configuracao completa |
+| Status                    | Quando ocorre                                          |
+| ------------------------- | ------------------------------------------------------ |
+| `401 Unauthorized`        | headers M2M ausentes/invalidos e sem sessao autorizada |
+| `403 Forbidden`           | sessao humana existe, mas sem role permitida           |
+| `503 Service Unavailable` | integracoes habilitadas sem configuracao completa      |
 
 ---
 
@@ -477,9 +477,9 @@ Processa eventos pendentes do outbox para webhooks outbound. A rota e bearer-onl
 
 #### Query Parameters
 
-| Parametro | Tipo | Obrigatorio | Descricao |
-|---|---|---|---|
-| `limit` | `number` | Nao | Tamanho do lote entre `1` e `100`; default `20` |
+| Parametro | Tipo     | Obrigatorio | Descricao                                       |
+| --------- | -------- | ----------- | ----------------------------------------------- |
+| `limit`   | `number` | Nao         | Tamanho do lote entre `1` e `100`; default `20` |
 
 #### Exemplo de solicitacao
 
@@ -508,9 +508,9 @@ Executa o job de verificacao de consultas/processos juridicos com SLA proximo do
 
 #### Query Parameters
 
-| Parametro | Tipo | Obrigatorio | Descricao |
-|---|---|---|---|
-| `limit` | `number` | Nao | Tamanho do lote entre `1` e `100`; default `50` |
+| Parametro | Tipo     | Obrigatorio | Descricao                                       |
+| --------- | -------- | ----------- | ----------------------------------------------- |
+| `limit`   | `number` | Nao         | Tamanho do lote entre `1` e `100`; default `50` |
 
 #### Exemplo de solicitacao
 

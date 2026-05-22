@@ -5,15 +5,7 @@ import { StarterKit } from '@tiptap/starter-kit';
 import { TextAlign } from '@tiptap/extension-text-align';
 import { FontSize, TextStyle } from '@tiptap/extension-text-style';
 import type { ComponentType } from 'react';
-import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
-  Bold,
-  Italic,
-  List,
-  ListOrdered,
-} from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, List, ListOrdered } from 'lucide-react';
 import { useEffect } from 'react';
 import { focusRingClass, hairline, navy, textMuted } from '@/lib/ui/tokens';
 
@@ -163,7 +155,10 @@ export function RichTextEditor({ valueHtml, onChange, error }: RichTextEditorPro
             disabled={disabled}
             onClick={() => editor?.chain().focus().setTextAlign('right').run()}
           />
-          <label className="ml-1 inline-flex items-center gap-2 text-xs font-semibold" style={{ color: textMuted }}>
+          <label
+            className="ml-1 inline-flex items-center gap-2 text-xs font-semibold"
+            style={{ color: textMuted }}
+          >
             Tamanho
             <select
               disabled={disabled}

@@ -1,11 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  deleteFile,
-  downloadFile,
-  getSignedUrl,
-  listFiles,
-  uploadFile,
-} from './index';
+import { deleteFile, downloadFile, getSignedUrl, listFiles, uploadFile } from './index';
 
 const uploadMock = vi.fn();
 const createSignedUrlMock = vi.fn();
@@ -45,7 +39,16 @@ describe('storage helpers', () => {
     });
     removeMock.mockResolvedValue({ error: null });
     listMock.mockResolvedValue({
-      data: [{ name: 'file.pdf', id: '1', updated_at: null, created_at: null, last_accessed_at: null, metadata: null }],
+      data: [
+        {
+          name: 'file.pdf',
+          id: '1',
+          updated_at: null,
+          created_at: null,
+          last_accessed_at: null,
+          metadata: null,
+        },
+      ],
       error: null,
     });
   });
@@ -94,7 +97,10 @@ describe('storage helpers', () => {
   });
 
   it('throws stable errors when storage operations fail', async () => {
-    createSignedUrlMock.mockResolvedValue({ data: { signedUrl: null }, error: { message: 'boom' } });
+    createSignedUrlMock.mockResolvedValue({
+      data: { signedUrl: null },
+      error: { message: 'boom' },
+    });
     downloadMock.mockResolvedValue({ data: null, error: { message: 'boom' } });
     removeMock.mockResolvedValue({ error: { message: 'boom' } });
     listMock.mockResolvedValue({ data: null, error: { message: 'boom' } });

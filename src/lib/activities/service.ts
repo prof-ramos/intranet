@@ -138,7 +138,7 @@ export async function updateActivityService(input: UpdateActivityInput) {
   const nextAssigneeId = input.assigneeId === undefined ? current.assigneeId : input.assigneeId;
   const nextCompletedAt =
     nextStatus === 'concluido'
-      ? current.completedAt ?? new Date()
+      ? (current.completedAt ?? new Date())
       : input.status && current.status === 'concluido'
         ? null
         : current.completedAt;

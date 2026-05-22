@@ -29,12 +29,10 @@ export default async function UsuariosPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
-      <p className="text-[rgba(13,31,60,0.55)] text-[11px] tracking-[0.18em] uppercase">
+      <p className="text-[11px] tracking-[0.18em] text-[rgba(13,31,60,0.55)] uppercase">
         Configurações · Usuários
       </p>
-      <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
-        Usuários
-      </h1>
+      <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">Usuários</h1>
 
       <div className="mt-8 overflow-hidden rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white">
         <table className="w-full text-sm">
@@ -51,17 +49,17 @@ export default async function UsuariosPage() {
             {users.map((user) => (
               <tr
                 key={user.id}
-                className="border-b border-[rgba(4,9,32,0.05)] last:border-0 hover:bg-[rgba(13,31,60,0.015)] transition-colors"
+                className="border-b border-[rgba(4,9,32,0.05)] transition-colors last:border-0 hover:bg-[rgba(13,31,60,0.015)]"
               >
                 <td className="px-6 py-4 font-medium text-[#040920]">
                   {user.name}
                   {user.mustChangePassword && (
-                    <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                    <span className="ml-2 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-amber-600 uppercase">
                       Troca obrigatória
                     </span>
                   )}
                   {user.id === currentUser.userId && (
-                    <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                    <span className="ml-2 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-blue-600 uppercase">
                       Você
                     </span>
                   )}
@@ -73,9 +71,7 @@ export default async function UsuariosPage() {
                 <td className="px-6 py-4">
                   <span
                     className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                      user.isActive
-                        ? 'bg-green-50 text-green-700'
-                        : 'bg-red-50 text-red-600'
+                      user.isActive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
                     }`}
                   >
                     {user.isActive ? 'Ativo' : 'Inativo'}

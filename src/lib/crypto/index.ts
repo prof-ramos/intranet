@@ -57,11 +57,7 @@ export function decrypt(ciphertext: string, key: string): string {
     throw new Error('Invalid v1 encrypted value format.');
   }
 
-  const decipher = createDecipheriv(
-    'aes-256-gcm',
-    derivedKey,
-    Buffer.from(ivEncoded, 'base64url'),
-  );
+  const decipher = createDecipheriv('aes-256-gcm', derivedKey, Buffer.from(ivEncoded, 'base64url'));
   decipher.setAuthTag(Buffer.from(authTagEncoded, 'base64url'));
 
   const decrypted = Buffer.concat([
@@ -139,11 +135,7 @@ export function encryptV2(
  *
  * @throws Error if the ciphertext format is invalid or decryption fails.
  */
-export function decryptV2(
-  ciphertext: string,
-  masterKey: string,
-  context: KeyContext,
-): string {
+export function decryptV2(ciphertext: string, masterKey: string, context: KeyContext): string {
   if (!ciphertext.startsWith(V2_PREFIX)) {
     if (ciphertext.startsWith(V1_PREFIX)) {
       throw new Error('v1 ciphertext passed to decryptV2; use decrypt() for v1.');
@@ -162,11 +154,7 @@ export function decryptV2(
   }
 
   const derivedKey = hkdfDeriveKey(masterKey, context);
-  const decipher = createDecipheriv(
-    'aes-256-gcm',
-    derivedKey,
-    Buffer.from(ivEncoded, 'base64url'),
-  );
+  const decipher = createDecipheriv('aes-256-gcm', derivedKey, Buffer.from(ivEncoded, 'base64url'));
   decipher.setAuthTag(Buffer.from(authTagEncoded, 'base64url'));
 
   const decrypted = Buffer.concat([

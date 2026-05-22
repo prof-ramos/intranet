@@ -4,7 +4,7 @@ import { escapeLikePattern } from '@/lib/db/like-pattern';
 
 export interface MonthlyPaymentsSearchParams {
   q: string;
-  status?: typeof paymentStatus.enumValues[number];
+  status?: (typeof paymentStatus.enumValues)[number];
   method?: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros';
   location?: 'brasil' | 'exterior';
   page: number;

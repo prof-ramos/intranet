@@ -26,7 +26,9 @@ describe('juridico/status', () => {
   describe('getLegalConsultationStatusLabel', () => {
     it('returns label for valid statuses', () => {
       expect(getLegalConsultationStatusLabel('aberta')).toBe('Aberta');
-      expect(getLegalConsultationStatusLabel('aguardando_escritorio')).toBe('Aguardando escritório');
+      expect(getLegalConsultationStatusLabel('aguardando_escritorio')).toBe(
+        'Aguardando escritório',
+      );
       expect(getLegalConsultationStatusLabel('respondida')).toBe('Respondida');
       expect(getLegalConsultationStatusLabel('arquivada')).toBe('Arquivada');
     });

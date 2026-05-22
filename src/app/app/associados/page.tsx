@@ -1,21 +1,42 @@
 import { requireAuth } from '@/lib/auth/require-auth';
 import { getAssociatesListPage, getAssociateStatusLabel } from '@/lib/associates/service';
 import { getRoleLabel } from '@/lib/ui/role-labels';
-import { parseAssociatesSearchParams, buildAssociatesSearchParams } from '@/lib/associates/search-params';
+import {
+  parseAssociatesSearchParams,
+  buildAssociatesSearchParams,
+} from '@/lib/associates/search-params';
 import { AssociadosFilters } from './AssociadosFilters';
 import { ChevronLeft, ChevronRight, Download, Pencil, Search } from 'lucide-react';
 import Link from 'next/link';
-import { hairline, textMuted, navy, skyBlue, success, successBg, canvas, focusRingClass, errorBg, error as errorColor } from '@/lib/ui/tokens';
+import {
+  hairline,
+  textMuted,
+  navy,
+  skyBlue,
+  success,
+  successBg,
+  canvas,
+  focusRingClass,
+  errorBg,
+  error as errorColor,
+} from '@/lib/ui/tokens';
 
 const PAGE_SIZE = 20;
 
 export default async function AssociadosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string; contributionStatus?: string; functionalStatus?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    page?: string;
+    contributionStatus?: string;
+    functionalStatus?: string;
+  }>;
 }) {
   const user = await requireAuth();
-  const { q, page, contributionStatus, functionalStatus } = parseAssociatesSearchParams(await searchParams);
+  const { q, page, contributionStatus, functionalStatus } = parseAssociatesSearchParams(
+    await searchParams,
+  );
 
   const { rows, total } = await getAssociatesListPage(page, PAGE_SIZE, q, { contributionStatus, functionalStatus }, user.role);
 
@@ -36,11 +57,17 @@ export default async function AssociadosPage({
   return (
     <div>
       {/* Header */}
-      <div className="sticky top-0 z-20 border-b px-5 py-3 sm:px-8 lg:px-10 bg-white" style={{ borderColor: hairline }}>
+      <div
+        className="sticky top-0 z-20 border-b bg-white px-5 py-3 sm:px-8 lg:px-10"
+        style={{ borderColor: hairline }}
+      >
         <div className="mx-auto grid w-full max-w-[1180px] gap-3 sm:grid-cols-[minmax(240px,420px)_auto] sm:items-center sm:justify-between">
           <div className="min-w-0">
             <form method="GET" action="/app/associados">
-              <label className="flex h-11 min-h-11 w-full items-center gap-3 rounded-[8px] border bg-white px-3" style={{ borderColor: hairline }}>
+              <label
+                className="flex h-11 min-h-11 w-full items-center gap-3 rounded-[8px] border bg-white px-3"
+                style={{ borderColor: hairline }}
+              >
                 <span className="sr-only">Buscar associado por nome</span>
                 <Search size={18} style={{ color: textMuted }} aria-hidden="true" />
                 <input
@@ -77,7 +104,9 @@ export default async function AssociadosPage({
               </div>
               <div className="min-w-0 leading-tight">
                 <p className="max-w-[190px] truncate text-sm font-semibold">{user.name}</p>
-                <p className="text-xs" style={{ color: textMuted }}>{getRoleLabel(user.role)}</p>
+                <p className="text-xs" style={{ color: textMuted }}>
+                  {getRoleLabel(user.role)}
+                </p>
               </div>
             </div>
           </div>
@@ -98,13 +127,19 @@ export default async function AssociadosPage({
         </section>
 
         {/* Tabela */}
-        <section className="rounded-[10px] overflow-hidden border bg-white shadow-sm" style={{ borderColor: hairline }}>
+        <section
+          className="overflow-hidden rounded-[10px] border bg-white shadow-sm"
+          style={{ borderColor: hairline }}
+        >
           <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <p style={{ color: textMuted }}>
               {total === 0 ? 'Nenhum resultado' : `${from}–${to} de ${total}`}
             </p>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <Link href="/app/associados?page=1" className={`text-sm font-semibold hover:underline ${focusRingClass}`}>
+              <Link
+                href="/app/associados?page=1"
+                className={`text-sm font-semibold hover:underline ${focusRingClass}`}
+              >
                 Ver todos ({total})
               </Link>
               <Link
@@ -135,7 +170,12 @@ export default async function AssociadosPage({
                   </span>
                 )}
                 {totalPages > 0 && (
-                  <span className="px-2 text-xs tabular-nums" style={{ color: textMuted }} aria-live="polite" role="status">
+                  <span
+                    className="px-2 text-xs tabular-nums"
+                    style={{ color: textMuted }}
+                    aria-live="polite"
+                    role="status"
+                  >
                     {page}/{totalPages}
                   </span>
                 )}
@@ -166,29 +206,70 @@ export default async function AssociadosPage({
             <table className="w-full text-sm" aria-label="Lista de associados">
               <thead className="bg-[#040920] text-white">
                 <tr className="text-left">
-                  <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Nome</th>
-                  <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Lotação</th>
-                  <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Posto</th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
+                  >
+                    Nome
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
+                  >
+                    Lotação
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
+                  >
+                    Posto
+                  </th>
                   {showEmail && (
-                    <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Email</th>
+                    <th
+                      scope="col"
+                      className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
+                    >
+                      Email
+                    </th>
                   )}
-                  <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Situação</th>
-                  <th scope="col" className="px-4 py-3 font-semibold text-[11px] tracking-[0.06em] uppercase">Contribuição</th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
+                  >
+                    Situação
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
+                  >
+                    Contribuição
+                  </th>
                   <th scope="col" className="w-10 px-4 py-3 text-center" aria-label="Ações" />
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-16 text-center" style={{ color: textMuted }}>
+                    <td
+                      colSpan={showEmail ? 7 : 6}
+                      className="py-16 text-center"
+                      style={{ color: textMuted }}
+                    >
                       Nenhum associado encontrado.
                     </td>
                   </tr>
                 ) : (
                   rows.map((row) => (
-                    <tr key={row.id} className="group border-b transition-colors hover:bg-[#f8fafc]" style={{ borderColor: hairline }}>
+                    <tr
+                      key={row.id}
+                      className="group border-b transition-colors hover:bg-[#f8fafc]"
+                      style={{ borderColor: hairline }}
+                    >
                       <td className="px-4 py-3 font-medium">
-                        <Link href={`/app/associados/${row.id}`} className={`hover:underline ${focusRingClass}`}>
+                        <Link
+                          href={`/app/associados/${row.id}`}
+                          className={`hover:underline ${focusRingClass}`}
+                        >
                           {row.fullName}
                         </Link>
                       </td>
@@ -213,13 +294,25 @@ export default async function AssociadosPage({
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className="inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold tracking-[0.06em] uppercase border"
+                          className="inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-[0.06em] uppercase"
                           style={
                             row.contributionStatus === 'em_dia'
-                              ? { backgroundColor: successBg, color: success, borderColor: 'transparent' }
+                              ? {
+                                  backgroundColor: successBg,
+                                  color: success,
+                                  borderColor: 'transparent',
+                                }
                               : row.contributionStatus === 'inadimplente'
-                                ? { backgroundColor: errorBg, color: errorColor, borderColor: 'transparent' }
-                                : { backgroundColor: canvas, color: textMuted, borderColor: hairline }
+                                ? {
+                                    backgroundColor: errorBg,
+                                    color: errorColor,
+                                    borderColor: 'transparent',
+                                  }
+                                : {
+                                    backgroundColor: canvas,
+                                    color: textMuted,
+                                    borderColor: hairline,
+                                  }
                           }
                         >
                           {getAssociateStatusLabel(row.contributionStatus) ?? '—'}
@@ -228,7 +321,7 @@ export default async function AssociadosPage({
                       <td className="px-4 py-3 text-center">
                         <Link
                           href={`/app/associados/${row.id}/editar`}
-                          className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-[rgba(13,31,60,0.55)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-[#f8fafc] hover:text-[#76aeea] ${focusRingClass}`}
+                          className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-[rgba(13,31,60,0.55)] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[#f8fafc] hover:text-[#76aeea] focus-visible:opacity-100 ${focusRingClass}`}
                           aria-label={`Editar ${row.fullName}`}
                         >
                           <Pencil size={14} aria-hidden="true" />

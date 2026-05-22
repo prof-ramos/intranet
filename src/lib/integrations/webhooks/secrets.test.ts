@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { decryptWebhookSecret, encryptWebhookSecret, isV1WebhookSecret } from '@/lib/integrations/webhooks/secrets';
+import {
+  decryptWebhookSecret,
+  encryptWebhookSecret,
+  isV1WebhookSecret,
+} from '@/lib/integrations/webhooks/secrets';
 import { encrypt as encryptV1 } from '@/lib/crypto';
 
 const mockEnv = vi.hoisted(() => ({

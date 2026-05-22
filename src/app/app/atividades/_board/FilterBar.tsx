@@ -224,7 +224,7 @@ export function FilterBar({
             })
           }
           className={[
-            'inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-3 text-xs font-semibold transition',
+            'inline-flex items-center gap-1 rounded-full border px-3 text-xs font-semibold whitespace-nowrap transition',
             desktopDenseControlClass,
             focusRingClass,
           ].join(' ')}

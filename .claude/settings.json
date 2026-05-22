@@ -22,11 +22,7 @@
       "Bash(git pull:*)",
       "Bash(git log:*)"
     ],
-    "deny": [
-      "Bash(curl:*)",
-      "Bash(wget:*)",
-      "Bash(rm -rf:*)"
-    ],
+    "deny": ["Bash(curl:*)", "Bash(wget:*)", "Bash(rm -rf:*)"],
     "defaultMode": "acceptEdits"
   },
   "env": {

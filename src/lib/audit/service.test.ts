@@ -130,9 +130,7 @@ describe('logDataAccess', () => {
       entityId: 42,
     });
 
-    expect(mockValues).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'data_view' }),
-    );
+    expect(mockValues).toHaveBeenCalledWith(expect.objectContaining({ action: 'data_view' }));
   });
 
   it('prefixes export action as data_export', async () => {
@@ -142,9 +140,7 @@ describe('logDataAccess', () => {
       entityType: 'associate',
     });
 
-    expect(mockValues).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'data_export' }),
-    );
+    expect(mockValues).toHaveBeenCalledWith(expect.objectContaining({ action: 'data_export' }));
   });
 
   it('prefixes edit action as data_edit', async () => {
@@ -155,9 +151,7 @@ describe('logDataAccess', () => {
       entityId: 42,
     });
 
-    expect(mockValues).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'data_edit' }),
-    );
+    expect(mockValues).toHaveBeenCalledWith(expect.objectContaining({ action: 'data_edit' }));
   });
 
   it('delegates to logAuditAction with prefixed action and PII sanitization', async () => {

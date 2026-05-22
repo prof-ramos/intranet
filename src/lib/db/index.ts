@@ -12,10 +12,7 @@ const logger = createLogger('db');
 // databaseUrl intentionally prefers DATABASE_URL for runtime connections.
 // Falls back to Supabase Vercel integration var names (POSTGRES_URL, POSTGRES_PRISMA_URL).
 const databaseUrl =
-  env.DATABASE_URL ??
-  env.DATABASE_POSTGRES_URL ??
-  env.POSTGRES_PRISMA_URL ??
-  env.POSTGRES_URL;
+  env.DATABASE_URL ?? env.DATABASE_POSTGRES_URL ?? env.POSTGRES_PRISMA_URL ?? env.POSTGRES_URL;
 
 if (!databaseUrl) {
   throw new Error('DATABASE_URL or DATABASE_POSTGRES_URL must be set.');
@@ -57,7 +54,11 @@ export const db = drizzle(client, { schema });
 
 export type Tx =
   | typeof db
-  | PgTransaction<PostgresJsQueryResultHKT, typeof schema, ExtractTablesWithRelations<typeof schema>>;
+  | PgTransaction<
+      PostgresJsQueryResultHKT,
+      typeof schema,
+      ExtractTablesWithRelations<typeof schema>
+    >;
 
 /** Uniform executor type for all repository functions. Satisfied by both `db` and any `tx`. */
 export type DbExecutor = Tx;

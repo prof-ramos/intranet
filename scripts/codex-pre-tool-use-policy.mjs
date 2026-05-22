@@ -27,7 +27,8 @@ if (!command) {
 const blockedPatterns = [
   {
     pattern: /\bgit\s+add\s+(?:\.|-A|--all)(?:\s|$)/,
-    reason: 'Use path-specific git add so local tool state and unrelated dirty files are not staged.',
+    reason:
+      'Use path-specific git add so local tool state and unrelated dirty files are not staged.',
   },
   {
     pattern: /\bgit\s+reset\s+--hard\b/,
@@ -46,7 +47,8 @@ const blockedPatterns = [
     reason: 'Forced worktree removal can discard unfinished parallel-agent work.',
   },
   {
-    pattern: /\brm\s+-[^\n;|&]*r[^\n;|&]*f[^\n;|&]*(?:\s|$)(?:\.git|\.worktrees|\.claude\/worktrees)\b/,
+    pattern:
+      /\brm\s+-[^\n;|&]*r[^\n;|&]*f[^\n;|&]*(?:\s|$)(?:\.git|\.worktrees|\.claude\/worktrees)\b/,
     reason: 'Recursive force removal of repo/worktree metadata is blocked by project policy.',
   },
 ];

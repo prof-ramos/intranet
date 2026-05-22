@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createIntegrationRateLimiter, getClientIp, getIntegrationRateLimitKey } from './rate-limit';
+import {
+  createIntegrationRateLimiter,
+  getClientIp,
+  getIntegrationRateLimitKey,
+} from './rate-limit';
 
 // Mock the ip module to control getTrustedClientIp behavior
 vi.mock('@/lib/ip', () => ({

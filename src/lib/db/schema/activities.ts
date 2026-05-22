@@ -1,4 +1,13 @@
-import { bigint, index, integer, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import {
+  bigint,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+} from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { admins } from '@/lib/db/schema/admins';
 import { associates } from '@/lib/db/schema/associates';

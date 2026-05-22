@@ -20,27 +20,28 @@ function NewKeyAfterRotation({ rawKey, onDismiss }: NewKeyAfterRotationProps) {
   }
 
   return (
-    <div
-      role="alert"
-      className="mt-3 rounded-[10px] border border-amber-200 bg-amber-50 p-4"
-    >
+    <div role="alert" className="mt-3 rounded-[10px] border border-amber-200 bg-amber-50 p-4">
       <div className="flex items-start gap-2">
         <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-700" aria-hidden="true" />
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-amber-900">
             Nova chave gerada. Esta é a única vez que ela será exibida.
           </p>
           <div className="mt-2 flex items-center gap-2">
-            <code className="flex-1 min-w-0 break-all rounded-md border border-amber-200 bg-white px-2.5 py-1.5 text-[11px] font-mono text-[#040920] select-all">
+            <code className="min-w-0 flex-1 rounded-md border border-amber-200 bg-white px-2.5 py-1.5 font-mono text-[11px] break-all text-[#040920] select-all">
               {rawKey}
             </code>
             <button
               type="button"
               onClick={handleCopy}
               aria-label={copied ? 'Copiado' : 'Copiar nova chave'}
-              className={`shrink-0 inline-flex items-center gap-1 rounded-md border border-amber-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-amber-900 transition-colors hover:bg-amber-100 ${focusRingClass}`}
+              className={`inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-amber-900 transition-colors hover:bg-amber-100 ${focusRingClass}`}
             >
-              {copied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
+              {copied ? (
+                <Check size={12} aria-hidden="true" />
+              ) : (
+                <Copy size={12} aria-hidden="true" />
+              )}
               {copied ? 'Copiado' : 'Copiar'}
             </button>
           </div>
@@ -101,9 +102,7 @@ export function ApiKeyActionsPanel({ id, isActive: initialIsActive }: ApiKeyActi
   }
 
   if (!isActive) {
-    return (
-      <span className="text-xs font-medium text-[rgba(13,31,60,0.40)]">Revogada</span>
-    );
+    return <span className="text-xs font-medium text-[rgba(13,31,60,0.40)]">Revogada</span>;
   }
 
   return (
@@ -151,10 +150,14 @@ export function ApiKeyActionsPanel({ id, isActive: initialIsActive }: ApiKeyActi
       </div>
 
       {revokeError && (
-        <p role="alert" className="text-xs text-red-600">{revokeError}</p>
+        <p role="alert" className="text-xs text-red-600">
+          {revokeError}
+        </p>
       )}
       {rotateError && (
-        <p role="alert" className="text-xs text-red-600">{rotateError}</p>
+        <p role="alert" className="text-xs text-red-600">
+          {rotateError}
+        </p>
       )}
 
       {rotatedKey && (

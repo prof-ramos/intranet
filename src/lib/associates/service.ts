@@ -15,7 +15,11 @@ import {
   type AssociatesFilters,
 } from './repository';
 import { db } from '@/lib/db';
-import { functionalStatus as fsEnum, associationStatus as asEnum, contributionStatus as csEnum } from '@/lib/db/schema';
+import {
+  functionalStatus as fsEnum,
+  associationStatus as asEnum,
+  contributionStatus as csEnum,
+} from '@/lib/db/schema';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { logDataAccess } from '@/lib/audit/service';
 import { getAssociateAuditHistory } from '@/lib/audit/queries';

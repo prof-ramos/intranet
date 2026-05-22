@@ -173,7 +173,9 @@ export async function deleteAdminAuthUser(email: string, adminId?: number) {
         metadata: { targetEmail: email, targetUserId: user.id },
       });
     } catch (auditError) {
-      logger.error('[deleteAdminAuthUser] audit logging failed', { error: toSafeErrorLog(auditError) });
+      logger.error('[deleteAdminAuthUser] audit logging failed', {
+        error: toSafeErrorLog(auditError),
+      });
       // Audit failure does not block deletion, but it is logged.
     }
   }

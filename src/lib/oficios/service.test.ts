@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { saveOfficialLetter, updateOfficialLetter, cancelOfficialLetter, generateOfficialLetterNumber } from './service';
+import {
+  saveOfficialLetter,
+  updateOfficialLetter,
+  cancelOfficialLetter,
+  generateOfficialLetterNumber,
+} from './service';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import type { NewOfficialLetter, OfficialLetter } from '@/lib/db/schema/oficios';
 
@@ -168,29 +173,31 @@ describe('oficios service', () => {
   });
 
   it('cancels an official letter and logs audit action', async () => {
-      const repository = await import('./repository');
-      const audit = await import('@/lib/audit/service');
+    const repository = await import('./repository');
+    const audit = await import('@/lib/audit/service');
 
-      vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
-      vi.mocked(repository.cancelOfficialLetter).mockResolvedValue({
-        ...BASE_OFFICIAL_LETTER,
-        status: 'cancelado',
-      });
-
-      const result = await cancelOfficialLetter(12, 1);
-
-      expect(result.status).toBe('cancelado');
-      expect(audit.logAuditAction).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: 'official_letter_cancelled',
-          entityId: 12,
-        }),
-      );
+    vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
+    vi.mocked(repository.cancelOfficialLetter).mockResolvedValue({
+      ...BASE_OFFICIAL_LETTER,
+      status: 'cancelado',
     });
 
-    it('throws when cancelling a non-existent letter', async () => {
-      const repository = await import('./repository');
-      vi.mocked(repository.findOfficialLetterById).mockResolvedValue(null as unknown as Awaited<ReturnType<typeof repository.findOfficialLetterById>>);
+    const result = await cancelOfficialLetter(12, 1);
+
+    expect(result.status).toBe('cancelado');
+    expect(audit.logAuditAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'official_letter_cancelled',
+        entityId: 12,
+      }),
+    );
+  });
+
+  it('throws when cancelling a non-existent letter', async () => {
+    const repository = await import('./repository');
+    vi.mocked(repository.findOfficialLetterById).mockResolvedValue(
+      null as unknown as Awaited<ReturnType<typeof repository.findOfficialLetterById>>,
+    );
 
     await expect(cancelOfficialLetter(999, 1)).rejects.toThrow('Ofício não encontrado.');
   });

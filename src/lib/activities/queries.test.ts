@@ -24,13 +24,10 @@ describe('activities queries', () => {
   });
 
   it('preserves the authenticated current user when admin rows include the same id', () => {
-    const result = buildPeopleList(
-      { userId: 7, name: 'Sessao Atual', role: 'diretoria' },
-      [
-        { id: 7, name: 'Registro Antigo', role: 'admin' },
-        { id: 9, name: 'Outra Pessoa', role: 'secretaria' },
-      ],
-    );
+    const result = buildPeopleList({ userId: 7, name: 'Sessao Atual', role: 'diretoria' }, [
+      { id: 7, name: 'Registro Antigo', role: 'admin' },
+      { id: 9, name: 'Outra Pessoa', role: 'secretaria' },
+    ]);
 
     expect(result.currentUser).toEqual({
       id: 7,

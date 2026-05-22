@@ -1,11 +1,11 @@
-@import "tailwindcss";
-@plugin "daisyui";
+@import 'tailwindcss';
+@plugin 'daisyui';
 
-@plugin "daisyui/theme" {
-  name: "ASOF";
+@plugin 'daisyui/theme' {
+  name: 'ASOF';
   default: true;
   prefersdark: false;
-  color-scheme: "light";
+  color-scheme: 'light';
   --color-base-100: #f8fafc;
   --color-base-200: #eef1f6;
   --color-base-300: #dde3ec;
@@ -42,7 +42,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

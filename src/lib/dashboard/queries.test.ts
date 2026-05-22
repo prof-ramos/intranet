@@ -63,7 +63,7 @@ describe('dashboard queries', () => {
 
     expect(brasilSql).toContain('count(*) filter');
     expect(brasilSql).toContain(' is null');
-    expect(brasilSql).toContain("nullif(btrim(");
+    expect(brasilSql).toContain('nullif(btrim(');
     expect(brasilSql).toContain("in ('brasil', 'brazil')");
 
     expect(exteriorSql).toContain('count(*) filter');
@@ -79,7 +79,7 @@ describe('dashboard queries', () => {
     const selectShape = dbMock.lastSelectShape as Record<string, SQL>;
     const countrySql = compileSql(selectShape.country);
 
-    expect(countrySql).toContain("when lower(btrim(");
+    expect(countrySql).toContain('when lower(btrim(');
     expect(countrySql).toContain("in ('brasil', 'brazil') then 'Brasil'");
     expect(dbMock._selectChain.groupBy).toHaveBeenCalled();
   });

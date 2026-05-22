@@ -60,10 +60,10 @@ describe('parseReportExportParams', () => {
   it.each(['0', '-1', 'abc', '1e2', '0x10'])(
     'ignores invalid birthMonth value %s',
     (birthMonth) => {
-    expect(parseReportExportParams(new URLSearchParams({ birthMonth }))).toEqual({
-      filters: {},
-      selectedKeys: [],
-    });
+      expect(parseReportExportParams(new URLSearchParams({ birthMonth }))).toEqual({
+        filters: {},
+        selectedKeys: [],
+      });
     },
   );
 });

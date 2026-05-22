@@ -45,7 +45,11 @@ describe('activity urgency tiers', () => {
   });
 
   it('completed activity suppresses all tiers regardless of dueOffset', () => {
-    expect(computeTiers(-1, 'concluido')).toEqual({ isLate: false, isUrgent: false, isSoon: false });
+    expect(computeTiers(-1, 'concluido')).toEqual({
+      isLate: false,
+      isUrgent: false,
+      isSoon: false,
+    });
     expect(computeTiers(0, 'concluido')).toEqual({ isLate: false, isUrgent: false, isSoon: false });
     expect(computeTiers(1, 'concluido')).toEqual({ isLate: false, isUrgent: false, isSoon: false });
   });

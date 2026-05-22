@@ -3,7 +3,8 @@ import { associates } from '@/lib/db/schema';
 import { eq, and, asc, sql } from 'drizzle-orm';
 import type { Associate } from '@/lib/db/schema/associates';
 
-export type ReportAssociate = Pick<Associate,
+export type ReportAssociate = Pick<
+  Associate,
   | 'id'
   | 'fullName'
   | 'primaryEmail'
@@ -26,12 +27,16 @@ export type ReportAssociate = Pick<Associate,
   | 'associationCategory'
 >;
 
-import type { functionalStatus as FunctionalStatusEnum, associationStatus as AssociationStatusEnum, contributionStatus as ContributionStatusEnum } from '@/lib/db/schema/associates';
+import type {
+  functionalStatus as FunctionalStatusEnum,
+  associationStatus as AssociationStatusEnum,
+  contributionStatus as ContributionStatusEnum,
+} from '@/lib/db/schema/associates';
 
 interface ReportFilters {
-  functionalStatus?: typeof FunctionalStatusEnum.enumValues[number];
-  associationStatus?: typeof AssociationStatusEnum.enumValues[number];
-  contributionStatus?: typeof ContributionStatusEnum.enumValues[number];
+  functionalStatus?: (typeof FunctionalStatusEnum.enumValues)[number];
+  associationStatus?: (typeof AssociationStatusEnum.enumValues)[number];
+  contributionStatus?: (typeof ContributionStatusEnum.enumValues)[number];
   birthMonth?: number;
 }
 

@@ -368,9 +368,7 @@ const expectedIndexes = {
     'idx_audit_entity',
     'idx_audit_performed_by',
   ],
-  assignments: [
-    'assignments_pkey',
-  ],
+  assignments: ['assignments_pkey'],
   domain_events: [
     'domain_events_pkey',
     'idx_domain_events_actor_admin_id',
@@ -619,9 +617,7 @@ describe('database schema contract', () => {
   });
 
   it('has RLS enabled with at least one policy on every app table', async () => {
-    const rows = await db<
-      { relname: string; relrowsecurity: boolean; policy_count: number }[]
-    >`
+    const rows = await db<{ relname: string; relrowsecurity: boolean; policy_count: number }[]>`
       select c.relname, c.relrowsecurity, count(p.polname)::int as policy_count
       from pg_class c
       join pg_namespace n on n.oid = c.relnamespace

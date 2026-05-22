@@ -30,8 +30,12 @@ export function AssociatePicker({
         style={{ borderColor: '#c9d2df' }}
       >
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold" style={{ color: '#0d1f3c' }}>{value.name}</p>
-          <p className="mt-0.5 text-xs" style={{ color: '#59677a' }}>Associado vinculado</p>
+          <p className="truncate text-sm font-semibold" style={{ color: '#0d1f3c' }}>
+            {value.name}
+          </p>
+          <p className="mt-0.5 text-xs" style={{ color: '#59677a' }}>
+            Associado vinculado
+          </p>
         </div>
         <button
           type="button"
@@ -66,7 +70,9 @@ export function AssociatePicker({
           style={{ borderColor: '#c9d2df', boxShadow: '0 8px 20px rgba(4,9,32,0.08)' }}
         >
           {filtered.length === 0 ? (
-            <p className="px-3 py-2 text-sm" style={{ color: '#59677a' }}>Nenhum associado encontrado.</p>
+            <p className="px-3 py-2 text-sm" style={{ color: '#59677a' }}>
+              Nenhum associado encontrado.
+            </p>
           ) : (
             filtered.map((associate) => (
               <button
@@ -78,7 +84,7 @@ export function AssociatePicker({
                   setOpen(false);
                 }}
                 className={[
-                  'block w-full rounded-md px-3 py-3 text-left lg:py-2 hover:bg-[#f8fafc]',
+                  'block w-full rounded-md px-3 py-3 text-left hover:bg-[#f8fafc] lg:py-2',
                   focusRingClass,
                 ].join(' ')}
                 style={{ color: '#0d1f3c' }}

@@ -14,6 +14,7 @@ A seguir, será apresentada a estrutura do padrão ofício, de acordo com a orde
 ## 5.1 Partes do documento no padrão ofício
 
 ### 5.1.1 Cabeçalho
+
 O cabeçalho é utilizado apenas na primeira página do documento, centralizado na área determinada pela formatação (ver subitem “5.2 Formatação e apresentação”). No cabeçalho deverão constar os seguintes elementos:
 
 a) brasão de Armas da República: no topo da página. Não há necessidade de ser aplicado em cores. O uso de marca da instituição deve ser evitado na correspondência oficial para não se sobrepor ao Brasão de Armas da República.
@@ -32,6 +33,7 @@ Exemplo:
 Os dados do órgão, tais como endereço, telefone, endereço de correspondência eletrônica, sítio eletrônico oficial da instituição, podem ser informados no rodapé do documento, centralizados.
 
 ### 5.1.2 Identificação do expediente
+
 Os documentos oficiais devem ser identificados da seguinte maneira:
 a) nome do documento: tipo de expediente por extenso, com todas as letras maiúsculas;
 b) indicação de numeração: abreviatura da palavra “número”, padronizada como No;
@@ -41,6 +43,7 @@ d) alinhamento: à margem esquerda da página.
 Exemplo: OFÍCIO No 652/2018/SAA/SE/MT
 
 ### 5.1.3 Local e data do documento
+
 Na grafia de datas em um documento, o conteúdo deve constar da seguinte forma:
 a) composição: local e data do documento;
 b) informação de local: nome da cidade onde foi expedido o documento, seguido de vírgula. Não se deve utilizar a sigla da unidade da federação depois do nome da cidade;
@@ -52,15 +55,17 @@ f) alinhamento: o texto da data deve ser alinhado à margem direita da página.
 Exemplo: Brasília, 2 de fevereiro de 2018.
 
 ### 5.1.4 Endereçamento
+
 O endereçamento é a parte do documento que informa quem receberá o expediente. Nele deverão constar os seguintes elementos:
 
 a) vocativo: na forma de tratamento adequada para quem receberá o expediente (ver subitem “4.1 Pronomes de tratamento”);
 b) nome: nome do destinatário do expediente;
 c) cargo: cargo do destinatário do expediente;
 d) endereço: endereço postal de quem receberá o expediente, dividido em duas linhas:
+
 - primeira linha: informação de localidade/logradouro do destinatário ou, no caso de ofício ao mesmo órgão, informação do setor;
 - segunda linha: CEP e cidade/unidade da federação, separados por espaço simples. Na separação entre cidade e unidade da federação pode ser substituída a barra pelo ponto ou pelo travessão. No caso de ofício ao mesmo órgão, não é obrigatória a informação do CEP, podendo ficar apenas a informação da cidade/unidade da federação; e
-e) alinhamento: à margem esquerda da página.
+  e) alinhamento: à margem esquerda da página.
 
 O pronome de tratamento no endereçamento das comunicações dirigidas às autoridades tratadas por Vossa Excelência terá a seguinte forma: “A Sua Excelência o Senhor” ou “A Sua Excelência a Senhora”. Quando o tratamento destinado ao receptor for Vossa Senhoria, o endereçamento a ser empregado é “Ao Senhor” ou “À Senhora”. Ressalte-se que não se utiliza a expressão “A Sua Senhoria o Senhor” ou “A Sua Senhoria a Senhora”.
 
@@ -81,6 +86,7 @@ Diretoria de Material, Seção
 Brasília — DF
 
 ### 5.1.5 Assunto
+
 O assunto deve dar uma ideia geral do que trata o documento, de forma sucinta. Ele deve ser grafado da seguinte maneira:
 a) título: a palavra Assunto deve anteceder a frase que define o conteúdo do documento, seguida de dois-pontos;
 b) descrição do assunto: a frase que descreve o conteúdo do documento deve ser escrita com inicial maiúscula, não se deve utilizar verbos e sugere-se utilizar de quatro a cinco palavras;
@@ -93,6 +99,7 @@ Assunto: Encaminhamento do Relatório de Gestão julho/2018.
 Assunto: Aquisição de computadores.
 
 ### 5.1.6 Texto do documento
+
 O texto do documento oficial deve seguir a seguinte padronização de estrutura:
 I – nos casos em que não seja usado para encaminhamento de documentos, o expediente deve conter a seguinte estrutura:
 a) introdução: em que é apresentado o objetivo da comunicação. Evite o uso das formas: Tenho a honra de, Tenho o prazer de, Cumpre-me informar que. Prefira empregar a forma direta: Informo, Solicito, Comunico;
@@ -122,6 +129,7 @@ iii notas de Rodapé: tamanho 10 pontos;
 e) símbolos: para símbolos não existentes nas fontes indicadas, pode-se utilizar as fontes Symbol e Wingdings;
 
 ### 5.1.7 Fechos para comunicações
+
 O fecho das comunicações oficiais objetiva, além da finalidade óbvia de arrematar o texto, saudar o destinatário.
 
 Este Manual estabelece o emprego de somente dois fechos diferentes para todas as modalidades de comunicação oficial:
@@ -138,6 +146,7 @@ d) espaçamento entre parágrafos: de 6 pontos após cada parágrafo; e
 e) não deve ser numerado.
 
 ### 5.1.8 Identificação do signatário
+
 Excluídas as comunicações assinadas pelo Presidente da República, todas as demais comunicações oficiais devem informar o signatário segundo o padrão:
 a) nome: nome da autoridade que as expede, grafado em letras maiúsculas, sem negrito. Não se usa linha acima do nome do signatário;
 b) cargo: cargo da autoridade que expede o documento, redigido apenas com as iniciais maiúsculas. As preposições que liguem as palavras do cargo devem ser grafadas em minúsculas; e
@@ -151,11 +160,13 @@ NOME
 Ministro de Estado Chefe da Casa Civil da Presidência da República
 
 ### 5.1.9 Numeração das páginas
+
 A numeração das páginas é obrigatória apenas a partir da segunda página da comunicação. Ela deve ser centralizada na página e obedecer à seguinte formatação:
 a) posição: no rodapé do documento, ou acima da área de 2 cm da margem inferior; e
 b) fonte: Calibri ou Carlito.
 
 ## 5.2 Formatação e apresentação
+
 Os documentos do padrão ofício devem obedecer à seguinte formatação:
 a) tamanho do papel: A4 (29,7 cm x 21 cm);
 b) margem lateral esquerda: no mínimo, 3 cm de largura;

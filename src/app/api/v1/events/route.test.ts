@@ -75,7 +75,10 @@ describe('/api/v1/events route', () => {
   });
 
   it('dispatches a single event on POST with eventId', async () => {
-    mockDispatchDomainEventById.mockResolvedValue({ dispatched: false, reason: 'not_dispatchable' });
+    mockDispatchDomainEventById.mockResolvedValue({
+      dispatched: false,
+      reason: 'not_dispatchable',
+    });
     const response = await POST(
       new Request('https://asof.local/api/v1/events', {
         method: 'POST',
@@ -129,7 +132,9 @@ describe('/api/v1/events route', () => {
 
   it('logs a safe audit error without failing dispatch', async () => {
     const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
-    auditValues.mockRejectedValue(Object.assign(new Error('email=user@example.com'), { code: 'E_AUDIT' }));
+    auditValues.mockRejectedValue(
+      Object.assign(new Error('email=user@example.com'), { code: 'E_AUDIT' }),
+    );
 
     const response = await POST(
       new Request('https://asof.local/api/v1/events', {
@@ -156,9 +161,15 @@ describe('/api/v1/events route', () => {
   });
 
   it('returns method not allowed for PUT/PATCH/DELETE', async () => {
-    const put = await PUT(new Request('https://asof.local/api/v1/events', { headers: { 'x-request-id': 'req-1' } }));
-    const patch = await PATCH(new Request('https://asof.local/api/v1/events', { headers: { 'x-request-id': 'req-2' } }));
-    const del = await DELETE(new Request('https://asof.local/api/v1/events', { headers: { 'x-request-id': 'req-3' } }));
+    const put = await PUT(
+      new Request('https://asof.local/api/v1/events', { headers: { 'x-request-id': 'req-1' } }),
+    );
+    const patch = await PATCH(
+      new Request('https://asof.local/api/v1/events', { headers: { 'x-request-id': 'req-2' } }),
+    );
+    const del = await DELETE(
+      new Request('https://asof.local/api/v1/events', { headers: { 'x-request-id': 'req-3' } }),
+    );
 
     expect(put.status).toBe(405);
     expect(patch.status).toBe(405);

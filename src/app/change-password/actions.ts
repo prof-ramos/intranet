@@ -85,14 +85,22 @@ export async function changePassword(formData: FormData) {
     });
 
     if (rollbackError) {
-      logger.error('[change-password] failed to rollback auth password after DB write failure', {
-        error: toSafeErrorLog(rollbackError),
-      }, rollbackError as Error);
+      logger.error(
+        '[change-password] failed to rollback auth password after DB write failure',
+        {
+          error: toSafeErrorLog(rollbackError),
+        },
+        rollbackError as Error,
+      );
     }
 
-    logger.error('[change-password] failed to persist new password hash', {
-      error: toSafeErrorLog(error),
-    }, error as Error);
+    logger.error(
+      '[change-password] failed to persist new password hash',
+      {
+        error: toSafeErrorLog(error),
+      },
+      error as Error,
+    );
     changePasswordError('Não foi possível concluir a alteração de senha.');
   }
 

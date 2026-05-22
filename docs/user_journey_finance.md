@@ -3,12 +3,14 @@
 Este documento descreve a jornada do administrador ao interagir com o módulo financeiro baseado no schema de `monthly_payments`.
 
 ## Atores
+
 - **Administrador Financeiro**: Membro da equipe administrativa ou diretoria com permissões para gerenciar pagamentos.
 
 ---
 
 ## Fluxo 1: Inicialização do Mês
-*O objetivo é criar os registros base para todos os associados ativos no início de um novo mês.*
+
+_O objetivo é criar os registros base para todos os associados ativos no início de um novo mês._
 
 1. **Acesso**: O administrador navega até **Financeiro > Controle de Mensalidades**.
 2. **Seleção**: Escolhe o mês e ano desejados através dos controles de navegação.
@@ -24,7 +26,8 @@ Este documento descreve a jornada do administrador ao interagir com o módulo fi
 ---
 
 ## Fluxo 2: Gestão e Filtros
-*O objetivo é localizar rapidamente associados para conferência de pagamentos.*
+
+_O objetivo é localizar rapidamente associados para conferência de pagamentos._
 
 1. **Busca**: O administrador utiliza a barra de busca para filtrar por **Nome** (busca textual com debounce sincronizada na URL).
 2. **Filtros Avançados** (sincronizados com URL — `search-params.ts`):
@@ -38,12 +41,13 @@ Este documento descreve a jornada do administrador ao interagir com o módulo fi
 ---
 
 ## Fluxo 3: Atualização Manual
-*O objetivo é registrar pagamentos recebidos fora do fluxo automático de folha.*
+
+_O objetivo é registrar pagamentos recebidos fora do fluxo automático de folha._
 
 1. **Seleção**: O administrador localiza o associado (ex: que enviou um comprovante de PIX).
 2. **Ação**: No seletor de status da linha correspondente, altera de **"Pendente"** para **"Marcar Pago"**.
 3. **Feedback**:
-   - Indicador de carregamento enquanto a *Server Action* processa.
+   - Indicador de carregamento enquanto a _Server Action_ processa.
    - Banner verde de sucesso: "Pagamento atualizado com sucesso." (auto-limpa em 3s).
    - Em caso de conflito de concorrência: banner vermelho "Este registro foi alterado por outro usuário. Recarregue a página."
 4. **Concorrência**: A Server Action valida `expectedUpdatedAt`. Se outro usuário alterou o registro no intervalo, a operação é rejeitada sem sobrescrever dados.
@@ -51,7 +55,8 @@ Este documento descreve a jornada do administrador ao interagir com o módulo fi
 ---
 
 ## Fluxo 4: Auditoria e Conformidade (LGPD)
-*O objetivo é garantir que todas as alterações financeiras sejam rastreáveis.*
+
+_O objetivo é garantir que todas as alterações financeiras sejam rastreáveis._
 
 1. **Registro**: Cada alteração de status gera uma entrada na tabela `audit_logs`.
 2. **Conteúdo completo**: O log captura `changes.old` e `changes.new`:

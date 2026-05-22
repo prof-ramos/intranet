@@ -63,8 +63,9 @@ export function parseReportExportParams(searchParams: URLSearchParams): {
     filters,
     selectedKeys: searchParams
       .getAll('fields')
-      .filter((field, index, fields) =>
-        ALLOWED_EXPORT_FIELD_KEYS.has(field) && fields.indexOf(field) === index,
+      .filter(
+        (field, index, fields) =>
+          ALLOWED_EXPORT_FIELD_KEYS.has(field) && fields.indexOf(field) === index,
       ),
   };
 }

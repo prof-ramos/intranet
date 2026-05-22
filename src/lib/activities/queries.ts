@@ -1,6 +1,11 @@
 import type { AuthUser } from '@/lib/auth/config';
 import type { ActivitiesBoardData, BoardAssociate, BoardPerson } from './types';
-import { findActivities, findActiveAdmins, findActiveAssociates, mapActivityRowToBoardActivity } from './repository';
+import {
+  findActivities,
+  findActiveAdmins,
+  findActiveAssociates,
+  mapActivityRowToBoardActivity,
+} from './repository';
 
 function buildPeopleList(
   user: Pick<AuthUser, 'userId' | 'name' | 'role'>,

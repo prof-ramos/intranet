@@ -22,7 +22,13 @@ import type { BoardActivity, BoardPerson } from './types';
 
 export function Avatar({ person, compact = false }: { person?: BoardPerson; compact?: boolean }) {
   if (!person)
-    return <span className="h-5 w-5 shrink-0 rounded-full" style={{ background: borderMuted }} aria-hidden="true" />;
+    return (
+      <span
+        className="h-5 w-5 shrink-0 rounded-full"
+        style={{ background: borderMuted }}
+        aria-hidden="true"
+      />
+    );
 
   return (
     <span
@@ -50,19 +56,23 @@ export function ActivityCardContent({
   const dueOffset = activity.dueOffset;
   const isLate = dueOffset !== null && dueOffset < 0 && activity.status !== 'concluido';
   const isUrgent = dueOffset === 0 && activity.status !== 'concluido';
-  const isSoon = dueOffset !== null && dueOffset > 0 && dueOffset <= 3 && activity.status !== 'concluido';
+  const isSoon =
+    dueOffset !== null && dueOffset > 0 && dueOffset <= 3 && activity.status !== 'concluido';
   const priority = priorityStyles[activity.priority] ?? priorityStyles.normal;
 
   return (
     <div
-      className={`relative flex flex-col rounded-[8px] bg-white transition-colors cursor-pointer hover:bg-[var(--card-hover-bg)] ${
+      className={`relative flex cursor-pointer flex-col rounded-[8px] bg-white transition-colors hover:bg-[var(--card-hover-bg)] ${
         compact ? 'gap-2 p-3' : 'gap-2.5 p-3.5'
       }`}
-      style={{
-        border: `1px solid ${hairline}`,
-        borderLeft: activity.status === 'concluido' ? '3px solid #94a3b8' : `3px solid ${priority.fg}`,
-        '--card-hover-bg': buttonOutlineHoverBg,
-      } as CSSProperties}
+      style={
+        {
+          border: `1px solid ${hairline}`,
+          borderLeft:
+            activity.status === 'concluido' ? '3px solid #94a3b8' : `3px solid ${priority.fg}`,
+          '--card-hover-bg': buttonOutlineHoverBg,
+        } as CSSProperties
+      }
     >
       <p
         className={`m-0 text-left leading-snug font-semibold [overflow-wrap:anywhere] ${
@@ -130,7 +140,10 @@ export function ActivityCardContent({
             </span>
           )}
           {activity.completedAt && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold" style={{ color: successText }}>
+            <span
+              className="inline-flex items-center gap-1 text-[11px] font-semibold"
+              style={{ color: successText }}
+            >
               <Check size={14} aria-hidden="true" />
               {formatDueDate(activity.completedAt)}
             </span>

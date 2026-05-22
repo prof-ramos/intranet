@@ -10,7 +10,9 @@ function requireValue(value: string | undefined, name: string): string {
 
 export function getSupabaseUrl(): string {
   return requireValue(
-    env.NEXT_PUBLIC_SUPABASE_URL ?? env.NEXT_PUBLIC_DATABASE_SUPABASE_URL ?? env.DATABASE_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_URL ??
+      env.NEXT_PUBLIC_DATABASE_SUPABASE_URL ??
+      env.DATABASE_SUPABASE_URL,
     'NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_DATABASE_SUPABASE_URL',
   );
 }

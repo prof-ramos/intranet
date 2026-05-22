@@ -19,12 +19,12 @@
 
 ## Resumo Executivo
 
-| Métrica | Valor |
-|---|---|
-| **Dependências diretas** | 12 |
-| **DevDependencies** | 17 |
-| **Vulnerabilidades** | **0** |
-| **Pacotes desatualizados** | 3 |
+| Métrica                          | Valor         |
+| -------------------------------- | ------------- |
+| **Dependências diretas**         | 12            |
+| **DevDependencies**              | 17            |
+| **Vulnerabilidades**             | **0**         |
+| **Pacotes desatualizados**       | 3             |
 | **Pacotes candidatos à remoção** | 1 (`daisyui`) |
 
 **Conclusão**: `react-kanban-kit` foi removido e substituído por `@hello-pangea/dnd`, eliminando todas as vulnerabilidades transitivas. `@libsql/client` e o seed legado foram removidos. `jose` também foi removido em 2026-05-17 porque a autenticação atual usa Supabase Auth e não havia imports do pacote no código, scripts ou testes.
@@ -50,14 +50,14 @@ react-kanban-kit@0.0.2-beta.7
 
 ### Detalhes
 
-| Severidade | Pacote | CVE/Advisory | Descrição | Fix via |
-|---|---|---|---|---|
-| **HIGH** | `lodash` | [GHSA-r5fr-rjxr-66jc](https://github.com/advisories/GHSA-r5fr-rjxr-66jc) | Code Injection via `_.template` | `npm audit fix` (não resolve — transitiva) |
-| **HIGH** | `lodash` | [GHSA-f23m-r3pf-42rh](https://github.com/advisories/GHSA-f23m-r3pf-42rh) | Prototype Pollution via `_.unset` / `_.omit` | override para lodash@4.17.21 |
-| **HIGH** | `minimatch` | [GHSA-3ppc-4f35-3m26](https://github.com/advisories/GHSA-3ppc-4f35-3m26) | ReDoS via wildcards | override para minimatch@9.0.0+ |
-| **HIGH** | `minimatch` | [GHSA-7r86-cg39-jmmj](https://github.com/advisories/GHSA-7r86-cg39-jmmj) | ReDoS via GLOBSTAR | override para minimatch@9.0.0+ |
-| **MODERATE** | `ajv` | [GHSA-2g4f-4pwh-qvx6](https://github.com/advisories/GHSA-2g4f-4pwh-qvx6) | ReDoS via `$data` | override para ajv@8.0.0+ |
-| **MODERATE** | `vue-template-compiler` | [GHSA-g3ch-rx76-35fx](https://github.com/advisories/GHSA-g3ch-rx76-35fx) | XSS no compilador de template Vue | substituir react-kanban-kit |
+| Severidade   | Pacote                  | CVE/Advisory                                                             | Descrição                                    | Fix via                                    |
+| ------------ | ----------------------- | ------------------------------------------------------------------------ | -------------------------------------------- | ------------------------------------------ |
+| **HIGH**     | `lodash`                | [GHSA-r5fr-rjxr-66jc](https://github.com/advisories/GHSA-r5fr-rjxr-66jc) | Code Injection via `_.template`              | `npm audit fix` (não resolve — transitiva) |
+| **HIGH**     | `lodash`                | [GHSA-f23m-r3pf-42rh](https://github.com/advisories/GHSA-f23m-r3pf-42rh) | Prototype Pollution via `_.unset` / `_.omit` | override para lodash@4.17.21               |
+| **HIGH**     | `minimatch`             | [GHSA-3ppc-4f35-3m26](https://github.com/advisories/GHSA-3ppc-4f35-3m26) | ReDoS via wildcards                          | override para minimatch@9.0.0+             |
+| **HIGH**     | `minimatch`             | [GHSA-7r86-cg39-jmmj](https://github.com/advisories/GHSA-7r86-cg39-jmmj) | ReDoS via GLOBSTAR                           | override para minimatch@9.0.0+             |
+| **MODERATE** | `ajv`                   | [GHSA-2g4f-4pwh-qvx6](https://github.com/advisories/GHSA-2g4f-4pwh-qvx6) | ReDoS via `$data`                            | override para ajv@8.0.0+                   |
+| **MODERATE** | `vue-template-compiler` | [GHSA-g3ch-rx76-35fx](https://github.com/advisories/GHSA-g3ch-rx76-35fx) | XSS no compilador de template Vue            | substituir react-kanban-kit                |
 
 > ⚠️ **Nota**: `npm audit fix` não resolve estas vulnerabilidades porque elas estão em dependências transitivas de `react-kanban-kit` e o `audit fix` não consegue atualizar dependências de pacotes que não têm versões mais novas disponíveis.
 
@@ -65,12 +65,12 @@ react-kanban-kit@0.0.2-beta.7
 
 ## Pacotes Desatualizados
 
-| Pacote | Atual | Última | Tipo | Risco de Update |
-|---|---|---|---|---|
-| `@libsql/client` | 0.15.15 | 0.17.3 | Major (0.x) | Baixo (não usado diretamente) |
-| `@tailwindcss/postcss` | 4.2.4 | 4.3.0 | Minor | Muito baixo |
-| `tailwindcss` | 4.2.4 | 4.3.0 | Minor | Muito baixo |
-| `eslint` | 9.39.4 | 10.3.0 | Major | **Médio** — ESLint 10 tem breaking changes |
+| Pacote                 | Atual   | Última | Tipo        | Risco de Update                            |
+| ---------------------- | ------- | ------ | ----------- | ------------------------------------------ |
+| `@libsql/client`       | 0.15.15 | 0.17.3 | Major (0.x) | Baixo (não usado diretamente)              |
+| `@tailwindcss/postcss` | 4.2.4   | 4.3.0  | Minor       | Muito baixo                                |
+| `tailwindcss`          | 4.2.4   | 4.3.0  | Minor       | Muito baixo                                |
+| `eslint`               | 9.39.4  | 10.3.0 | Major       | **Médio** — ESLint 10 tem breaking changes |
 
 ### Análise
 
@@ -147,11 +147,11 @@ O pacote foi uma dependência legada do SQLite/libSQL usada apenas pelo script `
 
 ### Substituir `react-kanban-kit`
 
-| Alternativa | Prós | Contras | Nota |
-|---|---|---|---|
-| **@hello-pangea/dnd** | Estável, acessível, ativamente mantido (fork do react-beautiful-dnd) | Requer mais código boilerplate | ⭐ Recomendado |
-| **@dnd-kit/core** | Modular, muito flexível, tree-shakeable | Curva de aprendizado maior | Recomendado para casos complexos |
-| **Implementação própria** | Zero dependências externas, controle total | Mais trabalho inicial | Viável para o caso de uso atual (colunas fixas) |
+| Alternativa               | Prós                                                                 | Contras                        | Nota                                            |
+| ------------------------- | -------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------- |
+| **@hello-pangea/dnd**     | Estável, acessível, ativamente mantido (fork do react-beautiful-dnd) | Requer mais código boilerplate | ⭐ Recomendado                                  |
+| **@dnd-kit/core**         | Modular, muito flexível, tree-shakeable                              | Curva de aprendizado maior     | Recomendado para casos complexos                |
+| **Implementação própria** | Zero dependências externas, controle total                           | Mais trabalho inicial          | Viável para o caso de uso atual (colunas fixas) |
 
 **Recomendação**: **@hello-pangea/dnd** é o drop-in replacement mais direto para `react-kanban-kit`. É o fork mantido do `react-beautiful-dnd`, que é a biblioteca subjacente do `react-kanban-kit`.
 
@@ -173,31 +173,31 @@ npm update tailwindcss @tailwindcss/postcss
 
 ### Dependências de Produção (`dependencies`)
 
-| Pacote | Uso | Relevância |
-|---|---|---|
-| `next` | Framework | Essencial |
-| `react` / `react-dom` | UI | Essencial |
-| `drizzle-orm` | ORM | Essencial |
-| `postgres` | Driver PostgreSQL | Essencial |
-| `bcryptjs` | Hash de senha | Essencial |
-| `zod` | Validação | Essencial |
-| `lucide-react` | Ícones | Essencial |
-| `@supabase/supabase-js` | SDK Supabase | Essencial (scripts/admin) |
-| `daisyui` | Componentes UI | 🚫 Remover gradualmente |
-| `server-only` | Guarda de servidor | ✅ Manter |
+| Pacote                  | Uso                | Relevância                |
+| ----------------------- | ------------------ | ------------------------- |
+| `next`                  | Framework          | Essencial                 |
+| `react` / `react-dom`   | UI                 | Essencial                 |
+| `drizzle-orm`           | ORM                | Essencial                 |
+| `postgres`              | Driver PostgreSQL  | Essencial                 |
+| `bcryptjs`              | Hash de senha      | Essencial                 |
+| `zod`                   | Validação          | Essencial                 |
+| `lucide-react`          | Ícones             | Essencial                 |
+| `@supabase/supabase-js` | SDK Supabase       | Essencial (scripts/admin) |
+| `daisyui`               | Componentes UI     | 🚫 Remover gradualmente   |
+| `server-only`           | Guarda de servidor | ✅ Manter                 |
 
 ### DevDependencies
 
-| Pacote | Uso | Relevância |
-|---|---|---|
-| `typescript` | Type system | Essencial |
-| `tailwindcss` / `@tailwindcss/postcss` | CSS | Essencial |
-| `eslint` / `eslint-config-next` / `eslint-config-prettier` | Lint | Essencial |
-| `prettier` / `prettier-plugin-tailwindcss` | Formatação | Essencial |
-| `vitest` / `@vitejs/plugin-react` | Testes | Essencial |
-| `drizzle-kit` | Migrations | Essencial |
-| `tsx` | Runtime TS para scripts | Essencial |
-| `@types/*` | Tipos | Essencial |
+| Pacote                                                     | Uso                     | Relevância |
+| ---------------------------------------------------------- | ----------------------- | ---------- |
+| `typescript`                                               | Type system             | Essencial  |
+| `tailwindcss` / `@tailwindcss/postcss`                     | CSS                     | Essencial  |
+| `eslint` / `eslint-config-next` / `eslint-config-prettier` | Lint                    | Essencial  |
+| `prettier` / `prettier-plugin-tailwindcss`                 | Formatação              | Essencial  |
+| `vitest` / `@vitejs/plugin-react`                          | Testes                  | Essencial  |
+| `drizzle-kit`                                              | Migrations              | Essencial  |
+| `tsx`                                                      | Runtime TS para scripts | Essencial  |
+| `@types/*`                                                 | Tipos                   | Essencial  |
 
 ---
 

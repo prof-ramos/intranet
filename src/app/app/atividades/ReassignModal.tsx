@@ -53,17 +53,20 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
         onClick={onClose}
       />
       <div
-        className="rounded-[16px] fixed top-1/2 left-1/2 z-[61] w-[min(440px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2"
+        className="fixed top-1/2 left-1/2 z-[61] w-[min(440px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-[16px]"
         style={{ background: '#ffffff', boxShadow: '0 24px 60px #04092040' }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="reassign-modal-title"
       >
         <header className="border-b border-[rgba(4,9,32,0.05)] px-6 py-5">
-          <p className="text-[rgba(13,31,60,0.55)] m-0 text-[11px] tracking-[0.16em] uppercase">
+          <p className="m-0 text-[11px] tracking-[0.16em] text-[rgba(13,31,60,0.55)] uppercase">
             Reatribuir atividade
           </p>
-          <h3 id="reassign-modal-title" className="mt-1.5 font-serif text-xl leading-tight font-bold">
+          <h3
+            id="reassign-modal-title"
+            className="mt-1.5 font-serif text-xl leading-tight font-bold"
+          >
             {activity.title}
           </h3>
         </header>
@@ -92,7 +95,7 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
               className={`w-full rounded-[8px] border border-[#e2e8f0] bg-white p-3 text-sm ${focusRingClass}`}
             />
           </label>
-          <p className="bg-[#f8fafc] text-[rgba(13,31,60,0.70)] m-0 rounded-[8px] p-3 text-xs leading-relaxed">
+          <p className="m-0 rounded-[8px] bg-[#f8fafc] p-3 text-xs leading-relaxed text-[rgba(13,31,60,0.70)]">
             A atividade será reatribuída imediatamente e o histórico ficará registrado.
           </p>
         </div>
@@ -101,7 +104,7 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
             type="button"
             ref={closeRef}
             onClick={onClose}
-            className={`inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-11 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-8 ${focusRingClass}`}
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-8 ${focusRingClass}`}
           >
             Cancelar
           </button>
@@ -112,7 +115,7 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
               setIsPending(true);
               void onSubmit(toUserId, message).finally(() => setIsPending(false));
             }}
-            className={`inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-8 ${focusRingClass}`}
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-8 ${focusRingClass}`}
             disabled={isPending || toUserId === null || !candidates.some((c) => c.id === toUserId)}
           >
             {isPending ? 'Reatribuindo...' : 'Reatribuir'}

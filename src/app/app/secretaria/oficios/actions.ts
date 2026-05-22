@@ -17,7 +17,10 @@ const MAX_OFFICIAL_LETTERS_LIMIT = 1000;
 
 export async function getOfficialLettersAction(year?: number, limit?: number) {
   await requireRole(ALLOWED_ROLES);
-  const safeLimit = limit != null ? Math.min(Math.max(1, Math.floor(limit)), MAX_OFFICIAL_LETTERS_LIMIT) : undefined;
+  const safeLimit =
+    limit != null
+      ? Math.min(Math.max(1, Math.floor(limit)), MAX_OFFICIAL_LETTERS_LIMIT)
+      : undefined;
   return repository.findOfficialLetters(year, { limit: safeLimit });
 }
 
@@ -40,49 +43,68 @@ export async function generateAiTextAction(params: {
   try {
     return { success: true, text: await generateOfficialLetterContent(params) };
   } catch (error) {
-    logger.error('[generateAiTextAction] AI generation failed', { error: toSafeErrorLog(error) }, error as Error);
+    logger.error(
+      '[generateAiTextAction] AI generation failed',
+      { error: toSafeErrorLog(error) },
+      error as Error,
+    );
     return { success: false, error: 'Falha ao gerar sugestão com IA.' };
   }
 }
 
 export async function saveOfficialLetterAction(values: OfficialLetterFormValues) {
   const user = await requireRole(ALLOWED_ROLES);
-  
+
   const validated = officialLetterFormSchema.parse(values);
-  
+
   try {
     const result = await service.saveOfficialLetter(validated, user.userId);
     revalidatePath('/app/secretaria/oficios');
     return { success: true, data: result };
   } catch (error) {
-    logger.error('[saveOfficialLetterAction] save failed', { error: toSafeErrorLog(error) }, error as Error);
+    logger.error(
+      '[saveOfficialLetterAction] save failed',
+      { error: toSafeErrorLog(error) },
+      error as Error,
+    );
     return { success: false, error: 'Falha ao salvar o ofício.' };
   }
 }
 
-export async function updateOfficialLetterAction(id: number, values: Partial<OfficialLetterFormValues>) {
+export async function updateOfficialLetterAction(
+  id: number,
+  values: Partial<OfficialLetterFormValues>,
+) {
   const user = await requireRole(ALLOWED_ROLES);
-  
+
   try {
     const result = await service.updateOfficialLetter(id, values, user.userId);
     revalidatePath('/app/secretaria/oficios');
     revalidatePath(`/app/secretaria/oficios/${id}/editar`);
     return { success: true, data: result };
   } catch (error) {
-    logger.error('[updateOfficialLetterAction] update failed', { error: toSafeErrorLog(error) }, error as Error);
+    logger.error(
+      '[updateOfficialLetterAction] update failed',
+      { error: toSafeErrorLog(error) },
+      error as Error,
+    );
     return { success: false, error: 'Falha ao atualizar o ofício.' };
   }
 }
 
 export async function cancelOfficialLetterAction(id: number) {
   const user = await requireRole(ALLOWED_ROLES);
-  
+
   try {
     const result = await service.cancelOfficialLetter(id, user.userId);
     revalidatePath('/app/secretaria/oficios');
     return { success: true, data: result };
   } catch (error) {
-    logger.error('[cancelOfficialLetterAction] cancel failed', { error: toSafeErrorLog(error) }, error as Error);
+    logger.error(
+      '[cancelOfficialLetterAction] cancel failed',
+      { error: toSafeErrorLog(error) },
+      error as Error,
+    );
     return { success: false, error: 'Falha ao cancelar o ofício.' };
   }
 }

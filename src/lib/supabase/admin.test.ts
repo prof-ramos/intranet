@@ -113,16 +113,13 @@ describe('supabase admin helpers', () => {
     await deleteAdminAuthUser('admin@asof.local', 7);
 
     expect(deleteUserMock).toHaveBeenCalledWith('auth-1');
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      '[deleteAdminAuthUser] audit logging failed',
-      {
-        error: expect.objectContaining({
-          kind: 'error',
-          name: 'Error',
-          code: 'E_AUDIT',
-        }),
-      },
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith('[deleteAdminAuthUser] audit logging failed', {
+      error: expect.objectContaining({
+        kind: 'error',
+        name: 'Error',
+        code: 'E_AUDIT',
+      }),
+    });
     consoleErrorSpy.mockRestore();
   });
 

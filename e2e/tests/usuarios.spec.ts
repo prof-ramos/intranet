@@ -1,7 +1,10 @@
 import { test, expect } from '../fixtures';
 
 test.describe('Admin User Management & Password Reset Flow', () => {
-  test('admin can reset another user\'s password and copy the generated credentials', async ({ page, loginAsAdmin }) => {
+  test("admin can reset another user's password and copy the generated credentials", async ({
+    page,
+    loginAsAdmin,
+  }) => {
     await loginAsAdmin();
     await page.goto('/app/config/usuarios');
     await expect(page).toHaveURL(/\/app\/config\/usuarios/);

@@ -27,8 +27,7 @@ if (!['postgres:', 'postgresql:'].includes(parsedDatabaseUrl.protocol)) {
 // Transaction-mode pooler (port 6543 or pgbouncer param) breaks prepared statements.
 // Session-mode pooler (port 5432 on pooler hostname) is safe for migrations.
 const isTransactionPooler =
-  parsedDatabaseUrl.searchParams.has('pgbouncer') ||
-  parsedDatabaseUrl.port === '6543';
+  parsedDatabaseUrl.searchParams.has('pgbouncer') || parsedDatabaseUrl.port === '6543';
 
 if (isTransactionPooler) {
   throw new Error(

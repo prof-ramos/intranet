@@ -65,24 +65,27 @@ export function useNotifications({ userId }: UseNotificationsOptions): UseNotifi
     }
   }, [loadNotifications]);
 
-  const markAsRead = useCallback(async (id: number) => {
-    const previous = notifications;
+  const markAsRead = useCallback(
+    async (id: number) => {
+      const previous = notifications;
 
-    setNotifications((current) =>
-      current.map((item) =>
-        item.id === id && !item.readAt ? { ...item, readAt: new Date().toISOString() } : item,
-      ),
-    );
+      setNotifications((current) =>
+        current.map((item) =>
+          item.id === id && !item.readAt ? { ...item, readAt: new Date().toISOString() } : item,
+        ),
+      );
 
-    try {
-      await markNotificationReadAction(id);
-      setError(null);
-    } catch (error) {
-      setNotifications(previous);
-      setError('Não foi possível marcar a notificação como lida.');
-      throw error;
-    }
-  }, [notifications]);
+      try {
+        await markNotificationReadAction(id);
+        setError(null);
+      } catch (error) {
+        setNotifications(previous);
+        setError('Não foi possível marcar a notificação como lida.');
+        throw error;
+      }
+    },
+    [notifications],
+  );
 
   const markAllAsRead = useCallback(async () => {
     const previous = notifications;

@@ -25,7 +25,9 @@ const ACTIVITY_PRIORITY_LABELS: Record<Priority, string> = {
   urgente: 'Urgente',
 };
 
-function describeTimelineEntry(entry: Awaited<ReturnType<typeof listActivityTimeline>>[number]): string {
+function describeTimelineEntry(
+  entry: Awaited<ReturnType<typeof listActivityTimeline>>[number],
+): string {
   if (entry.action === 'activity_created') {
     return 'Atividade criada.';
   }
@@ -42,13 +44,17 @@ function describeTimelineEntry(entry: Awaited<ReturnType<typeof listActivityTime
     const oldDueDate = changes.old.dueDate;
     const newDueDate = changes.new.dueDate;
 
-    if (oldStatus !== newStatus && typeof newStatus === 'string' && newStatus in ACTIVITY_STATUS_LABELS) {
+    if (
+      oldStatus !== newStatus &&
+      typeof newStatus === 'string' &&
+      newStatus in ACTIVITY_STATUS_LABELS
+    ) {
       parts.push(`status para ${ACTIVITY_STATUS_LABELS[newStatus as Status]}`);
     }
     if (
-      oldPriority !== newPriority
-      && typeof newPriority === 'string'
-      && newPriority in ACTIVITY_PRIORITY_LABELS
+      oldPriority !== newPriority &&
+      typeof newPriority === 'string' &&
+      newPriority in ACTIVITY_PRIORITY_LABELS
     ) {
       parts.push(`prioridade para ${ACTIVITY_PRIORITY_LABELS[newPriority as Priority]}`);
     }
@@ -106,13 +112,16 @@ export async function createActivity(formData: FormData) {
   const assigneeId = parsePositiveOptionalId(assigneeIdRaw);
   const associateId = parsePositiveOptionalId(associateIdRaw);
 
-  if (assigneeIdRaw && (typeof assigneeId !== 'number' || !Number.isInteger(assigneeId) || assigneeId <= 0)) {
+  if (
+    assigneeIdRaw &&
+    (typeof assigneeId !== 'number' || !Number.isInteger(assigneeId) || assigneeId <= 0)
+  ) {
     throw new Error('Responsável inválido.');
   }
 
   if (
-    associateIdRaw
-    && (typeof associateId !== 'number' || !Number.isInteger(associateId) || associateId <= 0)
+    associateIdRaw &&
+    (typeof associateId !== 'number' || !Number.isInteger(associateId) || associateId <= 0)
   ) {
     throw new Error('Associado inválido.');
   }

@@ -14,9 +14,5 @@ export default async function NovaConsultaPage() {
     .orderBy(asc(associates.fullName))
     .limit(200);
 
-  return (
-    <NovaConsultaForm
-      associates={associateRows}
-    />
-  );
+  return <NovaConsultaForm associates={associateRows} />;
 }

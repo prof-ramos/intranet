@@ -1,4 +1,8 @@
-import type { NotificationEntity, NotificationEventPayload, NotificationEventType } from '@/lib/events';
+import type {
+  NotificationEntity,
+  NotificationEventPayload,
+  NotificationEventType,
+} from '@/lib/events';
 import {
   countUnreadNotificationsForUser,
   createNotification,
@@ -76,7 +80,10 @@ export async function getUnreadNotificationsCountForUser(userId: number, tx?: No
   return countUnreadNotificationsForUser(userId, tx);
 }
 
-export async function markNotificationAsReadForUser(input: { id: number; userId: number }, tx?: NotificationsTx) {
+export async function markNotificationAsReadForUser(
+  input: { id: number; userId: number },
+  tx?: NotificationsTx,
+) {
   if (!Number.isInteger(input.id) || input.id <= 0) {
     throw new Error('Notificação inválida.');
   }

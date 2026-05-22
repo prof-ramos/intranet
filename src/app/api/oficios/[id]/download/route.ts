@@ -11,10 +11,7 @@ const logger = createLogger('api:oficios:download');
 
 const ALLOWED_ROLES = ['admin', 'diretoria', 'secretaria'] as const;
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const officialLetterId = parsePositiveIntParam(id);
   if (officialLetterId == null) {
@@ -34,7 +31,11 @@ export async function GET(
 
     pdfBytes = await generateOfficialLetterPdf(oficio);
   } catch (error) {
-    logger.error('PDF download failed for oficio', { officialLetterId, error: toSafeErrorLog(error) }, error as Error);
+    logger.error(
+      'PDF download failed for oficio',
+      { officialLetterId, error: toSafeErrorLog(error) },
+      error as Error,
+    );
     return new NextResponse('Erro ao gerar PDF', { status: 500 });
   }
 

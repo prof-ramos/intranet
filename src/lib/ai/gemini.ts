@@ -49,7 +49,9 @@ function sanitizePromptInput(input: string): string {
 function validatePromptInput(input: string): void {
   for (const pattern of FORBIDDEN_PATTERNS) {
     if (pattern.test(input)) {
-      throw new Error('A instrução contém conteúdo não permitido. Reescreva sem instruções de sistema.');
+      throw new Error(
+        'A instrução contém conteúdo não permitido. Reescreva sem instruções de sistema.',
+      );
     }
   }
 }
@@ -114,7 +116,10 @@ Instrução do usuário: "${sanitizedInstruction}"`;
         },
       }),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Falha ao gerar conteúdo do ofício. Tente novamente.')), timeoutMs)
+        setTimeout(
+          () => reject(new Error('Falha ao gerar conteúdo do ofício. Tente novamente.')),
+          timeoutMs,
+        ),
       ),
     ]);
     const raw = result.text ?? '';

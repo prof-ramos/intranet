@@ -25,20 +25,14 @@ export const surfaceMuted = '#f8fafc';
 export const borderSubtle = 'rgba(4, 9, 32, 0.15)';
 export const borderFaint = 'rgba(4, 9, 32, 0.05)';
 
-export const statusStyles: Record<
-  string,
-  { label: string; accent: string }
-> = {
+export const statusStyles: Record<string, { label: string; accent: string }> = {
   a_fazer: { label: 'A fazer', accent: '#94a3b8' },
   em_andamento: { label: 'Em andamento', accent: '#76AEEA' },
   aguardando_terceiros: { label: 'Aguardando terceiros', accent: '#e7c16b' },
   concluido: { label: 'Concluído', accent: '#86efac' },
 };
 
-export const priorityStyles: Record<
-  string,
-  { label: string; fg: string; bg: string }
-> = {
+export const priorityStyles: Record<string, { label: string; fg: string; bg: string }> = {
   urgente: { label: 'Urgente', fg: '#b91c1c', bg: '#fee2e2' },
   alta: { label: 'Alta', fg: '#a16207', bg: '#f4ddb1' },
   normal: { label: 'Normal', fg: 'rgba(13,31,60,0.70)', bg: canvas },
@@ -56,8 +50,7 @@ export const info = '#2563eb';
 export const infoBg = '#eff6ff';
 
 // Shadows
-export const cardShadow =
-  '0 1px 3px rgba(4, 9, 32, 0.08), 0 1px 2px rgba(4, 9, 32, 0.04)';
+export const cardShadow = '0 1px 3px rgba(4, 9, 32, 0.08), 0 1px 2px rgba(4, 9, 32, 0.04)';
 export const elevatedShadow =
   '0 10px 15px -3px rgba(4, 9, 32, 0.08), 0 4px 6px -4px rgba(4, 9, 32, 0.04)';
 export const drawerShadow = '-12px 0 30px rgba(4, 9, 32, 0.12)';

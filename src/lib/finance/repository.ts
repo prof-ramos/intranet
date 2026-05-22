@@ -58,7 +58,7 @@ export async function getPaymentHistoryForAssociate(
 
 export interface MonthlyPaymentsFilters {
   q?: string;
-  status?: typeof paymentStatus.enumValues[number];
+  status?: (typeof paymentStatus.enumValues)[number];
   method?: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros';
   location?: 'brasil' | 'exterior';
 }
@@ -135,10 +135,7 @@ export async function markOverduePaymentsForAudit(
         eq(monthlyPayments.status, 'pendente'),
         or(
           lt(monthlyPayments.year, thisYear),
-          and(
-            eq(monthlyPayments.year, thisYear),
-            lt(monthlyPayments.month, thisMonth),
-          ),
+          and(eq(monthlyPayments.year, thisYear), lt(monthlyPayments.month, thisMonth)),
         ),
       ),
     )

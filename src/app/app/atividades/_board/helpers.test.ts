@@ -102,10 +102,39 @@ describe('activity board normalization and initials', () => {
 
 describe('activity board filters', () => {
   const items = [
-    activity({ id: 1, title: 'Preparar relatório', assigneeId: 10, priority: 'normal', associateId: 100, dueOffset: 3 }),
-    activity({ id: 2, title: 'Cobrar documento', assigneeId: 20, priority: 'alta', associateId: 200, dueOffset: -1 }),
-    activity({ id: 3, title: 'Concluir ata', assigneeId: null, priority: 'urgente', associateId: null, dueOffset: 10 }),
-    activity({ id: 4, title: 'Arquivar processo', status: 'concluido', assigneeId: 10, priority: 'baixa', associateId: 100, dueOffset: -5 }),
+    activity({
+      id: 1,
+      title: 'Preparar relatório',
+      assigneeId: 10,
+      priority: 'normal',
+      associateId: 100,
+      dueOffset: 3,
+    }),
+    activity({
+      id: 2,
+      title: 'Cobrar documento',
+      assigneeId: 20,
+      priority: 'alta',
+      associateId: 200,
+      dueOffset: -1,
+    }),
+    activity({
+      id: 3,
+      title: 'Concluir ata',
+      assigneeId: null,
+      priority: 'urgente',
+      associateId: null,
+      dueOffset: 10,
+    }),
+    activity({
+      id: 4,
+      title: 'Arquivar processo',
+      status: 'concluido',
+      assigneeId: 10,
+      priority: 'baixa',
+      associateId: 100,
+      dueOffset: -5,
+    }),
   ];
 
   it('filters by current user scope and text query', () => {
@@ -123,9 +152,7 @@ describe('activity board filters', () => {
   it('does not treat zero-like IDs as missing associated activities', () => {
     const zeroAssociate = activity({ id: 5, associateId: 0 });
 
-    expect(filterWith([zeroAssociate], { associate: '__any' }).map((item) => item.id)).toEqual([
-      5,
-    ]);
+    expect(filterWith([zeroAssociate], { associate: '__any' }).map((item) => item.id)).toEqual([5]);
   });
 
   it('filters due this week and overdue open activities', () => {

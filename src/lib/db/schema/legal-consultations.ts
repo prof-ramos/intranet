@@ -5,7 +5,10 @@ import { associates } from '@/lib/db/schema/associates';
 import { LEGAL_CONSULTATION_STATUSES } from '@/lib/juridico/status';
 import { legalSatisfaction } from './enums';
 
-export const legalConsultationStatus = pgEnum('legal_consultation_status', LEGAL_CONSULTATION_STATUSES);
+export const legalConsultationStatus = pgEnum(
+  'legal_consultation_status',
+  LEGAL_CONSULTATION_STATUSES,
+);
 
 export const legalConsultations = pgTable(
   'legal_consultations',

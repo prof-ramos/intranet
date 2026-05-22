@@ -1,9 +1,5 @@
 import { bigint, pgView, text, timestamp } from 'drizzle-orm/pg-core';
-import {
-  associationStatus,
-  contributionStatus,
-  functionalStatus,
-} from './associates';
+import { associationStatus, contributionStatus, functionalStatus } from './associates';
 
 export const associatesListView = pgView('associates_list_view', {
   id: bigint('id', { mode: 'number' }),

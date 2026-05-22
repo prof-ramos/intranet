@@ -19,8 +19,18 @@ import { Drawer } from './_board/Drawer';
 import { FilterBar } from './_board/FilterBar';
 import { QuickAdd } from './_board/QuickAdd';
 import { SummaryStrip } from './_board/SummaryStrip';
-import { daysFromToday, filterActivities, groupActivitiesByStatus, normalizeActivity } from './_board/helpers';
-import { buildBoardUrl, hasOpenActivity, parseFiltersFromUrl, parseOpenActivityId } from './_board/url-state';
+import {
+  daysFromToday,
+  filterActivities,
+  groupActivitiesByStatus,
+  normalizeActivity,
+} from './_board/helpers';
+import {
+  buildBoardUrl,
+  hasOpenActivity,
+  parseFiltersFromUrl,
+  parseOpenActivityId,
+} from './_board/url-state';
 import { useBoardPreferences } from './_board/useBoardPreferences';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 import type {
@@ -80,11 +90,19 @@ export function AtividadesBoard({
     ? (items.find((activity) => activity.id === drawerId) ?? null)
     : null;
   const drawerTimelineLoading =
-    drawerId !== null && drawerActivity !== null && loadedDrawerTimelineId !== drawerId && !drawerTimelineError;
+    drawerId !== null &&
+    drawerActivity !== null &&
+    loadedDrawerTimelineId !== drawerId &&
+    !drawerTimelineError;
 
-  const syncDrawerUrl = useCallback((nextDrawerId: number | null) => {
-    router.replace(buildBoardUrl(pathname, searchParams, nextDrawerId, filters), { scroll: false });
-  }, [filters, pathname, router, searchParams]);
+  const syncDrawerUrl = useCallback(
+    (nextDrawerId: number | null) => {
+      router.replace(buildBoardUrl(pathname, searchParams, nextDrawerId, filters), {
+        scroll: false,
+      });
+    },
+    [filters, pathname, router, searchParams],
+  );
 
   useEffect(() => {
     const url = buildBoardUrl(pathname, new URLSearchParams(), null, filters);
@@ -113,10 +131,10 @@ export function AtividadesBoard({
 
   useEffect(() => {
     if (
-      drawerActivity
-      && drawerTimelineLoading
-      && drawerTimeline.length === 0
-      && !drawerTimelineError
+      drawerActivity &&
+      drawerTimelineLoading &&
+      drawerTimeline.length === 0 &&
+      !drawerTimelineError
     ) {
       queueMicrotask(() => {
         void loadDrawerTimeline(drawerActivity.id);
@@ -168,7 +186,9 @@ export function AtividadesBoard({
           updateActivity(id, {
             ...persisted,
             assigneeName:
-              persisted.assigneeId != null ? (peopleById.get(persisted.assigneeId)?.name ?? null) : null,
+              persisted.assigneeId != null
+                ? (peopleById.get(persisted.assigneeId)?.name ?? null)
+                : null,
           });
           if (drawerId === id) {
             setDrawerTimeline([]);
@@ -228,7 +248,7 @@ export function AtividadesBoard({
           ? new Date().toISOString().slice(0, 10)
           : current?.status === 'concluido'
             ? null
-            : current?.completedAt ?? null,
+            : (current?.completedAt ?? null),
     } satisfies Partial<BoardActivity>;
     updateActivity(id, nextPatch);
     persistActivityPatch(
@@ -250,7 +270,9 @@ export function AtividadesBoard({
       const created = await createQuickActivityAction({ title, status });
       setItems((activities) => [...activities, normalizeActivity(created)]);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Não foi possível criar a atividade.');
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Não foi possível criar a atividade.',
+      );
       throw error;
     }
   }
@@ -259,7 +281,7 @@ export function AtividadesBoard({
     <main className="mx-auto w-full max-w-[1180px] min-w-0 px-5 py-7 sm:px-8 lg:px-10">
       <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-[rgba(13,31,60,0.55)] m-0 text-[11px] tracking-[0.18em] whitespace-nowrap uppercase">
+          <p className="m-0 text-[11px] tracking-[0.18em] whitespace-nowrap text-[rgba(13,31,60,0.55)] uppercase">
             Operação · Quadro de atividades
           </p>
           <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-5xl">
@@ -268,7 +290,7 @@ export function AtividadesBoard({
         </div>
         <Link
           href="/app/atividades/nova"
-          className={`inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-10 lg:min-h-10 ${focusRingClass}`}
+          className={`inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-10 lg:min-h-10 ${focusRingClass}`}
         >
           <Plus size={16} aria-hidden="true" />
           Nova atividade
@@ -290,7 +312,7 @@ export function AtividadesBoard({
       />
 
       {items.length === 0 && (
-        <div className="rounded-[16px] border-[rgba(4,9,32,0.05)] text-[rgba(13,31,60,0.60)] mb-5 border border-dashed bg-white px-5 py-4 text-sm">
+        <div className="mb-5 rounded-[16px] border border-dashed border-[rgba(4,9,32,0.05)] bg-white px-5 py-4 text-sm text-[rgba(13,31,60,0.60)]">
           Nenhuma atividade cadastrada ainda. Use o botão <strong>Nova atividade</strong> ou o
           quick-add das colunas para montar o quadro.
         </div>
@@ -308,7 +330,7 @@ export function AtividadesBoard({
               return (
                 <div
                   key={col.key}
-                  className="snap-start min-w-[280px] md:min-w-0"
+                  className="min-w-[280px] snap-start md:min-w-0"
                   style={{
                     background: '#eef1f6',
                     borderRadius: 16,
@@ -327,7 +349,10 @@ export function AtividadesBoard({
                       />
                       <h2
                         className="truncate text-[11px] font-bold tracking-[0.1em] uppercase"
-                        style={{ color: '#0d1f3c', fontFamily: "'Google Sans', system-ui, sans-serif" }}
+                        style={{
+                          color: '#0d1f3c',
+                          fontFamily: "'Google Sans', system-ui, sans-serif",
+                        }}
                       >
                         {col.title}
                       </h2>
@@ -352,7 +377,11 @@ export function AtividadesBoard({
                         <ChevronDown
                           size={14}
                           aria-hidden="true"
-                          className={collapsedDone ? '-rotate-90 transition-transform' : 'transition-transform'}
+                          className={
+                            collapsedDone
+                              ? '-rotate-90 transition-transform'
+                              : 'transition-transform'
+                          }
                           style={{ color: '#59677a' }}
                         />
                       </button>
@@ -403,9 +432,7 @@ export function AtividadesBoard({
                       </div>
                     )}
                   </Droppable>
-                  {col.key !== 'concluido' && (
-                    <QuickAdd columnKey={col.key} onAdd={handleAdd} />
-                  )}
+                  {col.key !== 'concluido' && <QuickAdd columnKey={col.key} onAdd={handleAdd} />}
                 </div>
               );
             })}
@@ -414,7 +441,7 @@ export function AtividadesBoard({
         <div className="pointer-events-none absolute top-0 right-0 bottom-4 w-10 bg-gradient-to-l from-[#f8fafc] to-transparent md:hidden" />
       </div>
 
-      <div className="text-[rgba(13,31,60,0.55)] mt-5 flex items-center gap-2 text-xs">
+      <div className="mt-5 flex items-center gap-2 text-xs text-[rgba(13,31,60,0.55)]">
         <Clock size={14} aria-hidden="true" />
         Alterações no quadro são salvas imediatamente e entram no histórico da atividade.
         <ArrowRight size={14} aria-hidden="true" />

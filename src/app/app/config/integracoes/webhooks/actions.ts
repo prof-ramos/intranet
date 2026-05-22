@@ -3,10 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { ZodError } from 'zod';
 import { requireRole } from '@/lib/auth/authorization';
-import {
-  webhookSecretSchema,
-  webhookSubscriptionFormSchema,
-} from '@/lib/validation/schemas';
+import { webhookSecretSchema, webhookSubscriptionFormSchema } from '@/lib/validation/schemas';
 import {
   createManagedWebhookSubscription,
   rotateManagedWebhookSubscriptionSecret,

@@ -73,24 +73,15 @@ describe('buildMonthlyPaymentsSearchParams', () => {
   });
 
   it('includes page only when > 1', () => {
-    const result1 = buildMonthlyPaymentsSearchParams(
-      { q: '', page: 1 },
-      { page: 1 },
-    );
+    const result1 = buildMonthlyPaymentsSearchParams({ q: '', page: 1 }, { page: 1 });
     expect(result1.page).toBeUndefined();
 
-    const result2 = buildMonthlyPaymentsSearchParams(
-      { q: '', page: 1 },
-      { page: 3 },
-    );
+    const result2 = buildMonthlyPaymentsSearchParams({ q: '', page: 1 }, { page: 3 });
     expect(result2.page).toBe('3');
   });
 
   it('preserves page from current when updates do not override it', () => {
-    const result = buildMonthlyPaymentsSearchParams(
-      { q: '', page: 3, status: 'pago' },
-      {},
-    );
+    const result = buildMonthlyPaymentsSearchParams({ q: '', page: 3, status: 'pago' }, {});
     expect(result.page).toBe('3');
     expect(result.q).toBeUndefined();
   });

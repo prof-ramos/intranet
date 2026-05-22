@@ -5,14 +5,12 @@ import { login } from '@/app/login/actions';
 let mockRateLimit = { allowed: true };
 let mockConsumeError: Error | null = null;
 let mockResetError: Error | null = null;
-let mockDbUser:
-  | {
-      id: number;
-      email: string;
-      isActive: boolean;
-      mustChangePassword: boolean;
-    }
-  | null = null;
+let mockDbUser: {
+  id: number;
+  email: string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+} | null = null;
 let mockAuthUser: { email?: string | null } | null = null;
 let mockSignInError: Error | null = null;
 const mockSignOut = vi.fn(() => Promise.resolve({ error: null }));

@@ -6,7 +6,9 @@ import type { Filters } from './types';
 const VALID_SCOPES = ['todas', 'minhas'] as const;
 const VALID_PRIORITIES = ACTIVITY_PRIORITIES as readonly string[];
 
-export function parseOpenActivityId(searchParams: { get(name: string): string | null }): number | null {
+export function parseOpenActivityId(searchParams: {
+  get(name: string): string | null;
+}): number | null {
   const raw = searchParams.get('open');
   if (!raw) return null;
 
@@ -22,14 +24,16 @@ export function parseFiltersFromUrl(searchParams: { get(name: string): string | 
   const dueLate = searchParams.get('dueLate');
 
   return {
-    scope: scope && VALID_SCOPES.includes(scope as (typeof VALID_SCOPES)[number])
-      ? (scope as Filters['scope'])
-      : defaultFilters.scope,
+    scope:
+      scope && VALID_SCOPES.includes(scope as (typeof VALID_SCOPES)[number])
+        ? (scope as Filters['scope'])
+        : defaultFilters.scope,
     query: defaultFilters.query,
     assignee: assignee ?? defaultFilters.assignee,
-    priority: priority && VALID_PRIORITIES.includes(priority)
-      ? (priority as Filters['priority'])
-      : defaultFilters.priority,
+    priority:
+      priority && VALID_PRIORITIES.includes(priority)
+        ? (priority as Filters['priority'])
+        : defaultFilters.priority,
     associate: associate ?? defaultFilters.associate,
     dueWeek: dueWeek === '1',
     dueLate: dueLate === '1',

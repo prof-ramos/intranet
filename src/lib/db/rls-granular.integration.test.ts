@@ -65,9 +65,7 @@ describe('VULN-001: Granular RLS policies', () => {
     `;
 
     // No policy should have qual = 'true' (which indicates USING(true))
-    const permissivePolicies = rows.filter(
-      (row) => row.qual === 'true' || row.qual === '(true)',
-    );
+    const permissivePolicies = rows.filter((row) => row.qual === 'true' || row.qual === '(true)');
 
     expect(
       permissivePolicies,
@@ -123,8 +121,9 @@ describe('VULN-001: Granular RLS policies', () => {
   });
 
   it('has role-based helper functions for RLS', async () => {
-    const functions = await db<{ proname: string }[]>
-      `select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and proname = any(${['get_current_admin_role', 'get_current_admin_id', 'is_admin_role', 'is_privileged_role', 'is_staff_role']}) order by proname`;
+    const functions = await db<
+      { proname: string }[]
+    >`select proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and proname = any(${['get_current_admin_role', 'get_current_admin_id', 'is_admin_role', 'is_privileged_role', 'is_staff_role']}) order by proname`;
 
     const functionNames = functions.map((f) => f.proname);
     expect(functionNames).toContain('get_current_admin_role');
@@ -135,8 +134,9 @@ describe('VULN-001: Granular RLS policies', () => {
   });
 
   it('get_current_admin_role() references get_jwt_email() for JWT-based role resolution', async () => {
-    const rows = await db<{ prosrc: string }[]>
-      `select prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and proname = 'get_current_admin_role'`;
+    const rows = await db<
+      { prosrc: string }[]
+    >`select prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and proname = 'get_current_admin_role'`;
 
     expect(rows).toHaveLength(1);
     const source = rows[0].prosrc;
@@ -148,9 +148,7 @@ describe('VULN-001: Granular RLS policies', () => {
   });
 
   it('every granular RLS table has at least 2 policies (read + write separation)', async () => {
-    const rows = await db<
-      { tablename: string; policy_count: number }[]
-    >`
+    const rows = await db<{ tablename: string; policy_count: number }[]>`
       select tablename, count(policyname)::int as policy_count
       from pg_policies
       where schemaname = 'public'
@@ -159,9 +157,7 @@ describe('VULN-001: Granular RLS policies', () => {
       order by tablename
     `;
 
-    const tableMap = Object.fromEntries(
-      rows.map((r) => [r.tablename, r.policy_count]),
-    );
+    const tableMap = Object.fromEntries(rows.map((r) => [r.tablename, r.policy_count]));
 
     for (const table of granularRlsTables) {
       const count = tableMap[table] ?? 0;
@@ -184,9 +180,7 @@ describe('VULN-001: Granular RLS policies', () => {
 
     // Should have at least one policy that uses is_admin_role()
     const adminOnlyPolicies = policies.filter(
-      (p) =>
-        p.with_check?.includes('is_admin_role') ||
-        p.qual?.includes('is_admin_role'),
+      (p) => p.with_check?.includes('is_admin_role') || p.qual?.includes('is_admin_role'),
     );
 
     expect(
@@ -196,9 +190,7 @@ describe('VULN-001: Granular RLS policies', () => {
 
     // Should have a policy that allows users to read their own row
     const selfReadPolicies = policies.filter(
-      (p) =>
-        p.qual?.includes('get_current_admin_id') ||
-        p.policyname.includes('select_own'),
+      (p) => p.qual?.includes('get_current_admin_id') || p.policyname.includes('select_own'),
     );
 
     expect(
@@ -219,32 +211,21 @@ describe('VULN-001: Granular RLS policies', () => {
 
     // SELECT should use is_staff_role()
     const selectPolicies = policies.filter((p) => p.cmd === 'SELECT' || p.cmd === 'ALL');
-    const staffRead = selectPolicies.some(
-      (p) => p.qual?.includes('is_staff_role'),
-    );
+    const staffRead = selectPolicies.some((p) => p.qual?.includes('is_staff_role'));
     expect(staffRead, 'Associates SELECT should require is_staff_role()').toBe(true);
 
     // INSERT/UPDATE/DELETE should use is_privileged_role()
-    const writePolicies = policies.filter(
-      (p) => p.cmd !== 'SELECT',
-    );
+    const writePolicies = policies.filter((p) => p.cmd !== 'SELECT');
     const privilegedWrite = writePolicies.some(
-      (p) =>
-        p.with_check?.includes('is_privileged_role') ||
-        p.qual?.includes('is_privileged_role'),
+      (p) => p.with_check?.includes('is_privileged_role') || p.qual?.includes('is_privileged_role'),
     );
-    expect(
-      privilegedWrite,
-      'Associates write policies should require is_privileged_role()',
-    ).toBe(true);
+    expect(privilegedWrite, 'Associates write policies should require is_privileged_role()').toBe(
+      true,
+    );
   });
 
   it('webhook tables and integration_api_keys are admin-only', async () => {
-    const adminOnlyTables = [
-      'webhook_subscriptions',
-      'webhook_deliveries',
-      'integration_api_keys',
-    ];
+    const adminOnlyTables = ['webhook_subscriptions', 'webhook_deliveries', 'integration_api_keys'];
 
     for (const table of adminOnlyTables) {
       const policies = await db<
@@ -256,15 +237,10 @@ describe('VULN-001: Granular RLS policies', () => {
       `;
 
       const allAdminOnly = policies.every(
-        (p) =>
-          p.qual?.includes('is_admin_role') &&
-          p.with_check?.includes('is_admin_role'),
+        (p) => p.qual?.includes('is_admin_role') && p.with_check?.includes('is_admin_role'),
       );
 
-      expect(
-        allAdminOnly,
-        `All policies on ${table} should use is_admin_role()`,
-      ).toBe(true);
+      expect(allAdminOnly, `All policies on ${table} should use is_admin_role()`).toBe(true);
     }
   });
 
@@ -303,10 +279,9 @@ describe('VULN-001: Granular RLS policies', () => {
 
       const selectPolicy = policies.find((p) => p.cmd === 'SELECT');
       expect(selectPolicy, `${table} should have SELECT policy`).toBeDefined();
-      expect(
-        selectPolicy!.qual,
-        `${table} SELECT should use is_admin_role()`,
-      ).toContain('is_admin_role');
+      expect(selectPolicy!.qual, `${table} SELECT should use is_admin_role()`).toContain(
+        'is_admin_role',
+      );
 
       const insertPolicy = policies.find((p) => p.cmd === 'INSERT');
       expect(insertPolicy, `${table} should have INSERT policy`).toBeDefined();
@@ -314,9 +289,7 @@ describe('VULN-001: Granular RLS policies', () => {
   });
 
   it('FORCE ROW LEVEL SECURITY is enabled on all application tables', async () => {
-    const rows = await db<
-      { relname: string; relforcerowsecurity: boolean }[]
-    >`
+    const rows = await db<{ relname: string; relforcerowsecurity: boolean }[]>`
       select c.relname, c.relforcerowsecurity
       from pg_class c
       join pg_namespace n on n.oid = c.relnamespace

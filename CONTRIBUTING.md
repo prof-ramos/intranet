@@ -93,30 +93,30 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 ### 5. Referência de Scripts
 
-| Script | Descrição |
-|---|---|
-| `npm run dev` | Servidor de desenvolvimento (Webpack) |
-| `npm run dev:turbo` | Servidor de desenvolvimento (Turbopack, diagnóstico) |
-| `npm run build` | Build de produção |
-| `npm run start` | Inicia servidor de produção |
-| `npm run lint` | ESLint |
-| `npm run typecheck` | Verificação de tipos (`tsc --noEmit`) |
-| `npm run test` | Roda testes unitários (Vitest) |
-| `npm run test:watch` | Testes em modo watch |
-| `npm run test:db` | Schema contract contra PostgreSQL real |
-| `npm run test:e2e` | Testes end-to-end (Playwright) |
-| `npm run test:e2e:ui` | Playwright com UI |
-| `npm run test:e2e:debug` | Playwright em modo debug |
-| `npm run format` | Formata código com Prettier |
-| `npm run format:check` | Verifica formatação |
-| `npm run audit` | npm audit de segurança |
-| `npm run validate:quick` | typecheck + lint + testes unitários |
-| `npm run validate:full` | quick validation + testes de DB + build |
-| `npm run scope:check` | Verifica escopo de arquivos alterados (strict) |
-| `npm run pr:check` | Verificações de prontidão para PR |
-| `npm run db:migrate:unsafe` | drizzle-kit migrate direto (diagnóstico controlado) |
-| `npm run db:supabase:status` | Consulta status/totais via Supabase SDK |
-| `npm run db:studio` | Abre Drizzle Studio no browser |
+| Script                       | Descrição                                            |
+| ---------------------------- | ---------------------------------------------------- |
+| `npm run dev`                | Servidor de desenvolvimento (Webpack)                |
+| `npm run dev:turbo`          | Servidor de desenvolvimento (Turbopack, diagnóstico) |
+| `npm run build`              | Build de produção                                    |
+| `npm run start`              | Inicia servidor de produção                          |
+| `npm run lint`               | ESLint                                               |
+| `npm run typecheck`          | Verificação de tipos (`tsc --noEmit`)                |
+| `npm run test`               | Roda testes unitários (Vitest)                       |
+| `npm run test:watch`         | Testes em modo watch                                 |
+| `npm run test:db`            | Schema contract contra PostgreSQL real               |
+| `npm run test:e2e`           | Testes end-to-end (Playwright)                       |
+| `npm run test:e2e:ui`        | Playwright com UI                                    |
+| `npm run test:e2e:debug`     | Playwright em modo debug                             |
+| `npm run format`             | Formata código com Prettier                          |
+| `npm run format:check`       | Verifica formatação                                  |
+| `npm run audit`              | npm audit de segurança                               |
+| `npm run validate:quick`     | typecheck + lint + testes unitários                  |
+| `npm run validate:full`      | quick validation + testes de DB + build              |
+| `npm run scope:check`        | Verifica escopo de arquivos alterados (strict)       |
+| `npm run pr:check`           | Verificações de prontidão para PR                    |
+| `npm run db:migrate:unsafe`  | drizzle-kit migrate direto (diagnóstico controlado)  |
+| `npm run db:supabase:status` | Consulta status/totais via Supabase SDK              |
+| `npm run db:studio`          | Abre Drizzle Studio no browser                       |
 
 ---
 
@@ -183,14 +183,14 @@ scripts/                    # Seed, diagnóstico, status Supabase, smoke test Re
 
 ### Padrões de Arquitetura
 
-| Padrão | Onde usar | Exemplo |
-|---|---|---|
-| **Server Component** | Páginas que buscam dados | `src/app/app/juridico/consultas/page.tsx` |
+| Padrão               | Onde usar                      | Exemplo                                                    |
+| -------------------- | ------------------------------ | ---------------------------------------------------------- |
+| **Server Component** | Páginas que buscam dados       | `src/app/app/juridico/consultas/page.tsx`                  |
 | **Client Component** | Interatividade (forms, estado) | `src/app/app/juridico/consultas/nova/NovaConsultaForm.tsx` |
-| **Server Action** | Mutações via formulário | `src/app/app/juridico/actions.ts` |
-| **Route Handler** | Downloads, webhooks | `src/app/app/associados/relatorio/download/route.ts` |
-| **Repository** | SQL isolado | `src/lib/juridico/repository.ts` |
-| **Service** | Regras de negócio | `src/lib/juridico/service.ts` |
+| **Server Action**    | Mutações via formulário        | `src/app/app/juridico/actions.ts`                          |
+| **Route Handler**    | Downloads, webhooks            | `src/app/app/associados/relatorio/download/route.ts`       |
+| **Repository**       | SQL isolado                    | `src/lib/juridico/repository.ts`                           |
+| **Service**          | Regras de negócio              | `src/lib/juridico/service.ts`                              |
 
 ---
 
@@ -233,14 +233,18 @@ export default async function NovaPaginaPage() {
 }
 
 // MeuForm.tsx (Client Component)
-'use client';
+('use client');
 import { minhaAction } from './actions';
 
 export function MeuForm({ opcoes }) {
   return (
     <form action={minhaAction}>
       <select name="opcaoId">
-        {opcoes.map(o => <option key={o.id} value={o.id}>{o.nome}</option>)}
+        {opcoes.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.nome}
+          </option>
+        ))}
       </select>
       <button type="submit">Salvar</button>
     </form>
@@ -322,25 +326,25 @@ gh pr create --fill
 
 O schema está dividido por domínio em `src/lib/db/schema/`:
 
-| Arquivo | Domínio |
-|---|---|
-| `admins.ts` | Usuários administrativos |
-| `associates.ts` | Associados da ASOF |
-| `activities.ts` | Atividades administrativas (Kanban) |
-| `audit.ts` | Logs de auditoria (LGPD) |
-| `login-attempts.ts` | Rate limiting de login |
-| `legal-consultations.ts` | Consultas jurídicas |
-| `legal-processes.ts` | Processos jurídicos |
-| `legal-notes.ts` | Notas/histórico |
-| `legal-opinions.ts` | Pareceres e tags |
-| `finance.ts` | Mensalidades e pagamentos |
-| `oficios.ts` | Ofícios oficiais |
-| `rate-limits.ts` | Rate limiting por IP |
-| `integrations.ts` | Eventos de domínio, webhooks outbound e chaves de API M2M |
-| `notifications.ts` | Notificações em tempo real |
-| `assignments.ts` | Lotações/postos |
-| `enums.ts` | Enums compartilhados |
-| `views.ts` | Views PII-safe (`associates_list_view`)
+| Arquivo                  | Domínio                                                   |
+| ------------------------ | --------------------------------------------------------- |
+| `admins.ts`              | Usuários administrativos                                  |
+| `associates.ts`          | Associados da ASOF                                        |
+| `activities.ts`          | Atividades administrativas (Kanban)                       |
+| `audit.ts`               | Logs de auditoria (LGPD)                                  |
+| `login-attempts.ts`      | Rate limiting de login                                    |
+| `legal-consultations.ts` | Consultas jurídicas                                       |
+| `legal-processes.ts`     | Processos jurídicos                                       |
+| `legal-notes.ts`         | Notas/histórico                                           |
+| `legal-opinions.ts`      | Pareceres e tags                                          |
+| `finance.ts`             | Mensalidades e pagamentos                                 |
+| `oficios.ts`             | Ofícios oficiais                                          |
+| `rate-limits.ts`         | Rate limiting por IP                                      |
+| `integrations.ts`        | Eventos de domínio, webhooks outbound e chaves de API M2M |
+| `notifications.ts`       | Notificações em tempo real                                |
+| `assignments.ts`         | Lotações/postos                                           |
+| `enums.ts`               | Enums compartilhados                                      |
+| `views.ts`               | Views PII-safe (`associates_list_view`)                   |
 
 ### Comandos úteis
 
@@ -439,11 +443,11 @@ Usuário → /login → Server Action: login()
 
 ### Roles
 
-| Role | Acesso jurídico | Relatórios |
-|---|---|---|
-| `admin` | Sim | Sim |
-| `diretoria` | Sim | Sim |
-| `secretaria` | Não | Não |
+| Role         | Acesso jurídico | Relatórios |
+| ------------ | --------------- | ---------- |
+| `admin`      | Sim             | Sim        |
+| `diretoria`  | Sim             | Sim        |
+| `secretaria` | Não             | Não        |
 
 ---
 
@@ -478,7 +482,7 @@ Verifique `src/lib/env.ts` para identificar variáveis obrigatórias. `SESSION_S
 'use client';
 export function StatusUpdater({ defaultValue, children }) {
   return (
-    <select name="status" defaultValue={defaultValue} onChange={e => e.target.form?.submit()}>
+    <select name="status" defaultValue={defaultValue} onChange={(e) => e.target.form?.submit()}>
       {children}
     </select>
   );

@@ -50,8 +50,7 @@ async function main() {
     process.env.NEXT_PUBLIC_DATABASE_SUPABASE_URL ??
     process.env.DATABASE_SUPABASE_URL;
   const supabaseServiceKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ??
-    process.env.DATABASE_SUPABASE_SERVICE_ROLE_KEY;
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.DATABASE_SUPABASE_SERVICE_ROLE_KEY;
 
   if (supabaseUrl && supabaseServiceKey) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -178,7 +177,8 @@ async function main() {
         associationCategory: 'mensalista',
         paymentMethod: 'folha',
         joinedAt: '1994-02-01T08:00:00Z',
-        internalNotes: 'Ex-associado. Cancelamento em 15/09/2025. Oficial ativo com lotação permanente em São Francisco.',
+        internalNotes:
+          'Ex-associado. Cancelamento em 15/09/2025. Oficial ativo com lotação permanente em São Francisco.',
       },
     ])
     .returning();

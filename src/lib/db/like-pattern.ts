@@ -8,8 +8,5 @@
  * Callers are responsible for wrapping the result with wildcards (e.g. `%...%`).
  */
 export function escapeLikePattern(input: string): string {
-  return input
-    .replace(/\\/g, '\\\\')
-    .replace(/_/g, '\\_')
-    .replace(/%/g, '\\%');
+  return input.replace(/\\/g, '\\\\').replace(/_/g, '\\_').replace(/%/g, '\\%');
 }

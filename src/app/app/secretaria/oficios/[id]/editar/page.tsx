@@ -4,11 +4,7 @@ import { textMuted } from '@/lib/ui/tokens';
 import { notFound } from 'next/navigation';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 
-export default async function EditarOficioPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function EditarOficioPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const officialLetterId = parsePositiveIntParam(id);
 
@@ -16,8 +12,7 @@ export default async function EditarOficioPage({
 
   const oficio = await getOfficialLetterAction(officialLetterId);
   if (!oficio) notFound();
-  const closure =
-    oficio.closure === 'Respeitosamente,' ? 'Respeitosamente,' : 'Atenciosamente,';
+  const closure = oficio.closure === 'Respeitosamente,' ? 'Respeitosamente,' : 'Atenciosamente,';
 
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
@@ -26,12 +21,8 @@ export default async function EditarOficioPage({
           Ofícios
         </p>
         <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-baseline sm:gap-4">
-          <h1 className="font-serif text-4xl font-bold md:text-[3rem]">
-            Editar Ofício
-          </h1>
-          <span className="font-serif text-xl text-slate-400 font-medium">
-            {oficio.number}
-          </span>
+          <h1 className="font-serif text-4xl font-bold md:text-[3rem]">Editar Ofício</h1>
+          <span className="font-serif text-xl font-medium text-slate-400">{oficio.number}</span>
         </div>
       </div>
 

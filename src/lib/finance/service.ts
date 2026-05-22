@@ -3,7 +3,11 @@ import { markOverduePaymentsForAudit, type OverduePaymentTransition } from './re
 import { logAuditAction } from '@/lib/audit/service';
 import { db, type DbExecutor } from '@/lib/db';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
-import { monthlyPayments, type MonthlyPayment, type NewMonthlyPayment } from '@/lib/db/schema/finance';
+import {
+  monthlyPayments,
+  type MonthlyPayment,
+  type NewMonthlyPayment,
+} from '@/lib/db/schema/finance';
 import { auditLogs, type NewAuditLog } from '@/lib/db/schema/audit';
 import { associates } from '@/lib/db/schema/associates';
 import { and, eq, sql } from 'drizzle-orm';
@@ -53,10 +57,7 @@ export async function autoMarkOverduePaymentsService(): Promise<number> {
   return count;
 }
 
-async function logSystemOverdueTransition(
-  payment: OverduePaymentTransition,
-  executor: DbExecutor,
-) {
+async function logSystemOverdueTransition(payment: OverduePaymentTransition, executor: DbExecutor) {
   const changes = {
     old: {
       status: 'pendente',
@@ -141,9 +142,7 @@ export async function updateMonthlyPayment(
       }
     }
 
-    const oldState = current
-      ? getPaymentAuditState(current)
-      : null;
+    const oldState = current ? getPaymentAuditState(current) : null;
 
     const upserted = await tx
       .insert(monthlyPayments)
@@ -343,8 +342,8 @@ export async function initializeMonth(adminId: number, year: number, month: numb
       .where(eq(associates.associationStatus, 'ativo'));
 
     const updates: NewMonthlyPayment[] = rows
-      .filter(r => !r.paymentId)
-      .map(r => ({
+      .filter((r) => !r.paymentId)
+      .map((r) => ({
         associateId: r.associateId,
         year,
         month,

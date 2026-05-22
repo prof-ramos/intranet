@@ -58,7 +58,10 @@ interface MonthlyPaymentsTableProps {
   currentFilters: MonthlyPaymentsSearchParams;
 }
 
-const statusConfig: Record<string, { label: string; icon: typeof CheckCircle2; color: string; bg: string }> = {
+const statusConfig: Record<
+  string,
+  { label: string; icon: typeof CheckCircle2; color: string; bg: string }
+> = {
   pago: { label: 'Pago', icon: CheckCircle2, color: success, bg: successBg },
   pendente: { label: 'Pendente', icon: Clock, color: warning, bg: warningBg },
   atrasado: { label: 'Atrasado', icon: AlertCircle, color: error, bg: errorBg },
@@ -113,39 +116,45 @@ export default function MonthlyPaymentsTable({
   const searchTimerRef = useRef<number | undefined>(undefined);
 
   // Debounce search input to URL
-  const handleSearchChange = useCallback((value: string) => {
-    setSearch(value);
-    window.clearTimeout(searchTimerRef.current);
-    searchTimerRef.current = window.setTimeout(() => {
-      setDebouncedSearch(value);
-      const params = new URLSearchParams(searchParams.toString());
-      if (value.trim()) {
-        params.set('q', value.trim().slice(0, 80));
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearch(value);
+      window.clearTimeout(searchTimerRef.current);
+      searchTimerRef.current = window.setTimeout(() => {
+        setDebouncedSearch(value);
+        const params = new URLSearchParams(searchParams.toString());
+        if (value.trim()) {
+          params.set('q', value.trim().slice(0, 80));
+        } else {
+          params.delete('q');
+        }
+        params.set('year', String(year));
+        params.set('month', String(month));
+        startTransition(() => {
+          router.push(`/app/financeiro/mensalidades?${params.toString()}`);
+        });
+      }, 400);
+    },
+    [router, searchParams, year, month],
+  );
+
+  const updateFilter = useCallback(
+    (key: keyof MonthlyPaymentsSearchParams, value: string | undefined) => {
+      const base = buildMonthlyPaymentsSearchParams(currentFilters, {});
+      const params = new URLSearchParams(base);
+      if (value) {
+        params.set(key, value);
       } else {
-        params.delete('q');
+        params.delete(key);
       }
       params.set('year', String(year));
       params.set('month', String(month));
       startTransition(() => {
         router.push(`/app/financeiro/mensalidades?${params.toString()}`);
       });
-    }, 400);
-  }, [router, searchParams, year, month]);
-
-  const updateFilter = useCallback((key: keyof MonthlyPaymentsSearchParams, value: string | undefined) => {
-    const base = buildMonthlyPaymentsSearchParams(currentFilters, {});
-    const params = new URLSearchParams(base);
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
-    }
-    params.set('year', String(year));
-    params.set('month', String(month));
-    startTransition(() => {
-      router.push(`/app/financeiro/mensalidades?${params.toString()}`);
-    });
-  }, [currentFilters, router, year, month]);
+    },
+    [currentFilters, router, year, month],
+  );
 
   const filteredPayments = useMemo(() => {
     if (!debouncedSearch.trim()) return payments;
@@ -271,13 +280,13 @@ export default function MonthlyPaymentsTable({
     <div className="space-y-4">
       {/* Filters */}
       <div
-        className="flex flex-wrap gap-3 items-center rounded-[10px] bg-white px-4 py-3"
+        className="flex flex-wrap items-center gap-3 rounded-[10px] bg-white px-4 py-3"
         style={{ border: `1px solid ${hairline}` }}
       >
         {/* Search */}
-        <div className="relative flex-1 min-w-[220px]">
+        <div className="relative min-w-[220px] flex-1">
           <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2"
+            className="absolute top-1/2 left-3 -translate-y-1/2"
             size={16}
             style={{ color: textFaint }}
             aria-hidden="true"
@@ -285,7 +294,7 @@ export default function MonthlyPaymentsTable({
           <input
             type="text"
             placeholder="Buscar por nome..."
-            className={`w-full rounded-[8px] border bg-white pl-9 pr-4 text-sm transition-colors ${focusRingClass}`}
+            className={`w-full rounded-[8px] border bg-white pr-4 pl-9 text-sm transition-colors ${focusRingClass}`}
             style={{
               borderColor: borderMuted,
               color: textPrimary,
@@ -381,7 +390,12 @@ export default function MonthlyPaymentsTable({
       </div>
 
       {isPending && (
-        <div role="status" aria-live="polite" className="text-xs font-medium" style={{ color: textMuted }}>
+        <div
+          role="status"
+          aria-live="polite"
+          className="text-xs font-medium"
+          style={{ color: textMuted }}
+        >
           Atualizando...
         </div>
       )}
@@ -411,22 +425,37 @@ export default function MonthlyPaymentsTable({
         className="overflow-hidden rounded-[10px] bg-white"
         style={{ border: `1px solid ${hairline}` }}
       >
-        <table className="w-full text-left border-collapse">
+        <table className="w-full border-collapse text-left">
           <thead>
             <tr style={{ backgroundColor: canvas, borderBottom: `1px solid ${hairline}` }}>
-              <th className="px-5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase" style={{ color: textMuted }}>
+              <th
+                className="px-5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase"
+                style={{ color: textMuted }}
+              >
                 Associado
               </th>
-              <th className="px-5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase" style={{ color: textMuted }}>
+              <th
+                className="px-5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase"
+                style={{ color: textMuted }}
+              >
                 Local
               </th>
-              <th className="px-5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase" style={{ color: textMuted }}>
+              <th
+                className="px-5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase"
+                style={{ color: textMuted }}
+              >
                 Canal
               </th>
-              <th className="px-5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase" style={{ color: textMuted }}>
+              <th
+                className="px-5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase"
+                style={{ color: textMuted }}
+              >
                 Status
               </th>
-              <th className="px-5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase text-right" style={{ color: textMuted }}>
+              <th
+                className="px-5 py-3 text-right text-[11px] font-bold tracking-[0.08em] uppercase"
+                style={{ color: textMuted }}
+              >
                 Ação
               </th>
             </tr>
@@ -443,17 +472,20 @@ export default function MonthlyPaymentsTable({
               const locGroup = locationGroup(p.locationCountry);
 
               return (
-                <tr
-                  key={p.associateId}
-                  className="transition-colors hover:bg-[rgba(4,9,32,0.02)]"
-                >
+                <tr key={p.associateId} className="transition-colors hover:bg-[rgba(4,9,32,0.02)]">
                   <td className="px-5 py-3.5">
-                    <div className="font-medium text-sm" style={{ color: textPrimary }}>
+                    <div className="text-sm font-medium" style={{ color: textPrimary }}>
                       {p.fullName}
                     </div>
                     {p.functionalStatus && (
                       <div className="mt-0.5 text-[11px]" style={{ color: textFaint }}>
-                        {p.functionalStatus === 'ativo' ? 'Ativo' : p.functionalStatus === 'aposentado' ? 'Aposentado' : p.functionalStatus === 'cedido' ? 'Cedido' : 'Licença'}
+                        {p.functionalStatus === 'ativo'
+                          ? 'Ativo'
+                          : p.functionalStatus === 'aposentado'
+                            ? 'Aposentado'
+                            : p.functionalStatus === 'cedido'
+                              ? 'Cedido'
+                              : 'Licença'}
                       </div>
                     )}
                   </td>
@@ -472,7 +504,7 @@ export default function MonthlyPaymentsTable({
                   </td>
                   <td className="px-5 py-3.5">
                     <span
-                      className="inline-flex items-center text-[10px] font-bold tracking-[0.08em] uppercase rounded-full px-2.5 py-1"
+                      className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold tracking-[0.08em] uppercase"
                       style={{
                         backgroundColor: currentMethod === 'folha' ? '#eef1f6' : '#f8fafc',
                         color: navy,
@@ -482,7 +514,10 @@ export default function MonthlyPaymentsTable({
                       {methodCfg.short}
                     </span>
                     {currentMethod === 'folha' && locGroup === 'exterior' && (
-                      <span className="ml-1.5 text-[10px] font-bold tracking-[0.06em] uppercase" style={{ color: textMuted }}>
+                      <span
+                        className="ml-1.5 text-[10px] font-bold tracking-[0.06em] uppercase"
+                        style={{ color: textMuted }}
+                      >
                         DPAG
                       </span>
                     )}
@@ -517,7 +552,7 @@ export default function MonthlyPaymentsTable({
                               )
                             }
                             aria-label={s.label}
-                            className={`inline-flex h-7 w-7 items-center justify-center rounded-[6px] transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 active:scale-95 ${focusRingClass}`}
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-[6px] transition-all hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${focusRingClass}`}
                             style={{
                               backgroundColor: isCurrent ? cfg.color : cfg.bg,
                               color: isCurrent ? '#fff' : cfg.color,
@@ -532,10 +567,14 @@ export default function MonthlyPaymentsTable({
                         disabled={updatingId === p.associateId || currentStatus === 'cancelado'}
                         onClick={() => handleCancelPayment(p.associateId, p.paymentId, p.fullName)}
                         aria-label="Cancelar mensalidade"
-                        className={`inline-flex h-7 w-7 items-center justify-center rounded-[6px] transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 active:scale-95 ${focusRingClass}`}
+                        className={`inline-flex h-7 w-7 items-center justify-center rounded-[6px] transition-all hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${focusRingClass}`}
                         style={{
-                          backgroundColor: currentStatus === 'cancelado' ? statusConfig.cancelado.color : statusConfig.cancelado.bg,
-                          color: currentStatus === 'cancelado' ? '#fff' : statusConfig.cancelado.color,
+                          backgroundColor:
+                            currentStatus === 'cancelado'
+                              ? statusConfig.cancelado.color
+                              : statusConfig.cancelado.bg,
+                          color:
+                            currentStatus === 'cancelado' ? '#fff' : statusConfig.cancelado.color,
                           border: `1px solid ${currentStatus === 'cancelado' ? statusConfig.cancelado.color : 'transparent'}`,
                         }}
                       >

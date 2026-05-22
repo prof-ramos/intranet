@@ -30,7 +30,10 @@ interface SidebarProps {
 
 export function Sidebar({ user }: SidebarProps) {
   return (
-    <aside className="flex min-h-full w-72 shrink-0 flex-col" style={{ backgroundColor: '#06284f' }}>
+    <aside
+      className="flex min-h-full w-72 shrink-0 flex-col"
+      style={{ backgroundColor: '#06284f' }}
+    >
       {/* Logo */}
       <div
         className="flex min-h-[124px] flex-col items-center justify-center px-6 py-6"
@@ -79,7 +82,11 @@ export function Sidebar({ user }: SidebarProps) {
           icon={<FileSpreadsheet size={20} />}
           label="Secretaria"
           items={[
-            { href: '/app/secretaria/oficios', label: 'Ofícios', icon: <FileSpreadsheet size={18} /> },
+            {
+              href: '/app/secretaria/oficios',
+              label: 'Ofícios',
+              icon: <FileSpreadsheet size={18} />,
+            },
             ...(user.role !== 'diretoria'
               ? [
                   {
@@ -97,7 +104,11 @@ export function Sidebar({ user }: SidebarProps) {
             icon={<DollarSign size={20} />}
             label="Financeiro"
             items={[
-              { href: '/app/financeiro/mensalidades', label: 'Mensalidades', icon: <Receipt size={18} /> },
+              {
+                href: '/app/financeiro/mensalidades',
+                label: 'Mensalidades',
+                icon: <Receipt size={18} />,
+              },
             ]}
           />
         )}
@@ -114,8 +125,16 @@ export function Sidebar({ user }: SidebarProps) {
             items={[
               { href: '/app/config/usuarios', label: 'Usuários', icon: <Shield size={18} /> },
               { href: '/app/config/lotacoes', label: 'Lotações', icon: <MapPin size={18} /> },
-              { href: '/app/config/auditoria', label: 'Auditoria', icon: <ShieldCheck size={18} /> },
-              { href: '/app/config/integracoes/webhooks', label: 'Integrações', icon: <Webhook size={18} /> },
+              {
+                href: '/app/config/auditoria',
+                label: 'Auditoria',
+                icon: <ShieldCheck size={18} />,
+              },
+              {
+                href: '/app/config/integracoes/webhooks',
+                label: 'Integrações',
+                icon: <Webhook size={18} />,
+              },
             ]}
           />
         )}

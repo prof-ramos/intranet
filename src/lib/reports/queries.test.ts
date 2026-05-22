@@ -38,7 +38,9 @@ const { dbMock, MOCK_ASSOCIATE } = vi.hoisted(() => {
   const dbMock = {
     select: vi.fn().mockReturnValue(selectChain),
     _selectChain: selectChain,
-    setSelectResult(val: any[]) { _selectResult = val; },
+    setSelectResult(val: any[]) {
+      _selectResult = val;
+    },
   };
 
   return { dbMock, MOCK_ASSOCIATE };

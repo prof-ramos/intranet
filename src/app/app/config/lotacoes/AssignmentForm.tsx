@@ -11,7 +11,13 @@ interface AssignmentFormProps {
   onSuccess?: () => void;
 }
 
-export function AssignmentForm({ mode, id, defaultName = '', defaultType = 'domestic', onSuccess }: AssignmentFormProps) {
+export function AssignmentForm({
+  mode,
+  id,
+  defaultName = '',
+  defaultType = 'domestic',
+  onSuccess,
+}: AssignmentFormProps) {
   const action = mode === 'create' ? createAssignment : updateAssignment;
   const [state, formAction, isPending] = useActionState(action, null);
 
@@ -46,15 +52,13 @@ export function AssignmentForm({ mode, id, defaultName = '', defaultType = 'dome
         </select>
       </fieldset>
 
-      {state?.success === false && (
-        <p className="text-sm text-red-600">{state.message}</p>
-      )}
+      {state?.success === false && <p className="text-sm text-red-600">{state.message}</p>}
 
       <div className="flex justify-end gap-2">
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 h-10 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 disabled:opacity-50"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
         >
           {isPending ? 'Salvando...' : mode === 'create' ? 'Criar lotação' : 'Salvar alterações'}
         </button>

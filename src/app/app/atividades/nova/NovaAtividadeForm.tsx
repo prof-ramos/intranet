@@ -126,10 +126,16 @@ export function NovaAtividadeForm({
           <p className="m-0 text-[11px] tracking-[0.18em] uppercase" style={{ color: '#59677a' }}>
             Atividades · Nova
           </p>
-          <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-5xl" style={{ color: '#040920' }}>
+          <h1
+            className="mt-2 font-serif text-4xl leading-none font-bold md:text-5xl"
+            style={{ color: '#040920' }}
+          >
             Criar atividade
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed" style={{ color: 'rgba(13,31,60,0.65)' }}>
+          <p
+            className="mt-3 max-w-2xl text-sm leading-relaxed"
+            style={{ color: 'rgba(13,31,60,0.65)' }}
+          >
             Tarefas internas da operação. Vincule a um associado quando o trabalho for sobre uma
             pessoa específica.
           </p>
@@ -182,7 +188,10 @@ export function NovaAtividadeForm({
       )}
 
       <div className="grid items-start gap-7 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <section className="flex flex-col gap-5 rounded-[16px] border bg-white p-5 sm:p-6" style={{ borderColor: '#c9d2df' }}>
+        <section
+          className="flex flex-col gap-5 rounded-[16px] border bg-white p-5 sm:p-6"
+          style={{ borderColor: '#c9d2df' }}
+        >
           <Field
             controlId="activity-title"
             label="Título"
@@ -233,7 +242,9 @@ export function NovaAtividadeForm({
                         style={{ width: 8, height: 8, background: area.accent }}
                         aria-hidden="true"
                       />
-                      <span className="text-[13px] font-semibold" style={{ color: '#0d1f3c' }}>{area.label}</span>
+                      <span className="text-[13px] font-semibold" style={{ color: '#0d1f3c' }}>
+                        {area.label}
+                      </span>
                     </span>
                     <span className="text-[11px] leading-snug" style={{ color: '#59677a' }}>
                       {area.desc}
@@ -244,7 +255,11 @@ export function NovaAtividadeForm({
             </div>
           </Field>
 
-          <Field controlId="activity-description" label="Descrição" hint="Contexto, links, próximos passos.">
+          <Field
+            controlId="activity-description"
+            label="Descrição"
+            hint="Contexto, links, próximos passos."
+          >
             <textarea
               id="activity-description"
               value={form.description}
@@ -257,7 +272,11 @@ export function NovaAtividadeForm({
             />
           </Field>
 
-          <Field controlId="activity-tags" label="Tags" hint="Aperte Enter ou vírgula para adicionar.">
+          <Field
+            controlId="activity-tags"
+            label="Tags"
+            hint="Aperte Enter ou vírgula para adicionar."
+          >
             <TagInput
               id="activity-tags"
               describedBy="activity-tags-hint"
@@ -282,8 +301,13 @@ export function NovaAtividadeForm({
         </section>
 
         <aside className="flex flex-col gap-7">
-          <section className="flex flex-col gap-4 rounded-[16px] border bg-white p-4 sm:p-5" style={{ borderColor: '#c9d2df' }}>
-            <h2 className="font-serif text-xl font-bold" style={{ color: '#040920' }}>Detalhes</h2>
+          <section
+            className="flex flex-col gap-4 rounded-[16px] border bg-white p-4 sm:p-5"
+            style={{ borderColor: '#c9d2df' }}
+          >
+            <h2 className="font-serif text-xl font-bold" style={{ color: '#040920' }}>
+              Detalhes
+            </h2>
 
             <Field label="Status inicial">
               <div className="flex flex-col gap-1">
@@ -298,7 +322,8 @@ export function NovaAtividadeForm({
                     ].join(' ')}
                     style={{
                       borderColor: form.status === status.value ? navy : 'transparent',
-                      background: form.status === status.value ? 'rgba(4,9,32,0.04)' : 'transparent',
+                      background:
+                        form.status === status.value ? 'rgba(4,9,32,0.04)' : 'transparent',
                       color: '#0d1f3c',
                     }}
                   >
@@ -315,7 +340,12 @@ export function NovaAtividadeForm({
 
             <Field label="Prioridade">
               <div className="grid grid-cols-2 gap-1.5">
-                {(Object.entries(priorityStyles) as [FormPriority, { label: string; fg: string; bg: string }][]).map(([key, style]) => {
+                {(
+                  Object.entries(priorityStyles) as [
+                    FormPriority,
+                    { label: string; fg: string; bg: string },
+                  ][]
+                ).map(([key, style]) => {
                   const selected = form.priority === key;
                   return (
                     <button
@@ -356,8 +386,13 @@ export function NovaAtividadeForm({
             </Field>
           </section>
 
-          <section className="flex flex-col gap-4 rounded-[16px] border bg-white p-4 sm:p-5" style={{ borderColor: '#c9d2df' }}>
-            <h2 className="font-serif text-xl font-bold" style={{ color: '#040920' }}>Responsável</h2>
+          <section
+            className="flex flex-col gap-4 rounded-[16px] border bg-white p-4 sm:p-5"
+            style={{ borderColor: '#c9d2df' }}
+          >
+            <h2 className="font-serif text-xl font-bold" style={{ color: '#040920' }}>
+              Responsável
+            </h2>
             <AssigneePicker
               people={people}
               currentUserId={currentUser.id}
@@ -375,9 +410,7 @@ export function NovaAtividadeForm({
                 >
                   !
                 </span>
-                <span>
-                  A atividade será criada já atribuída à pessoa selecionada.
-                </span>
+                <span>A atividade será criada já atribuída à pessoa selecionada.</span>
               </div>
             )}
           </section>

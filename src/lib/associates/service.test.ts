@@ -54,7 +54,8 @@ vi.mock('./lgpd', () => ({
   toActivityDTO: (a: unknown) => a,
   canViewSensitiveFields: (role: string) => role === 'admin' || role === 'diretoria',
   maskCpf: (cpf: string | null) => (cpf ? `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**` : null),
-  maskSiape: (siape: string | null) => (siape ? `${siape.slice(0, 2)}****${siape.slice(-2)}` : null),
+  maskSiape: (siape: string | null) =>
+    siape ? `${siape.slice(0, 2)}****${siape.slice(-2)}` : null,
 }));
 
 vi.mock('@/lib/crypto/pii', () => ({
@@ -76,7 +77,11 @@ vi.mock('@/lib/utils/date', () => ({
 }));
 
 vi.mock('@/lib/utils/initials', () => ({
-  initialsFromName: (name: string) => name.split(' ').map((n) => n[0]).join(''),
+  initialsFromName: (name: string) =>
+    name
+      .split(' ')
+      .map((n) => n[0])
+      .join(''),
 }));
 
 const baseAssociate = {

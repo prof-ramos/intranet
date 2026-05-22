@@ -11,9 +11,7 @@ import { legalConsultationStatus } from '@/lib/db/schema';
 
 const TTL_VOLATILE = 30;
 
-export const countConsultationsByStatus = (
-  status: Parameters<typeof repoCountByStatus>[0],
-) =>
+export const countConsultationsByStatus = (status: Parameters<typeof repoCountByStatus>[0]) =>
   unstable_cache(
     async () => repoCountByStatus(status),
     ['consultations-count-by-status', String(status)],
@@ -21,11 +19,10 @@ export const countConsultationsByStatus = (
   )();
 
 export const countConsultationsStale = (days = 7) =>
-  unstable_cache(
-    async () => repoCountStale(days),
-    ['consultations-stale-count', String(days)],
-    { revalidate: TTL_VOLATILE, tags: ['legal', 'dashboard'] },
-  )();
+  unstable_cache(async () => repoCountStale(days), ['consultations-stale-count', String(days)], {
+    revalidate: TTL_VOLATILE,
+    tags: ['legal', 'dashboard'],
+  })();
 
 export const countConsultationsSlaDueSoon = (days = 2) =>
   unstable_cache(
@@ -44,17 +41,13 @@ export type { ConsultationListItem, GetConsultationsFilters } from './repository
 export { getConsultationsPaginated } from './repository';
 export type { ConsultationDetail } from './repository';
 export const getConsultationById = (id: number) =>
-  unstable_cache(
-    async () => repoGetById(id),
-    ['consultation-detail', String(id)],
-    { revalidate: 30, tags: ['legal', 'consultation-detail'] },
-  )();
+  unstable_cache(async () => repoGetById(id), ['consultation-detail', String(id)], {
+    revalidate: 30,
+    tags: ['legal', 'consultation-detail'],
+  })();
 
 export type { NoteItem } from './repository';
-export const getNotesByEntity = (
-  entityType: 'consultation' | 'process',
-  entityId: number,
-) =>
+export const getNotesByEntity = (entityType: 'consultation' | 'process', entityId: number) =>
   unstable_cache(
     async () => repoGetNotes(entityType, entityId),
     ['legal-notes', entityType, String(entityId)],

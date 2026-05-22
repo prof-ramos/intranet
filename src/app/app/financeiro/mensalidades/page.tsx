@@ -25,15 +25,28 @@ interface PageProps {
 }
 
 const monthNames = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
 ];
 
 export default async function MensalidadesPage({ searchParams }: PageProps) {
   await requireRole(['admin', 'diretoria']);
 
-  const { year: currentYear, month: currentMonth, filters: currentFilters } =
-    parseMonthlyPaymentsPageSearchParams(await searchParams);
+  const {
+    year: currentYear,
+    month: currentMonth,
+    filters: currentFilters,
+  } = parseMonthlyPaymentsPageSearchParams(await searchParams);
   const initializeCurrentMonthAction = initializeMonthAction.bind(null, currentYear, currentMonth);
 
   await autoMarkOverduePaymentsService();
@@ -72,8 +85,13 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
     return `/app/financeiro/mensalidades?${params.toString()}`;
   };
 
-  const hasActiveFilters = !!(currentFilters.q || currentFilters.status || currentFilters.method || currentFilters.location);
-  const hasNoData = !hasActiveFilters && data.every(p => !p.paymentId);
+  const hasActiveFilters = !!(
+    currentFilters.q ||
+    currentFilters.status ||
+    currentFilters.method ||
+    currentFilters.location
+  );
+  const hasNoData = !hasActiveFilters && data.every((p) => !p.paymentId);
 
   return (
     <main className="mx-auto w-full max-w-[1400px] px-5 py-7 sm:px-8 lg:px-10">
@@ -83,7 +101,10 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
           <p className="text-[11px] tracking-[0.18em] uppercase" style={{ color: textMuted }}>
             Financeiro · {monthNames[currentMonth - 1]} de {currentYear}
           </p>
-          <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]" style={{ color: navy }}>
+          <h1
+            className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]"
+            style={{ color: navy }}
+          >
             Controle de Mensalidades
           </h1>
         </div>
@@ -101,9 +122,14 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
             <ChevronLeft size={18} aria-hidden="true" />
           </Link>
 
-          <div className="flex items-center gap-2 px-4 text-sm font-semibold" style={{ color: textMuted, minWidth: 180, justifyContent: 'center' }}>
+          <div
+            className="flex items-center gap-2 px-4 text-sm font-semibold"
+            style={{ color: textMuted, minWidth: 180, justifyContent: 'center' }}
+          >
             <Calendar size={16} style={{ color: skyBlue }} aria-hidden="true" />
-            <span>{monthNames[currentMonth - 1]} de {currentYear}</span>
+            <span>
+              {monthNames[currentMonth - 1]} de {currentYear}
+            </span>
           </div>
 
           <Link
@@ -133,8 +159,9 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
               <h3 className="text-sm font-semibold" style={{ color: '#1e3a8a' }}>
                 Mês não inicializado
               </h3>
-              <p className="text-xs mt-0.5" style={{ color: '#1d4ed8' }}>
-                Este mês ainda não possui registros de pagamento. Inicialize para gerar os registros automáticos.
+              <p className="mt-0.5 text-xs" style={{ color: '#1d4ed8' }}>
+                Este mês ainda não possui registros de pagamento. Inicialize para gerar os registros
+                automáticos.
               </p>
             </div>
           </div>

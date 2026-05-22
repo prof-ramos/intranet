@@ -5,10 +5,11 @@ Este documento descreve o usuário e sua jornada no uso da plataforma. Bruna Lim
 ## Fluxos
 
 Ao acessar a intranet, Bruna verifica mensalmente quais associados estão em dia e quais estão inadimplentes. A ASOF aceita as seguintes formas de pagamento:
-1) Desconto em folha - SIGEPE - para servidores ativos e inativos no Brasil
-2) Boleto - para servidores ativos e inativos no Brasil (incluindo inativos no exterior)
-3) PIX - para servidores ativos e inativos no Brasil (incluindo inativos no exterior)
-4) Servidores no Exterior: desconto em folha realizado via DPAG - Divisão de Pagamentos do MRE
+
+1. Desconto em folha - SIGEPE - para servidores ativos e inativos no Brasil
+2. Boleto - para servidores ativos e inativos no Brasil (incluindo inativos no exterior)
+3. PIX - para servidores ativos e inativos no Brasil (incluindo inativos no exterior)
+4. Servidores no Exterior: desconto em folha realizado via DPAG - Divisão de Pagamentos do MRE
 
 Mensalmente, Bruna emite um relatório de pagamentos pelo SIGEPE, acessando-o no site da entidade. Além disso, a DPAG envia a folha de pagamentos dos servidores no exterior. Os pagamentos via boleto e PIX são gerados pelo sistema financeiro da ASOF, e Bruna controla os recebimentos.
 

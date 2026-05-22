@@ -19,7 +19,8 @@ function readPreferences(): BoardPreferences {
     const parsed = JSON.parse(raw);
     return {
       compact: typeof parsed.compact === 'boolean' ? parsed.compact : defaults.compact,
-      collapsedDone: typeof parsed.collapsedDone === 'boolean' ? parsed.collapsedDone : defaults.collapsedDone,
+      collapsedDone:
+        typeof parsed.collapsedDone === 'boolean' ? parsed.collapsedDone : defaults.collapsedDone,
     };
   } catch {
     return defaults;
@@ -56,7 +57,8 @@ export function useBoardPreferences() {
 
   function setCollapsedDone(collapsedDone: boolean | ((prev: boolean) => boolean)) {
     setPreferencesState((prev) => {
-      const next = typeof collapsedDone === 'function' ? collapsedDone(prev.collapsedDone) : collapsedDone;
+      const next =
+        typeof collapsedDone === 'function' ? collapsedDone(prev.collapsedDone) : collapsedDone;
       const updated = { ...prev, collapsedDone: next };
       writePreferences(updated);
       return updated;

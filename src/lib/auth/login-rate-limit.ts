@@ -16,7 +16,6 @@ export interface LoginRateLimitResult {
   retryAfterMs?: number;
 }
 
-
 export interface RateLimitStore {
   consume(key: string, now: number, windowMs: number, maxAttempts: number): Promise<LoginRateLimitResult>;
   reset(key: string): Promise<void>;
@@ -30,7 +29,9 @@ export interface RateLimitStore {
 function getEmailSearchKey(): string {
   const masterKey = env.ENCRYPTION_MASTER_KEY ?? env.ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY;
   if (!masterKey) {
-    throw new Error('ENCRYPTION_MASTER_KEY or ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY must be set for email hashing.');
+    throw new Error(
+      'ENCRYPTION_MASTER_KEY or ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY must be set for email hashing.',
+    );
   }
   return hkdfDeriveKey(masterKey, KEY_CONTEXTS.piiSearch).toString('hex');
 }
@@ -88,9 +89,7 @@ const dbStore: RateLimitStore = {
   },
 
   async reset(key) {
-    await db
-      .delete(loginAttempts)
-      .where(eq(loginAttempts.email, key));
+    await db.delete(loginAttempts).where(eq(loginAttempts.email, key));
   },
 
   async cleanup(now) {

@@ -27,14 +27,10 @@ export function toCsvCell(value: string | null | undefined): string {
 
 export function generateCsv(rows: ReportAssociate[], selectedKeys: string[]): string {
   const selectedFields =
-    selectedKeys.length > 0
-      ? ALL_FIELDS.filter((f) => selectedKeys.includes(f.key))
-      : ALL_FIELDS;
+    selectedKeys.length > 0 ? ALL_FIELDS.filter((f) => selectedKeys.includes(f.key)) : ALL_FIELDS;
 
   const headerRow = selectedFields.map((f) => toCsvCell(f.label)).join(',');
-  const dataRows = rows.map((row) =>
-    selectedFields.map((f) => toCsvCell(f.get(row))).join(','),
-  );
+  const dataRows = rows.map((row) => selectedFields.map((f) => toCsvCell(f.get(row))).join(','));
 
   // BOM prefix ensures Excel opens UTF-8 correctly
   return '﻿' + [headerRow, ...dataRows].join('\r\n');

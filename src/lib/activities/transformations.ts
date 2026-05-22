@@ -47,7 +47,9 @@ export function filterActivities(
   });
 }
 
-export function groupActivitiesByStatus(activities: BoardActivity[]): Record<Status, BoardActivity[]> {
+export function groupActivitiesByStatus(
+  activities: BoardActivity[],
+): Record<Status, BoardActivity[]> {
   const result: Record<Status, BoardActivity[]> = {
     a_fazer: [],
     em_andamento: [],
@@ -56,7 +58,9 @@ export function groupActivitiesByStatus(activities: BoardActivity[]): Record<Sta
   };
   for (const activity of activities) {
     if (!Object.prototype.hasOwnProperty.call(result, activity.status)) {
-      throw new Error(`groupActivitiesByStatus: invalid status "${activity.status}" for activity ${activity.id}`);
+      throw new Error(
+        `groupActivitiesByStatus: invalid status "${activity.status}" for activity ${activity.id}`,
+      );
     }
     result[activity.status].push(activity);
   }

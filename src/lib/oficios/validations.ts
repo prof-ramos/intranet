@@ -1,12 +1,14 @@
 import { z } from 'zod';
 
 function htmlHasText(value: string) {
-  return value
-    .replace(/<\s*script[\s\S]*?<\s*\/\s*script\s*>/gi, '')
-    .replace(/<\s*style[\s\S]*?<\s*\/\s*style\s*>/gi, '')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/gi, ' ')
-    .trim().length > 0;
+  return (
+    value
+      .replace(/<\s*script[\s\S]*?<\s*\/\s*script\s*>/gi, '')
+      .replace(/<\s*style[\s\S]*?<\s*\/\s*style\s*>/gi, '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/gi, ' ')
+      .trim().length > 0
+  );
 }
 
 function decodeNumericHtmlEntities(value: string): string {

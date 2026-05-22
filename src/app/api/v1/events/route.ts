@@ -3,7 +3,10 @@ import { authorizeIntegrationRequest } from '@/lib/integrations/auth';
 import { db } from '@/lib/db';
 import { auditLogs } from '@/lib/db/schema';
 import { jsonError, jsonMethodNotAllowed, jsonOk } from '@/lib/integrations/http';
-import { dispatchDomainEventById, dispatchPendingDomainEvents } from '@/lib/integrations/webhooks/service';
+import {
+  dispatchDomainEventById,
+  dispatchPendingDomainEvents,
+} from '@/lib/integrations/webhooks/service';
 import { getIntegrationRateLimitKey, integrationRateLimiter } from '@/lib/integrations/rate-limit';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
@@ -49,7 +52,9 @@ async function auditEventDispatch(input: {
   }
 }
 
-function getOperatorId(authorization: Extract<Awaited<ReturnType<typeof authorizeIntegrationRequest>>, { ok: true }>) {
+function getOperatorId(
+  authorization: Extract<Awaited<ReturnType<typeof authorizeIntegrationRequest>>, { ok: true }>,
+) {
   return authorization.principal.kind === 'session' ? authorization.principal.userId : null;
 }
 
@@ -75,7 +80,8 @@ export async function GET(request: Request) {
       stream: 'events',
       implemented: true,
       direction: 'outbound-only',
-      message: 'Outbound dispatch is available through this operator route. Inbound event ingestion is not implemented.',
+      message:
+        'Outbound dispatch is available through this operator route. Inbound event ingestion is not implemented.',
     },
     {
       requestId: authorization.requestId,

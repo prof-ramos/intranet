@@ -21,6 +21,7 @@
 ## Task 1: #41 Hardening residual de migrations
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `ARCHITECTURE.md`
 - Modify: `docs/runbook.md`
@@ -31,15 +32,18 @@
 - [ ] **Step 1: Confirmar estado atual da issue**
 
 Run:
+
 ```bash
 gh issue view 41 --json number,title,body,comments,state,url
 rg -n "CONCURRENTLY|ALLOW_PRODUCTION_MIGRATIONS|vmohxhyfgywaqfuqeuom|FORCE ROW LEVEL SECURITY" README.md ARCHITECTURE.md docs scripts drizzle/postgres src/lib/db
 ```
+
 Expected: RLS e guardrail ja implementados; falta documentar estrategia de `CREATE INDEX CONCURRENTLY`.
 
 - [ ] **Step 2: Documentar politica de indices grandes**
 
 Add to `docs/runbook.md` and summarize in `README.md`/`ARCHITECTURE.md`:
+
 ```markdown
 ### Indices grandes e CREATE INDEX CONCURRENTLY
 
@@ -55,15 +59,18 @@ Migrations Drizzle seguem transacionais por padrao. Para tabelas grandes em prod
 - [ ] **Step 3: Validar guardrails e RLS**
 
 Run:
+
 ```bash
 npm run test -- scripts/guarded-migrate.test.ts src/lib/db/rls-granular.test.ts
 npm run test:db
 ```
+
 Expected: all tests pass.
 
 - [ ] **Step 4: Commitar e fechar**
 
 Run:
+
 ```bash
 git add README.md ARCHITECTURE.md docs/runbook.md TODO-PROD.md
 git commit -m "docs(db): document production index migration policy"
@@ -74,6 +81,7 @@ gh issue close 41
 ## Task 2: #58 M2M, deprecacao legado e docs de producao
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `API.md`
 - Modify: `ARCHITECTURE.md`
@@ -87,9 +95,11 @@ gh issue close 41
 - [ ] **Step 1: Decidir destino do caminho legado**
 
 Check Vercel env:
+
 ```bash
 vercel env ls | rg 'ASOF_INTEGRATION_(API_KEY|HMAC_SECRET)|ASOF_INTEGRATIONS_ENABLED' || true
 ```
+
 Expected: no legacy `ASOF_INTEGRATION_API_KEY` or `ASOF_INTEGRATION_HMAC_SECRET` in production.
 
 Decision: if production no longer uses legacy env vars, update docs to say legacy path is code-level compatibility only and disabled in production unless explicitly configured.
@@ -97,6 +107,7 @@ Decision: if production no longer uses legacy env vars, update docs to say legac
 - [ ] **Step 2: Atualizar docs M2M**
 
 Update:
+
 - `README.md`: replace legacy env wording with table-backed API keys as primary path.
 - `API.md`: include `/api/v1/juridico/sla-warnings`, table-backed scopes, cron bearer endpoints and legacy compatibility note.
 - `ARCHITECTURE.md`: mark legacy env auth as deprecated compatibility, not production default.
@@ -105,15 +116,18 @@ Update:
 - [ ] **Step 3: Validar testes M2M**
 
 Run:
+
 ```bash
 npm run test -- src/lib/integrations/auth.test.ts src/lib/integrations/keys/service.test.ts src/app/app/config/integracoes/api-keys/actions.test.ts src/app/api/v1/events/route.test.ts
 npm run pr:check
 ```
+
 Expected: focused tests and full readiness pass.
 
 - [ ] **Step 4: Commitar e fechar**
 
 Run:
+
 ```bash
 git add README.md API.md ARCHITECTURE.md TODO-PROD.md
 git commit -m "docs(api): finalize m2m auth production guidance"
@@ -124,6 +138,7 @@ gh issue close 58
 ## Task 3: #50 Cancelamento de mensalidade com auditoria explicita
 
 **Files:**
+
 - Modify: `src/lib/db/schema/finance.ts`
 - Add: `drizzle/postgres/0043_add_monthly_payment_cancellation_fields.sql`
 - Modify: `drizzle/postgres/meta/_journal.json`
@@ -138,14 +153,17 @@ gh issue close 58
 - [ ] **Step 1: Confirmar modelo atual**
 
 Run:
+
 ```bash
 rg -n "monthlyPayments|paymentStatus|cancel|audit|updateMonthlyPayment" src/lib/db/schema/finance.ts src/lib/finance src/app/app/financeiro/mensalidades
 ```
+
 Expected: no dedicated cancellation action exists.
 
 - [ ] **Step 2: Adicionar campos de cancelamento**
 
 Add columns to `monthly_payments`:
+
 ```sql
 ALTER TABLE monthly_payments
   ADD COLUMN IF NOT EXISTS cancelled_at timestamptz,
@@ -160,6 +178,7 @@ CREATE INDEX IF NOT EXISTS idx_monthly_payments_cancelled_at
 - [ ] **Step 3: Implementar service**
 
 Add `cancelMonthlyPayment(adminId, paymentId, reason)` that:
+
 - loads current payment;
 - updates status to `cancelado` only if enum supports it, otherwise uses current domain decision and sets cancellation fields;
 - writes `audit_logs` with old/new state;
@@ -174,6 +193,7 @@ Add form action with confirmation and reason field. UI must not delete payment r
 - [ ] **Step 5: Testar**
 
 Run:
+
 ```bash
 npm run test -- src/lib/finance src/app/app/financeiro/mensalidades/actions.test.ts
 npm run test:db
@@ -183,6 +203,7 @@ npm run pr:check
 - [ ] **Step 6: Commitar e fechar**
 
 Run:
+
 ```bash
 git add src/lib/db/schema/finance.ts drizzle/postgres src/lib/finance src/app/app/financeiro/mensalidades
 git commit -m "feat(finance): audit monthly payment cancellations"
@@ -193,6 +214,7 @@ gh issue close 50
 ## Task 4: #24 Editor rich-text no corpo do oficio
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `package-lock.json`
 - Add: `src/app/app/secretaria/oficios/_components/RichTextEditor.tsx`
@@ -210,6 +232,7 @@ Use Context7 before installing. Candidate: Tiptap or Lexical. Pick the smallest 
 - [ ] **Step 2: Install dependency**
 
 Run, after docs check:
+
 ```bash
 npm install @tiptap/react @tiptap/starter-kit @tiptap/extension-text-align
 ```
@@ -217,6 +240,7 @@ npm install @tiptap/react @tiptap/starter-kit @tiptap/extension-text-align
 - [ ] **Step 3: Criar editor client-only**
 
 Create `RichTextEditor.tsx` with:
+
 - toolbar: bold, italic, bullet list, ordered list, align left/center/right;
 - `valueHtml`, `valueText`, `onChange({ html, text })`;
 - accessible buttons with `aria-pressed`;
@@ -225,12 +249,14 @@ Create `RichTextEditor.tsx` with:
 - [ ] **Step 4: Integrar no formulario**
 
 Replace textarea in `OficioForm.tsx`. Keep hidden fields or react-hook-form state for:
+
 - `bodyRichText`: sanitized/serialized HTML;
 - `bodyPlainText`: editor text content.
 
 - [ ] **Step 5: PDF simplificado**
 
 Update `src/lib/oficios/pdf.ts` to convert HTML to readable text for `pdf-lib`. Minimum safe parser:
+
 - strip tags to paragraphs/lists;
 - preserve line breaks for `<p>`, `<br>`, `<li>`;
 - ignore style beyond text layout.
@@ -238,6 +264,7 @@ Update `src/lib/oficios/pdf.ts` to convert HTML to readable text for `pdf-lib`. 
 - [ ] **Step 6: Testar**
 
 Run:
+
 ```bash
 npm run test -- src/lib/oficios src/app/app/secretaria/oficios/actions.test.ts
 npm run lint
@@ -248,6 +275,7 @@ npm run build
 - [ ] **Step 7: Commitar e fechar**
 
 Run:
+
 ```bash
 git add package.json package-lock.json src/app/app/secretaria/oficios src/lib/oficios
 git commit -m "feat(oficios): add rich text editor"
@@ -258,6 +286,7 @@ gh issue close 24
 ## Task 5: #51 Validacao Realtime com dois usuarios
 
 **Files:**
+
 - Optional Add: `scripts/smoke-notifications-realtime.ts`
 - Optional Test: `scripts/smoke-notifications-realtime.test.ts`
 - Modify: `docs/runbook.md`
@@ -266,6 +295,7 @@ gh issue close 24
 - [ ] **Step 1: Preparar dois usuarios de teste**
 
 Use production/staging accounts:
+
 - `realtime-a@asof.org.br`
 - `realtime-b@asof.org.br`
 
@@ -274,6 +304,7 @@ Both must map to rows in `admins` with active status. Do not use real member PII
 - [ ] **Step 2: Confirmar publication e RLS**
 
 Run against target DB:
+
 ```sql
 select pubname from pg_publication where pubname = 'supabase_realtime';
 select schemaname, tablename from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'notifications';
@@ -286,6 +317,7 @@ Expected: `notifications` in `supabase_realtime`, FORCE RLS true, select-own pol
 - [ ] **Step 3: Fazer smoke com dois browsers/sessoes**
 
 Manual or scripted:
+
 1. Login user A in browser/session A.
 2. Login user B in browser/session B.
 3. Insert notification for user A.
@@ -299,6 +331,7 @@ Update `docs/runbook.md` with exact smoke command/manual checklist and record re
 - [ ] **Step 5: Fechar**
 
 Run:
+
 ```bash
 git add docs/runbook.md TODO-PROD.md scripts
 git commit -m "docs(notifications): record realtime two-user smoke"
@@ -309,6 +342,7 @@ gh issue close 51
 ## Final Validation
 
 - [ ] Run:
+
 ```bash
 git status --short --branch
 npm run pr:check
@@ -319,4 +353,3 @@ gh issue list --state open --limit 100
   - working tree clean;
   - `npm run pr:check` passes;
   - none of #58, #51, #50, #41, #24 remain open.
-

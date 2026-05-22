@@ -1,7 +1,11 @@
 import { z } from 'zod';
 import { LEGAL_CONSULTATION_STATUSES } from '@/lib/juridico/status';
 import { paymentStatus } from '@/lib/db/schema/finance';
-import { functionalStatus, associationStatus, contributionStatus } from '@/lib/db/schema/associates';
+import {
+  functionalStatus,
+  associationStatus,
+  contributionStatus,
+} from '@/lib/db/schema/associates';
 import { domainEventType } from '@/lib/db/schema/integrations';
 
 export const PRIVATE_IPV4_RANGES = [
@@ -28,14 +32,16 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Senha é obrigatória.'),
 });
 
-export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'Senha atual é obrigatória.'),
-  newPassword: z.string().min(8, 'A nova senha deve ter pelo menos 8 caracteres.'),
-  confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória.'),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: 'A confirmação não confere.',
-  path: ['confirmPassword'],
-});
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Senha atual é obrigatória.'),
+    newPassword: z.string().min(8, 'A nova senha deve ter pelo menos 8 caracteres.'),
+    confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória.'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'A confirmação não confere.',
+    path: ['confirmPassword'],
+  });
 
 export const associateSearchParamsSchema = z.object({
   q: z.string().optional(),
@@ -110,7 +116,12 @@ export function isPublicWebhookUrl(value: string): boolean {
     return false;
   }
 
-  if (hostname === '[::1]' || hostname === '::1' || hostname.startsWith('fc') || hostname.startsWith('fd')) {
+  if (
+    hostname === '[::1]' ||
+    hostname === '::1' ||
+    hostname.startsWith('fc') ||
+    hostname.startsWith('fd')
+  ) {
     return false;
   }
 
@@ -121,17 +132,46 @@ export const updateAssociateSchema = z.object({
   id: z.coerce.number().int().positive('ID do associado inválido.'),
   fullName: z.string().min(1, 'O nome completo é obrigatório.').trim(),
   cpf: z.string().trim().nullable().refine(cpfValidator, 'CPF em formato inválido.').optional(),
-  siape: z.string().trim().nullable().refine((v) => !v || /^\d{6,10}$/.test(v.replace(/\D/g, '')), 'SIAPE em formato inválido.').optional(),
-  primaryEmail: z.string().trim().email('E-mail principal inválido.').nullable().or(z.literal('')).optional(),
-  secondaryEmail: z.string().trim().email('E-mail alternativo inválido.').nullable().or(z.literal('')).optional(),
+  siape: z
+    .string()
+    .trim()
+    .nullable()
+    .refine((v) => !v || /^\d{6,10}$/.test(v.replace(/\D/g, '')), 'SIAPE em formato inválido.')
+    .optional(),
+  primaryEmail: z
+    .string()
+    .trim()
+    .email('E-mail principal inválido.')
+    .nullable()
+    .or(z.literal(''))
+    .optional(),
+  secondaryEmail: z
+    .string()
+    .trim()
+    .email('E-mail alternativo inválido.')
+    .nullable()
+    .or(z.literal(''))
+    .optional(),
   phone: z.string().trim().nullable().optional(),
   whatsapp: z.string().trim().nullable().optional(),
-  birthDate: z.string().trim().refine(isValidDateString, 'Data de nascimento inválida.').nullable().or(z.literal('')).optional(),
+  birthDate: z
+    .string()
+    .trim()
+    .refine(isValidDateString, 'Data de nascimento inválida.')
+    .nullable()
+    .or(z.literal(''))
+    .optional(),
   address: z.string().trim().nullable().optional(),
   locationCity: z.string().trim().nullable().optional(),
   locationCountry: z.string().trim().nullable().optional(),
   assignment: z.string().trim().nullable().optional(),
-  assignmentStartDate: z.string().trim().refine(isValidDateString, 'Data de lotação inválida.').nullable().or(z.literal('')).optional(),
+  assignmentStartDate: z
+    .string()
+    .trim()
+    .refine(isValidDateString, 'Data de lotação inválida.')
+    .nullable()
+    .or(z.literal(''))
+    .optional(),
   classPattern: z.string().trim().nullable().optional(),
   associationCategory: z.string().trim().nullable().optional(),
   functionalStatus: z.enum(validFunctionalStatuses).nullable().optional(),
@@ -173,12 +213,11 @@ export const webhookSecretSchema = z
 
 export const webhookSubscriptionFormSchema = z.object({
   name: z.string().trim().min(2, 'Nome deve ter pelo menos 2 caracteres.').max(120),
-  targetUrl: z
-    .string()
-    .trim()
-    .url('URL de destino inválida.')
-    .refine(isPublicWebhookUrl, {
-      message: 'A URL deve usar HTTPS público; hosts locais, privados ou reservados não são permitidos.',
-    }),
-  subscribedEvents: z.array(z.enum(domainEventType.enumValues)).min(1, 'Selecione ao menos um evento.'),
+  targetUrl: z.string().trim().url('URL de destino inválida.').refine(isPublicWebhookUrl, {
+    message:
+      'A URL deve usar HTTPS público; hosts locais, privados ou reservados não são permitidos.',
+  }),
+  subscribedEvents: z
+    .array(z.enum(domainEventType.enumValues))
+    .min(1, 'Selecione ao menos um evento.'),
 });
