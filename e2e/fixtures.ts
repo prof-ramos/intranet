@@ -14,6 +14,8 @@ export const e2eUsers: Record<string, TestUser> = {
 async function loginAs(page: Page, user: TestUser, maxAttempts = 3) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     await page.goto('/login');
+    // Wait for potential auth redirects to complete
+    await page.waitForLoadState('networkidle', { timeout: 2000 }).catch(() => {});
     if (page.url().includes('/app')) {
       return;
     }
@@ -36,6 +38,8 @@ async function loginAs(page: Page, user: TestUser, maxAttempts = 3) {
 
   // Final attempt — let waitForURL throw if it still fails
   await page.goto('/login');
+  // Wait for potential auth redirects to complete
+  await page.waitForLoadState('networkidle', { timeout: 2000 }).catch(() => {});
   if (page.url().includes('/app')) {
     return;
   }

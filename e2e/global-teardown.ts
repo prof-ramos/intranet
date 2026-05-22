@@ -3,23 +3,18 @@ import path from 'path';
 
 const DEV_SERVER_PID_FILE = path.resolve(process.cwd(), '.next-e2e/e2e-dev-server.pid');
 
-function killE2EServer(pid: number, signal: NodeJS.Signals) {
-  let signaled = false;
+function killE2EServer(pid: number, signal: NodeJS.Signals): void {
   try {
     process.kill(-pid, signal);
-    signaled = true;
   } catch {
     // Fall back to killing the direct process on platforms/shells without groups.
   }
 
   try {
     process.kill(pid, signal);
-    signaled = true;
   } catch {
     // Process already exited.
   }
-
-  return signaled;
 }
 
 export default async function globalTeardown() {

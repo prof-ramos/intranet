@@ -135,4 +135,18 @@ describe('supabase admin helpers', () => {
       },
     });
   });
+
+  it('generates recovery links without redirectTo when ASOF_INTRANET_URL is undefined', async () => {
+    envMock.ASOF_INTRANET_URL = undefined;
+    const link = await generatePasswordResetLink('admin@asof.local');
+
+    expect(link).toBe('https://example.supabase.co/auth/v1/verify?token=abc');
+    expect(generateLinkMock).toHaveBeenCalledWith({
+      type: 'recovery',
+      email: 'admin@asof.local',
+      options: {
+        redirectTo: undefined,
+      },
+    });
+  });
 });

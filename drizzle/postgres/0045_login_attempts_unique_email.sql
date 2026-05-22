@@ -24,6 +24,9 @@ CREATE TABLE IF NOT EXISTS login_attempts_dedup_backup (
   backup_reason text NOT NULL
 );
 
+ALTER TABLE login_attempts_dedup_backup ENABLE ROW LEVEL SECURITY;
+ALTER TABLE login_attempts_dedup_backup FORCE ROW LEVEL SECURITY;
+
 WITH duplicate_rows AS (
   SELECT *
   FROM (

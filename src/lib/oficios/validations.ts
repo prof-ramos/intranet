@@ -90,7 +90,7 @@ const voidTags = new Set(['br']);
 
 function isSafeLinkAttribute(name: string, value: string): boolean {
   const canonical = canonicalizeAttributeValue(value);
-  if (name === 'href') {
+  if (name === 'href' || name === 'src') {
     return /^(https?:|mailto:)/.test(canonical) || canonical.startsWith('#');
   }
   return true;
@@ -119,8 +119,10 @@ function sanitizeAttributes(tagName: string, rawAttributes: string): string {
       if (safeStyle) attributes.push(`style="${escapeHtmlAttribute(safeStyle)}"`);
       continue;
     }
-    if (name === 'href' && tagName === 'a' && isSafeLinkAttribute(name, value)) {
-      attributes.push(`href="${escapeHtmlAttribute(value)}"`);
+    if ((name === 'href' && tagName === 'a') || (name === 'src' && tagName === 'img')) {
+      if (isSafeLinkAttribute(name, value)) {
+        attributes.push(`${name}="${escapeHtmlAttribute(value)}"`);
+      }
       continue;
     }
     if (name === 'title' || name === 'aria-label') {

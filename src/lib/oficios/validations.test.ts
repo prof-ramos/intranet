@@ -55,7 +55,7 @@ describe('officialLetterFormSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('sanitizes numeric-entity encoded javascript and data URLs', () => {
+  it('removes disallowed <img> tags (data: URIs are blocked by isSafeLinkAttribute when attributes are allowed)', () => {
     const result = officialLetterFormSchema.safeParse({
       ...validData,
       bodyRichText:
