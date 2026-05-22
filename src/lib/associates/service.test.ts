@@ -238,8 +238,10 @@ describe('updateAssociateData', () => {
     expect(mockUpdateAssociateById).toHaveBeenCalledWith(
       1,
       expect.objectContaining({
+        cpf: null,
         cpfCiphertext: null,
         cpfHash: null,
+        siape: null,
         siapeCiphertext: null,
         siapeHash: null,
       }),

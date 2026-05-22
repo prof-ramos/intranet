@@ -8,6 +8,7 @@ import {
 } from '@/lib/db/schema';
 import { eq, and, count, asc, sql } from 'drizzle-orm';
 import { buildAssociateNameSearchPattern } from './search-params';
+import { decryptPiiField } from '@/lib/crypto/pii';
 
 type FunctionalStatusEnum = (typeof functionalStatus.enumValues)[number];
 type AssociationStatusEnum = (typeof associationStatus.enumValues)[number];
@@ -61,7 +62,11 @@ export async function findAssociatesPaginated(
     db
       .select(
         includeEmail
-          ? { ...publicAssociateListColumns, primaryEmail: associates.primaryEmail }
+          ? {
+              ...publicAssociateListColumns,
+              primaryEmail: associates.primaryEmail,
+              primaryEmailCiphertext: associates.primaryEmailCiphertext,
+            }
           : publicAssociateListColumns,
       )
       .from(associates)
@@ -75,12 +80,17 @@ export async function findAssociatesPaginated(
   return {
     rows: rows.map((row) => ({
       ...row,
-      primaryEmail: includeEmail && 'primaryEmail' in row ? (row.primaryEmail ?? null) : null,
+      primaryEmail:
+        includeEmail && 'primaryEmail' in row
+          ? decryptPiiField(
+              'primaryEmailCiphertext' in row ? (row.primaryEmailCiphertext ?? null) : null,
+              row.primaryEmail ?? null,
+            )
+          : null,
     })),
     total,
   };
 }
-
 
 export async function findAssociateById(id: number, executor: DbExecutor = db) {
   const [row] = await executor.select().from(associates).where(eq(associates.id, id)).limit(1);

@@ -201,9 +201,11 @@ Fallback seguro:
 Checklist:
 
 1. Confirmar env de produção sem expor valores:
+
    ```bash
    vercel env ls | rg 'ASOF_INTRANET_URL|MAILJET_'
    ```
+
 2. Confirmar no painel do Mailjet que `MAILJET_SENDER_EMAIL` está validado.
 3. Redefinir a senha de um usuário de teste ativo.
 4. Se `MAILJET_SENDER_VALIDATED=true`, confirmar recebimento do email "Redefinição de senha — ASOF Intranet".

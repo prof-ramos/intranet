@@ -103,16 +103,19 @@ Gere um e-mail HTML completo no design system da ASOF para este tipo de comunica
 
     try {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${trimmedApiKey}`,
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': trimmedApiKey,
+          },
           body: JSON.stringify({
             system_instruction: { parts: [{ text: DESIGN_SYSTEM }] },
             contents: [{ parts: [{ text: userPrompt }] }],
             generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
           }),
-        }
+        },
       );
 
       if (!res.ok) {
@@ -129,7 +132,10 @@ Gere um e-mail HTML completo no design system da ASOF para este tipo de comunica
 
       // Extrair HTML
       let html = raw.replace(/ASSUNTO:\s*.+\n?/i, '').trim();
-      html = html.replace(/^```html\n?/i, '').replace(/\n?```$/i, '').trim();
+      html = html
+        .replace(/^```html\n?/i, '')
+        .replace(/\n?```$/i, '')
+        .trim();
 
       if (!html.toLowerCase().includes('<html')) {
         // Fallback básico caso o modelo não retorne HTML válido
@@ -183,7 +189,9 @@ Gere um e-mail HTML completo no design system da ASOF para este tipo de comunica
     <div className="email-generator-container">
       <header>
         <div>
-          <div className="header-logo">AS<span>◎</span>F</div>
+          <div className="header-logo">
+            AS<span>◎</span>F
+          </div>
           <div className="header-sub">Gerador de E-mails Institucionais</div>
         </div>
         <div className="header-badge">✦ Powered by Gemini 2.0</div>
@@ -316,7 +324,8 @@ Gere um e-mail HTML completo no design system da ASOF para este tipo de comunica
                   <div className="empty-icon">✉️</div>
                   <div className="empty-title">Nenhum e-mail gerado ainda</div>
                   <p className="empty-desc">
-                    Preencha o formulário ao lado e clique em &quot;Gerar E-mail&quot; para criar uma comunicação institucional no padrão ASOF.
+                    Preencha o formulário ao lado e clique em &quot;Gerar E-mail&quot; para criar
+                    uma comunicação institucional no padrão ASOF.
                   </p>
                 </div>
               )}

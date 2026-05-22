@@ -148,7 +148,10 @@ export async function updateActivityById(
   expectedUpdatedAt?: Date | null,
 ): Promise<Activity | null> {
   const whereClause = expectedUpdatedAt
-    ? and(eq(activities.id, id), sql`${activities.updatedAt} = ${expectedUpdatedAt}`)
+    ? and(
+        eq(activities.id, id),
+        sql`${activities.updatedAt} >= ${expectedUpdatedAt} AND ${activities.updatedAt} < ${expectedUpdatedAt} + interval '1 millisecond'`,
+      )
     : eq(activities.id, id);
 
   const [row] = await db

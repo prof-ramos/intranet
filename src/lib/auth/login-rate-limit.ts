@@ -17,7 +17,12 @@ export interface LoginRateLimitResult {
 }
 
 export interface RateLimitStore {
-  consume(key: string, now: number, windowMs: number, maxAttempts: number): Promise<LoginRateLimitResult>;
+  consume(
+    key: string,
+    now: number,
+    windowMs: number,
+    maxAttempts: number,
+  ): Promise<LoginRateLimitResult>;
   reset(key: string): Promise<void>;
   cleanup(now: number): Promise<void>;
 }
@@ -52,13 +57,14 @@ const dbStore: RateLimitStore = {
     const rows = await db
       .insert(loginAttempts)
       .values({
-        email: key,
+        email: null,
         emailHash,
         attempts: 1,
         expiresAt,
       })
       .onConflictDoUpdate({
-        target: loginAttempts.email,
+        target: loginAttempts.emailHash,
+        targetWhere: sql`${loginAttempts.emailHash} IS NOT NULL`,
         set: {
           attempts: sql`CASE 
             WHEN ${loginAttempts.expiresAt} <= ${new Date(now).toISOString()} THEN 1 
@@ -89,7 +95,7 @@ const dbStore: RateLimitStore = {
   },
 
   async reset(key) {
-    await db.delete(loginAttempts).where(eq(loginAttempts.email, key));
+    await db.delete(loginAttempts).where(eq(loginAttempts.emailHash, hashEmail(key)));
   },
 
   async cleanup(now) {
@@ -104,10 +110,7 @@ export function createLoginRateLimiter(
   store: RateLimitStore = dbStore,
 ) {
   return {
-    async consume(
-      key: string,
-      now = Date.now(),
-    ): Promise<LoginRateLimitResult> {
+    async consume(key: string, now = Date.now()): Promise<LoginRateLimitResult> {
       return store.consume(key.trim().toLowerCase(), now, options.windowMs, options.maxAttempts);
     },
 

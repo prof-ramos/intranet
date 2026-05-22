@@ -5,6 +5,7 @@ import {
   parseAssociatesSearchParams,
   buildAssociatesSearchParams,
 } from '@/lib/associates/search-params';
+import { canViewSensitiveFields } from '@/lib/associates/lgpd';
 import { AssociadosFilters } from './AssociadosFilters';
 import { ChevronLeft, ChevronRight, Download, Pencil, Search } from 'lucide-react';
 import Link from 'next/link';
@@ -38,9 +39,15 @@ export default async function AssociadosPage({
     await searchParams,
   );
 
-  const { rows, total } = await getAssociatesListPage(page, PAGE_SIZE, q, { contributionStatus, functionalStatus }, user.role);
+  const { rows, total } = await getAssociatesListPage(
+    page,
+    PAGE_SIZE,
+    q,
+    { contributionStatus, functionalStatus },
+    user.role,
+  );
 
-  const showEmail = user.role === 'admin' || user.role === 'diretoria';
+  const showEmail = canViewSensitiveFields(user.role);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const from = total === 0 ? 0 : Math.min((page - 1) * PAGE_SIZE + 1, total);
@@ -275,9 +282,7 @@ export default async function AssociadosPage({
                       </td>
                       <td className="px-4 py-3">{row.assignment ?? '—'}</td>
                       <td className="px-4 py-3">{row.classPattern ?? '—'}</td>
-                      {showEmail && (
-                        <td className="px-4 py-3">{row.primaryEmail ?? '—'}</td>
-                      )}
+                      {showEmail && <td className="px-4 py-3">{row.primaryEmail ?? '—'}</td>}
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold tracking-[0.06em] uppercase ${

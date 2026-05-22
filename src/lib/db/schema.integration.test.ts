@@ -31,7 +31,7 @@ const expectedColumns = {
   admins: [
     'id:int8:NO',
     'name:text:NO',
-    'email:text:NO',
+    'email:text:YES',
     'password_hash:text:NO',
     'role:admin_role:NO',
     'is_active:bool:NO',
@@ -431,8 +431,7 @@ const expectedIndexes = {
     'legal_processes_pkey',
   ],
   login_attempts: [
-    'idx_login_attempts_email_hash',
-    'idx_login_attempts_email_unique',
+    'idx_login_attempts_email_hash_unique',
     'idx_login_attempts_expires_at',
     'login_attempts_pkey',
   ],

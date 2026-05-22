@@ -226,20 +226,57 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
     fullName: input.fullName,
     // F-008: Do not write plaintext PII columns. Only write ciphertext + hash.
     // decryptPiiField() retains a fallback to plaintext for rows not yet backfilled.
-    cpfCiphertext: input.cpf != null ? encryptPii(input.cpf) : input.cpf === null ? null : undefined,
+    cpf: input.cpf === null ? null : undefined,
+    cpfCiphertext:
+      input.cpf != null ? encryptPii(input.cpf) : input.cpf === null ? null : undefined,
     cpfHash: input.cpf != null ? piiBlindIndex(input.cpf) : input.cpf === null ? null : undefined,
-    siapeCiphertext: input.siape != null ? encryptPii(input.siape) : input.siape === null ? null : undefined,
-    siapeHash: input.siape != null ? piiBlindIndex(input.siape) : input.siape === null ? null : undefined,
-    primaryEmailCiphertext: input.primaryEmail != null ? encryptPii(input.primaryEmail) : input.primaryEmail === null ? null : undefined,
-    primaryEmailHash: input.primaryEmail != null ? piiBlindIndex(input.primaryEmail) : input.primaryEmail === null ? null : undefined,
+    siape: input.siape === null ? null : undefined,
+    siapeCiphertext:
+      input.siape != null ? encryptPii(input.siape) : input.siape === null ? null : undefined,
+    siapeHash:
+      input.siape != null ? piiBlindIndex(input.siape) : input.siape === null ? null : undefined,
+    primaryEmail: input.primaryEmail === null ? null : undefined,
+    primaryEmailCiphertext:
+      input.primaryEmail != null
+        ? encryptPii(input.primaryEmail)
+        : input.primaryEmail === null
+          ? null
+          : undefined,
+    primaryEmailHash:
+      input.primaryEmail != null
+        ? piiBlindIndex(input.primaryEmail)
+        : input.primaryEmail === null
+          ? null
+          : undefined,
     secondaryEmail: input.secondaryEmail,
-    phoneCiphertext: input.phone != null ? encryptPii(input.phone) : input.phone === null ? null : undefined,
-    phoneHash: input.phone != null ? piiBlindIndex(input.phone) : input.phone === null ? null : undefined,
-    whatsappCiphertext: input.whatsapp != null ? encryptPii(input.whatsapp) : input.whatsapp === null ? null : undefined,
-    whatsappHash: input.whatsapp != null ? piiBlindIndex(input.whatsapp) : input.whatsapp === null ? null : undefined,
+    phone: input.phone === null ? null : undefined,
+    phoneCiphertext:
+      input.phone != null ? encryptPii(input.phone) : input.phone === null ? null : undefined,
+    phoneHash:
+      input.phone != null ? piiBlindIndex(input.phone) : input.phone === null ? null : undefined,
+    whatsapp: input.whatsapp === null ? null : undefined,
+    whatsappCiphertext:
+      input.whatsapp != null
+        ? encryptPii(input.whatsapp)
+        : input.whatsapp === null
+          ? null
+          : undefined,
+    whatsappHash:
+      input.whatsapp != null
+        ? piiBlindIndex(input.whatsapp)
+        : input.whatsapp === null
+          ? null
+          : undefined,
     birthDate: input.birthDate,
-    addressCiphertext: input.address != null ? encryptPii(input.address) : input.address === null ? null : undefined,
-    addressHash: input.address != null ? piiBlindIndex(input.address) : input.address === null ? null : undefined,
+    address: input.address === null ? null : undefined,
+    addressCiphertext:
+      input.address != null ? encryptPii(input.address) : input.address === null ? null : undefined,
+    addressHash:
+      input.address != null
+        ? piiBlindIndex(input.address)
+        : input.address === null
+          ? null
+          : undefined,
     locationCity: input.locationCity,
     locationCountry: input.locationCountry,
     assignment: input.assignment,

@@ -1,6 +1,6 @@
 # Vulnerability Assessment Report
 
-**Target**: `/Users/gabrielramos/projetos/ASOF/intranet`
+**Target**: `ASOF/intranet`
 **Date**: 2026-05-22
 **Scope**: Entire repository, excluding generated/dependency directories such as `node_modules`, `.next`, `.next-e2e`, `.git`, `dist`, and `build`.
 **Total Findings**: 14
@@ -22,12 +22,12 @@ The audit found no confirmed SQL injection, command injection, path traversal, u
 ## Severity Distribution
 
 | Severity | Count | Reachable | Partially Reachable | Unreachable |
-|----------|-------|-----------|---------------------|-------------|
-| Critical | 0 | 0 | 0 | 0 |
-| High | 0 | 0 | 0 | 0 |
-| Medium | 8 | 1 | 7 | 0 |
-| Low | 5 | 0 | 5 | 0 |
-| Info | 1 | 1 | 0 | 0 |
+| -------- | ----- | --------- | ------------------- | ----------- |
+| Critical | 0     | 0         | 0                   | 0           |
+| High     | 0     | 0         | 0                   | 0           |
+| Medium   | 8     | 1         | 7                   | 0           |
+| Low      | 5     | 0         | 5                   | 0           |
+| Info     | 1     | 1         | 0                   | 0           |
 
 ## Findings
 
@@ -75,9 +75,9 @@ await store.incrementAttempts(normalizedKey, now);
 
 **Sanitization Checkpoints**:
 
-| Checkpoint | Type | Bypassable? |
-|------------|------|-------------|
-| `login-rate-limit.ts:141` | validation | Yes |
+| Checkpoint                | Type       | Bypassable? |
+| ------------------------- | ---------- | ----------- |
+| `login-rate-limit.ts:141` | validation | Yes         |
 
 **Impact**:
 
@@ -146,9 +146,9 @@ primaryEmail: associates.primaryEmail,
 
 **Sanitization Checkpoints**:
 
-| Checkpoint | Type | Bypassable? |
-|------------|------|-------------|
-| `src/lib/associates/lgpd.ts` profile masking | sanitize | Yes |
+| Checkpoint                                   | Type     | Bypassable? |
+| -------------------------------------------- | -------- | ----------- |
+| `src/lib/associates/lgpd.ts` profile masking | sanitize | Yes         |
 
 **Impact**:
 
@@ -214,9 +214,9 @@ internalNotes: data.internalNotes ?? null,
 
 **Sanitization Checkpoints**:
 
-| Checkpoint | Type | Bypassable? |
-|------------|------|-------------|
-| `EditarAssociadoForm.tsx:355` | validation | Yes |
+| Checkpoint                    | Type       | Bypassable? |
+| ----------------------------- | ---------- | ----------- |
+| `EditarAssociadoForm.tsx:355` | validation | Yes         |
 
 **Impact**:
 
@@ -285,9 +285,9 @@ entry.error = {
 
 **Sanitization Checkpoints**:
 
-| Checkpoint | Type | Bypassable? |
-|------------|------|-------------|
-| `toSafeErrorLog()` context | sanitize | Yes |
+| Checkpoint                 | Type     | Bypassable? |
+| -------------------------- | -------- | ----------- |
+| `toSafeErrorLog()` context | sanitize | Yes         |
 
 **Impact**:
 
@@ -352,10 +352,10 @@ const response = await fetch(subscription.targetUrl, { method: 'POST', ... });
 
 **Sanitization Checkpoints**:
 
-| Checkpoint | Type | Bypassable? |
-|------------|------|-------------|
-| `isPublicWebhookUrl()` | validation | Yes |
-| dispatch-time URL revalidation | validation | Yes |
+| Checkpoint                     | Type       | Bypassable? |
+| ------------------------------ | ---------- | ----------- |
+| `isPublicWebhookUrl()`         | validation | Yes         |
+| dispatch-time URL revalidation | validation | Yes         |
 
 **Impact**:
 
@@ -423,9 +423,9 @@ for (const event of pendingEvents) {
 
 **Sanitization Checkpoints**:
 
-| Checkpoint | Type | Bypassable? |
-|------------|------|-------------|
-| processing recovery | validation | Yes |
+| Checkpoint          | Type       | Bypassable? |
+| ------------------- | ---------- | ----------- |
+| processing recovery | validation | Yes         |
 
 **Impact**:
 
@@ -491,9 +491,9 @@ if (currentUpdatedAt !== expectedUpdatedAt) throw new Error('CONCURRENCY_CONFLIC
 
 **Sanitization Checkpoints**:
 
-| Checkpoint | Type | Bypassable? |
-|------------|------|-------------|
-| `expectedUpdatedAt` pre-check | validation | Yes |
+| Checkpoint                    | Type       | Bypassable? |
+| ----------------------------- | ---------- | ----------- |
+| `expectedUpdatedAt` pre-check | validation | Yes         |
 
 **Impact**:
 
@@ -562,10 +562,10 @@ primaryEmailCiphertext: input.primaryEmail != null ? encryptPii(input.primaryEma
 
 **Sanitization Checkpoints**:
 
-| Checkpoint | Type | Bypassable? |
-|------------|------|-------------|
-| role-based DTO masking | sanitize | Yes |
-| ciphertext columns | encryption | Yes |
+| Checkpoint             | Type       | Bypassable? |
+| ---------------------- | ---------- | ----------- |
+| role-based DTO masking | sanitize   | Yes         |
+| ciphertext columns     | encryption | Yes         |
 
 **Impact**:
 
@@ -633,9 +633,9 @@ return {
 
 **Sanitization Checkpoints**:
 
-| Checkpoint | Type | Bypassable? |
-|------------|------|-------------|
-| caller-level UI checks | validation | Yes |
+| Checkpoint             | Type       | Bypassable? |
+| ---------------------- | ---------- | ----------- |
+| caller-level UI checks | validation | Yes         |
 
 **Impact**:
 
@@ -657,6 +657,7 @@ Plausible. Kept as Low because exploitability depends on existing session state.
 - **Category**: CONFIG-01
 - **Confidence**: plausible
 - **Reachability**: partially_reachable
+- **Tracking**: https://github.com/prof-ramos/intranet/issues/71
 - **Locations**:
   - `src/lib/integrations/auth.ts:178`
   - `src/lib/integrations/auth.ts:228`
@@ -691,9 +692,9 @@ const expectedSignature = signIntegrationRequest(signaturePayload, config.hmacSe
 
 **Sanitization Checkpoints**:
 
-| Checkpoint | Type | Bypassable? |
-|------------|------|-------------|
-| per-key scope check | validation | No |
+| Checkpoint          | Type       | Bypassable? |
+| ------------------- | ---------- | ----------- |
+| per-key scope check | validation | No          |
 
 **Impact**:
 
@@ -744,15 +745,15 @@ Root cause ID: `RC-fileio-oficio-pdf-size`
 **Evidence**:
 
 ```ts
-bodyRichText: z.string().min(1).refine(htmlHasText)
-bodyPlainText: z.string().trim().min(1)
+bodyRichText: z.string().min(1).refine(htmlHasText);
+bodyPlainText: z.string().trim().min(1);
 ```
 
 **Sanitization Checkpoints**:
 
-| Checkpoint | Type | Bypassable? |
-|------------|------|-------------|
-| required text validation | validation | Yes |
+| Checkpoint               | Type       | Bypassable? |
+| ------------------------ | ---------- | ----------- |
+| required text validation | validation | Yes         |
 
 **Impact**:
 
@@ -803,15 +804,15 @@ Root cause ID: `RC-xss-oficio-richtext-canonicalization`
 **Evidence**:
 
 ```ts
-bodyRichText: z.string().min(1).refine(htmlHasText)
+bodyRichText: z.string().min(1).refine(htmlHasText);
 ```
 
 **Sanitization Checkpoints**:
 
-| Checkpoint | Type | Bypassable? |
-|------------|------|-------------|
-| TipTap schema parsing | sanitize | Partially |
-| PDF tag stripping | sanitize | No for PDF sink |
+| Checkpoint            | Type     | Bypassable?     |
+| --------------------- | -------- | --------------- |
+| TipTap schema parsing | sanitize | Partially       |
+| PDF tag stripping     | sanitize | No for PDF sink |
 
 **Impact**:
 
@@ -869,9 +870,9 @@ const updated = await updateActivityById(input.id, { ... });
 
 **Sanitization Checkpoints**:
 
-| Checkpoint | Type | Bypassable? |
-|------------|------|-------------|
-| status enum validation | validation | No |
+| Checkpoint             | Type       | Bypassable? |
+| ---------------------- | ---------- | ----------- |
+| status enum validation | validation | No          |
 
 **Impact**:
 
@@ -921,14 +922,14 @@ Root cause ID: `RC-auth-health-scope`
 **Evidence**:
 
 ```ts
-authorizeIntegrationRequest(request, { allowSessionRoles: ['admin', 'diretoria'] })
+authorizeIntegrationRequest(request, { allowSessionRoles: ['admin', 'diretoria'] });
 ```
 
 **Sanitization Checkpoints**:
 
-| Checkpoint | Type | Bypassable? |
-|------------|------|-------------|
-| active API key auth | validation | No |
+| Checkpoint          | Type       | Bypassable? |
+| ------------------- | ---------- | ----------- |
+| active API key auth | validation | No          |
 
 **Impact**:
 
@@ -969,4 +970,3 @@ Demoted to Info because behavior may be intentional and impact is low.
 - No production environment variables, Vercel project settings, Supabase RLS runtime claims, or deployed logs were inspected in this pass.
 - Browser-level CSP/security headers were not validated live.
 - Dependency audit was limited to `npm audit --json`, which returned zero known vulnerabilities for the installed dependency graph.
-
