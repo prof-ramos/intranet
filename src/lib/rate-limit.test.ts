@@ -86,7 +86,9 @@ describe('consumeIpRateLimit', () => {
   });
 
   it('allows the first request with an insert-only path', async () => {
-    mockInsertReturning.mockResolvedValueOnce([{ attempts: 1, expiresAt: new Date(Date.now() + 60_000) }]);
+    mockInsertReturning.mockResolvedValueOnce([
+      { attempts: 1, expiresAt: new Date(Date.now() + 60_000) },
+    ]);
 
     const result = await consumeIpRateLimit('192.168.1.1', 'test_action', {
       windowMs: 60_000,
@@ -99,7 +101,9 @@ describe('consumeIpRateLimit', () => {
   });
 
   it('resets an expired window without relying on a prior read', async () => {
-    mockResetReturning.mockResolvedValueOnce([{ attempts: 1, expiresAt: new Date(Date.now() + 60_000) }]);
+    mockResetReturning.mockResolvedValueOnce([
+      { attempts: 1, expiresAt: new Date(Date.now() + 60_000) },
+    ]);
 
     const result = await consumeIpRateLimit('192.168.1.1', 'test_action', {
       windowMs: 60_000,
@@ -113,7 +117,9 @@ describe('consumeIpRateLimit', () => {
   });
 
   it('increments an active window after an insert conflict', async () => {
-    mockIncrementReturning.mockResolvedValueOnce([{ attempts: 3, expiresAt: new Date(Date.now() + 30_000) }]);
+    mockIncrementReturning.mockResolvedValueOnce([
+      { attempts: 3, expiresAt: new Date(Date.now() + 30_000) },
+    ]);
 
     const result = await consumeIpRateLimit('192.168.1.1', 'test_action', {
       windowMs: 60_000,

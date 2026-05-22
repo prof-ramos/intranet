@@ -41,7 +41,7 @@ export function NovaConsultaForm({ associates }: Props) {
           <ArrowLeft size={18} />
         </Link>
         <div>
-          <p className="text-[11px] uppercase tracking-[0.18em] text-[rgba(13,31,60,0.55)]">
+          <p className="text-[11px] tracking-[0.18em] text-[rgba(13,31,60,0.55)] uppercase">
             Jurídico / Consultas
           </p>
           <h1 className="mt-1 font-serif text-3xl font-bold">Nova consulta</h1>
@@ -66,7 +66,10 @@ export function NovaConsultaForm({ associates }: Props) {
         </div>
 
         <div className="mb-5">
-          <label htmlFor="questionSummary" className="mb-1 block text-sm font-semibold text-[#0d1f3c]">
+          <label
+            htmlFor="questionSummary"
+            className="mb-1 block text-sm font-semibold text-[#0d1f3c]"
+          >
             Resumo da pergunta *
           </label>
           <input
@@ -82,7 +85,10 @@ export function NovaConsultaForm({ associates }: Props) {
         </div>
 
         <div className="mb-5">
-          <label htmlFor="questionFullText" className="mb-1 block text-sm font-semibold text-[#0d1f3c]">
+          <label
+            htmlFor="questionFullText"
+            className="mb-1 block text-sm font-semibold text-[#0d1f3c]"
+          >
             Descrição completa
           </label>
           <textarea
@@ -98,7 +104,10 @@ export function NovaConsultaForm({ associates }: Props) {
 
         <div className="mb-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div>
-            <label htmlFor="associateId" className="mb-1 block text-sm font-semibold text-[#0d1f3c]">
+            <label
+              htmlFor="associateId"
+              className="mb-1 block text-sm font-semibold text-[#0d1f3c]"
+            >
               Associado
             </label>
             <select
@@ -144,14 +153,14 @@ export function NovaConsultaForm({ associates }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className={`inline-flex items-center gap-2 bg-[#040920] text-white rounded-[8px] h-10 px-5 text-sm font-semibold hover:bg-[#0d3260] disabled:opacity-60 ${focusRingClass}`}
+            className={`inline-flex h-10 items-center gap-2 rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white hover:bg-[#0d3260] disabled:opacity-60 ${focusRingClass}`}
           >
             <Save size={16} aria-hidden="true" />
             {saving ? 'Salvando...' : 'Salvar consulta'}
           </button>
           <Link
             href="/app/juridico/consultas"
-            className={`inline-flex items-center gap-2 bg-white text-[#040920] rounded-[8px] h-10 px-4 text-sm font-semibold border border-[rgba(4,9,32,0.15)] hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
+            className={`inline-flex h-10 items-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 text-sm font-semibold text-[#040920] hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
           >
             Cancelar
           </Link>

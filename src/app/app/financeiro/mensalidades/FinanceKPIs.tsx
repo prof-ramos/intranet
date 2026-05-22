@@ -27,7 +27,9 @@ interface FinanceKPIsProps {
 export function FinanceKPIs({ payments }: FinanceKPIsProps) {
   const total = payments.length;
   const pagos = payments.filter((p) => p.paymentStatus === 'pago').length;
-  const pendentes = payments.filter((p) => p.paymentStatus === 'pendente' || !p.paymentStatus).length;
+  const pendentes = payments.filter(
+    (p) => p.paymentStatus === 'pendente' || !p.paymentStatus,
+  ).length;
   const atrasados = payments.filter((p) => p.paymentStatus === 'atrasado').length;
   const isentos = payments.filter((p) => p.paymentStatus === 'isento').length;
   const cancelados = payments.filter((p) => p.paymentStatus === 'cancelado').length;
@@ -37,14 +39,12 @@ export function FinanceKPIs({ payments }: FinanceKPIsProps) {
   }).length;
 
   const folha = payments.filter(
-    (p) => (p.monthPaymentMethod || p.defaultPaymentMethod) === 'folha'
+    (p) => (p.monthPaymentMethod || p.defaultPaymentMethod) === 'folha',
   ).length;
-  const boletoPix = payments.filter(
-    (p) => {
-      const m = p.monthPaymentMethod || p.defaultPaymentMethod;
-      return m === 'boleto' || m === 'pix';
-    }
-  ).length;
+  const boletoPix = payments.filter((p) => {
+    const m = p.monthPaymentMethod || p.defaultPaymentMethod;
+    return m === 'boleto' || m === 'pix';
+  }).length;
 
   const kpiItems = [
     {
@@ -92,7 +92,10 @@ export function FinanceKPIs({ payments }: FinanceKPIsProps) {
   ];
 
   return (
-    <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6" aria-label="Indicadores financeiros">
+    <section
+      className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6"
+      aria-label="Indicadores financeiros"
+    >
       {kpiItems.map((item) => (
         <div
           key={item.label}

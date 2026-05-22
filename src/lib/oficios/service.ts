@@ -14,16 +14,16 @@ export async function generateOfficialLetterNumber(year: number, tx: Tx = db) {
   const lastSequence = await repository.getLastSequenceForYear(year, tx);
   const nextSequence = lastSequence + 1;
   const paddedSequence = String(nextSequence).padStart(3, '0');
-  
+
   // Format: OFÍCIO No 001/2026/ASOF
   const number = `OFÍCIO No ${paddedSequence}/${year}/ASOF`;
-  
+
   return { number, sequence: nextSequence };
 }
 
 export async function saveOfficialLetter(
   data: Omit<NewOfficialLetter, 'number' | 'year' | 'sequence' | 'createdBy'>,
-  userId: number
+  userId: number,
 ) {
   return db.transaction(async (tx) => {
     const year = new Date().getFullYear();
@@ -37,7 +37,7 @@ export async function saveOfficialLetter(
         sequence,
         createdBy: userId,
       },
-      tx
+      tx,
     );
 
     await logAuditAction({
@@ -77,7 +77,7 @@ export async function saveOfficialLetter(
 export async function updateOfficialLetter(
   id: number,
   data: Partial<NewOfficialLetter>,
-  userId: number
+  userId: number,
 ) {
   return db.transaction(async (tx) => {
     const old = await repository.findOfficialLetterById(id, tx);
@@ -96,7 +96,10 @@ export async function updateOfficialLetter(
       changes: { old, new: result },
     });
 
-    if (!isOperationalOfficialLetterStatus(old.status) && isOperationalOfficialLetterStatus(result.status)) {
+    if (
+      !isOperationalOfficialLetterStatus(old.status) &&
+      isOperationalOfficialLetterStatus(result.status)
+    ) {
       await emitDomainEvent(
         {
           type: 'official_letter.published',

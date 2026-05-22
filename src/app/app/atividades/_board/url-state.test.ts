@@ -25,18 +25,18 @@ describe('activity board url state', () => {
 
   describe('buildBoardUrl', () => {
     it('adds or replaces the open param while preserving other filters', () => {
-      expect(buildBoardUrl('/app/atividades', new URLSearchParams('scope=minhas&dueLate=true'), 44)).toBe(
-        '/app/atividades?scope=minhas&dueLate=true&open=44',
-      );
+      expect(
+        buildBoardUrl('/app/atividades', new URLSearchParams('scope=minhas&dueLate=true'), 44),
+      ).toBe('/app/atividades?scope=minhas&dueLate=true&open=44');
       expect(buildBoardUrl('/app/atividades', new URLSearchParams('open=8&scope=todas'), 44)).toBe(
         '/app/atividades?open=44&scope=todas',
       );
     });
 
     it('removes the open param when closing the drawer', () => {
-      expect(buildBoardUrl('/app/atividades', new URLSearchParams('open=8&scope=todas'), null)).toBe(
-        '/app/atividades?scope=todas',
-      );
+      expect(
+        buildBoardUrl('/app/atividades', new URLSearchParams('open=8&scope=todas'), null),
+      ).toBe('/app/atividades?scope=todas');
       expect(buildBoardUrl('/app/atividades', new URLSearchParams('open=8'), null)).toBe(
         '/app/atividades',
       );
@@ -145,7 +145,12 @@ describe('activity board url state', () => {
     });
 
     it('roundtrips through parse and serialize', () => {
-      const original = { ...defaultFilters, scope: 'minhas' as const, dueLate: true, priority: 'alta' as const };
+      const original = {
+        ...defaultFilters,
+        scope: 'minhas' as const,
+        dueLate: true,
+        priority: 'alta' as const,
+      };
       const serialized = serializeFiltersToUrl(original);
       const parsed = parseFiltersFromUrl(serialized);
       // query is always reset, so compare everything except query

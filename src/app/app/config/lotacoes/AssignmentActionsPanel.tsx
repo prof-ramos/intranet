@@ -17,9 +17,7 @@ export function AssignmentActionsPanel({ id, name, isActive }: AssignmentActions
 
   return (
     <div className="inline-flex items-center gap-2">
-      {state?.success === false && (
-        <span className="text-xs text-red-600">{state.message}</span>
-      )}
+      {state?.success === false && <span className="text-xs text-red-600">{state.message}</span>}
 
       {!confirming ? (
         <button
@@ -27,13 +25,17 @@ export function AssignmentActionsPanel({ id, name, isActive }: AssignmentActions
           onClick={() => setConfirming(true)}
           disabled={isPending}
           title={isActive ? 'Desativar lotação' : 'Ativar lotação'}
-          className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+          className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
             isActive
-              ? 'border-[rgba(4,9,32,0.1)] bg-white text-[#040920] hover:bg-red-50 hover:border-red-200 hover:text-red-700'
-              : 'border-[rgba(4,9,32,0.1)] bg-white text-[#040920] hover:bg-green-50 hover:border-green-200 hover:text-green-700'
+              ? 'border-[rgba(4,9,32,0.1)] bg-white text-[#040920] hover:border-red-200 hover:bg-red-50 hover:text-red-700'
+              : 'border-[rgba(4,9,32,0.1)] bg-white text-[#040920] hover:border-green-200 hover:bg-green-50 hover:text-green-700'
           } ${focusRingClass}`}
         >
-          {isActive ? <UserX size={13} aria-hidden="true" /> : <UserCheck size={13} aria-hidden="true" />}
+          {isActive ? (
+            <UserX size={13} aria-hidden="true" />
+          ) : (
+            <UserCheck size={13} aria-hidden="true" />
+          )}
           {isActive ? 'Desativar' : 'Ativar'}
         </button>
       ) : (
@@ -54,7 +56,7 @@ export function AssignmentActionsPanel({ id, name, isActive }: AssignmentActions
           <button
             type="button"
             onClick={() => setConfirming(false)}
-            className={`rounded-md border border-[rgba(4,9,32,0.1)] px-2.5 py-1 text-xs font-medium text-[rgba(13,31,60,0.6)] hover:bg-gray-50 transition-colors ${focusRingClass}`}
+            className={`rounded-md border border-[rgba(4,9,32,0.1)] px-2.5 py-1 text-xs font-medium text-[rgba(13,31,60,0.6)] transition-colors hover:bg-gray-50 ${focusRingClass}`}
           >
             Cancelar
           </button>

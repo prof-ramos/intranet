@@ -31,7 +31,10 @@ interface EmitEventOptions {
   tx?: NotificationsTx;
 }
 
-type EventHandler = (payload: NotificationEventPayload, options: EmitEventOptions) => Promise<unknown>;
+type EventHandler = (
+  payload: NotificationEventPayload,
+  options: EmitEventOptions,
+) => Promise<unknown>;
 
 interface ActivityCompletedPayload {
   activityId: number;
@@ -142,10 +145,7 @@ interface SlaWarningPayload {
   recipientId: number;
 }
 
-export async function emitSlaWarning(
-  payload: SlaWarningPayload,
-  options: EmitEventOptions = {},
-) {
+export async function emitSlaWarning(payload: SlaWarningPayload, options: EmitEventOptions = {}) {
   const dateSlug = payload.slaDueDate.slice(0, 10);
 
   logger.info('[emitSlaWarning]', {

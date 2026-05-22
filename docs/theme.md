@@ -1,42 +1,42 @@
-
 @plugin "daisyui/theme" {
-  name: "ASOF";
-  default: false;
-  prefersdark: false;
-  color-scheme: "dark";
-  --color-base-100: oklch(14.076% 0.004 285.822);
-  --color-base-200: oklch(20.219% 0.004 308.229);
-  --color-base-300: oklch(23.219% 0.004 308.229);
-  --color-base-content: oklch(75.687% 0.123 76.89);
-  --color-primary: #040920;
-  --color-primary-content: #ffffff;
-  --color-secondary: oklch(27.581% 0.064 261.069);
-  --color-secondary-content: oklch(85.516% 0.012 261.069);
-  --color-accent: oklch(36.674% 0.051 338.825);
-  --color-accent-content: oklch(87.334% 0.01 338.825);
-  --color-neutral: #e7edf4;
-  --color-neutral-content: #040920;
-  --color-info: oklch(79.061% 0.121 237.133);
-  --color-info-content: oklch(15.812% 0.024 237.133);
-  --color-success: oklch(78.119% 0.192 132.154);
-  --color-success-content: oklch(15.623% 0.038 132.154);
-  --color-warning: oklch(86.127% 0.136 102.891);
-  --color-warning-content: oklch(17.225% 0.027 102.891);
-  --color-error: oklch(71.753% 0.176 22.568);
-  --color-error-content: oklch(14.35% 0.035 22.568);
-  --radius-selector: 1rem;
-  --radius-field: 0.5rem;
-  --radius-box: 1rem;
-  --size-selector: 0.25rem;
-  --size-field: 0.25rem;
-  --border: 1px;
-  --depth: 1;
-  --noise: 0;
+name: "ASOF";
+default: false;
+prefersdark: false;
+color-scheme: "dark";
+--color-base-100: oklch(14.076% 0.004 285.822);
+--color-base-200: oklch(20.219% 0.004 308.229);
+--color-base-300: oklch(23.219% 0.004 308.229);
+--color-base-content: oklch(75.687% 0.123 76.89);
+--color-primary: #040920;
+--color-primary-content: #ffffff;
+--color-secondary: oklch(27.581% 0.064 261.069);
+--color-secondary-content: oklch(85.516% 0.012 261.069);
+--color-accent: oklch(36.674% 0.051 338.825);
+--color-accent-content: oklch(87.334% 0.01 338.825);
+--color-neutral: #e7edf4;
+--color-neutral-content: #040920;
+--color-info: oklch(79.061% 0.121 237.133);
+--color-info-content: oklch(15.812% 0.024 237.133);
+--color-success: oklch(78.119% 0.192 132.154);
+--color-success-content: oklch(15.623% 0.038 132.154);
+--color-warning: oklch(86.127% 0.136 102.891);
+--color-warning-content: oklch(17.225% 0.027 102.891);
+--color-error: oklch(71.753% 0.176 22.568);
+--color-error-content: oklch(14.35% 0.035 22.568);
+--radius-selector: 1rem;
+--radius-field: 0.5rem;
+--radius-box: 1rem;
+--size-selector: 0.25rem;
+--size-field: 0.25rem;
+--border: 1px;
+--depth: 1;
+--noise: 0;
 }
 
 > Tema aplicado no app em `src/app/globals.css` via Tailwind CSS 4 e DaisyUI 5.
 
 # Diretrizes para redes sociais e e-mail
+
 - Identidade e tom
   - Tom: institucional, claro, direto; evitar jargões; voz ativa.
   - Títulos/headers: `Playfair Display`; corpo e botões: `Inter`.

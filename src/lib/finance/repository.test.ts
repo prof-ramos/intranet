@@ -66,9 +66,15 @@ const { dbMock, MOCK_PAYMENT } = vi.hoisted(() => {
     _selectChain: selectChain,
     _insertChain: insertChain,
     _updateChain: updateChain,
-    setSelectResult(val: any[]) { _selectResult = val; },
-    setInsertResult(val: any[]) { _insertResult = val; },
-    setUpdateResult(val: any[]) { _updateResult = val; },
+    setSelectResult(val: any[]) {
+      _selectResult = val;
+    },
+    setInsertResult(val: any[]) {
+      _insertResult = val;
+    },
+    setUpdateResult(val: any[]) {
+      _updateResult = val;
+    },
   };
 
   return { dbMock, MOCK_PAYMENT };
@@ -171,8 +177,8 @@ describe('finance repository', () => {
       const whereClause = dbMock._selectChain.where.mock.calls.at(-1)?.[0];
       const compiled = compileSql(whereClause);
       expect(compiled).toContain(' is null');
-      expect(compiled).toContain("lower(btrim(");
-      expect(compiled).toContain("nullif(btrim(");
+      expect(compiled).toContain('lower(btrim(');
+      expect(compiled).toContain('nullif(btrim(');
       expect(compiled).toContain("in ('brasil', 'brazil')");
     });
 

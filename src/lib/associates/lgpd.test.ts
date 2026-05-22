@@ -114,7 +114,10 @@ describe('SENSITIVE_FIELDS and PUBLIC_FIELDS', () => {
 
   it('all export fields are classified', () => {
     for (const field of ASSOCIATE_EXPORT_FIELDS) {
-      expect(SENSITIVE_FIELDS.has(field.key as keyof Associate) || PUBLIC_FIELDS.has(field.key as keyof Associate)).toBe(true);
+      expect(
+        SENSITIVE_FIELDS.has(field.key as keyof Associate) ||
+          PUBLIC_FIELDS.has(field.key as keyof Associate),
+      ).toBe(true);
     }
   });
 });

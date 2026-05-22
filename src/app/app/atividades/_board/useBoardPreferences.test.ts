@@ -20,14 +20,18 @@ function createLocalStorage() {
   };
 }
 
-function readPreferences(localStorage: { getItem: (key: string) => string | null }): { compact: boolean; collapsedDone: boolean } {
+function readPreferences(localStorage: { getItem: (key: string) => string | null }): {
+  compact: boolean;
+  collapsedDone: boolean;
+} {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaults;
     const parsed = JSON.parse(raw);
     return {
       compact: typeof parsed.compact === 'boolean' ? parsed.compact : defaults.compact,
-      collapsedDone: typeof parsed.collapsedDone === 'boolean' ? parsed.collapsedDone : defaults.collapsedDone,
+      collapsedDone:
+        typeof parsed.collapsedDone === 'boolean' ? parsed.collapsedDone : defaults.collapsedDone,
     };
   } catch {
     return defaults;

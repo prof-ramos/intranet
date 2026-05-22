@@ -1,9 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  addNote,
-  createConsultation,
-  updateConsultationStatusFromForm,
-} from './actions';
+import { addNote, createConsultation, updateConsultationStatusFromForm } from './actions';
 
 const headersMock = vi.fn();
 const consumeIpRateLimitMock = vi.fn();

@@ -9,11 +9,11 @@ import { CSSProperties } from 'react';
 export function PremiumLoader() {
   return (
     <div className="flex items-center justify-center py-4">
-      <div 
+      <div
         className="relative h-1 w-[130px] overflow-hidden rounded-full bg-black/10"
         style={{ '--loader-color': '#0071e2' } as CSSProperties}
       >
-        <div className="absolute top-0 left-0 h-full w-full rounded-full bg-[var(--loader-color)] animate-premium-moving" />
+        <div className="animate-premium-moving absolute top-0 left-0 h-full w-full rounded-full bg-[var(--loader-color)]" />
       </div>
 
       <style jsx global>{`

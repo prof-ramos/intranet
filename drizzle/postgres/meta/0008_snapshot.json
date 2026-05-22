@@ -86,9 +86,7 @@
         "admins_email_unique": {
           "name": "admins_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -626,12 +624,8 @@
           "name": "activities_assignee_id_admins_id_fk",
           "tableFrom": "activities",
           "tableTo": "admins",
-          "columnsFrom": [
-            "assignee_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["assignee_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -639,12 +633,8 @@
           "name": "activities_associate_id_associates_id_fk",
           "tableFrom": "activities",
           "tableTo": "associates",
-          "columnsFrom": [
-            "associate_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["associate_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -652,12 +642,8 @@
           "name": "activities_created_by_admins_id_fk",
           "tableFrom": "activities",
           "tableTo": "admins",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -856,12 +842,8 @@
           "name": "audit_logs_performed_by_admins_id_fk",
           "tableFrom": "audit_logs",
           "tableTo": "admins",
-          "columnsFrom": [
-            "performed_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["performed_by"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1181,12 +1163,8 @@
           "name": "legal_consultations_associate_id_associates_id_fk",
           "tableFrom": "legal_consultations",
           "tableTo": "associates",
-          "columnsFrom": [
-            "associate_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["associate_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1194,12 +1172,8 @@
           "name": "legal_consultations_answered_by_admins_id_fk",
           "tableFrom": "legal_consultations",
           "tableTo": "admins",
-          "columnsFrom": [
-            "answered_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["answered_by"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1207,12 +1181,8 @@
           "name": "legal_consultations_created_by_admins_id_fk",
           "tableFrom": "legal_consultations",
           "tableTo": "admins",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1222,9 +1192,7 @@
         "legal_consultations_internal_number_unique": {
           "name": "legal_consultations_internal_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "internal_number"
-          ]
+          "columns": ["internal_number"]
         }
       },
       "policies": {},
@@ -1432,12 +1400,8 @@
           "name": "legal_processes_associate_id_associates_id_fk",
           "tableFrom": "legal_processes",
           "tableTo": "associates",
-          "columnsFrom": [
-            "associate_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["associate_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1445,12 +1409,8 @@
           "name": "legal_processes_created_by_admins_id_fk",
           "tableFrom": "legal_processes",
           "tableTo": "admins",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1460,9 +1420,7 @@
         "legal_processes_internal_number_unique": {
           "name": "legal_processes_internal_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "internal_number"
-          ]
+          "columns": ["internal_number"]
         }
       },
       "policies": {},
@@ -1587,12 +1545,8 @@
           "name": "legal_notes_created_by_admins_id_fk",
           "tableFrom": "legal_notes",
           "tableTo": "admins",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1661,9 +1615,7 @@
         "legal_opinion_tags_name_unique": {
           "name": "legal_opinion_tags_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},
@@ -1796,12 +1748,8 @@
           "name": "legal_opinions_created_by_admins_id_fk",
           "tableFrom": "legal_opinions",
           "tableTo": "admins",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1923,66 +1871,37 @@
     "public.admin_role": {
       "name": "admin_role",
       "schema": "public",
-      "values": [
-        "admin",
-        "diretoria",
-        "secretaria"
-      ]
+      "values": ["admin", "diretoria", "secretaria"]
     },
     "public.association_status": {
       "name": "association_status",
       "schema": "public",
-      "values": [
-        "ativo",
-        "inativo"
-      ]
+      "values": ["ativo", "inativo"]
     },
     "public.contribution_status": {
       "name": "contribution_status",
       "schema": "public",
-      "values": [
-        "em_dia",
-        "inadimplente",
-        "pendente_migracao"
-      ]
+      "values": ["em_dia", "inadimplente", "pendente_migracao"]
     },
     "public.functional_status": {
       "name": "functional_status",
       "schema": "public",
-      "values": [
-        "ativo",
-        "aposentado",
-        "cedido",
-        "em_licenca"
-      ]
+      "values": ["ativo", "aposentado", "cedido", "em_licenca"]
     },
     "public.activity_priority": {
       "name": "activity_priority",
       "schema": "public",
-      "values": [
-        "baixa",
-        "normal",
-        "alta",
-        "urgente"
-      ]
+      "values": ["baixa", "normal", "alta", "urgente"]
     },
     "public.activity_status": {
       "name": "activity_status",
       "schema": "public",
-      "values": [
-        "a_fazer",
-        "em_andamento",
-        "aguardando_terceiros",
-        "concluido"
-      ]
+      "values": ["a_fazer", "em_andamento", "aguardando_terceiros", "concluido"]
     },
     "public.assignment_type": {
       "name": "assignment_type",
       "schema": "public",
-      "values": [
-        "domestic",
-        "abroad"
-      ]
+      "values": ["domestic", "abroad"]
     },
     "public.audit_entity_type": {
       "name": "audit_entity_type",
@@ -1999,49 +1918,27 @@
     "public.legal_consultation_status": {
       "name": "legal_consultation_status",
       "schema": "public",
-      "values": [
-        "aberta",
-        "aguardando_escritorio",
-        "respondida",
-        "arquivada"
-      ]
+      "values": ["aberta", "aguardando_escritorio", "respondida", "arquivada"]
     },
     "public.legal_satisfaction": {
       "name": "legal_satisfaction",
       "schema": "public",
-      "values": [
-        "satisfeito",
-        "insatisfeito",
-        "sem_resposta"
-      ]
+      "values": ["satisfeito", "insatisfeito", "sem_resposta"]
     },
     "public.legal_process_status": {
       "name": "legal_process_status",
       "schema": "public",
-      "values": [
-        "ativo",
-        "concluido",
-        "suspenso"
-      ]
+      "values": ["ativo", "concluido", "suspenso"]
     },
     "public.legal_process_subtype": {
       "name": "legal_process_subtype",
       "schema": "public",
-      "values": [
-        "justica_federal",
-        "stf",
-        "mre",
-        "cgu",
-        "tcu"
-      ]
+      "values": ["justica_federal", "stf", "mre", "cgu", "tcu"]
     },
     "public.legal_process_type": {
       "name": "legal_process_type",
       "schema": "public",
-      "values": [
-        "judicial",
-        "administrativo"
-      ]
+      "values": ["judicial", "administrativo"]
     }
   },
   "schemas": {},

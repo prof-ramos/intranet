@@ -67,7 +67,9 @@ export function WebhookSubscriptionForm({
       </fieldset>
 
       <fieldset className="fieldset">
-        <legend className="fieldset-legend text-sm font-medium text-[#040920]">URL de destino</legend>
+        <legend className="fieldset-legend text-sm font-medium text-[#040920]">
+          URL de destino
+        </legend>
         <input
           name="targetUrl"
           type="url"
@@ -80,7 +82,9 @@ export function WebhookSubscriptionForm({
 
       {mode === 'create' && (
         <fieldset className="fieldset">
-          <legend className="fieldset-legend text-sm font-medium text-[#040920]">Segredo HMAC</legend>
+          <legend className="fieldset-legend text-sm font-medium text-[#040920]">
+            Segredo HMAC
+          </legend>
           <input
             name="secret"
             type="password"
@@ -96,7 +100,9 @@ export function WebhookSubscriptionForm({
       )}
 
       <fieldset className="fieldset">
-        <legend className="fieldset-legend text-sm font-medium text-[#040920]">Eventos assinados</legend>
+        <legend className="fieldset-legend text-sm font-medium text-[#040920]">
+          Eventos assinados
+        </legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {eventTypes.map((eventType) => (
             <label
@@ -126,9 +132,13 @@ export function WebhookSubscriptionForm({
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex h-10 items-center justify-center rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 disabled:opacity-50"
+          className="inline-flex h-10 items-center justify-center rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
         >
-          {isPending ? 'Salvando...' : mode === 'create' ? 'Criar subscription' : 'Salvar alterações'}
+          {isPending
+            ? 'Salvando...'
+            : mode === 'create'
+              ? 'Criar subscription'
+              : 'Salvar alterações'}
         </button>
       </div>
     </form>

@@ -197,7 +197,12 @@ export function GlobalSearch() {
       >
         <div className="pointer-events-none absolute left-3 flex shrink-0 items-center">
           {isPending ? (
-            <Loader2 size={16} className="motion-safe:animate-spin" style={{ color: skyBlue }} aria-hidden="true" />
+            <Loader2
+              size={16}
+              className="motion-safe:animate-spin"
+              style={{ color: skyBlue }}
+              aria-hidden="true"
+            />
           ) : (
             <Search size={16} style={{ color: textMuted }} aria-hidden="true" />
           )}
@@ -264,7 +269,7 @@ export function GlobalSearch() {
           id="gs-results"
           role="listbox"
           aria-label="Resultados da busca"
-          className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-[10px] bg-white py-1"
+          className="absolute top-full right-0 left-0 z-50 mt-1 overflow-hidden rounded-[10px] bg-white py-1"
           style={{ boxShadow: elevatedShadow, border: `1px solid ${hairline}` }}
         >
           {isPending && !hasResults ? (
@@ -286,7 +291,7 @@ export function GlobalSearch() {
               {results!.associates.length > 0 && (
                 <section aria-label="Associados">
                   <div
-                    className="flex items-center gap-1.5 px-4 pb-1 pt-2 text-[10px] font-semibold tracking-wider uppercase"
+                    className="flex items-center gap-1.5 px-4 pt-2 pb-1 text-[10px] font-semibold tracking-wider uppercase"
                     style={{ color: textMuted }}
                     aria-hidden="true"
                   >
@@ -311,7 +316,7 @@ export function GlobalSearch() {
                     <div className="my-1 border-t" style={{ borderColor: hairline }} />
                   )}
                   <div
-                    className="flex items-center gap-1.5 px-4 pb-1 pt-2 text-[10px] font-semibold tracking-wider uppercase"
+                    className="flex items-center gap-1.5 px-4 pt-2 pb-1 text-[10px] font-semibold tracking-wider uppercase"
                     style={{ color: textMuted }}
                     aria-hidden="true"
                   >

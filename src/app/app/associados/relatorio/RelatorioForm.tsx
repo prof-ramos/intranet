@@ -59,8 +59,7 @@ export function RelatorioForm() {
   });
 
   const isGroupFullySelected = useCallback(
-    (groupIndex: number) =>
-      FIELD_GROUPS[groupIndex].fields.every((f) => selected.has(f.key)),
+    (groupIndex: number) => FIELD_GROUPS[groupIndex].fields.every((f) => selected.has(f.key)),
     [selected],
   );
 
@@ -117,11 +116,7 @@ export function RelatorioForm() {
   const chipInactive = { borderColor: '#c9d2df', background: '#fff', color: '#0d1f3c' };
 
   return (
-    <form
-      method="GET"
-      action="/app/associados/relatorio/download"
-      onSubmit={handleSubmit}
-    >
+    <form method="GET" action="/app/associados/relatorio/download" onSubmit={handleSubmit}>
       {/* Global actions */}
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <button
@@ -132,12 +127,7 @@ export function RelatorioForm() {
         >
           Selecionar todos os campos
         </button>
-        <button
-          type="button"
-          onClick={clearAll}
-          className={chipStyle}
-          style={chipInactive}
-        >
+        <button type="button" onClick={clearAll} className={chipStyle} style={chipInactive}>
           Limpar seleção
         </button>
       </div>
@@ -153,16 +143,13 @@ export function RelatorioForm() {
               style={{ borderColor: '#c9d2df' }}
             >
               <div className="flex items-center justify-between gap-3">
-                <h2
-                  className="font-serif text-lg font-bold"
-                  style={{ color: '#040920' }}
-                >
+                <h2 className="font-serif text-lg font-bold" style={{ color: '#040920' }}>
                   {group.title}
                 </h2>
                 <button
                   type="button"
                   onClick={() => toggleGroup(groupIndex)}
-                  className="inline-flex h-8 items-center rounded-full border px-3 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2"
+                  className="inline-flex h-8 items-center rounded-full border px-3 text-[11px] font-semibold transition focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:outline-none"
                   style={
                     fullySelected
                       ? { borderColor: '#040920', background: '#040920', color: '#fff' }
@@ -177,10 +164,7 @@ export function RelatorioForm() {
                 {group.fields.map((field) => {
                   const checked = selected.has(field.key);
                   return (
-                    <label
-                      key={field.key}
-                      className="flex cursor-pointer items-center gap-3"
-                    >
+                    <label key={field.key} className="flex cursor-pointer items-center gap-3">
                       <input
                         type="checkbox"
                         name="fields"
@@ -220,7 +204,7 @@ export function RelatorioForm() {
                 birthMonth: 'todos',
               })
             }
-            className="inline-flex h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2"
+            className="inline-flex h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold transition focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:outline-none"
             style={{ borderColor: '#c9d2df', background: '#fff', color: '#59677a' }}
           >
             Limpar filtros
@@ -240,9 +224,7 @@ export function RelatorioForm() {
               id="filter-functional"
               name="functionalStatus"
               value={filters.functionalStatus}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, functionalStatus: e.target.value }))
-              }
+              onChange={(e) => setFilters((f) => ({ ...f, functionalStatus: e.target.value }))}
               className="h-12 w-full rounded-[8px] border bg-white px-3 text-sm"
               style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
             >
@@ -266,9 +248,7 @@ export function RelatorioForm() {
               id="filter-association"
               name="associationStatus"
               value={filters.associationStatus}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, associationStatus: e.target.value }))
-              }
+              onChange={(e) => setFilters((f) => ({ ...f, associationStatus: e.target.value }))}
               className="h-12 w-full rounded-[8px] border bg-white px-3 text-sm"
               style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
             >
@@ -290,9 +270,7 @@ export function RelatorioForm() {
               id="filter-contribution"
               name="contributionStatus"
               value={filters.contributionStatus}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, contributionStatus: e.target.value }))
-              }
+              onChange={(e) => setFilters((f) => ({ ...f, contributionStatus: e.target.value }))}
               className="h-12 w-full rounded-[8px] border bg-white px-3 text-sm"
               style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
             >
@@ -315,9 +293,7 @@ export function RelatorioForm() {
               id="filter-birth-month"
               name="birthMonth"
               value={filters.birthMonth}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, birthMonth: e.target.value }))
-              }
+              onChange={(e) => setFilters((f) => ({ ...f, birthMonth: e.target.value }))}
               className="h-12 w-full rounded-[8px] border bg-white px-3 text-sm"
               style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
             >
@@ -344,7 +320,7 @@ export function RelatorioForm() {
         <button
           type="submit"
           disabled={selected.size === 0}
-          className="inline-flex h-10 items-center gap-2 rounded-[8px] px-5 text-[13px] font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2"
+          className="inline-flex h-10 items-center gap-2 rounded-[8px] px-5 text-[13px] font-semibold text-white transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
           style={{ background: '#040920' }}
         >
           <FileSpreadsheet size={18} aria-hidden="true" />
@@ -353,7 +329,7 @@ export function RelatorioForm() {
         <button
           type="button"
           onClick={clearAll}
-          className="inline-flex h-10 items-center rounded-[8px] border px-4 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2"
+          className="inline-flex h-10 items-center rounded-[8px] border px-4 text-[13px] font-semibold focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:outline-none"
           style={{ color: '#0d1f3c', borderColor: '#c9d2df', background: '#fff' }}
         >
           Limpar

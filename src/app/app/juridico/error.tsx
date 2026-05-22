@@ -27,9 +27,7 @@ export default function JuridicoError({
         <p className="max-w-md text-[#59677a]">
           Não foi possível carregar esta seção. Verifique sua conexão e tente novamente.
         </p>
-        {error.digest && (
-          <p className="text-sm text-[#59677a]/60">Código: {error.digest}</p>
-        )}
+        {error.digest && <p className="text-sm text-[#59677a]/60">Código: {error.digest}</p>}
         <button
           onClick={reset}
           className="inline-flex items-center gap-2 rounded-lg bg-[#040920] px-4 py-2 text-white transition hover:bg-[#06284f]"

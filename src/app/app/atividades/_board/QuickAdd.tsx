@@ -92,7 +92,10 @@ export function QuickAdd({
           type="button"
           onClick={() => void submit()}
           disabled={isPending}
-          className={['min-h-10 flex-1 rounded-[8px] px-4 text-[13px] font-semibold', focusRingClass].join(' ')}
+          className={[
+            'min-h-10 flex-1 rounded-[8px] px-4 text-[13px] font-semibold',
+            focusRingClass,
+          ].join(' ')}
           style={{ background: navy, color: buttonPrimaryText }}
         >
           {isPending ? 'Salvando...' : 'Adicionar'}
@@ -104,7 +107,10 @@ export function QuickAdd({
             setTitle('');
           }}
           disabled={isPending}
-          className={['min-h-10 rounded-[8px] border px-4 text-[13px] font-semibold', focusRingClass].join(' ')}
+          className={[
+            'min-h-10 rounded-[8px] border px-4 text-[13px] font-semibold',
+            focusRingClass,
+          ].join(' ')}
           style={{ color: textStrong, borderColor: borderMuted, background: inputBg }}
         >
           Cancelar

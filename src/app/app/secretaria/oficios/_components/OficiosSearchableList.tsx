@@ -30,7 +30,10 @@ export function OficiosSearchableList({ oficios }: { oficios: OficioRow[] }) {
 
   return (
     <>
-      <div className="mb-6 flex items-center gap-3 rounded-[12px] border bg-white px-4 py-2" style={{ borderColor: hairline }}>
+      <div
+        className="mb-6 flex items-center gap-3 rounded-[12px] border bg-white px-4 py-2"
+        style={{ borderColor: hairline }}
+      >
         <Search size={18} style={{ color: textMuted }} aria-hidden="true" />
         <input
           type="text"
@@ -44,7 +47,7 @@ export function OficiosSearchableList({ oficios }: { oficios: OficioRow[] }) {
           <button
             type="button"
             onClick={() => setQuery('')}
-            className="text-xs text-[rgba(13,31,60,0.45)] hover:text-[#040920] transition-colors"
+            className="text-xs text-[rgba(13,31,60,0.45)] transition-colors hover:text-[#040920]"
             aria-label="Limpar busca"
           >
             Limpar

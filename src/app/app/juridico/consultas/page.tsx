@@ -42,7 +42,7 @@ export default async function ConsultasPage({
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-[rgba(13,31,60,0.55)]">
+            <p className="text-[11px] tracking-[0.18em] text-[rgba(13,31,60,0.55)] uppercase">
               Jurídico
             </p>
             <h1 className="mt-1 font-serif text-3xl font-bold">Consultas</h1>
@@ -50,7 +50,7 @@ export default async function ConsultasPage({
         </div>
         <Link
           href="/app/juridico/consultas/nova"
-          className={`inline-flex items-center gap-2 bg-[#040920] text-white rounded-[8px] h-10 px-5 text-sm font-semibold hover:bg-[#0d3260] ${focusRingClass}`}
+          className={`inline-flex h-10 items-center gap-2 rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white hover:bg-[#0d3260] ${focusRingClass}`}
         >
           <Plus size={16} aria-hidden="true" /> Nova consulta
         </Link>
@@ -68,7 +68,7 @@ export default async function ConsultasPage({
             name="q"
             defaultValue={q ?? ''}
             placeholder="Buscar por título ou número..."
-            className={`h-10 w-full max-w-md rounded-[8px] border border-[#e2e8f0] bg-white pl-9 pr-3 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] ${focusRingClass}`}
+            className={`h-10 w-full max-w-md rounded-[8px] border border-[#e2e8f0] bg-white pr-3 pl-9 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] ${focusRingClass}`}
           />
           {status && <input type="hidden" name="status" value={status} />}
         </form>
@@ -85,11 +85,14 @@ export default async function ConsultasPage({
         </form>
       </div>
 
-      <div className="overflow-hidden rounded-[16px] bg-white" style={{ border: `1px solid ${hairline}` }}>
+      <div
+        className="overflow-hidden rounded-[16px] bg-white"
+        style={{ border: `1px solid ${hairline}` }}
+      >
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[rgba(4,9,32,0.05)] text-[11px] font-bold uppercase tracking-[0.08em] text-[rgba(13,31,60,0.55)]">
+              <tr className="border-b border-[rgba(4,9,32,0.05)] text-[11px] font-bold tracking-[0.08em] text-[rgba(13,31,60,0.55)] uppercase">
                 <th className="px-4 py-3">Número</th>
                 <th className="px-4 py-3">Título</th>
                 <th className="px-4 py-3">Associado</th>
@@ -101,15 +104,17 @@ export default async function ConsultasPage({
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-[rgba(13,31,60,0.60)]">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-sm text-[rgba(13,31,60,0.60)]"
+                  >
                     Nenhuma consulta encontrada.
                   </td>
                 </tr>
               ) : (
                 rows.map((row) => {
                   const stale = daysSince(row.lastInteractionAt);
-                  const slaOverdue =
-                    row.slaDueDate && new Date(row.slaDueDate) < new Date();
+                  const slaOverdue = row.slaDueDate && new Date(row.slaDueDate) < new Date();
                   return (
                     <tr
                       key={row.id}
@@ -126,9 +131,7 @@ export default async function ConsultasPage({
                       <td className="px-4 py-3">
                         <p className="max-w-xs truncate text-sm font-medium">{row.title}</p>
                       </td>
-                      <td className="px-4 py-3 text-sm">
-                        {row.associateName ?? '—'}
-                      </td>
+                      <td className="px-4 py-3 text-sm">{row.associateName ?? '—'}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getLegalConsultationStatusBadgeClass(row.status)}`}
@@ -167,7 +170,7 @@ export default async function ConsultasPage({
               {page > 1 && (
                 <Link
                   href={`/app/juridico/consultas?page=${page - 1}${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${status}` : ''}`}
-                  className={`inline-flex items-center gap-2 bg-white text-[#040920] rounded-[8px] h-10 px-4 text-sm font-semibold border border-[rgba(4,9,32,0.15)] hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
+                  className={`inline-flex h-10 items-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 text-sm font-semibold text-[#040920] hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
                 >
                   Anterior
                 </Link>
@@ -175,7 +178,7 @@ export default async function ConsultasPage({
               {page < totalPages && (
                 <Link
                   href={`/app/juridico/consultas?page=${page + 1}${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${status}` : ''}`}
-                  className={`inline-flex items-center gap-2 bg-white text-[#040920] rounded-[8px] h-10 px-4 text-sm font-semibold border border-[rgba(4,9,32,0.15)] hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
+                  className={`inline-flex h-10 items-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 text-sm font-semibold text-[#040920] hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
                 >
                   Próxima
                 </Link>

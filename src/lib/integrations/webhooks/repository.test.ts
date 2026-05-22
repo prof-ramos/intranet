@@ -122,8 +122,14 @@ describe('cleanUpOldDeliveries', () => {
   });
 
   it('throws for invalid retentionDays values', async () => {
-    await expect(cleanUpOldDeliveries(0)).rejects.toThrow('retentionDays must be a positive integer');
-    await expect(cleanUpOldDeliveries(-1)).rejects.toThrow('retentionDays must be a positive integer');
-    await expect(cleanUpOldDeliveries(1.5)).rejects.toThrow('retentionDays must be a positive integer');
+    await expect(cleanUpOldDeliveries(0)).rejects.toThrow(
+      'retentionDays must be a positive integer',
+    );
+    await expect(cleanUpOldDeliveries(-1)).rejects.toThrow(
+      'retentionDays must be a positive integer',
+    );
+    await expect(cleanUpOldDeliveries(1.5)).rejects.toThrow(
+      'retentionDays must be a positive integer',
+    );
   });
 });

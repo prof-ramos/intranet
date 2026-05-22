@@ -2,7 +2,12 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireRole } from '@/lib/auth/authorization';
-import { cancelMonthlyPayment, updateMonthlyPayment, initializeMonth, validateYearMonth } from '@/lib/finance/service';
+import {
+  cancelMonthlyPayment,
+  updateMonthlyPayment,
+  initializeMonth,
+  validateYearMonth,
+} from '@/lib/finance/service';
 import { type NewMonthlyPayment } from '@/lib/db/schema/finance';
 
 const validPaymentStatuses = ['pago', 'pendente', 'atrasado', 'isento'] as const;
@@ -74,7 +79,10 @@ function validatePaymentInput(payment: Omit<NewMonthlyPayment, 'updatedBy' | 'up
   if (!Number.isInteger(payment.associateId) || payment.associateId <= 0) {
     throw new Error('Associado inválido.');
   }
-  if (!payment.status || !validPaymentStatuses.includes(payment.status as typeof validPaymentStatuses[number])) {
+  if (
+    !payment.status ||
+    !validPaymentStatuses.includes(payment.status as (typeof validPaymentStatuses)[number])
+  ) {
     throw new Error('Status de pagamento inválido.');
   }
   if (!payment.paymentMethod || !validPaymentMethods.includes(payment.paymentMethod)) {

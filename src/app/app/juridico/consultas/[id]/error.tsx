@@ -25,7 +25,8 @@ export default function ConsultaDetalheError({
         </div>
         <h1 className="font-serif text-2xl font-bold text-[#040920]">Erro ao carregar consulta</h1>
         <p className="max-w-md text-[rgba(13,31,60,0.60)]">
-          Não foi possível carregar os detalhes desta consulta. Verifique sua conexão e tente novamente.
+          Não foi possível carregar os detalhes desta consulta. Verifique sua conexão e tente
+          novamente.
         </p>
         {error.digest && (
           <p className="text-sm text-[rgba(13,31,60,0.40)]">Código: {error.digest}</p>

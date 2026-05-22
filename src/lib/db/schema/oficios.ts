@@ -1,8 +1,22 @@
-import { bigint, check, index, integer, pgEnum, pgTable, text, timestamp, unique } from 'drizzle-orm/pg-core';
+import {
+  bigint,
+  check,
+  index,
+  integer,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+} from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { admins } from './admins';
 
-export const officialLetterStatus = pgEnum('official_letter_status', ['gerado', 'cancelado', 'rascunho']);
+export const officialLetterStatus = pgEnum('official_letter_status', [
+  'gerado',
+  'cancelado',
+  'rascunho',
+]);
 
 export const oficios = pgTable(
   'oficios',
@@ -27,8 +41,9 @@ export const oficios = pgTable(
     createdBy: bigint('created_by', { mode: 'number' })
       .notNull()
       .references(() => admins.id, { onDelete: 'restrict' }),
-    updatedBy: bigint('updated_by', { mode: 'number' })
-      .references(() => admins.id, { onDelete: 'set null' }),
+    updatedBy: bigint('updated_by', { mode: 'number' }).references(() => admins.id, {
+      onDelete: 'set null',
+    }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()

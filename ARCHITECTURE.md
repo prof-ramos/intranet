@@ -262,15 +262,15 @@ Encrypted columns pattern: Each PII field has a `{field}Ciphertext` column (AES-
 
 The `postgres.js` client is configured in `src/lib/db/index.ts`:
 
-| Parameter | Value | Rationale |
-|---|---|---|
-| `max` | `10` (default) | Postgres.js default; Supabase pooler default is 42. Tuned for < 1000 associates |
-| `max_lifetime` | `1800` (30 min) | Prevents connection leaks by recycling stale connections |
-| `connect_timeout` | `10s` | Fail fast if DB is unreachable |
-| `idle_timeout` | `20s` | Free idle connections during low traffic |
-| `statement_timeout` | `30000` (30s) | Kills runaway queries; prevents connection pool starvation |
-| `application_name` | `'asof-intranet'` | Identifies this app's queries in `pg_stat_statements` and `pg_stat_activity` |
-| `prepare` | `false` if pgBouncer detected | Prepared statements are incompatible with transaction mode poolers |
+| Parameter           | Value                         | Rationale                                                                       |
+| ------------------- | ----------------------------- | ------------------------------------------------------------------------------- |
+| `max`               | `10` (default)                | Postgres.js default; Supabase pooler default is 42. Tuned for < 1000 associates |
+| `max_lifetime`      | `1800` (30 min)               | Prevents connection leaks by recycling stale connections                        |
+| `connect_timeout`   | `10s`                         | Fail fast if DB is unreachable                                                  |
+| `idle_timeout`      | `20s`                         | Free idle connections during low traffic                                        |
+| `statement_timeout` | `30000` (30s)                 | Kills runaway queries; prevents connection pool starvation                      |
+| `application_name`  | `'asof-intranet'`             | Identifies this app's queries in `pg_stat_statements` and `pg_stat_activity`    |
+| `prepare`           | `false` if pgBouncer detected | Prepared statements are incompatible with transaction mode poolers              |
 
 SSL is enforced in production (`DB_SSL=true` or `NODE_ENV=production`).
 
@@ -286,31 +286,31 @@ Rules applied across all tables:
 
 Current indexes by table:
 
-| Table | Est. Indexes | Primary Patterns (Authority: Migration files / Schema) |
-|---|---|---|
-| `associates` | 10 | GIN trigram for name, HMAC hash indexes for CPF/SIAPE/email lookups, composite for status+name, partial for active |
-| `activities` | 9 | Partial for open items, composite for associate+due_date+id |
-| `legal_consultations` | 11 | Partial for open items, composite for status+updated_at, trigram for title |
-| `legal_processes` | 5 | B-tree on status, associate, type |
-| `legal_notes` | 3 | Composite for entity lookup |
-| `audit_logs` | 3 | Composite for entity lookup |
-| `monthly_payments` | 3 | Unique index for (associate, year, month), composite for status+contribution, FK on associate_id |
-| `oficios` | 3 | DESC on created_at, B-tree on year, unique on year+sequence |
-| `login_attempts` / `rate_limits` | 2 each | B-tree on lookup key and expiry; rate_limits has unique index on (key, scope) |
-| `domain_events` | 8 | Event type, entity lookup, actor, status, occurred_at, partial for pending, retention expiry |
+| Table                            | Est. Indexes | Primary Patterns (Authority: Migration files / Schema)                                                             |
+| -------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `associates`                     | 10           | GIN trigram for name, HMAC hash indexes for CPF/SIAPE/email lookups, composite for status+name, partial for active |
+| `activities`                     | 9            | Partial for open items, composite for associate+due_date+id                                                        |
+| `legal_consultations`            | 11           | Partial for open items, composite for status+updated_at, trigram for title                                         |
+| `legal_processes`                | 5            | B-tree on status, associate, type                                                                                  |
+| `legal_notes`                    | 3            | Composite for entity lookup                                                                                        |
+| `audit_logs`                     | 3            | Composite for entity lookup                                                                                        |
+| `monthly_payments`               | 3            | Unique index for (associate, year, month), composite for status+contribution, FK on associate_id                   |
+| `oficios`                        | 3            | DESC on created_at, B-tree on year, unique on year+sequence                                                        |
+| `login_attempts` / `rate_limits` | 2 each       | B-tree on lookup key and expiry; rate_limits has unique index on (key, scope)                                      |
+| `domain_events`                  | 8            | Event type, entity lookup, actor, status, occurred_at, partial for pending, retention expiry                       |
 
 #### API Routes
 
-| Route | Method | Purpose |
-|---|---|---|
-| `/api/v1/health` | GET | Authenticated health check |
-| `/api/v1/events` | GET | Operator event dispatch (bearer auth) |
-| `/api/v1/events/dispatch` | GET | Scheduled batch dispatch (Vercel Cron, bearer-only) |
-| `/api/v1/juridico/sla-warnings` | GET | Scheduled SLA warning dispatch (Vercel Cron, bearer-only) |
-| `/api/oficios/[id]/download` | GET | Oficio PDF download (session auth) |
-| `webhook_subscriptions` | 6 | Name uniqueness, target URL, partial for active, creator, subscribed event lookup |
-| `webhook_deliveries` | 6 | Request id uniqueness, event/subscription lookup, status/retry, idempotency key uniqueness |
-| `integration_api_keys` | 3 | HMAC hash for lookup, partial for active keys |
+| Route                           | Method | Purpose                                                                                    |
+| ------------------------------- | ------ | ------------------------------------------------------------------------------------------ |
+| `/api/v1/health`                | GET    | Authenticated health check                                                                 |
+| `/api/v1/events`                | GET    | Operator event dispatch (bearer auth)                                                      |
+| `/api/v1/events/dispatch`       | GET    | Scheduled batch dispatch (Vercel Cron, bearer-only)                                        |
+| `/api/v1/juridico/sla-warnings` | GET    | Scheduled SLA warning dispatch (Vercel Cron, bearer-only)                                  |
+| `/api/oficios/[id]/download`    | GET    | Oficio PDF download (session auth)                                                         |
+| `webhook_subscriptions`         | 6      | Name uniqueness, target URL, partial for active, creator, subscribed event lookup          |
+| `webhook_deliveries`            | 6      | Request id uniqueness, event/subscription lookup, status/retry, idempotency key uniqueness |
+| `integration_api_keys`          | 3      | HMAC hash for lookup, partial for active keys                                              |
 
 > **Nota:** As contagens acima são informativas. A fonte canônica de verdade para o schema e índices são os arquivos em `src/lib/db/schema/` e as migrações em `drizzle/postgres/`. Use `npm run test:db` para validar esquemas, enums, índices e extensões contra o banco real.
 
@@ -318,31 +318,31 @@ Current indexes by table:
 
 PostgreSQL enums are preferred over free-text columns for status and type fields:
 
-| Enum | Used By | Status |
-|---|---|---|
-| `admin_role` | `admins.role` | ✅ Correct |
-| `association_status` | `associates.association_status` | ✅ Correct |
-| `contribution_status` | `associates.contribution_status` | ✅ Correct |
-| `functional_status` | `associates.functional_status` | ✅ Correct |
-| `activity_status` | `activities.status` | ✅ Correct |
-| `activity_priority` | `activities.priority` | ✅ Correct |
-| `audit_entity_type` | `audit_logs.entity_type` | ✅ Correct |
-| `legal_consultation_status` | `legal_consultations.status` | ✅ Correct |
-| `legal_satisfaction` | `legal_consultations.satisfaction`, `legal_processes.satisfaction` (corrected in 0009) | ✅ Correct (shared, in `enums.ts`) |
-| `legal_process_type` | `legal_processes.type` | ✅ Correct |
-| `legal_process_subtype` | `legal_processes.subtype` | ✅ Correct |
-| `legal_process_status` | `legal_processes.status` | ✅ Correct |
-| `legal_note_entity_type` | `legal_notes.entity_type` (fixed in 0009) | ✅ Correct |
-| `assignment_type` | `assignments.type` | ✅ Correct |
-| `domain_event_type` | `domain_events.event_type` | ✅ Correct |
-| `domain_event_entity_type` | `domain_events.entity_type` | ✅ Correct |
-| `domain_event_delivery_status` | `domain_events.delivery_status` | ✅ Correct |
-| `webhook_delivery_status` | `webhook_deliveries.status` | ✅ Correct |
-| `payment_method` | `monthly_payments.method` | ✅ Correct (shared, in `enums.ts`) |
-| `notification_type` | `notifications.type` | ✅ Correct (`activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`) |
-| `notification_entity_type` | `notifications.entity_type` | ✅ Correct (`consultation`, `process`) |
-| `official_letter_status` | `oficios.status` | ✅ Correct (`gerado`, `cancelado`, `rascunho`) |
-| `payment_status` | `monthly_payments.status` | ✅ Correct (`pago`, `pendente`, `atrasado`, `isento`, `cancelado`) |
+| Enum                           | Used By                                                                                | Status                                                                                                                  |
+| ------------------------------ | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `admin_role`                   | `admins.role`                                                                          | ✅ Correct                                                                                                              |
+| `association_status`           | `associates.association_status`                                                        | ✅ Correct                                                                                                              |
+| `contribution_status`          | `associates.contribution_status`                                                       | ✅ Correct                                                                                                              |
+| `functional_status`            | `associates.functional_status`                                                         | ✅ Correct                                                                                                              |
+| `activity_status`              | `activities.status`                                                                    | ✅ Correct                                                                                                              |
+| `activity_priority`            | `activities.priority`                                                                  | ✅ Correct                                                                                                              |
+| `audit_entity_type`            | `audit_logs.entity_type`                                                               | ✅ Correct                                                                                                              |
+| `legal_consultation_status`    | `legal_consultations.status`                                                           | ✅ Correct                                                                                                              |
+| `legal_satisfaction`           | `legal_consultations.satisfaction`, `legal_processes.satisfaction` (corrected in 0009) | ✅ Correct (shared, in `enums.ts`)                                                                                      |
+| `legal_process_type`           | `legal_processes.type`                                                                 | ✅ Correct                                                                                                              |
+| `legal_process_subtype`        | `legal_processes.subtype`                                                              | ✅ Correct                                                                                                              |
+| `legal_process_status`         | `legal_processes.status`                                                               | ✅ Correct                                                                                                              |
+| `legal_note_entity_type`       | `legal_notes.entity_type` (fixed in 0009)                                              | ✅ Correct                                                                                                              |
+| `assignment_type`              | `assignments.type`                                                                     | ✅ Correct                                                                                                              |
+| `domain_event_type`            | `domain_events.event_type`                                                             | ✅ Correct                                                                                                              |
+| `domain_event_entity_type`     | `domain_events.entity_type`                                                            | ✅ Correct                                                                                                              |
+| `domain_event_delivery_status` | `domain_events.delivery_status`                                                        | ✅ Correct                                                                                                              |
+| `webhook_delivery_status`      | `webhook_deliveries.status`                                                            | ✅ Correct                                                                                                              |
+| `payment_method`               | `monthly_payments.method`                                                              | ✅ Correct (shared, in `enums.ts`)                                                                                      |
+| `notification_type`            | `notifications.type`                                                                   | ✅ Correct (`activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`) |
+| `notification_entity_type`     | `notifications.entity_type`                                                            | ✅ Correct (`consultation`, `process`)                                                                                  |
+| `official_letter_status`       | `oficios.status`                                                                       | ✅ Correct (`gerado`, `cancelado`, `rascunho`)                                                                          |
+| `payment_status`               | `monthly_payments.status`                                                              | ✅ Correct (`pago`, `pendente`, `atrasado`, `isento`, `cancelado`)                                                      |
 
 **Principle:** Any column representing a bounded set of states MUST use a PostgreSQL enum. Text-only columns exist for unbounded data (names, emails, notes). Cross-file shared enums (`payment_method`, `legal_satisfaction`) are centralized in `src/lib/db/schema/enums.ts`.
 
@@ -373,16 +373,16 @@ Schema changes that PostgreSQL requires outside a transaction, especially `CREAT
 
 Transactions are used where data consistency across multiple tables is required:
 
-| Operation | Transaction | Status |
-|---|---|---|
-| `generateInternalNumber` | ✅ Yes | Inside `db.transaction(tx)` for sequence isolation |
-| `addNoteService` + `touchConsultationInteraction` | ✅ Yes | Note + timestamp update are atomic |
-| `createConsultationService` (generate number + insert) | ✅ Yes | Fixed in service refactor |
-| `updateConsultationStatus` | N/A | Single-statement update; no transaction needed |
-| `initializeMonth` | ✅ Yes | `db.transaction()` wraps all individual upserts |
-| `dispatchDomainEventById` | ✅ Yes | `db.transaction()` wraps claim + delivery |
-| `rotateApiKey` | ✅ Yes | `db.transaction()` creates new key and revokes old atomically |
-| Bulk associate import | ❌ No | Each row is upserted individually (future work) |
+| Operation                                              | Transaction | Status                                                        |
+| ------------------------------------------------------ | ----------- | ------------------------------------------------------------- |
+| `generateInternalNumber`                               | ✅ Yes      | Inside `db.transaction(tx)` for sequence isolation            |
+| `addNoteService` + `touchConsultationInteraction`      | ✅ Yes      | Note + timestamp update are atomic                            |
+| `createConsultationService` (generate number + insert) | ✅ Yes      | Fixed in service refactor                                     |
+| `updateConsultationStatus`                             | N/A         | Single-statement update; no transaction needed                |
+| `initializeMonth`                                      | ✅ Yes      | `db.transaction()` wraps all individual upserts               |
+| `dispatchDomainEventById`                              | ✅ Yes      | `db.transaction()` wraps claim + delivery                     |
+| `rotateApiKey`                                         | ✅ Yes      | `db.transaction()` creates new key and revokes old atomically |
+| Bulk associate import                                  | ❌ No       | Each row is upserted individually (future work)               |
 
 #### 4.2.7. Known N+1 Patterns
 
@@ -444,12 +444,12 @@ Integration Method: CLI workflow such as `git add . && coderabbit review --promp
 
 ### 6.1 Deploy Target
 
-| Camada | Serviço | Tipo |
-|---|---|---|
-| Frontend / Serverless Functions | **Vercel** | Hospedagem Next.js com Fluid Compute (Node.js 24) |
-| Banco de dados | **Supabase** | PostgreSQL 15+ gerenciado |
-| DNS / CDN | Vercel Edge Network | Incluído na plataforma |
-| Armazenamento de objetos (futuro) | Supabase Storage | Para anexos do módulo jurídico Fase 2 |
+| Camada                            | Serviço             | Tipo                                              |
+| --------------------------------- | ------------------- | ------------------------------------------------- |
+| Frontend / Serverless Functions   | **Vercel**          | Hospedagem Next.js com Fluid Compute (Node.js 24) |
+| Banco de dados                    | **Supabase**        | PostgreSQL 15+ gerenciado                         |
+| DNS / CDN                         | Vercel Edge Network | Incluído na plataforma                            |
+| Armazenamento de objetos (futuro) | Supabase Storage    | Para anexos do módulo jurídico Fase 2             |
 
 O projeto é uma aplicação Next.js 16 App Router **full-stack**, não apenas frontend estático. Server Components, Server Actions e Route Handlers executam nativamente na plataforma Vercel sem configuração extra.
 
@@ -519,11 +519,11 @@ Validacao de 2026-05-17: o Project Setting remoto foi ajustado para `Framework P
 
 Local development uses PostgreSQL installed through Homebrew, currently `postgresql@16` running as the macOS user service.
 
-| Variável | Valor / Origem |
-|---|---|
-| `DATABASE_URL` | Direct local URL, e.g. `postgres://$USER@localhost:5432/asof_intranet` |
-| `DATABASE_MIGRATION_URL` | Same direct local URL; there is no local pooler |
-| `SKIP_AUTH` / `DEV_USER_*` | Development-only auth bypass values |
+| Variável                   | Valor / Origem                                                         |
+| -------------------------- | ---------------------------------------------------------------------- |
+| `DATABASE_URL`             | Direct local URL, e.g. `postgres://$USER@localhost:5432/asof_intranet` |
+| `DATABASE_MIGRATION_URL`   | Same direct local URL; there is no local pooler                        |
+| `SKIP_AUTH` / `DEV_USER_*` | Development-only auth bypass values                                    |
 
 Homebrew PostgreSQL usually creates a role matching the macOS username, not a `postgres` role. On this machine `$USER` resolves to `gabrielramos`; `postgres://postgres@localhost:5432/...` fails because that role does not exist.
 
@@ -531,11 +531,11 @@ Homebrew PostgreSQL usually creates a role matching the macOS username, not a `p
 
 Staging/preview deve usar um projeto Supabase separado de produção. Previews não devem apontar para o banco de produção.
 
-| Variável | Origem / Dono |
-|---|---|
-| `DATABASE_URL` | Pooler de conexões do Supabase (porta 6543) |
-| `DATABASE_MIGRATION_URL` | URL direta/non-pooling do Supabase |
-| `DATABASE_SUPABASE_URL` | Dashboard do projeto Supabase |
+| Variável                             | Origem / Dono                                         |
+| ------------------------------------ | ----------------------------------------------------- |
+| `DATABASE_URL`                       | Pooler de conexões do Supabase (porta 6543)           |
+| `DATABASE_MIGRATION_URL`             | URL direta/non-pooling do Supabase                    |
+| `DATABASE_SUPABASE_URL`              | Dashboard do projeto Supabase                         |
 | `DATABASE_SUPABASE_SERVICE_ROLE_KEY` | Dashboard → Project Settings → API → service_role key |
 
 #### Produção (Vercel)
@@ -582,17 +582,17 @@ Antes de promover staging → produção:
 
 **Estado atual (`.github/workflows/ci.yml`):**
 
-| Job | Trigger | O que faz |
-|---|---|---|
-| `validate` | push/PR para `main` | lint, typecheck, unit tests (`npm run test`) |
-| `build` | needs: validate | build verification (`npm run build`) |
-| `database-contract` | push/PR para `main` | sobe PostgreSQL 16 em container, aplica migrations, roda `npm run test:db` |
-| `e2e` | needs: validate | sobe PostgreSQL 16 em container, instala Playwright Chromium, roda `npm run test:e2e` |
+| Job                 | Trigger             | O que faz                                                                             |
+| ------------------- | ------------------- | ------------------------------------------------------------------------------------- |
+| `validate`          | push/PR para `main` | lint, typecheck, unit tests (`npm run test`)                                          |
+| `build`             | needs: validate     | build verification (`npm run build`)                                                  |
+| `database-contract` | push/PR para `main` | sobe PostgreSQL 16 em container, aplica migrations, roda `npm run test:db`            |
+| `e2e`               | needs: validate     | sobe PostgreSQL 16 em container, instala Playwright Chromium, roda `npm run test:e2e` |
 
 **Workflows auxiliares:**
 
-| Workflow | Trigger | O que faz |
-|---|---|---|
+| Workflow              | Trigger             | O que faz                                                                           |
+| --------------------- | ------------------- | ----------------------------------------------------------------------------------- |
 | `migrate-staging.yml` | `workflow_dispatch` | aplica migrations em ambiente de staging com confirmação manual (`MIGRATE-STAGING`) |
 
 **Limitações atuais:**

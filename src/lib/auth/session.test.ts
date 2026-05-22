@@ -5,21 +5,20 @@ let skipAuth = false;
 let mockAuthUser: { email?: string | null } | null = null;
 let mockAuthError: Error | null = null;
 let mockSignOutError: Error | null = null;
-let mockDbUser:
-  | {
-      id: number;
-      name: string;
-      email: string;
-      role: 'admin' | 'diretoria' | 'secretaria';
-      isActive: boolean;
-      mustChangePassword: boolean;
-    }
-  | null = null;
+let mockDbUser: {
+  id: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'diretoria' | 'secretaria';
+  isActive: boolean;
+  mustChangePassword: boolean;
+} | null = null;
 
 vi.mock('@/lib/auth/config', () => ({
   isSkipAuthEnabled: vi.fn(() => skipAuth),
-  isAuthRole: vi.fn((value: string | undefined) =>
-    value === 'admin' || value === 'diretoria' || value === 'secretaria',
+  isAuthRole: vi.fn(
+    (value: string | undefined) =>
+      value === 'admin' || value === 'diretoria' || value === 'secretaria',
   ),
   getDevAuthUser: vi.fn(() => ({
     userId: 1,

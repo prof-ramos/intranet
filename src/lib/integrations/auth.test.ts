@@ -2,7 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHash, createHmac } from 'node:crypto';
 
 // --- Hoisted mocks (available inside vi.mock factories) ---
-const { mockGetIntegrationConfig, mockIsIntegrationAuthConfigured, mockFindActiveApiKeyByHash, mockUpdateApiKeyLastUsed, mockLoggerWarn } = vi.hoisted(() => ({
+const {
+  mockGetIntegrationConfig,
+  mockIsIntegrationAuthConfigured,
+  mockFindActiveApiKeyByHash,
+  mockUpdateApiKeyLastUsed,
+  mockLoggerWarn,
+} = vi.hoisted(() => ({
   mockGetIntegrationConfig: vi.fn(),
   mockIsIntegrationAuthConfigured: vi.fn(),
   mockFindActiveApiKeyByHash: vi.fn(),
@@ -75,12 +81,7 @@ function signRequest(
   body: string,
   secret: string,
 ): string {
-  const canonicalPayload = [
-    method.toUpperCase(),
-    path,
-    timestamp,
-    sha256Hex(body),
-  ].join('\n');
+  const canonicalPayload = [method.toUpperCase(), path, timestamp, sha256Hex(body)].join('\n');
   return createHmac('sha256', secret).update(canonicalPayload).digest('hex');
 }
 

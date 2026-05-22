@@ -9,7 +9,10 @@ function normalizeCountryValue(country: string | null | undefined): string | nul
 
 export function isDomesticCountry(country: string | null | undefined): boolean {
   const normalized = normalizeCountryValue(country);
-  return normalized === null || DOMESTIC_COUNTRY_ALIASES.includes(normalized as typeof DOMESTIC_COUNTRY_ALIASES[number]);
+  return (
+    normalized === null ||
+    DOMESTIC_COUNTRY_ALIASES.includes(normalized as (typeof DOMESTIC_COUNTRY_ALIASES)[number])
+  );
 }
 
 export function isExteriorCountry(country: string | null | undefined): boolean {
@@ -23,7 +26,7 @@ export function normalizeCountryLabel(country: string | null | undefined): strin
     return null;
   }
 
-  if (DOMESTIC_COUNTRY_ALIASES.includes(normalized as typeof DOMESTIC_COUNTRY_ALIASES[number])) {
+  if (DOMESTIC_COUNTRY_ALIASES.includes(normalized as (typeof DOMESTIC_COUNTRY_ALIASES)[number])) {
     return 'Brasil';
   }
 

@@ -20,7 +20,7 @@ export function SubmitButton() {
       aria-busy={pending}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`${mobileTouchTargetClass} ${desktopDenseControlClass} w-full rounded-[8px] font-semibold text-sm text-white transition-colors disabled:cursor-wait disabled:opacity-80`}
+      className={`${mobileTouchTargetClass} ${desktopDenseControlClass} w-full rounded-[8px] text-sm font-semibold text-white transition-colors disabled:cursor-wait disabled:opacity-80`}
       style={{ backgroundColor: isHovered || pending ? buttonPrimaryHover : buttonPrimaryBg }}
     >
       {pending ? 'Entrando...' : 'Entrar'}

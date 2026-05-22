@@ -148,12 +148,12 @@ describe('filterActivities', () => {
       makeActivity({ id: 2, assigneeId: 10, associateId: 20 }),
     ];
 
-    expect(
-      filterActivities(activities, { ...defaultFilters, assignee: '1e2' }, 10),
-    ).toHaveLength(2);
-    expect(
-      filterActivities(activities, { ...defaultFilters, associate: '0x10' }, 10),
-    ).toHaveLength(2);
+    expect(filterActivities(activities, { ...defaultFilters, assignee: '1e2' }, 10)).toHaveLength(
+      2,
+    );
+    expect(filterActivities(activities, { ...defaultFilters, associate: '0x10' }, 10)).toHaveLength(
+      2,
+    );
   });
 });
 

@@ -21,12 +21,7 @@ export async function getAssociateAuditHistory(
       createdAt: auditLogs.createdAt,
     })
     .from(auditLogs)
-    .where(
-      and(
-        eq(auditLogs.entityType, 'associate'),
-        eq(auditLogs.entityId, associateId),
-      ),
-    )
+    .where(and(eq(auditLogs.entityType, 'associate'), eq(auditLogs.entityId, associateId)))
     .orderBy(desc(auditLogs.createdAt))
     .limit(limit);
 

@@ -12,5 +12,5 @@ export const getMonthlyPaymentsData = cache(
       throw new Error('Mês inválido.');
     }
     return getAssociatesWithPayments(year, month, filters);
-  }
+  },
 );

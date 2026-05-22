@@ -37,6 +37,7 @@ DROP POLICY IF EXISTS notifications_select_own ON notifications;
 ```
 
 Design decisions:
+
 - Uses `get_current_admin_id()` (from 0039a) which checks `is_active = true` internally. Replaces the inline subquery with `auth.jwt() ->> 'email'` that referenced a non-existent `status` column.
 - `FOR SELECT` explicit — prevents default `FOR ALL` which would reintroduce client-side write access.
 - CREATE-before-DROP — `ALTER POLICY` cannot change the `TO` clause in PostgreSQL, so CREATE-before-DROP is the only correct approach. Under `FORCE ROW LEVEL SECURITY`, having both restrictive policies briefly is safe (intersection is strictly more restrictive).
@@ -61,14 +62,14 @@ Uses `@supabase/supabase-js` (already in project). Two authenticated Supabase cl
 
 ### Environment Variables
 
-| Variable | Description |
-|---|---|
-| `SMOKE_SUPABASE_URL` | Supabase project URL |
+| Variable                  | Description          |
+| ------------------------- | -------------------- |
+| `SMOKE_SUPABASE_URL`      | Supabase project URL |
 | `SMOKE_SUPABASE_ANON_KEY` | Anon/publishable key |
-| `SMOKE_USER_A_EMAIL` | Test user A email |
-| `SMOKE_USER_A_PASSWORD` | Test user A password |
-| `SMOKE_USER_B_EMAIL` | Test user B email |
-| `SMOKE_USER_B_PASSWORD` | Test user B password |
+| `SMOKE_USER_A_EMAIL`      | Test user A email    |
+| `SMOKE_USER_A_PASSWORD`   | Test user A password |
+| `SMOKE_USER_B_EMAIL`      | Test user B email    |
+| `SMOKE_USER_B_PASSWORD`   | Test user B password |
 
 ### Test Scenarios
 

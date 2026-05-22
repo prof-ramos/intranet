@@ -44,11 +44,7 @@ describe('VULN-001: Migration 0039 granular RLS policies', () => {
   });
 
   it('SECURITY DEFINER functions have SET search_path to prevent privilege escalation', () => {
-    const definerFunctions = [
-      'get_jwt_email',
-      'get_current_admin_role',
-      'get_current_admin_id',
-    ];
+    const definerFunctions = ['get_jwt_email', 'get_current_admin_role', 'get_current_admin_id'];
 
     for (const fn of definerFunctions) {
       const pattern = new RegExp(
@@ -65,8 +61,8 @@ describe('VULN-001: Migration 0039 granular RLS policies', () => {
     // Must detect auth.jwt() dynamically
     expect(helpersSql).toContain("to_regprocedure('auth.jwt()')");
     // Must NEVER create a stub that overwrites the native function
-    expect(helpersSql).not.toContain("CREATE OR REPLACE FUNCTION auth.jwt()");
-    expect(helpersSql).not.toContain("CREATE FUNCTION auth.jwt()");
+    expect(helpersSql).not.toContain('CREATE OR REPLACE FUNCTION auth.jwt()');
+    expect(helpersSql).not.toContain('CREATE FUNCTION auth.jwt()');
   });
 
   it('get_jwt_email falls back to current_setting when auth.jwt() is unavailable', () => {
@@ -89,10 +85,9 @@ describe('VULN-001: Migration 0039 granular RLS policies', () => {
     ];
 
     for (const policy of droppedPolicies) {
-      expect(
-        coreTablesSql,
-        `Migration 0039b should drop policy ${policy}`,
-      ).toContain(`DROP POLICY IF EXISTS ${policy}`);
+      expect(coreTablesSql, `Migration 0039b should drop policy ${policy}`).toContain(
+        `DROP POLICY IF EXISTS ${policy}`,
+      );
     }
   });
 
@@ -109,10 +104,9 @@ describe('VULN-001: Migration 0039 granular RLS policies', () => {
     ];
 
     for (const policy of droppedPolicies) {
-      expect(
-        auxTablesSql,
-        `Migration 0039c should drop policy ${policy}`,
-      ).toContain(`DROP POLICY IF EXISTS ${policy}`);
+      expect(auxTablesSql, `Migration 0039c should drop policy ${policy}`).toContain(
+        `DROP POLICY IF EXISTS ${policy}`,
+      );
     }
   });
 
@@ -145,10 +139,7 @@ describe('VULN-001: Migration 0039 granular RLS policies', () => {
     ];
 
     for (const policy of expectedPolicies) {
-      expect(
-        coreTablesSql,
-        `Should create policy ${policy}`,
-      ).toContain(`CREATE POLICY ${policy}`);
+      expect(coreTablesSql, `Should create policy ${policy}`).toContain(`CREATE POLICY ${policy}`);
     }
   });
 
@@ -178,10 +169,7 @@ describe('VULN-001: Migration 0039 granular RLS policies', () => {
     ];
 
     for (const policy of expectedPolicies) {
-      expect(
-        auxTablesSql,
-        `Should create policy ${policy}`,
-      ).toContain(`CREATE POLICY ${policy}`);
+      expect(auxTablesSql, `Should create policy ${policy}`).toContain(`CREATE POLICY ${policy}`);
     }
   });
 
@@ -199,19 +187,30 @@ describe('VULN-001: Migration 0039 granular RLS policies', () => {
 
   it('asserts FORCE ROW LEVEL SECURITY on all tables in 0039c', () => {
     const forceRlsTables = [
-      'admins', 'associates', 'activities', 'audit_logs',
-      'legal_consultations', 'legal_processes', 'legal_notes',
-      'legal_opinions', 'legal_opinion_tags', 'assignments',
-      'login_attempts', 'rate_limits', 'monthly_payments', 'oficios',
-      'domain_events', 'webhook_subscriptions', 'webhook_deliveries',
+      'admins',
+      'associates',
+      'activities',
+      'audit_logs',
+      'legal_consultations',
+      'legal_processes',
+      'legal_notes',
+      'legal_opinions',
+      'legal_opinion_tags',
+      'assignments',
+      'login_attempts',
+      'rate_limits',
+      'monthly_payments',
+      'oficios',
+      'domain_events',
+      'webhook_subscriptions',
+      'webhook_deliveries',
       'integration_api_keys',
     ];
 
     for (const table of forceRlsTables) {
-      expect(
-        auxTablesSql,
-        `Should FORCE ROW LEVEL SECURITY on ${table}`,
-      ).toContain(`ALTER TABLE ${table} FORCE ROW LEVEL SECURITY`);
+      expect(auxTablesSql, `Should FORCE ROW LEVEL SECURITY on ${table}`).toContain(
+        `ALTER TABLE ${table} FORCE ROW LEVEL SECURITY`,
+      );
     }
   });
 
@@ -222,9 +221,7 @@ describe('VULN-001: Migration 0039 granular RLS policies', () => {
     ].map((m) => m[0].replace(/\n/g, ' ').trim());
 
     const illegitimatePermissive = permissiveMatches.filter(
-      (match) =>
-        !match.includes('login_attempts_insert') &&
-        !match.includes('rate_limits_insert'),
+      (match) => !match.includes('login_attempts_insert') && !match.includes('rate_limits_insert'),
     );
 
     expect(
@@ -234,9 +231,9 @@ describe('VULN-001: Migration 0039 granular RLS policies', () => {
   });
 
   it('journal has entries for 0039a, 0039b, 0039c', () => {
-    const journal = JSON.parse(
-      fs.readFileSync(journalFile, 'utf8'),
-    ) as { entries: Array<{ tag: string }> };
+    const journal = JSON.parse(fs.readFileSync(journalFile, 'utf8')) as {
+      entries: Array<{ tag: string }>;
+    };
 
     const tags = journal.entries.map((e) => e.tag);
     expect(tags).toContain('0039a_rls_helpers');
@@ -272,9 +269,9 @@ describe('Migration 0040: FORCE ROW LEVEL SECURITY on notifications', () => {
   });
 
   it('journal has entry for 0040_force_rls_notifications', () => {
-    const journal = JSON.parse(
-      fs.readFileSync(journalFile, 'utf8'),
-    ) as { entries: Array<{ tag: string }> };
+    const journal = JSON.parse(fs.readFileSync(journalFile, 'utf8')) as {
+      entries: Array<{ tag: string }>;
+    };
 
     const tags = journal.entries.map((e) => e.tag);
     expect(tags).toContain('0040_force_rls_notifications');

@@ -35,7 +35,11 @@ async function retryTransientConnection<T>(operation: () => Promise<T>): Promise
       throw error;
     }
 
-    logger.warn('[Login] Retrying after transient database connection closure.', { error: toSafeErrorLog(error) }, error as Error);
+    logger.warn(
+      '[Login] Retrying after transient database connection closure.',
+      { error: toSafeErrorLog(error) },
+      error as Error,
+    );
     return operation();
   }
 }
@@ -56,7 +60,11 @@ export async function login(formData: FormData) {
     const rateLimit = await retryTransientConnection(() => loginRateLimiter.consume(email));
     if (!rateLimit.allowed) redirect('/login?error=rate-limit');
   } catch (error) {
-    logger.error('[Login] Rate-limit check failed; denying login.', { error: toSafeErrorLog(error) }, error as Error);
+    logger.error(
+      '[Login] Rate-limit check failed; denying login.',
+      { error: toSafeErrorLog(error) },
+      error as Error,
+    );
     redirect('/login?error=rate-limit');
   }
 
@@ -98,7 +106,11 @@ export async function login(formData: FormData) {
   try {
     await retryTransientConnection(() => loginRateLimiter.reset(email));
   } catch (error) {
-    logger.warn('[Login] Rate-limit reset failed after successful login.', { error: toSafeErrorLog(error) }, error as Error);
+    logger.warn(
+      '[Login] Rate-limit reset failed after successful login.',
+      { error: toSafeErrorLog(error) },
+      error as Error,
+    );
   }
   redirect(user.mustChangePassword ? '/change-password' : '/app');
 }

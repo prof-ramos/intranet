@@ -110,18 +110,21 @@ async function deliverEventToSubscription(
   if (!isPublicWebhookUrl(subscription.targetUrl)) {
     const failureReason = `Webhook target URL failed security validation: ${subscription.targetUrl}`;
     console.error('[webhook] ' + failureReason);
-    await insertWebhookDelivery({
-      domainEventId: eventId,
-      webhookSubscriptionId: subscription.id,
-      attempt,
-      requestId: `ssrf-blocked-${subscription.id}`,
-      idempotencyKey: `ssrf-blocked-${eventId}:${subscription.id}`,
-      status: 'failed',
-      statusCode: null,
-      responseExcerpt: null,
-      failedAt: new Date(),
-      failureReason,
-    }, executor);
+    await insertWebhookDelivery(
+      {
+        domainEventId: eventId,
+        webhookSubscriptionId: subscription.id,
+        attempt,
+        requestId: `ssrf-blocked-${subscription.id}`,
+        idempotencyKey: `ssrf-blocked-${eventId}:${subscription.id}`,
+        status: 'failed',
+        statusCode: null,
+        responseExcerpt: null,
+        failedAt: new Date(),
+        failureReason,
+      },
+      executor,
+    );
     return 'failed' as const;
   }
 
@@ -165,17 +168,20 @@ async function deliverEventToSubscription(
     responseExcerpt = sanitizeResponseExcerpt(await response.text());
 
     if (response.ok) {
-      await insertWebhookDelivery({
-        domainEventId: eventId,
-        webhookSubscriptionId: subscription.id,
-        attempt,
-        requestId,
-        idempotencyKey,
-        status: 'delivered',
-        statusCode,
-        responseExcerpt,
-        deliveredAt: new Date(),
-      }, executor);
+      await insertWebhookDelivery(
+        {
+          domainEventId: eventId,
+          webhookSubscriptionId: subscription.id,
+          attempt,
+          requestId,
+          idempotencyKey,
+          status: 'delivered',
+          statusCode,
+          responseExcerpt,
+          deliveredAt: new Date(),
+        },
+        executor,
+      );
 
       return 'delivered' as const;
     }
@@ -194,19 +200,22 @@ async function deliverEventToSubscription(
       ? `Max retry attempts (${MAX_WEBHOOK_ATTEMPTS}) exhausted.`
       : `Non-retryable HTTP status ${statusCode}.`;
 
-  await insertWebhookDelivery({
-    domainEventId: eventId,
-    webhookSubscriptionId: subscription.id,
-    attempt,
-    requestId,
-    idempotencyKey,
-    status: shouldRetry ? 'retry_scheduled' : 'failed',
-    statusCode,
-    responseExcerpt,
-    nextRetryAt: shouldRetry ? calculateNextRetryAt(attempt) : null,
-    failedAt: shouldRetry ? null : new Date(),
-    failureReason,
-  }, executor);
+  await insertWebhookDelivery(
+    {
+      domainEventId: eventId,
+      webhookSubscriptionId: subscription.id,
+      attempt,
+      requestId,
+      idempotencyKey,
+      status: shouldRetry ? 'retry_scheduled' : 'failed',
+      statusCode,
+      responseExcerpt,
+      nextRetryAt: shouldRetry ? calculateNextRetryAt(attempt) : null,
+      failedAt: shouldRetry ? null : new Date(),
+      failureReason,
+    },
+    executor,
+  );
 
   return shouldRetry ? ('retry_scheduled' as const) : ('failed' as const);
 }
@@ -261,14 +270,7 @@ export async function dispatchDomainEventById(eventId: number) {
       }
 
       const attempt = (previous?.attempt ?? 0) + 1;
-      return deliverEventToSubscription(
-        event.id,
-        event.eventType,
-        subscription,
-        body,
-        attempt,
-        tx,
-      );
+      return deliverEventToSubscription(event.id, event.eventType, subscription, body, attempt, tx);
     });
 
     const settled = await Promise.allSettled(dispatchPromises);

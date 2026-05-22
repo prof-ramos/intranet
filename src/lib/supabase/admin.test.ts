@@ -1,23 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Logger } from '@/lib/logger';
-import {
-  deleteAdminAuthUser,
-  ensureAdminPasswordAuthUser,
-} from './admin';
+import { deleteAdminAuthUser, ensureAdminPasswordAuthUser } from './admin';
 
-const {
-  listUsersMock,
-  updateUserByIdMock,
-  createUserMock,
-  deleteUserMock,
-  logAuditActionMock,
-} = vi.hoisted(() => ({
-  listUsersMock: vi.fn(),
-  updateUserByIdMock: vi.fn(),
-  createUserMock: vi.fn(),
-  deleteUserMock: vi.fn(),
-  logAuditActionMock: vi.fn(),
-}));
+const { listUsersMock, updateUserByIdMock, createUserMock, deleteUserMock, logAuditActionMock } =
+  vi.hoisted(() => ({
+    listUsersMock: vi.fn(),
+    updateUserByIdMock: vi.fn(),
+    createUserMock: vi.fn(),
+    deleteUserMock: vi.fn(),
+    logAuditActionMock: vi.fn(),
+  }));
 
 vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn(() => ({
@@ -92,16 +84,13 @@ describe('supabase admin helpers', () => {
     await deleteAdminAuthUser('admin@asof.local', 7);
 
     expect(deleteUserMock).toHaveBeenCalledWith('auth-1');
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      '[deleteAdminAuthUser] audit logging failed',
-      {
-        error: expect.objectContaining({
-          kind: 'error',
-          name: 'Error',
-          code: 'E_AUDIT',
-        }),
-      },
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith('[deleteAdminAuthUser] audit logging failed', {
+      error: expect.objectContaining({
+        kind: 'error',
+        name: 'Error',
+        code: 'E_AUDIT',
+      }),
+    });
     consoleErrorSpy.mockRestore();
   });
 });

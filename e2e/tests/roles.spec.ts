@@ -14,7 +14,10 @@ test.describe('Role-based access', () => {
     await expect(page).toHaveURL(/\/app\/juridico/);
   });
 
-  test('secretaria is redirected from juridico to dashboard', async ({ page, loginAsSecretaria }) => {
+  test('secretaria is redirected from juridico to dashboard', async ({
+    page,
+    loginAsSecretaria,
+  }) => {
     await loginAsSecretaria();
     await page.goto('/app/juridico');
     await expect(page).toHaveURL('/app');
@@ -68,19 +71,28 @@ test.describe('Config routes – admin/diretoria only', () => {
     await expect(page).toHaveURL('/app');
   });
 
-  test('secretaria is redirected from usuarios to dashboard', async ({ page, loginAsSecretaria }) => {
+  test('secretaria is redirected from usuarios to dashboard', async ({
+    page,
+    loginAsSecretaria,
+  }) => {
     await loginAsSecretaria();
     await page.goto('/app/config/usuarios');
     await expect(page).toHaveURL('/app');
   });
 
-  test('secretaria is redirected from auditoria to dashboard', async ({ page, loginAsSecretaria }) => {
+  test('secretaria is redirected from auditoria to dashboard', async ({
+    page,
+    loginAsSecretaria,
+  }) => {
     await loginAsSecretaria();
     await page.goto('/app/config/auditoria');
     await expect(page).toHaveURL('/app');
   });
 
-  test('secretaria is redirected from lotacoes to dashboard', async ({ page, loginAsSecretaria }) => {
+  test('secretaria is redirected from lotacoes to dashboard', async ({
+    page,
+    loginAsSecretaria,
+  }) => {
     await loginAsSecretaria();
     await page.goto('/app/config/lotacoes');
     await expect(page).toHaveURL('/app');
@@ -100,7 +112,10 @@ test.describe('Config sidebar navigation', () => {
     await expect(page.getByRole('link', { name: 'Auditoria' })).toBeVisible();
   });
 
-  test('config group auto-expands when navigating to a child route', async ({ page, loginAsAdmin }) => {
+  test('config group auto-expands when navigating to a child route', async ({
+    page,
+    loginAsAdmin,
+  }) => {
     await loginAsAdmin();
     await page.goto('/app/config/usuarios');
     const configButton = page.getByRole('button', { name: 'Configurações' });

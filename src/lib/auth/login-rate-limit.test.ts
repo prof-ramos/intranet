@@ -96,10 +96,7 @@ describe('login rate limiter', () => {
       async cleanup() {},
     };
 
-    const limiter = createLoginRateLimiter(
-      { maxAttempts: 3, windowMs: 60_000 },
-      nullStore,
-    );
+    const limiter = createLoginRateLimiter({ maxAttempts: 3, windowMs: 60_000 }, nullStore);
 
     const result = await limiter.consume('user@example.com');
     expect(result).toEqual({ allowed: true, remaining: 3 });

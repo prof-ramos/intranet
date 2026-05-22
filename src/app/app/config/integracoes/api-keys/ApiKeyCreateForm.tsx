@@ -29,27 +29,28 @@ function NewKeyDisplay({ rawKey, onDismiss }: NewKeyDisplayProps) {
   }
 
   return (
-    <div
-      role="alert"
-      className="mt-4 rounded-[10px] border border-amber-200 bg-amber-50 p-5"
-    >
+    <div role="alert" className="mt-4 rounded-[10px] border border-amber-200 bg-amber-50 p-5">
       <div className="flex items-start gap-3">
         <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-700" aria-hidden="true" />
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-amber-900">
             Esta chave só será exibida uma vez. Guarde-a com segurança.
           </p>
           <div className="mt-3 flex items-center gap-2">
-            <code className="flex-1 min-w-0 break-all rounded-md border border-amber-200 bg-white px-3 py-2 text-xs font-mono text-[#040920] select-all">
+            <code className="min-w-0 flex-1 rounded-md border border-amber-200 bg-white px-3 py-2 font-mono text-xs break-all text-[#040920] select-all">
               {rawKey}
             </code>
             <button
               type="button"
               onClick={handleCopy}
               aria-label={copied ? 'Copiado' : 'Copiar chave'}
-              className={`shrink-0 inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-white px-3 py-2 text-xs font-medium text-amber-900 transition-colors hover:bg-amber-100 ${focusRingClass}`}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border border-amber-300 bg-white px-3 py-2 text-xs font-medium text-amber-900 transition-colors hover:bg-amber-100 ${focusRingClass}`}
             >
-              {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+              {copied ? (
+                <Check size={13} aria-hidden="true" />
+              ) : (
+                <Copy size={13} aria-hidden="true" />
+              )}
               {copied ? 'Copiado' : 'Copiar'}
             </button>
           </div>
@@ -124,7 +125,7 @@ export function ApiKeyCreateForm() {
             placeholder="Ex.: Sistema de automação financeira"
             spellCheck={false}
             autoComplete="off"
-            className={`w-full rounded-md border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#040920] placeholder:text-[rgba(13,31,60,0.35)] transition-colors hover:border-[rgba(4,9,32,0.2)] ${focusRingClass}`}
+            className={`w-full rounded-md border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#040920] transition-colors placeholder:text-[rgba(13,31,60,0.35)] hover:border-[rgba(4,9,32,0.2)] ${focusRingClass}`}
           />
         </div>
 

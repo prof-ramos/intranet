@@ -14,6 +14,8 @@ describe('htmlToPlainText', () => {
   });
 
   it('drops script and style content', () => {
-    expect(htmlToPlainText('<p>Texto</p><script>alert(1)</script><style>p{}</style>')).toBe('Texto');
+    expect(htmlToPlainText('<p>Texto</p><script>alert(1)</script><style>p{}</style>')).toBe(
+      'Texto',
+    );
   });
 });

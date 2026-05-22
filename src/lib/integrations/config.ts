@@ -45,7 +45,9 @@ export function getIntegrationConfig(env: NodeJS.ProcessEnv = process.env): Inte
   };
 }
 
-export function isIntegrationAuthConfigured(config: IntegrationConfig = getIntegrationConfig()): boolean {
+export function isIntegrationAuthConfigured(
+  config: IntegrationConfig = getIntegrationConfig(),
+): boolean {
   return Boolean(config.apiKey && config.hmacSecret);
 }
 

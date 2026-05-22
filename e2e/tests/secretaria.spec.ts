@@ -34,7 +34,9 @@ test.describe('Secretaria — Ofícios', () => {
   test('download link is present for generated ofícios', async ({ page, loginAsAdmin }) => {
     await loginAsAdmin();
     await page.goto('/app/secretaria/oficios');
-    const downloadLink = page.locator('tr:has-text("OFÍCIO No 001/2026/ASOF") a[title="Download PDF"]');
+    const downloadLink = page.locator(
+      'tr:has-text("OFÍCIO No 001/2026/ASOF") a[title="Download PDF"]',
+    );
     await expect(downloadLink).toBeVisible();
     await expect(downloadLink).toHaveAttribute('href', /\/api\/oficios\/\d+\/download/);
   });
@@ -42,7 +44,9 @@ test.describe('Secretaria — Ofícios', () => {
   test('cancel button is present for generated ofícios', async ({ page, loginAsAdmin }) => {
     await loginAsAdmin();
     await page.goto('/app/secretaria/oficios');
-    const cancelButton = page.locator('tr:has-text("OFÍCIO No 001/2026/ASOF")').getByRole('button', { name: 'Cancelar ofício' });
+    const cancelButton = page
+      .locator('tr:has-text("OFÍCIO No 001/2026/ASOF")')
+      .getByRole('button', { name: 'Cancelar ofício' });
     await expect(cancelButton).toBeVisible();
   });
 

@@ -6,15 +6,7 @@ import {
   associates,
   admins,
 } from '@/lib/db/schema';
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  ne,
-  sql,
-} from 'drizzle-orm';
+import { and, asc, count, desc, eq, ne, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
 import { isSlaDueSoonSql } from './sla';
@@ -244,7 +236,10 @@ export interface NoteItem {
   createdAt: string;
 }
 
-export async function getNotesByEntity(entityType: 'consultation' | 'process', entityId: number): Promise<NoteItem[]> {
+export async function getNotesByEntity(
+  entityType: 'consultation' | 'process',
+  entityId: number,
+): Promise<NoteItem[]> {
   const rows = await db
     .select({
       id: legalNotes.id,
@@ -434,13 +429,16 @@ export async function updateConsultationStatus(
   await executor.update(legalConsultations).set(set).where(eq(legalConsultations.id, id));
 }
 
-export async function insertNote(values: {
-  entityType: 'consultation' | 'process';
-  entityId: number;
-  content: string;
-  createdBy: number;
-  isEscritorioResponse: boolean;
-}, executor: DbExecutor = db) {
+export async function insertNote(
+  values: {
+    entityType: 'consultation' | 'process';
+    entityId: number;
+    content: string;
+    createdBy: number;
+    isEscritorioResponse: boolean;
+  },
+  executor: DbExecutor = db,
+) {
   await executor.insert(legalNotes).values({
     entityType: values.entityType,
     entityId: values.entityId,

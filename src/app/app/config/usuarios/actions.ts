@@ -16,11 +16,14 @@ import { passwordResetEmailHtml, passwordResetEmailText } from '@/lib/email/temp
 
 const logger = createLogger('usuarios:actions');
 
-function toSafeEmailDeliveryErrorLog(error: unknown): ReturnType<typeof toSafeErrorLog> & { status?: number } {
+function toSafeEmailDeliveryErrorLog(
+  error: unknown,
+): ReturnType<typeof toSafeErrorLog> & { status?: number } {
   const safeError = toSafeErrorLog(error);
-  const status = typeof (error as { status?: unknown } | null)?.status === 'number'
-    ? (error as { status: number }).status
-    : undefined;
+  const status =
+    typeof (error as { status?: unknown } | null)?.status === 'number'
+      ? (error as { status: number }).status
+      : undefined;
 
   return status === undefined ? safeError : { ...safeError, status };
 }
@@ -68,7 +71,10 @@ export async function resetUserPassword(
   }
 
   if (targetId === actor.userId) {
-    return { success: false, message: 'Use a página de troca de senha para alterar sua própria senha.' };
+    return {
+      success: false,
+      message: 'Use a página de troca de senha para alterar sua própria senha.',
+    };
   }
 
   const [target] = await db
@@ -151,10 +157,10 @@ export async function resetUserPassword(
       });
       emailDelivered = true;
     } catch (emailError) {
-      logger.error(
-        '[resetUserPassword] Failed to deliver password reset email.',
-        { targetId, error: toSafeEmailDeliveryErrorLog(emailError) },
-      );
+      logger.error('[resetUserPassword] Failed to deliver password reset email.', {
+        targetId,
+        error: toSafeEmailDeliveryErrorLog(emailError),
+      });
       // Email delivery failure should not block the password reset
     }
   }

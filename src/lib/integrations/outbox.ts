@@ -1,9 +1,5 @@
 import { db, type DbExecutor } from '@/lib/db';
-import {
-  domainEvents,
-  domainEventEntityType,
-  domainEventType,
-} from '@/lib/db/schema/integrations';
+import { domainEvents, domainEventEntityType, domainEventType } from '@/lib/db/schema/integrations';
 import { sanitizePiiValue } from '@/lib/sanitize-pii';
 import { z } from 'zod';
 
@@ -56,13 +52,13 @@ const payloadSchemaByEventType = {
       year: z.number().int().positive(),
       month: z.number().int().min(1).max(12),
       previousStatus: z.string().min(1),
-	      status: z.string().min(1),
-	      paymentMethod: z.string().min(1),
-	      paidAt: z.string().datetime().nullable(),
-	      cancelledAt: z.string().datetime().nullable().optional(),
-	      cancellationReason: z.string().min(1).optional(),
-	      links: linksSchema,
-	    })
+      status: z.string().min(1),
+      paymentMethod: z.string().min(1),
+      paidAt: z.string().datetime().nullable(),
+      cancelledAt: z.string().datetime().nullable().optional(),
+      cancellationReason: z.string().min(1).optional(),
+      links: linksSchema,
+    })
     .strict(),
   'official_letter.published': z
     .object({
@@ -87,10 +83,7 @@ export interface EmitDomainEventInput<T extends DomainEventType = DomainEventTyp
   payload: DomainEventPayloadMap[T];
 }
 
-export async function emitDomainEvent(
-  input: EmitDomainEventInput,
-  executor: DbExecutor = db,
-) {
+export async function emitDomainEvent(input: EmitDomainEventInput, executor: DbExecutor = db) {
   const payload = payloadSchemaByEventType[input.type].parse(
     sanitizePiiValue(input.payload),
   ) as DomainEventPayloadMap[typeof input.type];

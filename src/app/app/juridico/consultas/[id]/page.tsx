@@ -14,11 +14,7 @@ import { hairline, focusRingClass } from '@/lib/ui/tokens';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 import { StatusUpdater } from './StatusUpdater';
 
-export default async function ConsultaDetalhePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function ConsultaDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   await requireAuth();
   const { id } = await params;
   const consultationId = parsePositiveIntParam(id);
@@ -47,12 +43,10 @@ export default async function ConsultaDetalhePage({
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-[rgba(13,31,60,0.55)]">
+            <p className="text-[11px] tracking-[0.18em] text-[rgba(13,31,60,0.55)] uppercase">
               Jurídico / Consultas
             </p>
-            <h1 className="mt-1 font-serif text-3xl font-bold">
-              {consultation.internalNumber}
-            </h1>
+            <h1 className="mt-1 font-serif text-3xl font-bold">{consultation.internalNumber}</h1>
           </div>
         </div>
 
@@ -112,9 +106,7 @@ export default async function ConsultaDetalhePage({
               </div>
               <div className="flex items-center gap-2 text-[rgba(13,31,60,0.60)]">
                 <MessageSquare size={14} />
-                <span>
-                  Última interação: {formatDate(consultation.lastInteractionAt)}
-                </span>
+                <span>Última interação: {formatDate(consultation.lastInteractionAt)}</span>
               </div>
             </div>
           </div>
@@ -127,10 +119,7 @@ export default async function ConsultaDetalhePage({
             ) : (
               <ul className="flex flex-col gap-4">
                 {notes.map((note) => (
-                  <li
-                    key={note.id}
-                    className="grid grid-cols-[32px_1fr] gap-3"
-                  >
+                  <li key={note.id} className="grid grid-cols-[32px_1fr] gap-3">
                     <div
                       className={`flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white ${
                         note.isEscritorioResponse ? 'bg-[#eab308]' : 'bg-[#040920]'
@@ -147,9 +136,7 @@ export default async function ConsultaDetalhePage({
                           {formatDate(note.createdAt)}
                         </span>
                       </div>
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                        {note.content}
-                      </p>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{note.content}</p>
                     </div>
                   </li>
                 ))}
@@ -182,7 +169,10 @@ export default async function ConsultaDetalhePage({
               </label>
 
               <div className="flex justify-end">
-                <button type="submit" className={`inline-flex items-center gap-2 bg-[#040920] text-white rounded-[8px] h-10 px-4 text-sm font-semibold hover:bg-[#0d3260] ${focusRingClass}`}>
+                <button
+                  type="submit"
+                  className={`inline-flex h-10 items-center gap-2 rounded-[8px] bg-[#040920] px-4 text-sm font-semibold text-white hover:bg-[#0d3260] ${focusRingClass}`}
+                >
                   <Send size={14} aria-hidden="true" />
                   Adicionar nota
                 </button>
@@ -197,7 +187,9 @@ export default async function ConsultaDetalhePage({
             <ul className="flex flex-col gap-2 text-sm">
               <li className="flex justify-between">
                 <span className="text-[rgba(13,31,60,0.60)]">Status</span>
-                <span className="font-medium">{getLegalConsultationStatusLabel(consultation.status)}</span>
+                <span className="font-medium">
+                  {getLegalConsultationStatusLabel(consultation.status)}
+                </span>
               </li>
               <li className="flex justify-between">
                 <span className="text-[rgba(13,31,60,0.60)]">Número</span>

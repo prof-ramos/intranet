@@ -1,11 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const {
-  selectLimitMock,
-  selectMock,
-  updateReturningMock,
-  updateMock,
-} = vi.hoisted(() => {
+const { selectLimitMock, selectMock, updateReturningMock, updateMock } = vi.hoisted(() => {
   const selectLimit = vi.fn();
   const selectWhere = vi.fn(() => ({ limit: selectLimit }));
   const selectFrom = vi.fn(() => ({ where: selectWhere }));

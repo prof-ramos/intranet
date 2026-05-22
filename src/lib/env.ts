@@ -2,14 +2,8 @@ import { z } from 'zod';
 
 const emptyStringToUndefined = (value: unknown) => (value === '' ? undefined : value);
 const optionalString = z.preprocess(emptyStringToUndefined, z.string().optional());
-const optionalNonEmptyString = z.preprocess(
-  emptyStringToUndefined,
-  z.string().min(1).optional(),
-);
-const optionalSecretString = z.preprocess(
-  emptyStringToUndefined,
-  z.string().min(32).optional(),
-);
+const optionalNonEmptyString = z.preprocess(emptyStringToUndefined, z.string().min(1).optional());
+const optionalSecretString = z.preprocess(emptyStringToUndefined, z.string().min(32).optional());
 const optionalUrl = z.preprocess(emptyStringToUndefined, z.string().url().optional());
 
 export const envSchema = z
@@ -33,7 +27,9 @@ export const envSchema = z
     MAILJET_SENDER_NAME: optionalString.default('ASOF Intranet'),
     GEMINI_API_KEY: optionalString.describe('Gemini API key for AI features'),
 
-    NEXT_PUBLIC_AI_ENABLED: z.preprocess(emptyStringToUndefined, z.enum(["true", "false"]).default("false")).transform(v => v === "true"),
+    NEXT_PUBLIC_AI_ENABLED: z
+      .preprocess(emptyStringToUndefined, z.enum(['true', 'false']).default('false'))
+      .transform((v) => v === 'true'),
 
     SKIP_AUTH: optionalString.default('false'),
     DEV_USER_ID: optionalString,
@@ -48,7 +44,10 @@ export const envSchema = z
     CRON_SECRET: optionalNonEmptyString,
     ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY: optionalSecretString,
     ENCRYPTION_MASTER_KEY: optionalSecretString,
-    TRUSTED_PROXY_COUNT: z.preprocess(emptyStringToUndefined, z.coerce.number().int().min(0).optional()),
+    TRUSTED_PROXY_COUNT: z.preprocess(
+      emptyStringToUndefined,
+      z.coerce.number().int().min(0).optional(),
+    ),
 
     // ─── Supabase ───────────────────────────────────────────────────────────────
     NEXT_PUBLIC_SUPABASE_URL: optionalUrl,

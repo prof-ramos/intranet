@@ -48,17 +48,14 @@ describe('reports service', () => {
 
     await generateReport(1, {}, ['fullName']);
 
-    expect(consoleWarnSpy).toHaveBeenCalledWith(
-      '[report-service] failed to persist audit log',
-      {
-        error: {
-          kind: 'error',
-          name: 'Error',
-          code: 'E_AUDIT',
-          digest: undefined,
-        },
+    expect(consoleWarnSpy).toHaveBeenCalledWith('[report-service] failed to persist audit log', {
+      error: {
+        kind: 'error',
+        name: 'Error',
+        code: 'E_AUDIT',
+        digest: undefined,
       },
-    );
+    });
     consoleWarnSpy.mockRestore();
   });
 

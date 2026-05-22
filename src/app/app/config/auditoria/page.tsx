@@ -112,12 +112,10 @@ export default async function AuditoriaPage({
 
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
-      <p className="text-[rgba(13,31,60,0.55)] text-[11px] tracking-[0.18em] uppercase">
+      <p className="text-[11px] tracking-[0.18em] text-[rgba(13,31,60,0.55)] uppercase">
         Configurações · Auditoria
       </p>
-      <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
-        Auditoria
-      </h1>
+      <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">Auditoria</h1>
 
       <form method="GET" action="/app/config/auditoria" className="mt-6 flex flex-wrap gap-3">
         <input
@@ -175,7 +173,7 @@ export default async function AuditoriaPage({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[rgba(4,9,32,0.06)] bg-[rgba(13,31,60,0.02)]">
-              <th className="whitespace-nowrap px-5 py-3 text-left font-semibold text-[#040920]">
+              <th className="px-5 py-3 text-left font-semibold whitespace-nowrap text-[#040920]">
                 Data / Hora
               </th>
               <th className="px-5 py-3 text-left font-semibold text-[#040920]">Ator</th>
@@ -199,7 +197,7 @@ export default async function AuditoriaPage({
                   key={row.id}
                   className="border-b border-[rgba(4,9,32,0.05)] transition-colors last:border-0 hover:bg-[rgba(13,31,60,0.015)]"
                 >
-                  <td className="whitespace-nowrap px-5 py-3 font-mono text-xs text-[rgba(13,31,60,0.55)]">
+                  <td className="px-5 py-3 font-mono text-xs whitespace-nowrap text-[rgba(13,31,60,0.55)]">
                     {row.createdAt.toLocaleString('pt-BR', {
                       day: '2-digit',
                       month: '2-digit',
@@ -211,7 +209,7 @@ export default async function AuditoriaPage({
                   </td>
                   <td className="px-5 py-3 text-[#040920]">
                     {row.actorName ?? (
-                      <span className="italic text-[rgba(13,31,60,0.35)]">Sistema</span>
+                      <span className="text-[rgba(13,31,60,0.35)] italic">Sistema</span>
                     )}
                   </td>
                   <td className="px-5 py-3 font-mono text-xs text-[rgba(13,31,60,0.75)]">

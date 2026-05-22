@@ -4,10 +4,7 @@ import { useActionState, useState } from 'react';
 import { KeyRound, Power, PowerOff, RotateCcw } from 'lucide-react';
 import { focusRingClass } from '@/lib/ui/tokens';
 import type { DomainEventType } from '@/lib/integrations/outbox';
-import {
-  rotateWebhookSubscriptionSecret,
-  toggleWebhookSubscription,
-} from './actions';
+import { rotateWebhookSubscriptionSecret, toggleWebhookSubscription } from './actions';
 import { WebhookSubscriptionForm } from './WebhookSubscriptionForm';
 
 interface WebhookSubscriptionActionsProps {
@@ -29,8 +26,14 @@ export function WebhookSubscriptionActions({
 }: WebhookSubscriptionActionsProps) {
   const [editing, setEditing] = useState(false);
   const [rotating, setRotating] = useState(false);
-  const [toggleState, toggleAction, isTogglePending] = useActionState(toggleWebhookSubscription, null);
-  const [rotateState, rotateAction, isRotatePending] = useActionState(rotateWebhookSubscriptionSecret, null);
+  const [toggleState, toggleAction, isTogglePending] = useActionState(
+    toggleWebhookSubscription,
+    null,
+  );
+  const [rotateState, rotateAction, isRotatePending] = useActionState(
+    rotateWebhookSubscriptionSecret,
+    null,
+  );
 
   return (
     <div className="grid gap-3">
@@ -64,13 +67,19 @@ export function WebhookSubscriptionActions({
                 : 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100'
             } ${focusRingClass}`}
           >
-            {isActive ? <PowerOff size={13} aria-hidden="true" /> : <Power size={13} aria-hidden="true" />}
+            {isActive ? (
+              <PowerOff size={13} aria-hidden="true" />
+            ) : (
+              <Power size={13} aria-hidden="true" />
+            )}
             {isActive ? 'Desativar' : 'Ativar'}
           </button>
         </form>
       </div>
 
-      {toggleState?.success === false && <p className="text-right text-xs text-red-600">{toggleState.message}</p>}
+      {toggleState?.success === false && (
+        <p className="text-right text-xs text-red-600">{toggleState.message}</p>
+      )}
 
       {editing && (
         <div className="rounded-lg border border-[rgba(4,9,32,0.08)] bg-[rgba(13,31,60,0.02)] p-4">
@@ -94,7 +103,9 @@ export function WebhookSubscriptionActions({
         >
           <input type="hidden" name="id" value={id} />
           <fieldset className="fieldset flex-1">
-            <legend className="fieldset-legend text-xs font-semibold text-amber-900">Novo segredo HMAC</legend>
+            <legend className="fieldset-legend text-xs font-semibold text-amber-900">
+              Novo segredo HMAC
+            </legend>
             <input
               name="secret"
               type="password"
@@ -112,8 +123,12 @@ export function WebhookSubscriptionActions({
             <RotateCcw size={14} aria-hidden="true" />
             {isRotatePending ? 'Rotacionando...' : 'Rotacionar'}
           </button>
-          {rotateState?.success === false && <p className="text-sm text-red-600">{rotateState.message}</p>}
-          {rotateState?.success === true && <p className="text-sm text-green-700">{rotateState.message}</p>}
+          {rotateState?.success === false && (
+            <p className="text-sm text-red-600">{rotateState.message}</p>
+          )}
+          {rotateState?.success === true && (
+            <p className="text-sm text-green-700">{rotateState.message}</p>
+          )}
         </form>
       )}
     </div>

@@ -1,5 +1,5 @@
 export function passwordResetEmailHtml(name: string, resetLink: string): string {
-  const escapedResetLink = escapeHtmlAttribute(resetLink)
+  const escapedResetLink = escapeHtmlAttribute(resetLink);
 
   return `
 <!DOCTYPE html>
@@ -19,7 +19,7 @@ export function passwordResetEmailHtml(name: string, resetLink: string): string 
   <p style="color: #666; font-size: 14px;">Ou copie e cole este link no navegador:<br/><code>${escapeHtml(resetLink)}</code></p>
 </body>
 </html>
-  `.trim()
+  `.trim();
 }
 
 export function passwordResetEmailText(name: string, resetLink: string): string {
@@ -34,7 +34,7 @@ export function passwordResetEmailText(name: string, resetLink: string): string 
     resetLink,
     ``,
     `Se você não esperava este email, ignore-o.`,
-  ].join('\n')
+  ].join('\n');
 }
 
 function escapeHtml(str: string): string {
@@ -42,9 +42,9 @@ function escapeHtml(str: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+    .replace(/"/g, '&quot;');
 }
 
 function escapeHtmlAttribute(str: string): string {
-  return escapeHtml(str).replace(/'/g, '&#39;')
+  return escapeHtml(str).replace(/'/g, '&#39;');
 }

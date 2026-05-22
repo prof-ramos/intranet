@@ -39,7 +39,11 @@ export async function createOfficialLetter(data: NewOfficialLetter, tx: Tx = db)
   return result;
 }
 
-export async function updateOfficialLetter(id: number, data: Partial<NewOfficialLetter>, tx: Tx = db) {
+export async function updateOfficialLetter(
+  id: number,
+  data: Partial<NewOfficialLetter>,
+  tx: Tx = db,
+) {
   const [result] = await tx.update(oficios).set(data).where(eq(oficios.id, id)).returning();
   return result;
 }

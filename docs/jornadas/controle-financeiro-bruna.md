@@ -1,4 +1,5 @@
 # Jornada da Usuária — Bruna
+
 ## Página de Controle Financeiro | Projeto `prof-ramos/intranet`
 
 ---
@@ -22,10 +23,10 @@ A ferramenta deverá funcionar como uma versão estruturada da planilha atual, c
 
 ## Perfil da Usuária
 
-| Campo | Valor |
-|---|---|
-| **Nome** | Bruna |
-| **Cargo** | Analista Administrativa Financeira |
+| Campo                 | Valor                                                                                                                                                                                                                 |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Nome**              | Bruna                                                                                                                                                                                                                 |
+| **Cargo**             | Analista Administrativa Financeira                                                                                                                                                                                    |
 | **Responsabilidades** | Controlar contribuições mensais; Conferir pagamentos; Registrar manualmente; Consultar pendências; Verificar inadimplência; Conferir relatórios SIGEPE e Itamaraty; Registrar pagamentos PIX, boleto ou transferência |
 
 ---
@@ -33,12 +34,14 @@ A ferramenta deverá funcionar como uma versão estruturada da planilha atual, c
 ## Escopo Atual da Ferramenta
 
 ### A ferramenta irá substituir
+
 - Planilha de controle financeiro
 - Marcação manual de pagamentos por mês
 - Consulta manual linha por linha
 - Controle visual simples de adimplência
 
 ### A ferramenta **não irá automatizar**, por enquanto
+
 - Importação automática de relatórios SIGEPE
 - Importação automática de relatórios do Itamaraty
 - Conciliação bancária automática
@@ -52,15 +55,18 @@ A ferramenta deverá funcionar como uma versão estruturada da planilha atual, c
 ## Jornada Atual da Bruna
 
 ### 1. Acessar a página de controle financeiro
+
 **Objetivo:** Entrar na ferramenta interna para visualizar e atualizar o controle financeiro dos associados.
 
 **Ações da Bruna:**
+
 - Acessa a intranet
 - Entra na página de controle financeiro
 - Visualiza a lista de associados
 - Filtra ou pesquisa o associado desejado
 
 **Necessidade da interface:**
+
 - Campo de busca por nome
 - Filtros por situação financeira
 - Filtros por forma de pagamento
@@ -69,15 +75,18 @@ A ferramenta deverá funcionar como uma versão estruturada da planilha atual, c
 ---
 
 ### 2. Consultar a situação financeira de um associado
+
 **Objetivo:** Verificar se determinado associado está adimplente ou possui pendências.
 
 **Ações da Bruna:**
+
 - Pesquisa o nome do associado
 - Acessa o registro financeiro
 - Consulta os meses pagos e pendentes
 - Verifica a modalidade de pagamento do associado
 
 **Informações exibidas:**
+
 - Nome do associado
 - Situação atual
 - Forma de pagamento
@@ -89,9 +98,11 @@ A ferramenta deverá funcionar como uma versão estruturada da planilha atual, c
 ---
 
 ### 3. Registrar pagamento manual
+
 **Objetivo:** Registrar na ferramenta um pagamento confirmado por PIX, boleto ou transferência.
 
 **Ações da Bruna:**
+
 - Confirma o recebimento no banco ou por comprovante
 - Localiza o associado na ferramenta
 - Seleciona o mês de competência
@@ -107,9 +118,11 @@ A ferramenta deverá funcionar como uma versão estruturada da planilha atual, c
 ---
 
 ### 4. Registrar pagamento por desconto em folha — Brasil
+
 **Objetivo:** Registrar manualmente os pagamentos identificados no relatório do SIGEPE.
 
 **Ações da Bruna:**
+
 - Recebe ou consulta o relatório do SIGEPE
 - Confere os associados listados
 - Localiza cada associado na ferramenta
@@ -122,9 +135,11 @@ A ferramenta deverá funcionar como uma versão estruturada da planilha atual, c
 ---
 
 ### 5. Registrar pagamento por desconto em folha — Exterior
+
 **Objetivo:** Registrar manualmente os pagamentos identificados no relatório do Itamaraty.
 
 **Ações da Bruna:**
+
 - Recebe ou consulta o relatório do Itamaraty
 - Confere os associados lotados no exterior
 - Localiza cada associado na ferramenta
@@ -137,9 +152,11 @@ A ferramenta deverá funcionar como uma versão estruturada da planilha atual, c
 ---
 
 ### 6. Consultar pagamentos pendentes
+
 **Objetivo:** Identificar associados sem pagamento registrado em determinada competência.
 
 **Ações da Bruna:**
+
 - Seleciona o mês desejado
 - Filtra por pagamentos pendentes
 - Visualiza associados sem registro de pagamento
@@ -150,9 +167,11 @@ A ferramenta deverá funcionar como uma versão estruturada da planilha atual, c
 ---
 
 ### 7. Editar ou corrigir registro de pagamento
+
 **Objetivo:** Corrigir erros de lançamento (mês, valor ou forma de pagamento incorretos).
 
 **Ações da Bruna:**
+
 - Acessa o histórico do associado
 - Seleciona o lançamento
 - Edita as informações necessárias
@@ -165,9 +184,11 @@ A ferramenta deverá funcionar como uma versão estruturada da planilha atual, c
 ---
 
 ### 8. Visualizar resumo mensal
+
 **Objetivo:** Ter uma visão geral da situação financeira do mês.
 
 **Indicadores úteis:**
+
 - Total de associados
 - Total de pagamentos registrados
 - Total de pendentes
@@ -178,6 +199,7 @@ A ferramenta deverá funcionar como uma versão estruturada da planilha atual, c
 ---
 
 ### 9. Registrar observações financeiras
+
 **Objetivo:** Adicionar contexto administrativo sobre situações específicas.
 
 **Exemplos:** Pagamento em atraso · Pagamento parcial · Associado aguardando boleto · Divergência no relatório · Pagamento identificado sem nome · Necessidade de conferência posterior
@@ -223,68 +245,70 @@ Consulta pendências e resumo mensal
 
 ## Requisitos Funcionais
 
-| ID | Requisito |
-|---|---|
-| RF01 | Listar associados cadastrados no sistema |
-| RF02 | Pesquisar associado por nome |
-| RF03 | Filtrar por competência (mês/ano) |
-| RF04 | Registrar pagamento manualmente |
-| RF05 | Selecionar forma de pagamento (PIX, Boleto, Transferência, SIGEPE, Itamaraty) |
+| ID   | Requisito                                                                                    |
+| ---- | -------------------------------------------------------------------------------------------- |
+| RF01 | Listar associados cadastrados no sistema                                                     |
+| RF02 | Pesquisar associado por nome                                                                 |
+| RF03 | Filtrar por competência (mês/ano)                                                            |
+| RF04 | Registrar pagamento manualmente                                                              |
+| RF05 | Selecionar forma de pagamento (PIX, Boleto, Transferência, SIGEPE, Itamaraty)                |
 | RF06 | Informar dados do pagamento: associado, competência, data, valor, forma, origem, observações |
-| RF07 | Marcar competência como paga após lançamento |
-| RF08 | Exibir associados sem pagamento em determinada competência |
-| RF09 | Editar lançamento já registrado |
-| RF10 | Cancelar lançamento incorreto, mantendo registro para rastreabilidade |
-| RF11 | Exibir resumo mensal: total recebido, quantidade de pagamentos, pendentes, total por forma |
-| RF12 | Registrar observações no lançamento ou no associado |
+| RF07 | Marcar competência como paga após lançamento                                                 |
+| RF08 | Exibir associados sem pagamento em determinada competência                                   |
+| RF09 | Editar lançamento já registrado                                                              |
+| RF10 | Cancelar lançamento incorreto, mantendo registro para rastreabilidade                        |
+| RF11 | Exibir resumo mensal: total recebido, quantidade de pagamentos, pendentes, total por forma   |
+| RF12 | Registrar observações no lançamento ou no associado                                          |
 
 ---
 
 ## Requisitos Não Funcionais
 
-| ID | Requisito |
-|---|---|
-| RNF01 | Interface simples e próxima da lógica da planilha atual |
-| RNF02 | Baixa curva de aprendizado |
+| ID    | Requisito                                                                     |
+| ----- | ----------------------------------------------------------------------------- |
+| RNF01 | Interface simples e próxima da lógica da planilha atual                       |
+| RNF02 | Baixa curva de aprendizado                                                    |
 | RNF03 | Dados salvos em campos estruturados (sem texto livre como controle principal) |
-| RNF04 | Rastreabilidade mínima: data, valor, origem, forma de pagamento |
-| RNF05 | Acesso restrito a usuários autorizados da intranet |
+| RNF04 | Rastreabilidade mínima: data, valor, origem, forma de pagamento               |
+| RNF05 | Acesso restrito a usuários autorizados da intranet                            |
 
 ---
 
 ## Modelo Mental da Tela
 
 ### Bloco 1 — Filtros
+
 - Competência · Nome do associado · Situação · Forma de pagamento · Origem
 
 ### Bloco 2 — Tabela de Controle
 
-| Coluna | Descrição |
-|---|---|
-| Associado | Nome do associado |
-| Lotação | Brasil ou Exterior |
-| Forma esperada | Forma de pagamento padrão do associado |
-| Competência | Mês/ano de referência |
-| Status | Situação do pagamento |
-| Valor | Valor registrado |
-| Data do pagamento | Data em que o pagamento foi recebido |
-| Origem | SIGEPE, Itamaraty, comprovante, etc. |
-| Ações | Editar · Cancelar |
+| Coluna            | Descrição                              |
+| ----------------- | -------------------------------------- |
+| Associado         | Nome do associado                      |
+| Lotação           | Brasil ou Exterior                     |
+| Forma esperada    | Forma de pagamento padrão do associado |
+| Competência       | Mês/ano de referência                  |
+| Status            | Situação do pagamento                  |
+| Valor             | Valor registrado                       |
+| Data do pagamento | Data em que o pagamento foi recebido   |
+| Origem            | SIGEPE, Itamaraty, comprovante, etc.   |
+| Ações             | Editar · Cancelar                      |
 
 ### Bloco 3 — Resumo Financeiro
+
 - Cards: Total recebido · Pagamentos registrados · Pendentes · Valor por modalidade
 
 ---
 
 ## Status Possíveis
 
-| Status | Descrição |
-|---|---|
-| **Pago** | Pagamento confirmado e registrado |
-| **Pendente** | Nenhum pagamento registrado para a competência |
-| **Em conferência** | Há informação pendente de validação |
-| **Divergente** | Inconsistência de valor, competência ou identificação |
-| **Cancelado** | Registro lançado incorretamente e posteriormente cancelado |
+| Status             | Descrição                                                  |
+| ------------------ | ---------------------------------------------------------- |
+| **Pago**           | Pagamento confirmado e registrado                          |
+| **Pendente**       | Nenhum pagamento registrado para a competência             |
+| **Em conferência** | Há informação pendente de validação                        |
+| **Divergente**     | Inconsistência de valor, competência ou identificação      |
+| **Cancelado**      | Registro lançado incorretamente e posteriormente cancelado |
 
 ---
 

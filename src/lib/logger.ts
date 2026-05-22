@@ -27,8 +27,22 @@ const LEVELS: Record<LogLevel, number> = {
 };
 
 const PII_KEYS = new Set([
-  'cpf', 'siape', 'email', 'primaryEmail', 'phone', 'address', 'whatsapp',
-  'password', 'token', 'secret', 'apiKey', 'authorization', 'resetlink', 'reset_link', 'recoverylink', 'recovery_link',
+  'cpf',
+  'siape',
+  'email',
+  'primaryEmail',
+  'phone',
+  'address',
+  'whatsapp',
+  'password',
+  'token',
+  'secret',
+  'apiKey',
+  'authorization',
+  'resetlink',
+  'reset_link',
+  'recoverylink',
+  'recovery_link',
 ]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

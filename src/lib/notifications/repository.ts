@@ -8,7 +8,11 @@ import { notifications, type NewNotification } from '@/lib/db/schema';
 
 export type NotificationsTx =
   | typeof db
-  | PgTransaction<PostgresJsQueryResultHKT, typeof schema, ExtractTablesWithRelations<typeof schema>>;
+  | PgTransaction<
+      PostgresJsQueryResultHKT,
+      typeof schema,
+      ExtractTablesWithRelations<typeof schema>
+    >;
 
 export interface NotificationListItem {
   id: number;
@@ -45,14 +49,20 @@ export async function createNotification(input: NewNotification, tx: Notificatio
   const [existing] = await tx
     .select()
     .from(notifications)
-    .where(and(eq(notifications.userId, input.userId), eq(notifications.dedupeKey, input.dedupeKey)))
+    .where(
+      and(eq(notifications.userId, input.userId), eq(notifications.dedupeKey, input.dedupeKey)),
+    )
     .orderBy(desc(notifications.createdAt), desc(notifications.id))
     .limit(1);
 
   return existing ?? null;
 }
 
-export async function listNotificationsForUser(userId: number, limit = 20, tx: NotificationsTx = db) {
+export async function listNotificationsForUser(
+  userId: number,
+  limit = 20,
+  tx: NotificationsTx = db,
+) {
   return tx
     .select({
       id: notifications.id,
@@ -81,7 +91,10 @@ export async function countUnreadNotificationsForUser(userId: number, tx: Notifi
   return result?.count ?? 0;
 }
 
-export async function markNotificationRead(input: { id: number; userId: number }, tx: NotificationsTx = db) {
+export async function markNotificationRead(
+  input: { id: number; userId: number },
+  tx: NotificationsTx = db,
+) {
   const [updated] = await tx
     .update(notifications)
     .set({ readAt: new Date(), updatedAt: new Date() })
@@ -106,7 +119,10 @@ export async function markAllNotificationsRead(userId: number, tx: Notifications
     });
 }
 
-export async function findNotificationByIdForUser(input: { id: number; userId: number }, tx: NotificationsTx = db) {
+export async function findNotificationByIdForUser(
+  input: { id: number; userId: number },
+  tx: NotificationsTx = db,
+) {
   const [notification] = await tx
     .select()
     .from(notifications)

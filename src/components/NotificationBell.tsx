@@ -157,11 +157,14 @@ export function NotificationBell({ userId }: NotificationBellProps) {
         aria-haspopup="dialog"
         onClick={() => setOpen((current) => !current)}
         className={`relative grid h-11 w-11 place-items-center rounded-full border bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
-        style={{ borderColor: hairline, boxShadow: unreadCount > 0 ? `0 0 0 3px ${skyBlue}24` : undefined }}
+        style={{
+          borderColor: hairline,
+          boxShadow: unreadCount > 0 ? `0 0 0 3px ${skyBlue}24` : undefined,
+        }}
       >
         {unreadCount > 0 && (
           <span
-            className="absolute -right-1 -top-1 z-10 grid h-5 min-w-[20px] place-items-center rounded-full px-1.5 text-[10px] font-bold text-white"
+            className="absolute -top-1 -right-1 z-10 grid h-5 min-w-[20px] place-items-center rounded-full px-1.5 text-[10px] font-bold text-white"
             style={{ backgroundColor: error, boxShadow: `0 0 0 2px ${white}` }}
           >
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -175,10 +178,13 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           role="dialog"
           aria-label="Painel de notificações"
           aria-modal="true"
-          className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-[8px] border bg-white"
+          className="absolute top-[calc(100%+0.5rem)] right-0 z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-[8px] border bg-white"
           style={{ borderColor: hairline, boxShadow: elevatedShadow }}
         >
-          <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: hairline }}>
+          <div
+            className="flex items-center justify-between border-b px-4 py-3"
+            style={{ borderColor: hairline }}
+          >
             <div>
               <p className="text-sm font-semibold text-[#0d1f3c]">Notificações</p>
               <p className="text-xs" style={{ color: textMuted }}>
@@ -200,7 +206,12 @@ export function NotificationBell({ userId }: NotificationBellProps) {
 
           <div className="max-h-[28rem] overflow-y-auto">
             {loading ? (
-              <div role="status" aria-live="polite" className="flex items-center gap-2 px-4 py-6 text-sm" style={{ color: textMuted }}>
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex items-center gap-2 px-4 py-6 text-sm"
+                style={{ color: textMuted }}
+              >
                 <Loader2 size={16} className="animate-spin" aria-hidden="true" />
                 Carregando notificações...
               </div>
@@ -227,12 +238,16 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                         className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-[#f8fafc] disabled:cursor-wait ${focusRingClass}`}
                         style={{
                           backgroundColor: notification.readAt ? white : '#f5f9ff',
-                          borderLeft: notification.readAt ? `3px solid transparent` : `3px solid ${skyBlue}`,
+                          borderLeft: notification.readAt
+                            ? `3px solid transparent`
+                            : `3px solid ${skyBlue}`,
                         }}
                       >
                         <span
                           className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: notification.readAt ? 'rgba(13,31,60,0.18)' : skyBlue }}
+                          style={{
+                            backgroundColor: notification.readAt ? 'rgba(13,31,60,0.18)' : skyBlue,
+                          }}
                           aria-hidden="true"
                         />
 
@@ -242,18 +257,27 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                               <span className="block truncate text-sm font-semibold text-[#0d1f3c]">
                                 {notification.title}
                               </span>
-                              <span className="mt-1 block text-sm leading-5" style={{ color: textMuted }}>
+                              <span
+                                className="mt-1 block text-sm leading-5"
+                                style={{ color: textMuted }}
+                              >
                                 {notification.message || 'Sem detalhes adicionais.'}
                               </span>
                             </span>
 
-                            <span className="shrink-0 text-[11px] font-medium" style={{ color: textMuted }}>
+                            <span
+                              className="shrink-0 text-[11px] font-medium"
+                              style={{ color: textMuted }}
+                            >
                               {formatTimestamp(notification.createdAt)}
                             </span>
                           </span>
 
                           {!safeHref && (
-                            <span className="mt-2 block text-[11px] font-medium uppercase tracking-[0.06em]" style={{ color: textMuted }}>
+                            <span
+                              className="mt-2 block text-[11px] font-medium tracking-[0.06em] uppercase"
+                              style={{ color: textMuted }}
+                            >
                               Sem atalho interno
                             </span>
                           )}

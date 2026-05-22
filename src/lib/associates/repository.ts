@@ -1,5 +1,11 @@
 import { db, type DbExecutor } from '@/lib/db';
-import { associates, activities, functionalStatus, associationStatus, contributionStatus } from '@/lib/db/schema';
+import {
+  associates,
+  activities,
+  functionalStatus,
+  associationStatus,
+  contributionStatus,
+} from '@/lib/db/schema';
 import { eq, and, count, asc, sql } from 'drizzle-orm';
 import { buildAssociateNameSearchPattern } from './search-params';
 
@@ -134,10 +140,7 @@ export async function updateAssociateById(
     .where(eq(associates.id, id));
 }
 
-export async function findAssociateByCpfHash(
-  cpfHash: string,
-  executor: DbExecutor = db,
-) {
+export async function findAssociateByCpfHash(cpfHash: string, executor: DbExecutor = db) {
   const [row] = await executor
     .select()
     .from(associates)
@@ -146,10 +149,7 @@ export async function findAssociateByCpfHash(
   return row ?? null;
 }
 
-export async function findAssociateBySiapeHash(
-  siapeHash: string,
-  executor: DbExecutor = db,
-) {
+export async function findAssociateBySiapeHash(siapeHash: string, executor: DbExecutor = db) {
   const [row] = await executor
     .select()
     .from(associates)

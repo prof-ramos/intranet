@@ -20,7 +20,9 @@ export function TagInput({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const filtered = useMemo(
     () =>
-      TAG_SUGGESTIONS.filter((tag) => !value.includes(tag) && tag.includes(draft.toLowerCase())).slice(0, 5),
+      TAG_SUGGESTIONS.filter(
+        (tag) => !value.includes(tag) && tag.includes(draft.toLowerCase()),
+      ).slice(0, 5),
     [draft, value],
   );
 

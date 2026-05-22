@@ -6,7 +6,9 @@ const mockEnv = vi.hoisted(() => ({ TRUSTED_PROXY_COUNT: undefined as number | u
 
 vi.mock('@/lib/env', () => ({
   env: {
-    get TRUSTED_PROXY_COUNT() { return mockEnv.TRUSTED_PROXY_COUNT; },
+    get TRUSTED_PROXY_COUNT() {
+      return mockEnv.TRUSTED_PROXY_COUNT;
+    },
   },
 }));
 

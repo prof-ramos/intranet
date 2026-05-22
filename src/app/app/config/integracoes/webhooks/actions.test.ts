@@ -156,11 +156,7 @@ describe('config integracoes webhook actions', () => {
     const result = await rotateWebhookSubscriptionSecret(null, formData);
 
     expect(result).toEqual({ success: true, message: 'Segredo rotacionado.' });
-    expect(rotateManagedWebhookSubscriptionSecretMock).toHaveBeenCalledWith(
-      7,
-      12,
-      'b'.repeat(40),
-    );
+    expect(rotateManagedWebhookSubscriptionSecretMock).toHaveBeenCalledWith(7, 12, 'b'.repeat(40));
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/integracoes/webhooks');
   });
 });

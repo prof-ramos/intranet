@@ -29,7 +29,7 @@ export function AssignmentEditRow({ id, name, type }: AssignmentEditRowProps) {
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className={`inline-flex items-center gap-1.5 rounded-md border border-[rgba(4,9,32,0.1)] bg-white px-3 py-1.5 text-xs font-medium text-[#040920] hover:bg-gray-50 transition-colors ${focusRingClass}`}
+        className={`inline-flex items-center gap-1.5 rounded-md border border-[rgba(4,9,32,0.1)] bg-white px-3 py-1.5 text-xs font-medium text-[#040920] transition-colors hover:bg-gray-50 ${focusRingClass}`}
       >
         <Pencil size={13} aria-hidden="true" />
         Editar
@@ -55,20 +55,18 @@ export function AssignmentEditRow({ id, name, type }: AssignmentEditRowProps) {
       <button
         type="submit"
         disabled={isPending}
-        className={`rounded-md bg-[#040920] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0d3260] transition-colors disabled:opacity-50 ${focusRingClass}`}
+        className={`rounded-md bg-[#040920] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#0d3260] disabled:opacity-50 ${focusRingClass}`}
       >
         {isPending ? 'Salvando...' : 'Salvar'}
       </button>
       <button
         type="button"
         onClick={() => setEditing(false)}
-        className={`rounded-md border border-[rgba(4,9,32,0.1)] px-3 py-1.5 text-xs font-medium text-[rgba(13,31,60,0.6)] hover:bg-gray-50 transition-colors ${focusRingClass}`}
+        className={`rounded-md border border-[rgba(4,9,32,0.1)] px-3 py-1.5 text-xs font-medium text-[rgba(13,31,60,0.6)] transition-colors hover:bg-gray-50 ${focusRingClass}`}
       >
         Cancelar
       </button>
-      {state?.success === false && (
-        <span className="text-xs text-red-600">{state.message}</span>
-      )}
+      {state?.success === false && <span className="text-xs text-red-600">{state.message}</span>}
     </form>
   );
 }

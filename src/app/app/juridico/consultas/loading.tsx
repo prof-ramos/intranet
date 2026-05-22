@@ -17,7 +17,7 @@ export default function ConsultasLoading() {
         <div className="h-12 w-36 animate-pulse rounded-lg bg-[#f8fafc]" />
       </div>
 
-      <div className="overflow-hidden rounded-[16px] bg-white border border-[rgba(4,9,32,0.05)]">
+      <div className="overflow-hidden rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white">
         <div className="border-b border-[rgba(4,9,32,0.05)] px-4 py-3">
           <div className="grid grid-cols-6 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (

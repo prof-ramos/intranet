@@ -2,15 +2,15 @@
 
 ## Nomes de branch
 
-| Prefixo   | Uso                              | Exemplo                        |
-|-----------|----------------------------------|-------------------------------|
-| `feat/`   | Nova funcionalidade               | `feat/report-csv-export`     |
-| `fix/`    | Correção de bug                  | `fix/cpf-mask`                |
-| `hotfix/` | Correção urgente de produção     | `hotfix/login-rate-limit`      |
-| `refactor/`| Refatoração sem mudança visual  | `refactor/consolidate-dates`   |
-| `chore/`  | Manutenção (deps, config)        | `chore/update-next`           |
-| `docs/`   | Documentação                     | `docs/add-branch-rules`       |
-| `test/`   | Adição ou correção de testes    | `test/auth-rate-limit`         |
+| Prefixo     | Uso                            | Exemplo                      |
+| ----------- | ------------------------------ | ---------------------------- |
+| `feat/`     | Nova funcionalidade            | `feat/report-csv-export`     |
+| `fix/`      | Correção de bug                | `fix/cpf-mask`               |
+| `hotfix/`   | Correção urgente de produção   | `hotfix/login-rate-limit`    |
+| `refactor/` | Refatoração sem mudança visual | `refactor/consolidate-dates` |
+| `chore/`    | Manutenção (deps, config)      | `chore/update-next`          |
+| `docs/`     | Documentação                   | `docs/add-branch-rules`      |
+| `test/`     | Adição ou correção de testes   | `test/auth-rate-limit`       |
 
 ## Commits
 

@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { dispatchDomainEventById, dispatchPendingDomainEvents } from '@/lib/integrations/webhooks/service';
+import {
+  dispatchDomainEventById,
+  dispatchPendingDomainEvents,
+} from '@/lib/integrations/webhooks/service';
 
 const mockGetDomainEventById = vi.fn();
 const mockClaimDispatchableDomainEventById = vi.fn();
@@ -12,19 +15,25 @@ const mockRecoverStuckProcessingEvents = vi.fn();
 const mockLockAndFetchDispatchableEvents = vi.fn();
 
 vi.mock('@/lib/integrations/webhooks/repository', () => ({
-  claimDispatchableDomainEventById: (...args: unknown[]) => mockClaimDispatchableDomainEventById(...args),
+  claimDispatchableDomainEventById: (...args: unknown[]) =>
+    mockClaimDispatchableDomainEventById(...args),
   getDomainEventById: (...args: unknown[]) => mockGetDomainEventById(...args),
   listActiveWebhookSubscriptionsForEvent: (...args: unknown[]) =>
     mockListActiveWebhookSubscriptionsForEvent(...args),
   listWebhookDeliveriesForEvent: (...args: unknown[]) => mockListWebhookDeliveriesForEvent(...args),
   insertWebhookDelivery: (...args: unknown[]) => mockInsertWebhookDelivery(...args),
-  updateDomainEventDeliveryStatus: (...args: unknown[]) => mockUpdateDomainEventDeliveryStatus(...args),
+  updateDomainEventDeliveryStatus: (...args: unknown[]) =>
+    mockUpdateDomainEventDeliveryStatus(...args),
   recoverStuckProcessingEvents: (...args: unknown[]) => mockRecoverStuckProcessingEvents(...args),
-  lockAndFetchDispatchableEvents: (...args: unknown[]) => mockLockAndFetchDispatchableEvents(...args),
+  lockAndFetchDispatchableEvents: (...args: unknown[]) =>
+    mockLockAndFetchDispatchableEvents(...args),
   getLastDeliveryAttemptForSubscription: (
     deliveries: Array<{ webhookSubscriptionId: number }>,
     webhookSubscriptionId: number,
-  ) => deliveries.filter((delivery) => delivery.webhookSubscriptionId === webhookSubscriptionId).at(-1) ?? null,
+  ) =>
+    deliveries
+      .filter((delivery) => delivery.webhookSubscriptionId === webhookSubscriptionId)
+      .at(-1) ?? null,
 }));
 
 vi.mock('@/lib/integrations/webhooks/secrets', () => ({

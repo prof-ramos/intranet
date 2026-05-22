@@ -72,7 +72,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
           <ArrowLeft size={18} />
         </Link>
         <div>
-          <p className="text-[11px] uppercase tracking-[0.18em] text-base-content/55">
+          <p className="text-base-content/55 text-[11px] tracking-[0.18em] uppercase">
             Associados / Editar
           </p>
           <h1 className="mt-1 font-serif text-3xl font-bold">Editar associado</h1>
@@ -84,7 +84,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
 
         {/* Identificação */}
         <section className="mb-6 rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-5 sm:p-7">
-          <h2 className="font-serif text-[22px] leading-tight font-bold mb-4">Identificação</h2>
+          <h2 className="mb-4 font-serif text-[22px] leading-tight font-bold">Identificação</h2>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label htmlFor="fullName" className="label">
@@ -200,7 +200,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
 
         {/* Endereço */}
         <section className="mb-6 rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-5 sm:p-7">
-          <h2 className="font-serif text-[22px] leading-tight font-bold mb-4">Endereço</h2>
+          <h2 className="mb-4 font-serif text-[22px] leading-tight font-bold">Endereço</h2>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label htmlFor="address" className="label">
@@ -245,7 +245,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
 
         {/* Administrativo */}
         <section className="mb-6 rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-5 sm:p-7">
-          <h2 className="font-serif text-[22px] leading-tight font-bold mb-4">Administrativo</h2>
+          <h2 className="mb-4 font-serif text-[22px] leading-tight font-bold">Administrativo</h2>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
               <label htmlFor="assignment" className="label">
@@ -355,7 +355,9 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
         {canEditInternalNotes && (
           /* Observações */
           <section className="mb-6 rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-5 sm:p-7">
-            <h2 className="font-serif text-[22px] leading-tight font-bold mb-4">Observações internas</h2>
+            <h2 className="mb-4 font-serif text-[22px] leading-tight font-bold">
+              Observações internas
+            </h2>
             <div>
               <label htmlFor="internalNotes" className="label">
                 <span className="label-text font-semibold">Notas</span>
@@ -373,7 +375,10 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
         )}
 
         {error && (
-          <div role="alert" className="mb-5 rounded-[8px] border border-[#fca5a5] bg-[#fee2e2] px-4 py-3 text-sm text-[#7f1d1d]">
+          <div
+            role="alert"
+            className="mb-5 rounded-[8px] border border-[#fca5a5] bg-[#fee2e2] px-4 py-3 text-sm text-[#7f1d1d]"
+          >
             {error}
           </div>
         )}
@@ -382,14 +387,14 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
           <button
             type="submit"
             disabled={saving}
-            className={`inline-flex items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-4 h-11 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
           >
             <Save size={16} aria-hidden="true" />
             {saving ? 'Salvando...' : 'Salvar alterações'}
           </button>
           <Link
             href={`/app/associados/${associate.id}`}
-            className={`inline-flex items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 h-11 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
           >
             Cancelar
           </Link>

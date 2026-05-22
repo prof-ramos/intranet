@@ -58,8 +58,12 @@ const { dbMock, MOCK_ACTIVITY, MOCK_ADMIN, MOCK_ASSOCIATE } = vi.hoisted(() => {
     _selectChain: selectChain,
     _insertChain: insertChain,
     _updateChain: updateChain,
-    setSelectResult(val: any[]) { _selectResult = val; },
-    setInsertResult(val: any[]) { _insertResult = val; },
+    setSelectResult(val: any[]) {
+      _selectResult = val;
+    },
+    setInsertResult(val: any[]) {
+      _insertResult = val;
+    },
   };
 
   return { dbMock, MOCK_ACTIVITY, MOCK_ADMIN, MOCK_ASSOCIATE };

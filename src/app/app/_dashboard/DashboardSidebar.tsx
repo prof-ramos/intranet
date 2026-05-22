@@ -30,9 +30,12 @@ interface DashboardSidebarProps {
   };
 }
 
-
-
-export function DashboardSidebar({ topRegions, urgentActivities, birthdaysThisMonth, user }: DashboardSidebarProps) {
+export function DashboardSidebar({
+  topRegions,
+  urgentActivities,
+  birthdaysThisMonth,
+  user,
+}: DashboardSidebarProps) {
   return (
     <aside className="flex w-full min-w-0 flex-col gap-5">
       <div className="rounded-[16px] bg-white p-5" style={{ border: `1px solid ${hairline}` }}>
@@ -91,7 +94,9 @@ export function DashboardSidebar({ topRegions, urgentActivities, birthdaysThisMo
         >
           <Clock size={20} style={{ color: textSubtle }} aria-hidden="true" />
           <div>
-            <p className="text-sm font-semibold" style={{ color: textStrong }}>Em desenvolvimento</p>
+            <p className="text-sm font-semibold" style={{ color: textStrong }}>
+              Em desenvolvimento
+            </p>
             <p className="mt-1 text-xs leading-relaxed" style={{ color: textSubtle }}>
               Métricas de e-mail e SLA em breve.
             </p>
@@ -111,7 +116,10 @@ export function DashboardSidebar({ topRegions, urgentActivities, birthdaysThisMo
                 <p className="truncate text-sm font-medium">{region.country ?? 'Não informado'}</p>
                 <p className="shrink-0 font-sans text-sm font-bold tabular-nums">
                   {region.total}
-                  <span className="ml-1.5 text-[11px] font-sans font-normal" style={{ color: textMuted }}>
+                  <span
+                    className="ml-1.5 font-sans text-[11px] font-normal"
+                    style={{ color: textMuted }}
+                  >
                     {region.pct}%
                   </span>
                 </p>

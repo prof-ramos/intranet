@@ -104,7 +104,10 @@ test.describe('Financeiro — Mensalidades', () => {
     await expect(page.locator('h1')).toContainText('Controle de Mensalidades');
   });
 
-  test('secretaria is redirected from financeiro to dashboard', async ({ page, loginAsSecretaria }) => {
+  test('secretaria is redirected from financeiro to dashboard', async ({
+    page,
+    loginAsSecretaria,
+  }) => {
     await loginAsSecretaria();
     await page.goto('/app/financeiro/mensalidades?year=2026&month=1');
     await expect(page).toHaveURL('/app');

@@ -62,8 +62,12 @@ describe('location-country helpers', () => {
     const compiled = compileSql(normalizedCountryLabelSql(sql.raw('location_country')));
 
     expect(compiled).toContain('case');
-    expect(compiled).toContain("when location_country is null or nullif(btrim(location_country), '') is null then null");
-    expect(compiled).toContain("when lower(btrim(location_country)) in ('brasil', 'brazil') then 'Brasil'");
+    expect(compiled).toContain(
+      "when location_country is null or nullif(btrim(location_country), '') is null then null",
+    );
+    expect(compiled).toContain(
+      "when lower(btrim(location_country)) in ('brasil', 'brazil') then 'Brasil'",
+    );
     expect(compiled).toContain('else btrim(location_country)');
   });
 });

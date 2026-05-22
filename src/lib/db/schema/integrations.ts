@@ -73,7 +73,9 @@ export const domainEvents = pgTable(
     index('idx_domain_events_occurred_at').on(table.occurredAt),
     index('idx_domain_events_status_occurred_at').on(table.deliveryStatus, table.occurredAt),
     index('idx_domain_events_expires_at').on(table.expiresAt),
-    index('idx_domain_events_pending').on(table.id).where(sql`${table.deliveryStatus} = 'pending'`),
+    index('idx_domain_events_pending')
+      .on(table.id)
+      .where(sql`${table.deliveryStatus} = 'pending'`),
   ],
 );
 
@@ -104,7 +106,9 @@ export const webhookSubscriptions = pgTable(
     index('idx_webhook_subscriptions_active').on(table.isActive),
     index('idx_webhook_subscriptions_created_by').on(table.createdBy),
     index('idx_webhook_subscriptions_subscribed_events').using('gin', table.subscribedEvents),
-    index('idx_webhook_subscriptions_active_partial').on(table.id).where(sql`${table.isActive} = true`),
+    index('idx_webhook_subscriptions_active_partial')
+      .on(table.id)
+      .where(sql`${table.isActive} = true`),
   ],
 );
 
@@ -169,7 +173,9 @@ export const integrationApiKeys = pgTable(
   (table) => [
     uniqueIndex('idx_integration_api_keys_name_unique').on(table.name),
     uniqueIndex('idx_integration_api_keys_key_hash_unique').on(table.keyHash),
-    index('idx_integration_api_keys_active').on(table.id).where(sql`${table.isActive} = true`),
+    index('idx_integration_api_keys_active')
+      .on(table.id)
+      .where(sql`${table.isActive} = true`),
     index('idx_integration_api_keys_created_by').on(table.createdBy),
   ],
 );

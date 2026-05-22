@@ -25,9 +25,12 @@ export const legalOpinions = pgTable(
     attachments: jsonb('attachments')
       .$type<string[]>()
       .default(sql`'[]'::jsonb`),
-    relatedProcessId: bigint('related_process_id', { mode: 'number' }).references(() => legalProcesses.id, {
-      onDelete: 'set null',
-    }),
+    relatedProcessId: bigint('related_process_id', { mode: 'number' }).references(
+      () => legalProcesses.id,
+      {
+        onDelete: 'set null',
+      },
+    ),
     createdBy: bigint('created_by', { mode: 'number' })
       .notNull()
       .references(() => admins.id, { onDelete: 'restrict' }),

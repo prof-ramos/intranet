@@ -14,7 +14,11 @@ export const legalProcessSubtype = pgEnum('legal_process_subtype', [
   'tcu',
 ]);
 
-export const legalProcessStatus = pgEnum('legal_process_status', ['ativo', 'concluido', 'suspenso']);
+export const legalProcessStatus = pgEnum('legal_process_status', [
+  'ativo',
+  'concluido',
+  'suspenso',
+]);
 
 export const legalProcesses = pgTable(
   'legal_processes',

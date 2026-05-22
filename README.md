@@ -47,49 +47,49 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 ### Obrigatórias em produção
 
-| Variável                             | Descrição                                                                                                                |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `DATABASE_URL`                       | URL PostgreSQL de runtime. Pode apontar para o pooler do Supabase, com `sslmode=require`.                                |
-| `DATABASE_MIGRATION_URL`             | URL PostgreSQL direta/non-pooling para migrations do Drizzle.                                                            |
-| `DATABASE_SUPABASE_URL`              | URL HTTP do projeto Supabase, usada pelos helpers SDK.                                                                   |
-| `DATABASE_SUPABASE_SERVICE_ROLE_KEY` | Chave service-role para scripts/admin server-side. Nunca expor no cliente.                                               |
+| Variável                             | Descrição                                                                                 |
+| ------------------------------------ | ----------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                       | URL PostgreSQL de runtime. Pode apontar para o pooler do Supabase, com `sslmode=require`. |
+| `DATABASE_MIGRATION_URL`             | URL PostgreSQL direta/non-pooling para migrations do Drizzle.                             |
+| `DATABASE_SUPABASE_URL`              | URL HTTP do projeto Supabase, usada pelos helpers SDK.                                    |
+| `DATABASE_SUPABASE_SERVICE_ROLE_KEY` | Chave service-role para scripts/admin server-side. Nunca expor no cliente.                |
 
 ### Seed do admin inicial
 
-| Variável                 | Padrão | Descrição                                                                                            |
-| ------------------------ | ------ | ---------------------------------------------------------------------------------------------------- |
-| `INITIAL_ADMIN_EMAIL`    | —      | Obrigatória. Email do primeiro admin                                                                 |
+| Variável                 | Padrão | Descrição                                                                                |
+| ------------------------ | ------ | ---------------------------------------------------------------------------------------- |
+| `INITIAL_ADMIN_EMAIL`    | —      | Obrigatória. Email do primeiro admin                                                     |
 | `INITIAL_ADMIN_PASSWORD` | —      | Obrigatória. Deve ter pelo menos 8 caracteres, incluindo 1 número e 1 caractere especial |
 
 ### Bypass de autenticação (apenas desenvolvimento)
 
-| Variável                        | Valor            | Descrição                                  |
-| ------------------------------- | ---------------- | ------------------------------------------ |
+| Variável                        | Valor            | Descrição                                            |
+| ------------------------------- | ---------------- | ---------------------------------------------------- |
 | `SKIP_AUTH`                     | `true`           | Desativa Supabase Auth e usa o usuário de dev abaixo |
-| `DEV_USER_ID`                   | `1`              | ID do usuário simulado                     |
-| `DEV_USER_NAME`                 | `ASOF Dev User`  | Nome exibido na sidebar                    |
-| `DEV_USER_EMAIL`                | `dev@asof.local` | —                                          |
-| `DEV_USER_ROLE`                 | `admin`          | `admin` \| `diretoria` \| `secretaria`     |
-| `DEV_USER_MUST_CHANGE_PASSWORD` | `false`          | Simula fluxo de troca de senha             |
+| `DEV_USER_ID`                   | `1`              | ID do usuário simulado                               |
+| `DEV_USER_NAME`                 | `ASOF Dev User`  | Nome exibido na sidebar                              |
+| `DEV_USER_EMAIL`                | `dev@asof.local` | —                                                    |
+| `DEV_USER_ROLE`                 | `admin`          | `admin` \| `diretoria` \| `secretaria`               |
+| `DEV_USER_MUST_CHANGE_PASSWORD` | `false`          | Simula fluxo de troca de senha                       |
 
 ### Logging
 
-| Variável   | Padrão  | Descrição                                                                   |
-| ---------- | ------- | --------------------------------------------------------------------------- |
-| `LOG_LEVEL` | `info`  | Nível mínimo de log: `debug`, `info`, `warn`, `error`. Em produção, o logger emite JSON; em desenvolvimento, formato colorizado. |
+| Variável    | Padrão | Descrição                                                                                                                        |
+| ----------- | ------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `LOG_LEVEL` | `info` | Nível mínimo de log: `debug`, `info`, `warn`, `error`. Em produção, o logger emite JSON; em desenvolvimento, formato colorizado. |
 
 > `SKIP_AUTH=true` é **ignorado em `NODE_ENV=production`** — o proxy rejeita a flag mesmo que esteja definida.
 
 ### Integrações e webhooks outbound
 
-| Variável | Padrão | Descrição |
-| --- | --- | --- |
-| `ASOF_INTEGRATIONS_ENABLED` | `false` | Habilita autenticação M2M para `/api/v1/*`; mantenha `false` no primeiro go-live, salvo decisão operacional explícita |
-| `ASOF_INTEGRATION_HMAC_SECRET` | — | Segredo server-side usado para validar `x-asof-signature` quando M2M estiver ativo |
-| `ASOF_INTEGRATION_TIMESTAMP_TOLERANCE_SECONDS` | `300` | Janela máxima de diferença para `x-asof-timestamp` |
-| `ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY` | — | Chave usada para criptografar/decriptografar `webhook_subscriptions.secret_ciphertext` |
-| `CRON_SECRET` | — | Segredo bearer enviado pelo Vercel Cron para `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings` |
-| `ASOF_INTEGRATION_API_KEY` | — | Compatibilidade legada para chave global sem escopos; não configurar em produção nova sem exceção registrada |
+| Variável                                       | Padrão  | Descrição                                                                                                             |
+| ---------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
+| `ASOF_INTEGRATIONS_ENABLED`                    | `false` | Habilita autenticação M2M para `/api/v1/*`; mantenha `false` no primeiro go-live, salvo decisão operacional explícita |
+| `ASOF_INTEGRATION_HMAC_SECRET`                 | —       | Segredo server-side usado para validar `x-asof-signature` quando M2M estiver ativo                                    |
+| `ASOF_INTEGRATION_TIMESTAMP_TOLERANCE_SECONDS` | `300`   | Janela máxima de diferença para `x-asof-timestamp`                                                                    |
+| `ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY`           | —       | Chave usada para criptografar/decriptografar `webhook_subscriptions.secret_ciphertext`                                |
+| `CRON_SECRET`                                  | —       | Segredo bearer enviado pelo Vercel Cron para `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings`              |
+| `ASOF_INTEGRATION_API_KEY`                     | —       | Compatibilidade legada para chave global sem escopos; não configurar em produção nova sem exceção registrada          |
 
 O caminho M2M principal usa chaves persistidas em `integration_api_keys`, criadas por admin em `/app/config/integracoes/api-keys`, com escopos como `events:read`, `events:write`, `webhooks:manage` e `admin`. As chamadas usam `x-asof-key`, `x-asof-timestamp` e `x-asof-signature`; a chave global `ASOF_INTEGRATION_API_KEY` existe apenas como compatibilidade de transição, gera log de depreciação e tem acesso irrestrito quando configurada.
 

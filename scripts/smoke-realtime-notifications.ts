@@ -104,20 +104,28 @@ async function runScenario1_InsertIsolation(
   await wait(3000);
 
   // Insert a notification for user A via Supabase client
-  const { data, error } = await clientA.from('notifications').insert({
-    user_id: userAId,
-    type: 'activity.completed',
-    title: 'Smoke test INSERT',
-    message: 'Validation: user A should see this, user B should not',
-    entity_type: 'activity',
-    entity_id: 999,
-    dedupe_key: `smoke-insert-${Date.now()}`,
-  }).select('id').single();
+  const { data, error } = await clientA
+    .from('notifications')
+    .insert({
+      user_id: userAId,
+      type: 'activity.completed',
+      title: 'Smoke test INSERT',
+      message: 'Validation: user A should see this, user B should not',
+      entity_type: 'activity',
+      entity_id: 999,
+      dedupe_key: `smoke-insert-${Date.now()}`,
+    })
+    .select('id')
+    .single();
 
   if (error) {
     collectorA.unsubscribe();
     collectorB.unsubscribe();
-    return { name: '1. INSERT isolation', passed: false, details: `Insert failed: ${error.message}` };
+    return {
+      name: '1. INSERT isolation',
+      passed: false,
+      details: `Insert failed: ${error.message}`,
+    };
   }
 
   const insertedId = data.id as number;
@@ -169,7 +177,11 @@ async function runScenario2_UpdateIsolation(
     .single();
 
   if (insertError) {
-    return { name: '2. UPDATE isolation', passed: false, details: `Insert failed: ${insertError.message}` };
+    return {
+      name: '2. UPDATE isolation',
+      passed: false,
+      details: `Insert failed: ${insertError.message}`,
+    };
   }
 
   const notificationId = insertData.id as number;
@@ -189,7 +201,11 @@ async function runScenario2_UpdateIsolation(
     collectorA.unsubscribe();
     collectorB.unsubscribe();
     await clientA.from('notifications').delete().eq('id', notificationId);
-    return { name: '2. UPDATE isolation', passed: false, details: `Update failed: ${updateError.message}` };
+    return {
+      name: '2. UPDATE isolation',
+      passed: false,
+      details: `Update failed: ${updateError.message}`,
+    };
   }
 
   await wait(10000);
@@ -237,7 +253,11 @@ async function runScenario3_MutationIsolation(
     .single();
 
   if (insertError) {
-    return { name: '3. Mutation isolation', passed: false, details: `Insert failed: ${insertError.message}` };
+    return {
+      name: '3. Mutation isolation',
+      passed: false,
+      details: `Insert failed: ${insertError.message}`,
+    };
   }
 
   const notificationId = insertData.id as number;
@@ -252,7 +272,7 @@ async function runScenario3_MutationIsolation(
   // Cleanup
   await clientA.from('notifications').delete().eq('id', notificationId);
 
-  const rowsReturned = count ?? updateError ? 0 : (updateError ? 0 : 1);
+  const rowsReturned = (count ?? updateError) ? 0 : updateError ? 0 : 1;
   const blocked = updateError !== null || rowsReturned === 0;
 
   if (blocked) {
@@ -297,9 +317,7 @@ async function runScenario4_TokenAbsent(): Promise<ScenarioResult> {
   };
 }
 
-async function runScenario5_PublicationCheck(
-  clientA: SupabaseClient,
-): Promise<ScenarioResult> {
+async function runScenario5_PublicationCheck(clientA: SupabaseClient): Promise<ScenarioResult> {
   // Query pg_publication_tables to confirm notifications is in supabase_realtime
   const { data, error } = await clientA
     .from('pg_publication_tables')
@@ -328,7 +346,8 @@ async function runScenario5_PublicationCheck(
   return {
     name: '5. Publication membership',
     passed: false,
-    details: 'notifications table is NOT in supabase_realtime publication — Realtime will not deliver events!',
+    details:
+      'notifications table is NOT in supabase_realtime publication — Realtime will not deliver events!',
   };
 }
 
@@ -394,24 +413,38 @@ async function main() {
   const results: ScenarioResult[] = [];
 
   console.log('Running scenario 1: INSERT isolation...');
-  results.push(await runScenario1_InsertIsolation(clientA, clientB, numericUserAId, numericUserBId));
-  console.log(`  → ${results[results.length - 1].passed ? 'PASS' : 'FAIL'}: ${results[results.length - 1].details}\n`);
+  results.push(
+    await runScenario1_InsertIsolation(clientA, clientB, numericUserAId, numericUserBId),
+  );
+  console.log(
+    `  → ${results[results.length - 1].passed ? 'PASS' : 'FAIL'}: ${results[results.length - 1].details}\n`,
+  );
 
   console.log('Running scenario 2: UPDATE isolation...');
-  results.push(await runScenario2_UpdateIsolation(clientA, clientB, numericUserAId, numericUserBId));
-  console.log(`  → ${results[results.length - 1].passed ? 'PASS' : 'FAIL'}: ${results[results.length - 1].details}\n`);
+  results.push(
+    await runScenario2_UpdateIsolation(clientA, clientB, numericUserAId, numericUserBId),
+  );
+  console.log(
+    `  → ${results[results.length - 1].passed ? 'PASS' : 'FAIL'}: ${results[results.length - 1].details}\n`,
+  );
 
   console.log('Running scenario 3: Mutation isolation...');
   results.push(await runScenario3_MutationIsolation(clientB, clientA, numericUserAId));
-  console.log(`  → ${results[results.length - 1].passed ? 'PASS' : 'FAIL'}: ${results[results.length - 1].details}\n`);
+  console.log(
+    `  → ${results[results.length - 1].passed ? 'PASS' : 'FAIL'}: ${results[results.length - 1].details}\n`,
+  );
 
   console.log('Running scenario 4: Token-absent isolation...');
   results.push(await runScenario4_TokenAbsent());
-  console.log(`  → ${results[results.length - 1].passed ? 'PASS' : 'FAIL'}: ${results[results.length - 1].details}\n`);
+  console.log(
+    `  → ${results[results.length - 1].passed ? 'PASS' : 'FAIL'}: ${results[results.length - 1].details}\n`,
+  );
 
   console.log('Running scenario 5: Publication membership...');
   results.push(await runScenario5_PublicationCheck(clientA));
-  console.log(`  → ${results[results.length - 1].passed ? 'PASS' : 'FAIL'}: ${results[results.length - 1].details}\n`);
+  console.log(
+    `  → ${results[results.length - 1].passed ? 'PASS' : 'FAIL'}: ${results[results.length - 1].details}\n`,
+  );
 
   // Summary
   const passed = results.filter((r) => r.passed).length;

@@ -9,6 +9,7 @@ Sistema de orquestração de agentes de IA para desenvolvimento paralelo do ASOF
 A fábrica de software é uma infraestrutura de desenvolvimento que permite múltiplos agentes de IA trabalharem em paralelo em diferentes estações (worktrees git), cada uma especializada em um tipo de tarefa, coordenados pelo Maestro (agente líder).
 
 **Princípios:**
+
 - **Isolação:** Cada agente trabalha em seu próprio worktree git isolado
 - **Especialização:** Cada estação tem um propósito específico e um agente especializado
 - **Paralelismo:** Tarefas independentes executam simultaneamente
@@ -49,6 +50,7 @@ A fábrica de software é uma infraestrutura de desenvolvimento que permite múl
 Todas as estações ficam em `.claude/worktrees/fabrica-*`.
 
 ### 1. Estação de Desenvolvimento (`fabrica-dev`)
+
 - **Propósito:** Desenvolvimento de novas features
 - **Branch padrão:** `fabrica/dev`
 - **Agente:** Developer
@@ -56,6 +58,7 @@ Todas as estações ficam em `.claude/worktrees/fabrica-*`.
 - **Worktree existente:** `dev-feature` (será renomeado/reutilizado)
 
 ### 2. Estação de Revisão (`fabrica-review`)
+
 - **Propósito:** Code review e análise de qualidade
 - **Branch padrão:** `fabrica/review`
 - **Agente:** Reviewer
@@ -63,6 +66,7 @@ Todas as estações ficam em `.claude/worktrees/fabrica-*`.
 - **Worktree existente:** `review-feature` (será renomeado/reutilizado)
 
 ### 3. Estação de Testes (`fabrica-test`)
+
 - **Propósito:** Escrita e execução de testes
 - **Branch padrão:** `fabrica/test`
 - **Agente:** Tester
@@ -70,6 +74,7 @@ Todas as estações ficam em `.claude/worktrees/fabrica-*`.
 - **Worktree existente:** `test-feature` (será renomeado/reutilizado)
 
 ### 4. Estação de Documentação (`fabrica-docs`)
+
 - **Propósito:** Documentação técnica e de produto
 - **Branch padrão:** `fabrica/docs`
 - **Agente:** Documenter
@@ -77,6 +82,7 @@ Todas as estações ficam em `.claude/worktrees/fabrica-*`.
 - **Worktree existente:** `docs-feature` (será renomeado/reutilizado)
 
 ### 5. Estação de Hotfix (`fabrica-hotfix`)
+
 - **Propósito:** Correções urgentes de bugs em produção
 - **Branch padrão:** `fabrica/hotfix`
 - **Agente:** Developer (prioridade máxima)
@@ -84,6 +90,7 @@ Todas as estações ficam em `.claude/worktrees/fabrica-*`.
 - **Worktree:** Novo
 
 ### 6. Estação de Arquitetura (`fabrica-arch`)
+
 - **Propósito:** Prototipagem e análise arquitetural
 - **Branch padrão:** `fabrica/arch`
 - **Agente:** Architect
@@ -153,6 +160,7 @@ Todas as estações ficam em `.claude/worktrees/fabrica-*`.
 ## Papéis dos Agentes
 
 ### Maestro (Líder)
+
 - **Responsabilidades:**
   - Receber e interpretar demandas
   - Delegar tarefas para agentes especializados
@@ -163,6 +171,7 @@ Todas as estações ficam em `.claude/worktrees/fabrica-*`.
 - **Modelo:** Opus (capacidade máxima de raciocínio)
 
 ### Developer
+
 - **Responsabilidades:**
   - Implementar código conforme especificação
   - Escrever testes unitários
@@ -172,6 +181,7 @@ Todas as estações ficam em `.claude/worktrees/fabrica-*`.
 - **Modelo:** Sonnet (padrão)
 
 ### Reviewer
+
 - **Responsabilidades:**
   - Revisar código para spec compliance
   - Revisar código para qualidade (padrões, segurança, performance)
@@ -181,6 +191,7 @@ Todas as estações ficam em `.claude/worktrees/fabrica-*`.
 - **Modelo:** Sonnet (análise profunda)
 
 ### Tester
+
 - **Responsabilidades:**
   - Escrever testes de integração e E2E
   - Executar testes e reportar falhas
@@ -190,6 +201,7 @@ Todas as estações ficam em `.claude/worktrees/fabrica-*`.
 - **Modelo:** Sonnet
 
 ### Documenter
+
 - **Responsabilidades:**
   - Atualizar documentação técnica
   - Manter CLAUDE.md, ARCHITECTURE.md, DESIGN.md sincronizados
@@ -199,6 +211,7 @@ Todas as estações ficam em `.claude/worktrees/fabrica-*`.
 - **Modelo:** Haiku (rápido, eficiente)
 
 ### Architect
+
 - **Responsabilidades:**
   - Analisar decisões arquiteturais
   - Prototipar soluções
@@ -212,6 +225,7 @@ Todas as estações ficam em `.claude/worktrees/fabrica-*`.
 ## Comandos de Orquestração
 
 ### Criar nova estação
+
 ```bash
 # Criar worktree para nova feature
 git worktree add .claude/worktrees/fabrica-dev -b fabrica/dev
@@ -221,6 +235,7 @@ cd .claude/worktrees/fabrica-dev && npm install
 ```
 
 ### Delegar tarefa para agente
+
 ```bash
 # Via Maestri CLI
 maestri ask "Developer" "Implementar feature X conforme especificação Y"
@@ -229,12 +244,14 @@ maestri ask "Tester" "Escrever testes E2E para feature X"
 ```
 
 ### Verificar status de agente
+
 ```bash
 maestri check "Developer"
 maestri check "Reviewer"
 ```
 
 ### Criar nota de coordenação
+
 ```bash
 maestri note create "## Sprint 42
 - Feature X: em desenvolvimento (Developer)
@@ -243,6 +260,7 @@ maestri note create "## Sprint 42
 ```
 
 ### Integrar trabalho
+
 ```bash
 # Merge de feature para main
 cd /Users/gabrielramos/projetos/ASOF/intranet
@@ -256,14 +274,14 @@ git worktree prune
 
 ## Convenções de Branch
 
-| Prefixo | Uso | Exemplo |
-|---------|-----|---------|
-| `feature/` | Novas funcionalidades | `feature/financeiro-dashboard` |
-| `hotfix/` | Correções urgentes | `hotfix/login-rate-limit` |
-| `refactor/` | Refatorações | `refactor/juridico-queries` |
-| `docs/` | Documentação | `docs/api-spec` |
-| `test/` | Testes | `test/e2e-playwright` |
-| `fabrica/` | Branches da fábrica | `fabrica/dev`, `fabrica/review` |
+| Prefixo     | Uso                   | Exemplo                         |
+| ----------- | --------------------- | ------------------------------- |
+| `feature/`  | Novas funcionalidades | `feature/financeiro-dashboard`  |
+| `hotfix/`   | Correções urgentes    | `hotfix/login-rate-limit`       |
+| `refactor/` | Refatorações          | `refactor/juridico-queries`     |
+| `docs/`     | Documentação          | `docs/api-spec`                 |
+| `test/`     | Testes                | `test/e2e-playwright`           |
+| `fabrica/`  | Branches da fábrica   | `fabrica/dev`, `fabrica/review` |
 
 ---
 
@@ -287,17 +305,20 @@ Antes de integrar qualquer trabalho na main:
 ## Escalonamento
 
 ### Quando um agente fica BLOCKED
+
 1. Maestro avalia o blocker
 2. Se problema de contexto → fornece mais contexto e re-delega
 3. Se tarefa muito complexa → divide em subtarefas menores
 4. Se plano está errado → escala para usuário humano
 
 ### Quando reviewer rejeita
+
 1. Implementer corrige os problemas
 2. Reviewer re-revisa
 3. Repete até aprovação
 
 ### Quando testes falham
+
 1. Tester reporta falhas detalhadamente
 2. Maestro delega correção para Developer
 3. Tester re-executa testes
@@ -327,15 +348,17 @@ Antes de integrar qualquer trabalho na main:
 ## Manutenção da Fábrica
 
 ### Semanal
+
 - Verificar worktrees obsoletos (`git worktree list`)
 - Limpar branches mergeadas
 - Atualizar dependências em todas as estações
 
 ### Mensal
+
 - Revisar arquitetura da fábrica
 - Avaliar eficiência dos agentes
 - Atualizar este documento
 
 ---
 
-*Documento versionado. Última atualização: 2026-05-13*
+_Documento versionado. Última atualização: 2026-05-13_

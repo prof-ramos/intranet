@@ -8,12 +8,10 @@ const hashMock = vi.fn();
 const updateUserMock = vi.fn();
 const updateWhereMock = vi.fn();
 
-let mockAdmin:
-  | {
-      id: number;
-      passwordHash: string;
-    }
-  | null = null;
+let mockAdmin: {
+  id: number;
+  passwordHash: string;
+} | null = null;
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn((path: string) => {
@@ -83,7 +81,9 @@ describe('change password action', () => {
     updateWhereMock.mockResolvedValue(undefined);
   });
 
-  function buildFormData(overrides?: Partial<Record<'currentPassword' | 'newPassword' | 'confirmPassword', string>>) {
+  function buildFormData(
+    overrides?: Partial<Record<'currentPassword' | 'newPassword' | 'confirmPassword', string>>,
+  ) {
     const formData = new FormData();
     formData.set('currentPassword', overrides?.currentPassword ?? 'Senha-Atual-2026!');
     formData.set('newPassword', overrides?.newPassword ?? 'Senha-Nova-2026!');
@@ -124,12 +124,12 @@ describe('change password action', () => {
 
   it('logs safe errors when both the database write and rollback fail', async () => {
     const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
-    updateWhereMock.mockRejectedValueOnce(Object.assign(new Error('db failed cpf=123'), { code: 'E_DB' }));
-    updateUserMock
-      .mockResolvedValueOnce({ error: null })
-      .mockResolvedValueOnce({
-        error: Object.assign(new Error('rollback failed token=secret'), { code: 'E_ROLLBACK' }),
-      });
+    updateWhereMock.mockRejectedValueOnce(
+      Object.assign(new Error('db failed cpf=123'), { code: 'E_DB' }),
+    );
+    updateUserMock.mockResolvedValueOnce({ error: null }).mockResolvedValueOnce({
+      error: Object.assign(new Error('rollback failed token=secret'), { code: 'E_ROLLBACK' }),
+    });
 
     await expect(changePassword(buildFormData())).rejects.toThrow(
       'NEXT_REDIRECT:/change-password?error=N%C3%A3o%20foi%20poss%C3%ADvel%20concluir%20a%20altera%C3%A7%C3%A3o%20de%20senha.',

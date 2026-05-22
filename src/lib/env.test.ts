@@ -14,13 +14,10 @@ describe('envSchema', () => {
   });
 
   test('rejeita quando DATABASE_URL e DATABASE_POSTGRES_URL estão ausentes', () => {
-    const result = envSchema.safeParse({
-    });
+    const result = envSchema.safeParse({});
     expect(result.success).toBe(false);
     if (!result.success) {
-      const issue = result.error.issues.find((i) =>
-        i.path.includes('DATABASE_URL'),
-      );
+      const issue = result.error.issues.find((i) => i.path.includes('DATABASE_URL'));
       expect(issue?.message).toBe(
         'Either DATABASE_URL, DATABASE_POSTGRES_URL, POSTGRES_URL, or POSTGRES_PRISMA_URL must be set.',
       );
@@ -57,9 +54,7 @@ describe('envSchema', () => {
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      const issue = result.error.issues.find((i) =>
-        i.path.includes('DEV_USER_ID'),
-      );
+      const issue = result.error.issues.find((i) => i.path.includes('DEV_USER_ID'));
       expect(issue?.message).toBe('DEV_USER_ID is required when SKIP_AUTH=true');
     }
   });

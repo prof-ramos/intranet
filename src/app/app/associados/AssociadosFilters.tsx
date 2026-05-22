@@ -27,10 +27,7 @@ export function AssociadosFilters({
 }: AssociadosFiltersProps) {
   const router = useRouter();
 
-  function navigate(updates: {
-    contributionStatus?: string;
-    functionalStatus?: string;
-  }) {
+  function navigate(updates: { contributionStatus?: string; functionalStatus?: string }) {
     const params = new URLSearchParams();
     if (currentQ) params.set('q', currentQ);
 

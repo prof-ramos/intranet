@@ -61,7 +61,9 @@ export async function consumeIpRateLimit(
   const [reset] = await db
     .update(rateLimits)
     .set({ attempts: 1, expiresAt, updatedAt: nowDate })
-    .where(and(eq(rateLimits.key, key), eq(rateLimits.scope, scope), lte(rateLimits.expiresAt, nowDate)))
+    .where(
+      and(eq(rateLimits.key, key), eq(rateLimits.scope, scope), lte(rateLimits.expiresAt, nowDate)),
+    )
     .returning({
       attempts: rateLimits.attempts,
       expiresAt: rateLimits.expiresAt,

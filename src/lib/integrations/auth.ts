@@ -154,7 +154,9 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
 
   const key = request.headers.get(INTEGRATION_HEADER_NAMES.key)?.trim() || '';
   const timestamp = request.headers.get(INTEGRATION_HEADER_NAMES.timestamp)?.trim() || '';
-  const signature = normalizeSignatureHeader(request.headers.get(INTEGRATION_HEADER_NAMES.signature));
+  const signature = normalizeSignatureHeader(
+    request.headers.get(INTEGRATION_HEADER_NAMES.signature),
+  );
 
   if (!key || !timestamp || !signature) {
     return {
@@ -247,9 +249,7 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
   };
 }
 
-async function getAuthorizedSessionPrincipal(
-  allowedRoles: readonly AuthRole[],
-): Promise<
+async function getAuthorizedSessionPrincipal(allowedRoles: readonly AuthRole[]): Promise<
   | {
       ok: true;
       principal: RequestPrincipal;
@@ -285,14 +285,22 @@ async function getAuthorizedSessionPrincipal(
   };
 }
 
-function mapIntegrationFailureToResponse(request: Request, reason: IntegrationAuthResult & { ok: false }) {
+function mapIntegrationFailureToResponse(
+  request: Request,
+  reason: IntegrationAuthResult & { ok: false },
+) {
   const requestId = getRequestId(request);
 
   switch (reason.reason) {
     case 'disabled':
-      return jsonError(503, 'integration_auth_disabled', 'Integration authentication is disabled.', {
-        requestId,
-      });
+      return jsonError(
+        503,
+        'integration_auth_disabled',
+        'Integration authentication is disabled.',
+        {
+          requestId,
+        },
+      );
     case 'misconfigured':
       return jsonError(
         503,
@@ -313,19 +321,34 @@ function mapIntegrationFailureToResponse(request: Request, reason: IntegrationAu
         requestId,
       });
     case 'invalid_timestamp':
-      return jsonError(400, 'invalid_request', 'Integration timestamp must be a Unix time in seconds.', {
-        requestId,
-      });
+      return jsonError(
+        400,
+        'invalid_request',
+        'Integration timestamp must be a Unix time in seconds.',
+        {
+          requestId,
+        },
+      );
     case 'timestamp_skew':
-      return jsonError(401, 'integration_auth_invalid', 'Integration timestamp is outside the allowed window.', {
-        requestId,
-        details: reason.details,
-      });
+      return jsonError(
+        401,
+        'integration_auth_invalid',
+        'Integration timestamp is outside the allowed window.',
+        {
+          requestId,
+          details: reason.details,
+        },
+      );
     case 'insufficient_scope':
-      return jsonError(403, 'insufficient_scope', 'The API key does not have the required scope for this endpoint.', {
-        requestId,
-        details: reason.details,
-      });
+      return jsonError(
+        403,
+        'insufficient_scope',
+        'The API key does not have the required scope for this endpoint.',
+        {
+          requestId,
+          details: reason.details,
+        },
+      );
   }
 }
 
@@ -407,9 +430,14 @@ export async function authorizeIntegrationRequest(
     if (sessionResult.status === 403) {
       return {
         ok: false,
-        response: jsonError(403, 'forbidden', 'Authenticated user does not have access to this route.', {
-          requestId,
-        }),
+        response: jsonError(
+          403,
+          'forbidden',
+          'Authenticated user does not have access to this route.',
+          {
+            requestId,
+          },
+        ),
       };
     }
   }

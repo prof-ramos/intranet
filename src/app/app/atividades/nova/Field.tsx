@@ -35,7 +35,10 @@ export function Field({
           {labelContent}
         </label>
       ) : (
-        <span className="text-[11px] font-bold tracking-[0.10em] uppercase" style={{ color: '#59677a' }}>
+        <span
+          className="text-[11px] font-bold tracking-[0.10em] uppercase"
+          style={{ color: '#59677a' }}
+        >
           {labelContent}
         </span>
       )}

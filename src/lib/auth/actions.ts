@@ -11,7 +11,11 @@ export async function logout() {
   try {
     await destroySession();
   } catch (error) {
-    logger.error('[auth] failed to destroy session during logout', { error: toSafeErrorLog(error) }, error as Error);
+    logger.error(
+      '[auth] failed to destroy session during logout',
+      { error: toSafeErrorLog(error) },
+      error as Error,
+    );
     throw new Error('Falha ao encerrar sessão.');
   }
 

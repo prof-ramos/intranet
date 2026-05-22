@@ -20,7 +20,7 @@ export function decryptWebhookSecret(secretCiphertext: string): string {
   if (!secretCiphertext.startsWith(V1_PREFIX) && !secretCiphertext.startsWith(V2_PREFIX)) {
     throw new Error(
       'Webhook secret is not encrypted. All webhook secrets must be stored with an encryption prefix (enc:v1: or enc:v2:). ' +
-      'Run the migration to re-encrypt plaintext secrets before dispatching webhooks.',
+        'Run the migration to re-encrypt plaintext secrets before dispatching webhooks.',
     );
   }
 
@@ -41,7 +41,7 @@ export function decryptWebhookSecret(secretCiphertext: string): string {
   if (!legacyKey) {
     throw new Error(
       'ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY is required to decrypt V1 webhook secrets. ' +
-      'Set ENCRYPTION_MASTER_KEY for V2 and keep the legacy key until all secrets are migrated.',
+        'Set ENCRYPTION_MASTER_KEY for V2 and keep the legacy key until all secrets are migrated.',
     );
   }
 

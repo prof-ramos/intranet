@@ -29,7 +29,11 @@ export async function logAuditAction(options: LogAuditOptions): Promise<void> {
       metadata: sanitizePiiValue(options.metadata) as NewAuditLog['metadata'],
     });
   } catch (error) {
-    logger.error('[AUDIT_FAILURE]', { adminId: options.adminId, action: options.action }, error as Error);
+    logger.error(
+      '[AUDIT_FAILURE]',
+      { adminId: options.adminId, action: options.action },
+      error as Error,
+    );
     // Não propaga o erro para não bloquear a operação principal
   }
 }

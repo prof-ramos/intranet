@@ -34,7 +34,9 @@ export interface RateLimitStore {
 function getEmailSearchKey(): string {
   const masterKey = env.ENCRYPTION_MASTER_KEY ?? env.ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY;
   if (!masterKey) {
-    throw new Error('ENCRYPTION_MASTER_KEY or ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY must be set for email hashing.');
+    throw new Error(
+      'ENCRYPTION_MASTER_KEY or ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY must be set for email hashing.',
+    );
   }
   return hkdfDeriveKey(masterKey, KEY_CONTEXTS.piiSearch).toString('hex');
 }
@@ -51,11 +53,7 @@ const dbStore: RateLimitStore = {
   async getEntry(key, now, windowMs) {
     const expiresAt = new Date(now + windowMs);
 
-    const rows = await db
-      .select()
-      .from(loginAttempts)
-      .where(eq(loginAttempts.email, key))
-      .limit(1);
+    const rows = await db.select().from(loginAttempts).where(eq(loginAttempts.email, key)).limit(1);
 
     if (rows.length === 0) {
       const inserted = await db
@@ -103,9 +101,7 @@ const dbStore: RateLimitStore = {
   },
 
   async reset(key) {
-    await db
-      .delete(loginAttempts)
-      .where(eq(loginAttempts.email, key));
+    await db.delete(loginAttempts).where(eq(loginAttempts.email, key));
   },
 
   async cleanup(now) {
@@ -119,18 +115,12 @@ export function createLoginRateLimiter(
   options: LoginRateLimitOptions,
   store: RateLimitStore = dbStore,
 ) {
-  async function getEntry(
-    normalizedKey: string,
-    now: number,
-  ): Promise<RateLimitEntry | null> {
+  async function getEntry(normalizedKey: string, now: number): Promise<RateLimitEntry | null> {
     return store.getEntry(normalizedKey, now, options.windowMs);
   }
 
   return {
-    async consume(
-      key: string,
-      now = Date.now(),
-    ): Promise<LoginRateLimitResult> {
+    async consume(key: string, now = Date.now()): Promise<LoginRateLimitResult> {
       const normalizedKey = key.trim().toLowerCase();
       const entry = await getEntry(normalizedKey, now);
 

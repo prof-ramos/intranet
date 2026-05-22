@@ -5,7 +5,6 @@ import { db, type DbExecutor } from '@/lib/db';
 import { integrationApiKeys } from '@/lib/db/schema/integrations';
 import type { IntegrationScope } from '@/lib/integrations/keys/service';
 
-
 export interface ActiveApiKeyRecord {
   id: number;
   name: string;

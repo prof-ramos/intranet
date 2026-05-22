@@ -86,7 +86,9 @@ describe('integration API key service', () => {
     });
 
     it('rejects empty scopes', async () => {
-      await expect(createApiKey('Test', [], 1)).rejects.toThrow('At least one scope must be selected.');
+      await expect(createApiKey('Test', [], 1)).rejects.toThrow(
+        'At least one scope must be selected.',
+      );
     });
 
     it('generates different keys for each call', async () => {
@@ -131,9 +133,11 @@ describe('integration API key service', () => {
 
   describe('rotateApiKey', () => {
     it('creates a new key and revokes the old one within a transaction', async () => {
-      const limit = vi.fn().mockResolvedValue([
-        { name: 'Old Key', scopes: ['events:read', 'webhooks:manage'], isActive: true },
-      ]);
+      const limit = vi
+        .fn()
+        .mockResolvedValue([
+          { name: 'Old Key', scopes: ['events:read', 'webhooks:manage'], isActive: true },
+        ]);
       const where = vi.fn(() => ({ limit }));
       const from = vi.fn(() => ({ where }));
       const select = vi.fn(() => ({ from }));

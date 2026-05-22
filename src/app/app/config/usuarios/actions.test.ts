@@ -228,7 +228,9 @@ describe('config usuarios actions', () => {
     const result = await resetUserPassword(null, formData);
 
     expect(result.success).toBe(true);
-    expect(result.message).toBe('Senha resetada. Comunique o link de recuperação ao usuário por canal seguro.');
+    expect(result.message).toBe(
+      'Senha resetada. Comunique o link de recuperação ao usuário por canal seguro.',
+    );
     expect(result.resetLink).toBe('https://supabase.co/recovery?token=abc');
     expect(result.tempPassword).toEqual(expect.any(String));
     expect(loggerErrorMock).toHaveBeenCalledWith(
@@ -278,9 +280,14 @@ describe('config usuarios actions', () => {
   });
 
   it('escapes reset link in password reset email href attributes', () => {
-    const html = passwordResetEmailHtml('Maria', 'https://asof.local/reset?token="abc"&next=<script>');
+    const html = passwordResetEmailHtml(
+      'Maria',
+      'https://asof.local/reset?token="abc"&next=<script>',
+    );
 
-    expect(html).toContain('href="https://asof.local/reset?token=&quot;abc&quot;&amp;next=&lt;script&gt;"');
+    expect(html).toContain(
+      'href="https://asof.local/reset?token=&quot;abc&quot;&amp;next=&lt;script&gt;"',
+    );
     expect(html).not.toContain('href="https://asof.local/reset?token="abc"&next=<script>"');
   });
 
