@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ASOF — Gerador de E-mails</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Jost:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --navy: #0a1628;
+        --navy-mid: #0f2044;
+        --navy-light: #1a3060;
+        --gold: #c9a84c;
+        --gold-light: #e8c96a;
+        --white: #ffffff;
+        --text-muted: #7a9bbf;
+        --text-body: #c8d8e8;
+        --border: rgba(201, 168, 76, 0.25);
+        --radius: 8px;
+      }
+
+      body {
+        background: var(--navy);
+        color: var(--white);
+        font-family: 'Jost', sans-serif;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ── HEADER ── */
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 36px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(10, 22, 40, 0.95);
+        backdrop-filter: blur(8px);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .header-logo {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 4px;
+        color: var(--white);
+      }
+      .header-logo span {
+        color: var(--gold);
+      }
+      .header-sub {
+        font-size: 11px;
+        color: var(--text-muted);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+      .header-badge {
+        background: rgba(201, 168, 76, 0.12);
+        border: 1px solid var(--border);
+        color: var(--gold);
+        font-size: 11px;
+        letter-spacing: 1.5px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        text-transform: uppercase;
+      }
+
+      /* ── LAYOUT ── */
+      main {
+        display: grid;
+        grid-template-columns: 420px 1fr;
+        gap: 0;
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* ── LEFT PANEL ── */
+      .panel-left {
+        background: var(--navy-mid);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .panel-section {
+        padding: 28px 32px;
+        border-bottom: 1px solid rgba(201, 168, 76, 0.1);
+      }
+      .panel-label {
+        font-size: 10px;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 16px;
+        font-weight: 600;
+      }
+
+      /* tipo de e-mail */
+      .type-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .type-btn {
+        background: transparent;
+        border: 1px solid rgba(201, 168, 76, 0.2);
+        color: var(--text-body);
+        font-family: 'Jost', sans-serif;
+        font-size: 13px;
+        padding: 10px 12px;
+        border-radius: var(--radius);
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .type-btn:hover {
+        border-color: var(--gold);
+        color: var(--white);
+      }
+      .type-btn.active {
+        background: rgba(201, 168, 76, 0.12);
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+      .type-icon {
+        font-size: 16px;
+      }
+
+      /* textarea */
+      .prompt-area {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(201, 168, 76, 0.2);
+        border-radius: var(--radius);
+        color: var(--white);
+        font-family: 'Jost', sans-serif;
+        font-size: 14px;
+        line-height: 1.7;
+        padding: 16px;
+        resize: vertical;
+        min-height: 160px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .prompt-area:focus {
+        border-color: var(--gold);
+      }
+      .prompt-area::placeholder {
+        color: var(--text-muted);
+      }
+
+      /* api key */
+      .api-input {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(201, 168, 76, 0.15);
+        border-radius: var(--radius);
+        color: var(--white);
+        font-family: 'Jost', sans-serif;
+        font-size: 13px;
+        padding: 12px 16px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .api-input:focus {
+        border-color: var(--gold);
+      }
+      .api-hint {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 8px;
+      }
+
+      /* generate button */
+      .btn-generate {
+        margin: 24px 32px 32px;
+        width: calc(100% - 64px);
+        background: var(--gold);
+        color: var(--navy);
+        border: none;
+        border-radius: var(--radius);
+        font-family: 'Jost', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+      .btn-generate:hover {
+        background: var(--gold-light);
+        transform: translateY(-1px);
+      }
+      .btn-generate:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      /* ── RIGHT PANEL ── */
+      .panel-right {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .preview-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 28px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(15, 32, 68, 0.6);
+      }
+      .preview-title {
+        font-size: 11px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+      .toolbar-actions {
+        display: flex;
+        gap: 10px;
+      }
+      .btn-action {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-body);
+        font-family: 'Jost', sans-serif;
+        font-size: 12px;
+        letter-spacing: 1px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn-action:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+      .btn-action.primary {
+        background: rgba(201, 168, 76, 0.1);
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+      .btn-action.primary:hover {
+        background: rgba(201, 168, 76, 0.2);
+      }
+      .btn-action:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      /* preview frame */
+      .preview-frame {
+        flex: 1;
+        overflow-y: auto;
+        background: #1a1a2e;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 32px 24px;
+      }
+      .preview-inner {
+        width: 100%;
+        max-width: 640px;
+      }
+
+      /* empty state */
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        min-height: 400px;
+        text-align: center;
+        gap: 16px;
+        color: var(--text-muted);
+      }
+      .empty-icon {
+        font-size: 48px;
+        opacity: 0.4;
+      }
+      .empty-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 22px;
+        color: var(--text-body);
+      }
+      .empty-desc {
+        font-size: 13px;
+        max-width: 320px;
+        line-height: 1.7;
+      }
+
+      /* loading */
+      .loading-state {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        min-height: 400px;
+        gap: 20px;
+      }
+      .loading-state.active {
+        display: flex;
+      }
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 2px solid rgba(201, 168, 76, 0.2);
+        border-top-color: var(--gold);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .loading-text {
+        color: var(--text-muted);
+        font-size: 13px;
+        letter-spacing: 1px;
+      }
+
+      /* subject line */
+      .subject-bar {
+        background: rgba(201, 168, 76, 0.06);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 18px;
+        margin-bottom: 16px;
+        font-size: 13px;
+        color: var(--text-body);
+        display: none;
+      }
+      .subject-bar.visible {
+        display: block;
+      }
+      .subject-label {
+        color: var(--gold);
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+
+      /* toast */
+      .toast {
+        position: fixed;
+        bottom: 32px;
+        right: 32px;
+        background: var(--navy-mid);
+        border: 1px solid var(--gold);
+        color: var(--white);
+        font-size: 13px;
+        padding: 14px 22px;
+        border-radius: var(--radius);
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.3s;
+        z-index: 999;
+      }
+      .toast.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      /* scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(201, 168, 76, 0.2);
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <div class="header-logo">AS<span>◎</span>F</div>
+        <div class="header-sub">Gerador de E-mails Institucionais</div>
+      </div>
+      <div class="header-badge">✦ Powered by Gemini</div>
+    </header>
+
+    <main>
+      <!-- LEFT -->
+      <aside class="panel-left">
+        <div class="panel-section">
+          <div class="panel-label">Tipo de E-mail</div>
+          <div class="type-grid">
+            <button class="type-btn active" data-type="newsletter" onclick="selectType(this)">
+              <span class="type-icon">📰</span> Newsletter
+            </button>
+            <button class="type-btn" data-type="convite" onclick="selectType(this)">
+              <span class="type-icon">📨</span> Convite
+            </button>
+            <button class="type-btn" data-type="comunicado" onclick="selectType(this)">
+              <span class="type-icon">📣</span> Comunicado
+            </button>
+            <button class="type-btn" data-type="aviso" onclick="selectType(this)">
+              <span class="type-icon">⚠️</span> Aviso
+            </button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-label">Descreva o E-mail</div>
+          <textarea
+            class="prompt-area"
+            id="prompt"
+            placeholder="Ex: Convite para o Encontro Jurídico sobre registro sindical, dia 26 de maio às 15h pelo Google Meet. Conduzido pelo advogado Eder Machado Leite. Link: https://meet.google.com/pzi-czot-brk"
+          ></textarea>
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-label">Chave da API Gemini</div>
+          <input type="password" class="api-input" id="apiKey" placeholder="AIza..." />
+          <p class="api-hint">Sua chave não é armazenada — apenas usada nesta sessão.</p>
+        </div>
+
+        <button class="btn-generate" id="btnGenerate" onclick="generate()">
+          <span id="btnIcon">✦</span>
+          <span id="btnText">Gerar E-mail</span>
+        </button>
+      </aside>
+
+      <!-- RIGHT -->
+      <section class="panel-right">
+        <div class="preview-toolbar">
+          <span class="preview-title">Pré-visualização</span>
+          <div class="toolbar-actions">
+            <button class="btn-action" id="btnCopyHtml" onclick="copyHtml()" disabled>
+              ⟨/⟩ Copiar HTML
+            </button>
+            <button class="btn-action primary" id="btnCopyGmail" onclick="copyForGmail()" disabled>
+              📋 Copiar para Gmail
+            </button>
+          </div>
+        </div>
+
+        <div class="preview-frame" id="previewFrame">
+          <div class="preview-inner">
+            <div class="loading-state" id="loadingState">
+              <div class="spinner"></div>
+              <p class="loading-text">Gerando e-mail com Gemini...</p>
+            </div>
+
+            <div class="empty-state" id="emptyState">
+              <div class="empty-icon">✉️</div>
+              <div class="empty-title">Nenhum e-mail gerado ainda</div>
+              <p class="empty-desc">
+                Preencha o formulário ao lado e clique em "Gerar E-mail" para criar um e-mail
+                institucional no padrão ASOF.
+              </p>
+            </div>
+
+            <div id="subjectBar" class="subject-bar">
+              <div class="subject-label">Assunto sugerido</div>
+              <div id="subjectText"></div>
+            </div>
+
+            <div id="emailPreview"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      let currentType = 'newsletter';
+      let generatedHtml = '';
+
+      function selectType(btn) {
+        document.querySelectorAll('.type-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentType = btn.dataset.type;
+      }
+
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+      }
+
+      function setLoading(on) {
+        document.getElementById('loadingState').classList.toggle('active', on);
+        document.getElementById('emptyState').style.display = on ? 'none' : '';
+        document.getElementById('btnGenerate').disabled = on;
+        document.getElementById('btnIcon').textContent = on ? '⏳' : '✦';
+        document.getElementById('btnText').textContent = on ? 'Gerando...' : 'Gerar E-mail';
+      }
+
+      const DESIGN_SYSTEM = `
+Você é um especialista em e-mail marketing institucional da ASOF (Associação Nacional dos Oficiais de Chancelaria do Serviço Exterior Brasileiro).
+
+DESIGN SYSTEM ASOF:
+- Fundo principal: #0f2044 (azul marinho)
+- Fundo secundário: #0a1828
+- Cor de destaque: #c9a84c (dourado)
+- Texto principal: #ffffff
+- Texto secundário: #d0dce8
+- Texto sutil: #a8c0d6
+- Borda: #c9a84c
+- Fonte: Georgia, serif (títulos) | Arial, sans-serif (corpo)
+- Logo: <img src="https://asof.org.br/img/asof-dark.svg" alt="ASOF" width="160" style="display:block;border:0;max-width:160px;"/>
+
+REGRAS OBRIGATÓRIAS DE E-MAIL HTML:
+- Use APENAS tabelas para layout (table, tr, td) — NUNCA div para estrutura
+- Todos os estilos INLINE — NUNCA CSS externo ou <style>
+- Largura máxima do container: 600px
+- Sempre inclua o logo ASOF no cabeçalho
+- Sempre inclua rodapé com link de descadastro
+- O e-mail deve ser compatível com Gmail, Outlook e Apple Mail
+- Linha separadora: border-top:1px solid #c9a84c
+
+RETORNE APENAS:
+1. Uma linha com o assunto: ASSUNTO: [assunto aqui]
+2. O HTML completo do e-mail (começando com <!DOCTYPE html>)
+
+NÃO inclua explicações, markdown, ou qualquer outro texto.
+`;
+
+      async function generate() {
+        const prompt = document.getElementById('prompt').value.trim();
+        const apiKey = document.getElementById('apiKey').value.trim();
+
+        if (!prompt) {
+          showToast('⚠️ Descreva o conteúdo do e-mail');
+          return;
+        }
+        if (!apiKey) {
+          showToast('⚠️ Insira sua chave da API Gemini');
+          return;
+        }
+
+        setLoading(true);
+        document.getElementById('emailPreview').innerHTML = '';
+        document.getElementById('subjectBar').classList.remove('visible');
+        document.getElementById('btnCopyHtml').disabled = true;
+        document.getElementById('btnCopyGmail').disabled = true;
+
+        const userPrompt = `Tipo de e-mail: ${currentType.toUpperCase()}
+
+Conteúdo solicitado pelo usuário:
+${prompt}
+
+Gere um e-mail HTML completo no design system da ASOF para este tipo de comunicação.`;
+
+        try {
+          const res = await fetch(
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': apiKey,
+              },
+              body: JSON.stringify({
+                system_instruction: { parts: [{ text: DESIGN_SYSTEM }] },
+                contents: [{ parts: [{ text: userPrompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
+              }),
+            },
+          );
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error?.message || 'Erro na API Gemini');
+          }
+
+          const data = await res.json();
+          const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+          // Extrair assunto
+          const subjectMatch = raw.match(/ASSUNTO:\s*(.+)/i);
+          const subject = subjectMatch ? subjectMatch[1].trim() : '';
+
+          // Extrair HTML
+          let html = raw.replace(/ASSUNTO:\s*.+\n?/i, '').trim();
+          // Remover blocos de código markdown se existirem
+          html = html
+            .replace(/^```html\n?/i, '')
+            .replace(/\n?```$/i, '')
+            .trim();
+
+          generatedHtml = html;
+
+          // Mostrar assunto
+          if (subject) {
+            document.getElementById('subjectText').textContent = subject;
+            document.getElementById('subjectBar').classList.add('visible');
+          }
+
+          // Renderizar preview via iframe para isolamento
+          const preview = document.getElementById('emailPreview');
+          preview.innerHTML = '';
+          const iframe = document.createElement('iframe');
+          iframe.style.cssText =
+            'width:100%;border:none;min-height:600px;background:#fff;border-radius:4px;';
+          iframe.setAttribute('sandbox', 'allow-same-origin');
+          preview.appendChild(iframe);
+
+          iframe.onload = () => {
+            const doc = iframe.contentDocument;
+            doc.open();
+            doc.write(html);
+            doc.close();
+            // Ajustar altura
+            setTimeout(() => {
+              iframe.style.height = doc.body.scrollHeight + 'px';
+            }, 200);
+          };
+          iframe.src = 'about:blank';
+
+          document.getElementById('btnCopyHtml').disabled = false;
+          document.getElementById('btnCopyGmail').disabled = false;
+          document.getElementById('emptyState').style.display = 'none';
+        } catch (e) {
+          showToast('❌ ' + e.message);
+          document.getElementById('emptyState').style.display = '';
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      async function copyHtml() {
+        if (!generatedHtml) return;
+        await navigator.clipboard.writeText(generatedHtml);
+        showToast('✓ HTML copiado para a área de transferência');
+      }
+
+      async function copyForGmail() {
+        if (!generatedHtml) return;
+        try {
+          // Renderizar num elemento temporário e copiar como text/html
+          const tmp = document.createElement('div');
+          tmp.style.cssText = 'position:fixed;left:-9999px;top:-9999px;';
+          tmp.innerHTML = generatedHtml;
+          document.body.appendChild(tmp);
+
+          const blob = new Blob([generatedHtml], { type: 'text/html' });
+          const item = new ClipboardItem({ 'text/html': blob });
+          await navigator.clipboard.write([item]);
+
+          document.body.removeChild(tmp);
+          showToast('✓ E-mail copiado! Cole direto no Gmail (Ctrl+V)');
+        } catch {
+          // Fallback
+          await copyHtml();
+          showToast('✓ HTML copiado — abra no navegador, selecione tudo e cole no Gmail');
+        }
+      }
+
+      // Enter no textarea com Ctrl/Cmd gera
+      document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') generate();
+      });
+    </script>
+  </body>
+</html>

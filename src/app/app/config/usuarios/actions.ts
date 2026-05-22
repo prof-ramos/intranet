@@ -146,7 +146,7 @@ export async function resetUserPassword(
   revalidatePath('/app/config/usuarios');
 
   let emailDelivered = false;
-  if (env.MAILJET_API_KEY && env.MAILJET_SECRET_KEY) {
+  if (env.MAILJET_API_KEY && env.MAILJET_SECRET_KEY && env.MAILJET_SENDER_VALIDATED) {
     try {
       await sendEmail({
         to: target.email,

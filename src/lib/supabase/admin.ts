@@ -3,6 +3,7 @@ import 'server-only';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseServiceRoleKey, getSupabaseUrl } from '@/lib/supabase/config';
 import { getNodeRealtimeOptions } from '@/lib/supabase/node-ws';
+import { env } from '@/lib/env';
 import type { AuthRole } from '@/lib/auth/config';
 import { logAuditAction } from '@/lib/audit/service';
 import { createLogger } from '@/lib/logger';
@@ -119,6 +120,12 @@ export function getSupabaseAdminClient() {
   return _getSupabaseAdminClient();
 }
 
+function getPasswordResetRedirectUrl(): string | undefined {
+  return env.ASOF_INTRANET_URL
+    ? new URL('/change-password', env.ASOF_INTRANET_URL).toString()
+    : undefined;
+}
+
 /**
  * Generate a password recovery link for the given address via the Supabase admin client.
  *
@@ -134,6 +141,9 @@ export async function generatePasswordResetLink(email: string): Promise<string> 
   const { data, error } = await supabase.auth.admin.generateLink({
     type: 'recovery',
     email,
+    options: {
+      redirectTo: getPasswordResetRedirectUrl(),
+    },
   });
   if (error) {
     throw error;

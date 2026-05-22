@@ -5,6 +5,7 @@ import {
   parseAssociatesSearchParams,
   buildAssociatesSearchParams,
 } from '@/lib/associates/search-params';
+import { canViewSensitiveFields } from '@/lib/associates/lgpd';
 import { AssociadosFilters } from './AssociadosFilters';
 import { ChevronLeft, ChevronRight, Download, Pencil, Search } from 'lucide-react';
 import Link from 'next/link';
@@ -38,10 +39,15 @@ export default async function AssociadosPage({
     await searchParams,
   );
 
-  const { rows, total } = await getAssociatesListPage(page, PAGE_SIZE, q, {
-    contributionStatus,
-    functionalStatus,
-  });
+  const { rows, total } = await getAssociatesListPage(
+    page,
+    PAGE_SIZE,
+    q,
+    { contributionStatus, functionalStatus },
+    user.role,
+  );
+
+  const showEmail = canViewSensitiveFields(user.role);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const from = total === 0 ? 0 : Math.min((page - 1) * PAGE_SIZE + 1, total);
@@ -225,12 +231,14 @@ export default async function AssociadosPage({
                   >
                     Posto
                   </th>
-                  <th
-                    scope="col"
-                    className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
-                  >
-                    Email
-                  </th>
+                  {showEmail && (
+                    <th
+                      scope="col"
+                      className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
+                    >
+                      Email
+                    </th>
+                  )}
                   <th
                     scope="col"
                     className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
@@ -249,7 +257,11 @@ export default async function AssociadosPage({
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-16 text-center" style={{ color: textMuted }}>
+                    <td
+                      colSpan={showEmail ? 7 : 6}
+                      className="py-16 text-center"
+                      style={{ color: textMuted }}
+                    >
                       Nenhum associado encontrado.
                     </td>
                   </tr>
@@ -270,7 +282,7 @@ export default async function AssociadosPage({
                       </td>
                       <td className="px-4 py-3">{row.assignment ?? '—'}</td>
                       <td className="px-4 py-3">{row.classPattern ?? '—'}</td>
-                      <td className="px-4 py-3">{row.primaryEmail ?? '—'}</td>
+                      {showEmail && <td className="px-4 py-3">{row.primaryEmail ?? '—'}</td>}
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold tracking-[0.06em] uppercase ${

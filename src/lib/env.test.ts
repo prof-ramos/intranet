@@ -103,6 +103,39 @@ describe('envSchema', () => {
     if (result.success) {
       expect(result.data.MAILJET_SENDER_EMAIL).toBe('gabriel@asof.org.br');
       expect(result.data.MAILJET_SENDER_NAME).toBe('ASOF Intranet');
+      expect(result.data.MAILJET_SENDER_VALIDATED).toBe(false);
+    }
+  });
+
+  test('aceita URL publica da intranet e flag de remetente validado', () => {
+    const result = envSchema.safeParse({
+      ...validEnv,
+      ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
+      MAILJET_SENDER_VALIDATED: 'true',
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.ASOF_INTRANET_URL).toBe('https://intranet.asof.com.br');
+      expect(result.data.MAILJET_SENDER_VALIDATED).toBe(true);
+    }
+  });
+
+  test('rejeita producao Vercel sem URL publica da intranet', () => {
+    const result = envSchema.safeParse({
+      ...validEnv,
+      VERCEL_ENV: 'production',
+      CRON_SECRET: 'cron-secret-configurado',
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) =>
+        i.path.includes('ASOF_INTRANET_URL'),
+      );
+      expect(issue?.message).toBe(
+        'ASOF_INTRANET_URL is required for production password recovery links.',
+      );
     }
   });
 });

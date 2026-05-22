@@ -316,6 +316,27 @@
       "when": 1779964800000,
       "tag": "0044_notifications_rls_to_authenticated",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1779964800001,
+      "tag": "0045_login_attempts_unique_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1779964800002,
+      "tag": "0046_login_attempts_hash_unique_followup",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1779964800003,
+      "tag": "0047_login_attempts_backup_rls",
+      "breakpoints": true
     }
   ]
 }

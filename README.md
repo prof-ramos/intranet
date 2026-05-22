@@ -6,6 +6,31 @@ Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de 
 
 ---
 
+## Guia rápido de navegação
+
+- **Primeira execução local:** siga [Início rápido](#início-rápido).
+- **Variáveis e banco:** veja [Variáveis de ambiente](#variáveis-de-ambiente) e [Banco de dados](#banco-de-dados).
+- **Comandos de trabalho:** use [Comandos](#comandos), especialmente `npm run validate:quick`, `npm run validate:full` e `npm run pr:check`.
+- **Arquitetura:** comece pelo mapa de módulos em [`ARCHITECTURE.md`](./ARCHITECTURE.md#21-domain-module-and-caller-map).
+- **Operação e deploy:** use [`docs/runbook.md`](./docs/runbook.md) e a seção 6 de [`ARCHITECTURE.md`](./ARCHITECTURE.md#6-deployment--infrastructure).
+
+## Módulos principais
+
+| Módulo | Rota principal | Responsabilidade |
+| --- | --- | --- |
+| Dashboard | `/app` | Visão operacional de associados, atividades, jurídico e financeiro. |
+| Associados | `/app/associados` | Cadastro, perfil, lotação/posto, situação funcional, situação associativa e contribuição. |
+| Atividades | `/app/atividades` | Kanban administrativo com responsáveis, prioridades, prazos e vínculos com associados. |
+| Jurídico | `/app/juridico` | Consultas jurídicas, notas, SLA e histórico de atendimento. |
+| Secretaria / Ofícios | `/app/secretaria/oficios` | Geração, edição, cancelamento e download de ofícios. |
+| Financeiro / Mensalidades | `/app/financeiro/mensalidades` | Controle mensal de pagamentos e status de mensalidade. |
+| Relatórios | `/app/associados/relatorio` | Exportação auditada de dados de associados para `admin` e `diretoria`. |
+| Configurações | `/app/config` | Usuários, lotações, auditoria, API keys e webhooks outbound. |
+
+> Dados como CPF, SIAPE, email, endereço e dados funcionais são sensíveis pela LGPD. Use os helpers de sanitização/logging do projeto e não exponha esses dados em logs, erros ou payloads públicos.
+
+---
+
 ## Pré-requisitos
 
 - Node.js 20+
@@ -131,26 +156,45 @@ As migrações PostgreSQL atuais ficam em `drizzle/postgres/`. O schema está em
 
 ## Comandos
 
+### Desenvolvimento
+
 ```bash
 npm run dev           # servidor de desenvolvimento (Webpack)
 npm run dev:turbo     # servidor de desenvolvimento (Turbopack — diagnóstico)
 npm run build         # build de produção (Webpack)
 npm run build:turbo   # build de produção (Turbopack — diagnóstico)
+npm run start         # serve o build de produção local
+```
+
+### Qualidade e PR
+
+```bash
 npm run lint          # ESLint
 npm run typecheck     # TypeScript sem emitir arquivos
 npm run format        # formata código com Prettier
 npm run format:check  # valida formatação
 npm run test          # Vitest (testes unitários)
 npm run test:watch    # Vitest em modo watch
-npm run test:db       # Schema contract contra PostgreSQL real
-npm run test:e2e      # Playwright (testes end-to-end)
-npm run test:e2e:ui   # Playwright modo interativo
-npm run test:e2e:debug # Playwright modo debug
 npm run audit         # npm audit
 npm run validate:quick  # typecheck + lint + testes unitários
 npm run validate:full   # quick validation + testes de DB + build
 npm run scope:check   # verifica escopo de arquivos alterados
 npm run pr:check      # verificações de prontidão para PR
+```
+
+`npm run pr:check` é o melhor gate único antes de abrir ou atualizar PR, porque combina checagem de escopo, typecheck, lint, testes, contrato de banco e build conforme a política atual do repo.
+
+### Banco e testes dependentes de serviços
+
+```bash
+npm run test:db       # schema contract contra PostgreSQL real
+npm run test:e2e      # Playwright (sobe app e banco E2E próprios)
+npm run test:e2e:ui   # Playwright modo interativo
+npm run test:e2e:debug # Playwright modo debug
+npm run db:generate   # gera migrações Drizzle
+npm run db:migrate    # aplica migrações com guardrails de produção
+npm run db:seed       # insere admin inicial
+npm run db:studio     # abre Drizzle Studio
 ```
 
 ### Testes E2E com Playwright
@@ -213,7 +257,7 @@ npx vitest run --config vitest.integration.config.ts
 
 ---
 
-## Estrutura
+## Estrutura do projeto
 
 ```text
 src/
@@ -257,9 +301,14 @@ drizzle/postgres/ # migrações PostgreSQL geradas
 scripts/          # seed, diagnóstico, status Supabase, smoke test Realtime
 ```
 
-Detalhes de arquitetura, fluxo de dados e decisões técnicas: [`ARCHITECTURE.md`](./ARCHITECTURE.md).
-Design system, tokens de cor e tipografia: [`DESIGN.md`](./DESIGN.md).
-Contexto institucional e vocabulário do domínio: [`AGENTS.md`](./AGENTS.md).
-Guia do desenvolvedor: [`CONTRIBUTING.md`](./CONTRIBUTING.md).
-Procedimentos operacionais (deploy, backup, rollback): [`docs/runbook.md`](./docs/runbook.md).
-Deploy target, env vars e checklist de release: seção 6 de [`ARCHITECTURE.md`](./ARCHITECTURE.md#6-deployment--infrastructure).
+## Documentação de referência
+
+| Documento | Quando usar |
+| --- | --- |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Arquitetura, fluxo de dados, mapa de módulos, deploy target e decisões técnicas. |
+| [`CONTEXT.md`](./CONTEXT.md) | Glossário de domínio e regras de negócio. |
+| [`AGENTS.md`](./AGENTS.md) | Instruções para agentes, vocabulário institucional, comandos e gotchas do projeto. |
+| [`DESIGN.md`](./DESIGN.md) | Design system, tokens, cores, tipografia e padrões visuais. |
+| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Guia do desenvolvedor e padrão de contribuição. |
+| [`docs/runbook.md`](./docs/runbook.md) | Procedimentos operacionais: deploy, backup, rollback, smoke tests e incidentes. |
+| [`TODO-PROD.md`](./TODO-PROD.md) | Checklist vivo de prontidão de produção e bloqueadores atuais. |

@@ -27,6 +27,7 @@ const {
   envMock: {
     MAILJET_API_KEY: undefined as string | undefined,
     MAILJET_SECRET_KEY: undefined as string | undefined,
+    MAILJET_SENDER_VALIDATED: false,
   },
   selectQueue: [] as unknown[][],
   insertQueue: [] as unknown[],
@@ -119,6 +120,7 @@ describe('config usuarios actions', () => {
     sendEmailMock.mockResolvedValue(undefined);
     envMock.MAILJET_API_KEY = undefined;
     envMock.MAILJET_SECRET_KEY = undefined;
+    envMock.MAILJET_SENDER_VALIDATED = false;
     mockLimit.mockImplementation(async () => selectQueue.shift() ?? []);
     mockInsertValues.mockImplementation(() => insertQueue.shift());
   });
@@ -171,6 +173,7 @@ describe('config usuarios actions', () => {
   it('sends configured Mailjet reset email without returning fallback secrets or target email', async () => {
     envMock.MAILJET_API_KEY = 'mailjet-key';
     envMock.MAILJET_SECRET_KEY = 'mailjet-secret';
+    envMock.MAILJET_SENDER_VALIDATED = true;
     selectQueue.push([
       {
         id: 10,
@@ -205,6 +208,7 @@ describe('config usuarios actions', () => {
   it('returns fallback secrets when configured Mailjet delivery fails without logging raw response body', async () => {
     envMock.MAILJET_API_KEY = 'mailjet-key';
     envMock.MAILJET_SECRET_KEY = 'mailjet-secret';
+    envMock.MAILJET_SENDER_VALIDATED = true;
     selectQueue.push([
       {
         id: 10,
@@ -254,6 +258,7 @@ describe('config usuarios actions', () => {
   it('throws sanitized Mailjet errors without raw response body', async () => {
     envMock.MAILJET_API_KEY = 'mailjet-key';
     envMock.MAILJET_SECRET_KEY = 'mailjet-secret';
+    envMock.MAILJET_SENDER_VALIDATED = true;
     const rawResponseBody = '{"Messages":[{"To":[{"Email":"maria@asof.local"}]}]}';
     const { sendEmail } = await vi.importActual<typeof import('@/lib/email')>('@/lib/email');
     const fetchMock = vi.fn(async () => new Response(rawResponseBody, { status: 400 }));
@@ -277,6 +282,33 @@ describe('config usuarios actions', () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it('uses fallback secrets instead of Mailjet when the sender is not explicitly validated', async () => {
+    envMock.MAILJET_API_KEY = 'mailjet-key';
+    envMock.MAILJET_SECRET_KEY = 'mailjet-secret';
+    envMock.MAILJET_SENDER_VALIDATED = false;
+    selectQueue.push([
+      {
+        id: 10,
+        name: 'Maria',
+        email: 'maria@asof.local',
+        role: 'secretaria',
+        isActive: true,
+      },
+    ]);
+    insertQueue.push(undefined);
+
+    const formData = new FormData();
+    formData.set('userId', '10');
+
+    const result = await resetUserPassword(null, formData);
+
+    expect(sendEmailMock).not.toHaveBeenCalled();
+    expect(result.success).toBe(true);
+    expect(result.message).toBe('Senha resetada. Comunique o link de recuperação ao usuário por canal seguro.');
+    expect(result.resetLink).toBe('https://supabase.co/recovery?token=abc');
+    expect(result.tempPassword).toEqual(expect.any(String));
   });
 
   it('escapes reset link in password reset email href attributes', () => {

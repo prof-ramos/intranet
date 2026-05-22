@@ -22,6 +22,9 @@ echo "$CRON" | vercel env add CRON_SECRET production
 echo "Adding TRUSTED_PROXY_COUNT..."
 echo "1" | vercel env add TRUSTED_PROXY_COUNT production
 
+echo "Adding ASOF_INTRANET_URL..."
+echo "https://intranet.asof.com.br" | vercel env add ASOF_INTRANET_URL production
+
 echo ""
 echo "=== Manual values needed ==="
 echo ""
@@ -31,9 +34,15 @@ vercel env add MAILJET_API_KEY production
 echo "Add MAILJET_SECRET_KEY from https://app.mailjet.com/account/api_keys"
 vercel env add MAILJET_SECRET_KEY production
 
+echo "Add MAILJET_SENDER_EMAIL only after confirming it is validated in Mailjet"
+vercel env add MAILJET_SENDER_EMAIL production
+
+echo "Set MAILJET_SENDER_VALIDATED to true only for a validated Mailjet sender"
+vercel env add MAILJET_SENDER_VALIDATED production
+
 echo ""
 echo "=== Done! Verifying... ==="
-vercel env ls 2>&1 | grep -i "ENCRYPTION_MASTER_KEY\|CRON_SECRET\|TRUSTED_PROXY_COUNT\|MAILJET"
+vercel env ls 2>&1 | grep -i "ENCRYPTION_MASTER_KEY\|CRON_SECRET\|TRUSTED_PROXY_COUNT\|ASOF_INTRANET_URL\|MAILJET"
 
 echo ""
 echo "Also add these to Preview and Development environments if needed:"

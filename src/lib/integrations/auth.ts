@@ -227,7 +227,12 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
     };
   }
 
-  // HMAC verification for table-backed path uses the same shared hmacSecret.
+  // F-010 (Low): All table-backed keys share the same HMAC secret (config.hmacSecret).
+  // This means a compromise of the shared secret affects all integration clients, and
+  // rotating one client's key does not isolate the signing-secret exposure.
+  // Tracked in https://github.com/prof-ramos/intranet/issues/71. Migration plan:
+  // add encrypted per-key signing material, resolve the table key before HMAC
+  // verification, then phase out shared-secret verification after a documented rollout.
   if (!safeCompare(expectedSignature, signature)) {
     return {
       ok: false,

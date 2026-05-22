@@ -2,20 +2,20 @@ import { describe, expect, it, afterAll } from 'vitest';
 import { db } from '@/lib/db';
 import { loginAttempts } from '@/lib/db/schema';
 import { inArray } from 'drizzle-orm';
-import { createLoginRateLimiter } from './login-rate-limit';
+import { createLoginRateLimiter, hashEmail } from './login-rate-limit';
 
 describe('login rate limiter integration', () => {
-  const testEmails: string[] = [];
+  const testEmailHashes: string[] = [];
 
   afterAll(async () => {
-    if (testEmails.length > 0) {
-      await db.delete(loginAttempts).where(inArray(loginAttempts.email, testEmails));
+    if (testEmailHashes.length > 0) {
+      await db.delete(loginAttempts).where(inArray(loginAttempts.emailHash, testEmailHashes));
     }
   });
 
   it('tracks attempts in the database and blocks after limit', async () => {
     const email = `test-${Date.now()}@example.com`;
-    testEmails.push(email);
+    testEmailHashes.push(hashEmail(email));
 
     const limiter = createLoginRateLimiter({ maxAttempts: 2, windowMs: 60_000 });
 
@@ -46,7 +46,7 @@ describe('login rate limiter integration', () => {
 
   it('resets expired entries on getEntry', async () => {
     const email = `expired-${Date.now()}@example.com`;
-    testEmails.push(email);
+    testEmailHashes.push(hashEmail(email));
 
     const limiter = createLoginRateLimiter({ maxAttempts: 1, windowMs: 100 });
 
@@ -66,7 +66,7 @@ describe('login rate limiter integration', () => {
 
   it('cleanup removes expired entries', async () => {
     const email = `cleanup-${Date.now()}@example.com`;
-    testEmails.push(email);
+    testEmailHashes.push(hashEmail(email));
 
     const limiter = createLoginRateLimiter({ maxAttempts: 1, windowMs: 100 });
 

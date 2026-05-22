@@ -183,6 +183,35 @@ Checklist manual:
 6. Confirmar que B não consegue marcar a notificação de A como lida, nem por ação individual nem por "marcar todas".
 7. Registrar horário, ambiente, commit SHA, IDs dos usuários de teste e prints/logs sem expor tokens.
 
+### 4.4 Smoke de redefinição de senha
+
+O fluxo de reset é iniciado por um `admin` em Configurações → Usuários. A Action gera um link de recuperação via Supabase Auth antes de invalidar a senha atual. Em produção, `ASOF_INTRANET_URL` deve estar definido como `https://intranet.asof.com.br`; essa URL é passada como redirect do link de recuperação para evitar links que retornem para `localhost`.
+
+Envio automático:
+
+- O Supabase Auth gera o link, mas este fluxo não usa o envio nativo do Supabase.
+- A intranet envia o email transacional pelo Mailjet somente quando `MAILJET_API_KEY`, `MAILJET_SECRET_KEY` e `MAILJET_SENDER_VALIDATED=true` estiverem configurados.
+- `MAILJET_SENDER_EMAIL` deve ser um remetente validado no Mailjet. Se houver alerta como "A non-validated sender address was used on your account", mantenha `MAILJET_SENDER_VALIDATED=false` até validar o remetente correto.
+
+Fallback seguro:
+
+- Se Mailjet não estiver configurado, se o remetente não estiver validado ou se a entrega falhar, o reset ainda é concluído e a tela administrativa mostra o link/senha temporária uma única vez para comunicação por canal seguro.
+- Logs não devem conter email do alvo, token, link completo, senha temporária ou corpo bruto de resposta do provedor.
+
+Checklist:
+
+1. Confirmar env de produção sem expor valores:
+
+   ```bash
+   vercel env ls | rg 'ASOF_INTRANET_URL|MAILJET_'
+   ```
+
+2. Confirmar no painel do Mailjet que `MAILJET_SENDER_EMAIL` está validado.
+3. Redefinir a senha de um usuário de teste ativo.
+4. Se `MAILJET_SENDER_VALIDATED=true`, confirmar recebimento do email "Redefinição de senha — ASOF Intranet".
+5. Abrir o link e confirmar que ele não aponta para `localhost` e termina no domínio `https://intranet.asof.com.br`.
+6. Se o email não for entregue, usar o fallback exibido pela UI admin e registrar o incidente sem copiar tokens nos logs.
+
 ---
 
 ## 5. Verificação de saúde

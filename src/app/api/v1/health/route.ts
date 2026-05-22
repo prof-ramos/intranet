@@ -14,6 +14,7 @@ export async function GET(request: Request) {
 
   const authorization = await authorizeIntegrationRequest(request, {
     allowSessionRoles: ['admin', 'diretoria'],
+    requiredScopes: ['health:read'],
   });
 
   if (!authorization.ok) {

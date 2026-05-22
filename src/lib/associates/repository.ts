@@ -8,10 +8,20 @@ import {
 } from '@/lib/db/schema';
 import { eq, and, count, asc, sql } from 'drizzle-orm';
 import { buildAssociateNameSearchPattern } from './search-params';
+import { decryptPiiField } from '@/lib/crypto/pii';
 
 type FunctionalStatusEnum = (typeof functionalStatus.enumValues)[number];
 type AssociationStatusEnum = (typeof associationStatus.enumValues)[number];
 type ContributionStatusEnum = (typeof contributionStatus.enumValues)[number];
+
+const publicAssociateListColumns = {
+  id: associates.id,
+  fullName: associates.fullName,
+  assignment: associates.assignment,
+  classPattern: associates.classPattern,
+  functionalStatus: associates.functionalStatus,
+  contributionStatus: associates.contributionStatus,
+};
 
 export interface AssociateListItem {
   id: number;
@@ -33,6 +43,7 @@ export async function findAssociatesPaginated(
   pageSize: number,
   searchQuery?: string,
   filters?: AssociatesFilters,
+  includeEmail = false,
 ): Promise<{ rows: AssociateListItem[]; total: number }> {
   const baseWhere = and(
     eq(associates.associationStatus, 'ativo'),
@@ -49,15 +60,15 @@ export async function findAssociatesPaginated(
 
   const [rows, [{ total }]] = await Promise.all([
     db
-      .select({
-        id: associates.id,
-        fullName: associates.fullName,
-        assignment: associates.assignment,
-        classPattern: associates.classPattern,
-        primaryEmail: associates.primaryEmail,
-        functionalStatus: associates.functionalStatus,
-        contributionStatus: associates.contributionStatus,
-      })
+      .select(
+        includeEmail
+          ? {
+              ...publicAssociateListColumns,
+              primaryEmail: associates.primaryEmail,
+              primaryEmailCiphertext: associates.primaryEmailCiphertext,
+            }
+          : publicAssociateListColumns,
+      )
       .from(associates)
       .where(baseWhere)
       .orderBy(asc(associates.fullName), asc(associates.id))
@@ -66,7 +77,19 @@ export async function findAssociatesPaginated(
     db.select({ total: count() }).from(associates).where(baseWhere),
   ]);
 
-  return { rows, total };
+  return {
+    rows: rows.map((row) => ({
+      ...row,
+      primaryEmail:
+        includeEmail && 'primaryEmail' in row
+          ? decryptPiiField(
+              'primaryEmailCiphertext' in row ? (row.primaryEmailCiphertext ?? null) : null,
+              row.primaryEmail ?? null,
+            )
+          : null,
+    })),
+    total,
+  };
 }
 
 export async function findAssociateById(id: number, executor: DbExecutor = db) {

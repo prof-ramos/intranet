@@ -130,7 +130,7 @@ describe('getAssociatesListPage', () => {
 
     const result = await getAssociatesListPage(1, 20, 'Alice');
     expect(result).toEqual(expected);
-    expect(mockFindAssociatesPaginated).toHaveBeenCalledWith(1, 20, 'Alice', undefined);
+    expect(mockFindAssociatesPaginated).toHaveBeenCalledWith(1, 20, 'Alice', undefined, false);
   });
 });
 
@@ -224,10 +224,12 @@ describe('updateAssociateData', () => {
     );
   });
 
-  it('sets PII encryption fields to null when cpf/siape not provided', async () => {
+  it('sets PII encryption fields to null when cpf/siape are null', async () => {
     await updateAssociateData({
       id: 1,
       fullName: 'Alice',
+      cpf: null,
+      siape: null,
       functionalStatus: 'ativo',
       associationStatus: 'ativo',
       contributionStatus: 'em_dia',
@@ -236,8 +238,10 @@ describe('updateAssociateData', () => {
     expect(mockUpdateAssociateById).toHaveBeenCalledWith(
       1,
       expect.objectContaining({
+        cpf: null,
         cpfCiphertext: null,
         cpfHash: null,
+        siape: null,
         siapeCiphertext: null,
         siapeHash: null,
       }),

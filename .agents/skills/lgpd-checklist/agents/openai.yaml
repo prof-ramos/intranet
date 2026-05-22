@@ -1,0 +1,4 @@
+interface:
+  display_name: "LGPD Checklist"
+  short_description: "LGPD-ready checklists with legal basis"
+  default_prompt: "Use $lgpd-checklist to turn a feature, repo, or process into an LGPD-ready checklist with article-level legal basis and evidence columns"

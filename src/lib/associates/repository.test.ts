@@ -31,6 +31,7 @@ vi.mock('@/lib/db/schema', () => ({
     assignment: 'assignment',
     classPattern: 'classPattern',
     primaryEmail: 'primaryEmail',
+    primaryEmailCiphertext: 'primaryEmailCiphertext',
     functionalStatus: 'functionalStatus',
     associationStatus: 'associationStatus',
   },

@@ -1,3 +1,5 @@
+import { PII_TEXT_PATTERNS } from '@/lib/sanitize-pii';
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogContext {
@@ -102,6 +104,14 @@ function getLogLevel(): LogLevel {
 const CURRENT_LEVEL = getLogLevel();
 const IS_PROD = process.env.NODE_ENV === 'production';
 
+function sanitizeErrorMessage(message: string): string {
+  let safe = message;
+  for (const [pattern, replacement] of PII_TEXT_PATTERNS) {
+    safe = safe.replace(pattern, replacement);
+  }
+  return safe;
+}
+
 function shouldLog(level: LogLevel): boolean {
   return LEVELS[level] >= LEVELS[CURRENT_LEVEL];
 }
@@ -157,8 +167,8 @@ export class Logger {
     if (error) {
       entry.error = {
         name: error.name,
-        message: error.message,
-        stack: error.stack,
+        message: sanitizeErrorMessage(error.message),
+        stack: IS_PROD ? undefined : error.stack,
       };
     }
 

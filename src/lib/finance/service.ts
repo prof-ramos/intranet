@@ -162,12 +162,18 @@ export async function updateMonthlyPayment(
           updatedBy: adminId,
           updatedAt: sql`now()`,
         },
+        // F-007: Include updated_at in the conflict predicate so concurrent writes
+        // with a stale expectedUpdatedAt do not silently overwrite newer state.
+        setWhere: expectedUpdatedAt != null
+          ? sql`${monthlyPayments.updatedAt} = ${new Date(expectedUpdatedAt)}`
+          : undefined,
       })
       .returning();
     const updatedPayment = upserted[0];
 
     if (!updatedPayment) {
-      throw new Error('Falha ao atualizar pagamento mensal.');
+      // setWhere predicate failed — another writer changed the row concurrently.
+      throw new Error('CONCURRENCY_CONFLICT');
     }
 
     await logAuditAction({
@@ -258,11 +264,13 @@ export async function cancelMonthlyPayment(adminId: number, paymentId: number, r
         updatedBy: adminId,
         updatedAt: sql`now()`,
       })
-      .where(eq(monthlyPayments.id, paymentId))
+      // F-007: Atomic conditional update — only succeed if the row is still non-cancelled.
+      // Prevents a double-cancel race where two concurrent requests both read status != 'cancelado'.
+      .where(and(eq(monthlyPayments.id, paymentId), sql`${monthlyPayments.status} != 'cancelado'`))
       .returning();
 
     if (!updatedPayment) {
-      throw new Error('Falha ao cancelar mensalidade.');
+      throw new Error('PAYMENT_ALREADY_CANCELLED');
     }
 
     const newState = getPaymentAuditState(updatedPayment);

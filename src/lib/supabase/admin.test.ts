@@ -1,15 +1,30 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Logger } from '@/lib/logger';
-import { deleteAdminAuthUser, ensureAdminPasswordAuthUser } from './admin';
+import {
+  deleteAdminAuthUser,
+  ensureAdminPasswordAuthUser,
+  generatePasswordResetLink,
+} from './admin';
 
-const { listUsersMock, updateUserByIdMock, createUserMock, deleteUserMock, logAuditActionMock } =
-  vi.hoisted(() => ({
-    listUsersMock: vi.fn(),
-    updateUserByIdMock: vi.fn(),
-    createUserMock: vi.fn(),
-    deleteUserMock: vi.fn(),
-    logAuditActionMock: vi.fn(),
-  }));
+const {
+  listUsersMock,
+  updateUserByIdMock,
+  createUserMock,
+  deleteUserMock,
+  generateLinkMock,
+  logAuditActionMock,
+  envMock,
+} = vi.hoisted(() => ({
+  listUsersMock: vi.fn(),
+  updateUserByIdMock: vi.fn(),
+  createUserMock: vi.fn(),
+  deleteUserMock: vi.fn(),
+  generateLinkMock: vi.fn(),
+  logAuditActionMock: vi.fn(),
+  envMock: {
+    ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
+  },
+}));
 
 vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn(() => ({
@@ -19,9 +34,14 @@ vi.mock('@supabase/supabase-js', () => ({
         updateUserById: (...args: unknown[]) => updateUserByIdMock(...args),
         createUser: (...args: unknown[]) => createUserMock(...args),
         deleteUser: (...args: unknown[]) => deleteUserMock(...args),
+        generateLink: (...args: unknown[]) => generateLinkMock(...args),
       },
     },
   })),
+}));
+
+vi.mock('@/lib/env', () => ({
+  env: envMock,
 }));
 
 vi.mock('@/lib/supabase/config', () => ({
@@ -43,7 +63,16 @@ describe('supabase admin helpers', () => {
     updateUserByIdMock.mockResolvedValue({ error: null });
     createUserMock.mockResolvedValue({ data: { user: { id: 'auth-2' } }, error: null });
     deleteUserMock.mockResolvedValue({ error: null });
+    generateLinkMock.mockResolvedValue({
+      data: {
+        properties: {
+          action_link: 'https://example.supabase.co/auth/v1/verify?token=abc',
+        },
+      },
+      error: null,
+    });
     logAuditActionMock.mockResolvedValue(undefined);
+    envMock.ASOF_INTRANET_URL = 'https://intranet.asof.com.br';
   });
 
   it('updates an existing auth user', async () => {
@@ -92,5 +121,32 @@ describe('supabase admin helpers', () => {
       }),
     });
     consoleErrorSpy.mockRestore();
+  });
+
+  it('generates recovery links with the production intranet redirect URL', async () => {
+    const link = await generatePasswordResetLink('admin@asof.local');
+
+    expect(link).toBe('https://example.supabase.co/auth/v1/verify?token=abc');
+    expect(generateLinkMock).toHaveBeenCalledWith({
+      type: 'recovery',
+      email: 'admin@asof.local',
+      options: {
+        redirectTo: 'https://intranet.asof.com.br/change-password',
+      },
+    });
+  });
+
+  it('generates recovery links without redirectTo when ASOF_INTRANET_URL is undefined', async () => {
+    envMock.ASOF_INTRANET_URL = undefined;
+    const link = await generatePasswordResetLink('admin@asof.local');
+
+    expect(link).toBe('https://example.supabase.co/auth/v1/verify?token=abc');
+    expect(generateLinkMock).toHaveBeenCalledWith({
+      type: 'recovery',
+      email: 'admin@asof.local',
+      options: {
+        redirectTo: undefined,
+      },
+    });
   });
 });

@@ -32,6 +32,10 @@ describe('/api/v1/health route', () => {
 
     expect(response.status).toBe(200);
     expect(mockConsume).toHaveBeenCalledWith('ip:127.0.0.1');
+    expect(mockAuthorizeIntegrationRequest).toHaveBeenCalledWith(expect.any(Request), {
+      allowSessionRoles: ['admin', 'diretoria'],
+      requiredScopes: ['health:read'],
+    });
     expect(body).toMatchObject({
       ok: true,
       data: {

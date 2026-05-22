@@ -5,6 +5,7 @@ import {
   FileSpreadsheet,
   Kanban,
   LayoutDashboard,
+  Mail,
   MapPin,
   Receipt,
   Scale,
@@ -86,6 +87,15 @@ export function Sidebar({ user }: SidebarProps) {
               label: 'Ofícios',
               icon: <FileSpreadsheet size={18} />,
             },
+            ...(user.role !== 'diretoria'
+              ? [
+                  {
+                    href: '/app/secretaria/emails/gerar',
+                    label: 'E-mails com IA',
+                    icon: <Mail size={18} />,
+                  },
+                ]
+              : []),
           ]}
         />
         {user.role !== 'secretaria' && (
