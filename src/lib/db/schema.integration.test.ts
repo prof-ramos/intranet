@@ -31,7 +31,7 @@ const expectedColumns = {
   admins: [
     'id:int8:NO',
     'name:text:NO',
-    'email:text:YES',
+    'email:text:NO',
     'password_hash:text:NO',
     'role:admin_role:NO',
     'is_active:bool:NO',
@@ -193,12 +193,23 @@ const expectedColumns = {
   ],
   login_attempts: [
     'id:int8:NO',
-    'email:text:NO',
+    'email:text:YES',
     'email_hash:text:YES',
     'attempts:int4:NO',
     'expires_at:timestamptz:NO',
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
+  ],
+  login_attempts_dedup_backup: [
+    'id:int8:NO',
+    'email:text:YES',
+    'email_hash:text:YES',
+    'attempts:int4:NO',
+    'expires_at:timestamptz:NO',
+    'created_at:timestamptz:NO',
+    'updated_at:timestamptz:NO',
+    'backed_up_at:timestamptz:NO',
+    'backup_reason:text:NO',
   ],
   rate_limits: [
     'id:int8:NO',
@@ -435,6 +446,7 @@ const expectedIndexes = {
     'idx_login_attempts_expires_at',
     'login_attempts_pkey',
   ],
+  login_attempts_dedup_backup: ['login_attempts_dedup_backup_pkey'],
   monthly_payments: [
     'idx_monthly_payments_associate_id',
     'idx_monthly_payments_cancelled_at',
