@@ -149,10 +149,10 @@ export async function updateActivityService(input: UpdateActivityInput) {
     dueDate: nextDueDate,
     assigneeId: nextAssigneeId,
     completedAt: nextCompletedAt,
-  });
+  }, current.updatedAt);
 
   if (!updated) {
-    throw new Error('Falha ao atualizar atividade.');
+    throw new Error('CONCURRENCY_CONFLICT');
   }
 
   await logAuditAction({

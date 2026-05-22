@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth/require-auth';
 
 let mockSession: import('@/lib/auth/config').SessionData | null = null;
 let mockDbError: Error | null = null;
+const mockHeaders = new Map<string, string>();
 let mockDbAdmin: {
   id: number;
   name: string;
@@ -12,6 +13,10 @@ let mockDbAdmin: {
   isActive: boolean;
   mustChangePassword: boolean;
 } | null = null;
+
+vi.mock('next/headers', () => ({
+  headers: vi.fn(() => Promise.resolve(mockHeaders)),
+}));
 
 vi.mock('react', () => ({ cache: (fn: unknown) => fn }));
 
@@ -48,6 +53,7 @@ beforeEach(() => {
   mockSession = null;
   mockDbError = null;
   mockDbAdmin = null;
+  mockHeaders.clear();
 });
 
 describe('requireAuth', () => {
@@ -118,7 +124,7 @@ describe('requireAuth', () => {
       email: 'updated@asof.local',
       role: 'diretoria',
       isActive: true,
-      mustChangePassword: true,
+      mustChangePassword: false,
     };
 
     await expect(requireAuth()).resolves.toEqual({
@@ -126,6 +132,53 @@ describe('requireAuth', () => {
       name: 'Updated Name',
       email: 'updated@asof.local',
       role: 'diretoria',
+      mustChangePassword: false,
+    });
+  });
+
+  it('redirects to /change-password when user must change password and is elsewhere', async () => {
+    mockSession = {
+      userId: 7,
+      name: 'Updated Name',
+      email: 'updated@asof.local',
+      role: 'diretoria',
+      mustChangePassword: false,
+      isLoggedIn: true,
+    };
+    mockDbAdmin = {
+      id: 7,
+      name: 'Updated Name',
+      email: 'updated@asof.local',
+      role: 'diretoria',
+      isActive: true,
+      mustChangePassword: true,
+    };
+    mockHeaders.set('x-pathname', '/app/dashboard');
+
+    await expect(requireAuth()).rejects.toThrow('NEXT_REDIRECT:/change-password');
+  });
+
+  it('allows access when next-url is an absolute /change-password URL', async () => {
+    mockSession = {
+      userId: 7,
+      name: 'Updated Name',
+      email: 'updated@asof.local',
+      role: 'diretoria',
+      mustChangePassword: false,
+      isLoggedIn: true,
+    };
+    mockDbAdmin = {
+      id: 7,
+      name: 'Updated Name',
+      email: 'updated@asof.local',
+      role: 'diretoria',
+      isActive: true,
+      mustChangePassword: true,
+    };
+    mockHeaders.set('next-url', 'https://intranet.asof.com.br/change-password?from=reset');
+
+    await expect(requireAuth()).resolves.toMatchObject({
+      userId: 7,
       mustChangePassword: true,
     });
   });

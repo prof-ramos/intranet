@@ -106,8 +106,10 @@ export async function getAssociatesListPage(
   pageSize: number,
   searchQuery?: string,
   filters?: AssociatesFilters,
+  role?: Role,
 ) {
-  return findAssociatesPaginated(page, pageSize, searchQuery, filters);
+  const includeEmail = role === 'admin' || role === 'diretoria';
+  return findAssociatesPaginated(page, pageSize, searchQuery, filters, includeEmail);
 }
 
 export async function getAssociateForEdit(

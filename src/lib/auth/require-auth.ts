@@ -1,5 +1,6 @@
 import { cache } from 'react';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { eq } from 'drizzle-orm';
 import { getSession } from '@/lib/auth/session';
 import { type AuthUser } from '@/lib/auth/config';
@@ -9,6 +10,24 @@ import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('auth:require-auth');
+
+function pathnameFromHeaders(reqHeaders: Headers): string {
+  const explicitPathname = reqHeaders.get('x-pathname');
+  if (explicitPathname) {
+    return explicitPathname;
+  }
+
+  const nextUrl = reqHeaders.get('next-url');
+  if (!nextUrl) {
+    return '';
+  }
+
+  try {
+    return new URL(nextUrl).pathname;
+  } catch {
+    return '';
+  }
+}
 
 export const requireAuth = cache(async (): Promise<AuthUser> => {
   const session = await getSession();
@@ -48,6 +67,14 @@ export const requireAuth = cache(async (): Promise<AuthUser> => {
 
   if (!admin || !admin.isActive) {
     redirect('/login');
+  }
+
+  if (admin.mustChangePassword) {
+    const reqHeaders = await headers();
+    const pathname = pathnameFromHeaders(reqHeaders);
+    if (!pathname.startsWith('/change-password')) {
+      redirect('/change-password');
+    }
   }
 
   return {
