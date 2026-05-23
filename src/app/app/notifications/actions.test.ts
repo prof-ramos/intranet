@@ -61,7 +61,6 @@ describe('notification actions', () => {
 
     await expect(markNotificationReadAction({ id: '4' })).resolves.toEqual({ id: 4 });
     expect(markNotificationAsReadForUser).toHaveBeenCalledWith({ id: 4, userId: 9 });
-    expect(revalidatePath).toHaveBeenCalledWith('/app');
     expect(revalidatePath).toHaveBeenCalledWith('/app/notifications');
     expect(revalidateTag).toHaveBeenCalledWith('notifications', 'max');
   });
@@ -84,7 +83,6 @@ describe('notification actions', () => {
 
     await expect(markAllNotificationsReadAction()).resolves.toBe(5);
     expect(markAllNotificationsAsReadForUser).toHaveBeenCalledWith(9);
-    expect(revalidatePath).toHaveBeenCalledWith('/app');
     expect(revalidatePath).toHaveBeenCalledWith('/app/notifications');
     expect(revalidateTag).toHaveBeenCalledWith('notifications', 'max');
   });

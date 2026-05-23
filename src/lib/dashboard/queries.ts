@@ -12,7 +12,7 @@ import { unstable_cache } from 'next/cache';
 const TTL_STABLE = 300; // 5 min — dados que mudam pouco (associados, regiões)
 const TTL_MODERATE = 120; // 2 min — dados de média volatilidade
 const TTL_VOLATILE = 30; // 30s — dados que mudam frequentemente (atividades)
-const TTL_REALTIME = 15; // 15s — dados altamente voláteis
+const TTL_REALTIME = 45; // 45s — dados voláteis; mutations usam revalidateTag explícito
 
 const MAX_CACHE_ENTRIES = 10;
 
@@ -195,7 +195,12 @@ export interface BirthdayItem {
 
 const TTL_BIRTHDAY = 3600; // 1h — birthday list changes rarely during the day
 
+const birthdaysCache = new Map<number, ReturnType<typeof unstable_cache>>();
+
 export const getBirthdaysThisMonth = (limit = 10): Promise<BirthdayItem[]> => {
+  const existing = birthdaysCache.get(limit);
+  if (existing) return existing() as Promise<BirthdayItem[]>;
+
   const created = unstable_cache(
     async (): Promise<BirthdayItem[]> => {
       const rows = await db
@@ -225,6 +230,7 @@ export const getBirthdaysThisMonth = (limit = 10): Promise<BirthdayItem[]> => {
     ['birthdays-this-month', String(limit)],
     { revalidate: TTL_BIRTHDAY, tags: ['dashboard'] },
   );
+  setWithLimit(birthdaysCache, limit, created);
   return created();
 };
 
