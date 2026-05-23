@@ -32,7 +32,7 @@ yarn-error.log*
 .pnpm-debug.log*
 next-dev*.log
 crabbit.txt
-repomix-output.xml
+repomix-output.*
 
 # env files (can opt-in for committing if needed)
 .env*
@@ -54,6 +54,7 @@ screenshot-*.png
 
 # visual brainstorming sessions
 .superpowers/
+.logos_temp/
 
 # git worktrees
 .worktrees/
@@ -77,3 +78,5 @@ playwright/.cache/
 # AI agent configuration (local agent definitions and skills)
 .agents/
 .claude/
+.codex/
+.antigravitycli/
