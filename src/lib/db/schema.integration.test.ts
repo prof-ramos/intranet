@@ -12,6 +12,12 @@ if (!databaseUrl) {
 const db = postgres(databaseUrl, { max: 1 });
 
 const expectedColumns = {
+  app_settings: [
+    'key:text:NO',
+    'value_ciphertext:text:NO',
+    'updated_by:int8:NO',
+    'updated_at:timestamptz:NO',
+  ],
   activities: [
     'id:int8:NO',
     'title:text:NO',
@@ -368,6 +374,7 @@ const expectedEnums = {
 } as const;
 
 const expectedIndexes = {
+  app_settings: ['app_settings_pkey'],
   activities: [
     'activities_pkey',
     'idx_activities_assignee_id',
