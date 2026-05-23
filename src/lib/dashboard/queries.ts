@@ -12,7 +12,7 @@ import { unstable_cache } from 'next/cache';
 const TTL_STABLE = 300; // 5 min — dados que mudam pouco (associados, regiões)
 const TTL_MODERATE = 120; // 2 min — dados de média volatilidade
 const TTL_VOLATILE = 30; // 30s — dados que mudam frequentemente (atividades)
-const TTL_REALTIME = 45; // 45s — dados voláteis; mutations usam revalidateTag explícito
+const TTL_REALTIME = 15; // 15s — dados voláteis; mutations usam revalidateTag explícito
 
 const MAX_CACHE_ENTRIES = 10;
 

@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef } from 'react';
 import { KeyRound, Trash2, Save } from 'lucide-react';
 import { saveGeminiApiKeyAction, deleteGeminiApiKeyAction } from './actions';
-import { focusRingClass } from '@/lib/ui/tokens';
+import { focusRingClass, navy, primaryContainerHover, borderSubtle, textPrimary, error } from '@/lib/ui/tokens';
 
 type Props = {
   isConfigured: boolean;
@@ -11,9 +11,9 @@ type Props = {
   updatedAt: Date | null;
 };
 
-const baseInputClass = `w-full rounded-md border border-[rgba(4,9,32,0.12)] bg-white px-3 py-2 text-sm text-[#040920] placeholder:text-[rgba(4,9,32,0.35)] ${focusRingClass}`;
-const btnPrimary = `inline-flex items-center gap-2 rounded-md bg-[#040920] px-4 py-2 text-sm font-medium text-white hover:bg-[#06284f] disabled:opacity-50 ${focusRingClass}`;
-const btnDanger = `inline-flex items-center gap-2 rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 ${focusRingClass}`;
+const baseInputClass = `w-full rounded-md border bg-white px-3 py-2 text-sm ${focusRingClass}`;
+const btnPrimary = `inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-white disabled:opacity-50 ${focusRingClass}`;
+const btnDanger = `inline-flex items-center gap-2 rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-medium hover:bg-red-50 disabled:opacity-50 ${focusRingClass}`;
 
 export function GeminiApiKeyForm({ isConfigured, source, updatedAt }: Props) {
   const [saveState, saveAction, savePending] = useActionState(saveGeminiApiKeyAction, null);
@@ -65,7 +65,8 @@ export function GeminiApiKeyForm({ isConfigured, source, updatedAt }: Props) {
             <div className="relative">
               <KeyRound
                 size={15}
-                className="absolute top-1/2 left-3 -translate-y-1/2 text-[rgba(4,9,32,0.35)]"
+                className="absolute top-1/2 left-3 -translate-y-1/2"
+                style={{ color: textPrimary }}
                 aria-hidden="true"
               />
               <input
@@ -73,15 +74,16 @@ export function GeminiApiKeyForm({ isConfigured, source, updatedAt }: Props) {
                 name="apiKey"
                 type="password"
                 className={`${baseInputClass} pl-9`}
+                style={{ borderColor: borderSubtle, color: textPrimary }}
                 placeholder="AIzaSy..."
                 autoComplete="off"
                 spellCheck={false}
                 required
               />
             </div>
-            <p className="mt-1 text-xs text-[rgba(4,9,32,0.45)]">
+            <p className="mt-1 text-xs" style={{ color: textPrimary }}>
               Obtenha sua chave em{' '}
-              <span className="font-mono text-[#040920]">aistudio.google.com</span>. A chave é
+              <span className="font-mono" style={{ color: navy }}>aistudio.google.com</span>. A chave é
               armazenada cifrada no banco de dados.
             </p>
           </div>
@@ -90,13 +92,17 @@ export function GeminiApiKeyForm({ isConfigured, source, updatedAt }: Props) {
             <p
               role={saveState.success ? 'status' : 'alert'}
               aria-live="polite"
-              className={`text-sm ${saveState.success ? 'text-green-700' : 'text-red-600'}`}
+              className="text-sm"
+              style={{ color: saveState.success ? '#15803d' : error }}
             >
               {saveState.message}
             </p>
           )}
 
-          <button type="submit" className={btnPrimary} disabled={savePending}>
+          <button type="submit" className={btnPrimary} style={{ backgroundColor: navy }} disabled={savePending}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = primaryContainerHover; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = navy; }}
+          >
             <Save size={14} aria-hidden="true" />
             {savePending ? 'Salvando...' : 'Salvar chave'}
           </button>

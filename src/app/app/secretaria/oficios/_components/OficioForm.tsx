@@ -11,7 +11,7 @@ import {
   generateAiTextAction,
 } from '../actions';
 import { Sparkles, Save, X, Loader2, AlertCircle } from 'lucide-react';
-import { navy, primaryContainerHover, hairline, focusRingClass } from '@/lib/ui/tokens';
+import { navy, primaryContainerHover, hairline, focusRingClass, error } from '@/lib/ui/tokens';
 import { CSSProperties } from 'react';
 import { RichTextEditor } from './RichTextEditor';
 
@@ -57,18 +57,18 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
   const [isAiPending, startAiTransition] = useTransition();
   const [isSubmitPending, startSubmitTransition] = useTransition();
 
+  const closeAiModal = () => {
+    setIsAiModalOpen(false);
+    setAiInstruction('');
+    setAiError(null);
+  };
+
   useEffect(() => {
     if (!isAiModalOpen) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeAiModal(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [isAiModalOpen]);
-
-  const closeAiModal = () => {
-    setIsAiModalOpen(false);
-    setAiInstruction('');
-    setAiError(null);
-  };
 
   const {
     register,
@@ -149,7 +149,7 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
               placeholder="Ex: Ministro das Relações Exteriores"
             />
             {errors.recipient && (
-              <p className="mt-1 text-xs text-red-600">{errors.recipient.message}</p>
+              <p className="mt-1 text-xs" style={{ color: error }}>{errors.recipient.message}</p>
             )}
           </div>
 
@@ -163,7 +163,7 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
                 placeholder="Ex: Ministro de Estado"
               />
               {errors.recipientRole && (
-                <p className="mt-1 text-xs text-red-600">{errors.recipientRole.message}</p>
+                <p className="mt-1 text-xs" style={{ color: error }}>{errors.recipientRole.message}</p>
               )}
             </div>
             <div>
@@ -175,7 +175,7 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
                 placeholder="Ex: Senhor Ministro"
               />
               {errors.vocativo && (
-                <p className="mt-1 text-xs text-red-600">{errors.vocativo.message}</p>
+                <p className="mt-1 text-xs" style={{ color: error }}>{errors.vocativo.message}</p>
               )}
             </div>
           </div>
@@ -189,7 +189,7 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
               placeholder="Ex: SGPR / SGP"
             />
             {errors.itamaratySector && (
-              <p className="mt-1 text-xs text-red-600">{errors.itamaratySector.message}</p>
+              <p className="mt-1 text-xs" style={{ color: error }}>{errors.itamaratySector.message}</p>
             )}
           </div>
         </div>
@@ -207,7 +207,7 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
               placeholder="Ex: Solicitação de dados funcionais"
             />
             {errors.subject && (
-              <p className="mt-1 text-xs text-red-600">{errors.subject.message}</p>
+              <p className="mt-1 text-xs" style={{ color: error }}>{errors.subject.message}</p>
             )}
           </div>
 
@@ -216,7 +216,7 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
               <label htmlFor="letterDate" className={labelClass}>Data do Documento</label>
               <input id="letterDate" {...register('letterDate')} className={inputClass} />
               {errors.letterDate && (
-                <p className="mt-1 text-xs text-red-600">{errors.letterDate.message}</p>
+                <p className="mt-1 text-xs" style={{ color: error }}>{errors.letterDate.message}</p>
               )}
             </div>
             <div>
@@ -233,14 +233,14 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
               <label htmlFor="signatoryName" className={labelClass}>Nome do Signatário</label>
               <input id="signatoryName" {...register('signatoryName')} className={inputClass} />
               {errors.signatoryName && (
-                <p className="mt-1 text-xs text-red-600">{errors.signatoryName.message}</p>
+                <p className="mt-1 text-xs" style={{ color: error }}>{errors.signatoryName.message}</p>
               )}
             </div>
             <div>
               <label htmlFor="signatoryRole" className={labelClass}>Cargo do Signatário</label>
               <input id="signatoryRole" {...register('signatoryRole')} className={inputClass} />
               {errors.signatoryRole && (
-                <p className="mt-1 text-xs text-red-600">{errors.signatoryRole.message}</p>
+                <p className="mt-1 text-xs" style={{ color: error }}>{errors.signatoryRole.message}</p>
               )}
             </div>
           </div>
@@ -278,10 +278,10 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
             }}
           />
           {errors.bodyRichText && (
-            <p className="mt-1 text-xs text-red-600">{errors.bodyRichText.message}</p>
+            <p className="mt-1 text-xs" style={{ color: error }}>{errors.bodyRichText.message}</p>
           )}
           {errors.bodyPlainText && (
-            <p className="mt-1 text-xs text-red-600">{errors.bodyPlainText.message}</p>
+            <p className="mt-1 text-xs" style={{ color: error }}>{errors.bodyPlainText.message}</p>
           )}
         </div>
 
