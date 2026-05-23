@@ -1,4 +1,5 @@
 export * from './admins';
+export * from './app-settings';
 export * from './associates';
 export * from './activities';
 export * from './assignments';
