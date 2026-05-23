@@ -109,3 +109,13 @@ export const fileIconArchive = '#d97706';
 export const fileIconCode = '#a855f7';
 export const fileIconDefault = '#94a3b8';
 
+// Alert / danger section tokens (used in privacidade page and similar destructive-action blocks)
+export const alertDangerBorder = '#fecaca';
+export const alertDangerBg = '#fff1f2';
+export const alertDangerText = '#b91c1c';
+export const alertDangerNoteBg = '#fef2f2';
+export const alertDangerNoteText = '#991b1b';
+export const alertDangerNoteBorder = '#fecaca';
+export const alertDangerButtonBorder = '#fca5a5';
+export const alertDangerButtonHoverBg = '#fef2f2';
+export const alertDangerButtonHoverBorder = '#f87171';

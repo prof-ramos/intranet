@@ -2,66 +2,72 @@ import { and, eq, lte, like, isNull } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { activities, admins, associates } from '@/lib/db/schema';
 
+const MAX_RETENTION_QUERY_LIMIT = 200;
+
 export async function checkAndEmitLgpdRetentionActivities({ limit }: { limit: number }) {
-  // Encontrar o primeiro admin ativo para ser o "createdBy" das atividades geradas pelo sistema
-  const [systemAdmin] = await db
-    .select({ id: admins.id })
-    .from(admins)
-    .where(eq(admins.isActive, true))
-    .orderBy(admins.id)
-    .limit(1);
+  const validatedLimit = Math.min(Math.max(Math.floor(limit), 1), MAX_RETENTION_QUERY_LIMIT);
 
-  if (!systemAdmin) {
-    throw new Error('No active admin found to create LGPD activities');
-  }
+  return db.transaction(async (tx) => {
+    // Encontrar o primeiro admin ativo para ser o "createdBy" das atividades geradas pelo sistema
+    const [systemAdmin] = await tx
+      .select({ id: admins.id })
+      .from(admins)
+      .where(eq(admins.isActive, true))
+      .orderBy(admins.id)
+      .limit(1);
 
-  // Define a data limite: 5 anos atrás
-  const fiveYearsAgo = new Date();
-  fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+    if (!systemAdmin) {
+      throw new Error('No active admin found to create LGPD activities');
+    }
 
-  const titlePrefix = 'Revisar Retenção LGPD (Prazo Expirado) - ';
+    // Define a data limite: 5 anos atrás
+    const fiveYearsAgo = new Date();
+    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
 
-  // Busca associados inativos há mais de 5 anos
-  // e que ainda NÃO possuem uma atividade de retenção pendente
-  const expiredAssociates = await db
-    .select({
-      id: associates.id,
-      fullName: associates.fullName,
-    })
-    .from(associates)
-    .leftJoin(
-      activities,
-      and(
-        eq(activities.associateId, associates.id),
-        eq(activities.status, 'a_fazer'),
-        like(activities.title, titlePrefix + '%')
+    const titlePrefix = 'Revisar Retenção LGPD (Prazo Expirado) - ';
+
+    // Busca associados inativos há mais de 5 anos
+    // e que ainda NÃO possuem uma atividade de retenção pendente
+    const expiredAssociates = await tx
+      .select({
+        id: associates.id,
+        fullName: associates.fullName,
+      })
+      .from(associates)
+      .leftJoin(
+        activities,
+        and(
+          eq(activities.associateId, associates.id),
+          eq(activities.status, 'a_fazer'),
+          like(activities.title, titlePrefix + '%')
+        )
       )
-    )
-    .where(
-      and(
-        eq(associates.associationStatus, 'inativo'),
-        lte(associates.updatedAt, fiveYearsAgo),
-        isNull(activities.id) // Não ter atividade pendente
+      .where(
+        and(
+          eq(associates.associationStatus, 'inativo'),
+          lte(associates.updatedAt, fiveYearsAgo),
+          isNull(activities.id) // Não ter atividade pendente
+        )
       )
-    )
-    .limit(limit);
+      .limit(validatedLimit);
 
-  if (expiredAssociates.length === 0) {
-    return { createdCount: 0 };
-  }
+    if (expiredAssociates.length === 0) {
+      return { createdCount: 0 };
+    }
 
-  // Cria as atividades
-  const newActivities = expiredAssociates.map((associate) => ({
-    title: `${titlePrefix}${associate.fullName}`,
-    description: `Atenção: O prazo de guarda (5 anos de inatividade) do associado ${associate.fullName} expirou. Aprovar anonimização? Por favor, revise de acordo com o Estatuto da ASOF.`,
-    status: 'a_fazer' as const,
-    priority: 'alta' as const,
-    associateId: associate.id,
-    createdBy: systemAdmin.id,
-    tags: ['LGPD', 'Retenção'],
-  }));
+    // Cria as atividades
+    const newActivities = expiredAssociates.map((associate) => ({
+      title: `${titlePrefix}${associate.fullName}`,
+      description: `Atenção: O prazo de guarda (5 anos de inatividade) do associado ${associate.fullName} expirou. Aprovar anonimização? Por favor, revise de acordo com o Estatuto da ASOF.`,
+      status: 'a_fazer' as const,
+      priority: 'alta' as const,
+      associateId: associate.id,
+      createdBy: systemAdmin.id,
+      tags: ['LGPD', 'Retenção'],
+    }));
 
-  const inserted = await db.insert(activities).values(newActivities).returning({ id: activities.id });
+    const inserted = await tx.insert(activities).values(newActivities).returning({ id: activities.id });
 
-  return { createdCount: inserted.length };
+    return { createdCount: inserted.length };
+  });
 }

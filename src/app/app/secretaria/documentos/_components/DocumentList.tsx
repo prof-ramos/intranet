@@ -16,8 +16,8 @@ import {
   AlertTriangle,
   FolderOpen
 } from 'lucide-react';
-import { deleteDocumentAction, downloadDocumentAction } from '../actions';
-import { UploadDocumentModal } from './UploadDocumentModal';
+import { deleteDocumentAction, downloadDocumentAction } from '@/app/app/secretaria/documentos/actions';
+import { UploadDocumentModal } from '@/app/app/secretaria/documentos/_components/UploadDocumentModal';
 import { 
   hairline, 
   textMuted, 
@@ -108,7 +108,8 @@ export function DocumentList({ initialDocuments, userRole }: DocumentListProps) 
         window.open(res.signedUrl, '_blank');
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erro ao gerar link de download.');
+      console.error('Erro ao gerar link de download:', err);
+      alert('Erro ao gerar link de download.');
     } finally {
       setDownloadingId(null);
     }
@@ -327,7 +328,7 @@ export function DocumentList({ initialDocuments, userRole }: DocumentListProps) 
                             type="button"
                             onClick={() => handleDownload(doc.id)}
                             disabled={downloadingId === doc.id}
-                            className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-[#040920] transition-colors focus-visible:outline-none ${focusRingClass}`}
+                            className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-[#040920] transition-colors ${focusRingClass}`}
                             title="Baixar documento"
                             aria-label={`Baixar ${doc.name}`}
                           >
@@ -342,7 +343,7 @@ export function DocumentList({ initialDocuments, userRole }: DocumentListProps) 
                             <button
                               type="button"
                               onClick={() => setDeletingId(doc.id)}
-                              className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors focus-visible:outline-none ${focusRingClass}`}
+                              className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 transition-colors ${focusRingClass}`}
                               title="Excluir documento"
                               aria-label={`Excluir ${doc.name}`}
                             >
@@ -394,7 +395,7 @@ export function DocumentList({ initialDocuments, userRole }: DocumentListProps) 
             </div>
 
             {deleteError && (
-              <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-800 border border-red-100">
+              <div role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-800 border border-red-100">
                 <span className="font-bold">Erro: </span>
                 {deleteError}
               </div>

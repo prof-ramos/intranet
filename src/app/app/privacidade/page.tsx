@@ -1,6 +1,22 @@
 import { requireAuth } from '@/lib/auth/require-auth';
-import { requestDataDownload, requestAccountDeletion } from './actions';
-import { focusRingClass, textPrimary, textMuted, hairline, navy, primaryContainerHover } from '@/lib/ui/tokens';
+import { requestDataDownload, requestAccountDeletion } from '@/app/app/privacidade/actions';
+import {
+  focusRingClass,
+  textPrimary,
+  textMuted,
+  hairline,
+  navy,
+  primaryContainerHover,
+  alertDangerBorder,
+  alertDangerBg,
+  alertDangerText,
+  alertDangerNoteBg,
+  alertDangerNoteText,
+  alertDangerNoteBorder,
+  alertDangerButtonBorder,
+  alertDangerButtonHoverBg,
+  alertDangerButtonHoverBorder,
+} from '@/lib/ui/tokens';
 import { Download, Trash2, ShieldAlert } from 'lucide-react';
 
 export const metadata = {
@@ -32,10 +48,8 @@ export default async function PrivacidadePage() {
         <form action={requestDataDownload}>
           <button
             type="submit"
-            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold text-white transition-colors ${focusRingClass}`}
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold text-white transition-colors hover:bg-[${primaryContainerHover}] ${focusRingClass}`}
             style={{ backgroundColor: navy }}
-            onMouseOver={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = primaryContainerHover; }}
-            onMouseOut={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = navy; }}
           >
             <Download size={16} aria-hidden="true" />
             Solicitar meus dados
@@ -43,8 +57,11 @@ export default async function PrivacidadePage() {
         </form>
       </section>
 
-      <section className="rounded-xl border border-red-100 bg-red-50/30 p-6 shadow-sm sm:p-8">
-        <div className="mb-4 flex items-center gap-2 text-red-700">
+      <section
+        className="rounded-xl border p-6 shadow-sm sm:p-8"
+        style={{ borderColor: alertDangerBorder, backgroundColor: alertDangerBg }}
+      >
+        <div className="mb-4 flex items-center gap-2" style={{ color: alertDangerText }}>
           <ShieldAlert size={24} />
           <h2 className="text-xl font-bold">Direito ao Esquecimento</h2>
         </div>
@@ -53,7 +70,14 @@ export default async function PrivacidadePage() {
           dados sensíveis. No entanto, este direito não é absoluto.
         </p>
 
-        <div className="mb-6 rounded-md bg-red-50 p-4 text-sm text-red-800 border border-red-100">
+        <div
+          className="mb-6 rounded-md p-4 text-sm border"
+          style={{
+            backgroundColor: alertDangerNoteBg,
+            color: alertDangerNoteText,
+            borderColor: alertDangerNoteBorder,
+          }}
+        >
           <strong>Atenção ao Estatuto Social (Art. 14):</strong> Sua solicitação será analisada pela
           Secretaria. A desfiliação e o apagamento dos dados só podem ser efetuados caso você{' '}
           <strong>não possua débitos ou processos em andamento</strong> com a Associação. A ASOF
@@ -64,7 +88,12 @@ export default async function PrivacidadePage() {
         <form action={requestAccountDeletion}>
           <button
             type="submit"
-            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 hover:border-red-300 ${focusRingClass}`}
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border bg-white px-5 text-sm font-semibold transition-colors ${focusRingClass}`}
+            style={{
+              color: alertDangerText,
+              borderColor: alertDangerButtonBorder,
+            }}
+            onMouseOver={undefined}
           >
             <Trash2 size={16} aria-hidden="true" />
             Solicitar Exclusão
