@@ -16,7 +16,8 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { cancelPaymentAction, updatePaymentAction } from './actions';
-import { createLogger, toSafeErrorLog } from '@/lib/logger';
+import { createLogger } from '@/lib/logger';
+import { toSafeErrorLog } from '@/lib/error-log';
 import {
   hairline,
   navy,

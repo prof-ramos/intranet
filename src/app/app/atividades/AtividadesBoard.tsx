@@ -33,7 +33,8 @@ import {
 } from './_board/url-state';
 import { useBoardPreferences } from './_board/useBoardPreferences';
 import { parsePositiveIntParam } from '@/lib/routing/params';
-import { createLogger, toSafeErrorLog } from '@/lib/logger';
+import { createLogger } from '@/lib/logger';
+import { toSafeErrorLog } from '@/lib/error-log';
 import type {
   ActivityTimelineItem,
   BoardActivity,
