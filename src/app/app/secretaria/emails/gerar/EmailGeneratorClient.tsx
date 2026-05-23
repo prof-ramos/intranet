@@ -1,48 +1,18 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useTransition } from 'react';
 import { Mail, Clipboard, Sparkles, Loader2 } from 'lucide-react';
-
-const DESIGN_SYSTEM = `
-Você é um especialista em e-mail marketing institucional da ASOF (Associação Nacional dos Oficiais de Chancelaria do Serviço Exterior Brasileiro).
-
-DESIGN SYSTEM ASOF:
-- Fundo principal: #0f2044 (azul marinho)
-- Fundo secundário: #0a1828
-- Cor de destaque: #c9a84c (dourado)
-- Texto principal: #ffffff
-- Texto secundário: #d0dce8
-- Texto sutil: #a8c0d6
-- Borda: #c9a84c
-- Fonte: Georgia, serif (títulos) | Arial, sans-serif (corpo)
-- Logo: <img src="https://asof.org.br/img/asof-dark.svg" alt="ASOF" width="160" style="display:block;border:0;max-width:160px;"/>
-
-REGRAS OBRIGATÓRIAS DE E-MAIL HTML:
-- Use APENAS tabelas para layout (table, tr, td) — NUNCA div para estrutura
-- Todos os estilos INLINE — NUNCA CSS externo ou <style>
-- Largura máxima do container: 600px
-- Sempre inclua o logo ASOF no cabeçalho
-- Sempre inclua rodapé com link de descadastro
-- O e-mail deve ser compatível com Gmail, Outlook e Apple Mail
-- Linha separadora: border-top:1px solid #c9a84c
-
-RETORNE APENAS:
-1. Uma linha com o assunto: ASSUNTO: [assunto aqui]
-2. O HTML completo do e-mail (começando com <!DOCTYPE html>)
-
-NÃO inclua explicações, markdown, ou qualquer outro texto além disso.
-`;
+import { generateEmailAction } from './actions';
 
 type EmailType = 'newsletter' | 'convite' | 'comunicado' | 'aviso';
 
 export function EmailGeneratorClient() {
   const [emailType, setEmailType] = useState<EmailType>('newsletter');
   const [prompt, setPrompt] = useState('');
-  const [apiKey, setApiKey] = useState('');
-  const [loading, setLoading] = useState(false);
   const [subject, setSubject] = useState('');
   const [generatedHtml, setGeneratedHtml] = useState('');
   const [toast, setToast] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -59,11 +29,10 @@ export function EmailGeneratorClient() {
     };
   }, []);
 
-  // Ajusta a altura do iframe dinamicamente conforme o conteúdo renderizado
   const adjustIframeHeight = () => {
     const iframe = iframeRef.current;
     if (iframe && iframe.contentDocument && iframe.contentDocument.body) {
-      iframe.style.height = '600px'; // Altura mínima padrão
+      iframe.style.height = '600px';
       const scrollHeight = iframe.contentDocument.body.scrollHeight;
       iframe.style.height = `${Math.max(scrollHeight + 40, 600)}px`;
     }
@@ -71,86 +40,31 @@ export function EmailGeneratorClient() {
 
   useEffect(() => {
     if (generatedHtml && iframeRef.current) {
-      // Pequeno timeout para garantir que o srcDoc foi renderizado pelo navegador
       const timer = setTimeout(adjustIframeHeight, 200);
       return () => clearTimeout(timer);
     }
   }, [generatedHtml]);
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     const trimmedPrompt = prompt.trim();
-    const trimmedApiKey = apiKey.trim();
-
     if (!trimmedPrompt) {
       showToast('⚠️ Descreva o conteúdo do e-mail');
       return;
     }
-    if (!trimmedApiKey) {
-      showToast('⚠️ Insira sua chave da API Gemini');
-      return;
-    }
 
-    setLoading(true);
     setSubject('');
     setGeneratedHtml('');
 
-    const userPrompt = `Tipo de e-mail: ${emailType.toUpperCase()}
-
-Conteúdo solicitado pelo usuário:
-${trimmedPrompt}
-
-Gere um e-mail HTML completo no design system da ASOF para este tipo de comunicação.`;
-
-    try {
-      const res = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': trimmedApiKey,
-          },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: DESIGN_SYSTEM }] },
-            contents: [{ parts: [{ text: userPrompt }] }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
-          }),
-        },
-      );
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error?.message || 'Erro na API Gemini');
+    startTransition(async () => {
+      const result = await generateEmailAction(emailType, trimmedPrompt);
+      if (result.success) {
+        setSubject(result.subject);
+        setGeneratedHtml(result.html);
+        showToast('✓ E-mail gerado com sucesso!');
+      } else {
+        showToast('❌ ' + result.error);
       }
-
-      const data = await res.json();
-      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-      // Extrair assunto
-      const subjectMatch = raw.match(/ASSUNTO:\s*(.+)/i);
-      const extractedSubject = subjectMatch ? subjectMatch[1].trim() : '';
-
-      // Extrair HTML
-      let html = raw.replace(/ASSUNTO:\s*.+\n?/i, '').trim();
-      html = html
-        .replace(/^```html\n?/i, '')
-        .replace(/\n?```$/i, '')
-        .trim();
-
-      if (!html.toLowerCase().includes('<html')) {
-        // Fallback básico caso o modelo não retorne HTML válido
-        throw new Error('O modelo não retornou um documento HTML válido. Tente novamente.');
-      }
-
-      setSubject(extractedSubject);
-      setGeneratedHtml(html);
-      showToast('✓ E-mail gerado com sucesso!');
-    } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : 'Erro ao gerar e-mail';
-      showToast('❌ ' + errorMessage);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const copyHtml = async () => {
@@ -171,13 +85,11 @@ Gere um e-mail HTML completo no design system da ASOF para este tipo de comunica
       await navigator.clipboard.write([item]);
       showToast('✓ E-mail copiado! Cole direto no Gmail (Ctrl+V)');
     } catch {
-      // Fallback para cópia em texto do HTML caso ClipboardItem falhe
       await copyHtml();
       showToast('✓ HTML copiado (ClipboardItem indisponível)');
     }
   };
 
-  // Atalho Ctrl+Enter para gerar
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
@@ -247,30 +159,14 @@ Gere um e-mail HTML completo no design system da ASOF para este tipo de comunica
             />
           </div>
 
-          {/* API Key */}
-          <div className="panel-section">
-            <div className="panel-label">Chave da API Gemini</div>
-            <input
-              type="password"
-              className="api-input"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="AIzaSy..."
-              autoComplete="off"
-            />
-            <p className="api-hint">
-              Sua chave não é armazenada — ela é usada apenas para as requisições nesta sessão.
-            </p>
-          </div>
-
           {/* Botão de Geração */}
           <button
             type="button"
             className="btn-generate"
             onClick={handleGenerate}
-            disabled={loading}
+            disabled={isPending}
           >
-            {loading ? (
+            {isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>Gerando...</span>
@@ -293,7 +189,7 @@ Gere um e-mail HTML completo no design system da ASOF para este tipo de comunica
                 type="button"
                 className="btn-action"
                 onClick={copyHtml}
-                disabled={!generatedHtml || loading}
+                disabled={!generatedHtml || isPending}
               >
                 <Clipboard className="h-3.5 w-3.5" />
                 <span>Copiar HTML</span>
@@ -302,7 +198,7 @@ Gere um e-mail HTML completo no design system da ASOF para este tipo de comunica
                 type="button"
                 className="btn-action primary"
                 onClick={copyForGmail}
-                disabled={!generatedHtml || loading}
+                disabled={!generatedHtml || isPending}
               >
                 <Mail className="h-3.5 w-3.5" />
                 <span>Copiar para Gmail</span>
@@ -312,14 +208,14 @@ Gere um e-mail HTML completo no design system da ASOF para este tipo de comunica
 
           <div className="preview-frame">
             <div className="preview-inner">
-              {loading && (
+              {isPending && (
                 <div className="loading-state">
                   <div className="spinner" />
                   <p className="loading-text">Gerando e-mail com Gemini...</p>
                 </div>
               )}
 
-              {!loading && !generatedHtml && (
+              {!isPending && !generatedHtml && (
                 <div className="empty-state">
                   <div className="empty-icon">✉️</div>
                   <div className="empty-title">Nenhum e-mail gerado ainda</div>
@@ -330,7 +226,7 @@ Gere um e-mail HTML completo no design system da ASOF para este tipo de comunica
                 </div>
               )}
 
-              {!loading && generatedHtml && (
+              {!isPending && generatedHtml && (
                 <>
                   {subject && (
                     <div className="subject-bar">

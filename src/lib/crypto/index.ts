@@ -78,6 +78,7 @@ export const KEY_CONTEXTS = {
   piiEncryption: 'pii-encryption',
   piiSearch: 'pii-search',
   webhookSecrets: 'webhook-secrets',
+  appSettings: 'app-settings',
 } as const;
 
 export type KeyContext = (typeof KEY_CONTEXTS)[keyof typeof KEY_CONTEXTS];
