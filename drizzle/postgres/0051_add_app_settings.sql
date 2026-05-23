@@ -11,7 +11,11 @@ CREATE TABLE IF NOT EXISTS "app_settings" (
 
 CREATE INDEX IF NOT EXISTS "idx_app_settings_updated_by" ON "app_settings" ("updated_by");
 
--- RLS: only the application role (authenticated) can access settings
+-- RLS: only the application role (authenticated) can access settings.
+-- Role-level enforcement (admin-only) is applied at the application layer via
+-- requireRole(['admin']) in the page and server actions. This policy acts as a
+-- defence-in-depth guard so unauthenticated requests are always rejected at the
+-- database level regardless of application-layer bugs.
 ALTER TABLE "app_settings" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "app_settings" FORCE ROW LEVEL SECURITY;
 

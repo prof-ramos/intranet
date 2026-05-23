@@ -27,7 +27,7 @@ export default async function DashboardPage() {
             Sala de operações · {today}
           </p>
           <h1 className="mt-2 font-serif text-4xl leading-none font-bold text-[#040920] md:text-[3rem]">
-            Painel da diretoria
+            Painel Administrativo
           </h1>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
