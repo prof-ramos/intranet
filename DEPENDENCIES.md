@@ -25,7 +25,7 @@
 | **DevDependencies**              | 17            |
 | **Vulnerabilidades**             | **0**         |
 | **Pacotes desatualizados**       | 3             |
-| **Pacotes candidatos à remoção** | 1 (`daisyui`) |
+| **Pacotes mantidos após revisão** | 1 (`daisyui`) |
 
 **Conclusão**: `react-kanban-kit` foi removido e substituído por `@hello-pangea/dnd`, eliminando todas as vulnerabilidades transitivas. `@libsql/client` e o seed legado foram removidos. `jose` também foi removido em 2026-05-17 porque a autenticação atual usa Supabase Auth e não havia imports do pacote no código, scripts ou testes.
 
@@ -106,16 +106,9 @@ O pacote foi uma dependência legada do SQLite/libSQL usada apenas pelo script `
 
 ---
 
-### 3. `daisyui` — Risco: BAIXO
+### 3. `daisyui` — ✅ Mantido
 
-**Problemas**:
-
-- O projeto está **fazendo transição para tokens de design próprios** (`src/lib/ui/tokens.ts`)
-- DaisyUI está sendo gradualmente removido (vide `CLAUDE.md`)
-- Classes como `btn btn-primary` estão sendo substituídas por utilitários Tailwind + tokens
-- Adiciona ~60KB ao CSS bundle
-
-**Recomendação**: Remover gradualmente conforme as telas são refatoradas. Não remover de uma só vez para evitar regressões visuais.
+**Nota**: Decisão de manter DaisyUI no projeto. Ele fornece o sistema de drawer, o tema customizado (`@plugin "daisyui/theme"`), e estilização de formulários que seria trabalhoso replicar manualmente. O bundle adicional é compensado pelo tree-shaking do DaisyUI v5.
 
 ---
 
@@ -183,7 +176,7 @@ npm update tailwindcss @tailwindcss/postcss
 | `zod`                   | Validação          | Essencial                 |
 | `lucide-react`          | Ícones             | Essencial                 |
 | `@supabase/supabase-js` | SDK Supabase       | Essencial (scripts/admin) |
-| `daisyui`               | Componentes UI     | 🚫 Remover gradualmente   |
+| `daisyui`               | Componentes UI     | ✅ Mantido                |
 | `server-only`           | Guarda de servidor | ✅ Manter                 |
 
 ### DevDependencies
@@ -244,11 +237,6 @@ npm update tailwindcss @tailwindcss/postcss
 1. **Revisar overrides de `esbuild` e `postcss`**
    - Testar build sem overrides
    - Se tudo funcionar, remover do `package.json`
-
-2. **Planejar remoção do `daisyui`**
-   - Identificar todas as classes DaisyUI em uso
-   - Substituir por tokens do design system ou utilitários Tailwind
-   - Remover quando todas as telas forem migradas
 
 ### Comandos Resumidos
 
