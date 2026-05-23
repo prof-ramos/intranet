@@ -5,6 +5,9 @@ import { db } from '@/lib/db';
 import { appSettings } from '@/lib/db/schema/app-settings';
 import { encryptV2, decryptV2, KEY_CONTEXTS } from '@/lib/crypto';
 import { env } from '@/lib/env';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('ai-settings');
 
 const GEMINI_KEY_SETTING = 'gemini_api_key';
 
@@ -59,11 +62,13 @@ export async function upsertGeminiApiKey(apiKey: string, updatedBy: number): Pro
       target: appSettings.key,
       set: { valueCiphertext: ciphertext, updatedBy, updatedAt: new Date() },
     });
+  logger.info('Gemini API key upserted', { updatedBy });
 }
 
 /** Removes the Gemini API key from the DB. Falls back to env var if set. */
 export async function deleteGeminiApiKey(): Promise<void> {
   await db.delete(appSettings).where(eq(appSettings.key, GEMINI_KEY_SETTING));
+  logger.info('Gemini API key deleted');
 }
 
 /** Returns metadata about the current Gemini key (source, updatedAt) without exposing the key. */

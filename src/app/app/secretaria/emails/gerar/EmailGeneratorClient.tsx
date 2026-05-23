@@ -154,7 +154,7 @@ export function EmailGeneratorClient() {
               aria-busy={isPending}
             >
               {isPending ? (
-                <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /><span>Gerando...</span></>
+                <><Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden="true" /><span>Gerando...</span></>
               ) : (
                 <><Sparkles className="h-4 w-4" aria-hidden="true" /><span>Gerar E-mail</span></>
               )}

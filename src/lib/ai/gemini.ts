@@ -181,7 +181,7 @@ ${sanitizedPrompt}
 
 Gere um e-mail HTML completo no design system da ASOF para este tipo de comunicação.`;
 
-  const timeoutMs = 30000;
+  const timeoutMs = 20000;
   try {
     const ai = await getGeminiClient();
     const result = await Promise.race([
