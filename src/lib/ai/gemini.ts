@@ -11,7 +11,9 @@ async function getGeminiClient(): Promise<GoogleGenAI> {
   const apiKey = await getGeminiApiKey();
 
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY_NOT_CONFIGURED');
+    throw new Error(
+      'Chave de API do Gemini não configurada. Configure-a em Configurações → Integrações → IA.',
+    );
   }
 
   if (cachedClient && cachedKey === apiKey) return cachedClient;
@@ -171,6 +173,11 @@ export async function generateEmailContent(params: {
   emailType: string;
   prompt: string;
 }): Promise<{ subject: string; html: string }> {
+  const allowedEmailTypes = ['newsletter', 'convite', 'comunicado', 'aviso'];
+  if (!allowedEmailTypes.includes(params.emailType)) {
+    throw new Error('Tipo de e-mail inválido.');
+  }
+
   const sanitizedPrompt = sanitizePromptInput(params.prompt);
   validatePromptInput(sanitizedPrompt);
 

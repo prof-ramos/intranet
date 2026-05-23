@@ -27,7 +27,7 @@ function decryptSettingValue(ciphertext: string): string {
 
 /** Returns the active Gemini API key, preferring env var over DB setting. */
 export async function getGeminiApiKey(): Promise<string | null> {
-  const envKey = 'GEMINI_API_KEY' in env ? (env.GEMINI_API_KEY?.trim() || null) : null;
+  const envKey = env.GEMINI_API_KEY?.trim() || null;
   if (envKey) return envKey;
 
   const rows = await db
@@ -77,7 +77,7 @@ export async function getGeminiKeyMeta(): Promise<{
   source: 'env' | 'database' | null;
   updatedAt: Date | null;
 } | null> {
-  const envKey = 'GEMINI_API_KEY' in env ? (env.GEMINI_API_KEY?.trim() || null) : null;
+  const envKey = env.GEMINI_API_KEY?.trim() || null;
   if (envKey) {
     return { configured: true, source: 'env', updatedAt: null };
   }
