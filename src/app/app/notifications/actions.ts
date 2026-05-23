@@ -10,7 +10,6 @@ import {
 } from '@/lib/notifications/service';
 
 function revalidateNotifications() {
-  revalidatePath('/app');
   revalidatePath('/app/notifications');
   revalidateTag('notifications', 'max');
 }
