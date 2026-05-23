@@ -275,6 +275,11 @@ export function AtividadesBoard({
       const created = await createQuickActivityAction({ title, status });
       setItems((activities) => [...activities, normalizeActivity(created)]);
     } catch (error) {
+      logger.error('Failed to create quick activity', {
+        title,
+        status,
+        error: toSafeErrorLog(error),
+      });
       setErrorMessage(
         error instanceof Error ? error.message : 'Não foi possível criar a atividade.',
       );

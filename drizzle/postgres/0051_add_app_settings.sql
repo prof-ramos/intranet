@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS "app_settings" (
   "updated_at" timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE INDEX IF NOT EXISTS "idx_app_settings_updated_by" ON "app_settings" ("updated_by");
+
 -- RLS: only the application role (authenticated) can access settings
 ALTER TABLE "app_settings" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "app_settings" FORCE ROW LEVEL SECURITY;

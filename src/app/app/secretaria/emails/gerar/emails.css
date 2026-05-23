@@ -1,15 +1,16 @@
 /* ── GERADOR DE E-MAILS ASOF — TEMA ESCURO PREMIUM ── */
 
 .email-generator-container {
-  --navy:       #0a1628;
-  --navy-mid:   #0f2044;
-  --navy-light: #1a3060;
-  --gold:       #c9a84c;
-  --gold-light: #e8c96a;
+  --navy:       #040920;
+  --navy-mid:   #06284f;
+  --navy-light: #0d3260;
+  --gold:       #e7c16b;
+  --gold-light: #f0d080;
+  --gold-warn:  #a16207;
   --white:      #ffffff;
-  --text-muted: #7a9bbf;
+  --text-muted: #59677a;
   --text-body:  #c8d8e8;
-  --border:     rgba(201, 168, 76, 0.25);
+  --border:     rgba(231, 193, 107, 0.25);
   --radius:     8px;
 
   background: var(--navy);

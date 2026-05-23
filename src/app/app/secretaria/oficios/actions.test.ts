@@ -17,6 +17,7 @@ const {
   cancelOfficialLetterMock,
   revalidatePathMock,
   envMock,
+  isGeminiConfiguredMock,
 } = vi.hoisted(() => ({
   requireRoleMock: vi.fn(),
   findOfficialLettersMock: vi.fn(),
@@ -27,6 +28,7 @@ const {
   cancelOfficialLetterMock: vi.fn(),
   revalidatePathMock: vi.fn(),
   envMock: { NEXT_PUBLIC_AI_ENABLED: true as boolean },
+  isGeminiConfiguredMock: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/authorization', () => ({
@@ -46,6 +48,10 @@ vi.mock('@/lib/oficios/service', () => ({
 
 vi.mock('@/lib/ai/gemini', () => ({
   generateOfficialLetterContent: (...args: unknown[]) => generateOfficialLetterContentMock(...args),
+}));
+
+vi.mock('@/lib/ai/settings', () => ({
+  isGeminiConfigured: (...args: unknown[]) => isGeminiConfiguredMock(...args),
 }));
 
 vi.mock('@/lib/oficios/validations', () => ({
@@ -72,6 +78,7 @@ describe('secretaria oficios actions', () => {
     saveOfficialLetterMock.mockResolvedValue({ id: 1 });
     updateOfficialLetterMock.mockResolvedValue({ id: 1 });
     cancelOfficialLetterMock.mockResolvedValue({ id: 1 });
+    isGeminiConfiguredMock.mockResolvedValue(true);
     envMock.NEXT_PUBLIC_AI_ENABLED = true;
   });
 
@@ -87,8 +94,8 @@ describe('secretaria oficios actions', () => {
     expect(result).toEqual({ success: true, text: 'texto gerado' });
   });
 
-  it('returns disabled error when AI is not enabled', async () => {
-    envMock.NEXT_PUBLIC_AI_ENABLED = false;
+  it('returns disabled error when Gemini key is not configured', async () => {
+    isGeminiConfiguredMock.mockResolvedValue(false);
 
     const result = await generateAiTextAction({
       recipient: 'Maria',
@@ -98,7 +105,11 @@ describe('secretaria oficios actions', () => {
       instruction: 'Escreva um ofício',
     });
 
-    expect(result).toEqual({ success: false, error: 'Funcionalidade de IA não está disponível.' });
+    expect(result).toEqual({
+      success: false,
+      error:
+        'A chave da API Gemini não está configurada. Solicite ao administrador que configure em Configurações → Integrações → IA.',
+    });
     expect(generateOfficialLetterContentMock).not.toHaveBeenCalled();
   });
 

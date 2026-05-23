@@ -1,5 +1,8 @@
 import { GoogleGenAI } from '@google/genai';
-import { getGeminiApiKey } from './settings';
+import { getGeminiApiKey } from '@/lib/ai/settings';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('ai/gemini');
 
 let cachedClient: GoogleGenAI | null = null;
 let cachedKey: string | null = null;
@@ -60,14 +63,12 @@ function validatePromptInput(input: string): void {
 }
 
 function validateOutput(text: string): string {
-  // Flag suspicious output but don't block — just log and warn
   for (const pattern of SUSPICIOUS_OUTPUT_PATTERNS) {
     if (pattern.test(text)) {
-      console.warn('[AI] Output contains suspicious pattern, review recommended.', {
+      logger.warn('[AI] Output contains suspicious pattern, review recommended.', {
         pattern: pattern.source,
       });
-      // Prepend a warning to the output
-      return `[⚠️ Revisão recomendada — conteúdo gerado pode requerer verificação]\n\n${text}`;
+      return '[REMOVIDO — conteúdo sensível detectado e bloqueado pela política de segurança da ASOF]';
     }
   }
   return text;
@@ -210,7 +211,7 @@ Gere um e-mail HTML completo no design system da ASOF para este tipo de comunica
       .replace(/\n?```$/i, '')
       .trim();
 
-    if (!html.toLowerCase().includes('<html')) {
+    if (!/<(!doctype\s+html|html[\s>])/i.test(html)) {
       throw new Error('O modelo não retornou um documento HTML válido. Tente novamente.');
     }
 
