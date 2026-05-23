@@ -13,6 +13,7 @@ export const auditEntityType = pgEnum('audit_entity_type', [
   'official_letter',
   'domain_event',
   'webhook_subscription',
+  'document',
 ]);
 
 export const auditLogs = pgTable(

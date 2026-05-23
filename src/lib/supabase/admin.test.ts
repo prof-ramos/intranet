@@ -137,7 +137,7 @@ describe('supabase admin helpers', () => {
   });
 
   it('generates recovery links without redirectTo when ASOF_INTRANET_URL is undefined', async () => {
-    envMock.ASOF_INTRANET_URL = undefined;
+    (envMock as { ASOF_INTRANET_URL: string | undefined }).ASOF_INTRANET_URL = undefined;
     const link = await generatePasswordResetLink('admin@asof.local');
 
     expect(link).toBe('https://example.supabase.co/auth/v1/verify?token=abc');

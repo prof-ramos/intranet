@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {
   DollarSign,
   FileSpreadsheet,
+  FileText,
   Kanban,
   LayoutDashboard,
   Mail,
@@ -86,6 +87,11 @@ export function Sidebar({ user }: SidebarProps) {
               href: '/app/secretaria/oficios',
               label: 'Ofícios',
               icon: <FileSpreadsheet size={18} />,
+            },
+            {
+              href: '/app/secretaria/documentos',
+              label: 'Documentos',
+              icon: <FileText size={18} />,
             },
             ...(user.role !== 'diretoria'
               ? [

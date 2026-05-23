@@ -6,7 +6,6 @@ import {
   textMuted,
   hairline,
   navy,
-  primaryContainerHover,
   alertDangerBorder,
   alertDangerBg,
   alertDangerText,
@@ -14,8 +13,6 @@ import {
   alertDangerNoteText,
   alertDangerNoteBorder,
   alertDangerButtonBorder,
-  alertDangerButtonHoverBg,
-  alertDangerButtonHoverBorder,
 } from '@/lib/ui/tokens';
 import { Download, Trash2, ShieldAlert } from 'lucide-react';
 
@@ -48,7 +45,7 @@ export default async function PrivacidadePage() {
         <form action={requestDataDownload}>
           <button
             type="submit"
-            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold text-white transition-colors hover:bg-[${primaryContainerHover}] ${focusRingClass}`}
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
             style={{ backgroundColor: navy }}
           >
             <Download size={16} aria-hidden="true" />
@@ -88,12 +85,11 @@ export default async function PrivacidadePage() {
         <form action={requestAccountDeletion}>
           <button
             type="submit"
-            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border bg-white px-5 text-sm font-semibold transition-colors ${focusRingClass}`}
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border bg-white px-5 text-sm font-semibold transition-colors hover:bg-[#fef2f2] hover:border-[#f87171] ${focusRingClass}`}
             style={{
               color: alertDangerText,
               borderColor: alertDangerButtonBorder,
             }}
-            onMouseOver={undefined}
           >
             <Trash2 size={16} aria-hidden="true" />
             Solicitar Exclusão

@@ -1,0 +1,2 @@
+CREATE INDEX "idx_documents_name_trgm" ON "documents" USING gin ("name" gin_trgm_ops);--> statement-breakpoint
+CREATE INDEX "idx_documents_description_trgm" ON "documents" USING gin ("description" gin_trgm_ops);
