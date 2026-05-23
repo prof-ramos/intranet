@@ -33,6 +33,7 @@ import {
 } from './_board/url-state';
 import { useBoardPreferences } from './_board/useBoardPreferences';
 import { parsePositiveIntParam } from '@/lib/routing/params';
+import { createLogger, toSafeErrorLog } from '@/lib/logger';
 import type {
   ActivityTimelineItem,
   BoardActivity,
@@ -41,6 +42,8 @@ import type {
   Filters,
   Status,
 } from '@/lib/activities/types';
+
+const logger = createLogger('atividades-board');
 
 export type { BoardActivity, BoardAssociate, BoardPerson } from '@/lib/activities/types';
 
@@ -115,7 +118,8 @@ export function AtividadesBoard({
       setDrawerTimeline(timeline);
       setLoadedDrawerTimelineId(activityId);
       setDrawerTimelineError(null);
-    } catch {
+    } catch (err) {
+      logger.error('Failed to load drawer timeline', { activityId, error: toSafeErrorLog(err) });
       setDrawerTimeline([]);
       setLoadedDrawerTimelineId(activityId);
       setDrawerTimelineError('Não foi possível carregar o histórico desta atividade.');
@@ -273,7 +277,6 @@ export function AtividadesBoard({
       setErrorMessage(
         error instanceof Error ? error.message : 'Não foi possível criar a atividade.',
       );
-      throw error;
     }
   }
 
