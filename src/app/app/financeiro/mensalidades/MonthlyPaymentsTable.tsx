@@ -16,6 +16,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { cancelPaymentAction, updatePaymentAction } from './actions';
+import { createLogger, toSafeErrorLog } from '@/lib/logger';
 import {
   hairline,
   navy,
@@ -37,6 +38,8 @@ import {
   buildMonthlyPaymentsSearchParams,
   type MonthlyPaymentsSearchParams,
 } from '@/lib/finance/search-params';
+
+const logger = createLogger('monthly-payments-table');
 
 interface Payment {
   associateId: number;
@@ -197,7 +200,8 @@ export default function MonthlyPaymentsTable({
 
       setSuccessMessage('Pagamento atualizado com sucesso.');
       window.setTimeout(() => setSuccessMessage(null), 3000);
-    } catch {
+    } catch (err) {
+      logger.error('Failed to update payment', { error: toSafeErrorLog(err) });
       setErrorMessage('Erro ao atualizar pagamento. Tente novamente.');
     } finally {
       setUpdatingId(null);
@@ -246,7 +250,8 @@ export default function MonthlyPaymentsTable({
 
       setSuccessMessage('Mensalidade cancelada com registro de auditoria.');
       window.setTimeout(() => setSuccessMessage(null), 3000);
-    } catch {
+    } catch (err) {
+      logger.error('Failed to cancel payment', { error: toSafeErrorLog(err) });
       setErrorMessage('Erro ao cancelar mensalidade. Tente novamente.');
     } finally {
       setUpdatingId(null);
