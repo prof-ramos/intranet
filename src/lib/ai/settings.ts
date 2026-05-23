@@ -24,7 +24,7 @@ function decryptSettingValue(ciphertext: string): string {
 
 /** Returns the active Gemini API key, preferring env var over DB setting. */
 export async function getGeminiApiKey(): Promise<string | null> {
-  const envKey = 'GEMINI_API_KEY' in env ? (env.GEMINI_API_KEY ?? null) : null;
+  const envKey = 'GEMINI_API_KEY' in env ? (env.GEMINI_API_KEY?.trim() || null) : null;
   if (envKey) return envKey;
 
   const rows = await db
@@ -48,6 +48,8 @@ export async function isGeminiConfigured(): Promise<boolean> {
 export async function upsertGeminiApiKey(apiKey: string, updatedBy: number): Promise<void> {
   const trimmed = apiKey.trim();
   if (!trimmed) throw new Error('A chave da API Gemini não pode ser vazia.');
+  if (!trimmed.startsWith('AIza'))
+    throw new Error('Chave da API Gemini inválida: deve começar com "AIza".');
 
   const ciphertext = encryptSettingValue(trimmed);
   await db
@@ -70,7 +72,7 @@ export async function getGeminiKeyMeta(): Promise<{
   source: 'env' | 'database' | null;
   updatedAt: Date | null;
 } | null> {
-  const envKey = 'GEMINI_API_KEY' in env ? (env.GEMINI_API_KEY ?? null) : null;
+  const envKey = 'GEMINI_API_KEY' in env ? (env.GEMINI_API_KEY?.trim() || null) : null;
   if (envKey) {
     return { configured: true, source: 'env', updatedAt: null };
   }

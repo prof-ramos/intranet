@@ -374,7 +374,7 @@ const expectedEnums = {
 } as const;
 
 const expectedIndexes = {
-  app_settings: ['app_settings_pkey'],
+  app_settings: ['app_settings_pkey', 'idx_app_settings_updated_by'],
   activities: [
     'activities_pkey',
     'idx_activities_assignee_id',
