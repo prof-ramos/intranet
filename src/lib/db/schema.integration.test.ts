@@ -642,6 +642,7 @@ describe('database schema contract', () => {
 
     const actual = rows.map((row) => `${row.table_name}:${row.constraint_name}`);
     const expected = [
+      'documents:chk_documents_file_size',
       'monthly_payments:chk_monthly_payments_month',
       'monthly_payments:chk_monthly_payments_year',
       'oficios:chk_oficios_sequence',

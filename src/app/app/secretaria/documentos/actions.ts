@@ -136,6 +136,9 @@ export async function uploadDocumentAction(formData: FormData) {
 
 export async function downloadDocumentAction(id: number) {
   const user = await requireAuth();
+  if (user.role !== 'admin' && user.role !== 'secretaria') {
+    throw new Error('Acesso negado. Apenas administradores e secretários podem baixar documentos.');
+  }
 
   const doc = await getDocumentById(id);
   if (!doc) {

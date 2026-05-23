@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { uploadDocumentAction } from '../actions';
 import { X, Upload, Loader2, AlertCircle } from 'lucide-react';
-import { navy, primaryContainerHover, hairline, focusRingClass } from '@/lib/ui/tokens';
+import { navy, primaryContainerHover, hairline, focusRingClass, info, infoBg } from '@/lib/ui/tokens';
 import { CSSProperties } from 'react';
 
 const CATEGORIES = [
@@ -143,7 +143,7 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess }: UploadDocume
       >
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: infoBg, color: info }}>
               <Upload size={22} />
             </div>
             <div>

@@ -101,6 +101,21 @@ export const infoNotice = {
   text: '#1e40af',
 };
 
+// Category badge colors (used in DocumentList)
+export const categoryColors: Record<string, { bg: string; text: string }> = {
+  modelo_contrato: { bg: '#e0f2fe', text: '#0369a1' },
+  contrato: { bg: '#eff6ff', text: '#1e40af' },
+  minuta: { bg: '#f5f3ff', text: '#5b21b6' },
+  estatuto: { bg: '#faf5ff', text: '#6b21a8' },
+  ata: { bg: '#ecfdf5', text: '#065f46' },
+  oficio: { bg: '#f0fdf4', text: '#166534' },
+  rh: { bg: '#fff7ed', text: '#9a3412' },
+  evento: { bg: '#fff1f2', text: '#9f1239' },
+  nota_fiscal: { bg: '#fef3c7', text: '#92400e' },
+  comprovante: { bg: '#fef3c7', text: '#92400e' },
+  outro: { bg: '#f1f5f9', text: '#334155' },
+};
+
 // File icon color tokens (used in DocumentList and similar components)
 export const fileIconPdf = '#ef4444';
 export const fileIconSpreadsheet = '#16a34a';

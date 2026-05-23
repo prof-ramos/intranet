@@ -339,7 +339,9 @@ export interface SetMessagesParams {
 /**
  * JSON object to set as the agent output. This completely replaces any previous output. If the agent was spawned, this value will be passed back to its parent. If the agent has an outputSchema defined, the output will be validated against it.
  */
-export interface SetOutputParams {}
+export interface SetOutputParams {
+  output: Record<string, unknown> | unknown
+}
 
 /**
  * Load a skill's full instructions when relevant to the current task. Skills are loaded on-demand - only load them when you need their specific guidance.

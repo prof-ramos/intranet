@@ -13,8 +13,8 @@ export async function requestDataDownload() {
 
   // Creating an activity for the secretariat to manually generate and send the data
   await db.insert(activities).values({
-    title: `Requisição LGPD: Baixar Dados - Solicitante ID ${session.userId}`,
-    description: `Solicitante ID ${session.userId} solicitou uma cópia dos seus dados (Direito de Acesso/Portabilidade). Por favor, compile os relatórios disponíveis e envie de forma segura.`,
+    title: 'Requisição LGPD: Baixar Dados',
+    description: 'Solicitação de cópia de dados (Direito de Acesso/Portabilidade). Compile os relatórios disponíveis e envie de forma segura.',
     status: 'a_fazer',
     priority: 'alta',
     createdBy: session.userId,
@@ -32,8 +32,8 @@ export async function requestAccountDeletion() {
 
   // Creating an activity for the secretariat to review the deletion
   await db.insert(activities).values({
-    title: `Requisição LGPD: Solicitação de Exclusão - Solicitante ID ${session.userId}`,
-    description: `Solicitante ID ${session.userId} solicitou a EXCLUSÃO / ANONIMIZAÇÃO de sua conta (Direito ao Esquecimento). Atenção: revise pendências financeiras e jurídicas de acordo com o Art. 14 do Estatuto da ASOF antes de aprovar ou recusar o pedido.`,
+    title: 'Solicitação de Exclusão - Direito ao Esquecimento',
+    description: 'Solicitação de EXCLUSÃO / ANONIMIZAÇÃO de conta (Direito ao Esquecimento). Revise pendências financeiras e jurídicas de acordo com o Art. 14 do Estatuto da ASOF antes de aprovar ou recusar o pedido.',
     status: 'a_fazer',
     priority: 'urgente',
     createdBy: session.userId,

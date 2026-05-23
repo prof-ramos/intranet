@@ -32,6 +32,7 @@ import {
   fileIconArchive,
   fileIconCode,
   fileIconDefault,
+  categoryColors as CATEGORY_COLORS,
 } from '@/lib/ui/tokens';
 import { CSSProperties } from 'react';
 import type { DocumentWithUploader } from '@/lib/documents/queries';
@@ -48,20 +49,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   nota_fiscal: 'Nota Fiscal',
   comprovante: 'Comprovante',
   outro: 'Outro',
-};
-
-const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
-  modelo_contrato: { bg: '#e0f2fe', text: '#0369a1' }, // Light Blue
-  contrato: { bg: '#eff6ff', text: '#1e40af' }, // Blue
-  minuta: { bg: '#f5f3ff', text: '#5b21b6' }, // Purple
-  estatuto: { bg: '#faf5ff', text: '#6b21a8' }, // Light Purple
-  ata: { bg: '#ecfdf5', text: '#065f46' }, // Green
-  oficio: { bg: '#f0fdf4', text: '#166534' }, // Green
-  rh: { bg: '#fff7ed', text: '#9a3412' }, // Orange
-  evento: { bg: '#fff1f2', text: '#9f1239' }, // Rose
-  nota_fiscal: { bg: '#fef3c7', text: '#92400e' }, // Amber
-  comprovante: { bg: '#fef3c7', text: '#92400e' }, // Amber
-  outro: { bg: '#f1f5f9', text: '#334155' }, // Slate
 };
 
 interface DocumentListProps {
@@ -82,6 +69,8 @@ export function DocumentList({ initialDocuments, userRole }: DocumentListProps) 
 
   // Estados para download
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
+
+  const [isClearHovered, setIsClearHovered] = useState(false);
 
   const canWrite = userRole === 'admin' || userRole === 'secretaria';
 
@@ -192,7 +181,10 @@ export function DocumentList({ initialDocuments, userRole }: DocumentListProps) 
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="text-xs text-slate-400 hover:text-[#040920] transition-colors"
+                onMouseEnter={() => setIsClearHovered(true)}
+                onMouseLeave={() => setIsClearHovered(false)}
+                className="text-xs text-slate-400 transition-colors"
+                style={{ color: isClearHovered ? navy : undefined }}
                 aria-label="Limpar busca"
               >
                 Limpar

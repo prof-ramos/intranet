@@ -13,6 +13,13 @@ Documento oficial de comunicação institucional seguindo o **Padrão Ofício** 
 - **Identificação**: Composta por `NOME DO DOCUMENTO No [número]/[ano]/[setor]`.
 - **Partes**: Cabeçalho, Identificação, Local/Data, Endereçamento (Destinatário, Cargo, Vocativo), Assunto, Texto (Introdução, Desenvolvimento, Conclusão), Fecho e Identificação do Signatário.
 
+#### Documento
+
+Arquivo estático armazenado no sistema (modelos de contratos, minutas, estatutos, atas, recibos, etc.) e gerenciado pela equipe administrativa da Secretaria. Diferencia-se do *Ofício* por ser um upload físico de arquivo legado, assinado ou template, e não um documento gerado dinamicamente pelo sistema.
+
+- **Categorias** (`document_category`): `modelo_contrato`, `contrato`, `minuta`, `estatuto`, `ata`, `oficio`, `rh`, `evento`, `nota_fiscal`, `comprovante`, `outro`.
+- **Campos**: Nome, descrição, categoria, caminho no storage, tamanho, tipo MIME, usuário que realizou o upload.
+
 #### Signatário
 
 A autoridade que assina e expede o documento.
@@ -57,6 +64,10 @@ Nível na carreira: Classe A → B → C → Especial, cada uma com 5 padrões. 
 #### Situação Associativa
 
 Status do associado na ASOF: `ativo`, `inativo`. Campo: `associationStatus`.
+
+#### Associado Anonimizado
+
+Estado irreversível onde um associado inativo que atendeu aos requisitos de desfiliação tem seus Dados Pessoais e de Contato (Nome, CPF, SIAPE, E-mail, Endereço, etc.) permanentemente sobrescritos com máscaras irreversíveis, preservando apenas seu ID interno (`id`) para manter a integridade referencial do histórico contábil (mensalidades) e gerencial.
 
 #### Situação Funcional
 
@@ -153,6 +164,13 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 1. **Numeração Sequencial**: O número do ofício é sequencial e reinicia a cada ano civil (ex: 001/2026, 002/2026).
 2. **Imutabilidade de Identificação**: Uma vez gerado o número de um ofício, ele deve ser preservado. Se o ofício for cancelado, o número não deve ser reutilizado para evitar lacunas ou duplicidades na cronologia oficial.
 3. **Roles de Acesso**: Operado por `admin`, `diretoria` e `secretaria`.
+
+### Módulo de Documentos
+
+1. **Upload e Armazenamento**: Os arquivos físicos devem ser armazenados de forma privada no bucket `documents` do Supabase Storage. O acesso aos arquivos para download é feito através de URLs assinadas geradas sob demanda com tempo de expiração curto (e.g. 1 hora).
+2. **Restrições de Arquivos**: O tamanho do arquivo está limitado a 15 MB. São permitidos apenas arquivos de texto/documentos de escritório comuns (PDF, DOC, DOCX, XLS, XLSX, ODT, TXT).
+3. **Controle de Acesso (Roles)**:
+   - **Acesso total (listagem, download, upload, exclusão)**: Permitido apenas para `admin` e `secretaria`. O perfil `diretoria` não tem acesso ao módulo de documentos.
 
 ### Módulo Financeiro
 

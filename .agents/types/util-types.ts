@@ -168,8 +168,8 @@ export type MCPConfig =
 // Logger Interface
 // ============================================================================
 export interface Logger {
-  debug: (data: unknown, msg?: string) => void
-  info: (data: unknown, msg?: string) => void
-  warn: (data: unknown, msg?: string) => void
-  error: (data: unknown, msg?: string) => void
+  debug: (msg: string, data?: unknown) => void
+  info: (msg: string, data?: unknown) => void
+  warn: (msg: string, data?: unknown) => void
+  error: (msg: string, data?: unknown) => void
 }

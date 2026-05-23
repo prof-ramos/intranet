@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, or } from 'drizzle-orm';
+import { and, desc, eq, ilike, isNotNull, or } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { documents, admins } from '@/lib/db/schema';
 import type { Document } from '@/lib/db/schema';
@@ -32,7 +32,7 @@ export async function getDocuments(filters: DocumentFilters = {}): Promise<Docum
     conditions.push(
       or(
         ilike(documents.name, searchPattern),
-        ilike(documents.description, searchPattern)
+        and(isNotNull(documents.description), ilike(documents.description, searchPattern))
       )
     );
   }

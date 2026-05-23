@@ -1,7 +1,7 @@
 ---
 allowed-tools: Read, Write, Edit, Bash
 argument-hint: '<field-name> on <table> (e.g. "birthDate on associates")'
-description: Add AES-256-GCM encryption + HMAC blind index for a new PII field following the project encryption pattern
+description: Add AES-256-GCM encryption + HKDF blind index for a new PII field following the project encryption pattern
 ---
 
 # Add PII Encryption for: $ARGUMENTS

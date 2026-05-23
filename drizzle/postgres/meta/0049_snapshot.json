@@ -3910,9 +3910,47 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "policies": {
+        "documents_select_policy": {
+          "name": "documents_select_policy",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": ["authenticated"],
+          "using": "is_staff_role() AND get_current_admin_role() <> 'diretoria'",
+          "withCheck": null
+        },
+        "documents_insert_policy": {
+          "name": "documents_insert_policy",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": ["authenticated"],
+          "using": null,
+          "withCheck": "is_staff_role() AND get_current_admin_role() <> 'diretoria' AND \"uploaded_by\" = get_current_admin_id()"
+        },
+        "documents_update_policy": {
+          "name": "documents_update_policy",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": ["authenticated"],
+          "using": "is_staff_role() AND get_current_admin_role() <> 'diretoria' AND (\"uploaded_by\" = get_current_admin_id() OR get_current_admin_role() = 'admin')",
+          "withCheck": "is_staff_role() AND get_current_admin_role() <> 'diretoria' AND (\"uploaded_by\" = get_current_admin_id() OR get_current_admin_role() = 'admin')"
+        },
+        "documents_delete_policy": {
+          "name": "documents_delete_policy",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": ["authenticated"],
+          "using": "is_staff_role() AND get_current_admin_role() <> 'diretoria' AND (\"uploaded_by\" = get_current_admin_id() OR get_current_admin_role() = 'admin')",
+          "withCheck": null
+        }
+      },
+      "checkConstraints": {
+        "chk_documents_file_size": {
+          "name": "chk_documents_file_size",
+          "value": "\"file_size\" >= 0 AND \"file_size\" <= 15728640"
+        }
+      },
+      "isRLSEnabled": true
     }
   },
   "enums": {

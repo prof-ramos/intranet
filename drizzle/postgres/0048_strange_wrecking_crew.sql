@@ -10,7 +10,8 @@ CREATE TABLE "documents" (
 	"file_type" text NOT NULL,
 	"uploaded_by" bigint NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "chk_documents_file_size" CHECK ("file_size" >= 0 AND "file_size" <= 15728640)
 );--> statement-breakpoint
 
 ALTER TABLE "documents" ADD CONSTRAINT "documents_uploaded_by_admins_id_fk" FOREIGN KEY ("uploaded_by") REFERENCES "public"."admins"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -38,12 +39,16 @@ ALTER TABLE "documents" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "documents" FORCE ROW LEVEL SECURITY;--> statement-breakpoint
 
 -- Criar Políticas de RLS
-CREATE POLICY documents_select ON "documents"
+-- SELECT: staff tem acesso, exceto diretoria
+CREATE POLICY documents_select_policy ON "documents"
   FOR SELECT TO authenticated
-  USING (is_staff_role());--> statement-breakpoint
+  USING (
+    is_staff_role()
+    AND get_current_admin_role() <> 'diretoria'
+  );--> statement-breakpoint
 
 -- INSERT: role permitida + uploaded_by deve ser o admin corrente
-CREATE POLICY documents_insert ON "documents"
+CREATE POLICY documents_insert_policy ON "documents"
   FOR INSERT TO authenticated
   WITH CHECK (
     is_staff_role()
@@ -51,25 +56,25 @@ CREATE POLICY documents_insert ON "documents"
     AND "uploaded_by" = get_current_admin_id()
   );--> statement-breakpoint
 
--- UPDATE: apenas o criador (ou admin) com role permitida pode alterar
-CREATE POLICY documents_update ON "documents"
+-- UPDATE: criador ou admin global pode alterar
+CREATE POLICY documents_update_policy ON "documents"
   FOR UPDATE TO authenticated
   USING (
     is_staff_role()
     AND get_current_admin_role() <> 'diretoria'
-    AND "uploaded_by" = get_current_admin_id()
+    AND ("uploaded_by" = get_current_admin_id() OR get_current_admin_role() = 'admin')
   )
   WITH CHECK (
     is_staff_role()
     AND get_current_admin_role() <> 'diretoria'
-    AND "uploaded_by" = get_current_admin_id()
+    AND ("uploaded_by" = get_current_admin_id() OR get_current_admin_role() = 'admin')
   );--> statement-breakpoint
 
--- DELETE: apenas o criador (ou admin) com role permitida pode excluir
-CREATE POLICY documents_delete ON "documents"
+-- DELETE: criador ou admin global pode excluir
+CREATE POLICY documents_delete_policy ON "documents"
   FOR DELETE TO authenticated
   USING (
     is_staff_role()
     AND get_current_admin_role() <> 'diretoria'
-    AND "uploaded_by" = get_current_admin_id()
+    AND ("uploaded_by" = get_current_admin_id() OR get_current_admin_role() = 'admin')
   );

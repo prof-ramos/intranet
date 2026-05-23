@@ -143,8 +143,8 @@ describe('Documentos Server Actions', () => {
   });
 
   describe('downloadDocumentAction', () => {
-    it('deve gerar url assinada e auditar com logDataAccess para qualquer papel', async () => {
-      mockRequireAuth.mockResolvedValue({ userId: 3, role: 'diretoria' });
+    it('deve gerar url assinada e auditar com logDataAccess', async () => {
+      mockRequireAuth.mockResolvedValue({ userId: 3, role: 'secretaria' });
       vi.mocked(getDocumentById).mockResolvedValue({
         id: 10,
         name: 'Ata 2026',
@@ -181,6 +181,12 @@ describe('Documentos Server Actions', () => {
       vi.mocked(getDocumentById).mockResolvedValue(null);
 
       await expect(downloadDocumentAction(404)).rejects.toThrow('Documento não encontrado');
+    });
+
+    it('deve bloquear download para diretoria', async () => {
+      mockRequireAuth.mockResolvedValue({ userId: 3, role: 'diretoria' });
+
+      await expect(downloadDocumentAction(10)).rejects.toThrow('Acesso negado');
     });
   });
 

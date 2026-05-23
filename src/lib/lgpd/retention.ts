@@ -1,8 +1,8 @@
-import { and, eq, lte, like, isNull } from 'drizzle-orm';
+import { and, eq, lte, like, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { activities, admins, associates } from '@/lib/db/schema';
 
-const MAX_RETENTION_QUERY_LIMIT = 200;
+const MAX_RETENTION_QUERY_LIMIT = 100;
 
 export async function checkAndEmitLgpdRetentionActivities({ limit }: { limit: number }) {
   const validatedLimit = Math.min(Math.max(Math.floor(limit), 1), MAX_RETENTION_QUERY_LIMIT);
@@ -29,24 +29,18 @@ export async function checkAndEmitLgpdRetentionActivities({ limit }: { limit: nu
     // Busca associados inativos há mais de 5 anos
     // e que ainda NÃO possuem uma atividade de retenção pendente
     const expiredAssociates = await tx
-      .select({
-        id: associates.id,
-        fullName: associates.fullName,
-      })
+      .select({ id: associates.id })
       .from(associates)
-      .leftJoin(
-        activities,
-        and(
-          eq(activities.associateId, associates.id),
-          eq(activities.status, 'a_fazer'),
-          like(activities.title, titlePrefix + '%')
-        )
-      )
       .where(
         and(
           eq(associates.associationStatus, 'inativo'),
           lte(associates.updatedAt, fiveYearsAgo),
-          isNull(activities.id) // Não ter atividade pendente
+          sql`NOT EXISTS (
+            SELECT 1 FROM ${activities}
+            WHERE ${activities.associateId} = ${associates.id}
+            AND ${activities.status} = 'a_fazer'
+            AND ${activities.title} LIKE ${titlePrefix + '%'}
+          )`
         )
       )
       .limit(validatedLimit);
@@ -57,8 +51,8 @@ export async function checkAndEmitLgpdRetentionActivities({ limit }: { limit: nu
 
     // Cria as atividades
     const newActivities = expiredAssociates.map((associate) => ({
-      title: `${titlePrefix}${associate.fullName}`,
-      description: `Atenção: O prazo de guarda (5 anos de inatividade) do associado ${associate.fullName} expirou. Aprovar anonimização? Por favor, revise de acordo com o Estatuto da ASOF.`,
+      title: `${titlePrefix}Associado ID ${associate.id}`,
+      description: `Prazo de guarda (5 anos de inatividade) do associado ID ${associate.id} expirou. Aprovar anonimização? Revise de acordo com o Estatuto da ASOF.`,
       status: 'a_fazer' as const,
       priority: 'alta' as const,
       associateId: associate.id,
