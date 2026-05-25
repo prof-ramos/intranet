@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { getGeminiApiKey } from '@/lib/ai/settings';
 import { createLogger } from '@/lib/logger';
+import { ALLOWED_EMAIL_TYPES } from './constants';
 
 const logger = createLogger('ai/gemini');
 
@@ -173,8 +174,7 @@ export async function generateEmailContent(params: {
   emailType: string;
   prompt: string;
 }): Promise<{ subject: string; html: string }> {
-  const allowedEmailTypes = ['newsletter', 'convite', 'comunicado', 'aviso'];
-  if (!allowedEmailTypes.includes(params.emailType)) {
+  if (!(ALLOWED_EMAIL_TYPES as readonly string[]).includes(params.emailType)) {
     throw new Error('Tipo de e-mail inválido.');
   }
 

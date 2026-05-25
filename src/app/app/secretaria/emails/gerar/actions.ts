@@ -4,11 +4,10 @@ import { requireAuth } from '@/lib/auth/require-auth';
 import { generateEmailContent } from '@/lib/ai/gemini';
 import { isGeminiConfigured } from '@/lib/ai/settings';
 
-const EMAIL_TYPES = ['newsletter', 'convite', 'comunicado', 'aviso'] as const;
-type EmailType = (typeof EMAIL_TYPES)[number];
+import { ALLOWED_EMAIL_TYPES, type EmailType } from '@/lib/ai/constants';
 
 function isValidEmailType(value: unknown): value is EmailType {
-  return EMAIL_TYPES.includes(value as EmailType);
+  return (ALLOWED_EMAIL_TYPES as readonly unknown[]).includes(value);
 }
 
 export type GenerateEmailResult =
