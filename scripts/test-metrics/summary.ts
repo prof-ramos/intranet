@@ -63,7 +63,7 @@ function loadSummaries(): TestMetricsSummary[] {
 
       try {
         return [JSON.parse(fs.readFileSync(fullPath, 'utf8')) as TestMetricsSummary];
-      } catch (error) {
+      } catch {
         console.warn(`Ignorando summary inválido: ${path.relative(process.cwd(), fullPath)}`);
         return [];
       }
@@ -163,8 +163,15 @@ function printSlowestRegressions(latest: TestMetricEntry[], previous: TestMetric
     return;
   }
 
+  const regressions = deltas.filter((item) => item.deltaMs > 0);
+
+  if (regressions.length === 0) {
+    console.log('Maiores regressões por teste: nenhuma regressão positiva entre testes comparáveis.');
+    return;
+  }
+
   console.log('Maiores regressões por teste:');
-  for (const delta of deltas.filter((item) => item.deltaMs > 0)) {
+  for (const delta of regressions) {
     const percent =
       delta.deltaPercent === null ? '' : `, ${delta.deltaPercent.toFixed(1)}%`;
     console.log(
