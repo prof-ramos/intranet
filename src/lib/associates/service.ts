@@ -226,16 +226,16 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
     fullName: input.fullName,
     // F-008: Do not write plaintext PII columns. Only write ciphertext + hash.
     // decryptPiiField() retains a fallback to plaintext for rows not yet backfilled.
-    cpf: input.cpf === null ? null : undefined,
+    cpf: input.cpf !== undefined ? null : undefined,
     cpfCiphertext:
       input.cpf != null ? encryptPii(input.cpf) : input.cpf === null ? null : undefined,
     cpfHash: input.cpf != null ? piiBlindIndex(input.cpf) : input.cpf === null ? null : undefined,
-    siape: input.siape === null ? null : undefined,
+    siape: input.siape !== undefined ? null : undefined,
     siapeCiphertext:
       input.siape != null ? encryptPii(input.siape) : input.siape === null ? null : undefined,
     siapeHash:
       input.siape != null ? piiBlindIndex(input.siape) : input.siape === null ? null : undefined,
-    primaryEmail: input.primaryEmail === null ? null : undefined,
+    primaryEmail: input.primaryEmail !== undefined ? null : undefined,
     primaryEmailCiphertext:
       input.primaryEmail != null
         ? encryptPii(input.primaryEmail)
@@ -249,12 +249,12 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
           ? null
           : undefined,
     secondaryEmail: input.secondaryEmail,
-    phone: input.phone === null ? null : undefined,
+    phone: input.phone !== undefined ? null : undefined,
     phoneCiphertext:
       input.phone != null ? encryptPii(input.phone) : input.phone === null ? null : undefined,
     phoneHash:
       input.phone != null ? piiBlindIndex(input.phone) : input.phone === null ? null : undefined,
-    whatsapp: input.whatsapp === null ? null : undefined,
+    whatsapp: input.whatsapp !== undefined ? null : undefined,
     whatsappCiphertext:
       input.whatsapp != null
         ? encryptPii(input.whatsapp)
@@ -268,7 +268,7 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
           ? null
           : undefined,
     birthDate: input.birthDate,
-    address: input.address === null ? null : undefined,
+    address: input.address !== undefined ? null : undefined,
     addressCiphertext:
       input.address != null ? encryptPii(input.address) : input.address === null ? null : undefined,
     addressHash:

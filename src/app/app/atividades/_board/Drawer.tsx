@@ -56,7 +56,18 @@ export function Drawer({
   const drawerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (activity) closeRef.current?.focus();
+    if (!activity) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    return () => {
+      if (
+        previouslyFocused &&
+        typeof previouslyFocused.focus === 'function' &&
+        previouslyFocused.isConnected
+      ) {
+        previouslyFocused.focus();
+      }
+    };
   }, [activity]);
 
   useEffect(() => {

@@ -17,6 +17,8 @@ export async function updateAssociate(formData: FormData) {
   }
 
   const data = parsed.data;
+  const functionalStatus = data.functionalStatus === '' ? null : data.functionalStatus;
+
   await updateAssociateData({
     id: data.id,
     fullName: data.fullName,
@@ -34,7 +36,7 @@ export async function updateAssociate(formData: FormData) {
     assignmentStartDate: data.assignmentStartDate ?? null,
     classPattern: data.classPattern ?? null,
     associationCategory: data.associationCategory ?? null,
-    functionalStatus: data.functionalStatus ?? null,
+    functionalStatus: functionalStatus ?? null,
     associationStatus: data.associationStatus ?? null,
     contributionStatus: data.contributionStatus ?? null,
     // internalNotes is admin-only: diretoria submissions have this field stripped.

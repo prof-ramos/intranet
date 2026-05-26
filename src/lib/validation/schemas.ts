@@ -174,7 +174,7 @@ export const updateAssociateSchema = z.object({
     .optional(),
   classPattern: z.string().trim().nullable().optional(),
   associationCategory: z.string().trim().nullable().optional(),
-  functionalStatus: z.enum(validFunctionalStatuses).nullable().optional(),
+  functionalStatus: z.enum(validFunctionalStatuses).nullable().or(z.literal('')).optional(),
   associationStatus: z.enum(validAssociationStatuses).nullable().optional(),
   contributionStatus: z.enum(validContributionStatuses).nullable().optional(),
   internalNotes: z.string().trim().nullable().optional(),
