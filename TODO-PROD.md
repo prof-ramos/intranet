@@ -26,7 +26,8 @@ Atualizado em 2026-05-26 apos decisao de resetar a camada de banco/autenticacao 
   - [x] `ALLOW_PRODUCTION_MIGRATIONS` não foi adicionado ao ambiente Vercel — deve ser passado só na execução pontual de migrate.
 - [x] Rodar seed inicial — admin `gabriel@asof.org.br` criado com `must_change_password=true`.
 - [x] Admin gabriel.org.br seedado no Neon com must_change_password=true.
-- [ ] Validar login do admin em producao + troca obrigatoria de senha antes da liberacao para usuarios finais.
+- [x] Login do admin validado em producao: gabriel.org.br acessou intranet.asof.com.br com redirect para troca de senha obrigatoria.
+- [ ] Troca de senha obrigatoria realizada pelo admin apos primeiro login.
 - [x] Rodar gates locais — `typecheck`, `lint`, `test` (824 testes): todos passaram em 2026-05-26.
 - [x] Rodar `npm run test:db` contra Neon produção antes do go-live — schema contract passou em 2026-05-26.
 - [ ] Fazer smoke manual em producao, em janela controlada, antes da liberacao para usuarios finais (ADR 009):
