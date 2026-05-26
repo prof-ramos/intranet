@@ -66,9 +66,18 @@ export async function upsertGeminiApiKey(apiKey: string, updatedBy: number): Pro
 }
 
 /** Removes the Gemini API key from the DB. Falls back to env var if set. */
-export async function deleteGeminiApiKey(): Promise<void> {
+export async function deleteGeminiApiKey(updatedBy: number): Promise<void> {
+  const auditLogsModule = await import('@/lib/db/schema/audit');
+  await db.insert(auditLogsModule.auditLogs).values({
+    action: 'delete_gemini_key',
+    entityType: 'admin',
+    entityId: updatedBy,
+    performedBy: updatedBy,
+    metadata: { key: GEMINI_KEY_SETTING },
+  });
+
   await db.delete(appSettings).where(eq(appSettings.key, GEMINI_KEY_SETTING));
-  logger.info('Gemini API key deleted');
+  logger.info('Gemini API key deleted', { updatedBy });
 }
 
 /** Returns metadata about the current Gemini key (source, updatedAt) without exposing the key. */

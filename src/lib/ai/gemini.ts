@@ -212,6 +212,10 @@ Gere um e-mail HTML completo no design system da ASOF para este tipo de comunica
     const subjectMatch = validated.match(/ASSUNTO:\s*(.+)/i);
     const subject = subjectMatch ? subjectMatch[1].trim() : '';
 
+    if (!subject) {
+      throw new Error('O modelo não retornou um assunto válido. Tente novamente.');
+    }
+
     let html = validated.replace(/ASSUNTO:\s*.+\n?/i, '').trim();
     html = html
       .replace(/^```html\n?/i, '')
@@ -228,6 +232,9 @@ Gere um e-mail HTML completo no design system da ASOF para este tipo de comunica
       throw error;
     }
     if (error instanceof Error && error.message.includes('HTML válido')) {
+      throw error;
+    }
+    if (error instanceof Error && error.message.includes('assunto válido')) {
       throw error;
     }
     if (error instanceof Error && error.message.includes('esgotado')) {
