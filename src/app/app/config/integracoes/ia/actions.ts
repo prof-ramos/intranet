@@ -39,10 +39,10 @@ export async function deleteGeminiApiKeyAction(
   void _prevState;
   void _formData;
 
-  await requireRole(['admin']);
+  const actor = await requireRole(['admin']);
 
   try {
-    await deleteGeminiApiKey();
+    await deleteGeminiApiKey(actor.userId);
     revalidatePath('/app/config/integracoes/ia');
     return { success: true, message: 'Chave da API Gemini removida.' };
   } catch (error) {

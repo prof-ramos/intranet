@@ -350,7 +350,6 @@
   text-align: center;
   gap: 14px;
   color: var(--text-muted);
-  animation: fadeIn 0.35s ease-out;
   padding: 20px;
 }
 
@@ -422,7 +421,6 @@
   border: 2px solid rgba(201, 168, 76, 0.15);
   border-top-color: var(--gold);
   border-radius: 50%;
-  animation: spin 0.75s linear infinite;
 }
 
 @keyframes spin {
@@ -444,7 +442,6 @@
   margin-bottom: 14px;
   font-size: 13.5px;
   color: var(--text-body);
-  animation: slideDown 0.25s ease-out;
   display: flex;
   align-items: baseline;
   gap: 10px;
@@ -475,8 +472,25 @@
   border-radius: var(--radius);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   z-index: 9999;
-  animation: toastIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   max-width: 340px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .email-generator-container .empty-state {
+    animation: fadeIn 0.35s ease-out;
+  }
+
+  .email-generator-container .spinner {
+    animation: spin 0.75s linear infinite;
+  }
+
+  .email-generator-container .subject-bar {
+    animation: slideDown 0.25s ease-out;
+  }
+
+  .email-generator-toast {
+    animation: toastIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
 }
 
 /* Animations */

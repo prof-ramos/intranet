@@ -276,7 +276,8 @@ export function AtividadesBoard({
       setItems((activities) => [...activities, normalizeActivity(created)]);
     } catch (error) {
       logger.error('Failed to create quick activity', {
-        title,
+        hasTitle: !!title,
+        titleLength: title.length,
         status,
         error: toSafeErrorLog(error),
       });

@@ -5,7 +5,7 @@ CREATE TYPE "public"."contribution_status" AS ENUM('em_dia', 'inadimplente', 'pe
 CREATE TYPE "public"."functional_status" AS ENUM('ativo', 'aposentado', 'cedido', 'em_licenca');--> statement-breakpoint
 CREATE TYPE "public"."activity_priority" AS ENUM('baixa', 'normal', 'alta', 'urgente');--> statement-breakpoint
 CREATE TYPE "public"."activity_status" AS ENUM('a_fazer', 'em_andamento', 'aguardando_terceiros', 'concluido');--> statement-breakpoint
-CREATE TYPE "public"."assignment_type" AS ENUM('domestic', 'abroad');--> statement-breakpoint
+CREATE TYPE "public"."assignment_type" AS ENUM('nacional', 'exterior');--> statement-breakpoint
 CREATE TYPE "public"."audit_entity_type" AS ENUM('associate', 'admin', 'activity', 'assignment', 'legal_consultation', 'legal_process', 'finance', 'monthly_payment', 'official_letter', 'domain_event', 'webhook_subscription', 'document');--> statement-breakpoint
 CREATE TYPE "public"."legal_satisfaction" AS ENUM('satisfeito', 'insatisfeito', 'sem_resposta');--> statement-breakpoint
 CREATE TYPE "public"."payment_method" AS ENUM('folha', 'boleto', 'pix', 'transferencia', 'outros');--> statement-breakpoint
