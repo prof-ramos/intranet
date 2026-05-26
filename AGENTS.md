@@ -1,26 +1,27 @@
 <!-- Generated: 2026-05-26 | Updated: 2026-05-26 -->
 <!-- Parent: none (root) -->
 
-# ASOF Intranet
+# ASOF Intranet — AI Agent Directory
 
 ## Purpose
-Next.js 15 App Router application for ASOF (associação) internal management — associates, activities (kanban), juridico/consultas, financeiro/mensalidades, oficios, notifications, audit, LGPD compliance. Drizzle ORM + Neon Postgres, Playwright e2e, Vitest unit+integration, Server Actions, self-hosted auth with cookie sessions.
+
+Next.js 16 App Router application for ASOF (associação) internal management — associates, activities (kanban), juridico/consultas, financeiro/mensalidades, oficios, notifications, audit, LGPD compliance. Drizzle ORM + Neon Postgres, Playwright e2e, Vitest unit+integration, Server Actions, self-hosted auth with cookie sessions.
 
 ## Key Files
+
 | File | Description |
 |------|-------------|
-| `package.json` | Dependencies and scripts (dev, build, test, e2e, typecheck, lint, migrate) |
-| `tsconfig.json` | TypeScript with path aliases (`@/` → `src/`) |
-| `next.config.ts` | Next.js 16.2.6 config |
-| `drizzle.config.ts` | Drizzle Kit with Neon Postgres |
-| `playwright.config.ts` | E2E test config |
-| `vitest.config.ts` | Unit test runner |
-| `vercel.json` | Vercel deployment config |
 | `CLAUDE.md` | Project instructions for AI agents (read FIRST) |
 | `AGENTS.md` | This file — AI agent directory navigation |
+| `CONTEXT.md` | Glossary, domain rules, institutional context |
 | `TODO-PROD.md` | Go-live checklist and production readiness |
+| `package.json` | Dependencies and scripts (dev, build, test, e2e, typecheck, lint, migrate) |
+| `next.config.ts` | Next.js 16.2.6 config |
+| `drizzle.config.ts` | Drizzle Kit with Neon Postgres |
+| `vercel.json` | Vercel deployment config |
 
 ## Subdirectories
+
 | Directory | Purpose |
 |-----------|---------|
 | `src/` | Application source (pages, components, lib, hooks) — see `src/AGENTS.md` |
@@ -30,56 +31,7 @@ Next.js 15 App Router application for ASOF (associação) internal management �
 | `drizzle/` | SQL migrations and schema snapshots — see `drizzle/AGENTS.md` |
 | `.github/` | CI/CD workflows, branch rules, PR template — see `.github/AGENTS.md` |
 
-## For AI Agents
-
-### First Read
-Always read `CLAUDE.md` before modifying anything. It contains the authoritative project instructions.
-
-### Common Commands
-```bash
-npm run dev          # Dev server (port 3000)
-npm run build        # Production build
-npm run test         # Unit tests (Vitest)
-npm run test:e2e     # E2E tests (Playwright, port 3001)
-npm run typecheck    # TypeScript check
-npm run lint         # ESLint
-npm run db:migrate   # Run pending migrations (guarded)
-npm run seed:e2e     # Seed test data for E2E
-npm run test:db      # Schema contract validation against live DB
-```
-
-### Stack
-- Next.js 16.2.6 App Router, TypeScript strict
-- Drizzle ORM + Neon Postgres
-- Self-hosted auth: `SESSION_SECRET`, `admins` table, httpOnly signed cookies
-- `requireAuth()` / `requireRole()` for route protection
-- PII: ciphertext + hash stored, plaintext never logged
-
-### Deployment
-- Vercel Preview: branch deploys, env from Vercel (no `.env.production`)
-- Vercel Production: `main` branch, `DATABASE_URL` pooled Neon and `DATABASE_MIGRATION_URL` direct Neon
-- Env vars stored in Vercel, never committed
-
-## Dependencies
-
-### Internal
-- `src/app/` — App Router pages and API routes
-- `src/lib/` — Domain services, repositories, DB schema
-- `src/components/` — Shared UI components
-- `src/hooks/` — React hooks
-
-### External
-- `next` 16.x, `react` 19.x
-- `@neondatabase/serverless` — Postgres driver
-- `drizzle-orm`, `drizzle-kit` — ORM and migrations
-- `@playwright/test` — E2E testing
-- `vitest` — Unit and integration testing
-- `@upstash/ratelimit` — Rate limiting
-- `zod` — Schema validation
-- `jose` — JWT / session signing
-- `argon2` — Password hashing
-
-<!-- MANUAL: Original AGENTS.md content preserved below — contains institutional context and agent rules from this project -->
+---
 
 <!-- BEGIN:nextjs-agent-rules -->
 
@@ -125,244 +77,65 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 
 <!-- END:nextjs-agent-rules -->
 
-# Project Notes
+---
 
-## Tooling
+## Convensões de Desenvolvimento
 
-- Use `npm` for this project; it has `package-lock.json` and no `pnpm-lock.yaml` or `yarn.lock`.
-- For Python work in this repository, use `uv` by default: `uv run`, `uv add`, and `uv sync`.
-- Use Context7 automatically for any query that references an external library, framework, API, SDK, CLI, cloud service, or tool. Do not rely on training knowledge for library/tool documentation.
-- Context7 triggers include code generation with any package, setup/installation steps, configuration files, API method signatures, migration/version-specific syntax, and debugging that depends on external library behavior. Never wait for the user to explicitly say "use Context7".
+### Tooling
 
-## Commands
+- Use `npm` para este projeto; tem `package-lock.json`.
+- Para Python, use `uv`: `uv run`, `uv add`, `uv sync`.
+- Use Context7 automaticamente para queries sobre bibliotecas/frameworks/APIs externas. Não confie no conhecimento de treinamento.
 
-```bash
-npm install
-npm run dev
-npm run dev:turbo
-npm run build
-npm run build:turbo
-npm run lint
-npm run test
-npm run test:db
-npm run db:generate
-npm run db:migrate
-npm run db:seed
-npm run db:studio
-```
+### Banco de dados
 
-- `npm run dev` runs `next dev --webpack`, which is the safe default for this project.
-- `npm run dev:turbo` and `npm run build:turbo` are available for explicit Turbopack checks only.
-- `scripts/run-dev-60s.sh` is the controlled dev-server diagnostic wrapper. It starts `npm run dev`, samples process state, curls the local app, writes `next-dev-60s.log`, and kills the process tree on exit.
+- Neon Postgres (`intranet-db`, `ep-empty-cake-ac26vl6w`, sa-east-1).
+- Pooled (`DATABASE_URL`) para runtime, direct (`DATABASE_MIGRATION_URL`) para migrations.
+- Conexão: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'`.
+- Multi-tabela: sempre `db.transaction()`.
+- Enums para todos os campos de status/tipo; nunca `text`.
+- Indexes: parciais para `WHERE` condicionais, GIN trigram para `LIKE '%term%'`, compostos `(filter, order)`. Prefixo `idx_` nos custom.
+- Migrations: nomear com zero-padding + descrição (e.g. `0009_quality_improvements.sql`). Atualizar `meta/_journal.json`.
+- Não usar `Record<string, unknown>` em funções de update; usar interfaces tipadas.
 
-## Architecture
+### Auth
 
-- App Router source lives under `src/app`.
-- The authenticated app area is `src/app/app`; login is under `src/app/login`.
-- Shared UI components live in `src/components`.
-- Auth helpers live in `src/lib/auth`.
-- Database access lives in `src/lib/db`, with Drizzle schema files in `src/lib/db/schema`.
-- Current Drizzle migrations are in `drizzle/postgres`.
-- The `@/*` import alias maps to `src/*`.
-- `src/lib/logger.ts` — structured logger with PII redaction. Use `createLogger('module-name')` instead of `console.*`.
-- `src/lib/sanitize-pii.ts` — shared PII sanitizer for audit logs and webhook outbox.
+- Server-side própria: `SESSION_SECRET`, `admins.password_hash`, cookie `httpOnly` assinado.
+- `requireAuth()` / `requireRole()` para proteção de rotas.
+- Dev local: `SKIP_AUTH=true` + `DEV_USER_ID`, `DEV_USER_ROLE` em `.env.local`.
 
-## Database Conventions
+### PII e LGPD
 
-- **Enums**: Use PostgreSQL enums for all status/type fields. Never use `text` for a bounded set of values.
-- **Indexes**: Create partial indexes for queries with conditional `WHERE`. Use trigram GIN (`gin_trgm_ops`) for `LIKE '%term%'`. Use composite indexes matching `(filter, order)` patterns. Prefix custom indexes with `idx_`.
-- **Connection pool**: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'` in `src/lib/db/index.ts`.
-- **Transactions**: Multi-table operations MUST use `db.transaction()`. Pass the `tx` executor to repository functions that accept one.
-- **RLS**: Hardened in migrations 0023 + 0044. All policies use `TO authenticated` (not `TO PUBLIC`) and `FORCE ROW LEVEL SECURITY` is applied on all 19 application tables. Migration 0044 aligned `notifications` (the last `TO PUBLIC` outlier) to `TO authenticated` with `get_current_admin_id()`. Auth is enforced server-side via `requireAuth()` and `requireRole()`. If a direct database client is ever exposed to the browser, RLS policies must be narrowed to per-user or per-role predicates.
-- **Update safety**: `updateAssociateById` and similar functions must use typed interfaces, not `Record<string, unknown>`, to prevent unintended column overwrites.
-- **Migrations**: Name SQL files with zero-padded index + description (e.g., `0009_quality_improvements.sql`). Update `meta/_journal.json` with the correct timestamp.
-- **Testing**: `npm run test:db` validates tables, columns, enums, indexes, extensions, and migration alignment against the live database.
+- `encryptPii()` para armazenamento, `piiBlindIndex()` para busca.
+- `sanitizePii()` para logs — plaintext nunca em logs, erros ou respostas de API.
+- Ver ADR 006 para desfiação/anonimização.
 
-## Database
+### Testing
 
-- `drizzle.config.ts` targets PostgreSQL and writes migrations to `drizzle/postgres`.
-- Runtime DB access requires `DATABASE_URL` or `DATABASE_POSTGRES_URL`.
-- Drizzle migrations require a direct/non-pooling PostgreSQL URL via `DATABASE_MIGRATION_URL` or `DATABASE_POSTGRES_URL_NON_POOLING`.
-- Local development uses PostgreSQL from Homebrew, currently `postgresql@16` on `localhost:5432`.
-- Homebrew PostgreSQL uses the macOS user role on this machine (`$USER`, currently `gabrielramos`); do not use `postgres://postgres@localhost:5432/...` unless that role has been explicitly created.
-- For local development, use the same direct URL for runtime and migrations: `DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet` and `DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet`.
-- Neon (intranet-db) remains the remote/staging/production Postgres target; use pooler URLs only for runtime and direct/non-pooling URLs for migrations.
-- Production Vercel should keep only `DATABASE_URL` and `DATABASE_MIGRATION_URL` for primary DB access; Preview should not inherit general production DB envs.
-- Seed scripts are `scripts/seed-admin.ts` only; `scripts/seed-associados.ts` was removed.
+- Unitários: Vitest, `src/**/*.test.{ts,tsx}`.
+- Integração: `vitest.integration.config.ts` contra PostgreSQL real.
+- E2E: Playwright, `http://127.0.0.1:3001` (não 3000), database `asof_test` criado por `e2e/global-setup.ts`.
+- `npm run test:db` — schema contract contra PostgreSQL ao vivo.
+- `npm run test:e2e` nunca contra `http://localhost:3000`; apontar para `3001` com `NEXT_E2E=1`.
 
-## Development Auth
+### Gotchas
 
-- Local bypass is controlled by `.env.local` with `SKIP_AUTH=true`.
-- When auth is skipped, the development user is read from `DEV_USER_ID`, `DEV_USER_NAME`, `DEV_USER_EMAIL`, `DEV_USER_ROLE`, and `DEV_USER_MUST_CHANGE_PASSWORD`.
-- Valid roles are `admin`, `diretoria`, and `secretaria`.
+- Next.js `16.2.6` — não fazer downgrade. Verificar `node_modules/next/dist/docs/` antes de mudar APIs.
+- `next.config.ts` fixa `turbopack.root` para evitar resolução de Tailwind pelo diretório pai.
+- Dev server pesado em 8 GB RAM: usar `scripts/run-dev-60s.sh` para diagnósticos.
+- Após mudanças em dependências, Next ou Tailwind: rodar `lint` + `typecheck` + `test` + `build`.
 
-## Testing And Validation
+### Documentação
 
-- Vitest runs Node-environment tests matching `src/**/*.test.{ts,tsx}`.
-- `npm run test:db` runs the PostgreSQL schema contract tests against `.env.local`; it validates tables, columns, enums, indexes, `pg_trgm`, migration SQL files, `meta/_journal.json`, and `drizzle.__drizzle_migrations`.
-- E2E tests must be run with `npm run test:e2e` unless explicitly diagnosing a different server. Playwright is configured for `http://localhost:3001`, and `e2e/global-setup.ts` creates/migrates/seeds `asof_test` before starting its own Next.js dev server on `127.0.0.1:3001`.
-- The E2E server sets `NEXT_E2E=1`; `next.config.ts` then uses `distDir: ".next-e2e"` so Next.js has a separate dev lock/cache from the regular `.next/dev` server on `3000`.
-- Do not point E2E tests at an existing `npm run dev` server on `http://localhost:3000` unless that server's database has been intentionally seeded for E2E. The normal dev server uses `.env.local` (`asof_intranet` locally), so E2E logins can fail with `/login?error=1`; repeated failures can persist in `login_attempts` and become `/login?error=rate-limit`.
-- ESLint uses `eslint-config-next` core web vitals plus TypeScript config.
-- After dependency or Next/Tailwind changes, validate with at least `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build` when feasible.
-
-## Gotchas
-
-- This project is on Next.js `16.2.6`; check `node_modules/next/dist/docs/` before changing Next APIs, routing conventions, config, or build behavior.
-- Do not downgrade Next.js below the pinned 16.2.6 line; keep RSC security fixes current when updating framework versions.
-- `next.config.ts` pins `turbopack.root` to this directory for explicit Turbopack checks. This was added because a prior real-project dev test resolved Tailwind from the parent project directory instead of this app directory.
-- The machine previously showed heavy memory pressure from `next dev` PostCSS/Tailwind workers on an 8 GB MacBook Air. Prefer controlled dev-server tests with `scripts/run-dev-60s.sh` when diagnosing freezes.
-
-## Worktrees e Isolamento
-
-- Antes de iniciar qualquer nova frente, rode `git status --short --branch` e identifique se ha arquivos modificados, staged ou untracked que pertencem a outra task.
-- Nao misture frentes no mesmo PR. Se a task atual terminou, faca commit/PR antes de iniciar a proxima. Se precisar pausar uma frente, use `git stash push -u -m "<nome-da-frente>"` ou crie um worktree/branch dedicado.
-- Evite `git add .` quando houver mais de uma frente aberta. Prefira `git add <arquivos-da-task>` e confira com `git diff --cached --name-status` antes de commitar.
-- Worktrees aninhados tambem contam: se `.claude/worktrees/*` ou `.worktrees/*` aparecer como dirty no repo principal, entre no worktree correspondente e faca commit/stash la dentro. Nao resolva isso apagando ou revertendo alteracoes sem confirmar a origem.
-- Antes de abrir PR, o `git status --short --branch` deve estar limpo ou conter apenas arquivos explicitamente fora do escopo e preservados em stash/branch separado.
-- Use git worktrees para isolar cada feature em `.worktrees/<branch-name>`. Cada worktree é um checkout independente com seu próprio `node_modules` e `.next`.
-- Cada agente deve modificar apenas arquivos dentro da área que lhe foi atribuída (ex: `src/app/api` vs `src/components`). Quanto menos sobreposição de arquivos, menor a chance de conflito.
-- Faça rebase em `origin/main` frequentemente durante o desenvolvimento. Conflitos pequenos e frequentes são mais fáceis de resolver que um conflito gigante no final.
-- PRs devem ser pequenos e focados em uma única responsabilidade.
-- Quando duas features tocam a mesma área, o segundo agente faz rebase em cima do resultado do merge da primeira.
-- Ao remover o worktree quando a feature for mergeada: `git worktree remove .worktrees/<branch>`.
-
-## Padrão Git Worktree + Subagentes Paralelos
-
-Este projeto usa um padrão padronizado de **git worktrees** combinado com **subagentes paralelos** no Maestri para acelerar o desenvolvimento de features sem conflitos.
-
-### Estrutura de Worktrees
-
-```
-<repo-root>/
-├── .git/
-├── .worktrees/
-│   ├── feature-auth-refactor/      ← worktree 1 (agente A)
-│   ├── feature-new-dashboard/      ← worktree 2 (agente B)
-│   └── fix-login-race/             ← worktree 3 (agente C)
-├── src/
-└── ...
-```
-
-**Comandos:**
-
-```bash
-# Criar worktree para uma feature
-git worktree add -b feature/nome .worktrees/feature-nome
-
-# Entrar no worktree
-cd .worktrees/feature-nome
-
-# Remover worktree após merge
-git worktree remove .worktrees/feature-nome
-```
-
-### Padrão de Subagentes Paralelos
-
-Quando uma feature é grande o suficiente, o Maestro decompõe em tarefas independentes e delega a **subagentes em worktrees separados**:
-
-```
-Maestro (terminal principal)
-├── Agente A — worktree: feature-auth-refactor
-│   └── Responsabilidade: refatorar middleware de auth
-├── Agente B — worktree: feature-new-dashboard
-│   └── Responsabilidade: criar componentes do dashboard
-└── Agente C — worktree: fix-login-race
-    └── Responsabilidade: corrigir race condition no login
-```
-
-**Regras de Coordenação:**
-
-1. **Isolamento obrigatório**: Cada subagente trabalha APENAS em seu worktree. Nenhum agente toca arquivos de outro.
-2. **Rebase frequente**: Subagentes fazem `git rebase origin/main` a cada 30 min ou antes de qualquer push.
-3. **Sem push direto para main**: Todos os worktrees usam branches nomeadas (`feature/*`, `fix/*`).
-4. **Sincronização via notes**: Subagentes escrevem status em notes do Maestri (`maestri note write`) em vez de commits de merge.
-5. **Testes locais independentes**: Cada worktree roda seu próprio `npm run test` e `npm run build` antes de reportar conclusão.
-
-### Fluxo de Orquestração
-
-**Passo 1 — Decomposição (Maestro)**
-
-- Analisa a feature e divide em tarefas com fronteiras claras (nenhuma tarefa deve editar os mesmos arquivos que outra).
-- Cria um plano de dependências: o que pode ser paralelo vs. o que precisa ser sequencial.
-
-**Passo 2 — Alocação (Maestro)**
-
-- Cria worktrees: `git worktree add -b feature/<nome> .worktrees/<nome>`
-- Recruta subagentes no Maestri (um por worktree).
-- Conecta notes de contexto a cada subagente.
-
-**Passo 3 — Execução Paralela (Subagentes)**
-
-- Cada subagente implementa sua tarefa no próprio worktree.
-- Reporta progresso via `maestri note write` a cada checkpoint.
-- Sinaliza conclusão ao Maestro.
-
-**Passo 4 — Integração (Maestro)**
-
-- Revisa cada branch individualmente (code review via `maestri ask`).
-- Resolve conflitos de merge se necessário.
-- Faz squash/merge para `main` na ordem correta (respeitando dependências).
-- Remove worktrees após merge bem-sucedido.
-
-### Exemplo Prático
-
-**Cenário:** Implementar novo módulo de "Eventos e Notificações"
-
-```
-Maestro
-├── Agente A — worktree: feature/eventos-db
-│   └── Schema Drizzle + migration PostgreSQL
-├── Agente B — worktree: feature/eventos-api
-│   └── Server Actions + repository + queries
-├── Agente C — worktree: feature/eventos-ui
-│   └── Páginas React + componentes + formulários
-└── Agente D — worktree: feature/eventos-tests
-    └── Testes unitários + E2E + schema contract
-```
-
-**Dependências:**
-
-- A → B (API depende do schema)
-- B → C (UI depende da API)
-- D pode rodar em paralelo, mas precisa do schema de A
-
-**Orquestração:**
-
-1. Maestro lança A primeiro.
-2. Quando A termina, Maestro faz merge do schema e lança B e D em paralelo.
-3. Quando B termina, Maestro lança C.
-4. Maestro integra tudo e faz merge final.
-
-### Anti-padrões a Evitar
-
-- **NÃO** compartilhar um único worktree entre múltiplos agentes.
-- **NÃO** permitir subagentes fazerem merge direto para `main`.
-- **NÃO** deixar worktrees abandonados por mais de 48h sem rebase.
-- **NÃO** dividir tarefas que editam o mesmo arquivo (ex: dois agentes modificando `src/lib/db/schema.ts`).
-- **NÃO** abrir PR a partir de um worktree com mudanças de outra frente no working tree.
-- **NÃO** usar `git add .` como atalho antes de revisar `git status --short` e `git diff --cached --name-status`.
-
-### Comandos Úteis
-
-```bash
-# Listar worktrees ativos
-git worktree list
-
-# Forçar remoção de worktree sujo
-git worktree remove --force .worktrees/<nome>
-
-# Prune worktrees inválidos
-git worktree prune
-
-# Verificar branch de cada worktree
-git worktree list --porcelain
-
-# Preservar uma frente inacabada antes de trocar de task
-git stash push -u -m "nome-da-frente"
-
-# Conferir exatamente o que entrara no commit
-git diff --cached --name-status
-```
-
-<!-- MANUAL: Production database is Neon Postgres. See TODO-PROD.md for go-live checklist. -->
+| Documento | Conteúdo |
+|-----------|----------|
+| `CONTEXT.md` | Glossário e regras de negócio |
+| `README.md` | Quick start |
+| `TODO-PROD.md` | Checklist de go-live |
+| `docs/runbook.md` | Runbook operacional |
+| `docs/adr/` | ADRs 001-011 |
+| `API.md` | Superfície HTTP pública |
+| `PAGES.md` | Páginas e funcionalidades |
+| `ARCHITECTURE.md` | Diagrama, deployment, glossário |
+| `DESIGN.md` | Design system |
+| `CONTRIBUTING.md` | Convenções de contribuição |

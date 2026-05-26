@@ -2,7 +2,7 @@
 
 Este guia orienta a configuração local, a navegação pelo código, o fluxo de desenvolvimento, a abordagem de testes e os problemas mais comuns da ASOF Intranet.
 
-Última atualização: 2026-05-25
+Última atualização: 2026-05-26
 
 ## 1. Instruções de configuração
 
