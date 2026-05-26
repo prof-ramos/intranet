@@ -12,7 +12,7 @@ const logger = createLogger('ip');
  * `x-forwarded-for` (or the direct socket IP) will be used.
  *
  * Controlled by the `TRUSTED_PROXY_COUNT` env var (defaults to 1 for
- * Vercel/Supabase deployments).
+ * Vercel/managed Postgres deployments).
  */
 export function getTrustedProxyCount(): number {
   const raw = env.TRUSTED_PROXY_COUNT;

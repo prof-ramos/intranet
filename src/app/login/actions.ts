@@ -1,12 +1,13 @@
 'use server';
 
+import bcrypt from 'bcryptjs';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
-import { sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { loginRateLimiter } from '@/lib/auth/login-rate-limit';
 import { loginSchema } from '@/lib/validation/schemas';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createSession } from '@/lib/auth/session';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 
@@ -68,40 +69,33 @@ export async function login(formData: FormData) {
     redirect('/login?error=rate-limit');
   }
 
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user: authUser },
-    error,
-  } = await supabase.auth.signInWithPassword({ email, password });
+  const normalizedEmail = email.trim().toLowerCase();
 
-  if (error) {
-    redirect('/login?error=1');
-  }
-
-  if (!authUser?.email) {
-    await supabase.auth.signOut();
-    redirect('/login?error=1');
-  }
-
-  const normalizedAuthEmail = authUser.email.trim().toLowerCase();
-
+  const DUMMY_HASH = '$2a$10$22V5F5Xg8N.0P5A/pZ7H/ee7o0T.3VvJ1Qz80J8w3Z1V2y0R.uw4S';
+  
   const [user] = await retryTransientConnection(() =>
     db
       .select({
         id: admins.id,
+        name: admins.name,
         email: admins.email,
+        passwordHash: admins.passwordHash,
+        role: admins.role,
         isActive: admins.isActive,
         mustChangePassword: admins.mustChangePassword,
       })
       .from(admins)
-      .where(sql`lower(${admins.email}) = ${normalizedAuthEmail}`)
+      .where(eq(admins.email, normalizedEmail))
       .limit(1),
   );
 
-  if (!user || !user.isActive) {
-    await supabase.auth.signOut();
+  const passwordMatches = await bcrypt.compare(password, user ? user.passwordHash : DUMMY_HASH);
+
+  if (!user || !user.isActive || !passwordMatches) {
     redirect('/login?error=1');
   }
+
+  await createSession({ userId: user.id, email: user.email });
 
   try {
     await retryTransientConnection(() => loginRateLimiter.reset(email));

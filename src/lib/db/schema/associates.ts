@@ -1,5 +1,6 @@
 import {
   bigint,
+  check,
   date,
   index,
   pgEnum,
@@ -8,6 +9,7 @@ import {
   timestamp,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { paymentMethod } from './enums';
 
 export const associationStatus = pgEnum('association_status', ['ativo', 'inativo']);
@@ -84,6 +86,21 @@ export const associates = pgTable(
     index('idx_associates_contribution_status').on(table.contributionStatus),
     index('idx_associates_status_name').on(table.associationStatus, table.fullName),
     index('idx_associates_name_trgm').using('gin', table.fullName.op('gin_trgm_ops')),
+    check('chk_associates_cpf_pii', sql`${table.cpf} IS NULL OR ${table.cpfCiphertext} IS NULL`),
+    check(
+      'chk_associates_email_pii',
+      sql`${table.primaryEmail} IS NULL OR ${table.primaryEmailCiphertext} IS NULL`,
+    ),
+    check('chk_associates_phone_pii', sql`${table.phone} IS NULL OR ${table.phoneCiphertext} IS NULL`),
+    check(
+      'chk_associates_address_pii',
+      sql`${table.address} IS NULL OR ${table.addressCiphertext} IS NULL`,
+    ),
+    check(
+      'chk_associates_whatsapp_pii',
+      sql`${table.whatsapp} IS NULL OR ${table.whatsappCiphertext} IS NULL`,
+    ),
+    check('chk_associates_siape_pii', sql`${table.siape} IS NULL OR ${table.siapeCiphertext} IS NULL`),
   ],
 );
 

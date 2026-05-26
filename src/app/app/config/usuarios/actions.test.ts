@@ -1,11 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetUserPassword, toggleUserActive } from './actions';
-import { passwordResetEmailHtml } from '@/lib/email/templates';
+import { temporaryPasswordEmailHtml } from '@/lib/email/templates';
 
 const {
   requireRoleMock,
-  ensureAdminPasswordAuthUserMock,
-  generatePasswordResetLinkMock,
   hashMock,
   revalidatePathMock,
   selectQueue,
@@ -18,8 +16,6 @@ const {
   envMock,
 } = vi.hoisted(() => ({
   requireRoleMock: vi.fn(),
-  ensureAdminPasswordAuthUserMock: vi.fn(),
-  generatePasswordResetLinkMock: vi.fn(),
   hashMock: vi.fn(),
   revalidatePathMock: vi.fn(),
   sendEmailMock: vi.fn(),
@@ -44,11 +40,6 @@ vi.mock('bcryptjs', () => ({
 
 vi.mock('@/lib/auth/authorization', () => ({
   requireRole: (...args: unknown[]) => requireRoleMock(...args),
-}));
-
-vi.mock('@/lib/supabase/admin', () => ({
-  ensureAdminPasswordAuthUser: (...args: unknown[]) => ensureAdminPasswordAuthUserMock(...args),
-  generatePasswordResetLink: (...args: unknown[]) => generatePasswordResetLinkMock(...args),
 }));
 
 vi.mock('@/lib/logger', () => ({
@@ -114,8 +105,6 @@ describe('config usuarios actions', () => {
     selectQueue.length = 0;
     insertQueue.length = 0;
     requireRoleMock.mockResolvedValue({ userId: 7 });
-    ensureAdminPasswordAuthUserMock.mockResolvedValue({ userId: 'auth-1', created: false });
-    generatePasswordResetLinkMock.mockResolvedValue('https://supabase.co/recovery?token=abc');
     hashMock.mockResolvedValue('hashed-password');
     sendEmailMock.mockResolvedValue(undefined);
     envMock.MAILJET_API_KEY = undefined;
@@ -123,9 +112,10 @@ describe('config usuarios actions', () => {
     envMock.MAILJET_SENDER_VALIDATED = false;
     mockLimit.mockImplementation(async () => selectQueue.shift() ?? []);
     mockInsertValues.mockImplementation(() => insertQueue.shift());
+    mockUpdateWhere.mockResolvedValue(undefined);
   });
 
-  it('generates reset link before invalidating password, then syncs supabase auth, audits, and revalidates', async () => {
+  it('generates a local temporary password, audits, and revalidates', async () => {
     selectQueue.push([
       {
         id: 10,
@@ -143,21 +133,9 @@ describe('config usuarios actions', () => {
     const result = await resetUserPassword(null, formData);
 
     expect(result.success).toBe(true);
-    expect(result.message).toContain('Senha resetada');
-    expect(result.resetLink).toBe('https://supabase.co/recovery?token=abc');
+    expect(result.message).toContain('Senha temporária gerada');
     expect(result.tempPassword).toEqual(expect.any(String));
-    // Link generated BEFORE password invalidation
-    expect(generatePasswordResetLinkMock).toHaveBeenCalledWith('maria@asof.local');
     expect(hashMock).toHaveBeenCalledWith(expect.any(String), 12);
-    expect(ensureAdminPasswordAuthUserMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        email: 'maria@asof.local',
-        name: 'Maria',
-        role: 'secretaria',
-        mustChangePassword: true,
-        resetPassword: true,
-      }),
-    );
     expect(mockUpdateWhere).toHaveBeenCalledTimes(1);
     expect(mockInsertValues).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -170,7 +148,7 @@ describe('config usuarios actions', () => {
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/usuarios');
   });
 
-  it('sends configured Mailjet reset email without returning fallback secrets or target email', async () => {
+  it('sends configured Mailjet temporary password email without returning fallback secrets', async () => {
     envMock.MAILJET_API_KEY = 'mailjet-key';
     envMock.MAILJET_SECRET_KEY = 'mailjet-secret';
     envMock.MAILJET_SENDER_VALIDATED = true;
@@ -199,13 +177,12 @@ describe('config usuarios actions', () => {
     );
     expect(result).toEqual({
       success: true,
-      message: 'Senha resetada. Email de recuperação enviado ao usuário.',
-      resetLink: undefined,
+      message: 'Senha temporária gerada e enviada ao usuário.',
       tempPassword: undefined,
     });
   });
 
-  it('returns fallback secrets when configured Mailjet delivery fails without logging raw response body', async () => {
+  it('returns fallback password when configured Mailjet delivery fails without logging raw response body', async () => {
     envMock.MAILJET_API_KEY = 'mailjet-key';
     envMock.MAILJET_SECRET_KEY = 'mailjet-secret';
     envMock.MAILJET_SENDER_VALIDATED = true;
@@ -220,7 +197,7 @@ describe('config usuarios actions', () => {
     ]);
     insertQueue.push(undefined);
     const mailjetError = new Error(
-      'Mailjet error 400: {"Messages":[{"To":[{"Email":"maria@asof.local"}],"Errors":[{"ErrorMessage":"https://supabase.co/recovery?token=abc"}]}]}',
+      'Mailjet error 400: {"Messages":[{"To":[{"Email":"maria@asof.local"}],"Errors":[{"ErrorMessage":"SenhaTemp123!"}]}]}',
     ) as Error & { code: string; status: number };
     mailjetError.code = 'MAILJET_SEND_FAILED';
     mailjetError.status = 400;
@@ -233,9 +210,8 @@ describe('config usuarios actions', () => {
 
     expect(result.success).toBe(true);
     expect(result.message).toBe(
-      'Senha resetada. Comunique o link de recuperação ao usuário por canal seguro.',
+      'Senha temporária gerada. Comunique-a ao usuário por canal seguro.',
     );
-    expect(result.resetLink).toBe('https://supabase.co/recovery?token=abc');
     expect(result.tempPassword).toEqual(expect.any(String));
     expect(loggerErrorMock).toHaveBeenCalledWith(
       '[resetUserPassword] Failed to deliver password reset email.',
@@ -251,40 +227,11 @@ describe('config usuarios actions', () => {
     );
     const loggedArgs = JSON.stringify(loggerErrorMock.mock.calls);
     expect(loggedArgs).not.toContain('maria@asof.local');
-    expect(loggedArgs).not.toContain('supabase.co/recovery');
+    expect(loggedArgs).not.toContain('SenhaTemp123');
     expect(loggedArgs).not.toContain('Messages');
   });
 
-  it('throws sanitized Mailjet errors without raw response body', async () => {
-    envMock.MAILJET_API_KEY = 'mailjet-key';
-    envMock.MAILJET_SECRET_KEY = 'mailjet-secret';
-    envMock.MAILJET_SENDER_VALIDATED = true;
-    const rawResponseBody = '{"Messages":[{"To":[{"Email":"maria@asof.local"}]}]}';
-    const { sendEmail } = await vi.importActual<typeof import('@/lib/email')>('@/lib/email');
-    const fetchMock = vi.fn(async () => new Response(rawResponseBody, { status: 400 }));
-    vi.stubGlobal('fetch', fetchMock);
-
-    try {
-      await expect(
-        sendEmail({
-          to: 'maria@asof.local',
-          toName: 'Maria',
-          subject: 'Redefinição de senha — ASOF Intranet',
-          htmlBody: '<p>reset</p>',
-          textBody: 'reset',
-        }),
-      ).rejects.toMatchObject({
-        name: 'MailjetSendError',
-        message: 'Mailjet send failed with status 400',
-        code: 'MAILJET_SEND_FAILED',
-        status: 400,
-      });
-    } finally {
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it('uses fallback secrets instead of Mailjet when the sender is not explicitly validated', async () => {
+  it('uses fallback password instead of Mailjet when the sender is not explicitly validated', async () => {
     envMock.MAILJET_API_KEY = 'mailjet-key';
     envMock.MAILJET_SECRET_KEY = 'mailjet-secret';
     envMock.MAILJET_SENDER_VALIDATED = false;
@@ -306,45 +253,17 @@ describe('config usuarios actions', () => {
 
     expect(sendEmailMock).not.toHaveBeenCalled();
     expect(result.success).toBe(true);
-    expect(result.message).toBe('Senha resetada. Comunique o link de recuperação ao usuário por canal seguro.');
-    expect(result.resetLink).toBe('https://supabase.co/recovery?token=abc');
+    expect(result.message).toBe(
+      'Senha temporária gerada. Comunique-a ao usuário por canal seguro.',
+    );
     expect(result.tempPassword).toEqual(expect.any(String));
   });
 
-  it('escapes reset link in password reset email href attributes', () => {
-    const html = passwordResetEmailHtml(
-      'Maria',
-      'https://asof.local/reset?token="abc"&next=<script>',
-    );
+  it('escapes temporary password in email HTML', () => {
+    const html = temporaryPasswordEmailHtml('Maria', 'Temp<"abc">&');
 
-    expect(html).toContain(
-      'href="https://asof.local/reset?token=&quot;abc&quot;&amp;next=&lt;script&gt;"',
-    );
-    expect(html).not.toContain('href="https://asof.local/reset?token="abc"&next=<script>"');
-  });
-
-  it('aborts without invalidating password when link generation fails', async () => {
-    selectQueue.push([
-      {
-        id: 10,
-        name: 'Maria',
-        email: 'maria@asof.local',
-        role: 'secretaria',
-        isActive: true,
-      },
-    ]);
-    generatePasswordResetLinkMock.mockRejectedValue(new Error('generateLink failed'));
-
-    const formData = new FormData();
-    formData.set('userId', '10');
-
-    const result = await resetUserPassword(null, formData);
-
-    expect(result.success).toBe(false);
-    expect(result.message).toContain('Falha ao gerar link de recuperação');
-    // Password should NOT have been invalidated
-    expect(ensureAdminPasswordAuthUserMock).not.toHaveBeenCalled();
-    expect(mockUpdateWhere).not.toHaveBeenCalled();
+    expect(html).toContain('Temp&lt;&quot;abc&quot;&gt;&amp;');
+    expect(html).not.toContain('Temp<"abc">&');
   });
 
   it('rejects password reset for the current actor', async () => {
@@ -357,7 +276,6 @@ describe('config usuarios actions', () => {
       success: false,
       message: 'Use a página de troca de senha para alterar sua própria senha.',
     });
-    expect(ensureAdminPasswordAuthUserMock).not.toHaveBeenCalled();
     expect(mockUpdateWhere).not.toHaveBeenCalled();
   });
 
@@ -378,7 +296,6 @@ describe('config usuarios actions', () => {
       message: 'Usuário inválido.',
     });
 
-    expect(ensureAdminPasswordAuthUserMock).not.toHaveBeenCalled();
     expect(mockUpdateWhere).not.toHaveBeenCalled();
   });
 
@@ -402,7 +319,6 @@ describe('config usuarios actions', () => {
       success: false,
       message: 'Não é possível resetar a senha de um usuário inativo.',
     });
-    expect(ensureAdminPasswordAuthUserMock).not.toHaveBeenCalled();
   });
 
   it('rejects toggling the current actor account', async () => {

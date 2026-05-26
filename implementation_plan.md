@@ -64,7 +64,7 @@ O documento não requer testes automatizados. A acuracidade das evidências ser�
 | # | Item | Evidência | Base Legal | Status | Risco | Ação Recomendada |
 |---|---|---|---|---|---|---|
 | 1.1 | Mapear operações de tratamento | Schema `associates` em src/lib/db/schema/associates.ts define 29 colunas + 3 ciphertext/hash por campo sensível. Registro de operações existe implicitamente no código, mas não há ROPA formal publicado. | LGPD art. 37 | parcial | Alto | Criar ROPA formal em docs/compliance/ropa.md |
-| 1.2 | Identificar controlador/operador/encarregado | Não há documentação publicada. O sistema não expõe quem é o controlador (ASOF), operador (provavelmente Supabase como operador de infra) ou encarregado. | LGPD art. 5º, VI, VII, VIII | não conforme | Alto | Adicionar seção na política de privacidade com DPO/encarregado |
+| 1.2 | Identificar controlador/operador/encarregado | Não há documentação publicada. O sistema não expõe quem é o controlador (ASOF), operador (provavelmente Neon/Vercel como operador de infra) ou encarregado. | LGPD art. 5º, VI, VII, VIII | não conforme | Alto | Adicionar seção na política de privacidade com DPO/encarregado |
 | 1.3 | Registrar finalidade, categoria e base legal | `src/lib/associates/lgpd.ts` classifica campos como `sensitive` ou `public`. Não há documentação explícita de base legal por fluxo. | LGPD arts. 6º, 7º | parcial | Alto | Documentar base legal para cada operação no ROPA |
 | 1.4 | Regra simplificada ANPD (pequeno porte) | ASOF tem ~763 associados. Possivelmente enquadrável como agente de pequeno porte. | Resolução CD/ANPD nº 2/2021 | não conforme | Médio | Verificar enquadramento e adotar modelo simplificado |
 
@@ -73,7 +73,7 @@ O documento não requer testes automatizados. A acuracidade das evidências ser�
 | # | Item | Evidência | Base Legal | Status | Risco | Ação Recomendada |
 |---|---|---|---|---|---|---|
 | 2.1 | Base legal definida por fluxo | Tratamento de associados parece usar "execução de contrato" (associação) e "legítimo interesse" (gestão administrativa). Não explicitado. | LGPD art. 7º | parcial | Alto | Documentar base legal de cada operação no ROPA |
-| 2.2 | Consentimento adequado | Não há mecanismo de consentimento granular implementado. Login usa autenticação Supabase (provavelmente consentimento implícito). | LGPD arts. 7º, I e 8º | parcial | Alto | Implementar termo de consentimento no primeiro login |
+| 2.2 | Consentimento adequado | Não há mecanismo de consentimento granular implementado. Login usa cookie de sessão assinado (provavelmente consentimento implícito). | LGPD arts. 7º, I e 8º | parcial | Alto | Implementar termo de consentimento no primeiro login |
 | 2.3 | Dados sensíveis (art. 11) | `birthDate` é dado sensível (origem racial/étnica implícita). `internalNotes` pode conter dados sensíveis. `sourcePayload` também. | LGPD art. 11 | parcial | Alto | Confirmar base legal específica para birthDate/internalNotes |
 | 2.4 | Legítimo interesse / obrigação legal | Associação sem fins lucrativos → legítimo interesse aplicável para gestão de associados. Não documentado. | LGPD art. 7º | parcial | Médio | Documentar no ROPA |
 
@@ -83,16 +83,16 @@ O documento não requer testes automatizados. A acuracidade das evidências ser�
 |---|---|---|---|---|---|---|
 | 3.1 | Política de privacidade publicada | Não existe rota `/privacidade` ou `/privacy`. Não há link no layout ou footer. | LGPD art. 6º, VI | não conforme | Alto | Criar página /privacidade com LGPD-compliant privacy policy |
 | 3.2 | Informar finalidades, forma, duração | `src/lib/logger.ts` redata PII em logs. `src/lib/db/index.ts` define timeouts de conexão (30s). Não há informação ao titular. | LGPD arts. 9º, 41 | não conforme | Alto | Incluir na política de privacidade |
-| 3.3 | Compartilhamentos com terceiros | Supabase Auth, provavelmente Resend/SendGrid para email. Não documentado. | LGPD arts. 33, 9º | não conforme | Médio | Listar operadores e subprocessadores na política |
+| 3.3 | Compartilhamentos com terceiros | Neon/Vercel, provavelmente Mailjet para email. Não documentado. | LGPD arts. 33, 9º | não conforme | Médio | Listar operadores e subprocessadores na política |
 | 3.4 | Linguagem objetiva e compatível | N/A — não há política publicada ainda. | LGPD art. 6º, VI | não conforme | Alto | Criar política em linguagem clara |
 
 ## 4. Consentimento e Cookies
 
 | # | Item | Evidência | Base Legal | Status | Risco | Ação Recomendada |
 |---|---|---|---|---|---|---|
-| 4.1 | Não carregar cookies não essenciais sem consentimento | Não há banner de cookies. Supabase Auth usa cookies de sessão (essenciais). Sem analytics/marketing identificado. | LGPD arts. 7º, I, 8º, 9º | parcial | Alto | Implementar cookie consent banner para não essenciais |
+| 4.1 | Não carregar cookies não essenciais sem consentimento | Não há banner de cookies. Cookie de sessão é essencial. Sem analytics/marketing identificado. | LGPD arts. 7º, I, 8º, 9º | parcial | Alto | Implementar cookie consent banner para não essenciais |
 | 4.2 | Prova do consentimento e revogação | Não há registro de consentimento. `src/lib/audit/service.ts` loga auditoria, mas não consentimento. | LGPD art. 8º, §5º | não conforme | Alto | Criar tabela `user_consents` + UI de revogação |
-| 4.3 | Separar cookies essenciais/não essenciais | Apenas cookies de sessão Supabase (essenciais). Sem categorização formal. | LGPD arts. 6º, I, III, 8º | parcial | Médio | Documentar categorias de cookies |
+| 4.3 | Separar cookies essenciais/não essenciais | Apenas cookies de sessão (essenciais). Sem categorização formal. | LGPD arts. 6º, I, III, 8º | parcial | Médio | Documentar categorias de cookies |
 | 4.4 | Tratamento posterior incompatível | Sem evidência de reuso de dados para finalidade diferente. | LGPD art. 6º, I, VII | conforme | Baixo | N/A |
 
 ## 5. Minimização de Dados
@@ -118,7 +118,7 @@ O documento não requer testes automatizados. A acuracidade das evidências ser�
 | # | Item | Evidência | Base Legal | Status | Risco | Ação Recomendada |
 |---|---|---|---|---|---|---|
 | 7.1 | Medidas técnicas e administrativas | AES-256-GCM encryption (src/lib/crypto/index.ts). RLS policies (migrations 0023, 0039, 0044). Connection pool configurado. | LGPD art. 46 | conforme | Baixo | N/A |
-| 7.2 | Controle de acesso por perfil, MFA | `requireAuth()` + `requireRole()` (src/lib/auth). Três roles: admin, diretoria, secretaria. | LGPD art. 46 | parcial | Médio | Implementar MFA via Supabase |
+| 7.2 | Controle de acesso por perfil, MFA | `requireAuth()` + `requireRole()` (src/lib/auth). Três roles: admin, diretoria, secretaria. | LGPD art. 46 | parcial | Médio | Implementar MFA |
 | 7.3 | Revisar segredos, tokens, env vars | `src/lib/env.ts` valida variáveis obrigatórias. `ENCRYPTION_MASTER_KEY`, `DATABASE_URL` etc. | LGPD art. 46 | conforme | Baixo | N/A |
 | 7.4 | Plano de resposta a incidentes | Não existe documentado. `src/lib/events.ts` e webhooks podem notificar, mas sem processo formal. | LGPD art. 48 | não conforme | Alto | Criar incident response runbook + notificação ANPD |
 
@@ -138,7 +138,7 @@ O documento não requer testes automatizados. A acuracidade das evidências ser�
 | 9.1 | Confirmação, acesso, correção, eliminação etc. | `getAssociateProfile()`, `getAssociateForEdit()`, `updateAssociateData()` no service.ts. Não há UI de "meus dados" para o titular. | LGPD art. 18 | parcial | Alto | Criar portal "Meus Dados" para associado |
 | 9.2 | Fluxo interno para responder solicitações | Não existe endpoint ou processo documentado. | LGPD art. 18 | não conforme | Alto | Criar API route `/api/lgpd/request` + workflow |
 | 9.3 | Exclusão de dados com consentimento | Não há lógica de exclusão de associados (apenas inativação via `associationStatus`). | LGPD art. 18, VI | não conforme | Alto | Implementar soft delete + purge schedule |
-| 9.4 | Canal simples de contato | Login usa Supabase Auth. Não há formulário de contato LGPD. | LGPD arts. 9º, 18 | não conforme | Médio | Adicionar formulário de contato LGPD |
+| 9.4 | Canal simples de contato | Login usa formulário interno. Não há formulário de contato LGPD. | LGPD arts. 9º, 18 | não conforme | Médio | Adicionar formulário de contato LGPD |
 
 ## 10. Retenção e Descarte
 
@@ -153,9 +153,9 @@ O documento não requer testes automatizados. A acuracidade das evidências ser�
 
 | # | Item | Evidência | Base Legal | Status | Risco | Ação Recomendada |
 |---|---|---|---|---|---|---|
-| 11.1 | Listar operadores e subprocessadores | Supabase (auth, banco, possivelmente Realtime). Não documentado. | LGPD arts. 5º, VII, 39 | não conforme | Alto | Listar todos os serviços externos |
-| 11.2 | Transferência internacional (arts. 33-36) | Supabase pode ter servidores nos EUA. Dados de associados no exterior (~63%) acessados do Brasil. | LGPD arts. 33-36 | não conforme | Alto | Verificar localização Supabase + cláusulas contratuais padrão |
-| 11.3 | Terceiros tratam sob instrução do controlador | Sem DPA (Data Processing Agreement) documentado com Supabase ou outros. | LGPD art. 39 | não conforme | Alto | Exigir DPA de todos os operadores |
+| 11.1 | Listar operadores e subprocessadores | Neon (banco), Vercel (deploy). Não documentado. | LGPD arts. 5º, VII, 39 | não conforme | Alto | Listar todos os serviços externos |
+| 11.2 | Transferência internacional (arts. 33-36) | Neon/Vercel podem ter servidores nos EUA. Dados de associados no exterior (~63%) acessados do Brasil. | LGPD arts. 33-36 | não conforme | Alto | Verificar localização Neon/Vercel + cláusulas contratuais padrão |
+| 11.3 | Terceiros tratam sob instrução do controlador | Sem DPA (Data Processing Agreement) documentado com Neon, Vercel ou outros. | LGPD art. 39 | não conforme | Alto | Exigir DPA de todos os operadores |
 | 11.4 | Registrar compartilhamentos e base legal | `src/lib/integrations/` gerencia webhooks. `WEBHOOK_SAFE_ASSOCIATE_FIELDS` evita PII. | LGPD arts. 9º, 37 | parcial | Médio | Documentar todos os compartilhamentos |
 
 ## 12. Governança e Prova
@@ -192,5 +192,5 @@ O documento não requer testes automatizados. A acuracidade das evidências ser�
 3. Fluxo de direitos do titular (art. 18) — acesso, correção, exclusão
 4. Plano de resposta a incidentes — LGPD art. 48
 5. Política de retenção e descarte — LGPD arts. 15 e 16
-6. DPA com operadores (Supabase) — LGPD arts. 33 e 39
+6. DPA com operadores (Neon/Vercel) — LGPD arts. 33 e 39
 7. Transferência internacional — LGPD arts. 33-36

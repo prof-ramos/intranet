@@ -96,7 +96,7 @@ npm run db:studio
 - **Indexes**: Create partial indexes for queries with conditional `WHERE`. Use trigram GIN (`gin_trgm_ops`) for `LIKE '%term%'`. Use composite indexes matching `(filter, order)` patterns. Prefix custom indexes with `idx_`.
 - **Connection pool**: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'` in `src/lib/db/index.ts`.
 - **Transactions**: Multi-table operations MUST use `db.transaction()`. Pass the `tx` executor to repository functions that accept one.
-- **RLS**: Hardened in migrations 0023 + 0044. All policies use `TO authenticated` (not `TO PUBLIC`) and `FORCE ROW LEVEL SECURITY` is applied on all 19 application tables. Migration 0044 aligned `notifications` (the last `TO PUBLIC` outlier) to `TO authenticated` with `get_current_admin_id()`. Auth is enforced server-side via `requireAuth()` and `requireRole()`. If a Supabase client is ever exposed to the browser, RLS policies must be narrowed to per-user or per-role predicates.
+- **RLS**: Hardened in migrations 0023 + 0044. All policies use `TO authenticated` (not `TO PUBLIC`) and `FORCE ROW LEVEL SECURITY` is applied on all 19 application tables. Migration 0044 aligned `notifications` (the last `TO PUBLIC` outlier) to `TO authenticated` with `get_current_admin_id()`. Auth is enforced server-side via `requireAuth()` and `requireRole()`. If a direct database client is ever exposed to the browser, RLS policies must be narrowed to per-user or per-role predicates.
 - **Update safety**: `updateAssociateById` and similar functions must use typed interfaces, not `Record<string, unknown>`, to prevent unintended column overwrites.
 - **Migrations**: Name SQL files with zero-padded index + description (e.g., `0009_quality_improvements.sql`). Update `meta/_journal.json` with the correct timestamp.
 - **Testing**: `npm run test:db` validates tables, columns, enums, indexes, extensions, and migration alignment against the live database.
@@ -109,7 +109,7 @@ npm run db:studio
 - Local development uses PostgreSQL from Homebrew, currently `postgresql@16` on `localhost:5432`.
 - Homebrew PostgreSQL uses the macOS user role on this machine (`$USER`, currently `gabrielramos`); do not use `postgres://postgres@localhost:5432/...` unless that role has been explicitly created.
 - For local development, use the same direct URL for runtime and migrations: `DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet` and `DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet`.
-- Supabase remains the remote/staging/production Postgres target; use pooler URLs only for runtime and direct/non-pooling URLs for migrations.
+- Neon (intranet-db) remains the remote/staging/production Postgres target; use pooler URLs only for runtime and direct/non-pooling URLs for migrations.
 - Seed scripts are `scripts/seed-admin.ts` only; `scripts/seed-associados.ts` was removed.
 
 ## Development Auth

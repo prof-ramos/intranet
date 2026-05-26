@@ -10,7 +10,7 @@ import { createLogger } from '@/lib/logger';
 const logger = createLogger('db');
 
 // databaseUrl intentionally prefers DATABASE_URL for runtime connections.
-// Falls back to Supabase Vercel integration var names (POSTGRES_URL, POSTGRES_PRISMA_URL).
+// Falls back to common managed Postgres integration var names.
 const databaseUrl =
   env.DATABASE_URL ?? env.DATABASE_POSTGRES_URL ?? env.POSTGRES_PRISMA_URL ?? env.POSTGRES_URL;
 

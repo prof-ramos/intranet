@@ -5,7 +5,6 @@ import { changePassword } from '@/app/change-password/actions';
 const requireAuthMock = vi.fn();
 const compareMock = vi.fn();
 const hashMock = vi.fn();
-const updateUserMock = vi.fn();
 const updateWhereMock = vi.fn();
 
 let mockAdmin: {
@@ -54,16 +53,6 @@ vi.mock('@/lib/db/schema', () => ({
   },
 }));
 
-vi.mock('@/lib/supabase/server', () => ({
-  createServerSupabaseClient: vi.fn(() =>
-    Promise.resolve({
-      auth: {
-        updateUser: (...args: unknown[]) => updateUserMock(...args),
-      },
-    }),
-  ),
-}));
-
 describe('change password action', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -77,7 +66,6 @@ describe('change password action', () => {
     mockAdmin = { id: 7, passwordHash: 'stored-hash' };
     compareMock.mockResolvedValue(true);
     hashMock.mockResolvedValue('new-hash');
-    updateUserMock.mockResolvedValue({ error: null });
     updateWhereMock.mockResolvedValue(undefined);
   });
 
@@ -96,8 +84,6 @@ describe('change password action', () => {
 
     expect(compareMock).toHaveBeenCalledWith('Senha-Atual-2026!', 'stored-hash');
     expect(hashMock).toHaveBeenCalledWith('Senha-Nova-2026!', 12);
-    expect(updateUserMock).toHaveBeenCalledTimes(1);
-    expect(updateUserMock).toHaveBeenCalledWith({ password: 'Senha-Nova-2026!' });
   });
 
   it('redirects back with an error when the current password is invalid', async () => {
@@ -107,46 +93,27 @@ describe('change password action', () => {
       'NEXT_REDIRECT:/change-password?error=Senha%20atual%20inv%C3%A1lida.',
     );
 
-    expect(updateUserMock).not.toHaveBeenCalled();
+    expect(updateWhereMock).not.toHaveBeenCalled();
   });
 
-  it('rolls back the auth password when the database write fails', async () => {
+  it('redirects with an error when the database write fails', async () => {
     updateWhereMock.mockRejectedValueOnce(new Error('write failed'));
 
     await expect(changePassword(buildFormData())).rejects.toThrow(
       'NEXT_REDIRECT:/change-password?error=N%C3%A3o%20foi%20poss%C3%ADvel%20concluir%20a%20altera%C3%A7%C3%A3o%20de%20senha.',
     );
-
-    expect(updateUserMock).toHaveBeenCalledTimes(2);
-    expect(updateUserMock).toHaveBeenNthCalledWith(1, { password: 'Senha-Nova-2026!' });
-    expect(updateUserMock).toHaveBeenNthCalledWith(2, { password: 'Senha-Atual-2026!' });
   });
 
-  it('logs safe errors when both the database write and rollback fail', async () => {
+  it('logs safe errors when the database write fails', async () => {
     const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     updateWhereMock.mockRejectedValueOnce(
       Object.assign(new Error('db failed cpf=123'), { code: 'E_DB' }),
     );
-    updateUserMock.mockResolvedValueOnce({ error: null }).mockResolvedValueOnce({
-      error: Object.assign(new Error('rollback failed token=secret'), { code: 'E_ROLLBACK' }),
-    });
 
     await expect(changePassword(buildFormData())).rejects.toThrow(
       'NEXT_REDIRECT:/change-password?error=N%C3%A3o%20foi%20poss%C3%ADvel%20concluir%20a%20altera%C3%A7%C3%A3o%20de%20senha.',
     );
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      '[change-password] failed to rollback auth password after DB write failure',
-      {
-        error: {
-          kind: 'error',
-          name: 'Error',
-          code: 'E_ROLLBACK',
-          digest: undefined,
-        },
-      },
-      expect.any(Error),
-    );
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       '[change-password] failed to persist new password hash',
       {

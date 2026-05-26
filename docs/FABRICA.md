@@ -337,9 +337,9 @@ Antes de integrar qualquer trabalho na main:
 
 ## Segurança
 
-- Service-role keys nunca em worktrees
+- Segredos de producao nunca em worktrees
 - Cada worktree usa seu próprio `.env.local`
-- RLS habilitado em todas as conexões
+- Autorizacao server-side e credenciais PostgreSQL com grants mínimos de DML, sem DDL/SUPERUSER (ver ADR 007)
 - Audit trail para todas as ações administrativas
 - Worktrees de hotfix são destruídos após merge
 

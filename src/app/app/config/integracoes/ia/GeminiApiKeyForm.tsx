@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef } from 'react';
 import { KeyRound, Trash2, Save } from 'lucide-react';
 import { saveGeminiApiKeyAction, deleteGeminiApiKeyAction } from './actions';
-import { focusRingClass, navy, primaryContainerHover, borderSubtle, textPrimary, error } from '@/lib/ui/tokens';
+import { focusRingClass, navy, borderSubtle, textPrimary, error } from '@/lib/ui/tokens';
 
 type Props = {
   isConfigured: boolean;
@@ -99,10 +99,7 @@ export function GeminiApiKeyForm({ isConfigured, source, updatedAt }: Props) {
             </p>
           )}
 
-          <button type="submit" className={btnPrimary} style={{ backgroundColor: navy }} disabled={savePending}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = primaryContainerHover; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = navy; }}
-          >
+          <button type="submit" className={`${btnPrimary} hover:opacity-90 transition-opacity`} style={{ backgroundColor: navy }} disabled={savePending}>
             <Save size={14} aria-hidden="true" />
             {savePending ? 'Salvando...' : 'Salvar chave'}
           </button>

@@ -1,11 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { isSkipAuthEnabled } from '@/lib/auth/config';
-import { createProxySupabaseClient } from '@/lib/supabase/proxy';
-import { toSafeErrorLog } from '@/lib/error-log';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('proxy');
+import { isSkipAuthEnabled, SESSION_COOKIE_NAME } from '@/lib/auth/config';
 
 const PROTECTED_ROUTE_PREFIXES = ['/app', '/change-password'] as const;
 const AUTH_PAGES = ['/login'] as const;
@@ -23,28 +18,17 @@ export async function proxy(request: NextRequest) {
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
 
-  const { client, getResponse } = createProxySupabaseClient(request);
-  let user = null;
-  try {
-    const result = await client.auth.getUser();
-    user = result.data.user;
-  } catch (error) {
-    logger.warn(
-      '[Auth proxy] Supabase user lookup failed.',
-      { error: toSafeErrorLog(error) },
-      error as Error,
-    );
-  }
+  const hasSession = request.cookies.has(SESSION_COOKIE_NAME);
 
-  if (!user && isProtectedRoute) {
+  if (!hasSession && isProtectedRoute) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  if (user && isAuthPage) {
+  if (hasSession && isAuthPage) {
     return NextResponse.redirect(new URL('/app', request.url));
   }
 
-  return getResponse();
+  return NextResponse.next();
 }
 
 export const config = {

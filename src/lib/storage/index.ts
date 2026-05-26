@@ -1,5 +1,3 @@
-import { getSupabaseAdminStorageClient } from '@/lib/storage/client';
-
 export const STORAGE_BUCKETS = ['oficios', 'documents', 'uploads'] as const;
 
 export type StorageBucket = (typeof STORAGE_BUCKETS)[number];
@@ -53,21 +51,21 @@ function assertNonNegativeInteger(value: number, label: string): void {
   }
 }
 
+function storageDisabled(): never {
+  throw new Error('Document storage is not configured for the managed PostgreSQL baseline.');
+}
+
 export async function uploadFile(
   bucket: string,
   path: string,
   body: StorageUploadBody,
   contentType?: string,
 ): Promise<StorageUploadResult> {
+  void body;
+  void contentType;
   assertSafeBucket(bucket);
   assertSafePath(path);
-
-  const { data, error } = await getSupabaseAdminStorageClient()
-    .storage.from(bucket)
-    .upload(path, body, { contentType, upsert: false });
-
-  if (error) throw new Error('Storage upload failed.');
-  return data;
+  storageDisabled();
 }
 
 export async function getSignedUrl(
@@ -78,23 +76,13 @@ export async function getSignedUrl(
   assertSafeBucket(bucket);
   assertSafePath(path);
   assertPositiveInteger(expiresIn, 'expiresIn');
-
-  const { data, error } = await getSupabaseAdminStorageClient()
-    .storage.from(bucket)
-    .createSignedUrl(path, expiresIn);
-
-  if (error || !data.signedUrl) throw new Error('Storage signed URL generation failed.');
-  return data.signedUrl;
+  storageDisabled();
 }
 
 export async function downloadFile(bucket: string, path: string): Promise<Blob> {
   assertSafeBucket(bucket);
   assertSafePath(path);
-
-  const { data, error } = await getSupabaseAdminStorageClient().storage.from(bucket).download(path);
-
-  if (error) throw new Error('Storage download failed.');
-  return data;
+  storageDisabled();
 }
 
 export async function deleteFile(bucket: string, paths: readonly string[]): Promise<void> {
@@ -102,12 +90,7 @@ export async function deleteFile(bucket: string, paths: readonly string[]): Prom
   paths.forEach(assertSafePath);
 
   if (paths.length === 0) return;
-
-  const { error } = await getSupabaseAdminStorageClient()
-    .storage.from(bucket)
-    .remove([...paths]);
-
-  if (error) throw new Error('Storage delete failed.');
+  storageDisabled();
 }
 
 export async function listFiles(
@@ -121,11 +104,5 @@ export async function listFiles(
   const offset = options?.offset ?? 0;
   assertPositiveInteger(limit, 'limit');
   assertNonNegativeInteger(offset, 'offset');
-
-  const { data, error } = await getSupabaseAdminStorageClient()
-    .storage.from(bucket)
-    .list(folder, { limit, offset });
-
-  if (error) throw new Error('Storage list failed.');
-  return data;
+  storageDisabled();
 }

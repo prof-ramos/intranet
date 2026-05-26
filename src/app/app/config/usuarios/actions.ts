@@ -7,12 +7,11 @@ import { requireRole } from '@/lib/auth/authorization';
 import { db } from '@/lib/db';
 import { admins, auditLogs } from '@/lib/db/schema';
 import { randomBytes } from 'crypto';
-import { ensureAdminPasswordAuthUser, generatePasswordResetLink } from '@/lib/supabase/admin';
 import { createLogger } from '@/lib/logger';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { env } from '@/lib/env';
 import { sendEmail } from '@/lib/email';
-import { passwordResetEmailHtml, passwordResetEmailText } from '@/lib/email/templates';
+import { temporaryPasswordEmailHtml, temporaryPasswordEmailText } from '@/lib/email/templates';
 
 const logger = createLogger('usuarios:actions');
 
@@ -54,7 +53,6 @@ function parseAdminId(formData: FormData): number {
 export interface ResetUserPasswordResult {
   success: boolean;
   message: string;
-  resetLink?: string;
   tempPassword?: string;
 }
 
@@ -97,35 +95,8 @@ export async function resetUserPassword(
     return { success: false, message: 'Não é possível resetar a senha de um usuário inativo.' };
   }
 
-  // CR#3: Generate the recovery link BEFORE invalidating the password.
-  // If link generation fails, we abort without leaving the user locked out.
-  let resetLink: string;
-  try {
-    resetLink = await generatePasswordResetLink(target.email);
-  } catch (linkError) {
-    logger.error(
-      '[resetUserPassword] Failed to generate password reset link.',
-      { targetId, error: toSafeErrorLog(linkError) },
-      linkError instanceof Error ? linkError : undefined,
-    );
-    return {
-      success: false,
-      message: 'Falha ao gerar link de recuperação. A senha não foi alterada. Tente novamente.',
-    };
-  }
-
-  // Now safe to invalidate: set a temporary password and mark must-change
   const tempPassword = generateTemporaryPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 12);
-
-  await ensureAdminPasswordAuthUser({
-    email: target.email,
-    password: tempPassword,
-    name: target.name,
-    role: target.role,
-    mustChangePassword: true,
-    resetPassword: true,
-  });
 
   await db
     .update(admins)
@@ -152,8 +123,8 @@ export async function resetUserPassword(
         to: target.email,
         toName: target.name,
         subject: 'Redefinição de senha — ASOF Intranet',
-        htmlBody: passwordResetEmailHtml(target.name, resetLink),
-        textBody: passwordResetEmailText(target.name, resetLink),
+        htmlBody: temporaryPasswordEmailHtml(target.name, tempPassword),
+        textBody: temporaryPasswordEmailText(target.name, tempPassword),
       });
       emailDelivered = true;
     } catch (emailError) {
@@ -168,9 +139,8 @@ export async function resetUserPassword(
   return {
     success: true,
     message: emailDelivered
-      ? `Senha resetada. Email de recuperação enviado ao usuário.`
-      : `Senha resetada. Comunique o link de recuperação ao usuário por canal seguro.`,
-    resetLink: emailDelivered ? undefined : resetLink,
+      ? `Senha temporária gerada e enviada ao usuário.`
+      : `Senha temporária gerada. Comunique-a ao usuário por canal seguro.`,
     tempPassword: emailDelivered ? undefined : tempPassword,
   };
 }

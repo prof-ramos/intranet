@@ -182,7 +182,7 @@ describe('finance repository', () => {
       expect(compiled).toContain("in ('brasil', 'brazil')");
     });
 
-    it('applies location filter for exterior as inverse of domestic aliases', async () => {
+    it('applies location filter for exterior as inverse of nacional aliases', async () => {
       dbMock.setSelectResult([]);
       await getAssociatesWithPayments(2026, 5, { location: 'exterior' });
       expect(dbMock._selectChain.where).toHaveBeenCalled();

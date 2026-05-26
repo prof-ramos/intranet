@@ -1,3 +1,5 @@
+approval_policy = "manual"
+sandbox_mode = "restricted"
 [features]
 codex_hooks = true
 hooks = true
@@ -10,7 +12,7 @@ args = [
 command = "npx"
 
 [mcp_servers.supabase]
-url = "https://mcp.supabase.com/mcp?project_ref=vmohxhyfgywaqfuqeuom"
+url = "https://mcp.supabase.com/mcp?project_ref=uftzjmmfkoqhjjwsiynk"
 
 [shell_environment_policy]
 inherit = "core"

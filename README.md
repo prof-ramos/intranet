@@ -2,7 +2,7 @@
 
 Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia associados, atividades administrativas e comunicações internas da diretoria.
 
-**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Drizzle ORM · PostgreSQL/Supabase · Supabase Auth
+**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Drizzle ORM · PostgreSQL gerenciado · auth server-side própria
 
 ---
 
@@ -16,16 +16,16 @@ Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de 
 
 ## Módulos principais
 
-| Módulo | Rota principal | Responsabilidade |
-| --- | --- | --- |
-| Dashboard | `/app` | Visão operacional de associados, atividades, jurídico e financeiro. |
-| Associados | `/app/associados` | Cadastro, perfil, lotação/posto, situação funcional, situação associativa e contribuição. |
-| Atividades | `/app/atividades` | Kanban administrativo com responsáveis, prioridades, prazos e vínculos com associados. |
-| Jurídico | `/app/juridico` | Consultas jurídicas, notas, SLA e histórico de atendimento. |
-| Secretaria / Ofícios | `/app/secretaria/oficios` | Geração, edição, cancelamento e download de ofícios. |
-| Financeiro / Mensalidades | `/app/financeiro/mensalidades` | Controle mensal de pagamentos e status de mensalidade. |
-| Relatórios | `/app/associados/relatorio` | Exportação auditada de dados de associados para `admin` e `diretoria`. |
-| Configurações | `/app/config` | Usuários, lotações, auditoria, API keys e webhooks outbound. |
+| Módulo                    | Rota principal                 | Responsabilidade                                                                          |
+| ------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------- |
+| Dashboard                 | `/app`                         | Visão operacional de associados, atividades, jurídico e financeiro.                       |
+| Associados                | `/app/associados`              | Cadastro, perfil, lotação/posto, situação funcional, situação associativa e contribuição. |
+| Atividades                | `/app/atividades`              | Kanban administrativo com responsáveis, prioridades, prazos e vínculos com associados.    |
+| Jurídico                  | `/app/juridico`                | Consultas jurídicas, notas, SLA e histórico de atendimento.                               |
+| Secretaria / Ofícios      | `/app/secretaria/oficios`      | Geração, edição, cancelamento e download de ofícios.                                      |
+| Financeiro / Mensalidades | `/app/financeiro/mensalidades` | Controle mensal de pagamentos e status de mensalidade.                                    |
+| Relatórios                | `/app/associados/relatorio`    | Exportação auditada de dados de associados para `admin` e `diretoria`.                    |
+| Configurações             | `/app/config`                  | Usuários, lotações, auditoria, API keys e webhooks outbound.                              |
 
 > Dados como CPF, SIAPE, email, endereço e dados funcionais são sensíveis pela LGPD. Use os helpers de sanitização/logging do projeto e não exponha esses dados em logs, erros ou payloads públicos.
 
@@ -72,12 +72,11 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 ### Obrigatórias em produção
 
-| Variável                             | Descrição                                                                                 |
-| ------------------------------------ | ----------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                       | URL PostgreSQL de runtime. Pode apontar para o pooler do Supabase, com `sslmode=require`. |
-| `DATABASE_MIGRATION_URL`             | URL PostgreSQL direta/non-pooling para migrations do Drizzle.                             |
-| `DATABASE_SUPABASE_URL`              | URL HTTP do projeto Supabase, usada pelos helpers SDK.                                    |
-| `DATABASE_SUPABASE_SERVICE_ROLE_KEY` | Chave service-role para scripts/admin server-side. Nunca expor no cliente.                |
+| Variável                 | Descrição                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------ |
+| `DATABASE_URL`           | URL PostgreSQL de runtime. Em produção, prefira pooler/runtime com usuário restrito. |
+| `DATABASE_MIGRATION_URL` | URL PostgreSQL direta/non-pooling para migrations do Drizzle.                        |
+| `SESSION_SECRET`         | Segredo forte para assinar cookies `httpOnly` de sessão.                             |
 
 ### Seed do admin inicial
 
@@ -88,14 +87,14 @@ Acesse [http://localhost:3000](http://localhost:3000).
 
 ### Bypass de autenticação (apenas desenvolvimento)
 
-| Variável                        | Valor            | Descrição                                            |
-| ------------------------------- | ---------------- | ---------------------------------------------------- |
-| `SKIP_AUTH`                     | `true`           | Desativa Supabase Auth e usa o usuário de dev abaixo |
-| `DEV_USER_ID`                   | `1`              | ID do usuário simulado                               |
-| `DEV_USER_NAME`                 | `ASOF Dev User`  | Nome exibido na sidebar                              |
-| `DEV_USER_EMAIL`                | `dev@asof.local` | —                                                    |
-| `DEV_USER_ROLE`                 | `admin`          | `admin` \| `diretoria` \| `secretaria`               |
-| `DEV_USER_MUST_CHANGE_PASSWORD` | `false`          | Simula fluxo de troca de senha                       |
+| Variável                        | Valor            | Descrição                                   |
+| ------------------------------- | ---------------- | ------------------------------------------- |
+| `SKIP_AUTH`                     | `true`           | Usa o usuário de dev abaixo sem sessão real |
+| `DEV_USER_ID`                   | `1`              | ID do usuário simulado                      |
+| `DEV_USER_NAME`                 | `ASOF Dev User`  | Nome exibido na sidebar                     |
+| `DEV_USER_EMAIL`                | `dev@asof.local` | —                                           |
+| `DEV_USER_ROLE`                 | `admin`          | `admin` \| `diretoria` \| `secretaria`      |
+| `DEV_USER_MUST_CHANGE_PASSWORD` | `false`          | Simula fluxo de troca de senha              |
 
 ### Logging
 
@@ -120,7 +119,7 @@ O caminho M2M principal usa chaves persistidas em `integration_api_keys`, criada
 
 As rotas versionadas atuais são `/api/v1/health`, `/api/v1/events`, `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings`. Elas suportam a fundação outbound-only: eventos são gravados em `domain_events`, subscriptions são gerenciadas internamente por admins em `/app/config/integracoes/webhooks`, dispatch manual é feito por `/api/v1/events`, e os jobs agendados são feitos por rotas bearer-only configuradas em `vercel.json`. Como o deploy usa o plano Free/Hobby da Vercel, cada cron roda no máximo uma vez por dia (`0 3 * * *` para eventos e `0 4 * * *` para SLA jurídico). URLs de destino de webhooks devem ser HTTPS públicas; localhost, hostnames locais/internos e redes privadas/reservadas são rejeitados. Ainda não há endpoint inbound público.
 
-Para o primeiro go-live, integrações/webhooks não são obrigatórios e produção deve manter `ASOF_INTEGRATIONS_ENABLED=false`, salvo decisão separada. Notificações realtime também não bloqueiam go-live; login, dashboard, associados, jurídico e ofícios devem operar sem depender de Supabase Realtime.
+Para o primeiro go-live, integrações/webhooks não são obrigatórios e produção deve manter `ASOF_INTEGRATIONS_ENABLED=false`, salvo decisão separada. Notificações são alertas persistidos e não dependem de entrega em tempo real.
 
 ---
 
@@ -129,20 +128,18 @@ Para o primeiro go-live, integrações/webhooks não são obrigatórios e produ�
 O projeto usa PostgreSQL via Drizzle.
 
 - **Desenvolvimento local:** PostgreSQL via Homebrew. Use `DATABASE_URL=postgres://<user>@localhost:5432/asof_intranet` e a mesma URL para `DATABASE_MIGRATION_URL` (não há pooler local, então a URL direta serve para ambos).
-- **Produção / remoto:** Supabase. Use a URL do pooler de runtime em `DATABASE_URL` e a URL direta/non-pooling em `DATABASE_MIGRATION_URL`.
-- **Produção oficial:** Supabase `vmohxhyfgywaqfuqeuom` (`db-intranet`).
-- **Staging / preview:** use um projeto Supabase separado; previews da Vercel não devem apontar para o banco de produção.
+- **Produção / remoto:** PostgreSQL gerenciado novo. Use a URL de runtime em `DATABASE_URL` e a URL direta/non-pooling em `DATABASE_MIGRATION_URL`.
+- **Staging / preview:** use banco separado; previews da Vercel não devem apontar para o banco de produção.
 
 ```bash
 npm run db:generate   # gera migrações a partir do schema
 npm run db:migrate    # aplica migrações pendentes com guardrail contra produção
 npm run db:migrate:unsafe # chama drizzle-kit migrate diretamente; use só em diagnóstico controlado
-npm run db:seed       # insere admin inicial
-npm run db:supabase:status # consulta status/totais via Supabase SDK
+npm run db:seed       # insere admin inicial (use --force para sobrescrever role/isActive)
 npm run db:studio     # abre Drizzle Studio no browser
 ```
 
-`npm run db:migrate` bloqueia automaticamente o Supabase de produção conhecido (`vmohxhyfgywaqfuqeuom`), `DATABASE_MIGRATION_ENV=production`, `VERCEL_ENV=production` e alvos remotos quando `NODE_ENV=production`. Para uma migration manual de produção, execute somente depois de backup/snapshot, janela aprovada e plano de rollback documentado:
+`npm run db:migrate` bloqueia `DATABASE_MIGRATION_ENV=production`, `VERCEL_ENV=production`, alvos com nome de host que parecem producao e alvos remotos quando `NODE_ENV=production`. Para uma migration manual de produção, execute somente depois de backup/snapshot, janela aprovada e plano de rollback documentado:
 
 ```bash
 ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
@@ -193,7 +190,7 @@ npm run test:e2e:ui   # Playwright modo interativo
 npm run test:e2e:debug # Playwright modo debug
 npm run db:generate   # gera migrações Drizzle
 npm run db:migrate    # aplica migrações com guardrails de produção
-npm run db:seed       # insere admin inicial
+npm run db:seed       # insere admin inicial (use --force para sobrescrever role/isActive)
 npm run db:studio     # abre Drizzle Studio
 ```
 
@@ -279,7 +276,7 @@ src/
     activities/   # Activity (board) CRUD, assignments
     ai/           # integração Gemini
     associates/   # queries, repository, PII masking
-    auth/         # Supabase session lookup, requireAuth, config, rate limit
+    auth/         # sessão própria, requireAuth, config, rate limit
     crypto/       # criptografia PII (AES-256-GCM, HKDF, HMAC blind indexes)
     dashboard/    # queries de agregação
     db/           # cliente Drizzle/PostgreSQL + schema
@@ -292,23 +289,22 @@ src/
     reports/      # geração de CSV e queries de relatório
     sanitize-pii.ts # sanitização de PII para logs e webhooks
     search/       # queries de busca
-    storage/      # Supabase Storage
-    supabase/     # helpers Supabase SDK server/admin
+    storage/      # interface para storage de objetos privado
     ui/           # design tokens
 
 proxy.ts          # proxy de autenticação (Next.js 16 — substitui middleware.ts)
 drizzle/postgres/ # migrações PostgreSQL geradas
-scripts/          # seed, diagnóstico, status Supabase, smoke test Realtime
+scripts/          # seed, diagnóstico e guardrails operacionais
 ```
 
 ## Documentação de referência
 
-| Documento | Quando usar |
-| --- | --- |
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Arquitetura, fluxo de dados, mapa de módulos, deploy target e decisões técnicas. |
-| [`CONTEXT.md`](./CONTEXT.md) | Glossário de domínio e regras de negócio. |
-| [`AGENTS.md`](./AGENTS.md) | Instruções para agentes, vocabulário institucional, comandos e gotchas do projeto. |
-| [`DESIGN.md`](./DESIGN.md) | Design system, tokens, cores, tipografia e padrões visuais. |
-| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Guia do desenvolvedor e padrão de contribuição. |
-| [`docs/runbook.md`](./docs/runbook.md) | Procedimentos operacionais: deploy, backup, rollback, smoke tests e incidentes. |
-| [`TODO-PROD.md`](./TODO-PROD.md) | Checklist vivo de prontidão de produção e bloqueadores atuais. |
+| Documento                              | Quando usar                                                                        |
+| -------------------------------------- | ---------------------------------------------------------------------------------- |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Arquitetura, fluxo de dados, mapa de módulos, deploy target e decisões técnicas.   |
+| [`CONTEXT.md`](./CONTEXT.md)           | Glossário de domínio e regras de negócio.                                          |
+| [`AGENTS.md`](./AGENTS.md)             | Instruções para agentes, vocabulário institucional, comandos e gotchas do projeto. |
+| [`DESIGN.md`](./DESIGN.md)             | Design system, tokens, cores, tipografia e padrões visuais.                        |
+| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Guia do desenvolvedor e padrão de contribuição.                                    |
+| [`docs/runbook.md`](./docs/runbook.md) | Procedimentos operacionais: deploy, backup, rollback, smoke tests e incidentes.    |
+| [`TODO-PROD.md`](./TODO-PROD.md)       | Checklist vivo de prontidão de produção e bloqueadores atuais.                     |

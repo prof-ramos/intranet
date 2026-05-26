@@ -8,7 +8,7 @@ import { focusRingClass } from '@/lib/ui/tokens';
 interface AssignmentEditRowProps {
   id: number;
   name: string;
-  type: 'domestic' | 'abroad';
+  type: 'nacional' | 'exterior';
 }
 
 export function AssignmentEditRow({ id, name, type }: AssignmentEditRowProps) {
@@ -49,8 +49,8 @@ export function AssignmentEditRow({ id, name, type }: AssignmentEditRowProps) {
         className="input input-sm w-48"
       />
       <select name="type" defaultValue={type} className="select select-sm w-40">
-        <option value="domestic">Secretaria de Estado</option>
-        <option value="abroad">Exterior</option>
+        <option value="nacional">Secretaria de Estado</option>
+        <option value="exterior">Exterior</option>
       </select>
       <button
         type="submit"

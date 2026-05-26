@@ -38,6 +38,7 @@ export const envSchema = z
       .transform((v) => v === 'true'),
 
     SKIP_AUTH: optionalString.default('false'),
+    SESSION_SECRET: optionalSecretString,
     DEV_USER_ID: optionalString,
     DEV_USER_NAME: optionalString,
     DEV_USER_EMAIL: optionalString,
@@ -54,18 +55,6 @@ export const envSchema = z
       emptyStringToUndefined,
       z.coerce.number().int().min(0).optional(),
     ),
-
-    // ─── Supabase ───────────────────────────────────────────────────────────────
-    NEXT_PUBLIC_SUPABASE_URL: optionalUrl,
-    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: optionalNonEmptyString,
-    SUPABASE_SERVICE_ROLE_KEY: optionalNonEmptyString,
-    DATABASE_SUPABASE_URL: optionalUrl,
-    DATABASE_SUPABASE_PUBLISHABLE_KEY: optionalNonEmptyString,
-    DATABASE_SUPABASE_ANON_KEY: optionalNonEmptyString,
-    DATABASE_SUPABASE_SERVICE_ROLE_KEY: optionalNonEmptyString,
-    NEXT_PUBLIC_DATABASE_SUPABASE_URL: optionalUrl,
-    NEXT_PUBLIC_DATABASE_SUPABASE_PUBLISHABLE_KEY: optionalNonEmptyString,
-    NEXT_PUBLIC_DATABASE_SUPABASE_ANON_KEY: optionalNonEmptyString,
   })
   .refine(
     (data) =>
@@ -105,13 +94,25 @@ export const envSchema = z
   )
   .refine(
     (data) => {
+      if (data.SKIP_AUTH === 'true' && data.NODE_ENV !== 'production') {
+        return true;
+      }
+      return !!data.SESSION_SECRET;
+    },
+    {
+      message: 'SESSION_SECRET is required when SKIP_AUTH is not enabled.',
+      path: ['SESSION_SECRET'],
+    },
+  )
+  .refine(
+    (data) => {
       if (data.VERCEL_ENV === 'production') {
         return !!data.ASOF_INTRANET_URL;
       }
       return true;
     },
     {
-      message: 'ASOF_INTRANET_URL is required for production password recovery links.',
+      message: 'ASOF_INTRANET_URL is required for production app links.',
       path: ['ASOF_INTRANET_URL'],
     },
   );

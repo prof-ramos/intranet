@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { 
-  uploadDocumentAction, 
-  downloadDocumentAction, 
-  deleteDocumentAction 
+import {
+  uploadDocumentAction,
+  downloadDocumentAction,
+  deleteDocumentAction,
 } from '@/app/app/secretaria/documentos/actions';
 import { uploadFile, getSignedUrl, deleteFile } from '@/lib/storage';
 import { logAuditAction, logDataAccess } from '@/lib/audit/service';
@@ -59,7 +59,7 @@ vi.mock('next/cache', () => ({
 describe('Documentos Server Actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Configuração padrão de transação síncrona para o mock do db
     mockDb.transaction.mockImplementation((callback) => callback(mockDb));
   });
@@ -80,7 +80,12 @@ describe('Documentos Server Actions', () => {
       const result = await uploadDocumentAction(formData);
 
       expect(result).toEqual({ success: true, id: 42 });
-      expect(uploadFile).toHaveBeenCalledWith('documents', expect.any(String), expect.any(ArrayBuffer), 'application/pdf');
+      expect(uploadFile).toHaveBeenCalledWith(
+        'documents',
+        expect.any(String),
+        expect.any(ArrayBuffer),
+        'application/pdf',
+      );
       expect(mockDb.insert).toHaveBeenCalled();
       expect(logAuditAction).toHaveBeenCalledWith({
         adminId: 1,
@@ -137,7 +142,9 @@ describe('Documentos Server Actions', () => {
       formData.append('category', 'outro');
       formData.append('file', file);
 
-      await expect(uploadDocumentAction(formData)).rejects.toThrow('O arquivo não pode exceder 15MB');
+      await expect(uploadDocumentAction(formData)).rejects.toThrow(
+        'O arquivo não pode exceder 15MB',
+      );
       expect(uploadFile).not.toHaveBeenCalled();
     });
   });
@@ -157,11 +164,11 @@ describe('Documentos Server Actions', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      vi.mocked(getSignedUrl).mockResolvedValue('http://supabase.signed.url');
+      vi.mocked(getSignedUrl).mockResolvedValue('http://storage.signed.url');
 
       const result = await downloadDocumentAction(10);
 
-      expect(result).toEqual({ signedUrl: 'http://supabase.signed.url' });
+      expect(result).toEqual({ signedUrl: 'http://storage.signed.url' });
       expect(getSignedUrl).toHaveBeenCalledWith('documents', 'ata/xyz.pdf', 3600);
       expect(logDataAccess).toHaveBeenCalledWith({
         adminId: 3,

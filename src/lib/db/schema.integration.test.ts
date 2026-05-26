@@ -13,7 +13,7 @@ const db = postgres(databaseUrl, { max: 1 });
 
 const expectedColumns = {
   app_settings: [
-    'key:text:NO',
+    'key:varchar:NO',
     'value_ciphertext:text:NO',
     'updated_by:int8:NO',
     'updated_at:timestamptz:NO',
@@ -84,19 +84,6 @@ const expectedColumns = {
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
     'payment_method:payment_method:NO',
-  ],
-  associates_list_view: [
-    'id:int8:YES',
-    'full_name:text:YES',
-    'assignment:text:YES',
-    'class_pattern:text:YES',
-    'association_status:association_status:YES',
-    'functional_status:functional_status:YES',
-    'contribution_status:contribution_status:YES',
-    'location_country:text:YES',
-    'location_city:text:YES',
-    'created_at:timestamptz:YES',
-    'updated_at:timestamptz:YES',
   ],
   audit_logs: [
     'id:int8:NO',
@@ -206,17 +193,6 @@ const expectedColumns = {
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
   ],
-  login_attempts_dedup_backup: [
-    'id:int8:NO',
-    'email:text:YES',
-    'email_hash:text:YES',
-    'attempts:int4:NO',
-    'expires_at:timestamptz:NO',
-    'created_at:timestamptz:NO',
-    'updated_at:timestamptz:NO',
-    'backed_up_at:timestamptz:NO',
-    'backup_reason:text:NO',
-  ],
   rate_limits: [
     'id:int8:NO',
     'key:text:NO',
@@ -238,6 +214,22 @@ const expectedColumns = {
     'cancellation_reason:text:YES',
     'cancelled_by:int8:YES',
     'updated_by:int8:YES',
+    'created_at:timestamptz:NO',
+    'updated_at:timestamptz:NO',
+  ],
+  notifications: [
+    'id:int8:NO',
+    'user_id:int8:NO',
+    'actor_id:int8:YES',
+    'type:notification_type:NO',
+    'title:text:NO',
+    'message:text:NO',
+    'href:text:YES',
+    'entity_type:notification_entity_type:YES',
+    'entity_id:int8:YES',
+    'read_at:timestamptz:YES',
+    'metadata:jsonb:YES',
+    'dedupe_key:text:YES',
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
   ],
@@ -309,7 +301,7 @@ const expectedEnums = {
   activity_priority: ['baixa', 'normal', 'alta', 'urgente'],
   activity_status: ['a_fazer', 'em_andamento', 'aguardando_terceiros', 'concluido'],
   admin_role: ['admin', 'diretoria', 'secretaria'],
-  assignment_type: ['domestic', 'abroad'],
+  assignment_type: ['nacional', 'exterior'],
   association_status: ['ativo', 'inativo'],
   audit_entity_type: [
     'associate',
@@ -367,6 +359,13 @@ const expectedEnums = {
   legal_process_type: ['judicial', 'administrativo'],
   legal_satisfaction: ['satisfeito', 'insatisfeito', 'sem_resposta'],
   legal_note_entity_type: ['consultation', 'process'],
+  notification_entity_type: ['activity', 'legal_consultation'],
+  notification_type: [
+    'activity.completed',
+    'legal_consultation.answered',
+    'activity.assigned',
+    'legal_consultation.sla_warning',
+  ],
   official_letter_status: ['gerado', 'cancelado', 'rascunho'],
   payment_method: ['folha', 'boleto', 'pix', 'transferencia', 'outros'],
   payment_status: ['pago', 'pendente', 'atrasado', 'isento', 'cancelado'],
@@ -381,18 +380,15 @@ const expectedIndexes = {
     'idx_activities_associate_due_id',
     'idx_activities_associate_id',
     'idx_activities_created_by',
-    'idx_activities_open_due_date',
-    'idx_activities_position',
+    'idx_activities_due_date',
     'idx_activities_status',
     'idx_activities_status_due_date',
-    'idx_activities_tags',
   ],
   admins: ['admins_email_unique', 'admins_pkey'],
   associates: [
     'associates_pkey',
     'idx_associates_address_hash',
     'idx_associates_association_status',
-    'idx_associates_birth_month',
     'idx_associates_contribution_status',
     'idx_associates_cpf',
     'idx_associates_cpf_hash',
@@ -402,7 +398,6 @@ const expectedIndexes = {
     'idx_associates_primary_email_hash',
     'idx_associates_siape',
     'idx_associates_siape_hash',
-    'idx_associates_status_country',
     'idx_associates_status_name',
     'idx_associates_whatsapp_hash',
   ],
@@ -432,18 +427,12 @@ const expectedIndexes = {
     'integration_api_keys_pkey',
   ],
   legal_consultations: [
-    'idx_legal_consultations_answered_by',
     'idx_legal_consultations_associate',
     'idx_legal_consultations_created_at',
     'idx_legal_consultations_created_by',
-    'idx_legal_consultations_open_last_interaction',
-    'idx_legal_consultations_open_sla',
-    'idx_legal_consultations_responded',
+    'idx_legal_consultations_last_interaction',
     'idx_legal_consultations_sla',
     'idx_legal_consultations_status',
-    'idx_legal_consultations_status_created_at',
-    'idx_legal_consultations_status_updated_at',
-    'idx_legal_consultations_title_trgm',
     'legal_consultations_internal_number_unique',
     'legal_consultations_pkey',
   ],
@@ -462,7 +451,6 @@ const expectedIndexes = {
     'idx_legal_opinions_created_at',
     'idx_legal_opinions_created_by',
     'idx_legal_opinions_related_process',
-    'idx_legal_opinions_tags',
     'legal_opinions_pkey',
   ],
   legal_processes: [
@@ -479,7 +467,6 @@ const expectedIndexes = {
     'idx_login_attempts_expires_at',
     'login_attempts_pkey',
   ],
-  login_attempts_dedup_backup: ['login_attempts_dedup_backup_pkey'],
   monthly_payments: [
     'idx_monthly_payments_associate_id',
     'idx_monthly_payments_cancelled_at',
@@ -490,6 +477,12 @@ const expectedIndexes = {
     'idx_monthly_payments_year_month_status',
     'monthly_payments_pkey',
   ],
+  notifications: [
+    'idx_notifications_user_created_at',
+    'idx_notifications_user_dedupe_key',
+    'idx_notifications_user_read_at',
+    'notifications_pkey',
+  ],
   oficios: [
     'idx_oficios_created_at',
     'idx_oficios_created_at_desc',
@@ -497,7 +490,7 @@ const expectedIndexes = {
     'idx_oficios_status',
     'idx_oficios_updated_by',
     'idx_oficios_year',
-    'oficios_number_key',
+    'oficios_number_unique',
     'oficios_pkey',
     'uq_oficios_year_sequence',
   ],
@@ -530,15 +523,6 @@ const expectedIndexes = {
   ],
 } as const;
 
-const expectedAppTables = Object.keys(expectedColumns)
-  .filter((name) => name !== 'associates_list_view')
-  .sort();
-// These allow known local/dev-only DB artifacts without weakening the production schema contract.
-// Add entries only for temporary local fixtures and promote them to expected* lists when migrations require them.
-const allowedLocalOnlyTables = ['notifications'] as const;
-const allowedLocalOnlyEnums = ['notification_entity_type', 'notification_type'] as const;
-const allowedLocalOnlyIndexTables = ['notifications'] as const;
-
 afterAll(async () => {
   await db.end();
 });
@@ -566,9 +550,9 @@ describe('database schema contract', () => {
       return acc;
     }, {});
 
-    const unexpectedTables = Object.keys(actual)
-      .filter((tableName) => !(tableName in expectedColumns))
-      .filter((tableName) => !allowedLocalOnlyTables.includes(tableName as never));
+    const unexpectedTables = Object.keys(actual).filter(
+      (tableName) => !(tableName in expectedColumns),
+    );
     expect(unexpectedTables).toEqual([]);
     for (const [tableName, expectedTableColumns] of Object.entries(expectedColumns)) {
       expect(actual[tableName]?.toSorted()).toEqual(expectedTableColumns.toSorted());
@@ -591,9 +575,7 @@ describe('database schema contract', () => {
       return acc;
     }, {});
 
-    const unexpectedEnums = Object.keys(actual)
-      .filter((enumName) => !(enumName in expectedEnums))
-      .filter((enumName) => !allowedLocalOnlyEnums.includes(enumName as never));
+    const unexpectedEnums = Object.keys(actual).filter((enumName) => !(enumName in expectedEnums));
     expect(unexpectedEnums).toEqual([]);
     for (const [enumName, expectedLabels] of Object.entries(expectedEnums)) {
       expect(actual[enumName]).toEqual(expectedLabels);
@@ -614,9 +596,9 @@ describe('database schema contract', () => {
       return acc;
     }, {});
 
-    const unexpectedIndexTables = Object.keys(actual)
-      .filter((tableName) => !(tableName in expectedIndexes))
-      .filter((tableName) => !allowedLocalOnlyIndexTables.includes(tableName as never));
+    const unexpectedIndexTables = Object.keys(actual).filter(
+      (tableName) => !(tableName in expectedIndexes),
+    );
     expect(unexpectedIndexTables).toEqual([]);
     for (const [tableName, expectedTableIndexes] of Object.entries(expectedIndexes)) {
       expect(actual[tableName]).toEqual(expectedTableIndexes);
@@ -649,7 +631,18 @@ describe('database schema contract', () => {
 
     const actual = rows.map((row) => `${row.table_name}:${row.constraint_name}`);
     const expected = [
-      'documents:chk_documents_file_size',
+      'associates:chk_associates_address_pii',
+      'associates:chk_associates_address_pii',
+      'associates:chk_associates_cpf_pii',
+      'associates:chk_associates_cpf_pii',
+      'associates:chk_associates_email_pii',
+      'associates:chk_associates_email_pii',
+      'associates:chk_associates_phone_pii',
+      'associates:chk_associates_phone_pii',
+      'associates:chk_associates_siape_pii',
+      'associates:chk_associates_siape_pii',
+      'associates:chk_associates_whatsapp_pii',
+      'associates:chk_associates_whatsapp_pii',
       'monthly_payments:chk_monthly_payments_month',
       'monthly_payments:chk_monthly_payments_year',
       'oficios:chk_oficios_sequence',
@@ -667,24 +660,6 @@ describe('database schema contract', () => {
     `;
 
     expect(rows).toEqual([{ extname: 'pg_trgm' }]);
-  });
-
-  it('has RLS enabled with at least one policy on every app table', async () => {
-    const rows = await db<{ relname: string; relrowsecurity: boolean; policy_count: number }[]>`
-      select c.relname, c.relrowsecurity, count(p.polname)::int as policy_count
-      from pg_class c
-      join pg_namespace n on n.oid = c.relnamespace
-      left join pg_policy p on p.polrelid = c.oid
-      where n.nspname = 'public'
-        and c.relkind = 'r'
-        and c.relname = any(${expectedAppTables})
-      group by c.relname, c.relrowsecurity
-      order by c.relname
-    `;
-
-    expect(rows.map((row) => row.relname)).toEqual(expectedAppTables);
-    expect(rows.every((row) => row.relrowsecurity)).toBe(true);
-    expect(rows.every((row) => row.policy_count > 0)).toBe(true);
   });
 
   it('has migration SQL files, journal entries, and DB migration history aligned', async () => {

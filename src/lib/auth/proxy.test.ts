@@ -1,32 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Logger } from '@/lib/logger';
 import { proxy } from '@/proxy';
+import { SESSION_COOKIE_NAME } from '@/lib/auth/config';
 
 let skipAuth = false;
-let mockUser: { email?: string | null } | null = null;
-let mockGetUserError: Error | null = null;
+let hasSession = false;
 const mockNext = vi.fn(() => ({ type: 'next' }));
 const mockRedirect = vi.fn((url: URL) => ({ type: 'redirect', url: url.toString() }));
-const mockGetResponse = vi.fn(() => ({ type: 'response' }));
 
-vi.mock('@/lib/auth/config', () => ({
-  isSkipAuthEnabled: vi.fn(() => skipAuth),
-}));
-
-vi.mock('@/lib/supabase/proxy', () => ({
-  createProxySupabaseClient: vi.fn(() => ({
-    client: {
-      auth: {
-        getUser: vi.fn(() =>
-          mockGetUserError
-            ? Promise.reject(mockGetUserError)
-            : Promise.resolve({ data: { user: mockUser } }),
-        ),
-      },
-    },
-    getResponse: mockGetResponse,
-  })),
-}));
+vi.mock('@/lib/auth/config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/auth/config')>();
+  return {
+    ...actual,
+    isSkipAuthEnabled: vi.fn(() => skipAuth),
+  };
+});
 
 vi.mock('next/server', () => ({
   NextResponse: {
@@ -40,8 +27,7 @@ function createRequest(pathname: string) {
     url: `http://localhost:3000${pathname}`,
     nextUrl: { pathname },
     cookies: {
-      getAll: vi.fn(() => []),
-      set: vi.fn(),
+      has: vi.fn((name: string) => name === SESSION_COOKIE_NAME && hasSession),
     },
   } as unknown as import('next/server').NextRequest;
 }
@@ -49,8 +35,7 @@ function createRequest(pathname: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   skipAuth = false;
-  mockUser = null;
-  mockGetUserError = null;
+  hasSession = false;
 });
 
 describe('proxy', () => {
@@ -58,18 +43,17 @@ describe('proxy', () => {
     skipAuth = true;
 
     await expect(proxy(createRequest('/app'))).resolves.toEqual({ type: 'next' });
-    expect(mockGetResponse).not.toHaveBeenCalled();
   });
 
-  it('redirects unauthenticated users away from protected routes', async () => {
+  it('redirects users without a local session away from protected routes', async () => {
     await expect(proxy(createRequest('/app'))).resolves.toEqual({
       type: 'redirect',
       url: 'http://localhost:3000/login',
     });
   });
 
-  it('redirects authenticated users away from /login', async () => {
-    mockUser = { email: 'admin@asof.local' };
+  it('redirects users with a local session away from /login', async () => {
+    hasSession = true;
 
     await expect(proxy(createRequest('/login'))).resolves.toEqual({
       type: 'redirect',
@@ -77,33 +61,9 @@ describe('proxy', () => {
     });
   });
 
-  it('returns the refreshed response for authenticated protected requests', async () => {
-    mockUser = { email: 'admin@asof.local' };
+  it('allows protected requests with a local session cookie', async () => {
+    hasSession = true;
 
-    await expect(proxy(createRequest('/app/associados'))).resolves.toEqual({ type: 'response' });
-    expect(mockGetResponse).toHaveBeenCalledOnce();
-  });
-
-  it('logs a safe warning when Supabase user lookup fails', async () => {
-    const consoleWarnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
-    mockGetUserError = Object.assign(new Error('token=secret'), { code: 'E_AUTH' });
-
-    await expect(proxy(createRequest('/app'))).resolves.toEqual({
-      type: 'redirect',
-      url: 'http://localhost:3000/login',
-    });
-    expect(consoleWarnSpy).toHaveBeenCalledWith(
-      '[Auth proxy] Supabase user lookup failed.',
-      {
-        error: {
-          kind: 'error',
-          name: 'Error',
-          code: 'E_AUTH',
-          digest: undefined,
-        },
-      },
-      expect.any(Error),
-    );
-    consoleWarnSpy.mockRestore();
+    await expect(proxy(createRequest('/app/associados'))).resolves.toEqual({ type: 'next' });
   });
 });

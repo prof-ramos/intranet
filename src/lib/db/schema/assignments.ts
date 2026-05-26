@@ -1,6 +1,6 @@
 import { bigint, boolean, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
-export const assignmentType = pgEnum('assignment_type', ['domestic', 'abroad']);
+export const assignmentType = pgEnum('assignment_type', ['nacional', 'exterior']);
 
 export const assignments = pgTable('assignments', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),

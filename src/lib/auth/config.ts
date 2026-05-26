@@ -16,6 +16,8 @@ export interface SessionData extends AuthUser {
   isLoggedIn: boolean;
 }
 
+export const SESSION_COOKIE_NAME = 'asof_session';
+
 const DEFAULT_DEV_USER: AuthUser = {
   userId: 1,
   name: 'ASOF Dev User',

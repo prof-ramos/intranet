@@ -1,4 +1,4 @@
-import { and, eq, lte, like, sql } from 'drizzle-orm';
+import { and, eq, lte, notExists, like } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { activities, admins, associates } from '@/lib/db/schema';
 
@@ -35,13 +35,19 @@ export async function checkAndEmitLgpdRetentionActivities({ limit }: { limit: nu
         and(
           eq(associates.associationStatus, 'inativo'),
           lte(associates.updatedAt, fiveYearsAgo),
-          sql`NOT EXISTS (
-            SELECT 1 FROM ${activities}
-            WHERE ${activities.associateId} = ${associates.id}
-            AND ${activities.status} = 'a_fazer'
-            AND ${activities.title} LIKE ${titlePrefix + '%'}
-          )`
-        )
+          notExists(
+            tx
+              .select({ id: activities.id })
+              .from(activities)
+              .where(
+                and(
+                  eq(activities.associateId, associates.id),
+                  eq(activities.status, 'a_fazer'),
+                  like(activities.title, `${titlePrefix}%`),
+                ),
+              ),
+          ),
+        ),
       )
       .limit(validatedLimit);
 
@@ -60,7 +66,10 @@ export async function checkAndEmitLgpdRetentionActivities({ limit }: { limit: nu
       tags: ['LGPD', 'Retenção'],
     }));
 
-    const inserted = await tx.insert(activities).values(newActivities).returning({ id: activities.id });
+    const inserted = await tx
+      .insert(activities)
+      .values(newActivities)
+      .returning({ id: activities.id });
 
     return { createdCount: inserted.length };
   });

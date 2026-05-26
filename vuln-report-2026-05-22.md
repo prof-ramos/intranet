@@ -14,7 +14,7 @@ The audit found no confirmed SQL injection, command injection, path traversal, u
 
 ## Architecture Snapshot
 
-- Stack: Next.js 16 App Router, React 19, TypeScript, Drizzle ORM, PostgreSQL/Supabase, Supabase Auth, Tailwind/DaisyUI.
+- Stack: Next.js 16 App Router, React 19, TypeScript, Drizzle ORM, PostgreSQL/Neon, custom session cookie, Tailwind/DaisyUI.
 - Main trust boundaries: `proxy.ts` protected routes, `requireAuth()`, `requireRole()`, `/api/v1/*` HMAC/API-key integration auth, cron bearer routes, Server Actions, Drizzle repositories, outbound webhook dispatch.
 - Sensitive domains: associados LGPD fields, financeiro mensalidades, jurídico consultas/SLA, secretaria/ofícios, integration API keys/webhooks, audit logs.
 - Highest-risk entry points reviewed: login, associate edit/list/report routes, juridico Server Actions, financeiro Server Actions, atividade board actions, `/api/v1/events`, cron dispatch routes, webhook subscription/dispatch code, ofício PDF download, reports CSV export, logger/sanitization utilities.
@@ -249,7 +249,7 @@ Requires an authenticated `diretoria` account.
 - **Locations**:
   - `src/lib/logger.ts:143`
   - `src/app/app/config/usuarios/actions.ts:100`
-  - `src/lib/supabase/admin.ts:144`
+  - `src/lib/auth/session.ts`
 
 **Description**:
 
@@ -598,11 +598,11 @@ Partially reachable through database-level access or compromised service-role cr
 - **Locations**:
   - `src/lib/auth/require-auth.ts:13`
   - `src/app/app/config/usuarios/actions.ts:111`
-  - `src/lib/supabase/admin.ts:132`
+  - `src/lib/auth/session.ts`
 
 **Description**:
 
-`requireAuth()` returns users with `mustChangePassword=true` rather than enforcing the password-change flow. If a user already has a valid session during a reset, protected routes can continue accepting the session unless Supabase session revocation happens elsewhere.
+`requireAuth()` returns users with `mustChangePassword=true` rather than enforcing the password-change flow. If a user already has a valid session during a reset, protected routes can continue accepting the session unless session cookie revocation happens elsewhere.
 
 **Root Cause**:
 
@@ -639,7 +639,7 @@ return {
 
 **Impact**:
 
-Weakens the forced password-change policy after reset. Impact depends on existing active-session handling in Supabase.
+Weakens the forced password-change policy after reset. Impact depends on existing active-session handling.
 
 **Remediation**:
 
@@ -950,7 +950,7 @@ Demoted to Info because behavior may be intentional and impact is low.
 - Prompt injection can steer AI-generated ofício text. Current impact is limited by authentication, feature flag, and human-in-the-loop review. Consider positive policy checks and blocking high-risk output classes.
 - Direct webhook localhost/private URL SSRF appears fixed by creation/update and dispatch-time `isPublicWebhookUrl()` checks; the remaining SSRF issue is redirect/DNS final-target validation.
 - API key HMAC design is operationally weaker than per-key secrets but no hardcoded production secret was found.
-- Must-change-password enforcement should move to the central guard even if Supabase session behavior currently mitigates part of the risk.
+- Must-change-password enforcement should move to the central guard even if session cookie behavior currently mitigates part of the risk.
 
 ## False Positives Ruled Out
 
@@ -967,6 +967,6 @@ Demoted to Info because behavior may be intentional and impact is low.
 ## Coverage Gaps
 
 - No live exploit payloads were executed against a running local app; validation is primarily static plus targeted command checks.
-- No production environment variables, Vercel project settings, Supabase RLS runtime claims, or deployed logs were inspected in this pass.
+- No production environment variables, Vercel project settings, Neon RLS runtime claims, or deployed logs were inspected in this pass.
 - Browser-level CSP/security headers were not validated live.
 - Dependency audit was limited to `npm audit --json`, which returned zero known vulnerabilities for the installed dependency graph.

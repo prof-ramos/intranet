@@ -1,10 +1,10 @@
-import { bigint, text, timestamp, pgTable, index } from 'drizzle-orm/pg-core';
+import { bigint, text, varchar, timestamp, pgTable, index } from 'drizzle-orm/pg-core';
 import { admins } from './admins';
 
 export const appSettings = pgTable(
   'app_settings',
   {
-    key: text('key').primaryKey(),
+    key: varchar('key', { length: 100 }).primaryKey(),
     valueCiphertext: text('value_ciphertext').notNull(),
     updatedBy: bigint('updated_by', { mode: 'number' })
       .notNull()

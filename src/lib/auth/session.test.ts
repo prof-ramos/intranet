@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { destroySession, getSession } from '@/lib/auth/session';
+import { createSession, destroySession, getSession } from '@/lib/auth/session';
+import { SESSION_COOKIE_NAME } from '@/lib/auth/config';
 
 let skipAuth = false;
-let mockAuthUser: { email?: string | null } | null = null;
-let mockAuthError: Error | null = null;
-let mockSignOutError: Error | null = null;
+let storedCookie: string | undefined;
 let mockDbUser: {
   id: number;
   name: string;
@@ -14,36 +13,43 @@ let mockDbUser: {
   mustChangePassword: boolean;
 } | null = null;
 
-vi.mock('@/lib/auth/config', () => ({
-  isSkipAuthEnabled: vi.fn(() => skipAuth),
-  isAuthRole: vi.fn(
-    (value: string | undefined) =>
-      value === 'admin' || value === 'diretoria' || value === 'secretaria',
+const cookieStore = {
+  get: vi.fn((name: string) =>
+    name === SESSION_COOKIE_NAME && storedCookie ? { value: storedCookie } : undefined,
   ),
-  getDevAuthUser: vi.fn(() => ({
-    userId: 1,
-    name: 'Dev User',
-    email: 'dev@asof.local',
-    role: 'admin',
-    mustChangePassword: false,
-  })),
+  set: vi.fn((name: string, value: string) => {
+    if (name === SESSION_COOKIE_NAME) storedCookie = value;
+  }),
+  delete: vi.fn((name: string) => {
+    if (name === SESSION_COOKIE_NAME) storedCookie = undefined;
+  }),
+};
+
+vi.mock('next/headers', () => ({
+  cookies: vi.fn(() => Promise.resolve(cookieStore)),
 }));
 
-vi.mock('@/lib/supabase/server', () => ({
-  createServerSupabaseClient: vi.fn(() =>
-    Promise.resolve({
-      auth: {
-        getUser: vi.fn(() =>
-          Promise.resolve({
-            data: { user: mockAuthUser },
-            error: mockAuthError,
-          }),
-        ),
-        signOut: vi.fn(() => Promise.resolve({ error: mockSignOutError })),
-      },
-    }),
-  ),
+vi.mock('@/lib/env', () => ({
+  env: {
+    NODE_ENV: 'test',
+    SESSION_SECRET: 'test-session-secret-with-at-least-32-chars',
+  },
 }));
+
+vi.mock('@/lib/auth/config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/auth/config')>();
+  return {
+    ...actual,
+    isSkipAuthEnabled: vi.fn(() => skipAuth),
+    getDevAuthUser: vi.fn(() => ({
+      userId: 1,
+      name: 'Dev User',
+      email: 'dev@asof.local',
+      role: 'admin',
+      mustChangePassword: false,
+    })),
+  };
+});
 
 vi.mock('@/lib/db', () => ({
   db: {
@@ -60,9 +66,7 @@ vi.mock('@/lib/db', () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   skipAuth = false;
-  mockAuthUser = null;
-  mockAuthError = null;
-  mockSignOutError = null;
+  storedCookie = undefined;
   mockDbUser = null;
 });
 
@@ -80,36 +84,11 @@ describe('session', () => {
     });
   });
 
-  it('returns null when Supabase has no authenticated user', async () => {
+  it('returns null without a local session cookie', async () => {
     await expect(getSession()).resolves.toBeNull();
   });
 
-  it('returns null when Supabase returns an auth error', async () => {
-    mockAuthError = new Error('token expired');
-    await expect(getSession()).resolves.toBeNull();
-  });
-
-  it('returns null when the authenticated user is not present in admins', async () => {
-    mockAuthUser = { email: 'missing@asof.local' };
-    await expect(getSession()).resolves.toBeNull();
-  });
-
-  it('returns null when the mapped admin is inactive', async () => {
-    mockAuthUser = { email: 'inactive@asof.local' };
-    mockDbUser = {
-      id: 2,
-      name: 'Inactive',
-      email: 'inactive@asof.local',
-      role: 'secretaria',
-      isActive: false,
-      mustChangePassword: false,
-    };
-
-    await expect(getSession()).resolves.toBeNull();
-  });
-
-  it('returns the mapped admin session for an authenticated Supabase user', async () => {
-    mockAuthUser = { email: 'admin@asof.local' };
+  it('creates, reads, and destroys a signed local session', async () => {
     mockDbUser = {
       id: 7,
       name: 'Admin',
@@ -119,6 +98,9 @@ describe('session', () => {
       mustChangePassword: true,
     };
 
+    await createSession({ userId: 7, email: 'admin@asof.local' });
+
+    expect(storedCookie).toBeTruthy();
     await expect(getSession()).resolves.toEqual({
       userId: 7,
       name: 'Admin',
@@ -127,14 +109,23 @@ describe('session', () => {
       mustChangePassword: true,
       isLoggedIn: true,
     });
+
+    await destroySession();
+    expect(storedCookie).toBeUndefined();
   });
 
-  it('signs out through Supabase when destroying the session', async () => {
-    await expect(destroySession()).resolves.toBeUndefined();
-  });
+  it('returns null when the signed cookie maps to an inactive admin', async () => {
+    mockDbUser = {
+      id: 7,
+      name: 'Inactive',
+      email: 'admin@asof.local',
+      role: 'admin',
+      isActive: false,
+      mustChangePassword: false,
+    };
 
-  it('bubbles up Supabase sign-out errors', async () => {
-    mockSignOutError = new Error('boom');
-    await expect(destroySession()).rejects.toThrow('boom');
+    await createSession({ userId: 7, email: 'admin@asof.local' });
+
+    await expect(getSession()).resolves.toBeNull();
   });
 });
