@@ -49,7 +49,7 @@ export function Sidebar({ user }: SidebarProps) {
           className={['rounded-[8px]', focusRingClass].join(' ')}
         >
           <Image
-            src="https://asof.org.br/img/asof-dark.svg"
+            src="/logo.svg"
             alt="ASOF — Associação de Oficiais de Chancelaria"
             width={200}
             height={60}
