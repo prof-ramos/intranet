@@ -1,5 +1,5 @@
 import path from 'node:path';
-import type { Reporter, TestModule } from 'vitest/node';
+import type { Reporter } from 'vitest/node';
 import {
   createTestMetricsRecorder,
   normalizeDurationMs,
@@ -19,8 +19,19 @@ interface VitestTaskResultLike {
 interface VitestTestLike {
   name?: string;
   fullName?: string;
-  type?: string;
   result?: () => VitestTaskResultLike | undefined;
+}
+
+interface VitestModuleLike {
+  filepath?: string;
+  moduleId?: string;
+  file?: {
+    filepath?: string;
+    name?: string;
+  };
+  children?: {
+    allTests?: () => unknown[];
+  };
 }
 
 export class VitestMetricsReporter implements Reporter {
@@ -33,19 +44,19 @@ export class VitestMetricsReporter implements Reporter {
     });
   }
 
-  onTestRunEnd(testModules: ReadonlyArray<TestModule>): void {
+  onTestRunEnd(testModules: readonly unknown[]): void {
     for (const testModule of testModules) {
-      for (const test of testModule.children.allTests()) {
-        this.recordTest(testModule, test as VitestTestLike);
+      for (const test of getModuleTests(testModule)) {
+        this.recordTest(testModule as VitestModuleLike, test as VitestTestLike);
       }
     }
 
     this.recorder.finish();
   }
 
-  private recordTest(testModule: TestModule, test: VitestTestLike): void {
+  private recordTest(testModule: VitestModuleLike, test: VitestTestLike): void {
     const result = test.result?.();
-    const file = normalizeFilePath(testModule.moduleId);
+    const file = normalizeFilePath(resolveModulePath(testModule));
     const name = test.name ?? test.fullName ?? 'unknown test';
     const fullName = test.fullName ?? name;
 
@@ -64,8 +75,28 @@ export class VitestMetricsReporter implements Reporter {
 
 export default VitestMetricsReporter;
 
-function normalizeFilePath(moduleId: string): string {
-  return path.relative(process.cwd(), moduleId);
+function getModuleTests(testModule: unknown): unknown[] {
+  const moduleLike = testModule as VitestModuleLike;
+
+  return moduleLike.children?.allTests?.() ?? [];
+}
+
+function resolveModulePath(testModule: VitestModuleLike): string {
+  return (
+    testModule.moduleId ??
+    testModule.filepath ??
+    testModule.file?.filepath ??
+    testModule.file?.name ??
+    'unknown'
+  );
+}
+
+function normalizeFilePath(filePath: string): string {
+  if (filePath === 'unknown') {
+    return filePath;
+  }
+
+  return path.relative(process.cwd(), filePath);
 }
 
 function mapVitestStatus(state: string | undefined): TestMetricStatus {
