@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.test-metrics
 
 # next.js
 /.next/
