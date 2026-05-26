@@ -19,7 +19,10 @@ interface VitestTaskResultLike {
 interface VitestTestLike {
   name?: string;
   fullName?: string;
-  result?: () => VitestTaskResultLike | undefined;
+  result?: VitestTaskResultLike | (() => VitestTaskResultLike | undefined);
+  task?: {
+    result?: VitestTaskResultLike;
+  };
 }
 
 interface VitestModuleLike {
@@ -55,7 +58,22 @@ export class VitestMetricsReporter implements Reporter {
   }
 
   private recordTest(testModule: VitestModuleLike, test: VitestTestLike): void {
-    const result = test.result?.();
+    let result: VitestTaskResultLike | undefined;
+
+    if (test.task?.result) {
+      result = test.task.result;
+    } else if (test.result) {
+      if (typeof test.result === 'function') {
+        try {
+          result = test.result.call(test);
+        } catch {
+          // Fallback if binding fails
+        }
+      } else {
+        result = test.result;
+      }
+    }
+
     const file = normalizeFilePath(resolveModulePath(testModule));
     const name = test.name ?? test.fullName ?? 'unknown test';
     const fullName = test.fullName ?? name;
