@@ -15,7 +15,7 @@ Documento oficial de comunicação institucional seguindo o **Padrão Ofício** 
 
 #### Documento
 
-Arquivo estático armazenado no sistema (modelos de contratos, minutas, estatutos, atas, recibos, etc.) e gerenciado pela equipe administrativa da Secretaria. Diferencia-se do *Ofício* por ser um upload físico de arquivo legado, assinado ou template, e não um documento gerado dinamicamente pelo sistema.
+Arquivo estático armazenado no sistema (modelos de contratos, minutas, estatutos, atas, recibos, etc.) e gerenciado pela equipe administrativa da Secretaria. Diferencia-se do _Ofício_ por ser um upload físico de arquivo legado, assinado ou template, e não um documento gerado dinamicamente pelo sistema.
 
 - **Categorias** (`document_category`): `modelo_contrato`, `contrato`, `minuta`, `estatuto`, `ata`, `oficio`, `rh`, `evento`, `nota_fiscal`, `comprovante`, `outro`.
 - **Campos**: Nome, descrição, categoria, caminho no storage, tamanho, tipo MIME, usuário que realizou o upload.
@@ -145,7 +145,9 @@ Criação rápida de atividade diretamente no board, sem abrir formulário compl
 
 #### Notificação
 
-Alerta em tempo real para o usuário sobre reatribuição de atividades ou atualização de consulta jurídica. Entregue via Supabase Realtime. Tipos (`notificationType`): `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`.
+Alerta persistido para o usuário sobre reatribuição de atividades ou atualização de consulta jurídica. A entrega em tempo real é uma capacidade opcional, não parte essencial do conceito. Tipos (`notificationType`): `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`.
+
+_Avoid_: tratar "notificação" como sinônimo de "evento em tempo real".
 
 #### Evento de Domínio
 
@@ -167,7 +169,7 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 
 ### Módulo de Documentos
 
-1. **Upload e Armazenamento**: Os arquivos físicos devem ser armazenados de forma privada no bucket `documents` do Supabase Storage. O acesso aos arquivos para download é feito através de URLs assinadas geradas sob demanda com tempo de expiração curto (e.g. 1 hora).
+1. **Upload e Armazenamento**: Arquivos físicos devem ficar em armazenamento de objetos privado, com download por URL assinada de curta duração. O provedor de storage não faz parte do conceito de Documento.
 2. **Restrições de Arquivos**: O tamanho do arquivo está limitado a 15 MB. São permitidos apenas arquivos de texto/documentos de escritório comuns (PDF, DOC, DOCX, XLS, XLSX, ODT, TXT).
 3. **Controle de Acesso (Roles)**:
    - **Acesso total (listagem, download, upload, exclusão)**: Permitido apenas para `admin` e `secretaria`. O perfil `diretoria` não tem acesso ao módulo de documentos.
@@ -194,11 +196,11 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 
 ### Autenticação e Autorização
 
-1. **Supabase Auth**: Sessão gerenciada por cookies server-side via `@supabase/ssr`.
-2. **Revalidação Local**: Após validação do Supabase, o sistema consulta a tabela `admins` para verificar `isActive` e `mustChangePassword`.
+1. **Sessão Administrativa**: Sessão server-side própria, baseada em cookie `httpOnly` assinado e usuário administrativo persistido em `admins`.
+2. **Revalidação Local**: Cada sessão é revalidada contra `admins` para verificar `isActive`, `role` e `mustChangePassword`.
 3. **Rate Limit de Login**: 5 tentativas por email a cada 15 minutos, persistido em PostgreSQL.
 4. **Dev Bypass**: `SKIP_AUTH=true` permite desenvolvimento sem autenticação real, mas é ignorado em produção.
-5. **Redefinição de Senha**: Administradores podem resetar a senha de outros usuários. A exposição temporária de credenciais geradas no painel administrativo é tratada como um débito técnico documentado no [ADR 005](file:///Users/gabrielramos/projetos/ASOF/intranet/docs/adr/005-temporary-manual-password-reset.md). Como política de segurança de dados, senhas temporárias e links/tokens de recuperação nunca devem ser salvos em logs ou registros de auditoria. A visibilidade do administrador deve ser limitada, a médio prazo, a um token ou link de uso único enviado diretamente por e-mail.
+5. **Redefinição de Senha**: Administradores podem resetar a senha de outros usuários. A exposição temporária de credenciais geradas no painel administrativo é tratada como um débito técnico documentado no ADR 005. Como política de segurança de dados, senhas temporárias nunca devem ser salvas em logs ou registros de auditoria.
 
 ### Auditoria e LGPD
 
@@ -249,7 +251,7 @@ Além dos módulos de domínio listados acima, o sistema inclui módulos auxilia
 
 - **`email/`** — Envio de e-mail via Mailjet (index.ts, templates.ts).
 - **`search/`** — Busca de associados e atividades (queries.ts).
-- **`storage/`** — Operações de Supabase Storage para upload de PDFs de ofícios (client.ts, index.ts).
+- **`storage/`** — Interface de armazenamento de documentos; o provedor de objetos privado é decisão de infraestrutura.
 
 ---
 

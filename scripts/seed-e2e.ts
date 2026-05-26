@@ -1,8 +1,6 @@
 import { closeDb, db, truncateAll } from '../e2e/helpers/db';
 import { admins, associates, monthlyPayments, oficios } from '@/lib/db/schema';
-import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
-import { getNodeRealtimeOptions } from '../src/lib/supabase/node-ws';
 
 const E2E_ADMIN_PASSWORD = 'Senha-Forte-2026!';
 
@@ -41,72 +39,6 @@ async function main() {
       },
     ])
     .returning();
-
-  // Ensure corresponding Supabase Auth users exist so E2E login works.
-  // We create them directly via the Admin API because the Next.js
-  // `server-only` guard prevents us from importing the app's helper.
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ??
-    process.env.NEXT_PUBLIC_DATABASE_SUPABASE_URL ??
-    process.env.DATABASE_SUPABASE_URL;
-  const supabaseServiceKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.DATABASE_SUPABASE_SERVICE_ROLE_KEY;
-
-  if (supabaseUrl && supabaseServiceKey) {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-      realtime: getNodeRealtimeOptions(),
-    });
-
-    const { data: listData, error: listError } = await supabase.auth.admin.listUsers({
-      page: 1,
-      perPage: 200,
-    });
-
-    if (!listError && listData) {
-      for (const admin of insertedAdmins) {
-        const existing = listData.users.find(
-          (u) => u.email?.toLowerCase() === admin.email.toLowerCase(),
-        );
-
-        const payload = {
-          email: admin.email,
-          email_confirm: true,
-          user_metadata: { name: admin.name },
-          app_metadata: {
-            role: admin.role,
-            mustChangePassword: admin.mustChangePassword,
-          },
-        };
-
-        if (existing) {
-          const { error } = await supabase.auth.admin.updateUserById(existing.id, {
-            ...payload,
-            password: E2E_ADMIN_PASSWORD,
-          });
-          if (error) {
-            console.error(`Failed to update auth user ${admin.email}:`, error.message);
-          } else {
-            console.log(`Updated Supabase auth user: ${admin.email}`);
-          }
-        } else {
-          const { error } = await supabase.auth.admin.createUser({
-            ...payload,
-            password: E2E_ADMIN_PASSWORD,
-          });
-          if (error) {
-            console.error(`Failed to create auth user ${admin.email}:`, error.message);
-          } else {
-            console.log(`Created Supabase auth user: ${admin.email}`);
-          }
-        }
-      }
-    } else if (listError) {
-      console.error('Supabase auth user listing failed:', listError.message);
-    }
-  } else {
-    console.warn('Supabase credentials not found; skipping auth user seed.');
-  }
 
   const adminId = insertedAdmins[0].id;
 

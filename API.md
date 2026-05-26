@@ -40,7 +40,7 @@ Hoje existem **6 endpoints HTTP expostos**, com superficie publica intencionalme
 
 ### Sessao
 
-Os endpoints legados usam a sessao autenticada da intranet, baseada em Supabase Auth com cookies server-side.
+Os endpoints legados usam a sessao autenticada da intranet, baseada em cookie de sessao assinado com HMAC (`session`) server-side.
 
 ### Fundacao M2M (`/api/v1/*`)
 
@@ -200,7 +200,7 @@ Exemplo ilustrativo:
 
 ```bash
 curl -L \
-  -H "Cookie: COOKIES_DA_SESSAO_SUPABASE" \
+  -H "Cookie: session=VALOR_DO_COOKIE" \
   "https://intranet.asof.com.br/app/associados/relatorio/download?fields=fullName&fields=cpf&fields=siape&functionalStatus=ativo&associationStatus=ativo" \
   -o relatorio-asof.csv
 ```
@@ -283,7 +283,7 @@ Content-Disposition: attachment; filename="OF_CIO_No_001_2026_ASOF.pdf"
 
 ```bash
 curl -L \
-  -H "Cookie: COOKIES_DA_SESSAO_SUPABASE" \
+  -H "Cookie: session=VALOR_DO_COOKIE" \
   "https://intranet.asof.com.br/api/oficios/42/download" \
   -o oficio-42.pdf
 ```
@@ -624,7 +624,7 @@ Too many requests.
 
 ```bash
 curl -L \
-  -H "Cookie: COOKIES_DA_SESSAO_SUPABASE" \
+  -H "Cookie: session=VALOR_DO_COOKIE" \
   "https://intranet.asof.com.br/app/associados/relatorio/download?fields=fullName&fields=primaryEmail&fields=assignment&associationStatus=ativo&contributionStatus=em_dia" \
   -o associados-ativos.csv
 ```
@@ -633,7 +633,7 @@ curl -L \
 
 ```bash
 curl -L \
-  -H "Cookie: COOKIES_DA_SESSAO_SUPABASE" \
+  -H "Cookie: session=VALOR_DO_COOKIE" \
   "https://intranet.asof.com.br/app/associados/relatorio/download?fields=fullName&fields=birthDate&birthMonth=5" \
   -o aniversariantes-maio.csv
 ```
@@ -642,7 +642,7 @@ curl -L \
 
 ```bash
 curl -L \
-  -H "Cookie: COOKIES_DA_SESSAO_SUPABASE" \
+  -H "Cookie: session=VALOR_DO_COOKIE" \
   "https://intranet.asof.com.br/api/oficios/123/download" \
   -o oficio-123.pdf
 ```

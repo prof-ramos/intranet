@@ -21,7 +21,7 @@ function compileSql(fragment: SQL) {
 }
 
 describe('location-country helpers', () => {
-  it('treats null, blank, Brasil and Brazil as domestic', () => {
+  it('treats null, blank, Brasil and Brazil as nacional', () => {
     expect(isDomesticCountry(null)).toBe(true);
     expect(isDomesticCountry('')).toBe(true);
     expect(isDomesticCountry('   ')).toBe(true);
@@ -43,7 +43,7 @@ describe('location-country helpers', () => {
     expect(normalizeCountryLabel(null)).toBeNull();
   });
 
-  it('builds a domestic SQL predicate with null and alias handling', () => {
+  it('builds a nacional SQL predicate with null and alias handling', () => {
     const compiled = compileSql(isDomesticCountrySql(sql.raw('location_country')));
 
     expect(compiled).toContain('location_country is null');
@@ -51,7 +51,7 @@ describe('location-country helpers', () => {
     expect(compiled).toContain("lower(btrim(location_country)) in ('brasil', 'brazil')");
   });
 
-  it('builds an exterior SQL predicate as the inverse of domestic', () => {
+  it('builds an exterior SQL predicate as the inverse of nacional', () => {
     const compiled = compileSql(isExteriorCountrySql(sql.raw('location_country')));
 
     expect(compiled).toContain('not (');

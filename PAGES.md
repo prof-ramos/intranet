@@ -10,7 +10,7 @@ Redireciona automaticamente para `/login` se o usuário não estiver autenticado
 
 ### `/login`
 
-Página de autenticação. Aceita email e senha, valida via Server Action `login` e cria sessão via Supabase Auth. Exibe mensagem de erro para credenciais inválidas. Protegida contra enumeração de usuários via timing attack (bcrypt dummy hash).
+Página de autenticação. Aceita email e senha, valida via Server Action `login` e cria sessão via cookie assinado. Exibe mensagem de erro para credenciais inválidas. Protegida contra enumeração de usuários via timing attack (bcrypt dummy hash).
 
 ### `/change-password`
 

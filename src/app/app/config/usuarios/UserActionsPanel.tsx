@@ -18,14 +18,13 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
   const [confirmToggle, setConfirmToggle] = useState(false);
   const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const [copiedPass, setCopiedPass] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
 
   // Sync state to auto-open modal on success
   const [lastResetState, setLastResetState] = useState<typeof resetState>(null);
   if (resetState !== lastResetState) {
     setLastResetState(resetState);
     if (resetState?.success) {
-      if (resetState.resetLink || resetState.tempPassword) {
+      if (resetState.tempPassword) {
         setShowCredentialsModal(true);
       }
       setConfirmReset(false);
@@ -37,14 +36,6 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
       navigator.clipboard.writeText(resetState.tempPassword);
       setCopiedPass(true);
       setTimeout(() => setCopiedPass(false), 2000);
-    }
-  };
-
-  const handleCopyLink = () => {
-    if (resetState?.resetLink) {
-      navigator.clipboard.writeText(resetState.resetLink);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
     }
   };
 
@@ -78,7 +69,7 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
       {resetState?.success && (
         <div className="inline-flex items-center gap-1.5" role="status" aria-live="polite">
           <MailCheck size={14} className="text-green-600" aria-hidden="true" />
-          {resetState.resetLink || resetState.tempPassword ? (
+          {resetState.tempPassword ? (
             <button
               type="button"
               onClick={() => setShowCredentialsModal(true)}
@@ -229,33 +220,6 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
                     title="Copiar senha"
                   >
                     {copiedPass ? (
-                      <Check size={16} className="text-green-600" />
-                    ) : (
-                      <Copy size={16} />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Reset Link */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#040920]">
-                  Link de Recuperação (Supabase)
-                </label>
-                <div className="flex items-stretch overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-                  <div
-                    data-testid="reset-link-value"
-                    className="grow self-center px-3 py-2 font-mono text-[11px] leading-relaxed break-all text-gray-600 select-all select-text"
-                  >
-                    {resetState.resetLink}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleCopyLink}
-                    className="flex shrink-0 items-center justify-center border-l border-gray-200 px-3 text-gray-600 transition-colors hover:bg-gray-100 active:bg-gray-200"
-                    title="Copiar link"
-                  >
-                    {copiedLink ? (
                       <Check size={16} className="text-green-600" />
                     ) : (
                       <Copy size={16} />

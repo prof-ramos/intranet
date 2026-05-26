@@ -1,1 +1,0 @@
-ALTER TABLE "webhook_deliveries" ADD COLUMN "failure_reason" text;

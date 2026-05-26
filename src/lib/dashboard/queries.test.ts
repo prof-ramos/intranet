@@ -54,7 +54,7 @@ describe('dashboard queries', () => {
     dbMock.setSelectResult([{ brasil: 0, exterior: 0 }]);
   });
 
-  it('counts Brasil, Brazil and null/blank as domestic', async () => {
+  it('counts Brasil, Brazil and null/blank as nacional', async () => {
     await countActiveAssociatesByLocation();
 
     const selectShape = dbMock.lastSelectShape as Record<string, SQL>;

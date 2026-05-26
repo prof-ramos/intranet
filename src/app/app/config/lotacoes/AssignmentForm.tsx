@@ -7,7 +7,7 @@ interface AssignmentFormProps {
   mode: 'create' | 'edit';
   id?: number;
   defaultName?: string;
-  defaultType?: 'domestic' | 'abroad';
+  defaultType?: 'nacional' | 'exterior';
   onSuccess?: () => void;
 }
 
@@ -15,7 +15,7 @@ export function AssignmentForm({
   mode,
   id,
   defaultName = '',
-  defaultType = 'domestic',
+  defaultType = 'nacional',
   onSuccess,
 }: AssignmentFormProps) {
   const action = mode === 'create' ? createAssignment : updateAssignment;
@@ -47,8 +47,8 @@ export function AssignmentForm({
       <fieldset className="fieldset">
         <legend className="fieldset-legend text-sm font-medium text-[#040920]">Tipo</legend>
         <select name="type" defaultValue={defaultType} className="select w-full">
-          <option value="domestic">Secretaria de Estado</option>
-          <option value="abroad">Exterior</option>
+          <option value="nacional">Secretaria de Estado</option>
+          <option value="exterior">Exterior</option>
         </select>
       </fieldset>
 

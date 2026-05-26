@@ -9,8 +9,6 @@ const MIGRATION_URL_ENV_NAMES = [
   'DATABASE_URL',
 ] as const;
 
-const PRODUCTION_SUPABASE_PROJECT_REFS = ['vmohxhyfgywaqfuqeuom'] as const;
-
 type MigrationUrlEnvName = (typeof MIGRATION_URL_ENV_NAMES)[number];
 type EnvMap = Record<string, string | undefined>;
 
@@ -37,9 +35,11 @@ export function isLocalDatabaseHost(hostname: string): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
 }
 
+const KNOWN_PRODUCTION_DOMAINS = ['supabase.co', 'supabase.com', 'aws.neon.tech'];
+
 export function isKnownProductionDatabaseUrl(url: URL): boolean {
-  const inspected = `${url.hostname} ${url.username}`.toLowerCase();
-  return PRODUCTION_SUPABASE_PROJECT_REFS.some((projectRef) => inspected.includes(projectRef));
+  const hostname = url.hostname.toLowerCase();
+  return KNOWN_PRODUCTION_DOMAINS.some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
 }
 
 export function shouldBlockMigration(env: EnvMap, resolved: ResolvedMigrationUrl): boolean {

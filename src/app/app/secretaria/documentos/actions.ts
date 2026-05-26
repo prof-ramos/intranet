@@ -11,6 +11,7 @@ import { logAuditAction, logDataAccess } from '@/lib/audit/service';
 import { getDocumentById } from '@/lib/documents/queries';
 import { createLogger } from '@/lib/logger';
 import { z } from 'zod';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 const logger = createLogger('documentos/actions');
 
@@ -95,9 +96,9 @@ export async function uploadDocumentAction(formData: FormData) {
     // 4) Remove o arquivo temporário (best-effort)
     try {
       await deleteFile('documents', [tempStoragePath]);
-    } catch (cleanupErr) {
+    } catch (err) {
       // Arquivo temporário não-crítico; será limpo por job periódico
-      logger.warn('Falha ao remover arquivo temporário após move', { tempStoragePath });
+      logger.warn('Falha ao remover arquivo temporário após move', { tempStoragePath, error: toSafeErrorLog(err) }, err as Error);
     }
   } catch (error) {
     // Rollback: remove o temp e, se o row foi inserido com o path temp, remove-o do banco
@@ -165,7 +166,9 @@ export async function downloadDocumentAction(id: number) {
 export async function deleteDocumentAction(id: number) {
   const user = await requireAuth();
   if (user.role !== 'admin' && user.role !== 'secretaria') {
-    throw new Error('Acesso negado. Apenas administradores e secretários podem excluir documentos.');
+    throw new Error(
+      'Acesso negado. Apenas administradores e secretários podem excluir documentos.',
+    );
   }
 
   const doc = await getDocumentById(id);
@@ -174,7 +177,7 @@ export async function deleteDocumentAction(id: number) {
   }
 
   // DB delete primeiro — dentro de transaction para garantir autorização antes de tocar o storage.
-  // Se o tx.delete falhar (ex.: RLS bloqueou), o storage não é tocado.
+  // Se o tx.delete falhar, o storage não é tocado.
   await db.transaction(async (tx) => {
     await tx.delete(documents).where(eq(documents.id, id));
   });
@@ -183,8 +186,12 @@ export async function deleteDocumentAction(id: number) {
   // o arquivo fica órfão no storage, detectável via auditoria.
   try {
     await deleteFile('documents', [doc.storagePath]);
-  } catch (storageError) {
-    logger.error('Falha ao remover arquivo do storage após delete do registro', { storagePath: doc.storagePath, documentId: id });
+  } catch (err) {
+    logger.error('Falha ao remover arquivo do storage após delete do registro', {
+      storagePath: doc.storagePath,
+      documentId: id,
+      error: toSafeErrorLog(err)
+    }, err as Error);
     // Não relança — o registro DB foi removido com sucesso e o usuário não precisa
     // de detalhes internos de storage. O arquivo órfão será tratado via monitoramento.
   }

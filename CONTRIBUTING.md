@@ -1,623 +1,331 @@
 # Guia do Desenvolvedor — ASOF Intranet
 
-> Documentação para contribuidores e desenvolvedores da ASOF Intranet.
-> Última atualização: 2026-05-18
+Este guia orienta a configuração local, a navegação pelo código, o fluxo de desenvolvimento, a abordagem de testes e os problemas mais comuns da ASOF Intranet.
 
----
+Última atualização: 2026-05-25
 
-## Índice
+## 1. Instruções de configuração
 
-1. [Pré-requisitos](#pré-requisitos)
-2. [Configuração do Ambiente](#configuração-do-ambiente)
-3. [Visão Geral da Estrutura](#visão-geral-da-estrutura)
-4. [Fluxo de Desenvolvimento](#fluxo-de-desenvolvimento)
-5. [Banco de Dados](#banco-de-dados)
-6. [Testes](#testes)
-7. [Autenticação e Autorização](#autenticação-e-autorização)
-8. [Solução de Problemas](#solução-de-problemas)
-9. [Decisões Arquiteturais](#decisões-arquiteturais)
+### Pré-requisitos
 
----
+- Node.js compatível com Next.js 16 e TypeScript 6.
+- `npm`. Este projeto usa `package-lock.json`; não use `pnpm` ou `yarn` por padrão.
+- PostgreSQL local, preferencialmente via Homebrew no macOS.
+- Git e GitHub CLI (`gh`) para branches, PRs e triagem.
+- Para qualquer script Python futuro, use `uv` por padrão (`uv run`, `uv add`, `uv sync`).
 
-## Pré-requisitos
-
-- **Node.js 20+**
-- **npm** (não pnpm/yarn — o lockfile é `package-lock.json`)
-- **PostgreSQL 15+** ou conta **Supabase**
-- **Git**
-
----
-
-## Configuração do Ambiente
-
-### 1. Clone e instalação
+### Instalação local
 
 ```bash
 git clone https://github.com/prof-ramos/intranet.git
 cd intranet
 npm install
-```
-
-### 2. Variáveis de ambiente
-
-```bash
 cp .env.example .env.local
 ```
 
-Edite `.env.local` conforme o modo de desenvolvimento:
-
-#### Modo de desenvolvimento com bypass de auth (recomendado para iniciar)
+Para desenvolvimento local, configure `.env.local` apontando para PostgreSQL local:
 
 ```bash
 DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet
+DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet
 SKIP_AUTH=true
 DEV_USER_ID=1
-DEV_USER_NAME="Desenvolvedor"
+DEV_USER_NAME="ASOF Dev User"
 DEV_USER_EMAIL=dev@asof.local
 DEV_USER_ROLE=admin
 DEV_USER_MUST_CHANGE_PASSWORD=false
 ```
 
-> `SKIP_AUTH=true` é **ignorado em produção** (`NODE_ENV=production`). O proxy rejeita a flag mesmo que definida.
+No macOS com Homebrew, o PostgreSQL costuma criar a role com o nome do usuário do sistema. Nesta máquina, por exemplo, `postgres://gabrielramos@localhost:5432/...` é o padrão; não assuma `postgres://postgres@localhost:5432/...`.
 
-#### Modo de desenvolvimento com auth real (recomendado para testar login)
-
-```bash
-DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet
-INITIAL_ADMIN_EMAIL=admin@asof.local
-INITIAL_ADMIN_PASSWORD=SenhaSegura123!
-```
-
-### 3. Banco de dados
+Inicialize o banco e a aplicação:
 
 ```bash
-# Criar banco (se necessário)
 createdb asof_intranet
-
-# Aplicar migrações
 npm run db:migrate
-
-# Popular dados iniciais (admin user only — seed-associados.ts was removed)
 npm run db:seed
-```
-
-### 4. Subir servidor
-
-```bash
 npm run dev
 ```
 
-Acesse [http://localhost:3000](http://localhost:3000).
+Acesse `http://localhost:3000`.
 
-> `npm run dev` usa Webpack por padrão. Turbopack (`npm run dev:turbo`) está disponível mas é tratado como modo de diagnóstico — houve problemas de resolução do Tailwind em máquinas com 8 GB RAM.
+### Banco de Produção (Neon)
 
-### 5. Referência de Scripts
+- Desenvolvimento local deve usar PostgreSQL local.
+- Produção oficial: Instância PostgreSQL gerenciada (`asof-intranet` no Vercel).
+- Autenticação: O app possui auth própria via cookie de sessão assinado por `SESSION_SECRET` (httpOnly). O login de administradores usa `admins.email` e `admins.password_hash` (bcryptjs), conforme `ARCHITECTURE.md`.
+- Staging/preview deve usar banco separado.
+- `npm run db:migrate` passa por `scripts/guarded-migrate.ts` e bloqueia produção sem `ALLOW_PRODUCTION_MIGRATIONS=true`.
+- Para o fluxo de reset de senha (senha temporária), `ASOF_INTRANET_URL` deve apontar para `https://intranet.asof.com.br`.
 
-| Script                       | Descrição                                            |
-| ---------------------------- | ---------------------------------------------------- |
-| `npm run dev`                | Servidor de desenvolvimento (Webpack)                |
-| `npm run dev:turbo`          | Servidor de desenvolvimento (Turbopack, diagnóstico) |
-| `npm run build`              | Build de produção                                    |
-| `npm run start`              | Inicia servidor de produção                          |
-| `npm run lint`               | ESLint                                               |
-| `npm run typecheck`          | Verificação de tipos (`tsc --noEmit`)                |
-| `npm run test`               | Roda testes unitários (Vitest)                       |
-| `npm run test:watch`         | Testes em modo watch                                 |
-| `npm run test:db`            | Schema contract contra PostgreSQL real               |
-| `npm run test:e2e`           | Testes end-to-end (Playwright)                       |
-| `npm run test:e2e:ui`        | Playwright com UI                                    |
-| `npm run test:e2e:debug`     | Playwright em modo debug                             |
-| `npm run format`             | Formata código com Prettier                          |
-| `npm run format:check`       | Verifica formatação                                  |
-| `npm run audit`              | npm audit de segurança                               |
-| `npm run validate:quick`     | typecheck + lint + testes unitários                  |
-| `npm run validate:full`      | quick validation + testes de DB + build              |
-| `npm run scope:check`        | Verifica escopo de arquivos alterados (strict)       |
-| `npm run pr:check`           | Verificações de prontidão para PR                    |
-| `npm run db:migrate:unsafe`  | drizzle-kit migrate direto (diagnóstico controlado)  |
-| `npm run db:supabase:status` | Consulta status/totais via Supabase SDK              |
-| `npm run db:studio`          | Abre Drizzle Studio no browser                       |
+Use o runbook para operações reais de deploy, backup, rollback e smoke test: [`docs/runbook.md`](./docs/runbook.md).
 
----
+## 2. Visão geral da estrutura do projeto
 
-## Visão Geral da Estrutura
+O projeto é uma aplicação Next.js 16 App Router full-stack. Server Components, Server Actions, Route Handlers e acesso ao banco vivem no mesmo repositório.
 
-```
+```text
 src/
-  app/                      # Next.js App Router
-    app/                    # Área autenticada (/app/*)
-      associados/           # CRUD de associados + relatórios
-      atividades/           # Kanban de atividades administrativas
-      config/               # Configurações, auditoria, usuários, integrações e lotações
-      financeiro/mensalidades/ # Mensalidades e dashboard financeiro
-      juridico/             # Módulo jurídico (consultas, processos)
-      notifications/        # Actions de notificação
-      search/               # Busca global
-      secretaria/oficios/   # Gestão de ofícios
-      layout.tsx            # Layout com sidebar
-      page.tsx              # Dashboard
-      error.tsx             # Error boundary global
-    login/                  # Página de login + action
-    change-password/        # Fluxo de troca de senha obrigatória
-    layout.tsx              # Layout raiz (fontes, tema, metadata)
-    page.tsx                # Landing page pública
-    globals.css             # Tailwind + DaisyUI imports
-
-  components/               # Componentes compartilhados
-    Sidebar.tsx             # Navegação lateral
-    NavLink.tsx             # Links ativos
-    LogoutButton.tsx        # Botão de logout com action
-
-  lib/                      # Código de negócio e infraestrutura
-    activities/             # Activity (board) CRUD, assignments
-    ai/                     # Integração Gemini
-    associates/             # Queries, repository, PII masking e helpers de associados
-    auth/                   # Supabase session lookup, login, guards, rate limit
-    crypto/                 # Criptografia de PII (AES-256-GCM, HKDF, HMAC blind indexes)
-    dashboard/              # Queries de agregação
-    db/                     # Cliente Drizzle + schema
-    email/                  # Envio de email (Mailjet)
-    finance/                # Repository, service, queries do módulo financeiro
-    integrations/           # Auth M2M, webhooks outbound, rate limiting de API
-    juridico/               # Repository, service, queries do módulo jurídico
-    notifications/          # Repository, service, event bus de notificações
-    oficios/                # Repository, service, PDF, validations do módulo de ofícios
-    reports/                # Geração de CSV e queries de relatório
-    routing/                # Helpers de navegação e rotas (entry: params.ts)
-    search/                 # Queries de busca de associados e atividades
-    server-actions/         # Utilitários compartilhados de Server Actions (entry: utils.ts)
-    storage/                # Supabase Storage (buckets de ofícios, documentos)
-    validation/             # Schemas de validação compartilhados (entry: schemas.ts)
-    sanitize-pii.ts         # Sanitização de PII para logs e webhooks
-    logger.ts               # Logger estruturado com redação de PII
-    supabase/               # Clientes Supabase (server/admin)
-    ui/                     # Design tokens
-    env.ts                  # Validação de variáveis de ambiente (Zod)
-    events.ts               # Event bus em processo para notificações
-
-  proxy.ts                  # Guarda de autenticação (Next.js 16)
-
-drizzle/postgres/           # Migrações geradas pelo Drizzle Kit
-scripts/                    # Seed, diagnóstico, status Supabase, smoke test Realtime
-```
-
-### Padrões de Arquitetura
-
-| Padrão               | Onde usar                      | Exemplo                                                    |
-| -------------------- | ------------------------------ | ---------------------------------------------------------- |
-| **Server Component** | Páginas que buscam dados       | `src/app/app/juridico/consultas/page.tsx`                  |
-| **Client Component** | Interatividade (forms, estado) | `src/app/app/juridico/consultas/nova/NovaConsultaForm.tsx` |
-| **Server Action**    | Mutações via formulário        | `src/app/app/juridico/actions.ts`                          |
-| **Route Handler**    | Downloads, webhooks            | `src/app/app/associados/relatorio/download/route.ts`       |
-| **Repository**       | SQL isolado                    | `src/lib/juridico/repository.ts`                           |
-| **Service**          | Regras de negócio              | `src/lib/juridico/service.ts`                              |
-
----
-
-## Fluxo de Desenvolvimento
-
-### Adicionar uma nova página
-
-1. **Crie a rota** em `src/app/app/<modulo>/<rota>/page.tsx`
-2. **Adicione `loading.tsx`** com skeleton (`animate-pulse`)
-3. **Adicione `error.tsx`** se a rota tiver queries críticas
-4. **Exporte como Server Component** por padrão
-5. **Extraia para Client Component** apenas quando necessitar interatividade
-
-```tsx
-// Exemplo: página Server Component
-import { requireAuth } from '@/lib/auth/require-auth';
-
-export default async function MinhaPaginaPage() {
-  const user = await requireAuth();
-  const dados = await minhaQuery();
-
-  return (
-    <main className="mx-auto max-w-[1180px] px-5 py-7">
-      <h1 className="font-serif text-3xl font-bold">Título</h1>
-    </main>
-  );
-}
-```
-
-### Adicionar um formulário
-
-1. **Shell**: Server Component busca dados
-2. **Form**: Client Component recebe dados e chama Server Action
-
-```tsx
-// page.tsx (Server Component)
-export default async function NovaPaginaPage() {
-  const opcoes = await db.select().from(minhaTabela);
-  return <MeuForm opcoes={opcoes} />;
-}
-
-// MeuForm.tsx (Client Component)
-('use client');
-import { minhaAction } from './actions';
-
-export function MeuForm({ opcoes }) {
-  return (
-    <form action={minhaAction}>
-      <select name="opcaoId">
-        {opcoes.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.nome}
-          </option>
-        ))}
-      </select>
-      <button type="submit">Salvar</button>
-    </form>
-  );
-}
-```
-
-### Adicionar uma Server Action
-
-1. **Marque com `'use server'`**
-2. **Valide auth** com `requireAuth()`
-3. **Valide rate limit** se aplicável
-4. **Valide inputs** (não confie em FormData)
-5. **Chame repository/service** (não escreva SQL na action)
-6. **Chame `revalidatePath()`** para invalidar cache
-7. **Redirecione** ou retorne erro
-
-```ts
-'use server';
-
-import { requireAuth } from '@/lib/auth/require-auth';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-
-export async function minhaAction(formData: FormData) {
-  const user = await requireAuth();
-
-  const nome = String(formData.get('nome') ?? '').trim();
-  if (!nome) throw new Error('Nome é obrigatório.');
-
-  await meuRepository.insert({ nome, createdBy: user.userId });
-
-  revalidatePath('/app/minha-rota');
-  redirect('/app/minha-rota');
-}
-```
-
-### Adicionar uma migração de banco
-
-1. **Edite o schema** em `src/lib/db/schema/nova-tabela.ts`
-2. **Exporte** em `src/lib/db/schema/index.ts`
-3. **Gere a migração**:
-
-   ```bash
-   npm run db:generate
-   ```
-
-4. **Aplique localmente**:
-
-   ```bash
-   npm run db:migrate
-   ```
-
-5. **Aplique em produção** via Vercel (ou manualmente via Drizzle Kit)
-
-> **Nunca** edite arquivos em `drizzle/postgres/` manualmente. Sempre regenere via `drizzle-kit generate`.
-
-### Branch e Commit
-
-```bash
-# Criar branch
-gh issue create --title "feat: minha feature" --body "..."
-git checkout -b feat/minha-feature
-
-# Desenvolver, testar, lint
-git add .
-git commit -m "feat: descrição da mudança"
-
-# Push e PR
-git push -u origin feat/minha-feature
-gh pr create --fill
-```
-
----
-
-## Banco de Dados
-
-### Schema
-
-O schema está dividido por domínio em `src/lib/db/schema/`:
-
-| Arquivo                  | Domínio                                                   |
-| ------------------------ | --------------------------------------------------------- |
-| `admins.ts`              | Usuários administrativos                                  |
-| `associates.ts`          | Associados da ASOF                                        |
-| `activities.ts`          | Atividades administrativas (Kanban)                       |
-| `audit.ts`               | Logs de auditoria (LGPD)                                  |
-| `login-attempts.ts`      | Rate limiting de login                                    |
-| `legal-consultations.ts` | Consultas jurídicas                                       |
-| `legal-processes.ts`     | Processos jurídicos                                       |
-| `legal-notes.ts`         | Notas/histórico                                           |
-| `legal-opinions.ts`      | Pareceres e tags                                          |
-| `finance.ts`             | Mensalidades e pagamentos                                 |
-| `oficios.ts`             | Ofícios oficiais                                          |
-| `rate-limits.ts`         | Rate limiting por IP                                      |
-| `integrations.ts`        | Eventos de domínio, webhooks outbound e chaves de API M2M |
-| `notifications.ts`       | Notificações em tempo real                                |
-| `assignments.ts`         | Lotações/postos                                           |
-| `enums.ts`               | Enums compartilhados                                      |
-| `views.ts`               | Views PII-safe (`associates_list_view`)                   |
-
-### Comandos úteis
-
-```bash
-# Drizzle Studio — UI visual do banco
-npm run db:studio
-
-# Status do Supabase
-npm run db:supabase:status
-
-# Reset completo (cuidado!)
-# 1. Dropar tabelas manualmente ou recriar banco
-# 2. Aplicar migrações: npm run db:migrate
-# 3. Popular seeds: npm run db:seed
-```
-
-### Conexão
-
-O cliente Drizzle detecta automaticamente:
-
-- **Pooler** (`port 6543` ou hostname com `pooler`): desabilita `prepare`
-- **SSL**: ativado em produção ou quando `DB_SSL=true`
-
----
-
-## Testes
-
-### Executar testes
-
-```bash
-# Todos os testes (CI)
-npm run test
-
-# Watch mode (desenvolvimento)
-npm run test:watch
-
-# Arquivo específico
-npx vitest run src/lib/auth/password.test.ts
-
-# Teste específico
-npx vitest run -t "deve rejeitar senha curta"
-```
-
-### Estrutura de testes
-
-```
-src/
+  app/
+    app/                    # área autenticada (/app/*)
+      associados/           # cadastro, perfil, relatórios e exportação
+      atividades/           # kanban administrativo
+      config/               # usuários, lotações, auditoria e integrações
+      financeiro/           # mensalidades e pagamentos
+      juridico/             # consultas jurídicas, SLA e histórico
+      secretaria/oficios/   # geração e gestão de ofícios
+      search/               # busca global
+    login/                  # login com auth server-side e cookie HTTP-only
+    change-password/        # troca de senha obrigatória
+  components/               # componentes compartilhados
   lib/
-    auth/
-      config.test.ts              # Testes de config
-      authorization.test.ts      # Testes de autorização
-      login-rate-limit.test.ts   # Testes de rate limit
-      password.test.ts           # Testes de validação de senha
-    juridico/
-      service.test.ts            # Testes de regras de negócio
-    associates/
-      search-params.test.ts      # Testes de helpers
+    auth/                   # sessão, autorização, rate limit e senha
+    db/                     # cliente Drizzle e schema
+    crypto/                 # contextos de criptografia e master key
+    associates/             # domínio de associados
+    activities/             # domínio de atividades
+    juridico/               # repository, service e queries jurídicas
+    finance/                # repository, service e queries financeiras
+    oficios/                # ofícios, validações e PDF
+    integrations/           # API keys, webhooks e auth M2M
+    notifications/          # notificações e realtime
+    email/                  # Mailjet e templates
+    logger.ts               # logger estruturado com redação de PII
+    sanitize-pii.ts         # sanitização de CPF, SIAPE, email e tokens
+  proxy.ts                  # guarda de autenticação do Next.js 16
+
+drizzle/postgres/           # migrations Drizzle/PostgreSQL
+scripts/                    # seed, diagnóstico e migrations
+docs/                       # runbooks, ADRs, compliance e notas operacionais
 ```
 
-### Escrevendo um teste
+Mapa mental para uma feature típica:
 
-```ts
-import { describe, it, expect } from 'vitest';
-import { minhaFuncao } from './minha-funcao';
-
-describe('minhaFuncao', () => {
-  it('deve retornar true para input válido', () => {
-    expect(minhaFuncao('valido')).toBe(true);
-  });
-
-  it('deve lançar erro para input inválido', () => {
-    expect(() => minhaFuncao('')).toThrow('Input inválido');
-  });
-});
+```text
+src/app/app/<area>/page.tsx
+  -> src/app/app/<area>/actions.ts
+  -> src/lib/<domain>/{queries,service,repository}.ts
+  -> src/lib/db/schema/<domain>.ts
+  -> PostgreSQL (Neon / Local)
 ```
 
-> Não é necessário mockar o banco para testes de service/repository. Os testes de service testam regras de negócio puras. Testes que precisam do banco devem usar um banco de testes dedicado.
+Regras importantes:
 
----
+- Use `requireAuth()` para usuário autenticado e `requireRole()` para restrições de papel.
+- Não exponha CPF, SIAPE, email, tokens, reset links completos ou dados funcionais em logs, erros ou payloads públicos.
+- Use `createLogger('module-name')` em vez de `console.*` em código de produção.
+- Prefira repository/service para regras e SQL; Server Actions devem validar entrada, chamar domínio e revalidar cache.
+- O mapa arquitetural mais completo está em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-## Autenticação e Autorização
+## 3. Fluxo de trabalho de desenvolvimento
 
-### Fluxo de login
-
-```
-Usuário → /login → Server Action: login()
-  → Supabase Auth signInWithPassword → session
-  → Redirect /app (ou /change-password se mustChangePassword=true)
-```
-
-### Verificação de sessão
-
-- **Proxy** (`src/proxy.ts`): lookup grosso de usuário Supabase para rotas `/app/*`
-- **Layout** (`src/app/app/layout.tsx`): `requireAuth()` completo com query ao banco
-- **Página**: `requireAuth()` retorna o usuário logado
-
-### Roles
-
-| Role         | Acesso jurídico | Relatórios |
-| ------------ | --------------- | ---------- |
-| `admin`      | Sim             | Sim        |
-| `diretoria`  | Sim             | Sim        |
-| `secretaria` | Não             | Não        |
-
----
-
-## Solução de Problemas
-
-### Build falha com "Invalid environment variables"
-
-Verifique `src/lib/env.ts` para identificar variáveis obrigatórias. `SESSION_SECRET` não é mais usado desde a migração para Supabase Auth. Se o build exigir variáveis inesperadas, confira se o código reintroduziu validação customizada obsoleta.
-
-### Typecheck falha com "Range out of order in character class"
-
-**Sintoma:** Regex inválida com range de caracteres.
-
-**Solução:** Em character classes `[]`, o hífen `-` deve ser escapado ou colocado no início/fim:
-
-```ts
-// ❌ Inválido
-/^[=-+@ ]/
-
-// ✅ Correto
-/^[-=+@ ]/
-```
-
-### "Event handlers cannot be passed to Client Component props"
-
-**Sintoma:** Next.js rejeita `onChange` passado de Server para Client Component.
-
-**Solução:** Extrair o `<select onChange>` para um Client Component separado:
-
-```tsx
-// StatusUpdater.tsx
-'use client';
-export function StatusUpdater({ defaultValue, children }) {
-  return (
-    <select name="status" defaultValue={defaultValue} onChange={(e) => e.target.form?.submit()}>
-      {children}
-    </select>
-  );
-}
-```
-
-### Rate limit de login bloqueou desenvolvimento
-
-**Sintoma:** `?error=rate-limit` após várias tentativas.
-
-**Solução:**
+### Antes de começar
 
 ```bash
-# No Drizzle Studio ou SQL:
-DELETE FROM login_attempts WHERE email = 'seu-email@asof.local';
+git status --short --branch
+git worktree list
 ```
 
-### Turbopack lento ou com erros de CSS
+Não misture frentes no mesmo PR. Se houver mudanças não relacionadas, preserve-as em branch, stash ou worktree dedicado antes de iniciar outra tarefa.
 
-**Sintoma:** Classes Tailwind não carregam ou builds demoram.
-
-**Solução:** Use Webpack (padrão):
+Para features novas, prefira worktree isolado:
 
 ```bash
-npm run dev        # ✅ Webpack
-npm run dev:turbo  # ⚠️ Apenas diagnóstico
+git worktree add -b codex/minha-feature .worktrees/minha-feature
+cd .worktrees/minha-feature
+npm install
 ```
 
-### "Cannot find module '@/lib/...'"
+### Durante a implementação
 
-**Sintoma:** Import alias `@/` não resolve.
+1. Leia o módulo existente antes de editar.
+2. Siga padrões locais de imports, componentes, services e repositories.
+3. Para páginas, comece com Server Component; crie Client Component apenas para interação.
+4. Para mutações, use Server Action com validação explícita de auth, role e input.
+5. Para mudanças de banco, edite `src/lib/db/schema/*`, rode `npm run db:generate`, revise a migration e aplique localmente com `npm run db:migrate`.
+6. Não coloque `CREATE INDEX CONCURRENTLY` ou `DROP INDEX CONCURRENTLY` em migrations Drizzle transacionais; use o procedimento operacional do runbook.
+7. Evite `git add .`; faça staging por arquivo e confira o diff.
 
-**Solução:** Verifique `tsconfig.json` e `next.config.ts`:
+Comandos comuns:
 
-```json
-// tsconfig.json
-{
-  "compilerOptions": {
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  }
-}
+```bash
+npm run dev             # Next dev com Webpack
+npm run dev:turbo       # Turbopack, apenas diagnóstico
+npm run typecheck
+npm run lint
+npm run test
+npm run validate:quick
+npm run validate:full
+npm run pr:check
 ```
 
-### Migração não aplica em produção
+`npm run pr:check` é o melhor gate único antes de abrir ou atualizar PR porque combina escopo, typecheck, lint, testes, contrato de banco e build.
 
-**Sintoma:** Tabela inexistente após deploy.
+### Antes de abrir PR
 
-**Solução:**
-
-1. Verifique se `DATABASE_MIGRATION_URL` ou `DATABASE_POSTGRES_URL_NON_POOLING` está configurado
-2. Aplique manualmente:
-
-   ```bash
-   DATABASE_MIGRATION_URL="postgres://..." npx drizzle-kit migrate
-   ```
-
-3. Ou execute o SQL da migration diretamente no Supabase SQL Editor
-
-### CSV gerado com caracteres estranhos no Excel
-
-**Sintoma:** Acentos ou caracteres especiais não aparecem corretamente.
-
-**Solução:** O CSV já inclui BOM UTF-8 (`﻿` no início). Se persistir, abra o arquivo no Excel via **Dados → Importar de texto/CSV** e selecione codificação UTF-8.
-
-### "db" não inicializa durante build
-
-**Sintoma:** Build falha com erro de conexão ao banco.
-
-**Solução:** Use importação tardia em Route Handlers:
-
-```ts
-const { db } = await import('@/lib/db');
+```bash
+git status --short
+npm run pr:check
+git diff --cached --name-status
 ```
 
-Isso evita que o Drizzle tente conectar durante o build estático do Next.js.
+O PR deve ter uma responsabilidade clara. Explique impacto, validação executada e qualquer bloqueio externo, especialmente quando depender de Vercel, Neon, Mailjet ou smoke test em ambiente alvo.
 
----
+## 4. Abordagem de teste
 
-## Decisões Arquiteturais
+### Camadas de teste
 
-### Por que não há `middleware.ts`?
+| Camada     | Comando             | Quando usar                                                                           |
+| ---------- | ------------------- | ------------------------------------------------------------------------------------- |
+| Unitário   | `npm run test`      | Regras puras, helpers, Server Actions mockadas, validações e services sem banco real. |
+| Typecheck  | `npm run typecheck` | Sempre antes de PR; pega contratos TypeScript e imports quebrados.                    |
+| Lint       | `npm run lint`      | Sempre antes de PR; mantém padrões Next/React/TS.                                     |
+| Banco real | `npm run test:db`   | Mudanças em schema, migrations, enums, RLS, índices e contrato Drizzle.               |
+| E2E        | `npm run test:e2e`  | Fluxos de login, navegação e workflows críticos.                                      |
+| Build      | `npm run build`     | Mudanças em Next.js, env, renderização, imports server/client e deploy readiness.     |
 
-Next.js 16 renomeou `middleware.ts` para `proxy.ts`. O arquivo `src/proxy.ts` faz o lookup grosso de usuário Supabase para rotas `/app/*`.
+### Testes unitários
 
-### Por que não há API routes REST?
+Use Vitest. Arquivos ficam próximos ao código:
 
-O projeto segue o padrão **Server Component + Server Action** do Next.js App Router:
+```text
+src/lib/auth/password.test.ts
+src/lib/juridico/service.test.ts
+src/app/app/config/usuarios/actions.test.ts
+```
 
-- **Leitura**: Server Components consultam o banco diretamente
-- **Escrita**: Server Actions recebem `FormData` e executam mutações
-- **Downloads**: Route Handlers para casos específicos (CSV)
+Rode um arquivo específico:
 
-Isso elimina a necessidade de endpoints REST intermediários e simplifica o código.
+```bash
+npx vitest run src/lib/auth/password.test.ts
+```
 
-### Por que Webpack como padrão?
+Rode por nome:
 
-Turbopack apresentou problemas de resolução do Tailwind CSS em máquinas com 8 GB RAM. Webpack é estável e o padrão recomendado.
+```bash
+npx vitest run -t "rejects password reset"
+```
 
-### Por que repository pattern no jurídico?
+### Testes de banco
 
-O módulo jurídico usa repository pattern para:
+`npm run test:db` usa `.env.local` e valida o PostgreSQL real contra schema, migrations, enums, índices, extensões e `drizzle.__drizzle_migrations`.
 
-- Isolar SQL em um único lugar
-- Facilitar testes sem mockar o banco
-- Permitir troca futura de ORM
+Use banco dedicado para integração. Nunca rode testes contra produção.
 
-### Por que rate limit no PostgreSQL?
+```bash
+createdb asof_intranet_test
+DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet_test \
+DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet_test \
+npm run db:migrate
+```
 
-Em vez de memória (Redis), o rate limit usa PostgreSQL para:
+### Testes E2E
 
-- Consistência entre múltiplas instâncias (serverless)
-- Persistência entre deploys
-- Simplicidade (uma tecnologia a menos)
+Use sempre:
 
----
+```bash
+npm run test:e2e
+```
 
-### Por que logger estruturado em vez de `console.*`?
+O Playwright usa `http://localhost:3001`. O `global-setup` cria/migra/semeia `asof_test` e sobe um servidor Next separado com `NEXT_E2E=1` e `distDir: .next-e2e`.
 
-O projeto usa `src/lib/logger.ts` para centralizar logs com:
+Não aponte E2E para `http://localhost:3000` sem semear intencionalmente esse banco. O servidor em `3000` usa `.env.local`, normalmente `asof_intranet`, e logins E2E podem falhar ou disparar rate limit.
 
-- Níveis configuráveis via `LOG_LEVEL` (`trace`, `debug`, `info`, `warn`, `error`, `fatal`)
-- Redação automática de PII (CPF, SIAPE, email, tokens, secrets) antes de logar
-- Formato JSON em produção e colorizado em desenvolvimento
-- Identificação de módulo via `createLogger('nome-do-modulo')`
+## 5. Solução de problemas comum
 
-Nunca use `console.error`, `console.warn` ou `console.log` diretamente em código de produção. Sempre importe `createLogger` e chame `logger.error()`, `logger.warn()`, etc.
+### `npm run dev` congela, fica lento ou consome memória demais
 
----
+Use o wrapper controlado:
 
-## Recursos
+```bash
+scripts/run-dev-60s.sh
+```
 
-- [`API.md`](./API.md) — Documentação de endpoints e Server Actions
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — Diagramas e decisões técnicas
-- [`DESIGN.md`](./DESIGN.md) — Design system, tokens e tipografia
-- [`AGENTS.md`](./AGENTS.md) — Contexto institucional e vocabulário do domínio
-- [`docs/runbook.md`](./docs/runbook.md) — Procedimentos operacionais (deploy, backup, rollback, smoke test)
+Ele inicia o dev server, coleta estado, faz `curl`, grava `next-dev-60s.log` e encerra a árvore de processos.
+
+### Turbopack falha ou Tailwind/CSS parece incorreto
+
+Use Webpack, que é o padrão do repo:
+
+```bash
+npm run dev
+npm run build
+```
+
+`npm run dev:turbo` e `npm run build:turbo` são checks explícitos de diagnóstico.
+
+### Migração bloqueada pelo guardrail
+
+Se a URL contém o Neon de produção conhecido, `npm run db:migrate` bloqueia por segurança.
+
+Para produção real, só use opt-in depois de backup/snapshot, janela aprovada e rollback documentado:
+
+```bash
+ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
+```
+
+Para desenvolvimento, corrija `.env.local` para apontar ao PostgreSQL local.
+
+### `DATABASE_MIGRATION_URL ... must be set`
+
+O migrador não encontrou URL. Defina pelo menos uma destas variáveis:
+
+```bash
+DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet
+DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet
+```
+
+### Login retorna `/login?error=1`
+
+A autenticação é server-side e validada diretamente contra a tabela `admins`.
+
+Possíveis causas:
+
+- O usuário não existe na tabela `admins` do ambiente usado.
+- Credenciais incorretas (verifique se `email` e `password_hash` batem com o esperado).
+- `.env.local` aponta para banco diferente do que você acha.
+- E2E foi rodado contra o servidor normal em `3000`.
+
+Para desenvolvimento rápido, use `SKIP_AUTH=true` com `DEV_USER_*`.
+
+### Login retorna `/login?error=rate-limit`
+
+Limpe apenas as tentativas do usuário de teste no banco local:
+
+```sql
+DELETE FROM login_attempts WHERE email_hash IS NOT NULL;
+```
+
+Se estiver diagnosticando um email específico, prefira usar os helpers/testes de rate limit em vez de tentar reconstruir o hash manualmente.
+
+### Build falha por env inválida
+
+Confira [`src/lib/env.ts`](./src/lib/env.ts). Em produção, `CRON_SECRET` é obrigatório quando `VERCEL_ENV=production`; `SKIP_AUTH=true` é ignorado em `NODE_ENV=production`.
+
+### Erro de Server Component com event handler
+
+Server Components não podem passar `onClick`, `onChange` ou closures interativas para filhos client-side. Extraia a parte interativa para um arquivo com `'use client'`.
+
+### Fluxo de reset de senha apresenta problemas
+
+Confirme:
+
+```bash
+ASOF_INTRANET_URL=https://intranet.asof.com.br
+```
+
+O sistema gera uma senha temporária no backend e a entrega à UI/usuário conforme o fluxo atual. Não há geração de link com token mágico.
+
+### E2E falha em `/login`
+
+Não use o dev server de `3000`. Rode `npm run test:e2e` e deixe o Playwright subir `3001` com banco `asof_test`.
+
+Se houver erro persistente, apague apenas o estado E2E local (`.next-e2e`, banco `asof_test` se necessário) e rode novamente.
+
+## Referências rápidas
+
+- [`README.md`](./README.md): visão geral, comandos e setup rápido.
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md): mapa completo de módulos e decisões de arquitetura.
+- [`docs/runbook.md`](./docs/runbook.md): operação, backup, rollback, deploy e incidentes.
+- [`TODO-PROD.md`](./TODO-PROD.md): checklist vivo de prontidão de produção.
+- [`AGENTS.md`](./AGENTS.md): instruções operacionais para agentes neste repo.

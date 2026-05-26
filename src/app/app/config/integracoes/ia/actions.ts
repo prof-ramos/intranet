@@ -10,6 +10,8 @@ export async function saveGeminiApiKeyAction(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<NonNullable<ActionState>> {
+  void _prevState;
+
   const actor = await requireRole(['admin']);
 
   const apiKey = formData.get('apiKey')?.toString().trim() ?? '';
@@ -34,6 +36,9 @@ export async function deleteGeminiApiKeyAction(
   _prevState: ActionState,
   _formData: FormData,
 ): Promise<NonNullable<ActionState>> {
+  void _prevState;
+  void _formData;
+
   await requireRole(['admin']);
 
   try {

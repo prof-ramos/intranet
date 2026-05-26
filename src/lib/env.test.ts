@@ -5,6 +5,7 @@ describe('envSchema', () => {
   const validEnv = {
     DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
     SKIP_AUTH: 'false',
+    SESSION_SECRET: 'test-session-secret-with-at-least-32-chars',
     NODE_ENV: 'development',
   };
 
@@ -27,6 +28,7 @@ describe('envSchema', () => {
   test('aceita DATABASE_POSTGRES_URL sem DATABASE_URL', () => {
     const result = envSchema.safeParse({
       DATABASE_POSTGRES_URL: 'postgres://user:pass@localhost:5432/db',
+      SESSION_SECRET: 'test-session-secret-with-at-least-32-chars',
     });
     expect(result.success).toBe(true);
   });
@@ -36,6 +38,7 @@ describe('envSchema', () => {
       DATABASE_URL: '',
       DATABASE_POSTGRES_URL: 'postgres://user:pass@localhost:5432/db',
       SKIP_AUTH: 'false',
+      SESSION_SECRET: 'test-session-secret-with-at-least-32-chars',
       NODE_ENV: 'production',
     });
 
@@ -82,6 +85,7 @@ describe('envSchema', () => {
     const result = envSchema.safeParse({
       DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
       SKIP_AUTH: 'false',
+      SESSION_SECRET: 'test-session-secret-with-at-least-32-chars',
       NODE_ENV: 'production',
     });
 
@@ -130,12 +134,8 @@ describe('envSchema', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      const issue = result.error.issues.find((i) =>
-        i.path.includes('ASOF_INTRANET_URL'),
-      );
-      expect(issue?.message).toBe(
-        'ASOF_INTRANET_URL is required for production password recovery links.',
-      );
+      const issue = result.error.issues.find((i) => i.path.includes('ASOF_INTRANET_URL'));
+      expect(issue?.message).toBe('ASOF_INTRANET_URL is required for production app links.');
     }
   });
 });

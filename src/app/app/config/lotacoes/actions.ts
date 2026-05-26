@@ -27,7 +27,7 @@ export async function createAssignment(
     return { success: false, message: 'Nome da lotação é obrigatório (mínimo 2 caracteres).' };
   }
 
-  if (type !== 'domestic' && type !== 'abroad') {
+  if (type !== 'nacional' && type !== 'exterior') {
     return { success: false, message: 'Tipo de lotação inválido.' };
   }
 
@@ -77,7 +77,7 @@ export async function updateAssignment(
     return { success: false, message: 'Nome da lotação é obrigatório (mínimo 2 caracteres).' };
   }
 
-  if (type !== 'domestic' && type !== 'abroad') {
+  if (type !== 'nacional' && type !== 'exterior') {
     return { success: false, message: 'Tipo de lotação inválido.' };
   }
 

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ASOF Intranet — Sistema interno da Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia ~763 associados, atividades administrativas e comunicações internas da diretoria.
 
-**Stack:** Next.js 16.2.6 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL/Supabase · Supabase Auth
+**Stack:** Next.js 16.2.6 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL/Neon
 
 ## Commands
 
@@ -37,7 +37,6 @@ npm run db:generate      # drizzle-kit generate
 npm run db:migrate       # drizzle-kit migrate
 npm run db:seed          # seed admin user only (seed-associados.ts removed)
 npm run db:studio        # Drizzle Studio
-npm run db:supabase:status
 
 # Validation & checks
 npm run validate:quick     # typecheck + lint + unit tests
@@ -81,12 +80,12 @@ the result becomes `/login?error=rate-limit`.
 
 ### Routing & Auth Flow
 
-- `src/proxy.ts` — Next.js 16 proxy (replaces `middleware.ts`). Coarse Supabase user lookup for `/app/:path*` routes. Redirects to `/login` if missing/invalid. No Drizzle queries here; full user revalidation happens in `requireAuth()` inside `src/app/app/layout.tsx`.
+- `src/proxy.ts` — Next.js 16 proxy (replaces `middleware.ts`). Checks for session cookie presence for `/app/:path*` routes. Redirects to `/login` if missing. No Drizzle queries here; full user validation happens in `requireAuth()` inside `src/app/app/layout.tsx`.
 - `src/app/app/layout.tsx` — Authenticated shell. Calls `requireAuth()`, renders sidebar.
 - `src/app/app/config/auditoria/page.tsx`, `src/app/app/config/page.tsx`, `src/app/app/config/usuarios/page.tsx`, `src/app/app/config/integracoes/page.tsx`, `src/app/app/config/lotacoes/page.tsx` — Thin configuration modules. Audit is read-only; users has admin-only actions.
 - `src/app/app/secretaria/oficios/` — Ofício management UI (create, edit, list)
 - `src/app/app/financeiro/mensalidades/` — Monthly payments management
-- `src/app/login/actions.ts` — Server Action for login. Rate-limited (5 attempts / 15 min), Supabase Auth `signInWithPassword` for credential validation.
+- `src/app/login/actions.ts` — Server Action for login. Rate-limited (5 attempts / 15 min), queries DB for credentials and validates via bcrypt.
 - `src/app/change-password/` — Required password-change flow for `mustChangePassword=true`.
 
 ### Database Layer
@@ -99,7 +98,7 @@ the result becomes `/login?error=rate-limit`.
 ### Database Conventions
 
 - **Enums**: Use PostgreSQL enums for all status/type fields. Never use `text` for a bounded set of values. Shared enums (`paymentMethod`, `legalSatisfaction`) live in `src/lib/db/schema/enums.ts`.
-- **Indexes**: Create partial indexes for queries with conditional `WHERE`. Use trigram GIN (`extensions.gin_trgm_ops` on Supabase) for `LIKE '%term%'`. Use composite indexes matching `(filter, order)` patterns. Prefix custom indexes with `idx_`. Each `CREATE INDEX CONCURRENTLY` must be in its own migration file (Drizzle/Supabase wrap migrations in transactions).
+- **Indexes**: Create partial indexes for queries with conditional `WHERE`. Use trigram GIN (`gin_trgm_ops`) for `LIKE '%term%'`. Use composite indexes matching `(filter, order)` patterns. Prefix custom indexes with `idx_`. Each `CREATE INDEX CONCURRENTLY` must be in its own migration file (Drizzle wraps migrations in transactions).
 - **Connection pool**: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'` in `src/lib/db/index.ts`. Pool config values are validated via Zod in `src/lib/env.ts`.
 - **Transactions**: Multi-table operations MUST use `db.transaction()`. Pass the `tx` executor to repository functions that accept one. This includes `initializeMonth`, `dispatchDomainEventById`, and `rotateApiKey`.
 - **RLS**: Hardened in migrations 0023 + 0044 — all policies use `TO authenticated` (not `TO PUBLIC`) and `FORCE ROW LEVEL SECURITY` is applied on all 19 application tables. Migration 0044 aligned `notifications` (the last `TO PUBLIC` outlier) to `TO authenticated` with `get_current_admin_id()`. JWT-based RLS policies are deferred; auth is enforced server-side.
@@ -142,7 +141,7 @@ All PII fields (CPF, SIAPE, email, phone, address, WhatsApp) are encrypted at re
 - `src/lib/finance/` — Monthly payments, contributions
 - `src/lib/integrations/` — API keys, webhooks, rate limits
 - `src/lib/juridico/` — Legal consultations, processes, opinions, notes, SLA tracking
-- `src/lib/notifications/` — Realtime notifications via Supabase
+- `src/lib/notifications/` — Realtime notifications via polling
 - `src/lib/oficios/` — Official letter (ofício) generation and management
 - `src/lib/reports/` — CSV export, audit reports
 - `src/lib/ai/` — Gemini integration
@@ -177,18 +176,17 @@ Real-time notification system for activities and legal consultations:
 - `src/lib/notifications/repository.ts` — create, list, count unread, mark read, mark all read
 - `src/lib/notifications/service.ts` — business logic layer
 - `src/lib/events.ts` — in-process event bus used by notifications
-- `src/components/NotificationBell.tsx` — UI component with Supabase realtime subscription
-- `src/hooks/useNotifications.ts` — realtime subscription hook
+- `src/components/NotificationBell.tsx` — UI component with notification list
+- `src/hooks/useNotifications.ts` — notification list hook
 - `src/app/app/notifications/actions.ts` — Server Actions for notification mutations
 
-Required env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+Required env vars: `DATABASE_URL`, `SESSION_SECRET`
 
 ### Auth & Authorization
 
 - `src/lib/auth/config.ts` — `AUTH_ROLES` = `['admin', 'diretoria', 'secretaria']`.
-- `src/lib/auth/require-auth.ts` — `requireAuth()` validates the Supabase session, queries DB for active user, caches with `React.cache()`.
-- `src/lib/auth/authorization.ts` — `requireRole(['admin', 'diretoria'])` throws if the current user's role isn't in the allowed list.
-- `src/lib/auth/session.ts` — server-side Supabase session lookup plus local admin revalidation.
+- `src/lib/auth/require-auth.ts` — `requireAuth()` validates the session cookie, queries DB for active user, caches with `React.cache()`.
+- `src/lib/auth/session.ts` — server-side session cookie parsing plus local admin validation.
 - `src/lib/auth/password.ts` — Password policy (8+ chars, at least 1 number and 1 special character).
 - `src/lib/auth/login-rate-limit.ts` — PostgreSQL-backed rate limiter (table `login_attempts`). Uses HMAC-SHA-256 for email hashing (not plain SHA-256).
 - `src/lib/integrations/auth.ts` — Dual-auth for API endpoints (env-var key OR table-backed key with scopes). `authorizeIntegrationRequest()` checks integration headers first, then falls back to session auth if `allowSessionRoles` is provided.
@@ -231,7 +229,7 @@ Set `SKIP_AUTH=true` in `.env.local` (ignored in production). Configures dev use
 ## Security
 
 - **LGPD:** CPF, SIAPE, email, phone, address, WhatsApp, and functional data are protected. Do not log or expose in API responses. All PII is encrypted at rest using AES-256-GCM with HKDF key derivation (`src/lib/crypto/`). HMAC-SHA-256 blind indexes enable searchable encrypted fields without plaintext comparison.
-- **Auth:** Supabase Auth cookies via `@supabase/ssr`; do not reintroduce custom JWT `SESSION_SECRET` build requirements. Integration auth supports dual paths (env-var key OR table-backed API keys with scopes).
+- **Auth:** Custom HMAC-signed session cookies via `SESSION_SECRET`. Integration auth supports dual paths (env-var key OR table-backed API keys with scopes).
 - **DB:** SSL required in production or when `DB_SSL=true`/`sslmode=require`. RLS policies use `TO authenticated` (not `TO PUBLIC`); `FORCE ROW LEVEL SECURITY` applied on all tables.
 - **Service-role keys:** Server/script only. Never expose to client components.
 - **CSV injection prevention:** Cells starting with `-`, `=`, `+`, `@`, or tab are prefixed with `\t` and quoted.
@@ -433,7 +431,6 @@ git diff --cached --name-status
 - `src/lib/integrations/keys/service.ts` — Integration API key CRUD (create, list, revoke, rotate)
 - `src/lib/integrations/rate-limit.ts` — PostgreSQL-backed rate limiter for API endpoints
 - `src/lib/integrations/webhooks/service.ts` — Transactional webhook dispatch with `Promise.allSettled`
-- `src/lib/supabase/client.ts` — Supabase realtime client (notifications)
 - `next.config.ts` — Next.js config (imports `env.ts`)
 - `drizzle.config.ts` — Migration config
 - `vitest.config.ts` — Test config

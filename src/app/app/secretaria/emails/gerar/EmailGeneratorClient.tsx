@@ -239,7 +239,11 @@ export function EmailGeneratorClient() {
       </main>
 
       {toast && (
-        <div className="email-generator-toast" role="status" aria-live="polite">
+        <div 
+          className="email-generator-toast" 
+          role={toast.startsWith('❌') ? 'alert' : 'status'} 
+          aria-live="polite"
+        >
           {toast}
         </div>
       )}

@@ -6,15 +6,11 @@ import {
   markAllNotificationsReadAction,
   markNotificationReadAction,
 } from '@/app/app/notifications/actions';
-import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import {
   countUnread,
   extractNotifications,
-  normalizeNotification,
-  removeNotificationById,
   type NotificationItem,
   type NotificationLike,
-  upsertNotification,
 } from './notifications-normalize';
 
 interface UseNotificationsOptions {
@@ -129,72 +125,48 @@ export function useNotifications({ userId }: UseNotificationsOptions): UseNotifi
   }, [loadNotifications]);
 
   useEffect(() => {
-    const supabase = createBrowserSupabaseClient();
+    let intervalId: number | undefined;
 
-    if (!supabase) {
-      return;
+    const tick = () => {
+      if (document.visibilityState === 'visible') {
+        void loadNotifications().catch(() => {
+          setError('Não foi possível atualizar as notificações.');
+        });
+      }
+    };
+
+    const startTimer = () => {
+      if (!intervalId) intervalId = window.setInterval(tick, 60_000);
+    };
+
+    const stopTimer = () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = undefined;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void loadNotifications().catch(() => {
+          setError('Não foi possível atualizar as notificações.');
+        });
+        startTimer();
+      } else {
+        stopTimer();
+      }
+    };
+
+    if (document.visibilityState === 'visible') {
+      startTimer();
     }
-
-    const channel = supabase
-      .channel(`notifications:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${String(userId)}`,
-        },
-        (payload: { new: Record<string, unknown> }) => {
-          const nextItem = normalizeNotification(payload.new as NotificationLike);
-
-          if (!nextItem) {
-            return;
-          }
-
-          setNotifications((current) => upsertNotification(current, nextItem));
-        },
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${String(userId)}`,
-        },
-        (payload: { new: Record<string, unknown> }) => {
-          const nextItem = normalizeNotification(payload.new as NotificationLike);
-          if (!nextItem) {
-            return;
-          }
-
-          setNotifications((current) => upsertNotification(current, nextItem));
-        },
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${String(userId)}`,
-        },
-        (payload: { old: Record<string, unknown> }) => {
-          const removedId = normalizeNotification(payload.old as NotificationLike)?.id;
-          if (removedId == null) {
-            return;
-          }
-
-          setNotifications((current) => removeNotificationById(current, removedId));
-        },
-      )
-      .subscribe();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      void supabase.removeChannel(channel);
+      stopTimer();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [userId]);
+  }, [loadNotifications]);
 
   return {
     notifications,

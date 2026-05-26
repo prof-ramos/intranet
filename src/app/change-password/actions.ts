@@ -9,7 +9,6 @@ import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
 import { firstZodError } from '@/lib/server-actions/utils';
 import { changePasswordSchema } from '@/lib/validation/schemas';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 
@@ -62,13 +61,6 @@ export async function changePassword(formData: FormData) {
   }
 
   const passwordHash = await bcrypt.hash(newPassword, 12);
-  const supabase = await createServerSupabaseClient();
-  const { error: updateAuthError } = await supabase.auth.updateUser({
-    password: newPassword,
-  });
-  if (updateAuthError) {
-    changePasswordError('Não foi possível atualizar a senha no provedor de autenticação.');
-  }
 
   try {
     await db
@@ -80,20 +72,6 @@ export async function changePassword(formData: FormData) {
       })
       .where(eq(admins.id, user.userId));
   } catch (error) {
-    const { error: rollbackError } = await supabase.auth.updateUser({
-      password: currentPassword,
-    });
-
-    if (rollbackError) {
-      logger.error(
-        '[change-password] failed to rollback auth password after DB write failure',
-        {
-          error: toSafeErrorLog(rollbackError),
-        },
-        rollbackError as Error,
-      );
-    }
-
     logger.error(
       '[change-password] failed to persist new password hash',
       {

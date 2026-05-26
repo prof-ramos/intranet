@@ -5,20 +5,35 @@ import { login } from '@/app/login/actions';
 let mockRateLimit = { allowed: true };
 let mockConsumeError: Error | null = null;
 let mockResetError: Error | null = null;
+let mockPasswordMatches = true;
 let mockDbUser: {
   id: number;
+  name: string;
   email: string;
+  passwordHash: string;
+  role: 'admin' | 'diretoria' | 'secretaria';
   isActive: boolean;
   mustChangePassword: boolean;
 } | null = null;
-let mockAuthUser: { email?: string | null } | null = null;
-let mockSignInError: Error | null = null;
-const mockSignOut = vi.fn(() => Promise.resolve({ error: null }));
+
+const createSessionMock = vi.fn(async (input: unknown) => {
+  void input;
+});
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn((path: string) => {
     throw new Error(`NEXT_REDIRECT:${path}`);
   }),
+}));
+
+vi.mock('bcryptjs', () => ({
+  default: {
+    compare: vi.fn(() => Promise.resolve(mockPasswordMatches)),
+  },
+}));
+
+vi.mock('@/lib/auth/session', () => ({
+  createSession: (input: unknown) => createSessionMock(input),
 }));
 
 vi.mock('@/lib/db', () => ({
@@ -42,31 +57,27 @@ vi.mock('@/lib/auth/login-rate-limit', () => ({
   },
 }));
 
-vi.mock('@/lib/supabase/server', () => ({
-  createServerSupabaseClient: vi.fn(() =>
-    Promise.resolve({
-      auth: {
-        signInWithPassword: vi.fn(() =>
-          Promise.resolve({
-            data: { user: mockAuthUser },
-            error: mockSignInError,
-          }),
-        ),
-        signOut: mockSignOut,
-      },
-    }),
-  ),
-}));
-
 beforeEach(() => {
   vi.clearAllMocks();
   mockRateLimit = { allowed: true };
   mockConsumeError = null;
   mockResetError = null;
+  mockPasswordMatches = true;
   mockDbUser = null;
-  mockAuthUser = null;
-  mockSignInError = null;
 });
+
+function activeAdmin(overrides?: Partial<typeof mockDbUser>): NonNullable<typeof mockDbUser> {
+  return {
+    id: 1,
+    name: 'Admin',
+    email: 'admin@asof.local',
+    passwordHash: 'stored-hash',
+    role: 'admin',
+    isActive: true,
+    mustChangePassword: false,
+    ...overrides,
+  };
+}
 
 describe('login action', () => {
   it('redirects with error for missing email or password', async () => {
@@ -86,54 +97,39 @@ describe('login action', () => {
     await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=rate-limit');
   });
 
-  it('redirects with error when Supabase rejects the credentials', async () => {
-    mockSignInError = new Error('invalid login');
-    const formData = new FormData();
-    formData.set('email', 'unknown@asof.local');
-    formData.set('password', 'Senha-Forte-2026!');
-
-    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=1');
-  });
-
-  it('signs out and redirects with error when the authenticated email is not an active admin', async () => {
-    mockAuthUser = { email: 'inactive@asof.local' };
-    mockDbUser = {
-      id: 1,
-      email: 'inactive@asof.local',
-      isActive: false,
-      mustChangePassword: false,
-    };
+  it('redirects with error when no active admin matches the email/password', async () => {
+    mockDbUser = activeAdmin({ isActive: false });
     const formData = new FormData();
     formData.set('email', 'inactive@asof.local');
     formData.set('password', 'Senha-Forte-2026!');
 
     await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=1');
-    expect(mockSignOut).toHaveBeenCalledOnce();
+    expect(createSessionMock).not.toHaveBeenCalled();
   });
 
-  it('redirects to /app on successful login', async () => {
-    mockAuthUser = { email: 'admin@asof.local' };
-    mockDbUser = {
-      id: 1,
-      email: 'admin@asof.local',
-      isActive: true,
-      mustChangePassword: false,
-    };
+  it('redirects with error when bcrypt rejects the password', async () => {
+    mockDbUser = activeAdmin();
+    mockPasswordMatches = false;
+    const formData = new FormData();
+    formData.set('email', 'admin@asof.local');
+    formData.set('password', 'Senha-Forte-2026!');
+
+    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=1');
+    expect(createSessionMock).not.toHaveBeenCalled();
+  });
+
+  it('creates a local session and redirects to /app on successful login', async () => {
+    mockDbUser = activeAdmin();
     const formData = new FormData();
     formData.set('email', 'admin@asof.local');
     formData.set('password', 'Senha-Forte-2026!');
 
     await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/app');
+    expect(createSessionMock).toHaveBeenCalledWith({ userId: 1, email: 'admin@asof.local' });
   });
 
   it('redirects to /change-password when the admin must rotate the password', async () => {
-    mockAuthUser = { email: 'new@asof.local' };
-    mockDbUser = {
-      id: 1,
-      email: 'new@asof.local',
-      isActive: true,
-      mustChangePassword: true,
-    };
+    mockDbUser = activeAdmin({ mustChangePassword: true });
     const formData = new FormData();
     formData.set('email', 'new@asof.local');
     formData.set('password', 'Senha-Forte-2026!');
@@ -166,13 +162,7 @@ describe('login action', () => {
 
   it('logs a safe warning when reset fails after successful login', async () => {
     const consoleWarnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
-    mockAuthUser = { email: 'admin@asof.local' };
-    mockDbUser = {
-      id: 1,
-      email: 'admin@asof.local',
-      isActive: true,
-      mustChangePassword: false,
-    };
+    mockDbUser = activeAdmin();
     mockResetError = Object.assign(new Error('cpf=12345678901'), { code: 'E_RESET' });
     const formData = new FormData();
     formData.set('email', 'admin@asof.local');

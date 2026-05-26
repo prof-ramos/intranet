@@ -4,7 +4,6 @@ import {
   index,
   jsonb,
   pgEnum,
-  pgPolicy,
   pgTable,
   text,
   timestamp,
@@ -55,15 +54,8 @@ export const notifications = pgTable(
     uniqueIndex('idx_notifications_user_dedupe_key')
       .on(table.userId, table.dedupeKey)
       .where(sql`${table.dedupeKey} is not null`),
-    // Server-side writes bypass RLS via superuser connection (src/lib/db/index.ts)
-    pgPolicy('notifications_select_authenticated', {
-      as: 'restrictive',
-      for: 'select',
-      to: 'authenticated',
-      using: sql`${table.userId} = get_current_admin_id()`,
-    }),
   ],
-).enableRLS();
+);
 
 export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;

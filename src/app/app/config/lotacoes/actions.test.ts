@@ -66,7 +66,7 @@ describe('config lotacoes actions', () => {
 
     const formData = new FormData();
     formData.set('name', 'Embaixada em Paris');
-    formData.set('type', 'abroad');
+    formData.set('type', 'exterior');
 
     const result = await createAssignment(null, formData);
 
@@ -77,7 +77,7 @@ describe('config lotacoes actions', () => {
     expect(mockReturning).toHaveBeenCalledTimes(1);
     expect(mockInsertValues).toHaveBeenNthCalledWith(1, {
       name: 'Embaixada em Paris',
-      type: 'abroad',
+      type: 'exterior',
     });
     expect(mockInsertValues).toHaveBeenNthCalledWith(
       2,
@@ -96,7 +96,7 @@ describe('config lotacoes actions', () => {
 
     const formData = new FormData();
     formData.set('name', 'SERE');
-    formData.set('type', 'domestic');
+    formData.set('type', 'nacional');
 
     const result = await createAssignment(null, formData);
 
@@ -108,12 +108,12 @@ describe('config lotacoes actions', () => {
   });
 
   it('rejects duplicate names on update when another record already uses them', async () => {
-    selectQueue.push([{ id: 9, name: 'Atual', type: 'domestic' }], [{ id: 12 }]);
+    selectQueue.push([{ id: 9, name: 'Atual', type: 'nacional' }], [{ id: 12 }]);
 
     const formData = new FormData();
     formData.set('id', '9');
     formData.set('name', 'Posto duplicado');
-    formData.set('type', 'abroad');
+    formData.set('type', 'exterior');
 
     const result = await updateAssignment(null, formData);
 
@@ -129,7 +129,7 @@ describe('config lotacoes actions', () => {
     const updateFormData = new FormData();
     updateFormData.set('id', '1e2');
     updateFormData.set('name', 'Posto X');
-    updateFormData.set('type', 'abroad');
+    updateFormData.set('type', 'exterior');
 
     await expect(updateAssignment(null, updateFormData)).resolves.toEqual({
       success: false,

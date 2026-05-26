@@ -1,1 +1,0 @@
-ALTER TABLE "webhook_deliveries" ADD COLUMN "idempotency_key" text;

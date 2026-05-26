@@ -18,8 +18,8 @@ export default async function LotacoesPage() {
     .orderBy(asc(assignments.name));
 
   const typeLabel: Record<string, string> = {
-    domestic: 'Secretaria de Estado',
-    abroad: 'Exterior',
+    nacional: 'Secretaria de Estado',
+    exterior: 'Exterior',
   };
 
   return (
@@ -54,7 +54,7 @@ export default async function LotacoesPage() {
                 <td className="px-6 py-4 text-[rgba(13,31,60,0.65)]">
                   <span
                     className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                      item.type === 'domestic'
+                      item.type === 'nacional'
                         ? 'bg-blue-50 text-blue-700'
                         : 'bg-purple-50 text-purple-700'
                     }`}

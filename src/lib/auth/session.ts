@@ -1,25 +1,129 @@
 import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
-import { sql } from 'drizzle-orm';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { getDevAuthUser, isAuthRole, isSkipAuthEnabled, type SessionData } from '@/lib/auth/config';
+import { and, eq } from 'drizzle-orm';
+import { cookies } from 'next/headers';
+import { createHmac, timingSafeEqual } from 'crypto';
+import {
+  getDevAuthUser,
+  isAuthRole,
+  isSkipAuthEnabled,
+  SESSION_COOKIE_NAME,
+  type SessionData,
+} from '@/lib/auth/config';
+import { env } from '@/lib/env';
+
+const SESSION_TTL_SECONDS = 60 * 60 * 8;
+
+interface SessionTokenPayload {
+  userId: number;
+  email: string;
+  iat: number;
+  exp: number;
+}
+
+function getSessionSecret(): string {
+  const secret = env.SESSION_SECRET;
+  if (!secret) {
+    throw new Error('SESSION_SECRET must be set when SKIP_AUTH is not enabled.');
+  }
+  return secret;
+}
+
+function encodeBase64Url(value: string): string {
+  return Buffer.from(value, 'utf8').toString('base64url');
+}
+
+function decodeBase64Url(value: string): string {
+  return Buffer.from(value, 'base64url').toString('utf8');
+}
+
+function signPayload(payload: string): string {
+  return createHmac('sha256', getSessionSecret()).update(payload).digest('base64url');
+}
+
+function verifySignature(payload: string, signature: string): boolean {
+  const expected = signPayload(payload);
+  const expectedBuffer = Buffer.from(expected, 'base64url');
+  const actualBuffer = Buffer.from(signature, 'base64url');
+
+  return (
+    expectedBuffer.length === actualBuffer.length && timingSafeEqual(expectedBuffer, actualBuffer)
+  );
+}
+
+function parseSessionToken(token: string | undefined): SessionTokenPayload | null {
+  if (!token) return null;
+
+  const [payload, signature] = token.split('.');
+  if (!payload || !signature || !verifySignature(payload, signature)) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(decodeBase64Url(payload)) as Partial<SessionTokenPayload>;
+    const { userId, email, iat, exp } = parsed;
+    if (
+      typeof userId !== 'number' ||
+      !Number.isInteger(userId) ||
+      typeof email !== 'string' ||
+      typeof iat !== 'number' ||
+      !Number.isInteger(iat) ||
+      typeof exp !== 'number' ||
+      !Number.isInteger(exp)
+    ) {
+      return null;
+    }
+
+    if (exp <= Math.floor(Date.now() / 1000)) {
+      return null;
+    }
+
+    return {
+      userId,
+      email: email.trim().toLowerCase(),
+      iat,
+      exp,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function createSessionToken(input: { userId: number; email: string }): string {
+  const now = Math.floor(Date.now() / 1000);
+  const payload = encodeBase64Url(
+    JSON.stringify({
+      userId: input.userId,
+      email: input.email.trim().toLowerCase(),
+      iat: now,
+      exp: now + SESSION_TTL_SECONDS,
+    } satisfies SessionTokenPayload),
+  );
+
+  return `${payload}.${signPayload(payload)}`;
+}
+
+export async function createSession(input: { userId: number; email: string }): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE_NAME, createSessionToken(input), {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: SESSION_TTL_SECONDS,
+  });
+}
 
 export async function getSession(): Promise<SessionData | null> {
   if (isSkipAuthEnabled()) {
     return { ...getDevAuthUser(), isLoggedIn: true };
   }
 
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user?.email) {
+  const cookieStore = await cookies();
+  const token = parseSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
+  if (!token) {
     return null;
   }
-
-  const normalizedEmail = user.email.trim().toLowerCase();
 
   const [admin] = await db
     .select({
@@ -31,7 +135,7 @@ export async function getSession(): Promise<SessionData | null> {
       mustChangePassword: admins.mustChangePassword,
     })
     .from(admins)
-    .where(sql`lower(${admins.email}) = ${normalizedEmail}`)
+    .where(and(eq(admins.id, token.userId), eq(admins.email, token.email)))
     .limit(1);
 
   if (!admin || !admin.isActive || !isAuthRole(admin.role)) {
@@ -53,9 +157,6 @@ export async function destroySession(): Promise<void> {
     return;
   }
 
-  const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.auth.signOut();
-  if (error) {
-    throw error;
-  }
+  const cookieStore = await cookies();
+  cookieStore.delete(SESSION_COOKIE_NAME);
 }
