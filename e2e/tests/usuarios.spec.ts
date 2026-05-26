@@ -43,11 +43,7 @@ test.describe('Admin User Management & Password Reset Flow', () => {
     const tempPassValue = modal.getByTestId('temp-password-value');
     await expect(tempPassValue).not.toBeEmpty();
 
-    // Verify reset link field exists and has value
-    const resetLinkLabel = modal.locator('text=Link de Recuperação (Supabase)');
-    await expect(resetLinkLabel).toBeVisible();
-    const resetLinkValue = modal.getByTestId('reset-link-value');
-    await expect(resetLinkValue).not.toBeEmpty();
+    // Reset link was removed from the UI, skipping link assertions
 
     // Click "Concluído" to close the modal
     const doneBtn = modal.getByRole('button', { name: 'Concluído' });

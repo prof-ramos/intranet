@@ -108,6 +108,7 @@ npm run db:studio
 - Homebrew PostgreSQL uses the macOS user role on this machine (`$USER`, currently `gabrielramos`); do not use `postgres://postgres@localhost:5432/...` unless that role has been explicitly created.
 - For local development, use the same direct URL for runtime and migrations: `DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet` and `DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet`.
 - Neon (intranet-db) remains the remote/staging/production Postgres target; use pooler URLs only for runtime and direct/non-pooling URLs for migrations.
+- Production Vercel is expected to use `DATABASE_URL` and `DATABASE_MIGRATION_URL` as the canonical Neon envs. Preview should not inherit the general production DB env set.
 - Seed scripts are `scripts/seed-admin.ts` only; `scripts/seed-associados.ts` was removed.
 
 ## Development Auth

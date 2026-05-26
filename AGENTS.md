@@ -1,3 +1,86 @@
+<!-- Generated: 2026-05-26 | Updated: 2026-05-26 -->
+<!-- Parent: none (root) -->
+
+# ASOF Intranet
+
+## Purpose
+Next.js 15 App Router application for ASOF (associação) internal management — associates, activities (kanban), juridico/consultas, financeiro/mensalidades, oficios, notifications, audit, LGPD compliance. Drizzle ORM + Neon Postgres, Playwright e2e, Vitest unit+integration, Server Actions, self-hosted auth with cookie sessions.
+
+## Key Files
+| File | Description |
+|------|-------------|
+| `package.json` | Dependencies and scripts (dev, build, test, e2e, typecheck, lint, migrate) |
+| `tsconfig.json` | TypeScript with path aliases (`@/` → `src/`) |
+| `next.config.ts` | Next.js 16.2.6 config |
+| `drizzle.config.ts` | Drizzle Kit with Neon Postgres |
+| `playwright.config.ts` | E2E test config |
+| `vitest.config.ts` | Unit test runner |
+| `vercel.json` | Vercel deployment config |
+| `CLAUDE.md` | Project instructions for AI agents (read FIRST) |
+| `AGENTS.md` | This file — AI agent directory navigation |
+| `TODO-PROD.md` | Go-live checklist and production readiness |
+
+## Subdirectories
+| Directory | Purpose |
+|-----------|---------|
+| `src/` | Application source (pages, components, lib, hooks) — see `src/AGENTS.md` |
+| `docs/` | ADRs, design docs, runbooks, compliance — see `docs/AGENTS.md` |
+| `scripts/` | DB scripts, seed, migrations, PII encryption — see `scripts/AGENTS.md` |
+| `e2e/` | Playwright end-to-end tests — see `e2e/AGENTS.md` |
+| `drizzle/` | SQL migrations and schema snapshots — see `drizzle/AGENTS.md` |
+| `.github/` | CI/CD workflows, branch rules, PR template — see `.github/AGENTS.md` |
+
+## For AI Agents
+
+### First Read
+Always read `CLAUDE.md` before modifying anything. It contains the authoritative project instructions.
+
+### Common Commands
+```bash
+npm run dev          # Dev server (port 3000)
+npm run build        # Production build
+npm run test         # Unit tests (Vitest)
+npm run test:e2e     # E2E tests (Playwright, port 3001)
+npm run typecheck    # TypeScript check
+npm run lint         # ESLint
+npm run db:migrate   # Run pending migrations (guarded)
+npm run seed:e2e     # Seed test data for E2E
+npm run test:db      # Schema contract validation against live DB
+```
+
+### Stack
+- Next.js 16.2.6 App Router, TypeScript strict
+- Drizzle ORM + Neon Postgres
+- Self-hosted auth: `SESSION_SECRET`, `admins` table, httpOnly signed cookies
+- `requireAuth()` / `requireRole()` for route protection
+- PII: ciphertext + hash stored, plaintext never logged
+
+### Deployment
+- Vercel Preview: branch deploys, env from Vercel (no `.env.production`)
+- Vercel Production: `main` branch, `DATABASE_URL` pooled Neon and `DATABASE_MIGRATION_URL` direct Neon
+- Env vars stored in Vercel, never committed
+
+## Dependencies
+
+### Internal
+- `src/app/` — App Router pages and API routes
+- `src/lib/` — Domain services, repositories, DB schema
+- `src/components/` — Shared UI components
+- `src/hooks/` — React hooks
+
+### External
+- `next` 16.x, `react` 19.x
+- `@neondatabase/serverless` — Postgres driver
+- `drizzle-orm`, `drizzle-kit` — ORM and migrations
+- `@playwright/test` — E2E testing
+- `vitest` — Unit and integration testing
+- `@upstash/ratelimit` — Rate limiting
+- `zod` — Schema validation
+- `jose` — JWT / session signing
+- `argon2` — Password hashing
+
+<!-- MANUAL: Original AGENTS.md content preserved below — contains institutional context and agent rules from this project -->
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # Contexto Institucional
@@ -39,12 +122,6 @@ CPF, SIAPE, email, endereço e dados funcionais são informações protegidas pe
 Em auditorias de segurança, documentar falsos positivos relevantes para evitar redescoberta em rodadas futuras.
 
 Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de renderização otimista (usados antes de o mapa `peopleById` ser atualizado); não são a fonte canônica de nomes. O mapa `peopleById` é autoritativo. Não remover esses campos sob o argumento de desnormalização de PII.
-
----
-
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 
 <!-- END:nextjs-agent-rules -->
 
@@ -110,6 +187,7 @@ npm run db:studio
 - Homebrew PostgreSQL uses the macOS user role on this machine (`$USER`, currently `gabrielramos`); do not use `postgres://postgres@localhost:5432/...` unless that role has been explicitly created.
 - For local development, use the same direct URL for runtime and migrations: `DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet` and `DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet`.
 - Neon (intranet-db) remains the remote/staging/production Postgres target; use pooler URLs only for runtime and direct/non-pooling URLs for migrations.
+- Production Vercel should keep only `DATABASE_URL` and `DATABASE_MIGRATION_URL` for primary DB access; Preview should not inherit general production DB envs.
 - Seed scripts are `scripts/seed-admin.ts` only; `scripts/seed-associados.ts` was removed.
 
 ## Development Auth
@@ -286,3 +364,5 @@ git stash push -u -m "nome-da-frente"
 # Conferir exatamente o que entrara no commit
 git diff --cached --name-status
 ```
+
+<!-- MANUAL: Production database is Neon Postgres. See TODO-PROD.md for go-live checklist. -->

@@ -7,7 +7,7 @@ Atualizado em 2026-05-26 apos decisao de resetar a camada de banco/autenticacao 
 ## Decisao Atual
 
 - Banco de producao: PostgreSQL gerenciado novo, inicialmente limpo.
-- Fonte canonica de schema: `src/lib/db/schema` + baseline em `drizzle/postgres/0000_green_glorian.sql`.
+- Fonte canonica de schema: `src/lib/db/schema` + historico Drizzle em `drizzle/postgres/` iniciado pelo baseline `0000_green_glorian.sql`.
 - Auth: server-side propria, `admins.password_hash`, cookie `httpOnly` assinado por `SESSION_SECRET`, `requireAuth()` e `requireRole()`.
 - Seed inicial: `INITIAL_ADMIN_EMAIL` + `INITIAL_ADMIN_PASSWORD`, sempre com `must_change_password=true`.
 - Notificacao: alerta persistido. Entrega em tempo real nao bloqueia o go-live.
@@ -18,31 +18,35 @@ Atualizado em 2026-05-26 apos decisao de resetar a camada de banco/autenticacao 
 
 - [x] Provisionar PostgreSQL gerenciado novo — Neon (intranet-db, `ep-empty-cake-ac26vl6w`, sa-east-1).
 - [x] Configurar `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `SESSION_SECRET`, `ENCRYPTION_MASTER_KEY`, `CRON_SECRET`, `TRUSTED_PROXY_COUNT=1` e `ASOF_INTEGRATIONS_ENABLED=false` no Vercel (produção). Concluído em 2026-05-26.
+  - [x] `SESSION_SECRET`, `ENCRYPTION_MASTER_KEY`, `CRON_SECRET`, `TRUSTED_PROXY_COUNT=1` e `ASOF_INTEGRATIONS_ENABLED=false` existem em produção.
+  - [x] `DATABASE_URL` e `DATABASE_MIGRATION_URL` foram reconfigurados via Vercel API com URLs Neon (`ep-empty-cake-ac26vl6w`) e fallbacks legados de banco foram removidos de produção.
 - [x] Confirmar rotação de segredos robustos: `SESSION_SECRET` e `ENCRYPTION_MASTER_KEY` gerados com `openssl rand -hex 32` (64 hex chars = 32 bytes de entropia). `CRON_SECRET` rotacionado no mesmo ciclo.
 - [x] Aplicar baseline em banco vazio:
   - `ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate` — concluído em 2026-05-26 contra Neon produção.
   - [x] `ALLOW_PRODUCTION_MIGRATIONS` não foi adicionado ao ambiente Vercel — deve ser passado só na execução pontual de migrate.
 - [x] Rodar seed inicial — admin `gabriel@asof.org.br` criado com `must_change_password=true`.
 - [ ] Validar login do admin inicial e troca obrigatoria de senha.
-- [x] Rodar gates locais — `typecheck`, `lint`, `test` (815 testes): todos passaram em 2026-05-26.
-- [ ] Rodar `npm run test:db` contra Neon produção antes do go-live.
-- [ ] Fazer smoke manual em staging/final:
-  - login, dashboard, associados, atividades, juridico, oficios, financeiro, auditoria, reset de senha e notificacoes persistidas.
+- [x] Rodar gates locais — `typecheck`, `lint`, `test` (824 testes): todos passaram em 2026-05-26.
+- [x] Rodar `npm run test:db` contra Neon produção antes do go-live — schema contract passou em 2026-05-26.
+- [ ] Fazer smoke manual em producao, em janela controlada, antes da liberacao para usuarios finais (ADR 009):
+  - pre-janela: snapshot Neon e rollback documentado.
+  - smoke: login do admin inicial + troca obrigatoria de senha, dashboard, associados, atividades, juridico, oficios, financeiro, auditoria, reset de senha e notificacoes persistidas.
+  - pos-smoke: limpeza dos dados marcados (`SMOKE_*`) via SQL direto antes da liberacao; auditoria preservada.
 - [ ] Validar crons com `CRON_SECRET` antes de ativar operacao.
-- [ ] Confirmar que previews/staging nao apontam para banco de producao.
+- [x] Confirmar que previews/staging nao apontam para banco de producao — envs gerais de banco foram removidos do ambiente Preview no Vercel em 2026-05-26; restam apenas `SESSION_SECRET` em Preview e `GEMINI_API_KEY` restrita ao branch `feature/outbound-integrations-webhooks`.
 
 ## Recomendado Antes Do Go-Live
 
-- [ ] Definir provider de storage se módulo Documentos for necessário no dia 1.
-- [ ] Rodar `npm audit`.
-- [ ] Rodar E2E local/staging quando o banco final estiver disponivel.
+- [x] Documentos fora do go-live: modulo de upload/download de arquivos legados nao entra no dia 1 (ADR 008). Storage de objetos sera frente separada pos-estreia.
+- [x] Rodar `npm audit` — 0 vulnerabilidades em 2026-05-26.
+- [x] E2E local contra `asof_test` aprovado em 2026-05-26 (`npm run test:e2e`, 52 testes). E2E em staging dedicado nao e gate do dia 1 (ADR 009); avaliar pos-estreia se Neon branch staging for adotado.
 - [ ] Registrar plano de rollback: restaurar snapshot do banco novo ou fazer forward-fix; nao usar projetos antigos como rollback.
 - [ ] Registrar owners de incidentes para app, banco, Vercel, Mailjet, DNS e LGPD.
 
 ## Evidencia Desta Frente
 
 - Removidos helpers/scripts operacionais de Auth externa, entrega em tempo real externa e storage externo.
-- Criado baseline unico `drizzle/postgres/0000_green_glorian.sql`.
-- `npm run typecheck` passou apos a troca para auth propria.
+- Criado baseline inicial `drizzle/postgres/0000_green_glorian.sql`; migrações incrementais atuais seguem em `drizzle/postgres/0001_living_hobgoblin.sql` e `drizzle/postgres/0002_fix_assignment_type_enum_labels.sql`.
+- `npm run typecheck`, `npm run lint`, `npm run test`, `npm run test:e2e` e `npm audit` passaram apos a troca para auth propria.
 
 Este arquivo substitui as pendencias antigas de smoke de tempo real e reconciliacao de projetos de banco. Elas nao sao mais caminho de go-live.

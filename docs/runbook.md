@@ -8,6 +8,9 @@ Este runbook cobre a estreia da intranet ASOF com PostgreSQL gerenciado limpo, b
 2. Criar ou obter duas URLs:
    - `DATABASE_URL`: runtime pooled, usuario restrito.
    - `DATABASE_MIGRATION_URL`: conexao direta/unpooled, usuario de migration.
+   - No setup atual do projeto, ambas sao URLs do Neon `intranet-db`:
+     `DATABASE_URL` via pooler `ep-empty-cake-ac26vl6w-pooler.sa-east-1.aws.neon.tech`
+     e `DATABASE_MIGRATION_URL` via host direto `ep-empty-cake-ac26vl6w.sa-east-1.aws.neon.tech`.
 3. Confirmar que o banco esta vazio ou explicitamente descartavel.
 4. Fazer snapshot/backup inicial do provider antes de qualquer migration de producao.
 
@@ -23,6 +26,10 @@ Este runbook cobre a estreia da intranet ASOF com PostgreSQL gerenciado limpo, b
 - `TRUSTED_PROXY_COUNT=1`
 - `SKIP_AUTH` ausente ou `false` em producao
 - `ASOF_INTEGRATIONS_ENABLED=false`, salvo decisao operacional separada
+
+Em producao, nao manter fallbacks legados de banco como `DATABASE_POSTGRES_URL`,
+`DATABASE_POSTGRES_URL_NON_POOLING`, `POSTGRES_URL` ou `POSTGRES_PRISMA_URL`.
+Em preview, nao compartilhar envs gerais de banco com producao.
 
 Nunca reutilize segredos expostos em chat, logs ou arquivos temporarios.
 

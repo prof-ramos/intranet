@@ -78,6 +78,12 @@ Acesse [http://localhost:3000](http://localhost:3000).
 | `DATABASE_MIGRATION_URL` | URL PostgreSQL direta/non-pooling para migrations do Drizzle.                        |
 | `SESSION_SECRET`         | Segredo forte para assinar cookies `httpOnly` de sessão.                             |
 
+No setup atual de producao em Vercel:
+
+- `DATABASE_URL` aponta para o pooler do Neon `ep-empty-cake-ac26vl6w-pooler.sa-east-1.aws.neon.tech`
+- `DATABASE_MIGRATION_URL` aponta para o host direto do Neon `ep-empty-cake-ac26vl6w.sa-east-1.aws.neon.tech`
+- Fallbacks legados como `DATABASE_POSTGRES_URL` e `POSTGRES_URL` nao devem permanecer configurados em producao
+
 ### Seed do admin inicial
 
 | Variável                 | Padrão | Descrição                                                                                |
@@ -128,8 +134,8 @@ Para o primeiro go-live, integrações/webhooks não são obrigatórios e produ�
 O projeto usa PostgreSQL via Drizzle.
 
 - **Desenvolvimento local:** PostgreSQL via Homebrew. Use `DATABASE_URL=postgres://<user>@localhost:5432/asof_intranet` e a mesma URL para `DATABASE_MIGRATION_URL` (não há pooler local, então a URL direta serve para ambos).
-- **Produção / remoto:** PostgreSQL gerenciado novo. Use a URL de runtime em `DATABASE_URL` e a URL direta/non-pooling em `DATABASE_MIGRATION_URL`.
-- **Staging / preview:** use banco separado; previews da Vercel não devem apontar para o banco de produção.
+- **Produção / remoto:** Neon Postgres. Use a URL pooled em `DATABASE_URL` e a URL direta/non-pooling em `DATABASE_MIGRATION_URL`.
+- **Staging / preview:** use banco separado. No setup atual, o ambiente `Preview` da Vercel nao deve carregar envs gerais de banco.
 
 ```bash
 npm run db:generate   # gera migrações a partir do schema
@@ -148,6 +154,8 @@ ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
 As migrações versionadas em `drizzle/postgres/` são tratadas como migrations transacionais. Operações PostgreSQL que exigem execução fora de transação, como `CREATE INDEX CONCURRENTLY` ou `DROP INDEX CONCURRENTLY`, não devem ser incluídas no fluxo `npm run db:migrate`. Para esses casos, use o procedimento operacional em `docs/runbook.md`: backup/snapshot, teste em staging, execução direta via `psql "$DATABASE_MIGRATION_URL"` em janela aprovada e validação posterior com `npm run test:db`.
 
 As migrações PostgreSQL atuais ficam em `drizzle/postgres/`. O schema está em `src/lib/db/schema/`.
+
+Se um segredo de banco for exposto em chat, log ou arquivo temporario, rotacione a senha no Neon e atualize imediatamente `DATABASE_URL` e `DATABASE_MIGRATION_URL` no Vercel.
 
 ---
 

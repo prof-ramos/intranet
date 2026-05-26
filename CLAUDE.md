@@ -94,6 +94,7 @@ the result becomes `/login?error=rate-limit`.
 - `src/lib/db/schema/` — Drizzle schemas: `admins`, `associates`, `activities`, `audit` (table `audit_logs`), `finance`, `login_attempts`, `rate_limits`, `legal_consultations`, `legal_notes`, `legal_processes`, `legal_opinions`, `legal_opinion_tags`, `monthly_payments`, `oficios`, `assignments`, `domain_events`, `webhook_subscriptions`, `webhook_deliveries`, `integration_api_keys`, `notifications`.
 - `drizzle.config.ts` — Targets PostgreSQL, writes migrations to `drizzle/postgres/`. **Rejects pooled URLs** — migrations require direct/non-pooling connection.
 - **Migrations:** Use `DATABASE_MIGRATION_URL` or `DATABASE_POSTGRES_URL_NON_POOLING`.
+- **Production env contract:** Vercel production should use Neon through `DATABASE_URL` (pooled) and `DATABASE_MIGRATION_URL` (direct). Preview should not inherit the general production DB env set.
 
 ### Database Conventions
 
