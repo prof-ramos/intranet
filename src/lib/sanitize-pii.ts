@@ -7,7 +7,7 @@
  */
 
 export const SENSITIVE_KEY_PATTERN =
-  /cpf|siape|email|address|endereco|phone|telefone|whatsapp|secret|token|password|sourcePayload|primaryEmail|reset_?link|recovery_?link/i;
+  /cpf|siape|email|address|endereco|phone|telefone|whatsapp|secret|token|password|sourcePayload|primaryEmail|reset_?link|recovery_?link|apiKey|authorization|ciphertext/i;
 
 export const PII_TEXT_PATTERNS: Array<[RegExp, string]> = [
   [/\b[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\b/g, '[email]'],

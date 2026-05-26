@@ -44,6 +44,18 @@ describe('SENSITIVE_KEY_PATTERN', () => {
     expect(SENSITIVE_KEY_PATTERN.test('recovery_link')).toBe(true);
   });
 
+  it('matches apiKey', () => {
+    expect(SENSITIVE_KEY_PATTERN.test('apiKey')).toBe(true);
+  });
+
+  it('matches authorization', () => {
+    expect(SENSITIVE_KEY_PATTERN.test('authorization')).toBe(true);
+  });
+
+  it('matches ciphertext', () => {
+    expect(SENSITIVE_KEY_PATTERN.test('ciphertext')).toBe(true);
+  });
+
   it('does not match structural links key', () => {
     expect(SENSITIVE_KEY_PATTERN.test('links')).toBe(false);
   });

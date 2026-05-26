@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm';
 import { loginRateLimiter } from '@/lib/auth/login-rate-limit';
 import { loginSchema } from '@/lib/validation/schemas';
 import { createSession } from '@/lib/auth/session';
-import { toSafeErrorLog } from '@/lib/error-log';
+import { toSafeErrorLog, ensureError } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('login');
@@ -39,7 +39,7 @@ async function retryTransientConnection<T>(operation: () => Promise<T>): Promise
     logger.warn(
       '[Login] Retrying after transient database connection closure.',
       { error: toSafeErrorLog(error) },
-      error as Error,
+      ensureError(error),
     );
     return operation();
   }
@@ -57,15 +57,19 @@ export async function login(formData: FormData) {
 
   const { email, password } = parsed.data;
 
+  let rateLimitAllowed = true;
   try {
     const rateLimit = await retryTransientConnection(() => loginRateLimiter.consume(email));
-    if (!rateLimit.allowed) redirect('/login?error=rate-limit');
+    rateLimitAllowed = rateLimit.allowed;
   } catch (error) {
-    logger.error(
-      '[Login] Rate-limit check failed; denying login.',
+    logger.warn(
+      '[Login] Rate-limit check failed; allowing login attempt to proceed.',
       { error: toSafeErrorLog(error) },
-      error as Error,
+      ensureError(error),
     );
+  }
+
+  if (!rateLimitAllowed) {
     redirect('/login?error=rate-limit');
   }
 
@@ -103,7 +107,7 @@ export async function login(formData: FormData) {
     logger.warn(
       '[Login] Rate-limit reset failed after successful login.',
       { error: toSafeErrorLog(error) },
-      error as Error,
+      ensureError(error),
     );
   }
   redirect(user.mustChangePassword ? '/change-password' : '/app');

@@ -30,3 +30,31 @@ export function toSafeErrorLog(error: unknown): SafeErrorLog {
 
   return { kind: 'non_error_thrown' };
 }
+
+export function ensureError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+
+  let message = 'An unknown error occurred';
+  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    message = error.message;
+  } else if (typeof error === 'string') {
+    message = error;
+  } else {
+    try {
+      message = JSON.stringify(error);
+    } catch {
+      message = String(error);
+    }
+  }
+
+  const newError = new Error(message);
+  if (error && typeof error === 'object') {
+    const errorObj = error as Record<string, unknown>;
+    if (typeof errorObj.name === 'string') newError.name = errorObj.name;
+    if (typeof errorObj.stack === 'string') newError.stack = errorObj.stack;
+    if (errorObj.code) (newError as Error & { code?: unknown }).code = errorObj.code;
+  }
+  return newError;
+}

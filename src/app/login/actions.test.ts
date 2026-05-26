@@ -137,16 +137,17 @@ describe('login action', () => {
     await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/change-password');
   });
 
-  it('logs a safe error when the rate-limit check fails', async () => {
-    const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
+  it('logs a safe warning when the rate-limit check fails and allows login attempt to proceed', async () => {
+    const consoleWarnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
+    mockDbUser = activeAdmin();
     mockConsumeError = Object.assign(new Error('email=user@example.com'), { code: 'E_RATE' });
     const formData = new FormData();
     formData.set('email', 'admin@asof.local');
     formData.set('password', 'Senha-Forte-2026!');
 
-    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=rate-limit');
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      '[Login] Rate-limit check failed; denying login.',
+    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/app');
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      '[Login] Rate-limit check failed; allowing login attempt to proceed.',
       {
         error: {
           kind: 'error',
@@ -157,7 +158,7 @@ describe('login action', () => {
       },
       expect.any(Error),
     );
-    consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   it('logs a safe warning when reset fails after successful login', async () => {

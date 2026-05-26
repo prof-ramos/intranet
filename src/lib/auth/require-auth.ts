@@ -6,7 +6,7 @@ import { getSession } from '@/lib/auth/session';
 import { type AuthUser } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
-import { toSafeErrorLog } from '@/lib/error-log';
+import { toSafeErrorLog, ensureError } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('auth:require-auth');
@@ -46,6 +46,7 @@ export const requireAuth = cache(async (): Promise<AuthUser> => {
       }
     | undefined;
 
+  let dbFailed = false;
   try {
     const result = await db
       .select({
@@ -61,11 +62,11 @@ export const requireAuth = cache(async (): Promise<AuthUser> => {
       .limit(1);
     admin = result[0];
   } catch (error) {
-    logger.error('requireAuth DB query failed', { error: toSafeErrorLog(error) }, error as Error);
-    redirect('/login');
+    logger.error('requireAuth DB query failed', { error: toSafeErrorLog(error) }, ensureError(error));
+    dbFailed = true;
   }
 
-  if (!admin || !admin.isActive) {
+  if (dbFailed || !admin || !admin.isActive) {
     redirect('/login');
   }
 
