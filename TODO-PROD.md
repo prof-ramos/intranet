@@ -40,8 +40,20 @@ Atualizado em 2026-05-26 apos decisao de resetar a camada de banco/autenticacao 
 - [x] Documentos fora do go-live: modulo de upload/download de arquivos legados nao entra no dia 1 (ADR 008). Storage de objetos sera frente separada pos-estreia.
 - [x] Rodar `npm audit` — 0 vulnerabilidades em 2026-05-26.
 - [x] E2E local contra `asof_test` aprovado em 2026-05-26 (`npm run test:e2e`, 52 testes). E2E em staging dedicado nao e gate do dia 1 (ADR 009); avaliar pos-estreia se Neon branch staging for adotado.
-- [ ] Registrar plano de rollback: restaurar snapshot do banco novo ou fazer forward-fix; nao usar projetos antigos como rollback.
-- [ ] Registrar owners de incidentes para app, banco, Vercel, Mailjet, DNS e LGPD.
+- [x] Plano de rollback registrado em ADR 010: Neon PITR + branch de restauracao como mecanismo primario, com gatilho objetivo de 30 min em fluxos criticos. Pre-janela exige anotar timestamp/LSN e confirmar `history_retention` Neon suficiente.
+- [x] Owners de incidente registrados em ADR 011: papel primario tecnico (app/banco/Vercel/DNS/Mailjet), papel substituto de decisao na Diretoria, papel LGPD/DPO (acumulado pela Diretoria ate formalizacao), e canal unico de incidente. Nomes e contatos vivem em anexo privado fora do repo.
+
+## Gate Pre-Janela
+
+Marcar a janela de go-live (ADR 009) somente quando todos os itens abaixo estiverem verdes. Confirmar item a item com o owner primario antes de comunicar a Diretoria.
+
+- [ ] ADRs 007, 008, 009, 010 e 011 lidos e aceitos pelos owners primario e substituto.
+- [ ] `history_retention` do projeto Neon `intranet-db` confirmado como suficiente para cobrir a janela + 24h (ADR 010); upgrade de tier feito antes da janela se necessario.
+- [ ] Procedimento de anotacao de timestamp/LSN pre-janela combinado com o owner primario (ADR 010).
+- [ ] Canal unico de incidente criado e populado com owner primario, substituto e DPO (ou Diretoria acumulando o papel) (ADR 011).
+- [ ] Versao de producao Vercel marcada como "ultima conhecida boa" para redeploy em caso de rollback (ADR 010).
+- [ ] Roteiro de smoke escrito como lista de passos (com dados marcados `SMOKE_*`) e revisado pelo owner primario (ADR 009).
+- [ ] Janela aprovada pela Diretoria com data, hora UTC e duracao estimada registradas.
 
 ## Evidencia Desta Frente
 
