@@ -295,6 +295,33 @@ const expectedColumns = {
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
   ],
+  test_runs: [
+    'run_id:text:NO',
+    'runner:test_runner:NO',
+    'suite:text:NO',
+    'environment:test_environment:NO',
+    'started_at:timestamptz:NO',
+    'finished_at:timestamptz:NO',
+    'total_duration_ms:int4:NO',
+    'total_tests:int4:NO',
+    'passed:int4:NO',
+    'failed:int4:NO',
+    'skipped:int4:NO',
+    'created_at:timestamptz:NO',
+  ],
+  test_results: [
+    'id:uuid:NO',
+    'run_id:text:NO',
+    'file:text:NO',
+    'name:text:NO',
+    'full_name:text:NO',
+    'status:test_result_status:NO',
+    'duration_ms:int4:NO',
+    'retry:int4:YES',
+    'project_name:text:YES',
+    'error_count:int4:YES',
+    'recorded_at:timestamptz:NO',
+  ],
 } as const;
 
 const expectedEnums = {
@@ -370,6 +397,17 @@ const expectedEnums = {
   payment_method: ['folha', 'boleto', 'pix', 'transferencia', 'outros'],
   payment_status: ['pago', 'pendente', 'atrasado', 'isento', 'cancelado'],
   webhook_delivery_status: ['pending', 'delivered', 'failed', 'retry_scheduled'],
+  test_runner: ['vitest', 'playwright'],
+  test_environment: ['ci', 'local'],
+  test_result_status: [
+    'passed',
+    'failed',
+    'skipped',
+    'todo',
+    'timed_out',
+    'interrupted',
+    'unknown',
+  ],
 } as const;
 
 const expectedIndexes = {
@@ -520,6 +558,17 @@ const expectedIndexes = {
     'idx_documents_description_trgm',
     'idx_documents_name_trgm',
     'idx_documents_uploaded_by',
+  ],
+  test_runs: [
+    'idx_test_runs_runner_suite',
+    'idx_test_runs_started_at',
+    'test_runs_pkey',
+  ],
+  test_results: [
+    'idx_test_results_duration',
+    'idx_test_results_run_id',
+    'idx_test_results_status',
+    'test_results_pkey',
   ],
 } as const;
 

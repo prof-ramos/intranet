@@ -8,13 +8,13 @@ export interface EmailMessage {
   textBody: string;
 }
 
-export class MailjetSendError extends Error {
-  readonly code = 'MAILJET_SEND_FAILED';
+export class EmailSendError extends Error {
+  readonly code = 'EMAIL_SEND_FAILED';
   readonly status: number;
 
   constructor(status: number) {
-    super(`Mailjet send failed with status ${status}`);
-    this.name = 'MailjetSendError';
+    super(`Email send failed with status ${status}`);
+    this.name = 'EmailSendError';
     this.status = status;
   }
 }
@@ -46,6 +46,6 @@ export async function sendEmail(message: EmailMessage): Promise<void> {
 
   if (!response.ok) {
     await response.text().catch(() => undefined);
-    throw new MailjetSendError(response.status);
+    throw new EmailSendError(response.status);
   }
 }

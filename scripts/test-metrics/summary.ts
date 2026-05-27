@@ -21,6 +21,19 @@ interface TestDelta {
 const metricsDir = resolveMetricsDir();
 const runsDir = path.join(metricsDir, 'runs');
 
+const colors = {
+  reset: '\x1b[0m',
+  bold: '\x1b[1m',
+  dim: '\x1b[2m',
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m',
+  gray: '\x1b[90m',
+};
+
 main();
 
 function main(): void {
@@ -104,30 +117,42 @@ function loadRunArtifacts(summary: TestMetricsSummary): RunArtifacts {
 
 function printRunReport(groupName: string, latest: RunArtifacts, previous: RunArtifacts | null): void {
   const { summary } = latest;
-  const totalSeconds = formatMs(summary.totalDurationMs);
+  const totalDuration = formatMs(summary.totalDurationMs);
 
-  console.log(`\n## ${groupName}`);
-  console.log(`Última execução: ${summary.finishedAt}`);
-  console.log(`Total: ${totalSeconds}`);
-  console.log(
-    `Testes: ${summary.totals.total} | passed: ${summary.totals.passed} | failed: ${summary.totals.failed} | skipped: ${summary.totals.skipped}`,
-  );
+  // Group Header Block
+  console.log(`\n${colors.bold}${colors.cyan}╭──────────────────────────────────────────────────────────────╮${colors.reset}`);
+  console.log(`${colors.bold}${colors.cyan}│  📊 RUNNER: ${groupName.padEnd(47)} │${colors.reset}`);
+  console.log(`${colors.bold}${colors.cyan}╰──────────────────────────────────────────────────────────────╯${colors.reset}`);
 
+  console.log(`  ${colors.bold}Última execução:${colors.reset} ${colors.gray}${new Date(summary.finishedAt).toLocaleString('pt-BR')}${colors.reset}`);
+  
+  // Status with nice colors
+  const passedStr = `${colors.green}${summary.totals.passed} passed${colors.reset}`;
+  const failedStr = summary.totals.failed > 0 ? `${colors.red}${summary.totals.failed} failed${colors.reset}` : `${colors.gray}0 failed${colors.reset}`;
+  const skippedStr = summary.totals.skipped > 0 ? `${colors.yellow}${summary.totals.skipped} skipped${colors.reset}` : `${colors.gray}0 skipped${colors.reset}`;
+  console.log(`  ${colors.bold}Resultados:     ${colors.reset}${colors.bold}${summary.totals.total}${colors.reset} total | ${passedStr} | ${failedStr} | ${skippedStr}`);
+  
+  // Duration & Comparison
+  let compStr = '';
   if (previous) {
     const deltaMs = summary.totalDurationMs - previous.summary.totalDurationMs;
-    const marker = deltaMs <= 0 ? 'mais rápida' : 'mais lenta';
-    console.log(
-      `Comparação com execução anterior: ${formatSignedMs(deltaMs)} (${marker})`,
-    );
-
-    printSlowestRegressions(latest.entries, previous.entries);
+    const isFaster = deltaMs <= 0;
+    const marker = isFaster ? `${colors.green}✔ mais rápida${colors.reset}` : `${colors.red}⚠ mais lenta${colors.reset}`;
+    compStr = ` (${formatSignedMs(deltaMs)} ${marker})`;
   } else {
-    console.log('Comparação com execução anterior: indisponível.');
+    compStr = ` (${colors.gray}comparação anterior indisponível${colors.reset})`;
+  }
+  console.log(`  ${colors.bold}Tempo Total:    ${colors.reset}${colors.bold}${colors.blue}${totalDuration}${colors.reset}${compStr}`);
+
+  // Regression section
+  if (previous) {
+    printSlowestRegressions(latest.entries, previous.entries);
   }
 
-  console.log('Testes mais lentos da última execução:');
+  // Slowest tests list
+  console.log(`\n  ${colors.bold}${colors.yellow}⏱  TESTES MAIS LENTOS DA ÚLTIMA EXECUÇÃO:${colors.reset}`);
   for (const test of summary.slowestTests.slice(0, 10)) {
-    console.log(`- ${formatMs(test.durationMs)} — ${test.fullName} (${test.file})`);
+    console.log(`    ${colors.bold}${colors.red}${formatMs(test.durationMs).padStart(8)}${colors.reset} ${colors.dim}—${colors.reset} ${test.fullName} ${colors.gray}(${test.file})${colors.reset}`);
   }
 }
 
@@ -159,23 +184,23 @@ function printSlowestRegressions(latest: TestMetricEntry[], previous: TestMetric
     .slice(0, 5);
 
   if (deltas.length === 0) {
-    console.log('Regressões por teste: sem dados comparáveis.');
+    console.log(`\n  ${colors.bold}${colors.gray}📈 Regressões por teste: sem dados comparáveis.${colors.reset}`);
     return;
   }
 
   const regressions = deltas.filter((item) => item.deltaMs > 0);
 
   if (regressions.length === 0) {
-    console.log('Maiores regressões por teste: nenhuma regressão positiva entre testes comparáveis.');
+    console.log(`\n  ${colors.bold}${colors.green}📈 Regressões por teste: nenhuma regressão de performance encontrada.${colors.reset}`);
     return;
   }
 
-  console.log('Maiores regressões por teste:');
+  console.log(`\n  ${colors.bold}${colors.red}📈 MAIORES REGRESSÕES DE PERFORMANCE:${colors.reset}`);
   for (const delta of regressions) {
     const percent =
-      delta.deltaPercent === null ? '' : `, ${delta.deltaPercent.toFixed(1)}%`;
+      delta.deltaPercent === null ? '' : ` (${colors.bold}${colors.red}+${delta.deltaPercent.toFixed(1)}%${colors.reset})`;
     console.log(
-      `- +${formatMs(delta.deltaMs)}${percent} — ${delta.fullName} (${delta.file})`,
+      `    ${colors.bold}${colors.red}+${formatMs(delta.deltaMs).padEnd(6)}${colors.reset}${percent} ${colors.dim}—${colors.reset} ${delta.fullName} ${colors.gray}(${delta.file})${colors.reset}`,
     );
   }
 }

@@ -36,7 +36,7 @@ type NotificationsListPayload =
       unreadCount?: number;
     };
 
-export function useNotifications({ userId }: UseNotificationsOptions): UseNotificationsResult {
+export function useNotifications({ userId: _userId }: UseNotificationsOptions): UseNotificationsResult {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

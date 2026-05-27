@@ -45,8 +45,8 @@ class PlaywrightMetricsReporter implements Reporter {
     });
   }
 
-  onEnd(_result: FullResult): void {
-    this.recorder.finish();
+  async onEnd(_result: FullResult): Promise<void> {
+    await this.recorder.finish();
   }
 }
 

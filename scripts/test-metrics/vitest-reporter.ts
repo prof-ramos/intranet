@@ -47,14 +47,14 @@ export class VitestMetricsReporter implements Reporter {
     });
   }
 
-  onTestRunEnd(testModules: readonly unknown[]): void {
+  async onTestRunEnd(testModules: readonly unknown[]): Promise<void> {
     for (const testModule of testModules) {
       for (const test of getModuleTests(testModule)) {
         this.recordTest(testModule as VitestModuleLike, test as VitestTestLike);
       }
     }
 
-    this.recorder.finish();
+    await this.recorder.finish();
   }
 
   private recordTest(testModule: VitestModuleLike, test: VitestTestLike): void {

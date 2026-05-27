@@ -76,7 +76,6 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 - `src/lib/crypto/` — HKDF, encrypt/decrypt PII, blind index
 - `src/lib/logger.ts` — logger estruturado com redacao de PII
 - `src/lib/db/index.ts` — cliente Drizzle
-- `src/lib/db/schema/views.ts` — `associates_list_view` (PII-safe)
 - `src/lib/db/schema/enums.ts` — enums compartilhados
 - `src/lib/notifications/` — notificações persistidas (polling, sem Realtime)
 - `next.config.ts` — Next.js config

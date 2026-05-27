@@ -13,7 +13,7 @@ afterEach(() => {
 });
 
 describe('createTestMetricsRecorder', () => {
-  it('records per-test jsonl entries and a run summary', () => {
+  it('records per-test jsonl entries and a run summary', async () => {
     const metricsDir = createTempDir();
     const recorder = createTestMetricsRecorder({
       runner: 'vitest',
@@ -42,7 +42,7 @@ describe('createTestMetricsRecorder', () => {
       errorCount: 1,
     });
 
-    const summary = recorder.finish();
+    const summary = await recorder.finish();
 
     expect(summary).not.toBeNull();
     expect(summary?.suite).toBe('unit-tests');
@@ -63,7 +63,7 @@ describe('createTestMetricsRecorder', () => {
     expect(fs.existsSync(recorder.paths.latest)).toBe(true);
   });
 
-  it('does not create files when disabled', () => {
+  it('does not create files when disabled', async () => {
     const metricsDir = createTempDir();
     const recorder = createTestMetricsRecorder({
       runner: 'vitest',
@@ -82,7 +82,7 @@ describe('createTestMetricsRecorder', () => {
       durationMs: 1,
     });
 
-    expect(recorder.finish()).toBeNull();
+    expect(await recorder.finish()).toBeNull();
     expect(fs.existsSync(path.join(metricsDir, 'runs'))).toBe(false);
   });
 });

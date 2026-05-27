@@ -199,7 +199,7 @@ describe('config usuarios actions', () => {
     const mailjetError = new Error(
       'Mailjet error 400: {"Messages":[{"To":[{"Email":"maria@asof.local"}],"Errors":[{"ErrorMessage":"SenhaTemp123!"}]}]}',
     ) as Error & { code: string; status: number };
-    mailjetError.code = 'MAILJET_SEND_FAILED';
+    mailjetError.code = 'EMAIL_SEND_FAILED';
     mailjetError.status = 400;
     sendEmailMock.mockRejectedValue(mailjetError);
 
@@ -220,7 +220,7 @@ describe('config usuarios actions', () => {
         error: {
           kind: 'error',
           name: 'Error',
-          code: 'MAILJET_SEND_FAILED',
+          code: 'EMAIL_SEND_FAILED',
           status: 400,
         },
       },

@@ -206,7 +206,7 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 
 1. **Data Access Logging**: Cada acesso a dados PII (view, export, edit) é registrado em `audit_logs` para compliance com Art. 30/37 da LGPD.
 2. **Sanitização de PII**: Logs de erro e payloads de eventos passam por redação automática de dados sensíveis.
-3. **View PII-Safe**: `associates_list_view` exclui colunas criptografadas e de hash, fornecendo uma visão segura para listagens.
+3. **PII View**: Exclui colunas criptografadas e de hash, fornecendo uma visao segura para listagens.
 
 ---
 

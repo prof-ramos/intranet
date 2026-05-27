@@ -16,4 +16,4 @@ export * from './finance';
 export * from './notifications';
 export * from './oficios';
 export * from './documents';
-export * from './views';
+export * from './test-metrics';

@@ -154,9 +154,7 @@ describe('activity board url state', () => {
       const serialized = serializeFiltersToUrl(original);
       const parsed = parseFiltersFromUrl(serialized);
       // query is always reset, so compare everything except query
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- query is destructured out for comparison
       const { query: _originalQuery, ...originalWithoutQuery } = original;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- query is destructured out for comparison
       const { query: _parsedQuery, ...parsedWithoutQuery } = parsed;
       expect(parsedWithoutQuery).toEqual(originalWithoutQuery);
     });

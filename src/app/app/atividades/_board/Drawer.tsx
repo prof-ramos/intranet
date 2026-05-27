@@ -57,7 +57,7 @@ export function Drawer({
 
   useEffect(() => {
     if (!activity) return;
-    const previouslyFocused = document.activeElement as HTMLElement | null;
+    let previouslyFocused = document.activeElement as HTMLElement | null;
     closeRef.current?.focus();
     return () => {
       if (
@@ -67,14 +67,12 @@ export function Drawer({
       ) {
         previouslyFocused.focus();
       }
+      previouslyFocused = null;
     };
   }, [activity]);
 
   useEffect(() => {
     if (!activity) return;
-
-    const el = drawerRef.current;
-    if (!el) return;
 
     const focusableSelectors = [
       'a[href]',
@@ -90,7 +88,9 @@ export function Drawer({
         return;
       }
       if (e.key === 'Tab') {
-        const focusable = Array.from(el!.querySelectorAll<HTMLElement>(focusableSelectors));
+        const el = drawerRef.current;
+        if (!el) return;
+        const focusable = Array.from(el.querySelectorAll<HTMLElement>(focusableSelectors));
         if (focusable.length === 0) return;
         const first = focusable[0];
         const last = focusable[focusable.length - 1];

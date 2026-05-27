@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import { testRuns, testResults } from '../../src/lib/db/schema/test-metrics';
 
 export type TestMetricRunner = 'vitest' | 'playwright';
 
@@ -95,6 +98,70 @@ export function getTestMetricEnvironment(): TestMetricEnvironment {
   return process.env.CI ? 'ci' : 'local';
 }
 
+async function saveToDatabase(
+  summary: TestMetricsSummary,
+  entries: TestMetricEntry[]
+): Promise<void> {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    return;
+  }
+
+  let client: ReturnType<typeof postgres> | undefined;
+  try {
+    client = postgres(dbUrl, {
+      max: 1,
+      connect_timeout: 5,
+    });
+    const db = drizzle(client);
+
+    await db.insert(testRuns).values({
+      runId: summary.runId,
+      runner: summary.runner,
+      suite: summary.suite,
+      environment: summary.environment,
+      startedAt: new Date(summary.startedAt),
+      finishedAt: new Date(summary.finishedAt),
+      totalDurationMs: summary.totalDurationMs,
+      totalTests: summary.totals.total,
+      passed: summary.totals.passed,
+      failed: summary.totals.failed,
+      skipped: summary.totals.skipped,
+    });
+
+    if (entries.length > 0) {
+      const chunkSize = 100;
+      for (let i = 0; i < entries.length; i += chunkSize) {
+        const chunk = entries.slice(i, i + chunkSize);
+        await db.insert(testResults).values(
+          chunk.map((entry) => ({
+            runId: entry.runId,
+            file: entry.file,
+            name: entry.name,
+            fullName: entry.fullName,
+            status: entry.status,
+            durationMs: entry.durationMs,
+            retry: entry.retry ?? null,
+            projectName: entry.projectName ?? null,
+            errorCount: entry.errorCount ?? 0,
+            recordedAt: new Date(entry.recordedAt),
+          }))
+        );
+      }
+    }
+  } catch (error) {
+    console.warn('\n⚠️ Falha ao salvar métricas no banco de dados (ignorada):', error);
+  } finally {
+    if (client) {
+      try {
+        await client.end();
+      } catch {
+        // Ignora erro no fechamento
+      }
+    }
+  }
+}
+
 export function createTestMetricsRecorder(options: TestMetricsRecorderOptions) {
   const enabled = options.enabled ?? shouldRecordTestMetrics();
   const suite = normalizeSuiteName(options.suite);
@@ -134,7 +201,7 @@ export function createTestMetricsRecorder(options: TestMetricsRecorderOptions) {
     fs.appendFileSync(jsonlPath, `${JSON.stringify(entry)}\n`, 'utf8');
   }
 
-  function finish(): TestMetricsSummary | null {
+  async function finish(): Promise<TestMetricsSummary | null> {
     if (!enabled) {
       return null;
     }
@@ -156,6 +223,8 @@ export function createTestMetricsRecorder(options: TestMetricsRecorderOptions) {
 
     fs.writeFileSync(summaryPath, `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
     fs.writeFileSync(latestPath, `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
+
+    await saveToDatabase(summary, entries);
 
     return summary;
   }
