@@ -155,6 +155,7 @@ export const integrationApiKeys = pgTable(
     id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
     name: text('name').notNull(),
     keyHash: text('key_hash').notNull(),
+    signingSecretCiphertext: text('signing_secret_ciphertext'),
     scopes: jsonb('scopes')
       .$type<string[]>()
       .notNull()

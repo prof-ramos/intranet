@@ -180,7 +180,13 @@ describe('isIntegrationAuthAvailable', () => {
     expect(mockFrom).not.toHaveBeenCalled();
   });
 
-  it('returns false when no hmacSecret is set (table-backed keys cannot work)', async () => {
+  it('checks table-backed keys even when no shared hmacSecret is set', async () => {
+    mockFrom.mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        limit: vi.fn().mockResolvedValue([{ id: 1 }]),
+      }),
+    });
+
     const config = {
       enabled: false,
       apiKey: null,
@@ -188,7 +194,7 @@ describe('isIntegrationAuthAvailable', () => {
       timestampToleranceSeconds: 300,
     };
     const result = await isIntegrationAuthAvailable(config);
-    expect(result).toBe(false);
+    expect(result).toBe(true);
   });
 
   it('returns true when DB has at least one active key', async () => {

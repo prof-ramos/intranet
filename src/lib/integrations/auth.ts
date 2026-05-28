@@ -7,6 +7,7 @@ import { safeCompare } from '@/lib/crypto/safe-compare';
 import { getSession } from '@/lib/auth/session';
 import { getIntegrationConfig, isIntegrationAuthConfigured } from '@/lib/integrations/config';
 import { findActiveApiKeyByHash, updateApiKeyLastUsed } from '@/lib/integrations/keys/repository';
+import { decryptIntegrationSigningSecret } from '@/lib/integrations/keys/signing-secrets';
 import { getRequestId, jsonError } from '@/lib/integrations/http';
 import {
   INTEGRATION_AUTH_SCHEME,
@@ -128,10 +129,11 @@ export function buildIntegrationAuthHeaders(
  * 2. Extract key, timestamp, and signature headers.
  * 3. Try env-var key match first (existing behaviour). If it matches, verify HMAC.
  * 4. If env-var key does not match, hash the incoming key and look it up in
- *    the `integration_api_keys` table. If found and active, verify HMAC using
- *    the same shared hmacSecret.
- * 5. If neither path succeeds, return `invalid_key`.
- * 6. On success, return a principal that includes scopes for table-backed keys.
+ *    the `integration_api_keys` table.
+ * 5. For table-backed keys, prefer the encrypted per-key signing secret.
+ *    Legacy rows without one temporarily fall back to the shared hmacSecret.
+ * 6. If neither path succeeds, return `invalid_key`.
+ * 7. On success, return a principal that includes scopes for table-backed keys.
  */
 export async function verifyIntegrationRequest(request: Request): Promise<IntegrationAuthResult> {
   const config = getIntegrationConfig();
@@ -140,15 +142,6 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
     return {
       ok: false,
       reason: 'disabled',
-    };
-  }
-
-  // We no longer require env-var auth to be configured — table keys are also valid.
-  // But if there's no hmacSecret, we can't verify signatures at all.
-  if (!config.hmacSecret) {
-    return {
-      ok: false,
-      reason: 'misconfigured',
     };
   }
 
@@ -177,11 +170,11 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
     timestamp,
     body,
   };
-  const expectedSignature = signIntegrationRequest(signaturePayload, config.hmacSecret);
 
   // --- Path 1: env-var key ---
   const envAuthConfigured = isIntegrationAuthConfigured(config);
   if (envAuthConfigured && safeCompare(config.apiKey ?? '', key)) {
+    const expectedSignature = signIntegrationRequest(signaturePayload, config.hmacSecret ?? '');
     if (!safeCompare(expectedSignature, signature)) {
       return {
         ok: false,
@@ -227,12 +220,26 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
     };
   }
 
-  // F-010 (Low): All table-backed keys share the same HMAC secret (config.hmacSecret).
-  // This means a compromise of the shared secret affects all integration clients, and
-  // rotating one client's key does not isolate the signing-secret exposure.
-  // Tracked in https://github.com/prof-ramos/intranet/issues/71. Migration plan:
-  // add encrypted per-key signing material, resolve the table key before HMAC
-  // verification, then phase out shared-secret verification after a documented rollout.
+  let tableSigningSecret: string;
+  if (tableKey.signingSecretCiphertext) {
+    try {
+      tableSigningSecret = decryptIntegrationSigningSecret(tableKey.signingSecretCiphertext);
+    } catch {
+      return {
+        ok: false,
+        reason: 'misconfigured',
+      };
+    }
+  } else if (config.hmacSecret) {
+    tableSigningSecret = config.hmacSecret;
+  } else {
+    return {
+      ok: false,
+      reason: 'misconfigured',
+    };
+  }
+
+  const expectedSignature = signIntegrationRequest(signaturePayload, tableSigningSecret);
   if (!safeCompare(expectedSignature, signature)) {
     return {
       ok: false,

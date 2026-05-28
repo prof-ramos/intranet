@@ -33,7 +33,9 @@ async function back(page) {
   } catch (error) {
     console.error('--- memlab back failed ---');
     console.error(error.message);
-    throw new Error(`Failed to close the drawer or wait for it to hide: ${error.message}`);
+    throw new Error(`Failed to close the drawer or wait for it to hide: ${error.message}`, {
+      cause: error,
+    });
   }
 }
 

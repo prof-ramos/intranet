@@ -9,6 +9,7 @@ export interface ActiveApiKeyRecord {
   id: number;
   name: string;
   keyHash: string;
+  signingSecretCiphertext: string | null;
   scopes: IntegrationScope[];
   isActive: boolean;
 }
@@ -22,6 +23,7 @@ export async function findActiveApiKeyByHash(
       id: integrationApiKeys.id,
       name: integrationApiKeys.name,
       keyHash: integrationApiKeys.keyHash,
+      signingSecretCiphertext: integrationApiKeys.signingSecretCiphertext,
       scopes: integrationApiKeys.scopes,
       isActive: integrationApiKeys.isActive,
     })

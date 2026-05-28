@@ -2,6 +2,7 @@ import { Menu } from 'lucide-react';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { Sidebar } from '@/components/Sidebar';
 import { GlobalSearch } from '@/components/GlobalSearch';
+import { NotificationInbox } from '@/components/NotificationInbox';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireAuth();
@@ -28,6 +29,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </label>
           <div className="min-w-0 flex-1 md:max-w-lg">
             <GlobalSearch />
+          </div>
+          <div className="ml-auto flex shrink-0 items-center">
+            <NotificationInbox subscriberId={user.userId} />
           </div>
         </header>
 

@@ -49,7 +49,7 @@ As rotas versionadas novas aceitam **uma de duas formas de autenticacao**:
 1. assinatura M2M por headers (`x-asof-key`, `x-asof-timestamp`, `x-asof-signature`)
 2. fallback de sessao humana autorizada, apenas para operadores internos, exceto `/api/v1/events/dispatch`, que e bearer-only para evitar dispatch por navegacao/CSRF
 
-O caminho M2M principal usa chaves persistidas em `integration_api_keys`, criadas por admin em `/app/config/integracoes/api-keys`. Essas chaves sao exibidas uma unica vez na criacao, armazenadas como hash, rate-limited por hash do token quando `x-asof-key` esta presente (fallback por IP quando nao ha token) e avaliadas por escopo:
+O caminho M2M principal usa chaves persistidas em `integration_api_keys`, criadas por admin em `/app/config/integracoes/api-keys`. A chave de API e o segredo HMAC por chave sao exibidos uma unica vez na criacao ou rotacao. A chave de API fica armazenada como hash, o segredo HMAC fica criptografado com `ENCRYPTION_MASTER_KEY`, e cada request e rate-limited por hash do token quando `x-asof-key` esta presente (fallback por IP quando nao ha token). Chaves persistidas sao avaliadas por escopo:
 
 - `events:read` para `GET /api/v1/events`
 - `events:write` para `POST /api/v1/events`
@@ -59,7 +59,9 @@ O caminho M2M principal usa chaves persistidas em `integration_api_keys`, criada
 O fluxo M2M usa:
 
 - `ASOF_INTEGRATIONS_ENABLED=true` para habilitar a verificacao M2M
-- `ASOF_INTEGRATION_HMAC_SECRET` como segredo server-side de assinatura
+- segredo HMAC por chave, exibido uma unica vez junto da API key persistida, para assinar requests de chaves criadas na UI
+- `ENCRYPTION_MASTER_KEY` para criptografar e decriptografar os segredos HMAC por chave
+- `ASOF_INTEGRATION_HMAC_SECRET` apenas para a chave global legada e fallback temporario de linhas antigas de `integration_api_keys` sem segredo por chave
 - `ASOF_INTEGRATION_TIMESTAMP_TOLERANCE_SECONDS` para janela de tolerancia; default `300`
 - `ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY` apenas para decriptografar secrets legados V1; novos secrets usam `ENCRYPTION_MASTER_KEY` com formato V2 (HKDF com separação de domínio)
 - `CRON_SECRET` para autorizar os endpoints agendados `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings`
@@ -74,6 +76,8 @@ X-ASOF-Key: <api-key>
 X-ASOF-Timestamp: <unix-seconds>
 X-ASOF-Signature: sha256=<hex-hmac>
 ```
+
+Para chaves persistidas, o HMAC usa o segredo mostrado junto da API key na criacao ou rotacao. Para a chave global legada `ASOF_INTEGRATION_API_KEY`, o HMAC usa `ASOF_INTEGRATION_HMAC_SECRET`.
 
 Payload canonico assinado:
 

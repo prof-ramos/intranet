@@ -7,12 +7,14 @@ const {
   mockIsIntegrationAuthConfigured,
   mockFindActiveApiKeyByHash,
   mockUpdateApiKeyLastUsed,
+  mockDecryptIntegrationSigningSecret,
   mockLoggerWarn,
 } = vi.hoisted(() => ({
   mockGetIntegrationConfig: vi.fn(),
   mockIsIntegrationAuthConfigured: vi.fn(),
   mockFindActiveApiKeyByHash: vi.fn(),
   mockUpdateApiKeyLastUsed: vi.fn(),
+  mockDecryptIntegrationSigningSecret: vi.fn(),
   mockLoggerWarn: vi.fn(),
 }));
 
@@ -44,6 +46,10 @@ vi.mock('@/lib/integrations/keys/repository', () => ({
   updateApiKeyLastUsed: mockUpdateApiKeyLastUsed,
 }));
 
+vi.mock('@/lib/integrations/keys/signing-secrets', () => ({
+  decryptIntegrationSigningSecret: mockDecryptIntegrationSigningSecret,
+}));
+
 vi.mock('@/lib/auth/session', () => ({
   getSession: vi.fn(),
 }));
@@ -68,6 +74,7 @@ import { verifyIntegrationRequest, authorizeIntegrationRequest } from './auth';
 const TEST_API_KEY = 'asof_test_api_key_12345';
 const TEST_HMAC_SECRET = 'test-hmac-secret-for-auth-tests';
 const TEST_TABLE_KEY_RAW = 'asof_table_key_abc123def456';
+const TEST_TABLE_SIGNING_SECRET = 'test-table-signing-secret-for-auth-tests';
 const NOW_SECONDS = Math.floor(Date.now() / 1000);
 
 function sha256Hex(value: string): string {
@@ -128,6 +135,7 @@ describe('verifyIntegrationRequest (dual-auth)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUpdateApiKeyLastUsed.mockResolvedValue([]);
+    mockDecryptIntegrationSigningSecret.mockReturnValue(TEST_TABLE_SIGNING_SECRET);
   });
 
   describe('env-var key authentication', () => {
@@ -211,12 +219,19 @@ describe('verifyIntegrationRequest (dual-auth)', () => {
         id: 1,
         name: 'test-table-key',
         keyHash: sha256Hex(TEST_TABLE_KEY_RAW),
+        signingSecretCiphertext: 'enc:v2:k1.iv.tag.ciphertext',
         scopes: ['events:read', 'events:write'],
         isActive: true,
       });
 
       const timestamp = String(NOW_SECONDS);
-      const signature = signRequest('GET', '/api/v1/events', timestamp, '', TEST_HMAC_SECRET);
+      const signature = signRequest(
+        'GET',
+        '/api/v1/events',
+        timestamp,
+        '',
+        TEST_TABLE_SIGNING_SECRET,
+      );
       const request = makeRequest(TEST_TABLE_KEY_RAW, timestamp, signature);
 
       const result = await verifyIntegrationRequest(request);
@@ -230,9 +245,10 @@ describe('verifyIntegrationRequest (dual-auth)', () => {
         }
       }
       expect(mockFindActiveApiKeyByHash).toHaveBeenCalledWith(sha256Hex(TEST_TABLE_KEY_RAW));
+      expect(mockDecryptIntegrationSigningSecret).toHaveBeenCalledWith('enc:v2:k1.iv.tag.ciphertext');
     });
 
-    it('authenticates with a table-backed key when env var key does not match', async () => {
+    it('authenticates a legacy table-backed key with the shared HMAC fallback', async () => {
       const config = defaultConfig();
       mockGetIntegrationConfig.mockReturnValue(config);
       mockIsIntegrationAuthConfigured.mockReturnValue(true);
@@ -240,6 +256,7 @@ describe('verifyIntegrationRequest (dual-auth)', () => {
         id: 2,
         name: 'another-table-key',
         keyHash: sha256Hex(TEST_TABLE_KEY_RAW),
+        signingSecretCiphertext: null,
         scopes: ['webhooks:manage'],
         isActive: true,
       });
@@ -258,6 +275,31 @@ describe('verifyIntegrationRequest (dual-auth)', () => {
       }
     });
 
+    it('rejects a per-key table-backed key signed with the legacy shared HMAC secret', async () => {
+      const config = defaultConfig();
+      mockGetIntegrationConfig.mockReturnValue(config);
+      mockIsIntegrationAuthConfigured.mockReturnValue(true);
+      mockFindActiveApiKeyByHash.mockResolvedValue({
+        id: 2,
+        name: 'per-key-table-key',
+        keyHash: sha256Hex(TEST_TABLE_KEY_RAW),
+        signingSecretCiphertext: 'enc:v2:k1.iv.tag.ciphertext',
+        scopes: ['webhooks:manage'],
+        isActive: true,
+      });
+
+      const timestamp = String(NOW_SECONDS);
+      const signature = signRequest('GET', '/api/v1/events', timestamp, '', TEST_HMAC_SECRET);
+      const request = makeRequest(TEST_TABLE_KEY_RAW, timestamp, signature);
+
+      const result = await verifyIntegrationRequest(request);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toBe('invalid_signature');
+      }
+    });
+
     it('rejects a table-backed key with an invalid HMAC signature', async () => {
       const config = defaultConfig({ apiKey: null });
       mockGetIntegrationConfig.mockReturnValue(config);
@@ -266,6 +308,7 @@ describe('verifyIntegrationRequest (dual-auth)', () => {
         id: 1,
         name: 'test-table-key',
         keyHash: sha256Hex(TEST_TABLE_KEY_RAW),
+        signingSecretCiphertext: 'enc:v2:k1.iv.tag.ciphertext',
         scopes: ['events:read'],
         isActive: true,
       });
@@ -317,14 +360,40 @@ describe('verifyIntegrationRequest (dual-auth)', () => {
       }
     });
 
-    it('returns misconfigured when hmacSecret is missing', async () => {
+    it('returns invalid_key when no hmacSecret is set and no table key matches', async () => {
       const config = defaultConfig({ hmacSecret: null, apiKey: null });
       mockGetIntegrationConfig.mockReturnValue(config);
       mockIsIntegrationAuthConfigured.mockReturnValue(false);
+      mockFindActiveApiKeyByHash.mockResolvedValue(null);
 
       const timestamp = String(NOW_SECONDS);
       const signature = signRequest('GET', '/api/v1/events', timestamp, '', '');
       const request = makeRequest(TEST_API_KEY, timestamp, signature);
+
+      const result = await verifyIntegrationRequest(request);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toBe('invalid_key');
+      }
+    });
+
+    it('returns misconfigured for a legacy table-backed key when the shared fallback is missing', async () => {
+      const config = defaultConfig({ hmacSecret: null, apiKey: null });
+      mockGetIntegrationConfig.mockReturnValue(config);
+      mockIsIntegrationAuthConfigured.mockReturnValue(false);
+      mockFindActiveApiKeyByHash.mockResolvedValue({
+        id: 1,
+        name: 'legacy-table-key',
+        keyHash: sha256Hex(TEST_TABLE_KEY_RAW),
+        signingSecretCiphertext: null,
+        scopes: ['events:read'],
+        isActive: true,
+      });
+
+      const timestamp = String(NOW_SECONDS);
+      const signature = signRequest('GET', '/api/v1/events', timestamp, '', '');
+      const request = makeRequest(TEST_TABLE_KEY_RAW, timestamp, signature);
 
       const result = await verifyIntegrationRequest(request);
 
@@ -394,6 +463,7 @@ describe('authorizeIntegrationRequest (scope validation)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUpdateApiKeyLastUsed.mockResolvedValue([]);
+    mockDecryptIntegrationSigningSecret.mockReturnValue(TEST_TABLE_SIGNING_SECRET);
   });
 
   it('allows env-var key to bypass scope requirements (no scopes on principal)', async () => {
@@ -427,6 +497,7 @@ describe('authorizeIntegrationRequest (scope validation)', () => {
       id: 1,
       name: 'scoped-key',
       keyHash: sha256Hex(TEST_TABLE_KEY_RAW),
+      signingSecretCiphertext: null,
       scopes: ['events:read', 'events:write'],
       isActive: true,
     });
@@ -450,6 +521,7 @@ describe('authorizeIntegrationRequest (scope validation)', () => {
       id: 1,
       name: 'limited-key',
       keyHash: sha256Hex(TEST_TABLE_KEY_RAW),
+      signingSecretCiphertext: null,
       scopes: ['webhooks:manage'],
       isActive: true,
     });
@@ -476,6 +548,7 @@ describe('authorizeIntegrationRequest (scope validation)', () => {
       id: 1,
       name: 'admin-key',
       keyHash: sha256Hex(TEST_TABLE_KEY_RAW),
+      signingSecretCiphertext: null,
       scopes: ['admin'],
       isActive: true,
     });
@@ -499,6 +572,7 @@ describe('authorizeIntegrationRequest (scope validation)', () => {
       id: 1,
       name: 'limited-key',
       keyHash: sha256Hex(TEST_TABLE_KEY_RAW),
+      signingSecretCiphertext: null,
       scopes: ['webhooks:manage'],
       isActive: true,
     });

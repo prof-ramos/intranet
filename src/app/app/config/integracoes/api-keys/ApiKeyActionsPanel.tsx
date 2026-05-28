@@ -7,16 +7,17 @@ import { revokeApiKeyAction, rotateApiKeyAction } from './actions';
 
 interface NewKeyAfterRotationProps {
   rawKey: string;
+  signingSecret: string;
   onDismiss: () => void;
 }
 
-function NewKeyAfterRotation({ rawKey, onDismiss }: NewKeyAfterRotationProps) {
-  const [copied, setCopied] = useState(false);
+function NewKeyAfterRotation({ rawKey, signingSecret, onDismiss }: NewKeyAfterRotationProps) {
+  const [copiedField, setCopiedField] = useState<'key' | 'secret' | null>(null);
 
-  async function handleCopy() {
-    await navigator.clipboard.writeText(rawKey);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  async function handleCopy(value: string, field: 'key' | 'secret') {
+    await navigator.clipboard.writeText(value);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
   }
 
   return (
@@ -25,25 +26,38 @@ function NewKeyAfterRotation({ rawKey, onDismiss }: NewKeyAfterRotationProps) {
         <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-700" aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-amber-900">
-            Nova chave gerada. Esta é a única vez que ela será exibida.
+            Nova chave e segredo HMAC gerados. Esta é a única vez que serão exibidos.
           </p>
-          <div className="mt-2 flex items-center gap-2">
-            <code className="min-w-0 flex-1 rounded-md border border-amber-200 bg-white px-2.5 py-1.5 font-mono text-[11px] break-all text-[#040920] select-all">
-              {rawKey}
-            </code>
-            <button
-              type="button"
-              onClick={handleCopy}
-              aria-label={copied ? 'Copiado' : 'Copiar nova chave'}
-              className={`inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-amber-900 transition-colors hover:bg-amber-100 ${focusRingClass}`}
-            >
-              {copied ? (
-                <Check size={12} aria-hidden="true" />
-              ) : (
-                <Copy size={12} aria-hidden="true" />
-              )}
-              {copied ? 'Copiado' : 'Copiar'}
-            </button>
+          <div className="mt-2 grid gap-2">
+            {[
+              ['key', 'Chave de API', rawKey],
+              ['secret', 'Segredo HMAC', signingSecret],
+            ].map(([field, label, value]) => {
+              const copied = copiedField === field;
+              return (
+                <div key={field} className="grid gap-1">
+                  <span className="text-[10px] font-semibold text-amber-900">{label}</span>
+                  <div className="flex items-center gap-2">
+                    <code className="min-w-0 flex-1 rounded-md border border-amber-200 bg-white px-2.5 py-1.5 font-mono text-[11px] break-all text-[#040920] select-all">
+                      {value}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(value, field as 'key' | 'secret')}
+                      aria-label={copied ? 'Copiado' : `Copiar ${label}`}
+                      className={`inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-amber-900 transition-colors hover:bg-amber-100 ${focusRingClass}`}
+                    >
+                      {copied ? (
+                        <Check size={12} aria-hidden="true" />
+                      ) : (
+                        <Copy size={12} aria-hidden="true" />
+                      )}
+                      {copied ? 'Copiado' : 'Copiar'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -67,7 +81,10 @@ interface ApiKeyActionsPanelProps {
 
 export function ApiKeyActionsPanel({ id, isActive: initialIsActive }: ApiKeyActionsPanelProps) {
   const [isActive, setIsActive] = useState(initialIsActive);
-  const [rotatedKey, setRotatedKey] = useState<string | null>(null);
+  const [rotatedCredentials, setRotatedCredentials] = useState<{
+    key: string;
+    signingSecret: string;
+  } | null>(null);
   const [revokeError, setRevokeError] = useState<string | null>(null);
   const [rotateError, setRotateError] = useState<string | null>(null);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
@@ -90,13 +107,16 @@ export function ApiKeyActionsPanel({ id, isActive: initialIsActive }: ApiKeyActi
 
   function handleRotate() {
     setRotateError(null);
-    setRotatedKey(null);
+    setRotatedCredentials(null);
     startRotateTransition(async () => {
       const result = await rotateApiKeyAction(id);
       if ('error' in result) {
         setRotateError(result.error ?? 'Erro ao rotacionar chave.');
       } else {
-        setRotatedKey(result.data.key);
+        setRotatedCredentials({
+          key: result.data.key,
+          signingSecret: result.data.signingSecret,
+        });
       }
     });
   }
@@ -160,8 +180,12 @@ export function ApiKeyActionsPanel({ id, isActive: initialIsActive }: ApiKeyActi
         </p>
       )}
 
-      {rotatedKey && (
-        <NewKeyAfterRotation rawKey={rotatedKey} onDismiss={() => setRotatedKey(null)} />
+      {rotatedCredentials && (
+        <NewKeyAfterRotation
+          rawKey={rotatedCredentials.key}
+          signingSecret={rotatedCredentials.signingSecret}
+          onDismiss={() => setRotatedCredentials(null)}
+        />
       )}
     </div>
   );

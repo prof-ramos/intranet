@@ -39,16 +39,33 @@ describe('config integracoes api key actions', () => {
     vi.clearAllMocks();
     requireAuthMock.mockResolvedValue({ userId: 7 });
     requireRoleMock.mockResolvedValue(undefined);
-    createApiKeyServiceMock.mockResolvedValue({ id: 10, name: 'Prod Key' });
+    createApiKeyServiceMock.mockResolvedValue({
+      id: 10,
+      name: 'Prod Key',
+      key: 'asof_created',
+      signingSecret: 'created-signing-secret',
+    });
     listApiKeysServiceMock.mockResolvedValue([{ id: 1, name: 'Existing' }]);
     revokeApiKeyServiceMock.mockResolvedValue(true);
-    rotateApiKeyServiceMock.mockResolvedValue({ id: 11, name: 'Rotated Key' });
+    rotateApiKeyServiceMock.mockResolvedValue({
+      id: 11,
+      name: 'Rotated Key',
+      key: 'asof_rotated',
+      signingSecret: 'rotated-signing-secret',
+    });
   });
 
   it('creates an api key with the authenticated actor id and revalidates', async () => {
     const result = await createApiKeyAction('  Prod Key  ', ['events:read', 'webhooks:manage']);
 
-    expect(result).toEqual({ data: { id: 10, name: 'Prod Key' } });
+    expect(result).toEqual({
+      data: {
+        id: 10,
+        name: 'Prod Key',
+        key: 'asof_created',
+        signingSecret: 'created-signing-secret',
+      },
+    });
     expect(createApiKeyServiceMock).toHaveBeenCalledWith(
       'Prod Key',
       ['events:read', 'webhooks:manage'],
@@ -140,7 +157,14 @@ describe('config integracoes api key actions', () => {
   it('rotates an api key with the authenticated actor id and revalidates', async () => {
     const result = await rotateApiKeyAction(9);
 
-    expect(result).toEqual({ data: { id: 11, name: 'Rotated Key' } });
+    expect(result).toEqual({
+      data: {
+        id: 11,
+        name: 'Rotated Key',
+        key: 'asof_rotated',
+        signingSecret: 'rotated-signing-secret',
+      },
+    });
     expect(rotateApiKeyServiceMock).toHaveBeenCalledWith(9, 7);
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/integracoes');
   });

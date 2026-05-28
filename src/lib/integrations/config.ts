@@ -64,11 +64,6 @@ export async function isIntegrationAuthAvailable(
     return true;
   }
 
-  // If no hmacSecret is set, table-backed keys can't work either.
-  if (!config.hmacSecret) {
-    return false;
-  }
-
   const [row] = await db
     .select({ id: integrationApiKeys.id })
     .from(integrationApiKeys)

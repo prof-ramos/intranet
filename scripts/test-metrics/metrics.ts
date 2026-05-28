@@ -100,55 +100,59 @@ export function getTestMetricEnvironment(): TestMetricEnvironment {
 
 async function saveToDatabase(
   summary: TestMetricsSummary,
-  entries: TestMetricEntry[]
+  entries: TestMetricEntry[],
 ): Promise<void> {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
     return;
   }
 
+  const connectTimeout = parseInt(process.env.DB_CONNECT_TIMEOUT_SECONDS ?? '10', 10);
+
   let client: ReturnType<typeof postgres> | undefined;
   try {
     client = postgres(dbUrl, {
       max: 1,
-      connect_timeout: 5,
+      connect_timeout: Number.isFinite(connectTimeout) && connectTimeout > 0 ? connectTimeout : 10,
     });
     const db = drizzle(client);
 
-    await db.insert(testRuns).values({
-      runId: summary.runId,
-      runner: summary.runner,
-      suite: summary.suite,
-      environment: summary.environment,
-      startedAt: new Date(summary.startedAt),
-      finishedAt: new Date(summary.finishedAt),
-      totalDurationMs: summary.totalDurationMs,
-      totalTests: summary.totals.total,
-      passed: summary.totals.passed,
-      failed: summary.totals.failed,
-      skipped: summary.totals.skipped,
-    });
+    await db.transaction(async (tx) => {
+      await tx.insert(testRuns).values({
+        runId: summary.runId,
+        runner: summary.runner,
+        suite: summary.suite,
+        environment: summary.environment,
+        startedAt: new Date(summary.startedAt),
+        finishedAt: new Date(summary.finishedAt),
+        totalDurationMs: summary.totalDurationMs,
+        totalTests: summary.totals.total,
+        passed: summary.totals.passed,
+        failed: summary.totals.failed,
+        skipped: summary.totals.skipped,
+      });
 
-    if (entries.length > 0) {
-      const chunkSize = 100;
-      for (let i = 0; i < entries.length; i += chunkSize) {
-        const chunk = entries.slice(i, i + chunkSize);
-        await db.insert(testResults).values(
-          chunk.map((entry) => ({
-            runId: entry.runId,
-            file: entry.file,
-            name: entry.name,
-            fullName: entry.fullName,
-            status: entry.status,
-            durationMs: entry.durationMs,
-            retry: entry.retry ?? null,
-            projectName: entry.projectName ?? null,
-            errorCount: entry.errorCount ?? 0,
-            recordedAt: new Date(entry.recordedAt),
-          }))
-        );
+      if (entries.length > 0) {
+        const chunkSize = 100;
+        for (let i = 0; i < entries.length; i += chunkSize) {
+          const chunk = entries.slice(i, i + chunkSize);
+          await tx.insert(testResults).values(
+            chunk.map((entry) => ({
+              runId: entry.runId,
+              file: entry.file,
+              name: entry.name,
+              fullName: entry.fullName,
+              status: entry.status,
+              durationMs: entry.durationMs,
+              retry: entry.retry ?? null,
+              projectName: entry.projectName ?? null,
+              errorCount: entry.errorCount ?? 0,
+              recordedAt: new Date(entry.recordedAt),
+            })),
+          );
+        }
       }
-    }
+    });
   } catch (error) {
     console.warn('\n⚠️ Falha ao salvar métricas no banco de dados (ignorada):', error);
   } finally {

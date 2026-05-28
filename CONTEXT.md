@@ -12,13 +12,22 @@ Documento oficial de comunicação institucional seguindo o **Padrão Ofício** 
 
 - **Identificação**: Composta por `NOME DO DOCUMENTO No [número]/[ano]/[setor]`.
 - **Partes**: Cabeçalho, Identificação, Local/Data, Endereçamento (Destinatário, Cargo, Vocativo), Assunto, Texto (Introdução, Desenvolvimento, Conclusão), Fecho e Identificação do Signatário.
+- **Arquivamento**: O Ofício é criado e numerado pela intranet; seu PDF final ou assinado pode ser arquivado como Documento para consulta futura.
 
 #### Documento
 
-Arquivo estático armazenado no sistema (modelos de contratos, minutas, estatutos, atas, recibos, etc.) e gerenciado pela equipe administrativa da Secretaria. Diferencia-se do _Ofício_ por ser um upload físico de arquivo legado, assinado ou template, e não um documento gerado dinamicamente pelo sistema.
+Arquivo institucional armazenado ou arquivado para consulta futura (modelos de contratos, contratos, minutas, estatutos, atas, recibos, comprovantes, digitalizações, arquivos assinados, PDFs finais de Ofícios, etc.) e gerenciado pela equipe administrativa da Secretaria. Diferencia-se do _Ofício_ porque não controla a geração, numeração ou ciclo de vida formal do Ofício; apenas guarda o arquivo resultante quando houver arquivamento.
 
 - **Categorias** (`document_category`): `modelo_contrato`, `contrato`, `minuta`, `estatuto`, `ata`, `oficio`, `rh`, `evento`, `nota_fiscal`, `comprovante`, `outro`.
 - **Campos**: Nome, descrição, categoria, caminho no storage, tamanho, tipo MIME, usuário que realizou o upload.
+
+#### Documento Vinculado
+
+Documento associado a uma entidade específica da intranet, como Associado, Ofício, Consulta Jurídica, Processo Jurídico, Mensalidade ou outro registro de negócio.
+
+#### Documento de Acervo
+
+Documento geral da Secretaria sem vínculo com uma entidade única da intranet, como estatutos, atas, modelos, comunicados internos e arquivos administrativos de referência.
 
 #### Signatário
 
@@ -173,6 +182,12 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 2. **Restrições de Arquivos**: O tamanho do arquivo está limitado a 15 MB. São permitidos apenas arquivos de texto/documentos de escritório comuns (PDF, DOC, DOCX, XLS, XLSX, ODT, TXT).
 3. **Controle de Acesso (Roles)**:
    - **Acesso total (listagem, download, upload, exclusão)**: Permitido apenas para `admin` e `secretaria`. O perfil `diretoria` não tem acesso ao módulo de documentos.
+   - A intranet é a fonte canônica de autorização para Documentos relacionados ao domínio ASOF; sistemas externos de arquivamento não devem conceder acesso que a intranet negaria.
+   - Expurgo físico de Documento é permitido apenas para `admin`, com motivo obrigatório, confirmação explícita e registro de auditoria. `secretaria` pode arquivar/desativar, mas não expurgar fisicamente.
+4. **Experiência de Uso**: Usuários acessam Documentos pelo contexto de negócio na intranet (Secretaria, Associado, Ofício, Jurídico ou Financeiro). Sistemas externos de arquivamento podem armazenar, indexar e buscar arquivos, mas não são a interface operacional principal da ASOF.
+5. **Busca de Documentos**: A busca inicial de Documentos é contextual ao módulo ou entidade de negócio onde o usuário já tem acesso. Busca global de Documentos é uma capacidade distinta e posterior, pois exige regras próprias de escopo, auditoria e exposição de resultados.
+6. **Ciclo de Vida**: O fluxo normal de remoção de um Documento é arquivamento, desativação ou ocultação das listas padrão, preservando histórico e auditoria. Expurgo físico é ação excepcional para LGPD ou erro grave, exige motivo explícito, role restrita e registro de auditoria.
+7. **Entrada de Documentos**: O canal operacional inicial de criação de Documento é upload manual pela intranet. Ingestão por email/webhook pode existir como entrada técnica para triagem, mas não deve criar Documento válido sem classificação, vínculo quando aplicável, autorização e auditoria na intranet.
 
 ### Módulo Financeiro
 
@@ -206,7 +221,7 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 
 1. **Data Access Logging**: Cada acesso a dados PII (view, export, edit) é registrado em `audit_logs` para compliance com Art. 30/37 da LGPD.
 2. **Sanitização de PII**: Logs de erro e payloads de eventos passam por redação automática de dados sensíveis.
-3. **PII View**: Exclui colunas criptografadas e de hash, fornecendo uma visao segura para listagens.
+3. **PII View** (`publicAssociateListColumns` em `src/lib/associates/repository.ts`): Seleção de colunas Drizzle ORM que exclui campos `_ciphertext` e `_hash`, fornecendo uma visão segura para listagens paginadas de associados.
 
 ---
 

@@ -10,6 +10,8 @@ arquivos locais e PRs incompletos.
 - O projeto precisa estar marcado como trusted no Codex para carregar `.codex/`.
 - `.codex/hooks.json` registra um `PreToolUse` para Bash que chama
   `scripts/codex-pre-tool-use-policy.mjs`.
+- Worktrees e automações do Codex app seguem o fluxo em
+  `docs/development/codex-worktrees-and-automations.md`.
 
 ## Scripts de Guardrail
 

@@ -4,6 +4,10 @@ import { createHash, randomBytes } from 'node:crypto';
 import { eq, and } from 'drizzle-orm';
 import { db, type DbExecutor } from '@/lib/db';
 import { integrationApiKeys } from '@/lib/db/schema/integrations';
+import {
+  encryptIntegrationSigningSecret,
+  generateIntegrationSigningSecret,
+} from '@/lib/integrations/keys/signing-secrets';
 
 const VALID_SCOPES = ['events:read', 'events:write', 'webhooks:manage', 'health:read', 'admin'] as const;
 export type IntegrationScope = (typeof VALID_SCOPES)[number];
@@ -32,6 +36,8 @@ export interface CreateApiKeyResult {
   name: string;
   /** The raw API key — shown only once at creation time. */
   key: string;
+  /** The HMAC signing secret — shown only once at creation/rotation time. */
+  signingSecret: string;
   scopes: IntegrationScope[];
   isActive: boolean;
   createdAt: Date;
@@ -55,12 +61,15 @@ export async function createApiKey(
   const validatedScopes = validateScopes(scopes);
   const rawKey = `${KEY_PREFIX}${randomBytes(KEY_BYTES).toString('base64url')}`;
   const keyHash = hashKey(rawKey);
+  const signingSecret = generateIntegrationSigningSecret();
+  const signingSecretCiphertext = encryptIntegrationSigningSecret(signingSecret);
 
   const [row] = await executor
     .insert(integrationApiKeys)
     .values({
       name,
       keyHash,
+      signingSecretCiphertext,
       scopes: validatedScopes,
       isActive: true,
       createdBy,
@@ -71,6 +80,7 @@ export async function createApiKey(
     id: row.id,
     name: row.name,
     key: rawKey,
+    signingSecret,
     scopes: row.scopes as IntegrationScope[],
     isActive: row.isActive,
     createdAt: row.createdAt,
@@ -127,12 +137,15 @@ export async function rotateApiKey(
 
     const rawKey = `${KEY_PREFIX}${randomBytes(KEY_BYTES).toString('base64url')}`;
     const keyHash = hashKey(rawKey);
+    const signingSecret = generateIntegrationSigningSecret();
+    const signingSecretCiphertext = encryptIntegrationSigningSecret(signingSecret);
 
     const [row] = await tx
       .insert(integrationApiKeys)
       .values({
         name: existing.name,
         keyHash,
+        signingSecretCiphertext,
         scopes: existing.scopes as IntegrationScope[],
         isActive: true,
         createdBy,
@@ -148,6 +161,7 @@ export async function rotateApiKey(
       id: row.id,
       name: row.name,
       key: rawKey,
+      signingSecret,
       scopes: row.scopes as IntegrationScope[],
       isActive: row.isActive,
       createdAt: row.createdAt,

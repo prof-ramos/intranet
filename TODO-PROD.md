@@ -40,6 +40,25 @@ Atualizado em 2026-05-26 apos decisao de resetar a camada de banco/autenticacao 
 ## Recomendado Antes Do Go-Live
 
 - [x] Documentos fora do go-live: modulo de upload/download de arquivos legados nao entra no dia 1 (ADR 008). Storage de objetos sera frente separada pos-estreia.
+- [ ] Avaliar Papra como DMS externo para Documentos da ASOF, mantendo Neon/PostgreSQL como banco transacional da intranet — frente pos-estreia, nao bloqueante para go-live; ADR 012 proposta; issue: https://github.com/prof-ramos/intranet/issues/93.
+  - [ ] Subir prova de conceito self-hosted do Papra em VPS isolada, com banco, storage e auth/admin separados da intranet.
+  - [ ] Restringir exposicao da VPS: Papra nao deve ser interface publica; API/endpoint apenas para a intranet e administracao via VPN ou allowlist de IP, com TLS.
+  - [ ] Definir backend de storage privado para documentos do Papra com software open source e self-hosted, preferencialmente S3 compativel (ex: MinIO ou Garage); evitar filesystem local simples e servico proprietario gerenciado na POC.
+  - [ ] Validar upload manual pela intranet como canal operacional inicial.
+  - [ ] Validar ingestao por email/webhook apenas como entrada tecnica para triagem, sem criar Documento valido fora da autorizacao/auditoria da intranet.
+  - [ ] Validar OCR/extracao de conteudo, busca full-text contextual, tags, propriedades customizadas e auditoria basica.
+  - [ ] Confirmar API/SDK/webhooks e capacidade de integrar com a intranet como fonte canônica de autorização, sem expor documentos sensiveis publicamente.
+  - [ ] Integrar a intranet ao Papra apenas por chamadas server-to-server, com token de servico/API key de escopo minimo guardado em ambiente server-side.
+  - [ ] Validar experiencia de uso em que a intranet lista, audita e medeia acesso aos Documentos, sem exigir navegacao operacional direta no Papra.
+  - [ ] Separar auditoria de negocio e logs tecnicos da integracao: a intranet registra quem acessou qual Documento e os logs tecnicos registram chamadas ao Papra com `requestId`, acao e resultado, sem conteudo sensivel.
+  - [ ] Validar busca contextual por módulo/entidade; busca global de Documentos fica fora da POC inicial.
+  - [ ] Dividir ownership de metadados: a intranet e canonica para metadados de dominio/autorizacao (`papraDocumentId`, tipo, entidade relacionada opcional, autor, datas, tags internas e status) e o Papra e canonico para metadados tecnicos do arquivo (MIME, tamanho, hash, OCR e timestamps tecnicos).
+  - [ ] Validar Documentos Vinculados e Documentos de Acervo, sem forcar vinculos artificiais.
+  - [ ] Definir tratamento de falha parcial: se a intranet salvar metadados locais e o upload no Papra falhar, o registro fica em estado explicito de falha pendente (`upload_failed` ou `pending_external_sync`), visivel apenas para `admin`/`secretaria`, com retry manual; Documento valido nao nasce pela metade.
+  - [ ] Validar ciclo de vida com arquivamento/desativacao como fluxo normal e expurgo fisico apenas como excecao LGPD/erro grave auditada e restrita a `admin`.
+  - [ ] Definir baseline operacional da POC: backup diario do banco do Papra por 14 dias, snapshot/versionamento do storage por 30 dias e restore simples testado ao menos uma vez em ambiente separado.
+  - [ ] Documentar a criptografia em repouso fornecida pelo stack/storage escolhido e seus limites; a POC nao adiciona camada extra propria de criptografia.
+  - [ ] Revisar implicacoes de LGPD, backup, retencao, exportacao e licencas open source (incluindo AGPL-3.0 quando aplicavel) antes de qualquer uso em producao.
 - [x] Rodar `npm audit` — 0 vulnerabilidades em 2026-05-26.
 - [x] E2E local contra `asof_test` aprovado em 2026-05-26 (`npm run test:e2e`, 52 testes). E2E em staging dedicado nao e gate do dia 1 (ADR 009); avaliar pos-estreia se Neon branch staging for adotado.
 - [x] Plano de rollback registrado em ADR 010: Neon PITR + branch de restauracao como mecanismo primario, com gatilho objetivo de 30 min em fluxos criticos. Pre-janela exige anotar timestamp/LSN e confirmar `history_retention` Neon suficiente.

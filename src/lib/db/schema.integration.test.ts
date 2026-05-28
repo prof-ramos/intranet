@@ -120,6 +120,7 @@ const expectedColumns = {
     'id:int8:NO',
     'name:text:NO',
     'key_hash:text:NO',
+    'signing_secret_ciphertext:text:YES',
     'scopes:jsonb:NO',
     'is_active:bool:NO',
     'last_used_at:timestamptz:YES',

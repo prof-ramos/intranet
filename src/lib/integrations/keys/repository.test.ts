@@ -35,6 +35,7 @@ vi.mock('@/lib/db/schema/integrations', () => ({
     id: 'id',
     name: 'name',
     keyHash: 'keyHash',
+    signingSecretCiphertext: 'signingSecretCiphertext',
     scopes: 'scopes',
     isActive: 'isActive',
     lastUsedAt: 'lastUsedAt',
@@ -64,6 +65,7 @@ describe('integration api keys repository', () => {
       id: 7,
       name: 'Prod key',
       keyHash: 'hash-123',
+      signingSecretCiphertext: 'enc:v2:k1.iv.tag.ciphertext',
       scopes: ['events:read', 'webhooks:manage'],
       isActive: true,
     };

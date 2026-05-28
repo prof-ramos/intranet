@@ -18,6 +18,11 @@ const transactionMock = vi.hoisted(() => ({
   } as unknown as Record<string, unknown>,
 }));
 
+vi.mock('@/lib/integrations/keys/signing-secrets', () => ({
+  generateIntegrationSigningSecret: vi.fn(() => 'generated-signing-secret'),
+  encryptIntegrationSigningSecret: vi.fn((secret: string) => `encrypted:${secret}`),
+}));
+
 vi.mock('@/lib/db', () => ({
   db: {
     transaction: vi.fn(async (callback: (tx: typeof transactionMock.tx) => Promise<unknown>) =>
@@ -48,6 +53,7 @@ function createMockExecutor() {
       id: 1,
       name: 'Test Key',
       keyHash: 'hash',
+      signingSecretCiphertext: 'encrypted:generated-signing-secret',
       scopes: ['events:read'],
       isActive: true,
       createdBy: 1,
@@ -76,9 +82,15 @@ describe('integration API key service', () => {
       } as unknown as Parameters<typeof createApiKey>[3]);
 
       expect(result.key).toMatch(/^asof_/);
+      expect(result.signingSecret).toBe('generated-signing-secret');
       expect(result.scopes).toEqual(['events:read']);
       expect(result.name).toBe('Test Key');
       expect(mockInsert).toHaveBeenCalled();
+      expect(mockValues).toHaveBeenCalledWith(
+        expect.objectContaining({
+          signingSecretCiphertext: 'encrypted:generated-signing-secret',
+        }),
+      );
     });
 
     it('rejects invalid scopes', async () => {
@@ -146,6 +158,7 @@ describe('integration API key service', () => {
           id: 2,
           name: 'Old Key',
           keyHash: 'new-hash',
+          signingSecretCiphertext: 'encrypted:generated-signing-secret',
           scopes: ['events:read', 'webhooks:manage'],
           isActive: true,
           createdBy: 1,
@@ -162,6 +175,7 @@ describe('integration API key service', () => {
 
       expect(result).not.toBeNull();
       expect(result!.key).toMatch(/^asof_/);
+      expect(result!.signingSecret).toBe('generated-signing-secret');
       expect(result!.scopes).toEqual(['events:read', 'webhooks:manage']);
     });
 

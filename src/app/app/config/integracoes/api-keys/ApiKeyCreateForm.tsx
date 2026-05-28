@@ -16,16 +16,17 @@ const scopeLabels: Record<string, string> = {
 
 interface NewKeyDisplayProps {
   rawKey: string;
+  signingSecret: string;
   onDismiss: () => void;
 }
 
-function NewKeyDisplay({ rawKey, onDismiss }: NewKeyDisplayProps) {
-  const [copied, setCopied] = useState(false);
+function NewKeyDisplay({ rawKey, signingSecret, onDismiss }: NewKeyDisplayProps) {
+  const [copiedField, setCopiedField] = useState<'key' | 'secret' | null>(null);
 
-  async function handleCopy() {
-    await navigator.clipboard.writeText(rawKey);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  async function handleCopy(value: string, field: 'key' | 'secret') {
+    await navigator.clipboard.writeText(value);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
   }
 
   return (
@@ -34,25 +35,38 @@ function NewKeyDisplay({ rawKey, onDismiss }: NewKeyDisplayProps) {
         <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-700" aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-amber-900">
-            Esta chave só será exibida uma vez. Guarde-a com segurança.
+            A chave e o segredo HMAC só serão exibidos uma vez. Guarde-os com segurança.
           </p>
-          <div className="mt-3 flex items-center gap-2">
-            <code className="min-w-0 flex-1 rounded-md border border-amber-200 bg-white px-3 py-2 font-mono text-xs break-all text-[#040920] select-all">
-              {rawKey}
-            </code>
-            <button
-              type="button"
-              onClick={handleCopy}
-              aria-label={copied ? 'Copiado' : 'Copiar chave'}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border border-amber-300 bg-white px-3 py-2 text-xs font-medium text-amber-900 transition-colors hover:bg-amber-100 ${focusRingClass}`}
-            >
-              {copied ? (
-                <Check size={13} aria-hidden="true" />
-              ) : (
-                <Copy size={13} aria-hidden="true" />
-              )}
-              {copied ? 'Copiado' : 'Copiar'}
-            </button>
+          <div className="mt-3 grid gap-3">
+            {[
+              ['key', 'Chave de API', rawKey],
+              ['secret', 'Segredo HMAC', signingSecret],
+            ].map(([field, label, value]) => {
+              const copied = copiedField === field;
+              return (
+                <div key={field} className="grid gap-1.5">
+                  <span className="text-[11px] font-semibold text-amber-900">{label}</span>
+                  <div className="flex items-center gap-2">
+                    <code className="min-w-0 flex-1 rounded-md border border-amber-200 bg-white px-3 py-2 font-mono text-xs break-all text-[#040920] select-all">
+                      {value}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(value, field as 'key' | 'secret')}
+                      aria-label={copied ? 'Copiado' : `Copiar ${label}`}
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border border-amber-300 bg-white px-3 py-2 text-xs font-medium text-amber-900 transition-colors hover:bg-amber-100 ${focusRingClass}`}
+                    >
+                      {copied ? (
+                        <Check size={13} aria-hidden="true" />
+                      ) : (
+                        <Copy size={13} aria-hidden="true" />
+                      )}
+                      {copied ? 'Copiado' : 'Copiar'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -73,7 +87,10 @@ export function ApiKeyCreateForm() {
   const [name, setName] = useState('');
   const [selectedScopes, setSelectedScopes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [newKey, setNewKey] = useState<string | null>(null);
+  const [newCredentials, setNewCredentials] = useState<{
+    key: string;
+    signingSecret: string;
+  } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function toggleScope(scope: string) {
@@ -83,7 +100,7 @@ export function ApiKeyCreateForm() {
   }
 
   function handleDismissKey() {
-    setNewKey(null);
+    setNewCredentials(null);
     setName('');
     setSelectedScopes([]);
   }
@@ -102,7 +119,10 @@ export function ApiKeyCreateForm() {
       if ('error' in result) {
         setError(result.error ?? 'Erro ao criar chave.');
       } else {
-        setNewKey(result.data.key);
+        setNewCredentials({
+          key: result.data.key,
+          signingSecret: result.data.signingSecret,
+        });
       }
     });
   }
@@ -167,7 +187,13 @@ export function ApiKeyCreateForm() {
         </div>
       </form>
 
-      {newKey && <NewKeyDisplay rawKey={newKey} onDismiss={handleDismissKey} />}
+      {newCredentials && (
+        <NewKeyDisplay
+          rawKey={newCredentials.key}
+          signingSecret={newCredentials.signingSecret}
+          onDismiss={handleDismissKey}
+        />
+      )}
     </div>
   );
 }
