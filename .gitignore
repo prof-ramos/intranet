@@ -38,6 +38,7 @@ repomix-output.*
 backups/
 *.sql.gz
 *.sql.gz.sha256
+*.heapsnapshot
 
 # env files (can opt-in for committing if needed)
 .env*
