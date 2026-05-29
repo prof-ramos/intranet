@@ -16,4 +16,5 @@ export * from './finance';
 export * from './notifications';
 export * from './oficios';
 export * from './documents';
+export * from './email-triage';
 export * from './test-metrics';
