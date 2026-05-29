@@ -4,21 +4,15 @@ import { createAssignment, toggleAssignmentActive, updateAssignment } from './ac
 const {
   requireRoleMock,
   revalidatePathMock,
-  mockLimit,
-  mockReturning,
-  mockInsertValues,
-  selectQueue,
-  insertQueue,
-  mockUpdateWhere,
+  createAssignmentMock,
+  updateAssignmentMock,
+  toggleAssignmentActiveMock,
 } = vi.hoisted(() => ({
   requireRoleMock: vi.fn(),
   revalidatePathMock: vi.fn(),
-  mockLimit: vi.fn(async () => selectQueue.shift() ?? []),
-  mockReturning: vi.fn(),
-  mockInsertValues: vi.fn(() => insertQueue.shift()),
-  mockUpdateWhere: vi.fn().mockResolvedValue(undefined),
-  selectQueue: [] as unknown[][],
-  insertQueue: [] as unknown[],
+  createAssignmentMock: vi.fn(),
+  updateAssignmentMock: vi.fn(),
+  toggleAssignmentActiveMock: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/authorization', () => ({
@@ -29,41 +23,34 @@ vi.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => revalidatePathMock(...args),
 }));
 
-vi.mock('@/lib/db', () => ({
-  db: {
-    select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        where: vi.fn(() => ({
-          limit: mockLimit,
-        })),
-      })),
-    })),
-    insert: vi.fn(() => ({
-      values: mockInsertValues,
-    })),
-    update: vi.fn(() => ({
-      set: vi.fn(() => ({
-        where: mockUpdateWhere,
-      })),
-    })),
+vi.mock('@/lib/assignments/service', () => ({
+  createAssignment: (...args: unknown[]) => createAssignmentMock(...args),
+  updateAssignment: (...args: unknown[]) => updateAssignmentMock(...args),
+  toggleAssignmentActive: (...args: unknown[]) => toggleAssignmentActiveMock(...args),
+  AssignmentNotFoundError: class AssignmentNotFoundError extends Error {
+    constructor() {
+      super('Lotação não encontrada.');
+      this.name = 'AssignmentNotFoundError';
+    }
+  },
+  DuplicateAssignmentNameError: class DuplicateAssignmentNameError extends Error {
+    constructor() {
+      super('Já existe uma lotação com este nome.');
+      this.name = 'DuplicateAssignmentNameError';
+    }
   },
 }));
 
 describe('config lotacoes actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    selectQueue.length = 0;
-    insertQueue.length = 0;
     requireRoleMock.mockResolvedValue({ userId: 7 });
-    mockReturning.mockResolvedValue([{ id: 21 }]);
-    mockInsertValues.mockImplementation(() => insertQueue.shift());
-    mockLimit.mockImplementation(async () => selectQueue.shift() ?? []);
+    createAssignmentMock.mockResolvedValue({ id: 21 });
+    updateAssignmentMock.mockResolvedValue(undefined);
+    toggleAssignmentActiveMock.mockResolvedValue({ name: 'Consulado em Lisboa', newState: false });
   });
 
-  it('creates an assignment, writes an audit log, and revalidates', async () => {
-    selectQueue.push([]);
-    insertQueue.push({ returning: mockReturning }, undefined);
-
+  it('creates an assignment, revalidates, and returns success', async () => {
     const formData = new FormData();
     formData.set('name', 'Embaixada em Paris');
     formData.set('type', 'exterior');
@@ -74,25 +61,13 @@ describe('config lotacoes actions', () => {
       success: true,
       message: 'Lotação "Embaixada em Paris" criada com sucesso.',
     });
-    expect(mockReturning).toHaveBeenCalledTimes(1);
-    expect(mockInsertValues).toHaveBeenNthCalledWith(1, {
-      name: 'Embaixada em Paris',
-      type: 'exterior',
-    });
-    expect(mockInsertValues).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        action: 'assignment_created',
-        entityType: 'assignment',
-        entityId: 21,
-        performedBy: 7,
-      }),
-    );
+    expect(createAssignmentMock).toHaveBeenCalledWith('Embaixada em Paris', 'exterior', 7);
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/lotacoes');
   });
 
   it('rejects duplicate assignment names before inserting', async () => {
-    selectQueue.push([{ id: 3 }]);
+    const { DuplicateAssignmentNameError } = await import('@/lib/assignments/service');
+    createAssignmentMock.mockRejectedValue(new DuplicateAssignmentNameError());
 
     const formData = new FormData();
     formData.set('name', 'SERE');
@@ -104,11 +79,11 @@ describe('config lotacoes actions', () => {
       success: false,
       message: 'Já existe uma lotação com este nome.',
     });
-    expect(mockInsertValues).not.toHaveBeenCalled();
   });
 
   it('rejects duplicate names on update when another record already uses them', async () => {
-    selectQueue.push([{ id: 9, name: 'Atual', type: 'nacional' }], [{ id: 12 }]);
+    const { DuplicateAssignmentNameError } = await import('@/lib/assignments/service');
+    updateAssignmentMock.mockRejectedValue(new DuplicateAssignmentNameError());
 
     const formData = new FormData();
     formData.set('id', '9');
@@ -121,7 +96,6 @@ describe('config lotacoes actions', () => {
       success: false,
       message: 'Já existe uma lotação com este nome.',
     });
-    expect(mockUpdateWhere).not.toHaveBeenCalled();
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
@@ -144,13 +118,12 @@ describe('config lotacoes actions', () => {
       message: 'Lotação inválida.',
     });
 
-    expect(mockUpdateWhere).not.toHaveBeenCalled();
-    expect(mockInsertValues).not.toHaveBeenCalled();
+    expect(updateAssignmentMock).not.toHaveBeenCalled();
+    expect(toggleAssignmentActiveMock).not.toHaveBeenCalled();
   });
 
-  it('toggles assignment active state, writes an audit log, and revalidates', async () => {
-    selectQueue.push([{ id: 4, name: 'Consulado em Lisboa', isActive: true }]);
-    insertQueue.push(undefined);
+  it('toggles assignment active state and revalidates', async () => {
+    toggleAssignmentActiveMock.mockResolvedValue({ name: 'Consulado em Lisboa', newState: false });
 
     const formData = new FormData();
     formData.set('id', '4');
@@ -161,15 +134,7 @@ describe('config lotacoes actions', () => {
       success: true,
       message: 'Lotação "Consulado em Lisboa" foi desativada com sucesso.',
     });
-    expect(mockUpdateWhere).toHaveBeenCalledTimes(1);
-    expect(mockInsertValues).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: 'assignment_deactivated',
-        entityType: 'assignment',
-        entityId: 4,
-        performedBy: 7,
-      }),
-    );
+    expect(toggleAssignmentActiveMock).toHaveBeenCalledWith(4, 7);
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/lotacoes');
   });
 });
