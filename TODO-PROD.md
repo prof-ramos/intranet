@@ -63,6 +63,7 @@ Atualizado em 2026-05-26 apos decisao de resetar a camada de banco/autenticacao 
 - [x] E2E local contra `asof_test` aprovado em 2026-05-26 (`npm run test:e2e`, 52 testes). E2E em staging dedicado nao e gate do dia 1 (ADR 009); avaliar pos-estreia se Neon branch staging for adotado.
 - [x] Plano de rollback registrado em ADR 010: Neon PITR + branch de restauracao como mecanismo primario, com gatilho objetivo de 30 min em fluxos criticos. Pre-janela exige anotar timestamp/LSN e confirmar `history_retention` Neon suficiente.
 - [x] Owners de incidente registrados em ADR 011: papel primario tecnico (app/banco/Vercel/DNS/Mailjet), papel substituto de decisao na Diretoria, papel LGPD/DPO (acumulado pela Diretoria ate formalizacao), e canal unico de incidente. Nomes e contatos vivem em anexo privado fora do repo.
+- [x] Higiene completa de branches e PRs realizada em 29/05/2026: remoção de PRs duplicados (#101/#102), branches stale (Pimaco, issue-76, issue-99), resolução de conflitos e merge do PR de extração de auth service (#105), merges dos refactors pendentes e publicação da convenção oficial de nomenclatura de branches (`docs/development/branch-naming.md`). Repositório deixou o estado de dívida de branches acumulada pós-Go-Live.
 
 ## Gate Pre-Janela
 
