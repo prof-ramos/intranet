@@ -114,9 +114,12 @@ describe('retryTransientConnection', () => {
     );
   });
 
-  it('caps backoff at MAX_BACKOFF_MS on repeated failures', { timeout: 30000 }, async () => {
+  it('caps backoff at MAX_BACKOFF_MS on repeated failures', async () => {
+    vi.useFakeTimers();
     const op = vi.fn().mockRejectedValue(transientError());
-    await expect(retryTransientConnection(op, 5)).rejects.toThrow();
+    const promise = retryTransientConnection(op, 5);
+    await vi.advanceTimersByTimeAsync(60000);
+    await expect(promise).rejects.toThrow();
     expect(op).toHaveBeenCalledTimes(5);
   });
 });

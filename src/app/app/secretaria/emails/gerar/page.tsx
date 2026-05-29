@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 import { requireRole } from '@/lib/auth/authorization';
 import { EmailGeneratorClient } from './EmailGeneratorClient';
-import './emails.css';
 
 export const metadata: Metadata = {
   title: 'Gerador de E-mails com IA — ASOF',

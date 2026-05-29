@@ -70,11 +70,80 @@ Marcar a janela de go-live (ADR 009) somente quando todos os itens abaixo estive
 
 - [ ] ADRs 007, 008, 009, 010 e 011 lidos e aceitos pelos owners primario e substituto.
 - [ ] `history_retention` do projeto Neon `intranet-db` confirmado como suficiente para cobrir a janela + 24h (ADR 010); upgrade de tier feito antes da janela se necessario.
+  - *Nota: `api.neon.tech` DNS irresolvivel neste ambiente — verificar tier no console Neon (app.neon.tech) manualmente. Tier Free = 6h (insuficiente), Launch/Pro = 24h+ (suficiente).*
 - [ ] Procedimento de anotacao de timestamp/LSN pre-janela combinado com o owner primario (ADR 010).
 - [ ] Canal unico de incidente criado e populado com owner primario, substituto e DPO (ou Diretoria acumulando o papel) (ADR 011).
-- [ ] Versao de producao Vercel marcada como "ultima conhecida boa" para redeploy em caso de rollback (ADR 010).
+- [x] Versao de producao Vercel marcada como "ultima conhecida boa" para redeploy em caso de rollback (ADR 010):
+  - Deployment ID: `dpl_9XKJMo5N6Vzyz3rPCLiSq8Fv34N5`
+  - URL: `https://asof-intranet-mwpj3qepq-gabriel-ramos-projects-c715690c.vercel.app`
+  - Alias: `intranet.asof.com.br`
+  - Criado: 2026-05-29 (merge do PR #96)
+  - Status: `READY`
 - [ ] Roteiro de smoke escrito como lista de passos (com dados marcados `SMOKE_*`) e revisado pelo owner primario (ADR 009).
+  - *Roteiro disponivel no TODO-PROD.md — seção "Roteiro de Smoke Manual" abaixo.*
 - [ ] Janela aprovada pela Diretoria com data, hora UTC e duracao estimada registradas.
+
+### Roteiro de Smoke Manual
+
+**Pre-requisitos:** snapshot Neon anotado, canal de incidente pronto, owner primario disponivel.
+
+**1. Login e Sessão**
+- [ ] Acessar `https://intranet.asof.com.br` — redirect para `/login`.
+- [ ] Fazer login como `gabriel@asof.org.br` (senha pos-troca).
+- [ ] Confirmar redirect para `/app` (dashboard).
+- [ ] Verificar cookie `httpOnly` assinado presente.
+
+**2. Dashboard**
+- [ ] Dashboard carrega com dados. Verificar widgets: total de associados, financeiro, atividades.
+- [ ] Notificacao de boas-vindas ou persistida visivel.
+
+**3. Associados**
+- [ ] Criar associado `SMOKE_NOME_FULL` com dados marcados (nome: `SMOKE_ Teste Go-Live`, email: `smoke@asof.org.br`).
+- [ ] Editar associado criado.
+- [ ] Buscar associado por nome/SIAPE/CPF.
+- [ ] Confirmar dados sensiveis (CPF, SIAPE) visiveis para admin autenticado.
+
+**4. Atividades (Kanban)**
+- [ ] Criar atividade com titulo `SMOKE_ Atividade Teste`.
+- [ ] Mover atividade entre colunas.
+- [ ] Adicionar comentario.
+
+**5. Juridico/Consultas**
+- [ ] Criar consulta `SMOKE_ Consulta Teste`.
+- [ ] Associar ao associado `SMOKE_NOME_FULL`.
+- [ ] Avancar status.
+
+**6. Financeiro/Mensalidades**
+- [ ] Registrar mensalidade para `SMOKE_NOME_FULL`.
+- [ ] Verificar status de contribuicao.
+- [ ] Gerar relatorio financeiro (CSV).
+
+**7. Oficios**
+- [ ] Gerar oficio com modelo padrao.
+- [ ] Confirmar PDF gerado.
+
+**8. Auditoria**
+- [ ] Verificar `audit_log` — acoes do smoke registradas (login, criacao de associado, etc.).
+- [ ] Navegar para pagina de auditoria.
+
+**9. Notificacoes**
+- [ ] Verificar central de notificacoes (sino).
+- [ ] Notificacao de teste persistida visivel.
+
+**10. Reset de Senha**
+- [ ] Solicitar reset de senha para `smoke@asof.org.br`.
+- [ ] Confirmar email enviado (Mailjet).
+
+**Pos-smoke:** Executar SQL de limpeza no Neon (via console Neon ou `psql` com `DATABASE_MIGRATION_URL`):
+```sql
+-- # audit_log e preservado integralmente por exigencia do ADR 009 — nao apagar.
+DELETE FROM notifications WHERE message ILIKE '%SMOKE_%';
+DELETE FROM monthly_payments WHERE associate_id IN (SELECT id FROM associates WHERE email = 'smoke@asof.org.br');
+DELETE FROM juridico_consultas WHERE description ILIKE '%SMOKE_%';
+DELETE FROM board_activities WHERE title ILIKE '%SMOKE_%';
+DELETE FROM associates WHERE email = 'smoke@asof.org.br';
+```
+_Nota: `audit_log` e preservado (ADR 009). Se necessario identificar registros de smoke posteriormente, usar tag `SMOKE_` na descricao e consultar por ela, sem deletar._
 
 ## Evidencia Desta Frente
 

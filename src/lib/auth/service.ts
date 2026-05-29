@@ -4,19 +4,21 @@ import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
 import { retryTransientConnection } from '@/lib/db/retry';
 
-const DUMMY_HASH = '$2a$10$22V5F5Xg8N.0P5A/pZ7H/ee7o0T.3VvJ1Qz80J8w3Z1V2y0R.uw4S';
-
-export async function authenticate(
-  email: string,
-  password: string,
-): Promise<{
+export interface AuthenticatedUser {
   id: number;
   name: string;
   email: string;
   role: 'admin' | 'diretoria' | 'secretaria';
   isActive: boolean;
   mustChangePassword: boolean;
-}> {
+}
+
+const DUMMY_HASH = '$2a$10$22V5F5Xg8N.0P5A/pZ7H/ee7o0T.3VvJ1Qz80J8w3Z1V2y0R.uw4S';
+
+export async function authenticate(
+  email: string,
+  password: string,
+): Promise<AuthenticatedUser> {
   const normalizedEmail = email.trim().toLowerCase();
 
   const [user] = await retryTransientConnection(() =>

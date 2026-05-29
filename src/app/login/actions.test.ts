@@ -137,7 +137,7 @@ describe('login action', () => {
     expect(redirect).toHaveBeenCalledWith('/login?error=1');
     expect(mockLogger.warn).toHaveBeenCalledWith(
       '[Login] Authentication failed',
-      expect.objectContaining({ email: 'admin@asof.local' }),
+      expect.objectContaining({ email: '[REDACTED]' }),
       expect.any(Error),
     );
   });
