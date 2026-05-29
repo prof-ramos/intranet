@@ -400,6 +400,7 @@ const expectedEnums = {
     'legal_consultation.answered',
     'activity.assigned',
     'legal_consultation.sla_warning',
+    'lgpd_request',
   ],
   official_letter_status: ['gerado', 'cancelado', 'rascunho'],
   assinafy_document_status: [
