@@ -1,7 +1,7 @@
 'use client';
 
 import { Kanban, Loader2, Search, Users, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   focusRingClass,
@@ -21,7 +21,7 @@ type FlatResult = {
   type: 'associate' | 'activity';
 };
 
-function ResultItem({
+const ResultItem = memo(function ResultItem({
   item,
   index,
   isFocused,
@@ -79,7 +79,10 @@ function ResultItem({
       </div>
     </button>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if focus state or item changes
+  return prevProps.isFocused === nextProps.isFocused && prevProps.item.id === nextProps.item.id;
+});
 
 export function GlobalSearch() {
   const router = useRouter();
@@ -93,10 +96,10 @@ export function GlobalSearch() {
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [isPending, startTransition] = useTransition();
 
-  const flatResults: FlatResult[] = [
+  const flatResults = useMemo(() => [
     ...(results?.associates ?? []).map((r) => ({ ...r, type: 'associate' as const })),
     ...(results?.activities ?? []).map((r) => ({ ...r, type: 'activity' as const })),
-  ];
+  ], [results?.associates, results?.activities]);
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {

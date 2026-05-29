@@ -33,6 +33,7 @@ yarn-error.log*
 .pnpm-debug.log*
 next-dev*.log
 crabbit.txt
+lighthouse-report.json
 repomix-output.*
 backups/
 *.sql.gz

@@ -38,7 +38,7 @@ Em preview, nao compartilhar envs gerais de banco com producao.
 
 Nunca reutilize segredos expostos em chat, logs ou arquivos temporarios.
 
-## 3. Migration E Seed
+## 3. Migration, Seed E Importação De Associados
 
 ```bash
 ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
@@ -46,6 +46,10 @@ npm run db:seed
 ```
 
 O seed cria ou atualiza o admin inicial em `admins`, grava `password_hash`, define `role=admin`, `is_active=true` e `must_change_password=true`.
+
+### 3.1 Associados
+
+O banco já contém **1662 Oficiais de Chancelaria** importados do sistema legado, sendo **440 associados** à ASOF. Nenhuma ação adicional é necessária.
 
 ## 4. Validacao Tecnica
 

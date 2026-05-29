@@ -51,6 +51,7 @@ vi.mock('@/lib/db', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.unstubAllEnvs();
   mockSession = null;
   mockDbError = null;
   mockDbAdmin = null;
@@ -90,6 +91,29 @@ describe('requireAuth', () => {
   });
 
   it('redirects to login when the admin is inactive', async () => {
+    mockSession = {
+      userId: 2,
+      name: 'Inactive',
+      email: 'inactive@asof.local',
+      role: 'admin',
+      mustChangePassword: false,
+      isLoggedIn: true,
+    };
+    mockDbAdmin = {
+      id: 2,
+      name: 'Inactive',
+      email: 'inactive@asof.local',
+      role: 'admin',
+      isActive: false,
+      mustChangePassword: false,
+    };
+
+    await expect(requireAuth()).rejects.toThrow('NEXT_REDIRECT:/login');
+  });
+
+  it('does not bypass active-admin revalidation in production when SKIP_AUTH is set', async () => {
+    vi.stubEnv('SKIP_AUTH', 'true');
+    vi.stubEnv('NODE_ENV', 'production');
     mockSession = {
       userId: 2,
       name: 'Inactive',

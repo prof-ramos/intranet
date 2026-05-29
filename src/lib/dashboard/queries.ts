@@ -1,10 +1,9 @@
 import { db } from '@/lib/db';
 import {
   isDomesticCountrySql,
-  isExteriorCountrySql,
   normalizedCountryLabelSql,
 } from '@/lib/associates/location-country';
-import { activities, associates } from '@/lib/db/schema';
+import { activities, associates, assignments } from '@/lib/db/schema';
 import { and, asc, count, desc, eq, ne, sql } from 'drizzle-orm';
 import { unstable_cache } from 'next/cache';
 
@@ -51,12 +50,21 @@ export interface ActiveAssociatesByLocation {
 
 export const countActiveAssociatesByLocation = unstable_cache(
   async (): Promise<ActiveAssociatesByLocation> => {
+    const locationType = sql<string>`coalesce(
+      ${assignments.type}::text,
+      case when ${isDomesticCountrySql(associates.locationCountry)}
+        then 'nacional'
+        else 'exterior'
+      end
+    )`;
+
     const rows = await db
       .select({
-        brasil: sql<number>`count(*) filter (where ${isDomesticCountrySql(associates.locationCountry)})::int`,
-        exterior: sql<number>`count(*) filter (where ${isExteriorCountrySql(associates.locationCountry)})::int`,
+        brasil: sql<number>`count(*) filter (where ${locationType} = 'nacional')::int`,
+        exterior: sql<number>`count(*) filter (where ${locationType} = 'exterior')::int`,
       })
       .from(associates)
+      .leftJoin(assignments, eq(assignments.name, associates.assignment))
       .where(eq(associates.associationStatus, 'ativo'));
 
     return rows[0] ?? { brasil: 0, exterior: 0 };

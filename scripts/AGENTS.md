@@ -14,7 +14,7 @@ Purpose: Operational scripts — database, migrations, seed, PII, and dev utilit
 | `seed-admin-config.ts` | Admin seed config (+ test) |
 | `seed-e2e.ts` | E2E test data seeding |
 | `backfill-pii-encryption.ts` | PII encryption backfill |
-| `import-asof-associados-json.ts` | JSON import utility |
+| `import-asof-associados-json.ts` | Importa associados de JSON (array flat, `asof_merged.json`). Uso: `npx tsx scripts/import-asof-associados-json.ts <arquivo> [--apply] [--replace]` |
 | `codex-pre-tool-use-policy.mjs` | Codex hook for Bash command policy |
 | `check-pr-ready.sh` | PR readiness check |
 | `check-scope.sh` | Scope validation |

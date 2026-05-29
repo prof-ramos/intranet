@@ -54,7 +54,7 @@ describe('dashboard queries', () => {
     dbMock.setSelectResult([{ brasil: 0, exterior: 0 }]);
   });
 
-  it('counts Brasil, Brazil and null/blank as nacional', async () => {
+  it('counts location using assignment type before falling back to country', async () => {
     await countActiveAssociatesByLocation();
 
     const selectShape = dbMock.lastSelectShape as Record<string, SQL>;
@@ -62,13 +62,18 @@ describe('dashboard queries', () => {
     const exteriorSql = compileSql(selectShape.exterior);
 
     expect(brasilSql).toContain('count(*) filter');
+    expect(brasilSql).toContain('coalesce(');
+    expect(brasilSql).toContain('::text');
+    expect(brasilSql).toContain("= 'nacional'");
     expect(brasilSql).toContain(' is null');
     expect(brasilSql).toContain('nullif(btrim(');
     expect(brasilSql).toContain("in ('brasil', 'brazil')");
 
     expect(exteriorSql).toContain('count(*) filter');
-    expect(exteriorSql).toContain('not (');
-    expect(exteriorSql).toContain("in ('brasil', 'brazil')");
+    expect(exteriorSql).toContain('coalesce(');
+    expect(exteriorSql).toContain('::text');
+    expect(exteriorSql).toContain("= 'exterior'");
+    expect(dbMock._selectChain.leftJoin).toHaveBeenCalled();
   });
 
   it('normalizes Brazil aliases when grouping top regions', async () => {
