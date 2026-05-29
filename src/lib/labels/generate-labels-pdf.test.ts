@@ -38,9 +38,9 @@ describe('Gabarito Físico (getLabelPosition)', () => {
   it('posição da última etiqueta da primeira página', () => {
     const pos = getLabelPosition(preset, labelsPerPage - 1);
     expect(pos.pageIndex).toBe(0);
-    expect(pos.indexOnPage).toBe(19);
-    expect(pos.col).toBe(1);
-    expect(pos.row).toBe(9);
+    expect(pos.indexOnPage).toBe(labelsPerPage - 1);
+    expect(pos.col).toBe((labelsPerPage - 1) % preset.grid.columns);
+    expect(pos.row).toBe(Math.floor((labelsPerPage - 1) / preset.grid.columns));
   });
 
   it('primeira etiqueta da segunda página', () => {
@@ -98,7 +98,7 @@ describe('generateLabelsPdf', () => {
     const items = Array.from({ length: 600 }).map((_, i) => ({ id: String(i) }));
     const pdfBytes = await generateLabelsPdf({ preset, items });
     const doc = await PDFDocument.load(pdfBytes);
-    // 600 etiquetas / 20 = 30 páginas
-    expect(doc.getPageCount()).toBe(30);
+    const expectedPages = Math.ceil(600 / labelsPerPage);
+    expect(doc.getPageCount()).toBe(expectedPages);
   });
 });
