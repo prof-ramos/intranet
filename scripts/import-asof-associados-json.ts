@@ -5,12 +5,7 @@ import postgres from 'postgres';
 
 type RawAssociate = Record<string, unknown>;
 
-type SourceFile = {
-  metadados?: {
-    total_registros?: number;
-  };
-  associados?: RawAssociate[];
-};
+type SourceFile = RawAssociate[];
 
 type FunctionalStatus = 'ativo' | 'aposentado' | 'cedido' | 'em_licenca';
 type AssociationStatus = 'ativo' | 'inativo';
@@ -86,7 +81,9 @@ function functionalStatus(row: RawAssociate): FunctionalStatus {
   const lotacao = stringValue(row.lotacao)?.toUpperCase() ?? '';
   const origem = stringValue(row.origem)?.toUpperCase() ?? '';
 
-  if (stringValue(row.licenca) || stringValue(row.data_licenca)) return 'em_licenca';
+  const licencas = Array.isArray(row.licencas) ? row.licencas : [];
+  const licenca = licencas[0] as Record<string, unknown> | undefined;
+  if (stringValue(licenca?.tipo) || stringValue(licenca?.data_licenca)) return 'em_licenca';
   if (lotacao.includes('APOSENTAD')) return 'aposentado';
   if (lotacao.includes('CEDID') || origem.includes('OUTROS')) return 'cedido';
   return 'ativo';
@@ -113,7 +110,7 @@ function toAssociate(row: RawAssociate, index: number) {
   const associationStatus: AssociationStatus = isAssociated ? 'ativo' : 'inativo';
   const contributionStatus: ContributionStatus = isAssociated ? 'em_dia' : 'pendente_migracao';
   const sourcePayload = {
-    origem: 'asof_associados.json',
+    origem: 'asof_merged.json',
     row,
   };
 
@@ -136,33 +133,39 @@ function toAssociate(row: RawAssociate, index: number) {
     contribution_status: contributionStatus,
     address: addressValue(row),
     secondary_email: null,
-    internal_notes: stringValue(row.data_cancelamento)
-      ? `Cancelamento no sistema legado: ${stringValue(row.data_cancelamento)}`
-      : null,
+    internal_notes: (() => {
+      const licencas = Array.isArray(row.licencas) ? row.licencas : [];
+      const dataCancelamento = stringValue(
+        (licencas[0] as Record<string, unknown> | undefined)?.data_cancelamento,
+      );
+      return dataCancelamento ? `Cancelamento no sistema legado: ${dataCancelamento}` : null;
+    })(),
     birth_date: dateValue(row.data_nascimento),
-    class_pattern: stringValue(row.classe_padrao),
+    class_pattern: (() => {
+      const classe = stringValue(row.classe);
+      const padrao = stringValue(row.padrao);
+      if (classe && padrao) return `${classe} - ${padrao}`;
+      return classe ?? padrao ?? null;
+    })(),
     source_payload: JSON.stringify(sourcePayload),
   };
 }
 
 async function loadSource(filePath: string) {
   const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
-  const parsed = JSON.parse(await fs.readFile(absolutePath, 'utf8')) as SourceFile;
+  const parsed = JSON.parse(await fs.readFile(absolutePath, 'utf8'));
 
-  if (!Array.isArray(parsed.associados)) {
-    throw new Error('JSON inválido: campo "associados" não é uma lista.');
+  if (!Array.isArray(parsed)) {
+    throw new Error('JSON inválido: arquivo deve conter uma lista de associados.');
   }
 
-  if (
-    typeof parsed.metadados?.total_registros === 'number' &&
-    parsed.metadados.total_registros !== parsed.associados.length
-  ) {
-    throw new Error(
-      `Total divergente: metadados=${parsed.metadados.total_registros}, associados=${parsed.associados.length}.`,
-    );
-  }
+  parsed.forEach((item, index) => {
+    if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+      throw new Error(`JSON inválido: associado no índice ${index} deve ser um objeto.`);
+    }
+  });
 
-  return parsed.associados;
+  return parsed as SourceFile;
 }
 
 async function main() {

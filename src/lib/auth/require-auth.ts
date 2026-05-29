@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { eq } from 'drizzle-orm';
 import { getSession } from '@/lib/auth/session';
-import { type AuthUser } from '@/lib/auth/config';
+import { type AuthUser, isSkipAuthEnabled } from '@/lib/auth/config';
 import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
 import { toSafeErrorLog, ensureError } from '@/lib/error-log';
@@ -33,6 +33,16 @@ export const requireAuth = cache(async (): Promise<AuthUser> => {
   const session = await getSession();
   if (!session?.isLoggedIn) {
     redirect('/login');
+  }
+
+  if (isSkipAuthEnabled()) {
+    return {
+      userId: session.userId,
+      name: session.name,
+      email: session.email,
+      role: session.role,
+      mustChangePassword: session.mustChangePassword,
+    };
   }
 
   let admin:

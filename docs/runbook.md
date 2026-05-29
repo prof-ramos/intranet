@@ -38,7 +38,7 @@ Em preview, nao compartilhar envs gerais de banco com producao.
 
 Nunca reutilize segredos expostos em chat, logs ou arquivos temporarios.
 
-## 3. Migration E Seed
+## 3. Migration, Seed E Importação De Associados
 
 ```bash
 ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
@@ -46,6 +46,15 @@ npm run db:seed
 ```
 
 O seed cria ou atualiza o admin inicial em `admins`, grava `password_hash`, define `role=admin`, `is_active=true` e `must_change_password=true`.
+
+### 3.1 Associados
+
+No ambiente Neon já populado para o go-live, o banco contém **1662 Oficiais de Chancelaria** importados do sistema legado, sendo **440 associados** à ASOF. Em um PostgreSQL novo ou restaurado sem dump operacional, importe primeiro o arquivo legado controlado antes de assumir esses números:
+
+```bash
+npx tsx scripts/import-asof-associados-json.ts <arquivo-legado.json> --apply
+node --env-file=.env.local scripts/seed-assignments-from-import.ts --apply
+```
 
 ## 4. Validacao Tecnica
 

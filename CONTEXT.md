@@ -205,8 +205,8 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 
 ### Módulo de Associados
 
-1. **PII Criptografada**: CPF, SIAPE, email, telefone, endereço e WhatsApp são criptografados em repouso (AES-256-GCM) com índices cegos HMAC-SHA-256 para busca.
-2. **Máscara por Role**: Campos sensíveis são descriptografados apenas para `admin` e `diretoria`; `secretaria` vê máscaras.
+1. **Acesso Operacional a PII**: Todos os usuários da intranet são funcionários, secretaria ou diretoria da ASOF e precisam de acesso integral aos dados cadastrais dos associados para executar rotinas administrativas, financeiras, jurídicas e de atendimento. A política do produto é visibilidade completa para usuários autenticados e autorizados, sem máscara por role dentro da intranet.
+2. **Armazenamento de PII**: A visibilidade integral no app não autoriza exposição fora da intranet. Plaintext em campos legados/importados é uma exceção temporária do go-live, limitada ao banco Neon da intranet e sob responsabilidade da ASOF + manutenção técnica até a fase de hardening pós-go-live (alvo: 90 dias após produção). Durante a exceção, manter controle de acesso ao Neon, backups protegidos, auditoria, menor privilégio e `sanitizePii()` em logs; a remediação é recriptografar campos com `encryptPii()`, recriar índices de busca com `piiBlindIndex()`, remover dumps plaintext e manter novas rotas de escrita no padrão criptografado quando suportado.
 3. **Importação em Lote**: Associados podem ser importados via CSV com upsert por CPF/SIAPE.
 
 ### Autenticação e Autorização
