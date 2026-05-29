@@ -29,8 +29,10 @@ test.describe('Associados', () => {
   test('edit associate page loads with pre-filled data', async ({ page, loginAsAdmin }) => {
     await loginAsAdmin();
     await page.goto('/app/associados');
-    // Click edit icon (Pencil) in the actions column
-    await page.locator('tr:has-text("João da Silva") a[aria-label^="Editar"]').click();
+    // The edit button is opacity-0 and revealed on group-hover; hover the row first.
+    const editRow = page.locator('tr:has-text("João da Silva")');
+    await editRow.hover();
+    await editRow.locator('a[aria-label^="Editar"]').click();
     await expect(page).toHaveURL(/\/app\/associados\/\d+\/editar/);
     await expect(page.locator('h1')).toContainText('Editar associado');
     await expect(page.locator('input[name="fullName"]')).toHaveValue('João da Silva');
@@ -40,7 +42,9 @@ test.describe('Associados', () => {
   test('updates associate and redirects to profile', async ({ page, loginAsAdmin }) => {
     await loginAsAdmin();
     await page.goto('/app/associados');
-    await page.locator('tr:has-text("João da Silva") a[aria-label^="Editar"]').click();
+    const editRow = page.locator('tr:has-text("João da Silva")');
+    await editRow.hover();
+    await editRow.locator('a[aria-label^="Editar"]').click();
     await expect(page).toHaveURL(/\/app\/associados\/\d+\/editar/);
 
     await page.fill('input[name="fullName"]', 'João da Silva Atualizado');
