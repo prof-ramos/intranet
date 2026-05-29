@@ -49,7 +49,7 @@ export default async function PrivacidadePage() {
             style={{ backgroundColor: navy }}
           >
             <Download size={16} aria-hidden="true" />
-            Solicitar meus dados
+            Baixar meus dados
           </button>
         </form>
       </section>
