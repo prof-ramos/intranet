@@ -37,7 +37,7 @@ describe('AssinafyClient', () => {
       fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify(mockResponse), { status: 200 }));
 
       const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
-      const pdf = Buffer.from('fake-pdf');
+      const pdf = new Uint8Array([1,2,3]);
       const result = await client.uploadDocument(pdf, 'test.pdf');
 
       expect(fetchSpy).toHaveBeenCalledWith(
@@ -54,7 +54,7 @@ describe('AssinafyClient', () => {
       fetchSpy.mockResolvedValueOnce(new Response('<html>Bad Gateway</html>', { status: 502 }));
 
       const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
-      await expect(client.uploadDocument(Buffer.from('x'), 'f.pdf')).rejects.toThrow(AssinafyError);
+      await expect(client.uploadDocument(new Uint8Array([1]), 'f.pdf')).rejects.toThrow(AssinafyError);
     });
 
     it('throws AssinafyError on API error response', async () => {
@@ -63,7 +63,7 @@ describe('AssinafyClient', () => {
       );
 
       const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
-      await expect(client.uploadDocument(Buffer.from('x'), 'f.pdf')).rejects.toThrow('Invalid file');
+      await expect(client.uploadDocument(new Uint8Array([1]), 'f.pdf')).rejects.toThrow('Invalid file');
     });
   });
 

@@ -104,7 +104,7 @@ export class AssinafyClient {
     return body as T;
   }
 
-  async uploadDocument(pdf: Buffer, filename: string) {
+  async uploadDocument(pdf: Uint8Array, filename: string) {
     const form = new FormData();
     form.set('file', new Blob([pdf], { type: 'application/pdf' }), filename);
 
