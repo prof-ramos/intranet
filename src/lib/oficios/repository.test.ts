@@ -31,6 +31,13 @@ const { dbMock, MOCK_RESULT } = vi.hoisted(() => {
     updatedBy: 1,
     createdAt: new Date('2026-05-15T10:00:00.000Z'),
     updatedAt: new Date('2026-05-15T11:00:00.000Z'),
+    assinafyDocumentId: null,
+    assinafyStatus: null,
+    assinafyAssignmentId: null,
+    assinafySignerId: null,
+    assinafySentAt: null,
+    assinafySignedAt: null,
+    assinafyError: null,
   };
 
   // Shared resolve values per chain type

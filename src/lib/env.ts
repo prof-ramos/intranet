@@ -50,6 +50,10 @@ export const envSchema = z
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).optional(),
     CRON_SECRET: optionalNonEmptyString,
     ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY: optionalSecretString,
+    ASSINAFY_API_KEY: optionalString,
+    ASSINAFY_ACCOUNT_ID: optionalString,
+    ASSINAFY_WEBHOOK_SECRET: optionalNonEmptyString,
+    ASSINAFY_BASE_URL: optionalUrl,
     ENCRYPTION_MASTER_KEY: optionalSecretString,
     TRUSTED_PROXY_COUNT: z.preprocess(
       emptyStringToUndefined,

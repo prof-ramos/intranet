@@ -31,6 +31,13 @@ const BASE_OFFICIAL_LETTER: OfficialLetter = {
   updatedBy: 1,
   createdAt: new Date('2026-05-13T10:00:00.000Z'),
   updatedAt: new Date('2026-05-13T11:00:00.000Z'),
+  assinafyDocumentId: null,
+  assinafyStatus: null,
+  assinafyAssignmentId: null,
+  assinafySignerId: null,
+  assinafySentAt: null,
+  assinafySignedAt: null,
+  assinafyError: null,
 };
 
 vi.mock('@/lib/db', () => ({
