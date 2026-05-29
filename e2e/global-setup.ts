@@ -103,6 +103,8 @@ async function warmupJitRoutes() {
     if (editHref) {
       // Direct goto compiles the [id]/editar route without needing hover.
       await page.goto(`${E2E_BASE_URL}${editHref}`, { timeout: 60_000 });
+    } else {
+      console.warn('[warmupJitRoutes] No edit links found; /editar route not warmed');
     }
 
     // Compile the financeiro route used in other specs.

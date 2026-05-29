@@ -66,6 +66,7 @@ for (const d of data) {
       horizontal: cmToPt(${d.gapH}),
       vertical: cmToPt(${d.gapV}),
     },
+    // Padding and text are uniform across all presets; calibrate per-label if needed after print testing.
     padding: {
       top: 10,
       right: 10,
@@ -83,5 +84,10 @@ for (const d of data) {
 
 output += `};\n`;
 
-writeFileSync('src/lib/labels/presets.ts', output);
-console.log('Generated src/lib/labels/presets.ts successfully.');
+try {
+  writeFileSync('src/lib/labels/presets.ts', output, 'utf-8');
+  console.log('Generated src/lib/labels/presets.ts successfully.');
+} catch (error) {
+  console.error('Failed to write presets file:', error);
+  process.exit(1);
+}

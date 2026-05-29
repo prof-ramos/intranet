@@ -4,7 +4,7 @@ export interface LabelPreset {
   page: {
     width: number; // pt
     height: number; // pt
-    unit?: 'pt';
+    unit: 'pt';
   };
   margins: {
     top: number; // pt
