@@ -5,6 +5,9 @@ import { requireAuth } from '@/lib/auth/require-auth';
 let mockSession: import('@/lib/auth/config').SessionData | null = null;
 let mockDbError: Error | null = null;
 const mockHeaders = new Map<string, string>();
+const authConfigMock = vi.hoisted(() => ({
+  isSkipAuthEnabled: vi.fn(() => false),
+}));
 
 vi.mock('next/headers', () => ({
   headers: vi.fn(() => Promise.resolve(mockHeaders)),
@@ -33,6 +36,11 @@ vi.mock('@/lib/auth/session', () => ({
   getSession: vi.fn(() => Promise.resolve(mockSession)),
 }));
 
+vi.mock('@/lib/auth/config', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/auth/config')>()),
+  isSkipAuthEnabled: authConfigMock.isSkipAuthEnabled,
+}));
+
 vi.mock('@/lib/db', () => ({
   db: {
     select: vi.fn(() => ({
@@ -56,6 +64,7 @@ beforeEach(() => {
   mockDbError = null;
   mockDbAdmin = null;
   mockHeaders.clear();
+  authConfigMock.isSkipAuthEnabled.mockReturnValue(false);
 });
 
 describe('requireAuth', () => {
@@ -132,6 +141,27 @@ describe('requireAuth', () => {
     };
 
     await expect(requireAuth()).rejects.toThrow('NEXT_REDIRECT:/login');
+  });
+
+  it('returns the session-derived user without DB lookup when skip-auth is enabled', async () => {
+    authConfigMock.isSkipAuthEnabled.mockReturnValue(true);
+    mockSession = {
+      userId: 42,
+      name: 'Dev User',
+      email: 'dev@asof.local',
+      role: 'admin',
+      mustChangePassword: false,
+      isLoggedIn: true,
+    };
+    mockDbAdmin = null;
+
+    await expect(requireAuth()).resolves.toEqual({
+      userId: 42,
+      name: 'Dev User',
+      email: 'dev@asof.local',
+      role: 'admin',
+      mustChangePassword: false,
+    });
   });
 
   it('returns the authenticated user from the database (not stale session data)', async () => {

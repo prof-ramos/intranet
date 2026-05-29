@@ -206,7 +206,7 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 ### Módulo de Associados
 
 1. **Acesso Operacional a PII**: Todos os usuários da intranet são funcionários, secretaria ou diretoria da ASOF e precisam de acesso integral aos dados cadastrais dos associados para executar rotinas administrativas, financeiras, jurídicas e de atendimento. A política do produto é visibilidade completa para usuários autenticados e autorizados, sem máscara por role dentro da intranet.
-2. **Armazenamento de PII**: A decisão de exibir PII integralmente no app não elimina o risco de armazenamento em repouso. CPF, SIAPE, email, telefone, endereço e WhatsApp podem estar em plaintext no banco para viabilizar a operação atual, mas isso é um risco operacional aceito e deve ser compensado por controle de acesso ao Neon, backups protegidos, auditoria, sanitização de logs e política de menor privilégio fora da aplicação.
+2. **Armazenamento de PII**: A visibilidade integral no app não autoriza exposição fora da intranet. Plaintext em campos legados/importados é uma exceção temporária do go-live, limitada ao banco Neon da intranet e sob responsabilidade da ASOF + manutenção técnica até a fase de hardening pós-go-live (alvo: 90 dias após produção). Durante a exceção, manter controle de acesso ao Neon, backups protegidos, auditoria, menor privilégio e `sanitizePii()` em logs; a remediação é recriptografar campos com `encryptPii()`, recriar índices de busca com `piiBlindIndex()`, remover dumps plaintext e manter novas rotas de escrita no padrão criptografado quando suportado.
 3. **Importação em Lote**: Associados podem ser importados via CSV com upsert por CPF/SIAPE.
 
 ### Autenticação e Autorização

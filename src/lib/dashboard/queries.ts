@@ -60,8 +60,8 @@ export const countActiveAssociatesByLocation = unstable_cache(
 
     const rows = await db
       .select({
-        brasil: sql<number>`count(*) filter (where ${locationType} = 'nacional')::int`,
-        exterior: sql<number>`count(*) filter (where ${locationType} = 'exterior')::int`,
+        brasil: sql<number>`count(distinct ${associates.id}) filter (where ${locationType} = 'nacional')::int`,
+        exterior: sql<number>`count(distinct ${associates.id}) filter (where ${locationType} = 'exterior')::int`,
       })
       .from(associates)
       .leftJoin(assignments, eq(assignments.name, associates.assignment))

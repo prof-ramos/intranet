@@ -21,17 +21,19 @@ type FlatResult = {
   type: 'associate' | 'activity';
 };
 
+interface ResultItemProps {
+  item: FlatResult;
+  index: number;
+  isFocused: boolean;
+  onSelect: (href: string) => void;
+}
+
 const ResultItem = memo(function ResultItem({
   item,
   index,
   isFocused,
   onSelect,
-}: {
-  item: FlatResult;
-  index: number;
-  isFocused: boolean;
-  onSelect: (href: string) => void;
-}) {
+}: ResultItemProps) {
   const isAssociate = item.type === 'associate';
   const initials = item.title
     .split(' ')
@@ -79,10 +81,14 @@ const ResultItem = memo(function ResultItem({
       </div>
     </button>
   );
-}, (prevProps, nextProps) => {
-  // Custom comparison: only re-render if focus state or item changes
-  return prevProps.isFocused === nextProps.isFocused && prevProps.item.id === nextProps.item.id;
-});
+}, (prevProps, nextProps) =>
+  prevProps.isFocused === nextProps.isFocused &&
+  prevProps.index === nextProps.index &&
+  prevProps.item.id === nextProps.item.id &&
+  prevProps.item.title === nextProps.item.title &&
+  prevProps.item.subtitle === nextProps.item.subtitle &&
+  prevProps.item.href === nextProps.item.href &&
+  prevProps.onSelect === nextProps.onSelect);
 
 export function GlobalSearch() {
   const router = useRouter();

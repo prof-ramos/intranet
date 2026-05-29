@@ -159,6 +159,12 @@ async function loadSource(filePath: string) {
     throw new Error('JSON inválido: arquivo deve conter uma lista de associados.');
   }
 
+  parsed.forEach((item, index) => {
+    if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+      throw new Error(`JSON inválido: associado no índice ${index} deve ser um objeto.`);
+    }
+  });
+
   return parsed as SourceFile;
 }
 

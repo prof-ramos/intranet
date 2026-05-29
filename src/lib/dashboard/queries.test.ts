@@ -61,7 +61,7 @@ describe('dashboard queries', () => {
     const brasilSql = compileSql(selectShape.brasil);
     const exteriorSql = compileSql(selectShape.exterior);
 
-    expect(brasilSql).toContain('count(*) filter');
+    expect(brasilSql).toContain('count(distinct');
     expect(brasilSql).toContain('coalesce(');
     expect(brasilSql).toContain('::text');
     expect(brasilSql).toContain("= 'nacional'");
@@ -69,7 +69,7 @@ describe('dashboard queries', () => {
     expect(brasilSql).toContain('nullif(btrim(');
     expect(brasilSql).toContain("in ('brasil', 'brazil')");
 
-    expect(exteriorSql).toContain('count(*) filter');
+    expect(exteriorSql).toContain('count(distinct');
     expect(exteriorSql).toContain('coalesce(');
     expect(exteriorSql).toContain('::text');
     expect(exteriorSql).toContain("= 'exterior'");
