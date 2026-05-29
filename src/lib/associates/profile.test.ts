@@ -1,10 +1,40 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   formatAssociateDate,
-  getAssociateStatusLabel,
+  getAssociateProfile,
   initialsFromName,
   yearsSinceDate,
-} from '@/lib/associates/service';
+} from '@/lib/associates/profile';
+import { getAssociateStatusLabel } from '@/lib/associates/service';
+
+const mockFindAssociateById = vi.fn();
+const mockFindLinkedActivities = vi.fn();
+const mockGetAssociateAuditHistory = vi.fn();
+const mockGetPaymentHistoryForAssociate = vi.fn();
+const mockGetConsultationsByAssociate = vi.fn();
+
+vi.mock('./repository', () => ({
+  findAssociateById: (...args: unknown[]) => mockFindAssociateById(...args),
+  findLinkedActivities: (...args: unknown[]) => mockFindLinkedActivities(...args),
+}));
+
+vi.mock('@/lib/audit/queries', () => ({
+  getAssociateAuditHistory: (...args: unknown[]) => mockGetAssociateAuditHistory(...args),
+}));
+
+vi.mock('@/lib/finance/repository', () => ({
+  getPaymentHistoryForAssociate: (...args: unknown[]) => mockGetPaymentHistoryForAssociate(...args),
+}));
+
+vi.mock('@/lib/juridico/repository', () => ({
+  getConsultationsByAssociate: (...args: unknown[]) => mockGetConsultationsByAssociate(...args),
+}));
+
+vi.mock('./lgpd', () => ({
+  toAssociateProfileDTO: (a: unknown) => a,
+  toActivityDTO: (a: unknown) => a,
+  canViewSensitiveFields: (role: string) => role === 'admin' || role === 'diretoria',
+}));
 
 describe('associates/profile helpers', () => {
   it('formats date values for pt-BR display', () => {
@@ -29,5 +59,114 @@ describe('associates/profile helpers', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('getAssociateProfile', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFindLinkedActivities.mockResolvedValue([]);
+    mockGetAssociateAuditHistory.mockResolvedValue([]);
+    mockGetPaymentHistoryForAssociate.mockResolvedValue([]);
+    mockGetConsultationsByAssociate.mockResolvedValue([]);
+  });
+
+  it('returns null when associate not found', async () => {
+    mockFindAssociateById.mockResolvedValue(null);
+
+    const result = await getAssociateProfile(999, 'admin');
+
+    expect(result).toBeNull();
+    expect(mockFindLinkedActivities).not.toHaveBeenCalled();
+  });
+
+  it('returns view model with timeline and linked activities', async () => {
+    mockFindAssociateById.mockResolvedValue({
+      id: 1,
+      fullName: 'Alice',
+      assignment: 'SERE',
+      locationCity: 'Brasília',
+      locationCountry: 'Brasil',
+      associationStatus: 'ativo',
+      functionalStatus: 'ativo',
+      associationCategory: 'A1',
+      joinedAt: '2015-06-01',
+      assignmentStartDate: '2018-01-01',
+      updatedAt: '2024-01-01',
+    });
+    mockFindLinkedActivities.mockResolvedValue([
+      { id: 1, title: 'Task', status: 'a_fazer', dueDate: '2024-12-01' },
+    ]);
+
+    const result = await getAssociateProfile(1, 'admin');
+
+    expect(result).not.toBeNull();
+    expect(result!.isAssociationActive).toBe(true);
+    expect(result!.isFunctionalActive).toBe(true);
+    expect(result!.timeline).toHaveLength(3);
+    expect(result!.linkedActivities).toHaveLength(1);
+    expect(result!.location).toBe('Brasília / Brasil');
+    expect(result!.showSensitive).toBe(true);
+  });
+
+  it('adds audit, payment, and juridico events to the profile timeline', async () => {
+    mockFindAssociateById.mockResolvedValue({
+      id: 1,
+      fullName: 'Alice',
+      assignment: null,
+      locationCity: null,
+      locationCountry: null,
+      associationStatus: 'ativo',
+      functionalStatus: 'ativo',
+      associationCategory: null,
+      joinedAt: null,
+      assignmentStartDate: null,
+      updatedAt: '2024-01-01',
+    });
+    mockGetAssociateAuditHistory.mockResolvedValue([
+      {
+        action: 'associate_updated',
+        changes: { new: { assignment: 'SERE' } },
+        createdAt: '2024-02-01',
+      },
+    ]);
+    mockGetPaymentHistoryForAssociate.mockResolvedValue([
+      {
+        month: 3,
+        year: 2024,
+        status: 'atrasado',
+        paidAt: null,
+        updatedAt: '2024-03-01',
+      },
+    ]);
+    mockGetConsultationsByAssociate.mockResolvedValue([
+      {
+        internalNumber: 'JUR-1',
+        title: 'Consulta teste',
+        status: 'respondida',
+        createdAt: '2024-04-01',
+        lastInteractionAt: null,
+      },
+    ]);
+
+    const result = await getAssociateProfile(1, 'secretaria');
+
+    expect(result).not.toBeNull();
+    expect(result!.timeline.map((item) => item.event)).toEqual([
+      'Consulta JUR-1',
+      'Mensalidade 03/2024',
+      'Cadastro atualizado',
+      'Última atualização cadastral',
+    ]);
+    expect(result!.timeline[0]).toMatchObject({
+      detail: 'Consulta teste — Respondida',
+      tone: 'pos',
+    });
+    expect(result!.timeline[1]).toMatchObject({
+      detail: 'Atrasado',
+      tone: 'neg',
+    });
+    expect(result!.showSensitive).toBe(false);
+    expect(result!.consultationCount).toBe(1);
   });
 });

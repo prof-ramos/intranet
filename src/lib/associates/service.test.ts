@@ -3,13 +3,11 @@ import {
   getAssociatesListPage,
   getAssociateForEdit,
   updateAssociateData,
-  getAssociateProfile,
   getAssociateStatusLabel,
 } from './service';
 
 const mockFindAssociatesPaginated = vi.fn();
 const mockFindAssociateById = vi.fn();
-const mockFindLinkedActivities = vi.fn();
 const mockUpdateAssociateById = vi.fn();
 const mockEmitDomainEvent = vi.fn();
 const mockTransaction = vi.fn();
@@ -24,7 +22,6 @@ vi.mock('@/lib/db', () => ({
 vi.mock('./repository', () => ({
   findAssociatesPaginated: (...args: unknown[]) => mockFindAssociatesPaginated(...args),
   findAssociateById: (...args: unknown[]) => mockFindAssociateById(...args),
-  findLinkedActivities: (...args: unknown[]) => mockFindLinkedActivities(...args),
   updateAssociateById: (...args: unknown[]) => mockUpdateAssociateById(...args),
 }));
 
@@ -36,22 +33,7 @@ vi.mock('@/lib/audit/service', () => ({
   logDataAccess: (...args: unknown[]) => mockLogDataAccess(...args),
 }));
 
-vi.mock('@/lib/audit/queries', () => ({
-  getAssociateAuditHistory: vi.fn().mockResolvedValue([]),
-}));
-
-vi.mock('@/lib/finance/repository', () => ({
-  getPaymentHistoryForAssociate: vi.fn().mockResolvedValue([]),
-  getPaymentHistoryForAssociateQuery: vi.fn().mockResolvedValue([]),
-}));
-
-vi.mock('@/lib/juridico/repository', () => ({
-  getConsultationsByAssociate: vi.fn().mockResolvedValue([]),
-}));
-
 vi.mock('./lgpd', () => ({
-  toAssociateProfileDTO: (a: unknown) => a,
-  toActivityDTO: (a: unknown) => a,
   canViewSensitiveFields: (role: string) => role === 'admin' || role === 'diretoria',
   maskCpf: (cpf: string | null) => (cpf ? `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**` : null),
   maskSiape: (siape: string | null) =>
@@ -69,19 +51,6 @@ vi.mock('@/lib/crypto/pii', () => ({
     if (ciphertext) return atob(ciphertext.split('.')[3]);
     return plaintext ?? null;
   },
-}));
-
-vi.mock('@/lib/utils/date', () => ({
-  formatLongDate: (v: string | null) => v,
-  yearsSinceDate: () => 5,
-}));
-
-vi.mock('@/lib/utils/initials', () => ({
-  initialsFromName: (name: string) =>
-    name
-      .split(' ')
-      .map((n) => n[0])
-      .join(''),
 }));
 
 const baseAssociate = {
@@ -290,45 +259,6 @@ describe('updateAssociateData', () => {
     });
 
     expect(mockEmitDomainEvent).not.toHaveBeenCalled();
-  });
-});
-
-describe('getAssociateProfile', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('returns null when associate not found', async () => {
-    mockFindAssociateById.mockResolvedValue(null);
-    const result = await getAssociateProfile(999, 'admin');
-    expect(result).toBeNull();
-  });
-
-  it('returns view model with timeline and activities', async () => {
-    mockFindAssociateById.mockResolvedValue({
-      id: 1,
-      fullName: 'Alice',
-      assignment: 'SERE',
-      locationCity: 'Brasília',
-      locationCountry: 'Brasil',
-      associationStatus: 'ativo',
-      functionalStatus: 'ativo',
-      associationCategory: 'A1',
-      joinedAt: '2015-06-01',
-      assignmentStartDate: '2018-01-01',
-      updatedAt: '2024-01-01',
-    });
-    mockFindLinkedActivities.mockResolvedValue([
-      { id: 1, title: 'Task', status: 'a_fazer', dueDate: '2024-12-01' },
-    ]);
-
-    const result = await getAssociateProfile(1, 'admin');
-    expect(result).not.toBeNull();
-    expect(result!.isAssociationActive).toBe(true);
-    expect(result!.isFunctionalActive).toBe(true);
-    expect(result!.timeline).toHaveLength(3);
-    expect(result!.linkedActivities).toHaveLength(1);
-    expect(result!.location).toBe('Brasília / Brasil');
   });
 });
 
