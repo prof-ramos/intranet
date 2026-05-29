@@ -1,14 +1,38 @@
 import { and, eq, lte, notExists, like } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { activities, admins, associates } from '@/lib/db/schema';
+import { activities, admins, associates, auditLogs, type NewAuditLog } from '@/lib/db/schema';
+import { sanitizePiiValue } from '@/lib/sanitize-pii';
 
 const MAX_RETENTION_QUERY_LIMIT = 100;
+const RETENTION_YEARS = 5;
+const REVIEW_SLA_DAYS = 15;
+const TITLE_PREFIX = 'Revisar Retenção LGPD (Prazo Expirado) - ';
 
-export async function checkAndEmitLgpdRetentionActivities({ limit }: { limit: number }) {
+function yearsAgo(from: Date, years: number) {
+  const date = new Date(from);
+  date.setFullYear(date.getFullYear() - years);
+  return date;
+}
+
+function daysFrom(from: Date, days: number) {
+  const date = new Date(from);
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
+export interface CheckLgpdRetentionActivitiesInput {
+  limit: number;
+  now?: Date;
+}
+
+export async function checkAndEmitLgpdRetentionActivities({
+  limit,
+  now = new Date(),
+}: CheckLgpdRetentionActivitiesInput) {
   const validatedLimit = Math.min(Math.max(Math.floor(limit), 1), MAX_RETENTION_QUERY_LIMIT);
 
   return db.transaction(async (tx) => {
-    // Encontrar o primeiro admin ativo para ser o "createdBy" das atividades geradas pelo sistema
+    // Use a real active admin as the actor because activities require createdBy.
     const [systemAdmin] = await tx
       .select({ id: admins.id })
       .from(admins)
@@ -20,21 +44,18 @@ export async function checkAndEmitLgpdRetentionActivities({ limit }: { limit: nu
       throw new Error('No active admin found to create LGPD activities');
     }
 
-    // Define a data limite: 5 anos atrás
-    const fiveYearsAgo = new Date();
-    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+    const retentionCutoff = yearsAgo(now, RETENTION_YEARS);
+    const dueDate = daysFrom(now, REVIEW_SLA_DAYS).toISOString();
 
-    const titlePrefix = 'Revisar Retenção LGPD (Prazo Expirado) - ';
-
-    // Busca associados inativos há mais de 5 anos
-    // e que ainda NÃO possuem uma atividade de retenção pendente
+    // ADR 006 forbids automatic erasure here. This watchdog only creates
+    // PII-free review activities for inactive associates whose retention expired.
     const expiredAssociates = await tx
       .select({ id: associates.id })
       .from(associates)
       .where(
         and(
           eq(associates.associationStatus, 'inativo'),
-          lte(associates.updatedAt, fiveYearsAgo),
+          lte(associates.updatedAt, retentionCutoff),
           notExists(
             tx
               .select({ id: activities.id })
@@ -43,7 +64,7 @@ export async function checkAndEmitLgpdRetentionActivities({ limit }: { limit: nu
                 and(
                   eq(activities.associateId, associates.id),
                   eq(activities.status, 'a_fazer'),
-                  like(activities.title, `${titlePrefix}%`),
+                  like(activities.title, `${TITLE_PREFIX}%`),
                 ),
               ),
           ),
@@ -52,24 +73,60 @@ export async function checkAndEmitLgpdRetentionActivities({ limit }: { limit: nu
       .limit(validatedLimit);
 
     if (expiredAssociates.length === 0) {
+      await tx.insert(auditLogs).values({
+        action: 'lgpd_retention_scan',
+        entityType: 'activity',
+        entityId: null,
+        performedBy: systemAdmin.id,
+        changes: null,
+        metadata: sanitizePiiValue({
+          actorType: 'system',
+          retentionYears: RETENTION_YEARS,
+          reviewSlaDays: REVIEW_SLA_DAYS,
+          limit: validatedLimit,
+          retentionCutoff: retentionCutoff.toISOString(),
+          candidatesFound: 0,
+          activitiesCreated: 0,
+        }) as NewAuditLog['metadata'],
+      });
       return { createdCount: 0 };
     }
 
-    // Cria as atividades
     const newActivities = expiredAssociates.map((associate) => ({
-      title: `${titlePrefix}Associado ID ${associate.id}`,
-      description: `Prazo de guarda (5 anos de inatividade) do associado ID ${associate.id} expirou. Aprovar anonimização? Revise de acordo com o Estatuto da ASOF.`,
+      title: `${TITLE_PREFIX}Associado ID ${associate.id}`,
+      description:
+        `Prazo de guarda (${RETENTION_YEARS} anos de inatividade) do associado ID ${associate.id} expirou. ` +
+        'Aprovar anonimização? Revise de acordo com o Estatuto da ASOF e registre eventual recusa com fundamento na LGPD Art. 16, I/IV ou Art. 18 §5º.',
       status: 'a_fazer' as const,
       priority: 'alta' as const,
       associateId: associate.id,
       createdBy: systemAdmin.id,
       tags: ['LGPD', 'Retenção'],
+      dueDate,
     }));
 
     const inserted = await tx
       .insert(activities)
       .values(newActivities)
       .returning({ id: activities.id });
+
+    await tx.insert(auditLogs).values({
+      action: 'lgpd_retention_scan',
+      entityType: 'activity',
+      entityId: null,
+      performedBy: systemAdmin.id,
+      changes: null,
+      metadata: sanitizePiiValue({
+        actorType: 'system',
+        retentionYears: RETENTION_YEARS,
+        reviewSlaDays: REVIEW_SLA_DAYS,
+        limit: validatedLimit,
+        retentionCutoff: retentionCutoff.toISOString(),
+        candidatesFound: expiredAssociates.length,
+        activitiesCreated: inserted.length,
+        activityIds: inserted.map((activity) => activity.id),
+      }) as NewAuditLog['metadata'],
+    });
 
     return { createdCount: inserted.length };
   });
