@@ -100,6 +100,10 @@ else
   log "Starting pg_dump backup without printing connection details."
   pg_dump --no-owner --no-privileges --format=plain --dbname="$DATABASE_BACKUP_URL" | gzip -9 > "$tmp_path"
   gzip -t "$tmp_path"
+  
+  backup_size="$(wc -c <"$tmp_path" | tr -d ' ')"
+  log "Backup complete: ${backup_name} (${backup_size} bytes)"
+  
   mv "$tmp_path" "$backup_path"
   (
     cd "$backup_root"

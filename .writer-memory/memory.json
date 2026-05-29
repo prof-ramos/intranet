@@ -79,9 +79,9 @@
     "atmosphere": "formal-institucional, confiável, acessível, respeitoso com dados sensíveis",
     "constraints": [
       "Nunca expor plaintext PII em logs, erros ou respostas",
-      "Sem RLS no dia 1 — segurança via app server + credenciais PostgreSQL",
+      "Sem RLS no dia 1 — segurança via app server + credenciais PostgreSQL (TODO: evaluate and enable RLS for associados/admin_users in future sprint - see issue #123 for rules, migration, and testing)",
       "E2E usa porta 3001, nunca 3000",
-      "Node 24.x obrigatório",
+      "Node.js 20+ obrigatório",
       "Next.js >= 16.2.6 (sem downgrade)",
       "824+ testes devem passar sempre",
       "Deploy automático via push para main"

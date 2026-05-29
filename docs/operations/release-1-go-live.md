@@ -111,7 +111,9 @@ gzip -t /opt/intranet-backup/asof-intranet-YYYYMMDDTHHMMSSZ.sql.gz
 cd /opt/intranet-backup
 shasum -a 256 -c asof-intranet-YYYYMMDDTHHMMSSZ.sql.gz.sha256
 gunzip -c /opt/intranet-backup/asof-intranet-YYYYMMDDTHHMMSSZ.sql.gz | psql "$RESTORE_DATABASE_URL"
-psql "$RESTORE_DATABASE_URL" -c "select 'admins' as table_name, count(*) from admins union all select 'associates', count(*) from associates union all select 'activities', count(*) from activities union all select 'monthly_payments', count(*) from monthly_payments union all select 'oficios', count(*) from oficios union all select 'audit_logs', count(*) from audit_logs union all select 'notifications', count(*) from notifications;"
+for t in admins associates activities monthly_payments oficios audit_logs notifications; do
+  psql "$RESTORE_DATABASE_URL" -t -c "SELECT '$t' AS table_name, count(*) FROM $t;"
+done
 ```
 
 Nao cole a saida se ela contiver PII. Para evidencia, registre somente os nomes
