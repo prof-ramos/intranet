@@ -10,10 +10,13 @@ vi.mock('@/lib/auth/session', () => ({
   createSession: vi.fn(async () => ({})),
 }));
 
+const mockConsume = vi.fn(async () => ({ allowed: true }));
+const mockReset = vi.fn(async () => ({}));
+
 vi.mock('@/lib/auth/login-rate-limit', () => ({
   loginRateLimiter: {
-    consume: vi.fn(async () => ({ allowed: true })),
-    reset: vi.fn(async () => ({})),
+    consume: mockConsume,
+    reset: mockReset,
   },
 }));
 
@@ -52,6 +55,13 @@ describe('login action', () => {
     vi.clearAllMocks();
   });
 
+  function buildForm() {
+    const form = new FormData();
+    form.set('email', 'admin@asof.local');
+    form.set('password', 'Senha-Forte-2026!');
+    return form;
+  }
+
   it('authenticates and creates session on valid credentials', async () => {
     mockAuthenticate.mockResolvedValue({
       id: 1,
@@ -63,14 +73,11 @@ describe('login action', () => {
     });
 
     const { login } = await import('@/app/login/actions');
+    const { redirect } = await import('next/navigation');
     const { createSession } = await import('@/lib/auth/session');
 
-    const form = new FormData();
-    form.set('email', 'admin@asof.local');
-    form.set('password', 'Senha-Forte-2026!');
-
     try {
-      await login(form);
+      await login(buildForm());
     } catch {}
 
     expect(mockAuthenticate).toHaveBeenCalledWith('admin@asof.local', 'Senha-Forte-2026!');
@@ -78,6 +85,39 @@ describe('login action', () => {
       userId: 1,
       email: 'admin@asof.local',
     });
+    expect(redirect).toHaveBeenCalledWith('/app');
+  });
+
+  it('redirects to change-password when mustChangePassword is true', async () => {
+    mockAuthenticate.mockResolvedValue({
+      id: 1,
+      name: 'Admin',
+      email: 'admin@asof.local',
+      role: 'admin',
+      isActive: true,
+      mustChangePassword: true,
+    });
+
+    const { login } = await import('@/app/login/actions');
+    const { redirect } = await import('next/navigation');
+
+    try {
+      await login(buildForm());
+    } catch {}
+
+    expect(redirect).toHaveBeenCalledWith('/change-password');
+  });
+
+  it('redirects to rate-limit error when rate limit is exceeded', async () => {
+    mockConsume.mockResolvedValueOnce({ allowed: false });
+    const { login } = await import('@/app/login/actions');
+    const { redirect } = await import('next/navigation');
+
+    try {
+      await login(buildForm());
+    } catch {}
+
+    expect(redirect).toHaveBeenCalledWith('/login?error=rate-limit');
   });
 
   it('redirects to error on authentication failure', async () => {
