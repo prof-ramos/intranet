@@ -1,0 +1,250 @@
+{
+  "version": "1.0",
+  "project": {
+    "name": "asof-intranet",
+    "genre": "sistema corporativo intranet",
+    "created": "2026-05-28T00:00:00Z",
+    "lastModified": "2026-05-28T00:00:00Z"
+  },
+  "characters": {
+    "Admin": {
+      "arc": "controle total → delegação → supervisão estratégica",
+      "attitude": "técnico, protetor, onipresente no sistema",
+      "tone": "direto, preciso, orientado a segurança",
+      "speechLevel": "formal-técnico",
+      "keywords": ["infraestrutura", "permissões", "audit", "backup", "migração"],
+      "taboo": ["dados sem criptografia", "acesso irrestrito", "skip auth"],
+      "emotional_baseline": "vigilância proativa",
+      "triggers": ["tentativa de acesso não autorizado", "dados PII expostos", "falha de migração"],
+      "role": "admin",
+      "access": "total — todas as rotas, schemas, configurações",
+      "modules_used": ["config", "associados", "atividades", "financeiro", "juridico", "oficios", "audit", "notifications"],
+      "pain_points": ["complexidade de permissões", "migração em produção", "PII leak em logs"]
+    },
+    "Diretoria": {
+      "arc": "decisão centralizada → transparência → governança compartilhada",
+      "attitude": "estratégico, representativo, responsável financeiramente",
+      "tone": "institucional, deliberativo, orientado a resultado",
+      "speechLevel": "formal-institucional",
+      "keywords": ["deliberação", "balanço", "assembleia", "ofício", "relatório"],
+      "taboo": ["dados pessoais de associados", "detalhes operacionais", "tech jargon"],
+      "emotional_baseline": "responsabilidade institucional",
+      "triggers": ["inadimplência", "questões jurídicas", "comunicação interna falha"],
+      "role": "diretoria",
+      "access": "associados, atividades, financeiro, juridico, oficios, dashboard",
+      "modules_used": ["dashboard", "financeiro", "juridico", "oficios", "atividades"],
+      "pain_points": ["visibilidade financeira incompleta", "ofícios sem rastreabilidade", "comunicação com associados"]
+    },
+    "Secretaria": {
+      "arc": "execução manual → semi-automatizada → operação eficiente",
+      "attitude": "operacional, detalhista, ponte entre diretoria e associados",
+      "tone": "prático, organizado, orientado a processo",
+      "speechLevel": "formal-operacional",
+      "keywords": ["cadastro", "mensalidade", "atualização", "comunicado", "protocolo"],
+      "taboo": ["decisões estratégicas sem diretoria", "alterar dados financeiros"],
+      "emotional_baseline": "pragmatismo diligente",
+      "triggers": ["dados desatualizados", "associado sem contato", "processo lento"],
+      "role": "secretaria",
+      "access": "associados (CRUD), atividades (CRUD), notificações, oficios (criação)",
+      "modules_used": ["associados", "atividades", "notifications", "secretaria", "oficios"],
+      "pain_points": ["cadastro manual repetitivo", "busca de associados lenta", "comunicados sem confirmação"]
+    },
+    "Associado": {
+      "arc": "passivo → informado → engajado",
+      "attitude": "recebedor de informação, eventualmente participativo",
+      "tone": "espera clareza, simplicidade, relevância",
+      "speechLevel": "informal-educado",
+      "keywords": ["mensalidade", "atividade", "comunicado", "meus dados"],
+      "taboo": ["dados de outros associados", "interface complexa", "jargão técnico"],
+      "emotional_baseline": "interesse seletivo",
+      "triggers": ["aumento de mensalidade", "atividade cancelada", "dados pessoais desatualizados"],
+      "role": "associado",
+      "access": "próprio perfil, atividades, comunicados, financeiro (próprio)",
+      "modules_used": ["dashboard", "atividades", "notifications", "privacidade"],
+      "pain_points": ["não saber status de mensalidade", "comunicados perdidos", "não conseguir atualizar dados"]
+    }
+  },
+  "world": {
+    "setting": "Associação dos Oficiais de Chancelaria do MRE, Brasília, ~763 associados, intranet corporativa",
+    "rules": [
+      "PII sempre criptografado com HKDF + AES-256-GCM",
+      "Blind indexes (HMAC) para busca de CPF/SIAPE/email",
+      "Auth server-side própria: SESSION_SECRET + cookie httpOnly assinado",
+      "Roles hierárquicos: admin > diretoria > secretaria > associado",
+      "Migrações em produção exigem ALLOW_PRODUCTION_MIGRATIONS=true",
+      "Rate limiting PostgreSQL-backed para integrações",
+      "Audit trail em todas as operações sensíveis",
+      "LGPD: direito de acesso, retificação, exclusão, portabilidade"
+    ],
+    "atmosphere": "formal-institucional, confiável, acessível, respeitoso com dados sensíveis",
+    "constraints": [
+      "Nunca expor plaintext PII em logs, erros ou respostas",
+      "Sem RLS no dia 1 — segurança via app server + credenciais PostgreSQL",
+      "E2E usa porta 3001, nunca 3000",
+      "Node 24.x obrigatório",
+      "Next.js >= 16.2.6 (sem downgrade)",
+      "824+ testes devem passar sempre",
+      "Deploy automático via push para main"
+    ],
+    "history": "Sistema iniciado para digitalizar gestão de ~763 associados da ASOF. Evoluiu de cadastro básico para sistema completo com financeiro, jurídico, ofícios, notificações e API de integrações. Go-live em andamento com TODO-PROD.md."
+  },
+  "relationships": [
+    {
+      "id": "rel_001",
+      "from": "Admin",
+      "to": "Diretoria",
+      "type": "professional",
+      "dynamic": "Admin garante infraestrutura; Diretoria consome relatórios",
+      "speechLevel": "formal-técnico",
+      "evolution": [
+        { "timestamp": "2026-05-28T00:00:00Z", "change": "Sistema provisionado — Admin habilita acesso para Diretoria", "catalyst": "go-live" }
+      ],
+      "notes": "Admin é invisível para Diretoria no dia a dia, mas essencial para que tudo funcione",
+      "intimacy_level": 3,
+      "tension": "Diretoria quer mais features; Admin precisa de estabilidade e segurança"
+    },
+    {
+      "id": "rel_002",
+      "from": "Diretoria",
+      "to": "Secretaria",
+      "type": "professional",
+      "dynamic": "Diretoria decide; Secretaria executa",
+      "speechLevel": "formal-institucional",
+      "evolution": [
+        { "timestamp": "2026-05-28T00:00:00Z", "change": "Fluxo de trabalho definido — Secretaria opera dentro de limites de Diretoria", "catalyst": "definição de roles" }
+      ],
+      "notes": "Ponte operacional do sistema",
+      "intimacy_level": 5,
+      "tension": "Secretaria quer mais automação; Diretoria prioriza controle e auditoria"
+    },
+    {
+      "id": "rel_003",
+      "from": "Secretaria",
+      "to": "Associado",
+      "type": "professional",
+      "dynamic": "Secretaria atende; Associado solicita",
+      "speechLevel": "formal-acolhedor",
+      "evolution": [
+        { "timestamp": "2026-05-28T00:00:00Z", "change": "Portal self-service — Associado passa a resolver parte das demandas sozinho", "catalyst": "intranet" }
+      ],
+      "notes": "Maior redução de carga operacional potencial",
+      "intimacy_level": 4,
+      "tension": "Associado quer autonomia; Secretaria mantém gatekeeping para qualidade de dados"
+    },
+    {
+      "id": "rel_004",
+      "from": "Diretoria",
+      "to": "Associado",
+      "type": "professional",
+      "dynamic": "Diretoria governa; Associado é membro",
+      "speechLevel": "formal-institucional → comunicados",
+      "evolution": [
+        { "timestamp": "2026-05-28T00:00:00Z", "change": "Comunicação via intranet substitui e-mails em cadeia", "catalyst": "módulo de notificações" }
+      ],
+      "notes": "Comunicação unilateral via ofícios e comunicados",
+      "intimacy_level": 2,
+      "tension": "Associado quer mais transparência; Diretoria controla ritmo e conteúdo"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-001",
+      "title": "Cadastro de Associado",
+      "characters": ["Secretaria", "Associado"],
+      "location": "Módulo Associados — formulário de cadastro/edição",
+      "cuts": ["Secretaria abre formulário", "Preenche dados pessoais (PII criptografado)", "Validação SIAPE/CPF via blind index", "Salva — audit trail registrado", "Associado recebe notificação de cadastro"],
+      "narration_tone": "operacional-preciso",
+      "emotional_tag": "diligência+confiança",
+      "purpose": "Onboard de novo associado ou atualização de dados existentes",
+      "before_after": "Associado: não cadastrado → cadastrado com dados verificados"
+    },
+    {
+      "id": "scene-002",
+      "title": "Gestão de Mensalidades",
+      "characters": ["Diretoria", "Secretaria", "Associado"],
+      "location": "Módulo Financeiro — dashboard e faturas",
+      "cuts": ["Diretoria revisa inadimplência", "Secretaria gera cobranças", "Associado consulta status", "Pagamento registrado — status atualiza", "Notificação automática de confirmação"],
+      "narration_tone": "institucional-transparente",
+      "emotional_tag": "transparência+responsabilidade",
+      "purpose": "Manter fluxo financeiro da associação e visibilidade para associados",
+      "before_after": "Associado: sem visibilidade → sabe exatamente status de pagamento"
+    },
+    {
+      "id": "scene-003",
+      "title": "Expedição de Ofício",
+      "characters": ["Diretoria", "Secretaria"],
+      "location": "Módulo Ofícios — criação e rastreamento",
+      "cuts": ["Diretoria solicita ofício", "Secretaria redige no sistema", "Diretoria revisa e aprova", "Ofício expedido com protocolo", "Histórico preservado com audit trail"],
+      "narration_tone": "formal-burocrático",
+      "emotional_tag": "formalidade+rastreabilidade",
+      "purpose": "Comunicação oficial da associação com rastreabilidade",
+      "before_after": "Ofício: inexistente → expedido com protocolo e histórico"
+    },
+    {
+      "id": "scene-004",
+      "title": "Consulta Jurídica",
+      "characters": ["Diretoria", "Associado"],
+      "location": "Módulo Jurídico — consultas e pareceres",
+      "cuts": ["Associado submete consulta", "Diretoria recebe e tria", "Parecer elaborado", "Associado notificado do resultado", "Histórico arquivado"],
+      "narration_tone": "jurídico-reservado",
+      "emotional_tag": "sigilo+resolução",
+      "purpose": "Atendimento jurídico a associados com confidencialidade",
+      "before_after": "Associado: dúvida jurídica → parecer documentado e sigiloso"
+    },
+    {
+      "id": "scene-005",
+      "title": "Login e Primeiro Acesso",
+      "characters": ["Admin", "Associado"],
+      "location": "Página de login — /login",
+      "cuts": ["Associado acessa intranet.asof.com.br", "Redirecionado para login", "Credenciais verificadas (SESSION_SECRET)", "Sessão criada com cookie httpOnly", "Redirecionado para dashboard"],
+      "narration_tone": "seguro-acolhedor",
+      "emotional_tag": "confiança+acolhimento",
+      "purpose": "Gateway de entrada — primeira impressão do sistema",
+      "before_after": "Associado: visitante → autenticado com role definido"
+    }
+  ],
+  "themes": [
+    {
+      "name": "LGPD e Conformidade",
+      "expression": "Criptografia PII, audit trails, direito de exclusão, blind indexes",
+      "scenes": ["Cadastro de Associado", "Login e Primeiro Acesso"],
+      "character_links": ["Admin", "Associado"],
+      "author_intent": "Garantir que dados sensíveis nunca sejam expostos e que o sistema esteja em conformidade legal"
+    },
+    {
+      "name": "Transparência Financeira",
+      "expression": "Dashboard financeiro, status de mensalidades visível, relatórios para diretoria",
+      "scenes": ["Gestão de Mensalidades"],
+      "character_links": ["Diretoria", "Associado"],
+      "author_intent": "Construir confiança entre diretoria e associados via visibilidade financeira"
+    },
+    {
+      "name": "Eficiência Operacional",
+      "expression": "Self-service para associados, automação de comunicados, cadastro semi-automatizado",
+      "scenes": ["Cadastro de Associado", "Gestão de Mensalidades"],
+      "character_links": ["Secretaria", "Associado"],
+      "author_intent": "Reduzir carga operacional da secretaria e empoderar associados"
+    },
+    {
+      "name": "Rastreabilidade Institucional",
+      "expression": "Protocolos de ofícios, audit trails, histórico jurídico",
+      "scenes": ["Expedição de Ofício", "Consulta Jurídica"],
+      "character_links": ["Diretoria", "Secretaria"],
+      "author_intent": "Garantir que toda comunicação e decisão institucional tenha registro permanente"
+    },
+    {
+      "name": "Acessibilidade e Usabilidade",
+      "expression": "Interface limpa (DaisyUI 5), navegação sidebar, feedback visual, notificações polling",
+      "scenes": ["Login e Primeiro Acesso", "Cadastro de Associado"],
+      "character_links": ["Associado"],
+      "author_intent": "Sistema deve ser usável por oficiais de chancelaria sem treinamento técnico"
+    }
+  ],
+  "synopsis": {
+    "protagonist_attitude": "ASOF é uma associação que protege e serve seus membros — o sistema reflete essa postura protetora e diligente",
+    "relationship_structure": "Hierarquia institucional clara (Admin→Diretoria→Secretaria→Associado) com fluxos de informação que precisam atravessar cada camada",
+    "emotional_theme": "Confiança via transparência — associados confiam na diretoria porque podem ver, diretoria confia no sistema porque tudo é rastreável",
+    "genre_contrast": "Intranet corporativa por fora, sistema de proteção de dados e governança institucional por dentro",
+    "ending_aftertaste": "Sistema que respeita dados, simplifica operações e fortalece a relação entre diretoria e associados"
+  }
+}
