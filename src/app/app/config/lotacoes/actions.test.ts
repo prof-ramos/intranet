@@ -29,8 +29,8 @@ vi.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => revalidatePathMock(...args),
 }));
 
-vi.mock('@/lib/db', () => ({
-  db: {
+vi.mock('@/lib/db', () => {
+  const mockDb = {
     select: vi.fn(() => ({
       from: vi.fn(() => ({
         where: vi.fn(() => ({
@@ -46,8 +46,13 @@ vi.mock('@/lib/db', () => ({
         where: mockUpdateWhere,
       })),
     })),
-  },
-}));
+    transaction: vi.fn(async (cb) => await cb(mockDb)),
+  };
+
+  return {
+    db: mockDb,
+  };
+});
 
 describe('config lotacoes actions', () => {
   beforeEach(() => {

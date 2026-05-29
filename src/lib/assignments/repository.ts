@@ -1,5 +1,5 @@
 import { db, type DbExecutor } from '@/lib/db';
-import { assignments, type Assignment, type NewAssignment } from '@/lib/db/schema';
+import { assignments, type NewAssignment } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 
 export interface FindAssignmentByIdResult {
