@@ -4,7 +4,7 @@
 # lib
 
 ## Purpose
-Domain library modules for business logic, data access, and DB schema. All modules follow service/repository/queries patterns. PII fields (cpf, siape, email, phone, address) stored as ciphertext + hash — plaintext never logged.
+Domain library modules for business logic, data access, and DB schema. All modules follow service/repository/queries patterns. Authenticated intranet users have full operational PII visibility. Prefer ciphertext + hash storage for new write paths when supported; legacy/import plaintext is an accepted operational risk. Plaintext is never logged.
 
 ## Key Files
 
@@ -53,7 +53,9 @@ Domain library modules for business logic, data access, and DB schema. All modul
 - Use `createLogger('module-name')` for structured logging — never use console.*
 - All domain modules follow service/repository/queries pattern
 - Use `db.transaction()` for multi-table writes
-- PII fields stored as ciphertext + hash; plaintext never logged or printed
+- Authenticated intranet users have full operational PII visibility; do not reintroduce role masking without a new product decision.
+- Prefer ciphertext + hash storage for new write paths when supported; legacy/import plaintext is an accepted operational risk.
+- Plaintext is never logged or printed.
 
 ### Testing Requirements
 - `npm run test` runs Vitest unit tests

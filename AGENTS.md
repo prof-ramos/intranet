@@ -106,7 +106,8 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 
 ### PII e LGPD
 
-- `encryptPii()` para armazenamento, `piiBlindIndex()` para busca.
+- Usuários autenticados da intranet têm visibilidade operacional integral de PII; não reintroduzir máscara por role sem nova decisão de produto.
+- Preferir `encryptPii()` para novas rotas de escrita e `piiBlindIndex()` para busca quando a camada suportar; dados plaintext legados/importados são risco operacional aceito e devem ser tratados com controle de acesso ao Neon, auditoria e backups protegidos.
 - `sanitizePii()` para logs — plaintext nunca em logs, erros ou respostas de API.
 - Ver ADR 006 para desfiação/anonimização.
 
