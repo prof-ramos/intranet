@@ -36,6 +36,13 @@
       "when": 1779897600000,
       "tag": "0004_add_integration_api_key_signing_secret",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1748448000000,
+      "tag": "0005_add_assinafy_oficios",
+      "breakpoints": true
     }
   ]
 }

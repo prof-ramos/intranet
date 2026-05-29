@@ -18,6 +18,20 @@ export const officialLetterStatus = pgEnum('official_letter_status', [
   'rascunho',
 ]);
 
+export const assinafyDocumentStatus = pgEnum('assinafy_document_status', [
+  'uploading',
+  'uploaded',
+  'metadata_processing',
+  'metadata_ready',
+  'pending_signature',
+  'certificating',
+  'certificated',
+  'expired',
+  'rejected_by_signer',
+  'rejected_by_user',
+  'failed',
+]);
+
 export const oficios = pgTable(
   'oficios',
   {
@@ -49,6 +63,14 @@ export const oficios = pgTable(
       .notNull()
       .defaultNow()
       .$onUpdate(() => new Date()),
+    // Assinafy fields
+    assinafyDocumentId: text('assinafy_document_id').unique(),
+    assinafyStatus: assinafyDocumentStatus('assinafy_status'),
+    assinafyAssignmentId: text('assinafy_assignment_id'),
+    assinafySignerId: text('assinafy_signer_id'),
+    assinafySentAt: timestamp('assinafy_sent_at', { withTimezone: true }),
+    assinafySignedAt: timestamp('assinafy_signed_at', { withTimezone: true }),
+    assinafyError: text('assinafy_error'),
   },
   (table) => [
     unique('uq_oficios_year_sequence').on(table.year, table.sequence),
