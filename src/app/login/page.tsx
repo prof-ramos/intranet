@@ -9,7 +9,7 @@ export default async function LoginPage({
 }) {
   const { error } = await searchParams;
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#040920] px-4">
+    <main id="main-content" className="flex min-h-screen items-center justify-center bg-[#040920] px-4">
       <div className="w-full max-w-sm rounded-[10px] bg-white shadow-xl">
         <div className="flex flex-col gap-6 p-6">
           <div>

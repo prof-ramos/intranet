@@ -2,6 +2,11 @@
 
 Este runbook cobre a estreia da intranet ASOF com PostgreSQL gerenciado limpo, baseline Drizzle novo e autenticacao server-side propria.
 
+Para a janela operacional da Release 1.0, use tambem o roteiro detalhado em
+[`docs/release-1-operational-go-live.md`](./release-1-operational-go-live.md).
+Ele cobre smoke manual em producao, backup Nivel 1 com `pg_dump`, restore de
+teste, validacao de crons e revisao minima de integracoes/API keys sem secrets.
+
 ## 1. Preparacao Do Banco
 
 1. Provisionar um PostgreSQL gerenciado novo.
@@ -55,6 +60,12 @@ npm run build
 Para uma prova isolada de banco limpo, aponte `DATABASE_URL` e `DATABASE_MIGRATION_URL` para um banco descartavel, rode `npm run db:migrate`, `npm run db:seed` e depois `npm run test:db`.
 
 ## 5. Smoke Manual
+
+Para a Release 1.0, use o roteiro detalhado em
+[`docs/release-1-operational-go-live.md`](./release-1-operational-go-live.md).
+Ele cobre backup pre-janela, smoke manual em producao, validacao dos crons com
+`CRON_SECRET`, limpeza `SMOKE_*`, restore de teste e revisao minima de
+integracoes/API keys.
 
 Validar no ambiente alvo:
 

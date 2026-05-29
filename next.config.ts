@@ -3,6 +3,11 @@ import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
 import '@/lib/env';
 
+import withBundleAnalyzer from '@next/bundle-analyzer';
+
+const analyzeBundle = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const isE2E = process.env.NEXT_E2E === '1';
 
@@ -48,4 +53,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default analyzeBundle(nextConfig);
