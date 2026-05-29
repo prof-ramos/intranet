@@ -125,6 +125,8 @@ export default async function globalSetup() {
         // Fixed only for ephemeral E2E runs; tests do not persist signed sessions.
         SESSION_SECRET: E2E_SESSION_SECRET,
         ENCRYPTION_MASTER_KEY: process.env.ENCRYPTION_MASTER_KEY ?? E2E_ENCRYPTION_MASTER_KEY,
+        CRON_SECRET: 'dummy_cron_secret_for_e2e_tests',
+        ASOF_INTRANET_URL: 'http://127.0.0.1:3001',
       },
       detached: true,
       stdio: ['ignore', logFd, logFd],
