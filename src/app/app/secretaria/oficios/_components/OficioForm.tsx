@@ -13,7 +13,12 @@ import {
 import { Sparkles, Save, X, Loader2, AlertCircle } from 'lucide-react';
 import { navy, primaryContainerHover, hairline, focusRingClass, error } from '@/lib/ui/tokens';
 import { CSSProperties } from 'react';
-import { RichTextEditor } from './RichTextEditor';
+import dynamic from 'next/dynamic';
+
+const RichTextEditor = dynamic(
+  () => import('./RichTextEditor').then((mod) => mod.RichTextEditor),
+  { ssr: false, loading: () => <div className="h-[300px] w-full animate-pulse rounded-lg bg-slate-100" /> }
+);
 
 interface OficioFormProps {
   initialData?: Partial<OfficialLetterFormValues>;
