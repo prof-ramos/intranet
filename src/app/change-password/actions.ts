@@ -1,12 +1,13 @@
 'use server';
 
-import bcrypt from 'bcryptjs';
 import { redirect } from 'next/navigation';
-import { eq, sql } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { validateNewPassword } from '@/lib/auth/password';
-import { db } from '@/lib/db';
-import { admins } from '@/lib/db/schema';
+import {
+  changePassword as changePasswordService,
+  AdminNotFoundError,
+  InvalidCurrentPasswordError,
+} from '@/lib/auth/service';
 import { firstZodError } from '@/lib/server-actions/utils';
 import { changePasswordSchema } from '@/lib/validation/schemas';
 import { toSafeErrorLog } from '@/lib/error-log';
@@ -42,41 +43,18 @@ export async function changePassword(formData: FormData) {
     changePasswordError('Sessão inválida.');
   }
 
-  const [admin] = await db
-    .select({
-      id: admins.id,
-      passwordHash: admins.passwordHash,
-    })
-    .from(admins)
-    .where(eq(admins.id, user.userId))
-    .limit(1);
-
-  if (!admin) {
-    changePasswordError('Sessão inválida.');
-  }
-
-  const currentPasswordMatches = await bcrypt.compare(currentPassword, admin.passwordHash);
-  if (!currentPasswordMatches) {
-    changePasswordError('Senha atual inválida.');
-  }
-
-  const passwordHash = await bcrypt.hash(newPassword, 12);
-
   try {
-    await db
-      .update(admins)
-      .set({
-        passwordHash,
-        mustChangePassword: false,
-        updatedAt: sql`now()`,
-      })
-      .where(eq(admins.id, user.userId));
+    await changePasswordService(user.userId, currentPassword, newPassword);
   } catch (error) {
+    if (error instanceof InvalidCurrentPasswordError) {
+      changePasswordError('Senha atual inválida.');
+    }
+    if (error instanceof AdminNotFoundError) {
+      changePasswordError('Sessão inválida.');
+    }
     logger.error(
       '[change-password] failed to persist new password hash',
-      {
-        error: toSafeErrorLog(error),
-      },
+      { error: toSafeErrorLog(error) },
       error as Error,
     );
     changePasswordError('Não foi possível concluir a alteração de senha.');

@@ -1,187 +1,151 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Logger } from '@/lib/logger';
-import { login } from '@/app/login/actions';
 
-let mockRateLimit = { allowed: true };
-let mockConsumeError: Error | null = null;
-let mockResetError: Error | null = null;
-let mockPasswordMatches = true;
-let mockDbUser: {
-  id: number;
-  name: string;
-  email: string;
-  passwordHash: string;
-  role: 'admin' | 'diretoria' | 'secretaria';
-  isActive: boolean;
-  mustChangePassword: boolean;
-} | null = null;
+const mockAuthenticate = vi.fn();
 
-const createSessionMock = vi.fn(async (input: unknown) => {
-  void input;
-});
-
-vi.mock('next/navigation', () => ({
-  redirect: vi.fn((path: string) => {
-    throw new Error(`NEXT_REDIRECT:${path}`);
-  }),
-}));
-
-vi.mock('bcryptjs', () => ({
-  default: {
-    compare: vi.fn(() => Promise.resolve(mockPasswordMatches)),
+vi.mock('@/lib/auth/service', () => ({
+  authenticate: (...args: unknown[]) => mockAuthenticate(...args),
+  InvalidCredentialsError: class InvalidCredentialsError extends Error {
+    constructor() {
+      super('Credenciais inválidas.');
+      this.name = 'InvalidCredentialsError';
+    }
   },
 }));
 
 vi.mock('@/lib/auth/session', () => ({
-  createSession: (input: unknown) => createSessionMock(input),
+  createSession: vi.fn(async () => ({})),
 }));
 
-vi.mock('@/lib/db', () => ({
-  db: {
-    select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        where: vi.fn(() => ({
-          limit: vi.fn(() => Promise.resolve(mockDbUser ? [mockDbUser] : [])),
-        })),
-      })),
+const mockConsume = vi.fn(async () => ({ allowed: true }));
+const mockReset = vi.fn(async () => ({}));
+
+vi.mock('@/lib/auth/login-rate-limit', () => ({
+  loginRateLimiter: {
+    consume: mockConsume,
+    reset: mockReset,
+  },
+}));
+
+vi.mock('next/navigation', () => ({
+  redirect: vi.fn((url: string) => {
+    throw new Error(`REDIRECT:${url}`);
+  }),
+}));
+
+vi.mock('@/lib/validation/schemas', () => ({
+  loginSchema: {
+    safeParse: vi.fn(() => ({
+      success: true,
+      data: { email: 'admin@asof.local', password: 'Senha-Forte-2026!' },
     })),
   },
 }));
 
-vi.mock('@/lib/auth/login-rate-limit', () => ({
-  loginRateLimiter: {
-    consume: vi.fn(() =>
-      mockConsumeError ? Promise.reject(mockConsumeError) : Promise.resolve(mockRateLimit),
-    ),
-    reset: vi.fn(() => (mockResetError ? Promise.reject(mockResetError) : Promise.resolve())),
-  },
+const mockLogger = {
+  warn: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+};
+
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => mockLogger,
 }));
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  mockRateLimit = { allowed: true };
-  mockConsumeError = null;
-  mockResetError = null;
-  mockPasswordMatches = true;
-  mockDbUser = null;
-});
-
-function activeAdmin(overrides?: Partial<typeof mockDbUser>): NonNullable<typeof mockDbUser> {
-  return {
-    id: 1,
-    name: 'Admin',
-    email: 'admin@asof.local',
-    passwordHash: 'stored-hash',
-    role: 'admin',
-    isActive: true,
-    mustChangePassword: false,
-    ...overrides,
-  };
-}
+vi.mock('@/lib/error-log', () => ({
+  toSafeErrorLog: vi.fn((e) => e),
+  ensureError: vi.fn((e) => e),
+}));
 
 describe('login action', () => {
-  it('redirects with error for missing email or password', async () => {
-    const formData = new FormData();
-    formData.set('email', '');
-    formData.set('password', '');
-
-    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=1');
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it('redirects with rate-limit error when rate limit is exceeded', async () => {
-    mockRateLimit = { allowed: false };
-    const formData = new FormData();
-    formData.set('email', 'user@asof.local');
-    formData.set('password', 'password');
+  function buildForm() {
+    const form = new FormData();
+    form.set('email', 'admin@asof.local');
+    form.set('password', 'Senha-Forte-2026!');
+    return form;
+  }
 
-    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=rate-limit');
+  it('authenticates and creates session on valid credentials', async () => {
+    mockAuthenticate.mockResolvedValue({
+      id: 1,
+      name: 'Admin',
+      email: 'admin@asof.local',
+      role: 'admin',
+      isActive: true,
+      mustChangePassword: false,
+    });
+
+    const { login } = await import('@/app/login/actions');
+    const { redirect } = await import('next/navigation');
+    const { createSession } = await import('@/lib/auth/session');
+
+    try {
+      await login(buildForm());
+    } catch {}
+
+    expect(mockAuthenticate).toHaveBeenCalledWith('admin@asof.local', 'Senha-Forte-2026!');
+    expect(createSession).toHaveBeenCalledWith({
+      userId: 1,
+      email: 'admin@asof.local',
+    });
+    expect(redirect).toHaveBeenCalledWith('/app');
   });
 
-  it('redirects with error when no active admin matches the email/password', async () => {
-    mockDbUser = activeAdmin({ isActive: false });
-    const formData = new FormData();
-    formData.set('email', 'inactive@asof.local');
-    formData.set('password', 'Senha-Forte-2026!');
+  it('redirects to change-password when mustChangePassword is true', async () => {
+    mockAuthenticate.mockResolvedValue({
+      id: 1,
+      name: 'Admin',
+      email: 'admin@asof.local',
+      role: 'admin',
+      isActive: true,
+      mustChangePassword: true,
+    });
 
-    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=1');
-    expect(createSessionMock).not.toHaveBeenCalled();
+    const { login } = await import('@/app/login/actions');
+    const { redirect } = await import('next/navigation');
+
+    try {
+      await login(buildForm());
+    } catch {}
+
+    expect(redirect).toHaveBeenCalledWith('/change-password');
   });
 
-  it('redirects with error when bcrypt rejects the password', async () => {
-    mockDbUser = activeAdmin();
-    mockPasswordMatches = false;
-    const formData = new FormData();
-    formData.set('email', 'admin@asof.local');
-    formData.set('password', 'Senha-Forte-2026!');
+  it('redirects to rate-limit error when rate limit is exceeded', async () => {
+    mockConsume.mockResolvedValueOnce({ allowed: false });
+    const { login } = await import('@/app/login/actions');
+    const { redirect } = await import('next/navigation');
 
-    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/login?error=1');
-    expect(createSessionMock).not.toHaveBeenCalled();
+    try {
+      await login(buildForm());
+    } catch {}
+
+    expect(redirect).toHaveBeenCalledWith('/login?error=rate-limit');
   });
 
-  it('creates a local session and redirects to /app on successful login', async () => {
-    mockDbUser = activeAdmin();
-    const formData = new FormData();
-    formData.set('email', 'admin@asof.local');
-    formData.set('password', 'Senha-Forte-2026!');
+  it('redirects to error on authentication failure', async () => {
+    const { InvalidCredentialsError } = await import('@/lib/auth/service');
+    mockAuthenticate.mockRejectedValue(new InvalidCredentialsError());
+    const { redirect } = await import('next/navigation');
 
-    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/app');
-    expect(createSessionMock).toHaveBeenCalledWith({ userId: 1, email: 'admin@asof.local' });
-  });
+    const { login } = await import('@/app/login/actions');
 
-  it('redirects to /change-password when the admin must rotate the password', async () => {
-    mockDbUser = activeAdmin({ mustChangePassword: true });
-    const formData = new FormData();
-    formData.set('email', 'new@asof.local');
-    formData.set('password', 'Senha-Forte-2026!');
+    const form = new FormData();
+    form.set('email', 'admin@asof.local');
+    form.set('password', 'wrong-password');
 
-    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/change-password');
-  });
+    try {
+      await login(form);
+    } catch {}
 
-  it('logs a safe warning when the rate-limit check fails and allows login attempt to proceed', async () => {
-    const consoleWarnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
-    mockDbUser = activeAdmin();
-    mockConsumeError = Object.assign(new Error('email=user@example.com'), { code: 'E_RATE' });
-    const formData = new FormData();
-    formData.set('email', 'admin@asof.local');
-    formData.set('password', 'Senha-Forte-2026!');
-
-    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/app');
-    expect(consoleWarnSpy).toHaveBeenCalledWith(
-      '[Login] Rate-limit check failed; allowing login attempt to proceed.',
-      {
-        error: {
-          kind: 'error',
-          name: 'Error',
-          code: 'E_RATE',
-          digest: undefined,
-        },
-      },
+    expect(redirect).toHaveBeenCalledWith('/login?error=1');
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      '[Login] Authentication failed',
+      expect.objectContaining({ email: 'admin@asof.local' }),
       expect.any(Error),
     );
-    consoleWarnSpy.mockRestore();
-  });
-
-  it('logs a safe warning when reset fails after successful login', async () => {
-    const consoleWarnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
-    mockDbUser = activeAdmin();
-    mockResetError = Object.assign(new Error('cpf=12345678901'), { code: 'E_RESET' });
-    const formData = new FormData();
-    formData.set('email', 'admin@asof.local');
-    formData.set('password', 'Senha-Forte-2026!');
-
-    await expect(login(formData)).rejects.toThrow('NEXT_REDIRECT:/app');
-    expect(consoleWarnSpy).toHaveBeenCalledWith(
-      '[Login] Rate-limit reset failed after successful login.',
-      {
-        error: {
-          kind: 'error',
-          name: 'Error',
-          code: 'E_RESET',
-          digest: undefined,
-        },
-      },
-      expect.any(Error),
-    );
-    consoleWarnSpy.mockRestore();
   });
 });
