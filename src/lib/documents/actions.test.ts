@@ -4,51 +4,23 @@ import {
   downloadDocumentAction,
   deleteDocumentAction,
 } from '@/app/app/secretaria/documentos/actions';
-import { uploadFile, getSignedUrl, deleteFile } from '@/lib/storage';
-import { logAuditAction, logDataAccess } from '@/lib/audit/service';
-import { getDocumentById } from '@/lib/documents/queries';
 import { revalidatePath } from 'next/cache';
 
-// Mock Auth e DB elevados (hoisted) no Vitest
-const { mockRequireAuth, mockDb } = vi.hoisted(() => {
+// Mock do service layer - as actions agora delegam para o service
+vi.mock('@/lib/documents/service', () => ({
+  uploadDocument: vi.fn(),
+  downloadDocument: vi.fn(),
+  deleteDocument: vi.fn(),
+}));
+
+// Mock Auth
+const { mockRequireAuth } = vi.hoisted(() => {
   const mockRequireAuth = vi.fn();
-  const mockDb = {
-    insert: vi.fn().mockReturnThis(),
-    values: vi.fn().mockReturnThis(),
-    returning: vi.fn(),
-    update: vi.fn().mockReturnThis(),
-    set: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    transaction: vi.fn(),
-  };
-  return { mockRequireAuth, mockDb };
+  return { mockRequireAuth };
 });
 
 vi.mock('@/lib/auth/require-auth', () => ({
   requireAuth: () => mockRequireAuth(),
-}));
-
-vi.mock('@/lib/db', () => ({
-  db: mockDb,
-}));
-
-// Mock Storage
-vi.mock('@/lib/storage', () => ({
-  uploadFile: vi.fn(),
-  getSignedUrl: vi.fn(),
-  deleteFile: vi.fn(),
-}));
-
-// Mock Audit
-vi.mock('@/lib/audit/service', () => ({
-  logAuditAction: vi.fn(),
-  logDataAccess: vi.fn(),
-}));
-
-// Mock Queries
-vi.mock('@/lib/documents/queries', () => ({
-  getDocumentById: vi.fn(),
 }));
 
 // Mock Cache
@@ -56,19 +28,26 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
+// Import dos mocks do service após vi.mock
+import {
+  uploadDocument,
+  downloadDocument,
+  deleteDocument,
+} from '@/lib/documents/service';
+
 describe('Documentos Server Actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-
-    // Configuração padrão de transação síncrona para o mock do db
-    mockDb.transaction.mockImplementation((callback) => callback(mockDb));
   });
 
   describe('uploadDocumentAction', () => {
     it('deve realizar upload e salvar metadados com admin', async () => {
       mockRequireAuth.mockResolvedValue({ userId: 1, role: 'admin' });
-      mockDb.returning.mockResolvedValue([{ id: 42 }]);
-      vi.mocked(uploadFile).mockResolvedValue({ id: '1', path: 'path', fullPath: 'fullPath' });
+      vi.mocked(uploadDocument).mockResolvedValue({
+        success: true,
+        id: 42,
+        message: 'Documento enviado com sucesso.',
+      });
 
       const file = new File(['conteudo'], 'contrato.pdf', { type: 'application/pdf' });
       const formData = new FormData();
@@ -79,30 +58,33 @@ describe('Documentos Server Actions', () => {
 
       const result = await uploadDocumentAction(formData);
 
-      expect(result).toEqual({ success: true, id: 42 });
-      expect(uploadFile).toHaveBeenCalledWith(
-        'documents',
-        expect.any(String),
-        expect.any(ArrayBuffer),
-        'application/pdf',
-      );
-      expect(mockDb.insert).toHaveBeenCalled();
-      expect(logAuditAction).toHaveBeenCalledWith({
-        adminId: 1,
-        action: 'upload',
-        entityType: 'document',
-        entityId: 42,
-        metadata: expect.objectContaining({
-          name: 'Contrato de Prestação de Serviço',
-          category: 'contrato',
-        }),
+      expect(result).toEqual({
+        success: true,
+        id: 42,
+        message: 'Documento enviado com sucesso.',
+      });
+      expect(uploadDocument).toHaveBeenCalledWith({
+        name: 'Contrato de Prestação de Serviço',
+        description: 'Prestação de serviço de TI',
+        category: 'contrato',
+        file: {
+          bytes: expect.any(ArrayBuffer),
+          size: expect.any(Number),
+          type: 'application/pdf',
+          originalName: 'contrato.pdf',
+        },
+        uploadedBy: 1,
       });
       expect(revalidatePath).toHaveBeenCalledWith('/app/secretaria/documentos');
     });
 
     it('deve realizar upload e salvar metadados com secretaria', async () => {
       mockRequireAuth.mockResolvedValue({ userId: 2, role: 'secretaria' });
-      mockDb.returning.mockResolvedValue([{ id: 43 }]);
+      vi.mocked(uploadDocument).mockResolvedValue({
+        success: true,
+        id: 43,
+        message: 'Documento enviado com sucesso.',
+      });
 
       const file = new File(['conteudo'], 'ata.pdf', { type: 'application/pdf' });
       const formData = new FormData();
@@ -112,9 +94,12 @@ describe('Documentos Server Actions', () => {
 
       const result = await uploadDocumentAction(formData);
 
-      expect(result).toEqual({ success: true, id: 43 });
-      expect(uploadFile).toHaveBeenCalled();
-      expect(mockDb.insert).toHaveBeenCalled();
+      expect(result).toEqual({
+        success: true,
+        id: 43,
+        message: 'Documento enviado com sucesso.',
+      });
+      expect(uploadDocument).toHaveBeenCalled();
       expect(revalidatePath).toHaveBeenCalledWith('/app/secretaria/documentos');
     });
 
@@ -127,8 +112,7 @@ describe('Documentos Server Actions', () => {
       formData.append('file', new File([''], 'estatuto.pdf'));
 
       await expect(uploadDocumentAction(formData)).rejects.toThrow('Acesso negado');
-      expect(uploadFile).not.toHaveBeenCalled();
-      expect(mockDb.insert).not.toHaveBeenCalled();
+      expect(uploadDocument).not.toHaveBeenCalled();
     });
 
     it('deve validar limites de tamanho de arquivo', async () => {
@@ -145,47 +129,31 @@ describe('Documentos Server Actions', () => {
       await expect(uploadDocumentAction(formData)).rejects.toThrow(
         'O arquivo não pode exceder 15MB',
       );
-      expect(uploadFile).not.toHaveBeenCalled();
+      expect(uploadDocument).not.toHaveBeenCalled();
     });
   });
 
   describe('downloadDocumentAction', () => {
     it('deve gerar url assinada e auditar com logDataAccess', async () => {
       mockRequireAuth.mockResolvedValue({ userId: 3, role: 'secretaria' });
-      vi.mocked(getDocumentById).mockResolvedValue({
-        id: 10,
-        name: 'Ata 2026',
-        description: 'Ata desc',
-        category: 'ata',
-        storagePath: 'ata/xyz.pdf',
-        fileSize: 1000,
-        fileType: 'application/pdf',
-        uploadedBy: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      vi.mocked(downloadDocument).mockResolvedValue({
+        success: true,
+        signedUrl: 'http://storage.signed.url',
+        message: 'URL assinada gerada com sucesso.',
       });
-      vi.mocked(getSignedUrl).mockResolvedValue('http://storage.signed.url');
 
       const result = await downloadDocumentAction(10);
 
       expect(result).toEqual({ signedUrl: 'http://storage.signed.url' });
-      expect(getSignedUrl).toHaveBeenCalledWith('documents', 'ata/xyz.pdf', 3600);
-      expect(logDataAccess).toHaveBeenCalledWith({
-        adminId: 3,
-        action: 'view',
-        entityType: 'document',
-        entityId: 10,
-        metadata: {
-          name: 'Ata 2026',
-          category: 'ata',
-          storagePath: 'ata/xyz.pdf',
-        },
-      });
+      expect(downloadDocument).toHaveBeenCalledWith(10, 3);
     });
 
     it('deve dar erro caso documento nao exista', async () => {
       mockRequireAuth.mockResolvedValue({ userId: 1, role: 'admin' });
-      vi.mocked(getDocumentById).mockResolvedValue(null);
+      vi.mocked(downloadDocument).mockResolvedValue({
+        success: false,
+        message: 'Documento não encontrado.',
+      });
 
       await expect(downloadDocumentAction(404)).rejects.toThrow('Documento não encontrado');
     });
@@ -200,35 +168,18 @@ describe('Documentos Server Actions', () => {
   describe('deleteDocumentAction', () => {
     it('deve excluir registro do db e arquivo do storage com admin', async () => {
       mockRequireAuth.mockResolvedValue({ userId: 1, role: 'admin' });
-      vi.mocked(getDocumentById).mockResolvedValue({
-        id: 10,
-        name: 'Ata 2026',
-        description: 'Ata desc',
-        category: 'ata',
-        storagePath: 'ata/xyz.pdf',
-        fileSize: 1000,
-        fileType: 'application/pdf',
-        uploadedBy: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      vi.mocked(deleteDocument).mockResolvedValue({
+        success: true,
+        message: 'Documento excluído com sucesso.',
       });
 
       const result = await deleteDocumentAction(10);
 
-      expect(result).toEqual({ success: true });
-      expect(mockDb.delete).toHaveBeenCalled();
-      expect(deleteFile).toHaveBeenCalledWith('documents', ['ata/xyz.pdf']);
-      expect(logAuditAction).toHaveBeenCalledWith({
-        adminId: 1,
-        action: 'delete',
-        entityType: 'document',
-        entityId: 10,
-        metadata: {
-          name: 'Ata 2026',
-          category: 'ata',
-          storagePath: 'ata/xyz.pdf',
-        },
+      expect(result).toEqual({
+        success: true,
+        message: 'Documento excluído com sucesso.',
       });
+      expect(deleteDocument).toHaveBeenCalledWith(10, 1);
       expect(revalidatePath).toHaveBeenCalledWith('/app/secretaria/documentos');
     });
 
@@ -236,8 +187,7 @@ describe('Documentos Server Actions', () => {
       mockRequireAuth.mockResolvedValue({ userId: 3, role: 'diretoria' });
 
       await expect(deleteDocumentAction(10)).rejects.toThrow('Acesso negado');
-      expect(mockDb.delete).not.toHaveBeenCalled();
-      expect(deleteFile).not.toHaveBeenCalled();
+      expect(deleteDocument).not.toHaveBeenCalled();
     });
   });
 });
