@@ -6,11 +6,11 @@ import { requireRole } from '@/lib/auth/authorization';
 
 const requestSchema = z.object({
   presetId: z.string(),
-  startPosition: z.number().min(0).default(0),
+  startPosition: z.number().int().min(0).default(0),
   drawDebugGrid: z.boolean().default(false),
   items: z.array(
     z.object({
-      id: z.string(),
+      id: z.string().max(80),
       name: z.string().max(160).optional(),
       line1: z.string().max(160).optional(),
       line2: z.string().max(160).optional(),

@@ -1,11 +1,55 @@
 import { PDFDocument, StandardFonts, rgb, PDFPage } from 'pdf-lib';
-import type { GenerateLabelsPdfOptions } from './types';
+import type { GenerateLabelsPdfOptions, LabelPreset } from './types';
 
 const FONT_MAP: Record<string, StandardFonts> = {
   Helvetica: StandardFonts.Helvetica,
   TimesRoman: StandardFonts.TimesRoman,
   Courier: StandardFonts.Courier,
 };
+
+export interface LabelPosition {
+  pageIndex: number;
+  indexOnPage: number;
+  col: number;
+  row: number;
+  x: number;
+  yBottom: number;
+  yTop: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Função pura para calcular as coordenadas absolutas (em pontos PDF)
+ * de uma etiqueta, garantindo que o gabarito físico seja respeitado.
+ */
+export function getLabelPosition(preset: LabelPreset, absoluteIndex: number): LabelPosition {
+  const { columns, rows } = preset.grid;
+  const labelsPerPage = columns * rows;
+
+  const pageIndex = Math.floor(absoluteIndex / labelsPerPage);
+  const indexOnPage = absoluteIndex % labelsPerPage;
+
+  const col = indexOnPage % columns;
+  const row = Math.floor(indexOnPage / columns);
+
+  const x = preset.margins.left + col * (preset.label.width + preset.gap.horizontal);
+  // No PDF o Y cresce de baixo para cima. O topo da página é preset.page.height.
+  const yTop = preset.page.height - (preset.margins.top + row * (preset.label.height + preset.gap.vertical));
+  const yBottom = yTop - preset.label.height;
+
+  return {
+    pageIndex,
+    indexOnPage,
+    col,
+    row,
+    x,
+    yBottom,
+    yTop,
+    width: preset.label.width,
+    height: preset.label.height,
+  };
+}
 
 export async function generateLabelsPdf(options: GenerateLabelsPdfOptions): Promise<Uint8Array> {
   const { preset, items, startPosition = 0, drawDebugGrid = false } = options;
@@ -16,50 +60,44 @@ export async function generateLabelsPdf(options: GenerateLabelsPdfOptions): Prom
   const { columns, rows } = preset.grid;
   const labelsPerPage = columns * rows;
 
-  const drawGridForPage = (page: PDFPage) => {
-    if (!drawDebugGrid) return;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < columns; c++) {
-        const labelX = preset.margins.left + c * (preset.label.width + preset.gap.horizontal);
-        const labelTopY = preset.page.height - (preset.margins.top + r * (preset.label.height + preset.gap.vertical));
-        const labelBottomY = labelTopY - preset.label.height;
+  // Calcula total de posições que serão ocupadas (itens + posições puladas)
+  const totalPositions = startPosition + items.length;
+  // Se não houver itens, geramos pelo menos 1 página (que terá a grade de debug se ativo)
+  const totalPages = Math.max(1, Math.ceil(totalPositions / labelsPerPage));
 
+  const pages: PDFPage[] = [];
+  for (let p = 0; p < totalPages; p++) {
+    const page = pdfDoc.addPage([preset.page.width, preset.page.height]);
+    pages.push(page);
+
+    if (drawDebugGrid) {
+      // Desenhar grade completa da folha
+      for (let i = 0; i < labelsPerPage; i++) {
+        const absoluteIndex = p * labelsPerPage + i;
+        const pos = getLabelPosition(preset, absoluteIndex);
+        
         page.drawRectangle({
-          x: labelX,
-          y: labelBottomY,
-          width: preset.label.width,
-          height: preset.label.height,
+          x: pos.x,
+          y: pos.yBottom,
+          width: pos.width,
+          height: pos.height,
           borderColor: rgb(1, 0, 0),
           borderWidth: 0.5,
         });
       }
     }
-  };
-
-  let currentPage = pdfDoc.addPage([preset.page.width, preset.page.height]);
-  drawGridForPage(currentPage);
-
-  let currentPosition = startPosition;
+  }
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
+    const absoluteIndex = startPosition + i;
+    const pos = getLabelPosition(preset, absoluteIndex);
+    const currentPage = pages[pos.pageIndex];
 
-    if (currentPosition >= labelsPerPage) {
-      currentPage = pdfDoc.addPage([preset.page.width, preset.page.height]);
-      drawGridForPage(currentPage);
-      currentPosition = 0;
-    }
-
-    const col = currentPosition % columns;
-    const row = Math.floor(currentPosition / columns);
-
-    const labelX = preset.margins.left + col * (preset.label.width + preset.gap.horizontal);
-    const labelTopY = preset.page.height - (preset.margins.top + row * (preset.label.height + preset.gap.vertical));
-
-    const innerX = labelX + preset.padding.left;
-    const innerTopY = labelTopY - preset.padding.top;
-    const maxTextWidth = preset.label.width - (preset.padding.left + preset.padding.right);
-    const maxTextHeight = preset.label.height - (preset.padding.top + preset.padding.bottom);
+    const innerX = pos.x + preset.padding.left;
+    const innerTopY = pos.yTop - preset.padding.top;
+    const maxTextWidth = pos.width - (preset.padding.left + preset.padding.right);
+    const maxTextHeight = pos.height - (preset.padding.top + preset.padding.bottom);
 
     const rawLines = [item.name, item.line1, item.line2, item.line3].filter(
       (line): line is string => typeof line === 'string' && line.length > 0
@@ -99,8 +137,6 @@ export async function generateLabelsPdf(options: GenerateLabelsPdfOptions): Prom
       currentY -= preset.text.lineHeight;
       linesRendered++;
     }
-
-    currentPosition++;
   }
 
   const pdfBytes = await pdfDoc.save();
