@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockCreateNotification = vi.fn().mockResolvedValue({ id: 1 });
 const mockRevalidatePath = vi.fn();
-const mockSession = vi.fn<[], { userId: number; role: string; name: string; email: string } | null>();
+const mockSession = vi.fn<() => { userId: number; role: string; name: string; email: string } | null>();
 const mockSelect = vi.fn();
 const mockFrom = vi.fn();
 const mockWhere = vi.fn();
