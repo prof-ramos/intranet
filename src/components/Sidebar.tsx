@@ -78,6 +78,9 @@ export function Sidebar({ user }: SidebarProps) {
         <NavLink href="/app/juridico" icon={<Scale size={20} />}>
           Jurídico
         </NavLink>
+        <NavLink href="/app/privacidade" icon={<Shield size={20} />}>
+          Privacidade
+        </NavLink>
         <NavGroup
           basePath="/app/secretaria"
           icon={<FileSpreadsheet size={20} />}
