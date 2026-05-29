@@ -25,7 +25,7 @@ function sha256Hex(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
 
-function normalizeSignatureHeader(signature: string | null): string | null {
+export function normalizeSignatureHeader(signature: string | null): string | null {
   if (!signature) {
     return null;
   }
@@ -38,7 +38,7 @@ function normalizeSignatureHeader(signature: string | null): string | null {
   return normalized.startsWith('sha256=') ? normalized.slice('sha256='.length) : normalized;
 }
 
-async function readRequestBody(request: Request): Promise<string> {
+export async function readRequestBody(request: Request): Promise<string> {
   try {
     return await request.clone().text();
   } catch {
@@ -46,12 +46,12 @@ async function readRequestBody(request: Request): Promise<string> {
   }
 }
 
-function getPathWithQuery(request: Request): string {
+export function getPathWithQuery(request: Request): string {
   const url = new URL(request.url);
   return `${url.pathname}${url.search}`;
 }
 
-function hasIntegrationHeaders(request: Request): boolean {
+export function hasIntegrationHeaders(request: Request): boolean {
   return (
     request.headers.has(INTEGRATION_HEADER_NAMES.key) ||
     request.headers.has(INTEGRATION_HEADER_NAMES.timestamp) ||
@@ -59,7 +59,7 @@ function hasIntegrationHeaders(request: Request): boolean {
   );
 }
 
-function isTimestampWithinTolerance(
+export function isTimestampWithinTolerance(
   timestamp: string,
   toleranceSeconds: number,
 ): Extract<IntegrationAuthResult, { ok: false }> | { ok: true } {
