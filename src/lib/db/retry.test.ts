@@ -47,8 +47,11 @@ describe('retryTransientConnection', () => {
   });
 
   it('throws after exhausting all retries', async () => {
+    vi.useFakeTimers();
     const op = vi.fn().mockRejectedValue(transientError('connection reset'));
-    await expect(retryTransientConnection(op, 3)).rejects.toThrow('connection reset');
+    const assertion = expect(retryTransientConnection(op, 3)).rejects.toThrow('connection reset');
+    await vi.advanceTimersByTimeAsync(10000);
+    await assertion;
     expect(op).toHaveBeenCalledTimes(3);
   });
 
@@ -118,8 +121,9 @@ describe('retryTransientConnection', () => {
     vi.useFakeTimers();
     const op = vi.fn().mockRejectedValue(transientError());
     const promise = retryTransientConnection(op, 5);
+    const assertion = expect(promise).rejects.toThrow();
     await vi.advanceTimersByTimeAsync(60000);
-    await expect(promise).rejects.toThrow();
+    await assertion;
     expect(op).toHaveBeenCalledTimes(5);
   });
 });
