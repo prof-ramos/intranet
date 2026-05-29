@@ -11,12 +11,12 @@ const requestSchema = z.object({
   items: z.array(
     z.object({
       id: z.string(),
-      name: z.string().optional(),
-      line1: z.string().optional(),
-      line2: z.string().optional(),
-      line3: z.string().optional(),
+      name: z.string().max(160).optional(),
+      line1: z.string().max(160).optional(),
+      line2: z.string().max(160).optional(),
+      line3: z.string().max(160).optional(),
     })
-  ).default([]),
+  ).max(600).default([]),
 });
 
 export async function POST(req: NextRequest) {
@@ -39,6 +39,11 @@ export async function POST(req: NextRequest) {
     const preset = LABEL_PRESETS[presetId];
     if (!preset) {
       return NextResponse.json({ error: 'Preset not found' }, { status: 404 });
+    }
+
+    const labelsPerPage = preset.grid.columns * preset.grid.rows;
+    if (startPosition >= labelsPerPage) {
+      return NextResponse.json({ error: `startPosition must be less than labelsPerPage (${labelsPerPage})` }, { status: 400 });
     }
 
     const pdfBytes = await generateLabelsPdf({

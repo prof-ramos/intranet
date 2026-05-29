@@ -4,7 +4,7 @@ import { LABEL_PRESETS } from './presets';
 import { PDFDocument } from 'pdf-lib';
 
 describe('generateLabelsPdf', () => {
-  const preset = LABEL_PRESETS['pimaco-a4054'];
+  const preset = LABEL_PRESETS['pimaco-a4054-approx'];
 
   it('generates a valid PDF with correct page size', async () => {
     const pdfBytes = await generateLabelsPdf({

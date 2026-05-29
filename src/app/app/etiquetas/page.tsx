@@ -5,7 +5,7 @@ import { LABEL_PRESETS } from '@/lib/labels/presets';
 import { LabelItem } from '@/lib/labels/types';
 
 export default function EtiquetasPage() {
-  const [presetId, setPresetId] = useState('pimaco-a4054');
+  const [presetId, setPresetId] = useState('pimaco-a4054-approx');
   const [startPosition, setStartPosition] = useState(0);
   const [drawDebugGrid, setDrawDebugGrid] = useState(true);
   const [loading, setLoading] = useState(false);
