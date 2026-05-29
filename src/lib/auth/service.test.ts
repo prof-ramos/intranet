@@ -1,99 +1,231 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockDbUser = {
-  id: 1,
-  name: 'Admin',
-  email: 'admin@asof.local',
-  passwordHash: 'stored-hash',
-  role: 'admin',
-  isActive: true,
-  mustChangePassword: false,
-};
-
-vi.mock('@/lib/db/retry', () => ({
-  retryTransientConnection: (fn: () => Promise<unknown>) => fn(),
+const { mockLogger } = vi.hoisted(() => ({
+  mockLogger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
+
+vi.mock('@/lib/logger', () => ({
+  createLogger: () => mockLogger,
+}));
+
+vi.mock('@/lib/error-log', () => ({
+  toSafeErrorLog: (err: unknown) => {
+    if (!(err instanceof Error)) return { kind: 'non_error_thrown' };
+    return { kind: 'error', name: err.name };
+  },
+}));
+
+const mockBcryptCompare = vi.fn();
+const mockBcryptHash = vi.fn();
+
+vi.mock('bcryptjs', () => ({
+  default: {
+    compare: (...args: unknown[]) => mockBcryptCompare(...args),
+    hash: (...args: unknown[]) => mockBcryptHash(...args),
+  },
+}));
+
+const selectQueue: unknown[][] = [];
+const mockLimit = vi.fn(async () => selectQueue.shift() ?? []);
+const mockUpdateWhere = vi.fn().mockResolvedValue(undefined);
+const mockInsertValues = vi.fn();
 
 vi.mock('@/lib/db', () => ({
   db: {
     select: vi.fn(() => ({
       from: vi.fn(() => ({
         where: vi.fn(() => ({
-          limit: vi.fn(async () => [mockDbUser]),
+          limit: mockLimit,
         })),
       })),
+    })),
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({
+        where: mockUpdateWhere,
+      })),
+    })),
+    insert: vi.fn(() => ({
+      values: mockInsertValues,
     })),
   },
 }));
 
-vi.mock('bcryptjs', () => ({
-  default: {
-    compare: vi.fn(async () => true),
+vi.mock('@/lib/db/retry', () => ({
+  retryTransientConnection: vi.fn((fn: () => unknown) => fn()),
+}));
+
+vi.mock('@/lib/env', () => ({
+  env: {
+    MAILJET_API_KEY: undefined,
+    MAILJET_SECRET_KEY: undefined,
+    MAILJET_SENDER_VALIDATED: false,
   },
+}));
+
+vi.mock('@/lib/email', () => ({
+  sendEmail: vi.fn(),
+}));
+
+vi.mock('@/lib/email/templates', () => ({
+  temporaryPasswordEmailHtml: vi.fn(() => '<html>'),
+  temporaryPasswordEmailText: vi.fn(() => 'text'),
 }));
 
 describe('auth service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    selectQueue.length = 0;
   });
 
-  it('returns authenticated user on valid credentials', async () => {
-    const bcrypt = await import('bcryptjs');
-    vi.mocked(bcrypt.default.compare).mockResolvedValue(true as never);
+  describe('authenticate', () => {
+    it('returns user on valid credentials', async () => {
+      selectQueue.push([
+        {
+          id: 1,
+          name: 'Admin',
+          email: 'admin@asof.local',
+          passwordHash: 'hashed',
+          role: 'admin',
+          isActive: true,
+          mustChangePassword: false,
+        },
+      ]);
+      mockBcryptCompare.mockResolvedValue(true);
 
-    const { authenticate } = await import('@/lib/auth/service');
+      const { authenticate } = await import('./service');
+      const result = await authenticate('admin@asof.local', 'Senha-Forte-2026!');
 
-    const user = await authenticate('admin@asof.local', 'Senha-Forte-2026!');
+      expect(result).toEqual({
+        id: 1,
+        name: 'Admin',
+        email: 'admin@asof.local',
+        role: 'admin',
+        isActive: true,
+        mustChangePassword: false,
+      });
+    });
 
-    expect(user.id).toBe(1);
-    expect(user.email).toBe('admin@asof.local');
-    expect(user.role).toBe('admin');
+    it('throws InvalidCredentialsError on wrong password', async () => {
+      selectQueue.push([
+        {
+          id: 1,
+          name: 'Admin',
+          email: 'admin@asof.local',
+          passwordHash: 'hashed',
+          role: 'admin',
+          isActive: true,
+          mustChangePassword: false,
+        },
+      ]);
+      mockBcryptCompare.mockResolvedValue(false);
+
+      const { authenticate, InvalidCredentialsError } = await import('./service');
+      await expect(authenticate('admin@asof.local', 'wrong')).rejects.toThrow(
+        InvalidCredentialsError,
+      );
+    });
+
+    it('throws InvalidCredentialsError when user not found', async () => {
+      selectQueue.push([]);
+      mockBcryptCompare.mockResolvedValue(false);
+
+      const { authenticate, InvalidCredentialsError } = await import('./service');
+      await expect(authenticate('nobody@asof.local', 'pass')).rejects.toThrow(
+        InvalidCredentialsError,
+      );
+    });
+
+    it('throws InvalidCredentialsError when user is inactive', async () => {
+      selectQueue.push([
+        {
+          id: 1,
+          name: 'Admin',
+          email: 'admin@asof.local',
+          passwordHash: 'hashed',
+          role: 'admin',
+          isActive: false,
+          mustChangePassword: false,
+        },
+      ]);
+      mockBcryptCompare.mockResolvedValue(true);
+
+      const { authenticate, InvalidCredentialsError } = await import('./service');
+      await expect(authenticate('admin@asof.local', 'pass')).rejects.toThrow(
+        InvalidCredentialsError,
+      );
+    });
   });
 
-  it('rejects invalid credentials', async () => {
-    const bcrypt = await import('bcryptjs');
-    vi.mocked(bcrypt.default.compare).mockResolvedValue(false as never);
+  describe('changePassword', () => {
+    it('updates password hash on valid current password', async () => {
+      selectQueue.push([{ id: 7, passwordHash: 'old-hash' }]);
+      mockBcryptCompare.mockResolvedValue(true);
+      mockBcryptHash.mockResolvedValue('new-hash');
 
-    const { authenticate } = await import('@/lib/auth/service');
+      const { changePassword } = await import('./service');
+      await changePassword(7, 'old-password', 'new-password');
 
-    await expect(
-      authenticate('admin@asof.local', 'wrong-password'),
-    ).rejects.toThrow('Credenciais inválidas.');
+      expect(mockBcryptCompare).toHaveBeenCalledWith('old-password', 'old-hash');
+      expect(mockBcryptHash).toHaveBeenCalledWith('new-password', 12);
+      expect(mockUpdateWhere).toHaveBeenCalled();
+    });
+
+    it('throws AdminNotFoundError when admin does not exist', async () => {
+      selectQueue.push([]);
+
+      const { changePassword, AdminNotFoundError } = await import('./service');
+      await expect(changePassword(999, 'old', 'new')).rejects.toThrow(AdminNotFoundError);
+    });
+
+    it('throws InvalidCurrentPasswordError on wrong current password', async () => {
+      selectQueue.push([{ id: 7, passwordHash: 'old-hash' }]);
+      mockBcryptCompare.mockResolvedValue(false);
+
+      const { changePassword, InvalidCurrentPasswordError } = await import('./service');
+      await expect(changePassword(7, 'wrong', 'new')).rejects.toThrow(InvalidCurrentPasswordError);
+    });
   });
 
-  it('rejects inactive user', async () => {
-    const { db } = await import('@/lib/db');
-    vi.mocked(db.select).mockReturnValue({
-      from: vi.fn(() => ({
-        where: vi.fn(() => ({
-          limit: vi.fn(async () => [{ ...mockDbUser, isActive: false }]),
-        })),
-      })),
-    } as never);
+  describe('resetPassword', () => {
+    it('generates temp password, updates DB, and audits', async () => {
+      selectQueue.push([
+        { id: 10, name: 'Maria', email: 'maria@asof.local', role: 'secretaria', isActive: true },
+      ]);
+      mockBcryptHash.mockResolvedValue('hashed-temp');
+      mockInsertValues.mockResolvedValue(undefined);
 
-    const { authenticate } = await import('@/lib/auth/service');
+      const { resetPassword } = await import('./service');
+      const result = await resetPassword(10, 7);
 
-    await expect(
-      authenticate('admin@asof.local', 'Senha-Forte-2026!'),
-    ).rejects.toThrow('Credenciais inválidas.');
-  });
+      expect(result.tempPassword).toEqual(expect.any(String));
+      expect(result.tempPassword.length).toBeGreaterThanOrEqual(8);
+      expect(result.emailDelivered).toBe(false);
+      expect(mockBcryptHash).toHaveBeenCalledWith(expect.any(String), 12);
+      expect(mockUpdateWhere).toHaveBeenCalled();
+      expect(mockInsertValues).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'password_reset',
+          entityType: 'admin',
+          entityId: 10,
+          performedBy: 7,
+        }),
+      );
+    });
 
-  it('rejects non-existent user with same error as wrong password', async () => {
-    const { db } = await import('@/lib/db');
-    vi.mocked(db.select).mockReturnValue({
-      from: vi.fn(() => ({
-        where: vi.fn(() => ({
-          limit: vi.fn(async () => []),
-        })),
-      })),
-    } as never);
+    it('throws AdminNotFoundError when target does not exist', async () => {
+      selectQueue.push([]);
 
-    const { authenticate } = await import('@/lib/auth/service');
+      const { resetPassword, AdminNotFoundError } = await import('./service');
+      await expect(resetPassword(999, 7)).rejects.toThrow(AdminNotFoundError);
+    });
 
-    await expect(
-      authenticate('nobody@asof.local', 'Senha-Forte-2026!'),
-    ).rejects.toThrow('Credenciais inválidas.');
+    it('throws InactiveAdminError when target is inactive', async () => {
+      selectQueue.push([
+        { id: 11, name: 'Joao', email: 'joao@asof.local', role: 'admin', isActive: false },
+      ]);
+
+      const { resetPassword, InactiveAdminError } = await import('./service');
+      await expect(resetPassword(11, 7)).rejects.toThrow(InactiveAdminError);
+    });
   });
 });
-
-

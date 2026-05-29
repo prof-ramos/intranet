@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { loginRateLimiter } from '@/lib/auth/login-rate-limit';
 import { loginSchema } from '@/lib/validation/schemas';
 import { createSession } from '@/lib/auth/session';
-import { authenticate } from '@/lib/auth/service';
+import { authenticate, InvalidCredentialsError } from '@/lib/auth/service';
 import { sanitizePiiValue } from '@/lib/sanitize-pii';
 import { toSafeErrorLog, ensureError } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
@@ -43,11 +43,13 @@ export async function login(formData: FormData) {
   try {
     user = await authenticate(email, password);
   } catch (error) {
-    logger.warn(
-      '[Login] Authentication failed',
-      sanitizePiiValue({ email, error: toSafeErrorLog(error) }) as Record<string, unknown>,
-      ensureError(error),
-    );
+    if (error instanceof InvalidCredentialsError) {
+      logger.warn(
+        '[Login] Authentication failed',
+        sanitizePiiValue({ email, error: toSafeErrorLog(error) }) as Record<string, unknown>,
+        ensureError(error),
+      );
+    }
     redirect('/login?error=1');
   }
 

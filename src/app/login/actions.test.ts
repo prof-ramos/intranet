@@ -4,6 +4,12 @@ const mockAuthenticate = vi.fn();
 
 vi.mock('@/lib/auth/service', () => ({
   authenticate: (...args: unknown[]) => mockAuthenticate(...args),
+  InvalidCredentialsError: class InvalidCredentialsError extends Error {
+    constructor() {
+      super('Credenciais inválidas.');
+      this.name = 'InvalidCredentialsError';
+    }
+  },
 }));
 
 vi.mock('@/lib/auth/session', () => ({
@@ -121,7 +127,8 @@ describe('login action', () => {
   });
 
   it('redirects to error on authentication failure', async () => {
-    mockAuthenticate.mockRejectedValue(new Error('Credenciais inválidas.'));
+    const { InvalidCredentialsError } = await import('@/lib/auth/service');
+    mockAuthenticate.mockRejectedValue(new InvalidCredentialsError());
     const { redirect } = await import('next/navigation');
 
     const { login } = await import('@/app/login/actions');
