@@ -16,6 +16,7 @@ export const notificationType = pgEnum('notification_type', [
   'legal_consultation.answered',
   'activity.assigned',
   'legal_consultation.sla_warning',
+  'lgpd_request',
 ]);
 
 export const notificationEntityType = pgEnum('notification_entity_type', [

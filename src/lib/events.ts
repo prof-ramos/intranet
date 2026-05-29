@@ -10,6 +10,7 @@ export const NOTIFICATION_EVENT_TYPES = [
   'legal_consultation.answered',
   'activity.assigned',
   'legal_consultation.sla_warning',
+  'lgpd_request',
 ] as const;
 
 export type NotificationEventType = (typeof NOTIFICATION_EVENT_TYPES)[number];
@@ -54,6 +55,8 @@ const eventHandlers: Record<NotificationEventType, EventHandler> = {
     createNotificationFromEvent('activity.assigned', payload, options.tx),
   'legal_consultation.sla_warning': (payload, options) =>
     createNotificationFromEvent('legal_consultation.sla_warning', payload, options.tx),
+  'lgpd_request': (payload, options) =>
+    createNotificationFromEvent('lgpd_request', payload, options.tx),
 };
 
 export async function emitEvent(
