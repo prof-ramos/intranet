@@ -43,6 +43,10 @@ backups/
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+credentials.json
+token.json
+gmail-token.json
+gmail-credentials.json
 
 # vercel
 .vercel
@@ -87,3 +91,13 @@ playwright/.cache/
 .codex/
 .antigravitycli/
 knowledge.md
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+

@@ -193,7 +193,7 @@ Gere um e-mail HTML completo no design system da ASOF para este tipo de comunica
     const ai = await getGeminiClient();
     const result = await Promise.race([
       ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         contents: userMessage,
         config: {
           systemInstruction: EMAIL_SYSTEM_INSTRUCTION,
