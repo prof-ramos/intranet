@@ -305,24 +305,13 @@ export async function addTriageObservacao(
   observacoes: string,
   _userId: number,
 ): Promise<void> {
-  const [row] = await db
-    .select({ existing: emailTriagens.observacoesValidacao })
-    .from(emailTriagens)
-    .where(eq(emailTriagens.id, id))
-    .limit(1);
-
-  if (!row) throw new Error('Triagem não encontrada.');
-
   const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
   const newEntry = `[${timestamp}] ${observacoes}`;
-  const combined = row.existing
-    ? `${row.existing}\n${newEntry}`
-    : newEntry;
 
   await db
     .update(emailTriagens)
     .set({
-      observacoesValidacao: combined,
+      observacoesValidacao: sql`COALESCE(${emailTriagens.observacoesValidacao} || ${'\n'}, '') || ${newEntry}`,
       updatedAt: sql`current_timestamp`,
     })
     .where(eq(emailTriagens.id, id));

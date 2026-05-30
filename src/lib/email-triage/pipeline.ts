@@ -95,11 +95,27 @@ async function getSystemBotUserId(): Promise<number> {
       isActive: false,
       mustChangePassword: false,
     })
+    .onConflictDoNothing()
     .returning({ id: admins.id });
 
-  _systemBotUserId = created.id;
-  log.info('Created system bot user for triage.', { userId: created.id });
-  return created.id;
+  if (created) {
+    _systemBotUserId = created.id;
+    log.info('Created system bot user for triage.', { userId: created.id });
+    return created.id;
+  }
+
+  const existing = await db
+    .select({ id: admins.id })
+    .from(admins)
+    .where(eq(admins.email, 'sistema-triagem@asof.local'))
+    .limit(1);
+
+  if (existing.length > 0) {
+    _systemBotUserId = existing[0].id;
+    return existing[0].id;
+  }
+
+  throw new Error('Failed to create or find system bot user.');
 }
 
 // ─── DB Persistence ──────────────────────────────────────────────────────
@@ -166,10 +182,10 @@ async function persistTriage(
   result: EmailTriageResult,
   modelName: string,
   responseId: string | null,
-): Promise<void> {
+): Promise<number> {
   const values = buildTriagemValues(payload, result, modelName, responseId);
 
-  await db
+  const [row] = await db
     .insert(emailTriagens)
     .values(values)
     .onConflictDoUpdate({
@@ -208,7 +224,10 @@ async function persistTriage(
         status: values.status,
         updatedAt: sql`current_timestamp`,
       },
-    });
+    })
+    .returning({ id: emailTriagens.id });
+
+  return row.id;
 }
 
 /**
@@ -483,8 +502,9 @@ export async function processEmail(
   }
 
   // ── Step 5: Persist to DB ─────────────────────────────────────────────
+  let triageId: number;
   try {
-    await persistTriage(payload, triageResult, DEFAULT_MODEL, null);
+    triageId = await persistTriage(payload, triageResult, DEFAULT_MODEL, null);
     log.info('Triage result persisted.', {
       messageId,
       categoria: triageResult.categoria,
@@ -497,6 +517,14 @@ export async function processEmail(
 
   if (triageResult.exige_validacao_humana) {
     try {
+      const [botUser] = await db
+        .select({ id: admins.id })
+        .from(admins)
+        .where(eq(admins.name, 'Sistema de Triagem'))
+        .limit(1);
+
+      const actorId = botUser?.id ?? 1;
+
       const adminUsers = await db
         .select({ id: admins.id })
         .from(admins)
@@ -506,12 +534,12 @@ export async function processEmail(
         adminUsers.map((admin) =>
           createNotificationFromEvent('email_triage_pending', {
             recipientId: admin.id,
-            actorId: admin.id,
+            actorId,
             title: 'Nova triagem aguardando validação',
             message: `E-mail "${payload.subject}" de ${payload.sender} foi classificado como ${triageResult.categoria} (risco ${triageResult.nivel_risco}) e exige validação.`,
-            href: `/app/email-triage`,
+            href: `/app/email-triage/${triageId}`,
             entityType: 'email_triagem',
-            entityId: 0,
+            entityId: triageId,
           }),
         ),
       );
