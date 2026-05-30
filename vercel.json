@@ -19,7 +19,7 @@
       "schedule": "0 6 * * *"
     },
     {
-      "path": "/api/v1/gmail-watch",
+      "path": "/api/v1/cron/gmail-watch",
       "schedule": "0 2 * * 0"
     }
   ]

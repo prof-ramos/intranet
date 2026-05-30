@@ -2,12 +2,12 @@ import { authorizeCronRequest } from '@/lib/cron/auth';
 import { jsonError, jsonOk, jsonMethodNotAllowed } from '@/lib/integrations/http';
 import { getGmailAccessToken, watchGmail } from '@/lib/email-triage/gmail';
 import { createLogger } from '@/lib/logger';
+import { env } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
 const ALLOWED_METHODS = ['POST'] as const;
 const log = createLogger('gmail-watch');
-const GMAIL_WATCH_TOPIC = process.env.GMAIL_WATCH_TOPIC ?? 'projects/automacaoasof/topics/gmail-inbox';
 
 export async function POST(request: Request) {
   const authorization = authorizeCronRequest(request);
@@ -15,13 +15,20 @@ export async function POST(request: Request) {
     return authorization.response;
   }
 
+  const topicName = env.GMAIL_WATCH_TOPIC;
+  if (!topicName) {
+    return jsonError(500, 'invalid_request', 'GMAIL_WATCH_TOPIC not configured.', {
+      requestId: authorization.requestId,
+    });
+  }
+
   const startTime = performance.now();
 
   try {
-    log.info('Renewing Gmail watch...', { topic: GMAIL_WATCH_TOPIC });
+    log.info('Renewing Gmail watch...', { topic: topicName });
 
     const accessToken = await getGmailAccessToken();
-    const result = await watchGmail(accessToken, GMAIL_WATCH_TOPIC);
+    const result = await watchGmail(accessToken, topicName);
 
     const elapsed = Math.round(performance.now() - startTime);
 

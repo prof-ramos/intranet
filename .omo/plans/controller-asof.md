@@ -98,15 +98,19 @@ Port the existing Python MVP email triage script (`scripts/email-triage/email_tr
 - Bootstrap script to obtain Gmail refresh token
 
 ### Must NOT Have (Guardrails)
-- ❌ No UI of any kind (validation, dashboard, CRUD pages)
 - ❌ No `legal_deadlines` table (use `email_triagens.prazo_data`)
 - ❌ No `follow_up_alerts` table
 - ❌ No auto-creation of `legal_consultations` records
 - ❌ No CRUD or UI for `lawyers` table
 - ❌ No Gmail Watch / Pub/Sub
-- ❌ No notification system (push/email)
 - ❌ No multi-mailbox support
 - ❌ No retry queues / dead-letter topics
+
+#### Scope Change (2026-05-30): UI added
+- ✅ List page (`/app/email-triage`) — read-only view with filters for all roles
+- ✅ Detail page (`/app/email-triage/[id]`) — full triagem detail with validation form
+- ✅ Server actions — status update, observação, deadline edit (admin only)
+- ✅ Notifications — admins notified when `exige_validacao_humana = true`
 - ❌ No `googleapis` package dependency (use raw `fetch()`)
 - ❌ No module explosion — max 4 files in `src/lib/email-triage/`
 

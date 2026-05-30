@@ -38,6 +38,7 @@ export const envSchema = z
     GMAIL_REFRESH_TOKEN: optionalString,
     GMAIL_USER: z.string().email().default('controller@asof.org.br'),
     GMAIL_MAX_EMAILS_PER_RUN: z.coerce.number().int().positive().default(10),
+    GMAIL_WATCH_TOPIC: optionalString,
 
     NEXT_PUBLIC_AI_ENABLED: z
       .preprocess(emptyStringToUndefined, z.enum(['true', 'false']).default('false'))

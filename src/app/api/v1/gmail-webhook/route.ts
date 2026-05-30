@@ -7,9 +7,38 @@ export const dynamic = 'force-dynamic';
 
 const log = createLogger('gmail-webhook');
 
-export async function POST(request: Request) {
-  const startTime = performance.now();
+async function processWebhookAsync(historyId: string) {
+  try {
+    const accessToken = await getGmailAccessToken();
+    const messages = await getHistoryChanges(accessToken, historyId);
 
+    if (messages.length === 0) {
+      log.info('No new messages to process.');
+      return;
+    }
+
+    log.info(`Processing ${messages.length} new messages...`);
+
+    const results = await Promise.allSettled(
+      messages.map((msg) => processEmail(accessToken, msg.id)),
+    );
+
+    const processed = results.filter(
+      (r) => r.status === 'fulfilled' && r.value.success,
+    ).length;
+    const errors = results.filter(
+      (r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success),
+    ).length;
+
+    log.info('Gmail webhook processing completed.', { processed, errors });
+  } catch (error) {
+    log.error('Gmail webhook processing failed.', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+export async function POST(request: Request) {
   try {
     const body = await request.json();
 
@@ -19,59 +48,26 @@ export async function POST(request: Request) {
     }
 
     const decoded = Buffer.from(body.message.data, 'base64url').toString('utf-8');
-    const { emailAddress, historyId } = JSON.parse(decoded);
+    const { historyId } = JSON.parse(decoded);
 
-    log.info('Gmail Pub/Sub notification received.', {
-      emailAddress: emailAddress ? '***@***' : null,
-      historyId,
-    });
+    log.info('Gmail Pub/Sub notification received.', { historyId });
 
     if (!historyId) {
       log.warn('No historyId in decoded payload');
       return jsonOk({ status: 'ignored', reason: 'no_history_id' });
     }
 
-    const accessToken = await getGmailAccessToken();
-
-    const messages = await getHistoryChanges(accessToken, historyId);
-
-    if (messages.length === 0) {
-      log.info('No new messages to process.');
-      return jsonOk({ status: 'ok', processed: 0 });
-    }
-
-    log.info(`Processing ${messages.length} new messages...`);
-
-    const results = [];
-    for (const msg of messages) {
-      const result = await processEmail(accessToken, msg.id);
-      results.push(result);
-    }
-
-    const processed = results.filter((r) => r.success).length;
-    const errors = results.filter((r) => !r.success).length;
-    const elapsed = Math.round(performance.now() - startTime);
-
-    log.info('Gmail webhook processing completed.', {
-      processed,
-      errors,
-      duration_ms: elapsed,
+    processWebhookAsync(historyId).catch((err) => {
+      log.error('Async processing failed.', { error: String(err) });
     });
 
-    return jsonOk({
-      status: 'ok',
-      processed,
-      errors,
-      duration: `${elapsed}ms`,
-    });
+    return jsonOk({ status: 'accepted', historyId });
   } catch (error) {
-    const elapsed = Math.round(performance.now() - startTime);
-    log.error('Gmail webhook processing failed.', {
+    log.error('Gmail webhook failed.', {
       error: error instanceof Error ? error.message : String(error),
-      duration_ms: elapsed,
     });
 
-    return jsonError(500, 'invalid_request', 'Gmail webhook processing failed.');
+    return jsonError(500, 'invalid_request', 'Gmail webhook failed.');
   }
 }
 
