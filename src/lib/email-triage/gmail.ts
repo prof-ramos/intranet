@@ -416,6 +416,104 @@ export async function batchMarkAsTriaged(
   }
 }
 
+// ─── Push Notifications (Pub/Sub) ────────────────────────────────────
+
+/**
+ * Register a Gmail push notification watch.
+ *
+ * POSTs to https://gmail.googleapis.com/gmail/v1/users/me/watch
+ * with the configured Pub/Sub topic.
+ *
+ * The watch expires after 7 days — renew weekly via cron.
+ */
+export async function watchGmail(
+  accessToken: string,
+  topicName: string,
+  userId: string = 'me',
+): Promise<{ historyId: string; expiration: string }> {
+  log.info('Registering Gmail watch...', { topicName });
+
+  const url = `${GMAIL_API_BASE}/${userId}/watch`;
+  const response = await fetchWithRetry(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      topicName,
+      labelIds: ['INBOX'],
+      labelFilterBehavior: 'INCLUDE',
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!data.historyId) {
+    log.error('Gmail watch returned no historyId.', {
+      responseKeys: Object.keys(data),
+    });
+    throw new Error('Gmail watch não retornou historyId.');
+  }
+
+  log.info('Gmail watch registered.', {
+    historyId: data.historyId,
+    expiration: data.expiration,
+  });
+
+  return {
+    historyId: data.historyId,
+    expiration: data.expiration,
+  };
+}
+
+/**
+ * Fetch changes since a given historyId using the Gmail history.list API.
+ *
+ * Returns the list of message IDs that were added or modified.
+ */
+export async function getHistoryChanges(
+  accessToken: string,
+  startHistoryId: string,
+  userId: string = 'me',
+): Promise<Array<{ id: string; threadId: string }>> {
+  log.info('Fetching history changes...', { startHistoryId });
+
+  const params = new URLSearchParams({
+    startHistoryId,
+    historyTypes: 'messageAdded',
+  });
+
+  const url = `${GMAIL_API_BASE}/${userId}/history?${params.toString()}`;
+  const response = await fetchWithRetry(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  const data = await response.json();
+  const messages: Array<{ id: string; threadId: string }> = [];
+
+  if (data.history) {
+    for (const record of data.history) {
+      if (record.messagesAdded) {
+        for (const msg of record.messagesAdded) {
+          if (msg.message?.id && msg.message?.threadId) {
+            messages.push({
+              id: msg.message.id,
+              threadId: msg.message.threadId,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  log.info(`History changes: ${messages.length} new messages.`, {
+    count: messages.length,
+  });
+
+  return messages;
+}
+
 // ─── Re-export helper for external use ──────────────────────────────────
 
 export { getHeader, TRIAGED_LABEL_NAME, DEFAULT_QUERY };
