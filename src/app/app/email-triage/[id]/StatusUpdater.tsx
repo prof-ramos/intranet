@@ -2,21 +2,19 @@
 
 import { focusRingClass } from '@/lib/ui/tokens';
 
-export function StatusFilter({
+export function StatusUpdater({
   children,
   defaultValue,
-  name = 'status',
 }: {
   children: React.ReactNode;
   defaultValue: string;
-  name?: string;
 }) {
   return (
     <select
-      name={name}
+      name="status"
       defaultValue={defaultValue}
-      className={`h-10 rounded-[8px] border border-[#e2e8f0] bg-white px-3 text-sm text-[#0d1f3c] ${focusRingClass}`}
-      onChange={(e) => e.currentTarget.form?.submit()}
+      className={`h-9 rounded-[8px] border border-[#e2e8f0] bg-white px-3 text-sm text-[#0d1f3c] ${focusRingClass}`}
+      onChange={(e) => e.currentTarget.form?.requestSubmit()}
     >
       {children}
     </select>

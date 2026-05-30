@@ -1,0 +1,24 @@
+{
+  "id": "msg-1",
+  "threadId": "thread-1",
+  "historyId": "99",
+  "internalDate": "1780272000000",
+  "payload": {
+    "headers": [
+      { "name": "From", "value": "Controller <controller@example.test>" },
+      { "name": "To", "value": "controller@asof.org.br" },
+      { "name": "Subject", "value": "Prazo de resposta" }
+    ],
+    "parts": [
+      {
+        "mimeType": "text/plain",
+        "body": { "data": "UmVzcG9uZGVyIGF0ZSAxMC8wNi8yMDI2Lg==" }
+      },
+      {
+        "filename": "aviso.txt",
+        "mimeType": "text/plain",
+        "body": { "data": "YW5leG8=", "size": 5 }
+      }
+    ]
+  }
+}

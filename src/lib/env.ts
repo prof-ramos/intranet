@@ -33,6 +33,12 @@ export const envSchema = z
     ASOF_INTRANET_URL: optionalUrl,
     GEMINI_API_KEY: optionalString.describe('Gemini API key for AI features'),
 
+    GMAIL_CLIENT_ID: optionalString,
+    GMAIL_CLIENT_SECRET: optionalString,
+    GMAIL_REFRESH_TOKEN: optionalString,
+    GMAIL_USER: z.string().email().default('controller@asof.org.br'),
+    GMAIL_MAX_EMAILS_PER_RUN: z.coerce.number().int().positive().default(10),
+
     NEXT_PUBLIC_AI_ENABLED: z
       .preprocess(emptyStringToUndefined, z.enum(['true', 'false']).default('false'))
       .transform((v) => v === 'true'),

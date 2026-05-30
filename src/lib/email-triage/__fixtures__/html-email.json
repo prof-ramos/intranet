@@ -1,0 +1,19 @@
+{
+  "id": "msg-html-1",
+  "threadId": "thread-html-1",
+  "historyId": "101",
+  "internalDate": "1780444800000",
+  "html_body": "<p>Responder <strong>hoje</strong>.</p>",
+  "expected_plain_text": "Responder hoje.",
+  "payload": {
+    "mimeType": "text/html",
+    "headers": [
+      { "name": "From", "value": "Sistema <noreply@sistema.asof.org.br>" },
+      { "name": "To", "value": "controller@asof.org.br" },
+      { "name": "Subject", "value": "Notificacao de prazo" }
+    ],
+    "body": {
+      "data": "PHA+UmVzcG9uZGVyIDxzdHJvbmc+aG9qZTwvc3Ryb25nPi48L3A+"
+    }
+  }
+}

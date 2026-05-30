@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { LEGAL_CONSULTATION_STATUSES } from '@/lib/juridico/status';
+import { EMAIL_TRIAGE_STATUSES } from '@/lib/email-triage/status';
 import { paymentStatus } from '@/lib/db/schema/finance';
 import {
   functionalStatus,
@@ -220,4 +221,26 @@ export const webhookSubscriptionFormSchema = z.object({
   subscribedEvents: z
     .array(z.enum(domainEventType.enumValues))
     .min(1, 'Selecione ao menos um evento.'),
+});
+
+// ─── Email Triage Validation ─────────────────────────────────────────
+
+export const updateTriageStatusSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  status: z.enum(EMAIL_TRIAGE_STATUSES),
+  observacoes: z.string().max(2000).optional(),
+});
+
+export const addTriageObservacaoSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  observacoes: z.string().min(1, 'Observação é obrigatória.').max(2000),
+});
+
+export const updateTriageDeadlineSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  prazoData: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato esperado: YYYY-MM-DD'),
+  prazoHora: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, 'Formato esperado: HH:mm')
+    .optional(),
 });

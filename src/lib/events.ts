@@ -11,10 +11,11 @@ export const NOTIFICATION_EVENT_TYPES = [
   'activity.assigned',
   'legal_consultation.sla_warning',
   'lgpd_request',
+  'email_triage_pending',
 ] as const;
 
 export type NotificationEventType = (typeof NOTIFICATION_EVENT_TYPES)[number];
-export type NotificationEntity = 'activity' | 'legal_consultation';
+export type NotificationEntity = 'activity' | 'legal_consultation' | 'email_triagem';
 
 export interface NotificationEventPayload {
   actorId: number;
@@ -57,6 +58,8 @@ const eventHandlers: Record<NotificationEventType, EventHandler> = {
     createNotificationFromEvent('legal_consultation.sla_warning', payload, options.tx),
   'lgpd_request': (payload, options) =>
     createNotificationFromEvent('lgpd_request', payload, options.tx),
+  'email_triage_pending': (payload, options) =>
+    createNotificationFromEvent('email_triage_pending', payload, options.tx),
 };
 
 export async function emitEvent(

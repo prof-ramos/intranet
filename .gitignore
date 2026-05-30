@@ -101,3 +101,6 @@ __pycache__/
 .venv/
 venv/
 
+
+.omo/run-continuation/
+opencode.json
