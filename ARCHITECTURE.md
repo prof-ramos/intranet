@@ -1,6 +1,6 @@
 # Arquitetura
 
-Atualizado em 2026-05-26 para refletir o reset da camada de banco/autenticacao.
+Atualizado em 2026-05-30 para incluir o módulo de triagem de e-mails.
 
 ## Visao Geral
 
@@ -15,6 +15,53 @@ A intranet ASOF e uma aplicacao Next.js 16 App Router, server-side, com Drizzle 
 - `src/app/app/secretaria/oficios` e `src/lib/oficios`: oficios, rich text e PDF.
 - `src/app/app/notifications` e `src/lib/notifications`: alertas persistidos.
 - `src/app/app/config`: usuarios, lotacoes, auditoria, API keys e webhooks outbound.
+- `src/app/app/email-triage` e `src/lib/email-triage`: triagem automatica de e-mails com Gemini AI. Busca emails via Gmail API, analisa com IA, persiste resultado, notifica admins.
+
+## Modulo Email Triage
+
+### Fluxo
+1. **Gmail API** — busca emails nao lidos de `controller@asof.org.br`
+2. **Extracao** — HTML-to-text, decodificacao Base64, anexos
+3. **Gemini AI** — classifica categoria, prazo, risco, acao recomendada
+4. **Persistencia** — salva em `email_triagens` com audit trail
+5. **Correlacao** — cria notas juridicas automaticas quando aplicavel
+6. **Labeling** — marca email como triado no Gmail
+
+### Componentes
+- `src/lib/email-triage/schema.ts` — Zod schemas e tipos
+- `src/lib/email-triage/status.ts` — labels, badges, filtros (13 status)
+- `src/lib/email-triage/search-params.ts` — parser de filtros da UI
+- `src/lib/email-triage/repository.ts` — queries e mutations do banco
+- `src/lib/email-triage/pipeline.ts` — orchestrador do fluxo
+- `src/lib/email-triage/gmail.ts` — cliente Gmail API (raw fetch)
+- `src/lib/email-triage/analyzer.ts` — PII redaction, HTML-to-text, Gemini analysis
+- `src/app/app/email-triage/page.tsx` — list page com filtros e KPIs
+- `src/app/app/email-triage/[id]/page.tsx` — detail page com validacao
+- `src/app/app/email-triage/actions.ts` — server actions (admin only)
+- `src/app/api/v1/email-triage/process/route.ts` — API endpoint (cron)
+
+### Status
+| Status | Descricao |
+|--------|-----------|
+| `novo` | Recem-chegado, nao processado |
+| `analisado` | Processado pela IA, sem validacao pendente |
+| `aguardando_validacao` | IA sugere validacao humana |
+| `validado` | Validado por admin |
+| `em_andamento` | Sendo trabalhado |
+| `concluido` | Finalizado |
+| `vencido` | Prazo expirado (automatizado) |
+| `arquivado` | Arquivado |
+| `erro_validacao_ia` | Falha na validacao da IA |
+| `erro_processamento_anexo` | Falha no processamento |
+| `aguardando_reprocessamento` | Aguardando nova tentativa |
+| `descartado_por_irrelevancia` | Marcado como irrelevante |
+| `pendente_validacao_lgpd` | Pendente de revisao LGPD |
+
+### Regras de Negocio
+- Todos veem a list page (`requireAuth()`)
+- Só `admin` altera status, observações e prazos (`requireRole(['admin'])`)
+- `vencido` é automático: `processBatch()` marca emails com prazo expirado
+- Notificação: admins notificados quando `exige_validacao_humana = true`
 
 ## Banco
 
@@ -23,6 +70,7 @@ A intranet ASOF e uma aplicacao Next.js 16 App Router, server-side, com Drizzle 
 - Runtime: `DATABASE_URL`.
 - Migrations: `DATABASE_MIGRATION_URL`.
 - Guardrail: `scripts/guarded-migrate.ts`.
+- Email triage migration: `drizzle/postgres/0007_email_triage_mvp.sql`.
 
 O baseline nao depende de roles, policies, publications ou recursos de plataforma externa. RLS pode voltar depois como hardening, mas nao bloqueia a estreia.
 
@@ -38,6 +86,8 @@ O baseline nao depende de roles, policies, publications ou recursos de plataform
 
 Notificacoes sao registros persistidos. O cliente carrega via Server Actions e atualiza periodicamente. Entrega em tempo real nao faz parte do caminho critico do go-live.
 
+O tipo `email_triage_pending` notifica admins quando uma triagem exige validacao humana.
+
 ## Documentos E Storage
 
 Metadados de documentos permanecem no PostgreSQL. Arquivos fisicos devem usar storage de objetos privado quando o modulo for ativado operacionalmente. O provedor ainda nao e parte do baseline.
@@ -47,6 +97,7 @@ Metadados de documentos permanecem no PostgreSQL. Arquivos fisicos devem usar st
 - Dados sensiveis passam por mascaramento, criptografia e indices cegos onde aplicavel.
 - Logs devem usar `src/lib/logger.ts` e `src/lib/sanitize-pii.ts`.
 - Senhas temporarias, cookies, tokens e segredos nunca devem ser persistidos em logs ou auditoria.
+- Email triage: PII (remetente, destinatário) sanitizado em logs via `sanitizePiiValue()`.
 
 ## Deploy
 
@@ -55,5 +106,7 @@ Metadados de documentos permanecem no PostgreSQL. Arquivos fisicos devem usar st
 3. Aplicar baseline com snapshot/backup e janela aprovada.
 4. Rodar seed inicial.
 5. Validar gates e smoke manual.
+6. Configurar credenciais Gmail (CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN).
+7. Configurar GEMINI_API_KEY para analysis.
 
 Detalhes operacionais ficam em `docs/runbook.md`; pendencias ficam em `TODO-PROD.md`.

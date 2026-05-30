@@ -1,10 +1,10 @@
 import { db } from '@/lib/db';
-import { admins } from '@/lib/db/schema';
+import { admins, lawyers } from '@/lib/db/schema';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { getInitialAdminCredentials } from './seed-admin-config';
 
-async function main() {
+async function seedAdmin() {
   const { email, password } = getInitialAdminCredentials();
   const hash = await bcrypt.hash(password, 12);
 
@@ -53,6 +53,35 @@ async function main() {
 
   console.log('Admin created successfully.');
   console.log('The admin must change the initial password on first login.');
+}
+
+async function seedLawyers() {
+  const lawFirms = [
+    { name: 'Dr. Carlos Andrade', email: 'carlos.andrade@asof.org.br', oab: 'OAB/DF 12345', firm: 'Andrade & Associados', specialty: 'Direito Administrativo' },
+    { name: 'Dra. Marina Silva', email: 'marina.silva@asof.org.br', oab: 'OAB/SP 67890', firm: 'Silva Advocacia', specialty: 'Direito Trabalhista' },
+    { name: 'Dr. Rafael Oliveira', email: 'rafael.oliveira@asof.org.br', oab: 'OAB/RJ 54321', firm: 'Oliveira & Mendes Advogados', specialty: 'Direito Civil' },
+  ];
+
+  for (const lawyer of lawFirms) {
+    const [existing] = await db
+      .select({ id: lawyers.id })
+      .from(lawyers)
+      .where(eq(lawyers.email, lawyer.email))
+      .limit(1);
+
+    if (existing) {
+      console.log(`Lawyer ${lawyer.name} already exists, skipping.`);
+      continue;
+    }
+
+    await db.insert(lawyers).values(lawyer);
+    console.log(`Lawyer ${lawyer.name} created successfully.`);
+  }
+}
+
+async function main() {
+  await seedAdmin();
+  await seedLawyers();
 }
 
 main().catch((error) => {

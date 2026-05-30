@@ -1,0 +1,26 @@
+{
+  "categoria": "juridico",
+  "resumo": "Associado solicita resposta sobre notificacao recebida.",
+  "thread_context_summary": null,
+  "ha_prazo": true,
+  "prazo_data": "2026-06-10",
+  "prazo_hora": null,
+  "prazo_confianca_data": "alta",
+  "tipo_prazo": "resposta",
+  "trecho_fonte_do_prazo": "Responder ate 10/06/2026.",
+  "resumo_anexos": [],
+  "source_evidence": [
+    {
+      "tipo": "corpo_email",
+      "referencia": "body_excerpt",
+      "trecho": "Responder ate 10/06/2026."
+    }
+  ],
+  "nivel_risco": "alto",
+  "confianca": "alta",
+  "acao_recomendada": "Encaminhar para avaliacao juridica.",
+  "responsavel_sugerido": "juridico",
+  "exige_validacao_humana": true,
+  "legal_basis": "avaliacao_humana_necessaria",
+  "processed_purpose": "triagem interna de obrigacoes institucionais"
+}

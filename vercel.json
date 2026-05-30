@@ -13,6 +13,14 @@
     {
       "path": "/api/v1/cron/lgpd-retention",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/v1/email-triage/process",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/v1/cron/gmail-watch",
+      "schedule": "0 2 * * 0"
     }
   ]
 }

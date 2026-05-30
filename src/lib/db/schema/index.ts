@@ -7,6 +7,7 @@ export * from './audit';
 export * from './enums';
 export * from './integrations';
 export * from './login-attempts';
+export * from './lawyers';
 export * from './legal-consultations';
 export * from './legal-processes';
 export * from './legal-notes';

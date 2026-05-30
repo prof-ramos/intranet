@@ -1,0 +1,55 @@
+{
+  "description": "Test cases for PII redaction patterns (EMAIL_RE, CPF_RE, LONG_NUMBER_RE). Each case has an input string and the set of substrings expected to be redacted.",
+  "cases": [
+    {
+      "label": "single email address",
+      "input": "Contato: contato@asof.org.br",
+      "expected_redacted_substrings": ["contato@asof.org.br"]
+    },
+    {
+      "label": "single CPF with separators",
+      "input": "CPF: 123.456.789-00",
+      "expected_redacted_substrings": ["123.456.789-00"]
+    },
+    {
+      "label": "single CPF without separators",
+      "input": "CPF 12345678901",
+      "expected_redacted_substrings": ["12345678901"]
+    },
+    {
+      "label": "single SIAPE (long number >=6 digits)",
+      "input": "SIAPE 1234567",
+      "expected_redacted_substrings": ["1234567"]
+    },
+    {
+      "label": "SIAPE 9876543",
+      "input": "SIAPE 9876543",
+      "expected_redacted_substrings": ["9876543"]
+    },
+    {
+      "label": "combined PII from test_redacts_common_pii_from_excerpt",
+      "input": "CPF 123.456.789-00 email pessoa@example.test SIAPE 1234567",
+      "expected_redacted_substrings": ["123.456.789-00", "pessoa@example.test", "1234567"]
+    },
+    {
+      "label": "email in institutional domain",
+      "input": "Enviar para controller@asof.org.br",
+      "expected_redacted_substrings": ["controller@asof.org.br"]
+    },
+    {
+      "label": "email with display name",
+      "input": "From: Controller <controller@example.test>",
+      "expected_redacted_substrings": ["controller@example.test"]
+    },
+    {
+      "label": "long number (6+ digits) that is not CPF",
+      "input": "Protocolo: 987654",
+      "expected_redacted_substrings": ["987654"]
+    },
+    {
+      "label": "mixed PII in sentence",
+      "input": "O CPF 123.456.789-00 do associado com email pessoa@example.test e SIAPE 9876543 deve ser protegido.",
+      "expected_redacted_substrings": ["123.456.789-00", "pessoa@example.test", "9876543"]
+    }
+  ]
+}

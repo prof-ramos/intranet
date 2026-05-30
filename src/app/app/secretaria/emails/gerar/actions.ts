@@ -3,6 +3,9 @@
 import { requireAuth } from '@/lib/auth/require-auth';
 import { generateEmailContent } from '@/lib/ai/gemini';
 import { isGeminiConfigured } from '@/lib/ai/settings';
+import { consumeIpRateLimit } from '@/lib/rate-limit';
+import { getTrustedClientIp } from '@/lib/ip';
+import { headers } from 'next/headers';
 
 import { ALLOWED_EMAIL_TYPES, type EmailType } from '@/lib/ai/constants';
 
@@ -19,6 +22,20 @@ export async function generateEmailAction(
   prompt: string,
 ): Promise<GenerateEmailResult> {
   await requireAuth();
+
+  const h = await headers();
+  const ip = getTrustedClientIp(h);
+  const rateLimitResult = await consumeIpRateLimit(ip, 'ai_generate_email', {
+    windowMs: 60 * 1000,
+    maxRequests: 5,
+  });
+
+  if (!rateLimitResult.allowed) {
+    return {
+      success: false,
+      error: `Limite de geração atingido. Tente novamente em ${Math.ceil((rateLimitResult.retryAfterMs ?? 60000) / 1000)} segundos.`,
+    };
+  }
 
   const trimmedPrompt = prompt?.trim();
   if (!trimmedPrompt) {

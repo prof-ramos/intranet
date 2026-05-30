@@ -120,7 +120,22 @@ Processo de criar registros de mensalidade para todos os associados ativos de um
 
 Solicitação de atendimento jurídico feita por associado. Possui número interno sequencial, status, e histórico de notas.
 
+_Avoid_: "Demanda" como sinônimo de Consulta Jurídica. O termo canônico é Consulta Jurídica.
+
+#### Nota (Jurídico)
+
+Unidade de interação em uma Consulta Jurídica ou Processo Jurídico. Cada nota atualiza o `last_interaction_at` da consulta. Notas originadas de e-mail processado automaticamente carregam campos opcionais `email_thread_id`, `email_from`, `email_to` — mas permanecem o mesmo conceito de Nota.
+
+_Avoid_: "Interação" como entidade separada. Toda interação — manual ou oriunda de e-mail — é uma Nota.
+
+#### Assessor Jurídico Externo
+
+Advogado de escritório parceiro externo que conduz ou acompanha uma Consulta Jurídica em nome da ASOF. Modelado na tabela `lawyers` (separada de `admins`, que são usuários internos). Campos: nome, e-mail, telefone, especialidades, escritório.
+
+_Avoid_: "Advogado" sozinho, pois é ambíguo — pode ser o responsável interno (membro da Diretoria) ou o assessor externo. O termo canônico é Assessor Jurídico Externo.
+
 #### Processo Jurídico
+
 
 Caso jurídico mais estruturado (Fase 2 do módulo). Relaciona-se a pareceres e notas.
 
@@ -135,6 +150,17 @@ Ciclo de vida da consulta: `aberta`, `aguardando_escritorio`, `respondida`, `arq
 #### Parecer
 
 Opinião jurídica formal emitida pela assessoria jurídica da ASOF. Pode ser vinculada a um processo.
+
+#### Prazo Processual
+
+Compromisso com data-limite extraído de uma Consulta Jurídica, geralmente identificado a partir de e-mails do escritório ou documentos do processo. Modelado na tabela `legal_deadlines`.
+
+- **Responsável** (`responsible_party`): `escritorio`, `associado`, `asof`.
+- **Status**: `pendente`, `cumprido`, `atrasado`.
+- Notificações progressivas antes do vencimento são geradas pelo sistema automaticamente.
+
+_Avoid_: confundir com SLA de inatividade. O SLA mede ausência de atualização em uma Consulta Jurídica; o Prazo Processual mede um compromisso processual específico com data e responsável definidos.
+
 
 ---
 
@@ -157,6 +183,16 @@ Criação rápida de atividade diretamente no board, sem abrir formulário compl
 Alerta persistido para o usuário sobre reatribuição de atividades ou atualização de consulta jurídica. A entrega em tempo real é uma capacidade opcional, não parte essencial do conceito. Tipos (`notificationType`): `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`.
 
 _Avoid_: tratar "notificação" como sinônimo de "evento em tempo real".
+
+#### Alerta de Acompanhamento
+
+Notificação que exige **resolução explícita** por um coordenador, com registro de quem resolveu, quando e qual ação foi tomada. Gerado automaticamente por inatividade prolongada (ex: ≥ 60 dias sem Nota) ou por Prazo Processual vencendo/vencido.
+
+- **Tipos** (`follow_up_alert_type`): `inatividade`, `prazo_processual`, `escalacao`.
+- **Ciclo de vida**: `ativo` → `resolvido` (com `resolved_by`, `resolved_at`, `resolution_note`).
+
+_Avoid_: confundir com Notificação, cujo ciclo de vida encerra com a leitura. O Alerta de Acompanhamento só encerra quando o coordenador registra explicitamente a ação tomada.
+
 
 #### Evento de Domínio
 
@@ -202,6 +238,9 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 2. **Status Flow**: Uma consulta pode transitar entre status definidos pelo enum `legal_consultation_status` (`aberta`, `aguardando_escritorio`, `respondida`, `arquivada`).
 3. **Notas Vinculadas**: Cada interação (nota) deve atualizar o timestamp `last_interaction_at` da consulta/processos.
 4. **Roles de Acesso**: `admin` e `diretoria` têm acesso; `secretaria` é bloqueada no layout do módulo.
+5. **Ingestão de E-mail**: E-mails processados automaticamente seguem política de dois caminhos:
+   - **Consulta correlacionada + remetente do escritório conhecido** → Nota adicionada automaticamente, sem aprovação humana.
+   - **E-mail sem Consulta correlacionada** → Cria rascunho de triagem com `status: pendente_classificacao`; coordenador vincula a uma Consulta existente, abre uma nova, ou descarta. Nenhuma entidade de domínio é criada sem decisão humana explícita.
 
 ### Módulo de Associados
 

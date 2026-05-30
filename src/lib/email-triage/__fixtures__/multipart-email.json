@@ -1,0 +1,29 @@
+{
+  "id": "msg-multi-1",
+  "threadId": "thread-multi-1",
+  "historyId": "100",
+  "internalDate": "1780358400000",
+  "payload": {
+    "mimeType": "multipart/alternative",
+    "headers": [
+      { "name": "From", "value": "Secretaria <secretaria@asof.org.br>" },
+      { "name": "To", "value": "associados@asof.org.br" },
+      { "name": "Subject", "value": "Comunicado importante - assembleia" },
+      { "name": "Date", "value": "Tue, 1 Jun 2026 10:00:00 -0300" }
+    ],
+    "parts": [
+      {
+        "mimeType": "text/plain",
+        "body": {
+          "data": "UHJlemFkbyBhc3NvY2lhZG8sCgpDb25mb3JtZSBzdWEgcHJlc2VuY2EgbmEgYXNzZW1sZWlhIGdlcmFsIGRpYSBkbyBtZXMgZGUganVuaG8uCkF0ZW5jaW9zYW1lbnRlLgoKQVNPQiAtIERpcmV0b3JpYQ=="
+        }
+      },
+      {
+        "mimeType": "text/html",
+        "body": {
+          "data": "PGh0bWw+PGJvZHk+PHA+UHJlemFkbyBhc3NvY2lhZG8sPC9wPjxwPkNvbmZpcm1lIHN1YSBwcmVzZW7Dp2EgbmEgYXNzZW1sZWlhIGdlcmFsIGRpYSBkbyBtZXMgZGUganVuaG8uPC9wPjxwPkF0ZW5jaW9zYW1lbnRlLjwvcD48cD5BU09CIC0gRGlyZXRvcmlhPC9wPjwvYm9keT48L2h0bWw+"
+        }
+      }
+    ]
+  }
+}
