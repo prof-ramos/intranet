@@ -14,6 +14,12 @@ export interface LogAuditOptions {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * @deprecated Use LogAuditOptions directly. Kept for backwards compatibility
+ * with code that was written against an earlier version of the audit API.
+ */
+export type AuditLogInput = LogAuditOptions;
+
 export async function logAuditAction(options: LogAuditOptions): Promise<void> {
   if (!Number.isInteger(options.adminId) || options.adminId <= 0) {
     throw new Error('Invalid audit actor.');

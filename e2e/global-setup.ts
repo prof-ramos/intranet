@@ -1,6 +1,7 @@
 import { execFileSync, execSync, spawn } from 'child_process';
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
+import { chromium } from '@playwright/test';
 
 const ENV_FILE = path.resolve(process.cwd(), '.env.development.local');
 const ENV_FILE_FLAG = existsSync(ENV_FILE) ? `--env-file="${ENV_FILE}" ` : '';
@@ -19,6 +20,8 @@ const NEXT_BIN = path.resolve(process.cwd(), 'node_modules/next/dist/bin/next');
 const E2E_SESSION_SECRET = 'e2e-session-secret-at-least-32-characters-long';
 const E2E_ENCRYPTION_MASTER_KEY = 'e2e-encryption-master-key-at-least-32-chars';
 const E2E_BASE_URL = 'http://127.0.0.1:3001';
+const E2E_ADMIN_EMAIL = 'e2e-admin@asof.local';
+const E2E_ADMIN_PASSWORD = 'Senha-Forte-2026!';
 const LOCAL_DB_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 
 function getRecentServerLog() {
@@ -76,6 +79,39 @@ function getTestDatabaseCommandConfig() {
   };
 
   return { args, databaseName, env };
+}
+
+async function warmupJitRoutes() {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.goto(`${E2E_BASE_URL}/login`);
+    await page.fill('input[name="email"]', E2E_ADMIN_EMAIL);
+    await page.fill('input[name="password"]', E2E_ADMIN_PASSWORD);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(`${E2E_BASE_URL}/app`, { timeout: 30_000 });
+
+    // Compile the associados list so subsequent list navigations are instant.
+    await page.goto(`${E2E_BASE_URL}/app/associados`, { timeout: 30_000 });
+
+    // Find any edit href (link is opacity-0 but getAttribute works without visibility).
+    const editHref = await page
+      .locator('a[aria-label^="Editar"]')
+      .first()
+      .getAttribute('href')
+      .catch(() => null);
+    if (editHref) {
+      // Direct goto compiles the [id]/editar route without needing hover.
+      await page.goto(`${E2E_BASE_URL}${editHref}`, { timeout: 60_000 });
+    } else {
+      console.warn('[warmupJitRoutes] No edit links found; /editar route not warmed');
+    }
+
+    // Compile the financeiro route used in other specs.
+    await page.goto(`${E2E_BASE_URL}/app/financeiro/mensalidades`, { timeout: 60_000 });
+  } finally {
+    await browser.close();
+  }
 }
 
 export default async function globalSetup() {
@@ -140,6 +176,10 @@ export default async function globalSetup() {
   devServer.unref();
 
   await waitForServerReady(devServer.pid);
+
+  await warmupJitRoutes().catch((err) => {
+    console.warn('[globalSetup] JIT warmup failed, continuing without warmup:', err);
+  });
 
   // Store server ref for teardown
   (globalThis as unknown as Record<string, unknown>).__DEV_SERVER__ = devServer;

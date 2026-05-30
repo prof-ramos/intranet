@@ -117,19 +117,9 @@ describe('retryTransientConnection', () => {
     );
   });
 
-<<<<<<< HEAD
-  it('caps backoff at MAX_BACKOFF_MS on repeated failures', async () => {
-    vi.useFakeTimers();
-    const op = vi.fn().mockRejectedValue(transientError());
-    const promise = retryTransientConnection(op, 5);
-    const assertion = expect(promise).rejects.toThrow();
-    await vi.advanceTimersByTimeAsync(60000);
-    await assertion;
-=======
   it('caps backoff at MAX_BACKOFF_MS on repeated failures', { timeout: 30000 }, async () => {
     const op = vi.fn().mockRejectedValue(transientError());
     await expect(retryTransientConnection(op, 5)).rejects.toThrow();
->>>>>>> 7deb73f (refactor: collapse auth orchestration into lib/auth/service.ts)
     expect(op).toHaveBeenCalledTimes(5);
   });
 });

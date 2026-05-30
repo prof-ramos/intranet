@@ -18,7 +18,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(3.1),
@@ -55,7 +55,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(2.6),
@@ -92,7 +92,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(9.9),
@@ -129,7 +129,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(3.82),
@@ -166,7 +166,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(9.9),
@@ -203,7 +203,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(6.35),
@@ -240,7 +240,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(6.35),
@@ -277,7 +277,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(6.35),
@@ -314,7 +314,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(6.35),
@@ -351,7 +351,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(9.9),
@@ -388,7 +388,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(9.9),
@@ -425,7 +425,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(6.35),
@@ -462,7 +462,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(9.9),
@@ -499,7 +499,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(9.9),
@@ -536,7 +536,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(20),
@@ -573,7 +573,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(19.99),
@@ -610,7 +610,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(7.62),
@@ -647,7 +647,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(14.5),
@@ -684,7 +684,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(7),
@@ -721,7 +721,7 @@ export const LABEL_PRESETS: Record<string, LabelPreset> = {
     page: {
       width: cmToPt(21), // A4
       height: cmToPt(29.7), // A4
-
+      unit: 'pt',
     },
     label: {
       width: cmToPt(2.97),

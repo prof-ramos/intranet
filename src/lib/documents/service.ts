@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { documents, type NewDocument } from '@/lib/db/schema';
 import { uploadFile, deleteFile, type StorageBucket } from '@/lib/storage';
 import { logAuditAction, logDataAccess, type AuditLogInput } from '@/lib/audit/service';
+import { eq } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
 import { toSafeErrorLog } from '@/lib/error-log';
 import {

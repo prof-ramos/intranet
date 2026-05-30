@@ -1,4 +1,4 @@
-const fs = require('fs');
+import { writeFileSync } from 'node:fs';
 
 const data = [
   { id: 'a4048', name: 'A4048/A4248/A4348', cols: 6, rows: 17, width: 3.1, height: 1.7, gapH: 0.2, gapV: 0, mLeft: 1.25, mTop: 0.4 },
@@ -66,6 +66,7 @@ for (const d of data) {
       horizontal: cmToPt(${d.gapH}),
       vertical: cmToPt(${d.gapV}),
     },
+    // Padding and text are uniform across all presets; calibrate per-label if needed after print testing.
     padding: {
       top: 10,
       right: 10,
@@ -83,4 +84,10 @@ for (const d of data) {
 
 output += `};\n`;
 
-fs.writeFileSync('src/lib/labels/presets.ts', output);
+try {
+  writeFileSync('src/lib/labels/presets.ts', output, 'utf-8');
+  console.log('Generated src/lib/labels/presets.ts successfully.');
+} catch (error) {
+  console.error('Failed to write presets file:', error);
+  process.exit(1);
+}
