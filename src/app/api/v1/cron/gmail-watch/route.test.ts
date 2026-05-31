@@ -49,7 +49,7 @@ describe('POST /api/v1/cron/gmail-watch', () => {
     const { authorizeCronRequest } = await import('@/lib/cron/auth');
     vi.mocked(authorizeCronRequest).mockReturnValue({
       ok: false,
-      response: NextResponse.json({ ok: false, error: { code: 'unauthorized', message: 'Unauthorized' } }, { status: 401 }) as unknown as NextResponse<JsonErrorEnvelope>,
+      response: NextResponse.json({ ok: false, error: { code: 'unauthorized', message: 'Unauthorized' } }, { status: 401 }) as unknown as NonNullable<ReturnType<typeof authorizeCronRequest>['response']>,
     });
 
     const { POST } = await import('./route');
