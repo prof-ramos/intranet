@@ -34,7 +34,7 @@ Atualizado em 2026-05-26 apos decisao de resetar a camada de banco/autenticacao 
   - pre-janela: snapshot Neon e rollback documentado.
   - smoke: login do admin inicial + troca obrigatoria de senha, dashboard, associados, atividades, juridico, oficios, financeiro, auditoria, reset de senha e notificacoes persistidas.
   - pos-smoke: limpeza dos dados marcados (`SMOKE_*`) via SQL direto antes da liberacao; auditoria preservada.
-- [ ] Validar crons com `CRON_SECRET` antes de ativar operacao.
+- [x] Validar crons com `CRON_SECRET` antes de ativar operacao.
 - [x] Confirmar que previews/staging nao apontam para banco de producao — envs gerais de banco foram removidos do ambiente Preview no Vercel em 2026-05-26; restam apenas `SESSION_SECRET` em Preview e `GEMINI_API_KEY` restrita ao branch `feature/outbound-integrations-webhooks`.
 
 ## Recomendado Antes Do Go-Live

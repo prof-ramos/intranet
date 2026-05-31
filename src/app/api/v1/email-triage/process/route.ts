@@ -5,10 +5,10 @@ import { createLogger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_METHODS = ['POST'] as const;
+const ALLOWED_METHODS = ['GET'] as const;
 const log = createLogger('email-triage/route');
 
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   const authorization = authorizeCronRequest(request);
   if (!authorization.ok) {
     return authorization.response;
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   return jsonMethodNotAllowed(ALLOWED_METHODS, {
     requestId: request.headers.get('x-request-id') ?? undefined,
   });
