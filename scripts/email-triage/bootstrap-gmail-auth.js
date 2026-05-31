@@ -36,7 +36,7 @@ import http from 'node:http';
 import https from 'node:https';
 import crypto from 'node:crypto';
 import readline from 'node:readline';
-import { exec, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 
 // ---------------------------------------------------------------------------
 // Constants

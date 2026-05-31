@@ -179,23 +179,24 @@ export async function lockAndFetchDispatchableEvents(
     throw new Error('limit must be an integer between 1 and 1000.');
   }
 
-  const rows = await executor.execute<DomainEvent>(sql`
-    UPDATE domain_events
-    SET delivery_status = 'processing',
-        updated_at = now()
-    WHERE id IN (
-      SELECT id FROM domain_events
-      WHERE delivery_status IN ('pending', 'partially_delivered', 'failed')
-      ORDER BY occurred_at ASC
-      LIMIT ${limit}
-      FOR UPDATE SKIP LOCKED
+  const rows = await executor
+    .update(domainEvents)
+    .set({ deliveryStatus: 'processing', updatedAt: new Date() })
+    .where(
+      inArray(
+        domainEvents.id,
+        sql`(
+          SELECT id FROM domain_events
+          WHERE delivery_status IN ('pending', 'partially_delivered', 'failed')
+          ORDER BY occurred_at ASC
+          LIMIT ${limit}
+          FOR UPDATE SKIP LOCKED
+        )`
+      )
     )
-    RETURNING *
-  `);
+    .returning();
 
-  // Drizzle's execute() returns a RowList<T> which extends Array<T>;
-  // cast to DomainEvent[] for a clean public return type.
-  return rows as DomainEvent[];
+  return rows;
 }
 
 export async function claimDispatchableDomainEventById(
@@ -206,16 +207,18 @@ export async function claimDispatchableDomainEventById(
     throw new Error('id must be a positive integer.');
   }
 
-  const rows = await executor.execute<DomainEvent>(sql`
-    UPDATE domain_events
-    SET delivery_status = 'processing',
-        updated_at = now()
-    WHERE id = ${id}
-      AND delivery_status IN ('pending', 'partially_delivered', 'failed')
-    RETURNING *
-  `);
+  const rows = await executor
+    .update(domainEvents)
+    .set({ deliveryStatus: 'processing', updatedAt: new Date() })
+    .where(
+      and(
+        eq(domainEvents.id, id),
+        inArray(domainEvents.deliveryStatus, ['pending', 'partially_delivered', 'failed'])
+      )
+    )
+    .returning();
 
-  return (rows as DomainEvent[])[0] ?? null;
+  return rows[0] ?? null;
 }
 
 /**

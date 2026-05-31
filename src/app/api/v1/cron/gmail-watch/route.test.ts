@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { NextResponse } from 'next/server';
+import type { JsonErrorEnvelope } from '@/lib/integrations/types';
 
 vi.mock('@/lib/cron/auth', () => ({
   authorizeCronRequest: vi.fn().mockReturnValue({
@@ -48,7 +50,10 @@ describe('POST /api/v1/cron/gmail-watch', () => {
     const { authorizeCronRequest } = await import('@/lib/cron/auth');
     vi.mocked(authorizeCronRequest).mockReturnValue({
       ok: false,
-      response: new Response('Unauthorized', { status: 401 }),
+      response: NextResponse.json(
+        { ok: false, error: { code: 'unauthorized', message: 'Unauthorized' } },
+        { status: 401 }
+      ) as unknown as NextResponse<JsonErrorEnvelope>,
     });
 
     const { POST } = await import('./route');
@@ -60,3 +65,4 @@ describe('POST /api/v1/cron/gmail-watch', () => {
     expect(response.status).toBe(401);
   });
 });
+

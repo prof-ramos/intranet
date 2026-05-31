@@ -30,7 +30,7 @@ function getRecentServerLog() {
 }
 
 async function waitForServerReady(pid: number) {
-  const deadline = Date.now() + 60_000;
+  const deadline = Date.now() + 120_000;
   let lastError: unknown;
 
   while (Date.now() < deadline) {
@@ -41,8 +41,15 @@ async function waitForServerReady(pid: number) {
     }
 
     try {
-      const response = await fetch(`${E2E_BASE_URL}/login`, { redirect: 'manual' });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const response = await fetch(`${E2E_BASE_URL}/login`, { 
+        redirect: 'manual',
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
       if (response.status < 500) return;
+      lastError = new Error(`Server returned status ${response.status}`);
     } catch (error) {
       lastError = error;
     }

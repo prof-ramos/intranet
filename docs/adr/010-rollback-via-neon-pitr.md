@@ -13,7 +13,7 @@ O ADR 007 fixou que o rollback do primeiro go-live se faz por snapshot do banco 
 
 **Pre-janela (checklist):**
 
-1. Confirmar que o projeto Neon `intranet-db` (`ep-empty-cake-ac26vl6w`) esta em um tier cujo `history_retention` cobre folgadamente a janela de smoke (minimo: janela + 24h). Se o tier atual nao cobrir, fazer upgrade antes da janela ou complementar com `pg_dump` (ver Opcao 2 rejeitada como cinto-e-suspensorio opcional).
+1. Confirmar que o projeto Neon `intranet-db` (`ep-empty-cake-ac26vl6w`) esta em um tier cujo `history_retention` cobre a janela de smoke (minimo: 6h - plano Free aceitavel).
 2. Anotar o timestamp UTC e, quando possivel, o LSN Neon imediatamente antes do primeiro passo do smoke. Registrar em `TODO-PROD.md` ou no runbook da janela.
 3. Validar que o admin inicial ja existe e ja trocou a senha **antes** desse timestamp, de modo que o ponto de retorno preserve um admin operavel sem necessidade de re-seed.
 

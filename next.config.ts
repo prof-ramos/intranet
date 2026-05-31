@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
-import '@/lib/env';
+import './src/lib/env';
 
 import withBundleAnalyzer from '@next/bundle-analyzer';
 

@@ -1,0 +1,195 @@
+
+> asof-intranet@0.1.0 dev
+> next dev --webpack -p 3001
+
+▲ Next.js 16.2.6 (webpack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.0.44:3001
+- Environments: .env.local
+✓ Ready in 231ms
+⚠ Attempted to load @next/swc-darwin-arm64, but an error occurred: dlopen(/Users/gabrielramos/projetos/ASOF/intranet/node_modules/@next/swc-darwin-arm64/next-swc.darwin-arm64.node, 0x0001): tried: '/Users/gabrielramos/projetos/ASOF/intranet/node_modules/@next/swc-darwin-arm64/next-swc.darwin-arm64.node' (code signature in <FA7DD5BE-F9CD-3EE6-880E-F0E59B12C5E1> '/Users/gabrielramos/projetos/ASOF/intranet/node_modules/@next/swc-darwin-arm64/next-swc.darwin-arm64.node' not valid for use in process: mapping process and mapped file (non-platform) have different Team IDs), '/System/Volumes/Preboot/Cryptexes/OS/Users/gabrielramos/projetos/ASOF/intranet/node_modules/@next/swc-darwin-arm64/next-swc.darwin-arm64.node' (no such file), '/Users/gabrielramos/projetos/ASOF/intranet/node_modules/@next/swc-darwin-arm64/next-swc.darwin-arm64.node' (code signature in <FA7DD5BE-F9CD-3EE6-880E-F0E59B12C5E1> '/Users/gabrielramos/projetos/ASOF/intranet/node_modules/@next/swc-darwin-arm64/next-swc.darwin-arm64.node' not valid for use in process: mapping process and mapped file (non-platform) have different Team IDs)
+  Skipping creating a lockfile at /Users/gabrielramos/projetos/ASOF/intranet/.next-e2e/dev/lock because we're using WASM bindings
+(node:288) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/gabrielramos/projetos/ASOF/intranet/src/lib/env.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/gabrielramos/projetos/ASOF/intranet/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+- Experiments (use with caution):
+  · optimizePackageImports
+
+⨯ src/app/layout.tsx
+An error occurred in `next/font`.
+
+Error: Cannot find module '../lightningcss.darwin-arm64.node'
+Require stack:
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/lightningcss/node/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/@tailwindcss/node/dist/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/@tailwindcss/postcss/dist/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack-config.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/dev/hot-reloader-webpack.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/lib/router-server.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/lib/start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:68:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:79:28)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/lightningcss/node/index.js:20:12)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:79:28)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/@tailwindcss/node/dist/index.js:15:188)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:79:28)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/@tailwindcss/postcss/dist/index.js:1:1328)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:79:28)
+    at require (node:internal/modules/helpers:152:16)
+    at /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js:64:48
+    at plugin (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js:30:44)
+    at Processor.normalize (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/postcss/lib/processor.js:18:13)
+    at new Processor (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/postcss/lib/processor.js:11:25)
+    at postcss (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/postcss/lib/postcss.js:26:10)
+    at /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/index.js:128:37
+○ Compiling /_not-found ...
+⨯ src/app/layout.tsx
+An error occurred in `next/font`.
+
+Error: Cannot find module '../lightningcss.darwin-arm64.node'
+Require stack:
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/lightningcss/node/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/@tailwindcss/node/dist/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/@tailwindcss/postcss/dist/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack-config.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/dev/hot-reloader-webpack.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/lib/router-server.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/lib/start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:68:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:79:28)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/lightningcss/node/index.js:20:12)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:79:28)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/@tailwindcss/node/dist/index.js:15:188)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:79:28)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/@tailwindcss/postcss/dist/index.js:1:1328)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:79:28)
+    at require (node:internal/modules/helpers:152:16)
+    at /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js:64:48
+    at plugin (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js:30:44)
+    at Processor.normalize (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/postcss/lib/processor.js:18:13)
+    at new Processor (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/postcss/lib/processor.js:11:25)
+    at postcss (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/postcss/lib/postcss.js:26:10)
+    at /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/index.js:128:37
+⨯ src/app/layout.tsx
+An error occurred in `next/font`.
+
+Error: Cannot find module '../lightningcss.darwin-arm64.node'
+Require stack:
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/lightningcss/node/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/@tailwindcss/node/dist/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/@tailwindcss/postcss/dist/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/index.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack-config.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/dev/hot-reloader-webpack.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/lib/router-server.js
+- /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/lib/start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1456:15)
+    at /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:68:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+    at Module._load (node:internal/modules/cjs/loader:1242:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:79:28)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/lightningcss/node/index.js:20:12)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:79:28)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/@tailwindcss/node/dist/index.js:15:188)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:79:28)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/@tailwindcss/postcss/dist/index.js:1:1328)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1556:12)
+    at mod.require (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/server/require-hook.js:79:28)
+    at require (node:internal/modules/helpers:152:16)
+    at /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js:64:48
+    at plugin (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js:30:44)
+    at Processor.normalize (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/postcss/lib/processor.js:18:13)
+    at new Processor (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/postcss/lib/processor.js:11:25)
+    at postcss (/Users/gabrielramos/projetos/ASOF/intranet/node_modules/postcss/lib/postcss.js:26:10)
+    at /Users/gabrielramos/projetos/ASOF/intranet/node_modules/next/dist/build/webpack/config/blocks/css/index.js:128:37
+ GET /login 500 in 7.4s (next.js: 7.2s, proxy.ts: 80ms, application-code: 96ms)
+ GET /login 500 in 31ms (next.js: 5ms, proxy.ts: 15ms, application-code: 12ms)
