@@ -1,5 +1,4 @@
 CREATE TYPE "public"."lawyer_status" AS ENUM('ativo', 'inativo');--> statement-breakpoint
-CREATE TYPE "public"."assinafy_document_status" AS ENUM('uploading', 'uploaded', 'metadata_processing', 'metadata_ready', 'pending_signature', 'certificating', 'certificated', 'expired', 'rejected_by_signer', 'rejected_by_user', 'failed');--> statement-breakpoint
 CREATE TYPE "public"."email_categoria" AS ENUM('juridico', 'administrativo', 'financeiro', 'institucional', 'comunicacao', 'irrelevante');--> statement-breakpoint
 CREATE TYPE "public"."email_confianca" AS ENUM('baixa', 'media', 'alta');--> statement-breakpoint
 CREATE TYPE "public"."email_nivel_risco" AS ENUM('baixo', 'medio', 'alto', 'critico');--> statement-breakpoint
@@ -74,13 +73,6 @@ CREATE TABLE "email_triagens" (
 );
 --> statement-breakpoint
 ALTER TABLE "integration_api_keys" ADD COLUMN "signing_secret_ciphertext" text;--> statement-breakpoint
-ALTER TABLE "oficios" ADD COLUMN "assinafy_document_id" text;--> statement-breakpoint
-ALTER TABLE "oficios" ADD COLUMN "assinafy_status" "assinafy_document_status";--> statement-breakpoint
-ALTER TABLE "oficios" ADD COLUMN "assinafy_assignment_id" text;--> statement-breakpoint
-ALTER TABLE "oficios" ADD COLUMN "assinafy_signer_id" text;--> statement-breakpoint
-ALTER TABLE "oficios" ADD COLUMN "assinafy_sent_at" timestamp with time zone;--> statement-breakpoint
-ALTER TABLE "oficios" ADD COLUMN "assinafy_signed_at" timestamp with time zone;--> statement-breakpoint
-ALTER TABLE "oficios" ADD COLUMN "assinafy_error" text;--> statement-breakpoint
 ALTER TABLE "email_triagens" ADD CONSTRAINT "email_triagens_usuario_validador_id_admins_id_fk" FOREIGN KEY ("usuario_validador_id") REFERENCES "public"."admins"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_email_triagens_thread_id" ON "email_triagens" USING btree ("thread_id");--> statement-breakpoint
 CREATE INDEX "idx_email_triagens_history_id" ON "email_triagens" USING btree ("history_id");--> statement-breakpoint
@@ -90,4 +82,3 @@ CREATE INDEX "idx_email_triagens_prazo_data" ON "email_triagens" USING btree ("p
 CREATE INDEX "idx_email_triagens_exige_validacao" ON "email_triagens" USING btree ("exige_validacao_humana") WHERE "email_triagens"."exige_validacao_humana" = true;--> statement-breakpoint
 CREATE INDEX "idx_email_triagens_source_evidence_gin" ON "email_triagens" USING gin ("source_evidence");--> statement-breakpoint
 CREATE INDEX "idx_email_triagens_resumo_anexos_gin" ON "email_triagens" USING gin ("resumo_anexos");--> statement-breakpoint
-ALTER TABLE "oficios" ADD CONSTRAINT "oficios_assinafy_document_id_unique" UNIQUE("assinafy_document_id");

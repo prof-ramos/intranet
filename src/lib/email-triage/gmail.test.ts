@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { getHeader } from './gmail';
 
 describe('getHeader', () => {
@@ -11,8 +11,8 @@ describe('getHeader', () => {
         ],
       },
     };
-    expect(getHeader(message as any, 'Subject')).toBe('Test Subject');
-    expect(getHeader(message as any, 'From')).toBe('test@example.com');
+    expect(getHeader(message as unknown as Parameters<typeof getHeader>[0], 'Subject')).toBe('Test Subject');
+    expect(getHeader(message as unknown as Parameters<typeof getHeader>[0], 'From')).toBe('test@example.com');
   });
 
   it('returns null for missing header', () => {
@@ -23,7 +23,7 @@ describe('getHeader', () => {
         ],
       },
     };
-    expect(getHeader(message as any, 'Missing')).toBeNull();
+    expect(getHeader(message as unknown as Parameters<typeof getHeader>[0], 'Missing')).toBeNull();
   });
 
   it('handles null message', () => {
@@ -31,7 +31,7 @@ describe('getHeader', () => {
   });
 
   it('handles message without payload', () => {
-    expect(getHeader({} as any, 'Subject')).toBeNull();
+    expect(getHeader({} as unknown as Parameters<typeof getHeader>[0], 'Subject')).toBeNull();
   });
 
   it('handles case-insensitive header lookup', () => {
@@ -42,6 +42,6 @@ describe('getHeader', () => {
         ],
       },
     };
-    expect(getHeader(message as any, 'subject')).toBe('Test');
+    expect(getHeader(message as unknown as Parameters<typeof getHeader>[0], 'subject')).toBe('Test');
   });
 });
