@@ -1,6 +1,7 @@
 'use client';
 
 import type { CSSProperties } from 'react';
+import { memo } from 'react';
 import { AlertTriangle, Calendar, Check } from 'lucide-react';
 import {
   borderMuted,
@@ -44,7 +45,13 @@ export function Avatar({ person, compact = false }: { person?: BoardPerson; comp
   );
 }
 
-export function ActivityCardContent({
+/**
+ * ⚡ Bolt Performance Optimization
+ * Wrap ActivityCardContent in React.memo() to prevent unnecessary re-renders of all cards
+ * when the parent board's state changes (e.g., during drag-and-drop operations).
+ * This significantly reduces main thread blocking time on boards with many activities.
+ */
+export const ActivityCardContent = memo(function ActivityCardContent({
   activity,
   peopleById,
   compact,
@@ -156,4 +163,4 @@ export function ActivityCardContent({
       </div>
     </div>
   );
-}
+});

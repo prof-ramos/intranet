@@ -1,0 +1,3 @@
+## 2026-05-26 - Memoize Kanban Board Activity Cards
+**Learning:** In highly interactive components like Kanban boards where drag-and-drop triggers parent state updates (`items` array modification), functional child components (like `ActivityCardContent`) can cause massive unnecessary re-renders of the entire board. When thousands of cards exist, this locks the main thread.
+**Action:** Always check if list items in drag-and-drop or large iterative arrays should be wrapped in `React.memo()`, especially if the parent component's state frequently updates in ways that don't affect all children (like reordering). Be mindful of prop references like `Map` which need to be memoized in the parent.
