@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@/lib/cron/auth', () => ({
@@ -48,7 +49,7 @@ describe('POST /api/v1/cron/gmail-watch', () => {
     const { authorizeCronRequest } = await import('@/lib/cron/auth');
     vi.mocked(authorizeCronRequest).mockReturnValue({
       ok: false,
-      response: new Response('Unauthorized', { status: 401 }),
+      response: NextResponse.json({ ok: false, error: { code: 'unauthorized', message: 'Unauthorized' } }, { status: 401 }) as unknown as NextResponse<JsonErrorEnvelope>,
     });
 
     const { POST } = await import('./route');
