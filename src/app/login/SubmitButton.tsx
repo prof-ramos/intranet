@@ -1,6 +1,7 @@
 'use client';
 
 import { useFormStatus } from 'react-dom';
+import { Loader2 } from 'lucide-react';
 import {
   buttonPrimaryBg,
   buttonPrimaryHover,
@@ -20,10 +21,15 @@ export function SubmitButton() {
       aria-busy={pending}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`${mobileTouchTargetClass} ${desktopDenseControlClass} w-full rounded-[8px] text-sm font-semibold text-white transition-colors disabled:cursor-wait disabled:opacity-80`}
+      className={`${mobileTouchTargetClass} flex items-center justify-center gap-2 ${desktopDenseControlClass} w-full rounded-[8px] text-sm font-semibold text-white transition-colors disabled:cursor-wait disabled:opacity-80`}
       style={{ backgroundColor: isHovered || pending ? buttonPrimaryHover : buttonPrimaryBg }}
     >
-      {pending ? 'Entrando...' : 'Entrar'}
+      {pending ? (
+        <>
+          <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+          Entrando...
+        </>
+      ) : 'Entrar'}
     </button>
   );
 }
