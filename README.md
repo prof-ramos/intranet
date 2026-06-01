@@ -23,6 +23,7 @@ Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de 
 | Associados                | `/app/associados`              | Cadastro, perfil, lotação/posto, situação funcional, situação associativa e contribuição. |
 | Atividades                | `/app/atividades`              | Kanban administrativo com responsáveis, prioridades, prazos e vínculos com associados.    |
 | Jurídico                  | `/app/juridico`                | Consultas jurídicas, notas, SLA e histórico de atendimento.                               |
+| Triagem de E-mails        | `/app/email-triage`            | Controle operacional de prazos, demandas e evidências extraídas de e-mails.               |
 | Secretaria / Ofícios      | `/app/secretaria/oficios`      | Geração, edição, cancelamento e download de ofícios.                                      |
 | Financeiro / Mensalidades | `/app/financeiro/mensalidades` | Controle mensal de pagamentos e status de mensalidade.                                    |
 | Relatórios                | `/app/associados/relatorio`    | Exportação auditada de dados de associados para `admin` e `diretoria`.                    |
@@ -277,6 +278,7 @@ src/
       config/                # configurações, auditoria, usuários, integrações, lotações
       financeiro/mensalidades/ # mensalidades e dashboard financeiro
       juridico/              # consultas, processos, pareceres e notas jurídicas
+      email-triage/          # triagem operacional de e-mails, prazos e demandas
       notifications/         # actions de notificação
       search/                # busca global
       secretaria/oficios/    # gestão de ofícios
@@ -292,6 +294,7 @@ src/
     crypto/       # criptografia PII (AES-256-GCM, HKDF, HMAC blind indexes)
     dashboard/    # queries de agregação
     db/           # cliente Drizzle/PostgreSQL + schema
+    email-triage/ # Gmail, Gemini, schema, correlação e persistência de triagens
     email/        # envio de email (Mailjet)
     finance/      # repository, service, queries do módulo financeiro
     integrations/ # auth M2M, envelopes JSON, outbox e webhooks outbound

@@ -12,8 +12,10 @@
 import { env } from '@/lib/env';
 import { db } from '@/lib/db';
 import { emailTriagens, emailStatusTriagem as _emailStatusTriagem } from '@/lib/db/schema/email-triage';
-import { legalConsultations } from '@/lib/db/schema/legal-consultations';
-import { admins, associates } from '@/lib/db/schema';
+import { admins } from '@/lib/db/schema';
+import { piiBlindIndex } from '@/lib/crypto/pii';
+import { findAssociateByPrimaryEmailHash } from '@/lib/associates/repository';
+import { correlate, type CorrelationContext, type CorrelationAction } from './correlate';
 import { createLogger } from '@/lib/logger';
 import { eq, and as _and, sql } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
@@ -34,9 +36,14 @@ import {
 } from './analyzer';
 import type { EmailPayload, EmailTriageResult } from './schema';
 import { EMAIL_TRIAGE_VERSION } from './system-prompt';
-import { insertNote } from '@/lib/juridico/repository';
+import {
+  insertNote,
+  getOpenConsultationsByAssociate,
+  touchConsultationInteraction,
+} from '@/lib/juridico/repository';
 import { markOverdueTriages } from './repository';
 import { createNotificationFromEvent } from '@/lib/notifications/service';
+import { extractSenderEmailForCorrelation } from './address';
 
 const log = createLogger('email-triage');
 
@@ -264,7 +271,7 @@ async function persistFailure(
       attachmentsHashes: attachmentHashes,
       nivelRisco: 'medio',
       confianca: 'baixa',
-      acaoRecomendada: 'Reprocessar e encaminhar para validacao humana se persistir.',
+      acaoRecomendada: 'Reprocessar e encaminhar para revisao operacional se persistir.',
       exigeValidacaoHumana: true,
       legalBasis: 'avaliacao_humana_necessaria',
       processedPurpose: 'registro de falha tecnica da triagem interna',
@@ -281,115 +288,49 @@ async function persistFailure(
     });
 }
 
-// ─── Correlation Engine ──────────────────────────────────────────────────
+// ─── Correlation Helpers ─────────────────────────────────────────────────
 
-/**
- * Rule-based correlation against existing `legalConsultations`.
- *
- * Rules:
- *  1. Match by sender — look up the associate by the sender's email,
- *     then find consultations linked to that associate.
- *  2. Only correlate if the email `categoria` is juridico or administrativo.
- *
- * For each match a `legal_note` is created with the triage summary.
- * Note creation failures are logged but do not throw (error isolation).
- */
-async function correlateAndCreateNotes(
+async function buildCorrelationContext(
   payload: EmailPayload,
-  result: EmailTriageResult,
+): Promise<CorrelationContext> {
+  const senderEmail = await extractSenderEmailForCorrelation(payload.sender);
+
+  if (!senderEmail) return { associate: null, consultations: [] };
+
+  const emailHash = piiBlindIndex(senderEmail);
+  const associate = await findAssociateByPrimaryEmailHash(emailHash);
+
+  if (!associate) return { associate: null, consultations: [] };
+
+  const consultations = await getOpenConsultationsByAssociate(associate.id);
+
+  return { associate: { id: associate.id }, consultations };
+}
+
+async function applyCorrelationActions(
+  actions: CorrelationAction[],
 ): Promise<void> {
-  // Only correlate emails that likely relate to existing consultations
-  if (result.categoria !== 'juridico' && result.categoria !== 'administrativo') {
-    return;
-  }
-
-  // Extract sender email from "Display Name <email@example.com>" or plain email
-  const senderMatch = payload.sender.match(/<([^>]+)>/);
-  const senderEmail = senderMatch
-    ? senderMatch[1].toLowerCase().trim()
-    : payload.sender.toLowerCase().trim();
-
-  if (!senderEmail || senderEmail.length === 0) return;
-
-  // Find associate by primary email
-  const matchingAssociates = await db
-    .select({ id: associates.id })
-    .from(associates)
-    .where(eq(associates.primaryEmail, senderEmail))
-    .limit(1);
-
-  if (matchingAssociates.length === 0) return;
-
-  const associateId = matchingAssociates[0].id;
-
-  // Find consultations linked to this associate
-  const consultations = await db
-    .select({ id: legalConsultations.id })
-    .from(legalConsultations)
-    .where(eq(legalConsultations.associateId, associateId));
-
-  if (consultations.length === 0) return;
-
-  // Get the system bot user for note authorship
-  const botUserId = await getSystemBotUserId();
-
-  // Build structured note content from the triage result
-  const noteParts: string[] = [
-    '=== Triagem Automatica de E-mail ===',
-    `Categoria: ${result.categoria}`,
-    `Resumo: ${result.resumo}`,
-    `Prazo: ${result.ha_prazo ? 'Sim' : 'Nao'}`,
-  ];
-
-  if (result.prazo_data) {
-    noteParts.push(`Data do prazo: ${result.prazo_data}`);
-  }
-  if (result.prazo_hora) {
-    noteParts.push(`Hora do prazo: ${result.prazo_hora}`);
-  }
-  if (result.tipo_prazo) {
-    noteParts.push(`Tipo de prazo: ${result.tipo_prazo}`);
-  }
-
-  noteParts.push(
-    `Nivel de Risco: ${result.nivel_risco}`,
-    `Confianca: ${result.confianca}`,
-    `Acao Recomendada: ${result.acao_recomendada}`,
-  );
-
-  if (result.responsavel_sugerido) {
-    noteParts.push(`Responsavel Sugerido: ${result.responsavel_sugerido}`);
-  }
-
-  noteParts.push(
-    `Validacao Humana: ${result.exige_validacao_humana ? 'Necessaria' : 'Nao necessaria'}`,
-  );
-
-  const noteContent = noteParts.join('\n');
-
-  // Create a note for each matching consultation (error-isolated)
-  for (const consultation of consultations) {
-    try {
-      await insertNote({
-        entityType: 'consultation',
-        entityId: consultation.id,
-        content: noteContent,
-        createdBy: botUserId,
-        isEscritorioResponse: false,
+  for (const action of actions) {
+    if (action.type === 'insert_note') {
+      const botUserId = await getSystemBotUserId();
+      await db.transaction(async (tx) => {
+        await insertNote(
+          {
+            entityType: 'consultation',
+            entityId: action.consultationId,
+            content: action.content,
+            createdBy: botUserId,
+            isEscritorioResponse: false,
+          },
+          tx,
+        );
+        await touchConsultationInteraction(action.consultationId, tx);
       });
-      log.info('Legal note created from email triage correlation.', {
-        consultationId: consultation.id,
-        messageId: payload.message_id,
+      log.info('Nota criada por correlação de triagem.', {
+        consultationId: action.consultationId,
       });
-    } catch (noteError) {
-      log.error('Failed to create legal note from email triage.', {
-        consultationId: consultation.id,
-        messageId: payload.message_id,
-        error:
-          noteError instanceof Error
-            ? noteError.message
-            : String(noteError),
-      });
+    } else {
+      log.info('Correlação ignorada.', { reason: action.reason });
     }
   }
 }
@@ -535,8 +476,8 @@ export async function processEmail(
           createNotificationFromEvent('email_triage_pending', {
             recipientId: admin.id,
             actorId,
-            title: 'Nova triagem aguardando validação',
-            message: `E-mail "${payload.subject}" de ${payload.sender} foi classificado como ${triageResult.categoria} (risco ${triageResult.nivel_risco}) e exige validação.`,
+            title: 'Nova triagem aguardando revisão operacional',
+            message: `E-mail "${payload.subject}" de ${payload.sender} foi classificado como ${triageResult.categoria} (risco ${triageResult.nivel_risco}) e exige revisão operacional.`,
             href: `/app/email-triage/${triageId}`,
             entityType: 'email_triagem',
             entityId: triageId,
@@ -554,14 +495,19 @@ export async function processEmail(
   }
 
   // ── Step 6: Correlation engine ────────────────────────────────────────
-  try {
-    await correlateAndCreateNotes(payload, triageResult);
-  } catch (err) {
-    // Non-fatal: correlation failure should not mark the email as untriaged.
-    log.warn('Correlation engine failed (non-fatal).', {
-      messageId,
-      error: String(err),
-    });
+  // Skipped when operational review is required; automatic notes are only
+  // created for low-ambiguity control of existing open demands.
+  if (!triageResult.exige_validacao_humana) {
+    try {
+      const context = await buildCorrelationContext(payload);
+      const actions = correlate(payload, triageResult, context);
+      await applyCorrelationActions(actions);
+    } catch (err) {
+      log.warn('Correlation engine failed (non-fatal).', {
+        messageId,
+        error: String(err),
+      });
+    }
   }
 
   // ── Step 7: Mark as triaged ───────────────────────────────────────────

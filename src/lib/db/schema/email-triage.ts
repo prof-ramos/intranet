@@ -168,18 +168,6 @@ export const emailTriagens = pgTable(
       'chk_email_triagens_prazo_com_evidencia',
       sql`${table.haPrazo} = false or jsonb_array_length(${table.sourceEvidence}) > 0`,
     ),
-    check(
-      'chk_email_triagens_juridico_validacao',
-      sql`${table.categoria} <> 'juridico' or ${table.exigeValidacaoHumana} = true`,
-    ),
-    check(
-      'chk_email_triagens_risco_validacao',
-      sql`${table.nivelRisco} not in ('alto', 'critico') or ${table.exigeValidacaoHumana} = true`,
-    ),
-    check(
-      'chk_email_triagens_confianca_validacao',
-      sql`${table.confianca} = 'alta' or ${table.exigeValidacaoHumana} = true`,
-    ),
   ],
 );
 

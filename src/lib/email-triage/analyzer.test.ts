@@ -151,7 +151,8 @@ describe('buildModelInput', () => {
     const lgpd = input.lgpd_constraints as Record<string, unknown>;
     expect(lgpd.full_body_is_not_persisted_by_default).toBe(true);
     expect(lgpd.legal_basis_is_ai_suggestion_only).toBe(true);
-    expect(lgpd.human_validation_required_for_deadlines_and_legal_content).toBe(true);
+    expect(lgpd.ai_does_not_make_legal_merit_decisions).toBe(true);
+    expect(lgpd.human_review_is_exceptional_operational_review).toBe(true);
   });
 });
 

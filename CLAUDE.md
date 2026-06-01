@@ -65,7 +65,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 | `src/hooks/` | React hooks |
 | `src/lib/db/schema/` | Schemas Drizzle (admins, associates, activities, audit, finance, legal, monthly_payments, oficios, assignments, notifications, etc.) |
 | `drizzle/postgres/` | Migrations SQL (baseline `0000_green_glorian.sql` + incrementais) |
-| `docs/adr/` | ADRs (001-011) — decisões arquiteturais |
+| `docs/adr/` | ADRs (001-012) — decisões arquiteturais |
 | `docs/` | Runbook, compliance LGPD, design, jornadas |
 
 ## Arquivos Importantes
@@ -123,7 +123,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 - `README.md` — quick start
 - `TODO-PROD.md` — checklist de go-live
 - `docs/runbook.md` — runbook operacional
-- `docs/adr/` — ADRs 001-011
+- `docs/adr/` — ADRs 001-012
 - `API.md` — superfície HTTP pública
 - `PAGES.md` — páginas e funcionalidades
 
