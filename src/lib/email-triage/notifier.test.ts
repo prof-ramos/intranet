@@ -90,6 +90,8 @@ describe('notifyNeedsValidation', () => {
         recipientId: 1,
         actorId: 99,
         entityId: 42,
+        dedupeKey: 'email_triage_pending:42:1',
+        message: expect.not.stringContaining(mockPayload.sender),
       }),
     );
     expect(createNotificationFromEvent).toHaveBeenCalledWith(
@@ -98,6 +100,8 @@ describe('notifyNeedsValidation', () => {
         recipientId: 2,
         actorId: 99,
         entityId: 42,
+        dedupeKey: 'email_triage_pending:42:2',
+        message: expect.not.stringContaining(mockPayload.sender),
       }),
     );
   });

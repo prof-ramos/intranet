@@ -6,17 +6,14 @@ import { createLogger } from '@/lib/logger';
 
 const log = createLogger('system-users');
 
-let _systemBotUserId: number | null = null;
-
 /**
  * Find or create the system bot admin user ('Sistema de Triagem').
  *
  * The bot user is used as `createdBy` for legal notes created by the
- * correlation engine. Created once per process lifetime; cached in memory.
+ * correlation engine. No module-level cache — the lookup is cheap
+ * (indexed by name) and caching risks stale IDs if the user is deleted.
  */
 export async function resolveSystemBotUser(): Promise<number> {
-  if (_systemBotUserId !== null) return _systemBotUserId;
-
   const systemBot = await db
     .select()
     .from(admins)
@@ -24,8 +21,7 @@ export async function resolveSystemBotUser(): Promise<number> {
     .limit(1);
 
   if (systemBot.length > 0) {
-    _systemBotUserId = systemBot[0].id;
-    return _systemBotUserId;
+    return systemBot[0].id;
   }
 
   const [created] = await db
@@ -42,7 +38,6 @@ export async function resolveSystemBotUser(): Promise<number> {
     .returning({ id: admins.id });
 
   if (created) {
-    _systemBotUserId = created.id;
     log.info('Created system bot user for triage.', { userId: created.id });
     return created.id;
   }
@@ -54,7 +49,6 @@ export async function resolveSystemBotUser(): Promise<number> {
     .limit(1);
 
   if (existing.length > 0) {
-    _systemBotUserId = existing[0].id;
     return existing[0].id;
   }
 

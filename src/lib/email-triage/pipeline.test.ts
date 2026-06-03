@@ -178,6 +178,73 @@ describe('processEmail', () => {
     expect(mockApplyCorrelationActions).toHaveBeenCalled();
   });
 
+  it('falls back to current date when Date header is empty', async () => {
+    const gmailMessage = {
+      id: 'msg-date-empty',
+      threadId: 'thread-999',
+      historyId: 'hist-111',
+      payload: {
+        headers: [
+          { name: 'From', value: 'sender@example.com' },
+          { name: 'To', value: 'to@example.com' },
+          { name: 'Subject', value: 'Test Subject' },
+          { name: 'Date', value: '' },
+        ],
+        body: { data: 'UmVzcG9uZGVyIGF0w6kgMTAvMDYvMjAyNi4=' },
+      },
+    };
+
+    mockGetMessage.mockResolvedValue(gmailMessage);
+    mockGetHeader.mockImplementation((msg: typeof gmailMessage, name: string) => {
+      const header = msg.payload.headers.find((h: { name: string }) => h.name === name);
+      return header ? header.value : null;
+    });
+    mockExtractTextAndAttachments.mockReturnValue({ text: 'Responder ate 10/06/2026.', attachments: [] });
+    mockRedactExcerpt.mockImplementation((text: string) => text);
+    mockBuildPersistedExcerpt.mockReturnValue('[short-body-redacted; sha256 stored]');
+
+    const triageResult: EmailTriageResult = {
+      categoria: 'juridico',
+      resumo: 'E-mail sobre prazo processual.',
+      ha_prazo: false,
+      exige_validacao_humana: false,
+      nivel_risco: 'baixo',
+      confianca: 'alta',
+      acao_recomendada: 'Encaminhar para juridico.',
+      legal_basis: 'interesse_legitimo',
+      processed_purpose: 'classificacao operacional de e-mail',
+      resumo_anexos: [],
+      source_evidence: [],
+      thread_context_summary: null,
+      prazo_data: null,
+      prazo_hora: null,
+      prazo_confianca_data: null,
+      tipo_prazo: null,
+      trecho_fonte_do_prazo: null,
+      responsavel_sugerido: null,
+    };
+
+    mockAnalyzeEmail.mockResolvedValue(triageResult);
+    mockEnsureLabel.mockResolvedValue('label-id-123');
+    mockMarkAsTriaged.mockResolvedValue(undefined);
+    mockBuildCorrelationContext.mockResolvedValue({ associate: { id: 1 }, consultations: [{ id: 1 }] });
+    mockApplyCorrelationActions.mockResolvedValue(undefined);
+
+    const before = Date.now();
+    const result = await processEmail('fake-token', 'msg-date-empty');
+    const after = Date.now();
+
+    expect(result).toEqual({ success: true, messageId: 'msg-date-empty', categoria: 'juridico' });
+
+    // Assert persistTriage received a valid ISO date (not empty string)
+    const persistCall = mockPersistTriage.mock.calls[0];
+    const receivedAt = persistCall[0].received_at;
+    const parsed = Date.parse(receivedAt);
+    expect(Number.isNaN(parsed)).toBe(false);
+    expect(parsed).toBeGreaterThanOrEqual(before);
+    expect(parsed).toBeLessThanOrEqual(after + 1000);
+  });
+
   it('returns error when Gmail fetch fails', async () => {
     mockGetMessage.mockRejectedValue(new Error('Network error'));
 

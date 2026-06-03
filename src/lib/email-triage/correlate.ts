@@ -54,6 +54,14 @@ export function correlate(
   ];
 }
 
+function escapeMarkdown(text: string): string {
+  return text
+    .replace(/\[/g, '\\[')
+    .replace(/\]/g, '\\]')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+}
+
 function buildNoteContent(payload: EmailPayload, result: EmailTriageResult): string {
   const lines: string[] = [
     '### Triagem Operacional de E-mail',
@@ -63,7 +71,7 @@ function buildNoteContent(payload: EmailPayload, result: EmailTriageResult): str
   ];
 
   lines.push(`**Categoria:** ${result.categoria}`);
-  lines.push(`**Resumo:** ${result.resumo}`);
+  lines.push(`**Resumo:** ${escapeMarkdown(result.resumo)}`);
 
   if (result.ha_prazo) {
     const parts: string[] = ['Sim'];

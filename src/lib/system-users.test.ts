@@ -35,11 +35,10 @@ vi.mock('@/lib/logger', () => ({
 describe('resolveSystemBotUser', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset module-level cache by re-evaluating the module
     vi.resetModules();
   });
 
-  it('returns existing bot user id and caches it', async () => {
+  it('returns existing bot user id', async () => {
     const { db } = await import('@/lib/db');
     const selectMock = vi.mocked(db.select);
     selectMock.mockReturnValueOnce({
@@ -51,12 +50,8 @@ describe('resolveSystemBotUser', () => {
     } as any);
 
     const { resolveSystemBotUser: resolve } = await import('./system-users');
-    const result1 = await resolve();
-    expect(result1).toBe(123);
-
-    // Second call should not hit db.select again because of cache
-    const result2 = await resolve();
-    expect(result2).toBe(123);
+    const result = await resolve();
+    expect(result).toBe(123);
     expect(selectMock).toHaveBeenCalledTimes(1);
   });
 
@@ -89,9 +84,30 @@ describe('resolveSystemBotUser', () => {
     expect(insertMock).toHaveBeenCalledTimes(1);
   });
 
-  it('uses cached value on second call without querying DB', async () => {
+  it('falls back to select by email when insert conflict occurs', async () => {
     const { db } = await import('@/lib/db');
     const selectMock = vi.mocked(db.select);
+    const insertMock = vi.mocked(db.insert);
+
+    // First select: no user by name
+    selectMock.mockReturnValueOnce({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: vi.fn(() => Promise.resolve([])),
+        })),
+      })),
+    } as any);
+
+    // insert returns nothing (conflict)
+    insertMock.mockReturnValueOnce({
+      values: vi.fn(() => ({
+        onConflictDoNothing: vi.fn(() => ({
+          returning: vi.fn(() => Promise.resolve([])),
+        })),
+      })),
+    } as any);
+
+    // Fallback select by email
     selectMock.mockReturnValueOnce({
       from: vi.fn(() => ({
         where: vi.fn(() => ({
@@ -101,11 +117,8 @@ describe('resolveSystemBotUser', () => {
     } as any);
 
     const { resolveSystemBotUser: resolve } = await import('./system-users');
-    await resolve();
-    expect(selectMock).toHaveBeenCalledTimes(1);
-
-    await resolve();
-    await resolve();
-    expect(selectMock).toHaveBeenCalledTimes(1);
+    const result = await resolve();
+    expect(result).toBe(789);
+    expect(selectMock).toHaveBeenCalledTimes(2);
   });
 });

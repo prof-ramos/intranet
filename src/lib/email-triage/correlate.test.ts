@@ -66,6 +66,24 @@ describe('correlate', () => {
     );
   });
 
+  it('escapes markdown control characters in the AI resumo', () => {
+    const maliciousResult: EmailTriageResult = {
+      ...result,
+      resumo: '[click](javascript:alert(1))',
+    };
+
+    const actions = correlate(payload, maliciousResult, {
+      associate: { id: 10 },
+      consultations: [{ id: 20 }],
+    });
+
+    expect(actions).toHaveLength(1);
+    expect(actions[0]).toMatchObject({ type: 'insert_note' });
+    const content = actions[0].type === 'insert_note' ? actions[0].content : '';
+    expect(content).toContain('\\[click\\]\\(javascript:alert\\(1\\)\\)');
+    expect(content).not.toContain('[click](javascript:alert(1))');
+  });
+
   it('skips when multiple open consultations make correlation ambiguous', () => {
     const actions = correlate(payload, result, {
       associate: { id: 10 },

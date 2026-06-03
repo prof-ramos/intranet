@@ -124,7 +124,12 @@ export async function processEmail(
     message_id: message.id as string,
     thread_id: message.threadId as string,
     history_id: (message.historyId as string) ?? '',
-    received_at: getHeader(message, 'Date') ?? new Date().toISOString(),
+    received_at: (() => {
+      const dateHeader = getHeader(message, 'Date');
+      return dateHeader && !Number.isNaN(Date.parse(dateHeader))
+        ? dateHeader
+        : new Date().toISOString();
+    })(),
     sender: getHeader(message, 'From') ?? '',
     original_recipient:
       getHeader(message, 'Delivered-To') ?? getHeader(message, 'To') ?? '',

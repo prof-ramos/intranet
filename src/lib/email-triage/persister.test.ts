@@ -164,6 +164,7 @@ describe('persistFailure', () => {
       expect.objectContaining({
         status: 'erro_validacao_ia',
         messageId: 'msg-789',
+        resumo: expect.stringContaining('Gemini timeout'),
       }),
     );
   });

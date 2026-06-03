@@ -147,7 +147,7 @@ export async function persistFailure(
       rawBodyStored: false,
       redactionApplied: true,
       categoria: 'irrelevante',
-      resumo: 'Falha na validacao da resposta da IA; analise valida nao foi salva.',
+      resumo: `Falha na validacao da resposta da IA: ${failureReason}`,
       haPrazo: false,
       resumoAnexos: [],
       sourceEvidence: [],
