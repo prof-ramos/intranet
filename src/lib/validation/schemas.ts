@@ -44,6 +44,21 @@ export const changePasswordSchema = z
     path: ['confirmPassword'],
   });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().min(1, 'E-mail é obrigatório.').email('E-mail inválido.').toLowerCase().trim(),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, 'Token é obrigatório.'),
+    newPassword: z.string().min(8, 'A nova senha deve ter pelo menos 8 caracteres.'),
+    confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória.'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'A confirmação não confere.',
+    path: ['confirmPassword'],
+  });
+
 export const associateSearchParamsSchema = z.object({
   q: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),

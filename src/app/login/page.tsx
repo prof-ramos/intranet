@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { login } from '@/app/login/actions';
 import { SubmitButton } from '@/app/login/SubmitButton';
 import { focusRingClass, hairline } from '@/lib/ui/tokens';
@@ -5,9 +6,9 @@ import { focusRingClass, hairline } from '@/lib/ui/tokens';
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; reset?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, reset } = await searchParams;
   return (
     <main id="main-content" className="flex min-h-screen items-center justify-center bg-[#040920] px-4">
       <div className="w-full max-w-sm rounded-[10px] bg-white shadow-xl">
@@ -23,6 +24,15 @@ export default async function LoginPage({
               className="rounded-[8px] border border-[#fca5a5] bg-[#fee2e2] px-4 py-3 text-sm text-[#7f1d1d]"
             >
               Email ou senha inválidos.
+            </div>
+          )}
+
+          {reset === 'success' && (
+            <div
+              role="alert"
+              className="rounded-[8px] border border-[#86efac] bg-[#dcfce7] px-4 py-3 text-sm text-[#166534]"
+            >
+              Senha redefinida com sucesso. Faça login com sua nova senha.
             </div>
           )}
 
@@ -47,12 +57,20 @@ export default async function LoginPage({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="password"
-                className="text-[11px] font-semibold tracking-[0.06em] text-[rgba(13,31,60,0.65)] uppercase"
-              >
-                Senha
-              </label>
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="password"
+                  className="text-[11px] font-semibold tracking-[0.06em] text-[rgba(13,31,60,0.65)] uppercase"
+                >
+                  Senha
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-[11px] text-[rgba(13,31,60,0.65)] underline hover:text-[#040920]"
+                >
+                  Esqueci minha senha
+                </Link>
+              </div>
               <input
                 id="password"
                 name="password"
