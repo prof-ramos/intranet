@@ -94,6 +94,7 @@ describe('notifyNeedsValidation', () => {
         dedupeKey: 'email_triage_pending:42:1',
         message: expect.not.stringContaining(mockPayload.sender),
       }),
+      undefined,
     );
     expect(createNotificationFromEvent).toHaveBeenCalledWith(
       'email_triage_pending',
@@ -104,6 +105,7 @@ describe('notifyNeedsValidation', () => {
         dedupeKey: 'email_triage_pending:42:2',
         message: expect.not.stringContaining(mockPayload.sender),
       }),
+      undefined,
     );
   });
 
