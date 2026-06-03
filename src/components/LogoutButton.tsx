@@ -41,7 +41,7 @@ export function LogoutButton() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button>fechar</button>
+          <button aria-label="Fechar modal de logout">fechar</button>
         </form>
       </dialog>
     </>

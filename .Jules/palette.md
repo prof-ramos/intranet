@@ -1,0 +1,3 @@
+## 2026-06-03 - Added aria-label to DaisyUI modal-backdrop button
+**Learning:** Dialog components, particularly those using DaisyUI's `modal-backdrop` pattern, often contain hidden buttons (like `<button>fechar</button>`) intended to close the modal when clicking outside. These buttons need descriptive `aria-label` attributes (e.g., 'Fechar modal de logout') because screen readers will still announce them even if they are visually obscured or lack descriptive text.
+**Action:** Always inspect modal structures and ensure all functional buttons, including background-closing ones, have clear `aria-label` attributes.
