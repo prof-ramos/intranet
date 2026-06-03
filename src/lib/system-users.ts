@@ -6,30 +6,34 @@ import { createLogger } from '@/lib/logger';
 
 const log = createLogger('system-users');
 
+const SYSTEM_BOT_EMAIL = 'sistema-triagem@asof.local';
+const SYSTEM_BOT_NAME = 'Sistema de Triagem';
+
 /**
- * Find or create the system bot admin user ('Sistema de Triagem').
+ * Find or create the system bot admin user.
  *
  * The bot user is used as `createdBy` for legal notes created by the
  * correlation engine. No module-level cache — the lookup is cheap
- * (indexed by name) and caching risks stale IDs if the user is deleted.
+ * (indexed by unique email) and caching risks stale IDs if the user is
+ * deleted.
  */
 export async function resolveSystemBotUser(): Promise<number> {
-  const systemBot = await db
-    .select()
+  const existing = await db
+    .select({ id: admins.id })
     .from(admins)
-    .where(eq(admins.name, 'Sistema de Triagem'))
+    .where(eq(admins.email, SYSTEM_BOT_EMAIL))
     .limit(1);
 
-  if (systemBot.length > 0) {
-    return systemBot[0].id;
+  if (existing.length > 0) {
+    return existing[0].id;
   }
 
   const [created] = await db
     .insert(admins)
     .values({
-      name: 'Sistema de Triagem',
-      email: 'sistema-triagem@asof.local',
-      passwordHash: `__SYSTEM_BOT__${createHash('sha256').update('sistema-triagem@asof.local').digest('hex').slice(0, 16)}`,
+      name: SYSTEM_BOT_NAME,
+      email: SYSTEM_BOT_EMAIL,
+      passwordHash: `__SYSTEM_BOT__${createHash('sha256').update(SYSTEM_BOT_EMAIL).digest('hex').slice(0, 16)}`,
       role: 'admin',
       isActive: false,
       mustChangePassword: false,
@@ -42,14 +46,14 @@ export async function resolveSystemBotUser(): Promise<number> {
     return created.id;
   }
 
-  const existing = await db
+  const raced = await db
     .select({ id: admins.id })
     .from(admins)
-    .where(eq(admins.email, 'sistema-triagem@asof.local'))
+    .where(eq(admins.email, SYSTEM_BOT_EMAIL))
     .limit(1);
 
-  if (existing.length > 0) {
-    return existing[0].id;
+  if (raced.length > 0) {
+    return raced[0].id;
   }
 
   throw new Error('Failed to create or find system bot user.');

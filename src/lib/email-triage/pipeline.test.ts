@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Drizzle mock chains require any for self-referencing builders */
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { processEmail } from './pipeline';
 import type { EmailPayload, EmailTriageResult } from './schema';
@@ -243,6 +244,77 @@ describe('processEmail', () => {
     expect(Number.isNaN(parsed)).toBe(false);
     expect(parsed).toBeGreaterThanOrEqual(before);
     expect(parsed).toBeLessThanOrEqual(after + 1000);
+  });
+
+  it('notifies admins and skips correlation when triage requires human validation', async () => {
+    const gmailMessage = {
+      id: 'msg-needs-review',
+      threadId: 'thread-review',
+      historyId: 'hist-review',
+      payload: {
+        headers: [
+          { name: 'From', value: 'sender@example.com' },
+          { name: 'To', value: 'to@example.com' },
+          { name: 'Subject', value: 'Urgent: prazo processual' },
+          { name: 'Date', value: '2026-06-01T10:00:00Z' },
+        ],
+        body: { data: 'UmVzcG9uZGVyIGF0w6kgMTAvMDYvMjAyNi4=' },
+      },
+    };
+
+    mockGetMessage.mockResolvedValue(gmailMessage);
+    mockGetHeader.mockImplementation((msg: typeof gmailMessage, name: string) => {
+      const header = msg.payload.headers.find((h: { name: string }) => h.name === name);
+      return header ? header.value : null;
+    });
+    mockExtractTextAndAttachments.mockReturnValue({
+      text: 'E-mail ambiguo que exige revisao operacional.',
+      attachments: [],
+    });
+    mockRedactExcerpt.mockImplementation((text: string) => text);
+    mockBuildPersistedExcerpt.mockReturnValue('[short-body-redacted; sha256 stored]');
+
+    const triageResult: EmailTriageResult = {
+      categoria: 'juridico',
+      resumo: 'E-mail ambiguo que exige revisao operacional.',
+      ha_prazo: false,
+      exige_validacao_humana: true,
+      nivel_risco: 'alto',
+      confianca: 'baixa',
+      acao_recomendada: 'Encaminhar para revisao operacional.',
+      legal_basis: 'avaliacao_humana_necessaria',
+      processed_purpose: 'classificacao operacional de e-mail',
+      resumo_anexos: [],
+      source_evidence: [],
+      thread_context_summary: null,
+      prazo_data: null,
+      prazo_hora: null,
+      prazo_confianca_data: null,
+      tipo_prazo: null,
+      trecho_fonte_do_prazo: null,
+      responsavel_sugerido: null,
+    };
+
+    mockAnalyzeEmail.mockResolvedValue(triageResult);
+    mockEnsureLabel.mockResolvedValue('label-id-123');
+    mockMarkAsTriaged.mockResolvedValue(undefined);
+    mockPersistTriage.mockResolvedValue(77);
+
+    const result = await processEmail('fake-token', 'msg-needs-review');
+
+    expect(result).toEqual({
+      success: true,
+      messageId: 'msg-needs-review',
+      categoria: 'juridico',
+    });
+    expect(mockNotifyNeedsValidation).toHaveBeenCalledTimes(1);
+    expect(mockNotifyNeedsValidation).toHaveBeenCalledWith(
+      triageResult,
+      77,
+      expect.objectContaining({ message_id: 'msg-needs-review' }),
+    );
+    expect(mockBuildCorrelationContext).not.toHaveBeenCalled();
+    expect(mockApplyCorrelationActions).not.toHaveBeenCalled();
   });
 
   it('returns error when Gmail fetch fails', async () => {

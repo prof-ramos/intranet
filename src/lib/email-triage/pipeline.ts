@@ -12,6 +12,7 @@
 import { env } from '@/lib/env';
 import { correlate } from './correlate';
 import { createLogger } from '@/lib/logger';
+import { redactPiiString } from '@/lib/sanitize-pii';
 import { createHash } from 'node:crypto';
 import {
   getGmailAccessToken,
@@ -188,7 +189,9 @@ export async function processEmail(
   if (triageResult.exige_validacao_humana) {
     const notifyResult = await notifyNeedsValidation(triageResult, triageId, payload);
     if (!notifyResult.ok) {
-      log.warn('Failed to notify admins of new triage (non-fatal).', { error: notifyResult.error });
+      log.warn('Failed to notify admins of new triage (non-fatal).', {
+        error: redactPiiString(notifyResult.error ?? ''),
+      });
     }
   }
 
@@ -200,12 +203,9 @@ export async function processEmail(
       const context = await buildCorrelationContext(payload);
       const actions = correlate(payload, triageResult, context);
       await applyCorrelationActions(actions);
-    } catch (err) {
-      log.warn('Correlation engine failed (non-fatal).', {
-        messageId,
-        error: String(err),
-      });
-    }
+  } catch (err) {
+    log.warn('Correlation engine failed (non-fatal).', { messageId }, err instanceof Error ? err : undefined);
+  }
   }
 
   // ── Step 7: Mark as triaged ───────────────────────────────────────────

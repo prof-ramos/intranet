@@ -17,6 +17,18 @@ export const PII_TEXT_PATTERNS: Array<[RegExp, string]> = [
 ];
 
 /**
+ * Redact PII (emails, CPFs, URLs, bearer tokens) from an arbitrary string.
+ * For object/array values, use `sanitizePiiValue` instead.
+ */
+export function redactPiiString(text: string): string {
+  let safe = text;
+  for (const [pattern, replacement] of PII_TEXT_PATTERNS) {
+    safe = safe.replace(pattern, replacement);
+  }
+  return safe;
+}
+
+/**
  * Recursively sanitize an arbitrary value by redacting string values
  * whose keys match `SENSITIVE_KEY_PATTERN`.
  *

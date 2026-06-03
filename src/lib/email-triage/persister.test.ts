@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Drizzle mock chains require any for self-referencing builders */
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { persistTriage, persistFailure } from './persister';
 import type { EmailPayload, EmailTriageResult } from './schema';
@@ -11,6 +12,13 @@ vi.mock('@/lib/db', () => ({
         })),
       })),
     })),
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: vi.fn(() => Promise.resolve([])),
+        })),
+      })),
+    })),
   },
 }));
 
@@ -19,6 +27,15 @@ vi.mock('@/lib/db/schema/email-triage', () => ({
     messageId: 'messageId',
     id: 'id',
   },
+}));
+
+vi.mock('@/lib/logger', () => ({
+  createLogger: vi.fn(() => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  })),
 }));
 
 vi.mock('./system-prompt', () => ({
@@ -167,5 +184,38 @@ describe('persistFailure', () => {
         resumo: expect.stringContaining('Gemini timeout'),
       }),
     );
+  });
+
+  it('preserves existing valid record instead of overwriting with failure', async () => {
+    const { db } = await import('@/lib/db');
+    const insertMock = vi.mocked(db.insert);
+    const selectMock = vi.mocked(db.select);
+
+    selectMock.mockReturnValueOnce({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: vi.fn(() => Promise.resolve([{ id: 999 }])),
+        })),
+      })),
+    } as any);
+
+    const payload: EmailPayload = {
+      message_id: 'msg-already-triaged',
+      thread_id: 'thread-456',
+      history_id: 'hist-789',
+      received_at: '2026-06-01T10:00:00Z',
+      sender: 'sender@example.com',
+      original_recipient: 'to@example.com',
+      subject: 'Test Subject',
+      body_hash: 'abc123',
+      body_excerpt: '[short-body-redacted; sha256 stored]',
+      analysis_excerpt: 'analysis excerpt',
+      attachments: [],
+    };
+
+    await persistFailure(payload, 'Gemini timeout on re-run', 'gemini-2.5-flash');
+
+    expect(insertMock).not.toHaveBeenCalled();
+    expect(selectMock).toHaveBeenCalledTimes(1);
   });
 });

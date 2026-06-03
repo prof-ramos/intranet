@@ -26,10 +26,11 @@ export async function applyCorrelationActions(actions: CorrelationAction[]): Pro
         });
         log.info('Nota criada por correlacao de triagem.', { consultationId: action.consultationId });
       } catch (err) {
-        log.warn('Failed to apply correlation action (non-fatal).', {
-          error: String(err),
-          actionType: action.type,
-        });
+        log.warn(
+          'Failed to apply correlation action (non-fatal).',
+          { actionType: action.type },
+          err instanceof Error ? err : undefined,
+        );
       }
     } else {
       log.info('Correlacao ignorada.', { reason: action.reason });

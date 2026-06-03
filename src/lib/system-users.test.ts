@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Drizzle mock chains require any for self-referencing builders */
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { resolveSystemBotUser } from './system-users';
 

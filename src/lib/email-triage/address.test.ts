@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractSenderEmailForCorrelation } from './address';
+import { extractSenderEmailForCorrelation } from '@/lib/email-triage/address';
 
 describe('extractSenderEmailForCorrelation', () => {
   it('extracts the first mailbox from a formatted From header', async () => {

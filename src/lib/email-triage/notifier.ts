@@ -6,7 +6,7 @@
  */
 import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { resolveSystemBotUser } from '@/lib/system-users';
 import { createNotificationFromEvent } from '@/lib/notifications/service';
 import type { EmailPayload, EmailTriageResult } from './schema';
@@ -33,20 +33,24 @@ export async function notifyNeedsValidation(
     const adminUsers = await executor
       .select({ id: admins.id })
       .from(admins)
-      .where(eq(admins.role, 'admin'));
+      .where(and(eq(admins.role, 'admin'), eq(admins.isActive, true)));
 
     const results = await Promise.allSettled(
       adminUsers.map((admin) =>
-        createNotificationFromEvent('email_triage_pending', {
-          recipientId: admin.id,
-          actorId,
-          title: 'Nova triagem aguardando revisão operacional',
-          message: `E-mail "${payload.subject}" foi classificado como ${triageResult.categoria} (risco ${triageResult.nivel_risco}) e exige revisao operacional.`,
-          dedupeKey: `email_triage_pending:${triageId}:${admin.id}`,
-          href: `/app/email-triage/${triageId}`,
-          entityType: 'email_triagem',
-          entityId: triageId,
-        }),
+        createNotificationFromEvent(
+          'email_triage_pending',
+          {
+            recipientId: admin.id,
+            actorId,
+            title: 'Nova triagem aguardando revisão operacional',
+            message: `E-mail "${payload.subject}" foi classificado como ${triageResult.categoria} (risco ${triageResult.nivel_risco}) e exige revisao operacional.`,
+            dedupeKey: `email_triage_pending:${triageId}:${admin.id}`,
+            href: `/app/email-triage/${triageId}`,
+            entityType: 'email_triagem',
+            entityId: triageId,
+          },
+          tx,
+        ),
       ),
     );
 

@@ -6,9 +6,12 @@
  */
 import { db } from '@/lib/db';
 import { emailTriagens } from '@/lib/db/schema/email-triage';
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
+import { createLogger } from '@/lib/logger';
 import { EMAIL_TRIAGE_VERSION } from './system-prompt';
 import type { EmailPayload, EmailTriageResult } from './schema';
+
+const log = createLogger('email-triage:persister');
 
 /**
  * Build the common insert/update values for email_triagens from a triage
@@ -122,12 +125,31 @@ export async function persistTriage(
 
 /**
  * Persist a partial record for an email that failed AI analysis.
+ *
+ * If a triage for the same `messageId` already exists (e.g. a previous
+ * successful run), it is preserved — we do not overwrite valid data with
+ * a failure status. The failure is logged so it can be triaged manually.
  */
 export async function persistFailure(
   payload: EmailPayload,
   failureReason: string,
   modelName: string,
 ): Promise<void> {
+  const existing = await db
+    .select({ id: emailTriagens.id })
+    .from(emailTriagens)
+    .where(eq(emailTriagens.messageId, payload.message_id))
+    .limit(1);
+
+  if (existing.length > 0) {
+    log.warn('Triage already exists; preserving valid record instead of overwriting with failure.', {
+      messageId: payload.message_id,
+      triageId: existing[0].id,
+      failureReason,
+    });
+    return;
+  }
+
   const attachmentHashes: string[] = payload.attachments
     .map((a) => a.sha256)
     .filter((h): h is string => h !== null);
