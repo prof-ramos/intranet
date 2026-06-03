@@ -1,6 +1,6 @@
 import { authorizeCronRequest } from '@/lib/cron/auth';
 import { jsonError, jsonMethodNotAllowed, jsonOk } from '@/lib/integrations/http';
-import { processBatch } from '@/lib/email-triage';
+import { processBatch } from '@/lib/email-triage/pipeline';
 import { createLogger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
