@@ -491,6 +491,7 @@ const expectedEnums = {
     'activity.assigned',
     'legal_consultation.sla_warning',
     'lgpd_request',
+    'email_triage_pending',
   ],
   official_letter_status: ['gerado', 'cancelado', 'rascunho'],
   assinafy_document_status: [
