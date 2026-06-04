@@ -1,5 +1,4 @@
 import { bigint, index, integer, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
 
 export const passwordResetAttempts = pgTable(
   'password_reset_attempts',
@@ -13,8 +12,7 @@ export const passwordResetAttempts = pgTable(
   },
   (table) => [
     uniqueIndex('idx_password_reset_attempts_email_hash_unique')
-      .on(table.emailHash)
-      .where(sql`${table.emailHash} IS NOT NULL`),
+      .on(table.emailHash),
     index('idx_password_reset_attempts_expires_at').on(table.expiresAt),
   ],
 );

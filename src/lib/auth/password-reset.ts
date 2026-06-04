@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { eq, and, isNull, sql } from 'drizzle-orm';
+import { eq, and, gt, isNull, ne, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { admins, passwordResetTokens, passwordResetAttempts, auditLogs } from '@/lib/db/schema';
@@ -108,63 +108,78 @@ export async function requestPasswordReset(email: string): Promise<void> {
     return;
   }
 
-  // Invalida tokens anteriores não usados
-  await retryTransientConnection(() =>
-    db
-      .delete(passwordResetTokens)
-      .where(
-        and(
-          eq(passwordResetTokens.adminId, admin.id),
-          isNull(passwordResetTokens.usedAt),
-        ),
-      ),
-  );
+  if (!env.MAILJET_API_KEY || !env.MAILJET_SECRET_KEY || !env.MAILJET_SENDER_VALIDATED) {
+    logger.warn('[requestPasswordReset] Email not configured; keeping existing reset tokens.', {
+      adminId: admin.id,
+    });
+    return;
+  }
 
   // Gera token
   const token = randomBytes(TOKEN_BYTES).toString('base64url');
   const tokenHashed = hashToken(token);
   const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_MS);
 
-  await retryTransientConnection(() =>
-    db.insert(passwordResetTokens).values({
-      adminId: admin.id,
-      tokenHash: tokenHashed,
-      expiresAt,
-    }),
+  const [createdToken] = await retryTransientConnection(() =>
+    db
+      .insert(passwordResetTokens)
+      .values({
+        adminId: admin.id,
+        tokenHash: tokenHashed,
+        expiresAt,
+      })
+      .returning({ id: passwordResetTokens.id }),
   );
 
-  // Envia email
-  if (env.MAILJET_API_KEY && env.MAILJET_SECRET_KEY && env.MAILJET_SENDER_VALIDATED) {
-    const baseUrl = env.ASOF_INTRANET_URL || 'http://localhost:3000';
-    const resetLink = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
-
-    try {
-      await sendEmail({
-        to: admin.email,
-        toName: admin.name,
-        subject: 'Redefinição de senha — ASOF Intranet',
-        htmlBody: passwordResetEmailHtml(admin.name, resetLink),
-        textBody: passwordResetEmailText(admin.name, resetLink),
-      });
-    } catch (emailError) {
-      logger.error(
-        '[requestPasswordReset] Failed to deliver reset email.',
-        { adminId: admin.id, error: toSafeErrorLog(emailError) },
-        ensureError(emailError),
-      );
-    }
-  } else {
-    logger.warn('[requestPasswordReset] Email not configured; token generated but not sent.', {
-      adminId: admin.id,
-    });
+  if (!createdToken) {
+    throw new Error('Failed to create password reset token.');
   }
 
-  // Audit log
+  const baseUrl = env.ASOF_INTRANET_URL || 'http://localhost:3000';
+  const resetLink = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
+
+  try {
+    await sendEmail({
+      to: admin.email,
+      toName: admin.name,
+      subject: 'Redefinição de senha — ASOF Intranet',
+      htmlBody: passwordResetEmailHtml(admin.name, resetLink),
+      textBody: passwordResetEmailText(admin.name, resetLink),
+    });
+  } catch (emailError) {
+    await retryTransientConnection(() =>
+      db
+        .delete(passwordResetTokens)
+        .where(
+          and(eq(passwordResetTokens.id, createdToken.id), isNull(passwordResetTokens.usedAt)),
+        ),
+    );
+
+    logger.error(
+      '[requestPasswordReset] Failed to deliver reset email.',
+      { adminId: admin.id, error: toSafeErrorLog(emailError) },
+      ensureError(emailError),
+    );
+    return;
+  }
+
   await retryTransientConnection(() =>
-    db.insert(auditLogs).values({
-      action: 'password_reset_requested',
-      entityType: 'admin',
-      entityId: admin.id,
+    db.transaction(async (tx) => {
+      await tx
+        .delete(passwordResetTokens)
+        .where(
+          and(
+            eq(passwordResetTokens.adminId, admin.id),
+            isNull(passwordResetTokens.usedAt),
+            ne(passwordResetTokens.id, createdToken.id),
+          ),
+        );
+
+      await tx.insert(auditLogs).values({
+        action: 'password_reset_requested',
+        entityType: 'admin',
+        entityId: admin.id,
+      });
     }),
   );
 }
@@ -210,69 +225,59 @@ export async function validateResetToken(token: string): Promise<ValidateResetTo
 }
 
 // ---------------------------------------------------------------------------
-// consumeResetToken — valida e aplica nova senha
+// consumeResetToken — valida e aplica nova senha (transactional)
 // ---------------------------------------------------------------------------
 
 export async function consumeResetToken(token: string, newPassword: string): Promise<void> {
   const tokenHashed = hashToken(token);
 
-  const [record] = await retryTransientConnection(() =>
-    db
-      .select({
-        id: passwordResetTokens.id,
-        adminId: passwordResetTokens.adminId,
-        expiresAt: passwordResetTokens.expiresAt,
-        usedAt: passwordResetTokens.usedAt,
-      })
-      .from(passwordResetTokens)
-      .where(eq(passwordResetTokens.tokenHash, tokenHashed))
-      .limit(1),
-  );
-
-  if (!record || record.usedAt || record.expiresAt.getTime() < Date.now()) {
-    throw new InvalidResetTokenError();
-  }
-
-  // Atualiza senha
+  // Hash da nova senha (operação lenta — fora da transação)
   const passwordHash = await bcrypt.hash(newPassword, 12);
+  const now = new Date();
 
+  // Escrita atômica: consome token antes de alterar a senha.
   await retryTransientConnection(() =>
-    db
-      .update(admins)
-      .set({
-        passwordHash,
-        mustChangePassword: false,
-        updatedAt: sql`now()`,
-      })
-      .where(eq(admins.id, record.adminId)),
-  );
+    db.transaction(async (tx) => {
+      const [record] = await tx
+        .update(passwordResetTokens)
+        .set({ usedAt: now })
+        .where(
+          and(
+            eq(passwordResetTokens.tokenHash, tokenHashed),
+            isNull(passwordResetTokens.usedAt),
+            gt(passwordResetTokens.expiresAt, now),
+          ),
+        )
+        .returning({
+          id: passwordResetTokens.id,
+          adminId: passwordResetTokens.adminId,
+        });
 
-  // Marca token como usado
-  await retryTransientConnection(() =>
-    db
-      .update(passwordResetTokens)
-      .set({ usedAt: new Date() })
-      .where(eq(passwordResetTokens.id, record.id)),
-  );
+      if (!record) {
+        throw new InvalidResetTokenError();
+      }
 
-  // Invalida todos os outros tokens do mesmo admin
-  await retryTransientConnection(() =>
-    db
-      .delete(passwordResetTokens)
-      .where(
-        and(
-          eq(passwordResetTokens.adminId, record.adminId),
-          isNull(passwordResetTokens.usedAt),
-        ),
-      ),
-  );
+      await tx
+        .update(admins)
+        .set({
+          passwordHash,
+          mustChangePassword: false,
+          sessionVersion: sql`${admins.sessionVersion} + 1`,
+          updatedAt: sql`now()`,
+        })
+        .where(eq(admins.id, record.adminId));
 
-  // Audit log
-  await retryTransientConnection(() =>
-    db.insert(auditLogs).values({
-      action: 'password_reset_completed',
-      entityType: 'admin',
-      entityId: record.adminId,
+      await tx
+        .delete(passwordResetTokens)
+        .where(
+          and(eq(passwordResetTokens.adminId, record.adminId), isNull(passwordResetTokens.usedAt)),
+        );
+
+      await tx.insert(auditLogs).values({
+        action: 'password_reset_completed',
+        entityType: 'admin',
+        entityId: record.adminId,
+      });
     }),
   );
 }

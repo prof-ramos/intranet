@@ -1,6 +1,13 @@
 import Link from 'next/link';
 import { requestReset } from '@/app/forgot-password/actions';
-import { focusRingClass, hairline } from '@/lib/ui/tokens';
+import {
+  dangerText,
+  errorBg,
+  focusRingClass,
+  hairline,
+  mobileTouchTargetClass,
+  successText,
+} from '@/lib/ui/tokens';
 
 export default async function ForgotPasswordPage({
   searchParams,
@@ -22,14 +29,15 @@ export default async function ForgotPasswordPage({
             <div className="flex flex-col gap-4">
               <div
                 role="alert"
-                className="rounded-[8px] border border-[#86efac] bg-[#dcfce7] px-4 py-3 text-sm text-[#166534]"
+                className="rounded-[8px] border border-[#86efac] bg-[#dcfce7] px-4 py-3 text-sm"
+                style={{ color: successText }}
               >
                 Se o email estiver cadastrado, enviaremos um link para redefinir sua senha.
                 Verifique sua caixa de entrada e spam.
               </div>
               <Link
                 href="/login"
-                className="inline-flex h-11 w-full items-center justify-center rounded-[8px] border bg-white px-5 text-sm font-semibold transition-colors hover:bg-gray-50"
+                className={`inline-flex ${mobileTouchTargetClass} w-full items-center justify-center rounded-[8px] border bg-white px-5 text-sm font-semibold transition-colors hover:bg-gray-50`}
                 style={{ borderColor: hairline }}
               >
                 Voltar ao login
@@ -40,7 +48,8 @@ export default async function ForgotPasswordPage({
               {error && (
                 <div
                   role="alert"
-                  className="rounded-[8px] border border-[#fca5a5] bg-[#fee2e2] px-4 py-3 text-sm text-[#7f1d1d]"
+                  className="rounded-[8px] border border-[#fca5a5] px-4 py-3 text-sm"
+                  style={{ backgroundColor: errorBg, color: dangerText }}
                 >
                   {error}
                 </div>
@@ -64,7 +73,7 @@ export default async function ForgotPasswordPage({
                     type="email"
                     required
                     autoComplete="email"
-                    className={`h-11 w-full rounded-[8px] border px-3 text-sm ${focusRingClass}`}
+                    className={`${mobileTouchTargetClass} w-full rounded-[8px] border px-3 text-sm ${focusRingClass}`}
                     style={{ borderColor: hairline }}
                     placeholder="seu@email.com"
                   />
@@ -72,7 +81,7 @@ export default async function ForgotPasswordPage({
 
                 <button
                   type="submit"
-                  className="inline-flex h-11 w-full items-center justify-center rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260]"
+                  className={`inline-flex ${mobileTouchTargetClass} w-full items-center justify-center rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260]`}
                 >
                   Enviar link de redefinição
                 </button>

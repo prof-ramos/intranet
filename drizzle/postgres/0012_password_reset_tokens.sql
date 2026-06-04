@@ -25,5 +25,5 @@ END $$;
 CREATE UNIQUE INDEX IF NOT EXISTS "idx_password_reset_tokens_hash_unique" ON "password_reset_tokens" USING btree ("token_hash");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "idx_password_reset_tokens_admin_id" ON "password_reset_tokens" USING btree ("admin_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "idx_password_reset_tokens_expires_at" ON "password_reset_tokens" USING btree ("expires_at");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "idx_password_reset_attempts_email_hash_unique" ON "password_reset_attempts" USING btree ("email_hash") WHERE "password_reset_attempts"."email_hash" IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_password_reset_attempts_email_hash_unique" ON "password_reset_attempts" USING btree ("email_hash");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "idx_password_reset_attempts_expires_at" ON "password_reset_attempts" USING btree ("expires_at");

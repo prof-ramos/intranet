@@ -11,6 +11,7 @@ let mockDbUser: {
   role: 'admin' | 'diretoria' | 'secretaria';
   isActive: boolean;
   mustChangePassword: boolean;
+  sessionVersion: number;
 } | null = null;
 
 const cookieStore = {
@@ -96,6 +97,7 @@ describe('session', () => {
       role: 'diretoria',
       isActive: true,
       mustChangePassword: true,
+      sessionVersion: 0,
     };
 
     await createSession({ userId: 7, email: 'admin@asof.local' });
@@ -122,9 +124,27 @@ describe('session', () => {
       role: 'admin',
       isActive: false,
       mustChangePassword: false,
+      sessionVersion: 0,
     };
 
     await createSession({ userId: 7, email: 'admin@asof.local' });
+
+    await expect(getSession()).resolves.toBeNull();
+  });
+
+  it('returns null when the signed cookie has an old session version', async () => {
+    mockDbUser = {
+      id: 7,
+      name: 'Admin',
+      email: 'admin@asof.local',
+      role: 'admin',
+      isActive: true,
+      mustChangePassword: false,
+      sessionVersion: 0,
+    };
+
+    await createSession({ userId: 7, email: 'admin@asof.local' });
+    mockDbUser.sessionVersion = 1;
 
     await expect(getSession()).resolves.toBeNull();
   });
