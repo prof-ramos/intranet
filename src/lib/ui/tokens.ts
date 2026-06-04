@@ -43,6 +43,7 @@ export const priorityStyles: Record<string, { label: string; fg: string; bg: str
 export const error = '#ef4444';
 export const errorBg = '#fee2e2';
 export const errorBorder = '#fca5a5';
+export const dangerBorder = errorBorder;
 export const warning = '#eab308';
 export const warningBg = '#fef3c7';
 export const success = '#22c55e';
