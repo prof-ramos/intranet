@@ -97,6 +97,7 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 - Indexes: parciais para `WHERE` condicionais, GIN trigram para `LIKE '%term%'`, compostos `(filter, order)`. Prefixo `idx_` nos custom.
 - Migrations: nomear com zero-padding + descrição (e.g. `0009_quality_improvements.sql`). Atualizar `meta/_journal.json`.
 - Não usar `Record<string, unknown>` em funções de update; usar interfaces tipadas.
+- Para referência completa de tabelas, enums, índices e migrações, veja [`DATABASE.md`](./DATABASE.md).
 
 ### Auth
 
@@ -134,7 +135,7 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 | `README.md` | Quick start |
 | `TODO-PROD.md` | Checklist de go-live |
 | `docs/runbook.md` | Runbook operacional |
-| `docs/adr/` | ADRs 001-011 |
+| `docs/adr/` | ADRs 001-012 |
 | `API.md` | Superfície HTTP pública |
 | `PAGES.md` | Páginas e funcionalidades |
 | `ARCHITECTURE.md` | Diagrama, deployment, glossário |

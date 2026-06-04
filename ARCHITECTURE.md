@@ -74,6 +74,8 @@ A intranet ASOF e uma aplicacao Next.js 16 App Router, server-side, com Drizzle 
 
 O baseline nao depende de roles, policies, publications ou recursos de plataforma externa. RLS pode voltar depois como hardening, mas nao bloqueia a estreia.
 
+> Para referência completa de tabelas, enums, índices, migrações e convenções, veja [`DATABASE.md`](./DATABASE.md).
+
 ## Autenticacao
 
 - Login valida `admins.email` + `admins.password_hash` com `bcryptjs`.

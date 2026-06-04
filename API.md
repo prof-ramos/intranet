@@ -1,7 +1,7 @@
 # API Documentation — ASOF Intranet
 
 > Documentação dos endpoints HTTP públicos atualmente expostos pela ASOF Intranet.
-> Última atualização: 2026-05-21
+> Última atualização: 2026-06-03
 
 ---
 
@@ -9,7 +9,7 @@
 
 A superficie HTTP publica atual da ASOF Intranet e pequena e intencionalmente restrita.
 
-Hoje existem **6 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
+Hoje existem **12 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
 
 | Metodo        | Rota                                 | Finalidade                                                                  |
 | ------------- | ------------------------------------ | --------------------------------------------------------------------------- |
@@ -19,6 +19,12 @@ Hoje existem **6 endpoints HTTP expostos**, com superficie publica intencionalme
 | `GET`, `POST` | `/api/v1/events`                     | Superficie administrativa para dispatch outbound-only; sem ingestao inbound |
 | `GET`         | `/api/v1/events/dispatch`            | Dispatch agendado por cron bearer para pendencias e retries outbound        |
 | `GET`         | `/api/v1/juridico/sla-warnings`      | Job agendado por cron bearer para emitir notificacoes de SLA juridico       |
+| `POST`        | `/api/v1/email-triage/process`       | Processar emails pendentes na triagem (cron ou manual)                      |
+| `POST`        | `/api/v1/gmail-webhook`              | Webhook de notificacao push do Gmail (Pub/Sub)                              |
+| `GET`         | `/api/v1/cron/gmail-watch`           | Renovacao semanal do watch Gmail (cron bearer)                              |
+| `GET`         | `/api/v1/cron/lgpd-retention`        | Job agendado de retencao e anonimizacao LGPD (cron bearer)                  |
+| `GET`         | `/api/labels/pimaco`                 | Geracao de etiquetas Pimaco em PDF                                          |
+| `POST`        | `/api/webhooks/assinafy`             | Webhook de retorno de assinatura digital (Assinafy)                         |
 
 ### O que esta fora deste documento
 
@@ -551,6 +557,185 @@ Authorization: Bearer <CRON_SECRET>
 #### Auditoria e restricoes
 
 Cada execucao grava `audit_logs.action = domain_event_dispatch_scheduled`. O endpoint nao ingere eventos externos e nao aceita `POST`; ele apenas consome `domain_events` ja persistidos por servicos internos.
+
+---
+
+### 7. Processamento de Triagem de Email
+
+**Metodo:** `POST`
+**Rota:** `/api/v1/email-triage/process`
+
+#### Descricao
+
+Processa emails pendentes na fila de triagem. Busca emails nao lidos na caixa de entrada do Gmail (controller@asof.org.br), extrai conteudo, classifica com Gemini AI e persiste o resultado em `email_triagens`. Pode ser chamado por cron (bearer) ou manualmente por admin.
+
+#### Autorizacao
+
+- `Authorization: Bearer <CRON_SECRET>` para chamadas agendadas
+- ou sessao humana com role `admin`
+
+#### Resposta de sucesso
+
+```json
+{
+  "ok": true,
+  "data": {
+    "processed": 3,
+    "results": [
+      { "emailId": "msg001", "status": "analisado", "triagemId": 42 },
+      { "emailId": "msg002", "status": "erro_validacao_ia" }
+    ]
+  }
+}
+```
+
+---
+
+### 8. Webhook de Notificacao Push do Gmail
+
+**Metodo:** `POST`
+**Rota:** `/api/v1/gmail-webhook`
+
+#### Descricao
+
+Recebe notificacoes push do Gmail via Google Pub/Sub quando novos emails chegam na caixa controller@asof.org.br. Inicia o processamento da triagem para o email notificado. O endpoint e assincrono e nao exige resposta imediata de processamento completo.
+
+#### Autorizacao
+
+- Verifica o token bearer configurado em `GMAIL_WEBHOOK_TOKEN`
+- A requisicao vem do Google Pub/Sub, nao de usuarios internos
+
+#### Observacoes
+
+- O watch Gmail e renovado semanalmente pelo cron `/api/v1/cron/gmail-watch`
+- A assinatura Pub/Sub e gerenciada externamente (`gmail-inbox-sub`)
+
+---
+
+### 9. Renovacao Agendada do Watch Gmail
+
+**Metodo:** `GET`
+**Rota:** `/api/v1/cron/gmail-watch`
+
+#### Descricao
+
+Renova a watch subscription da API Gmail para a caixa controller@asof.org.br. O watch expira a cada 7 dias e precisa ser renovado periodicamente. Executado por Vercel Cron.
+
+#### Autorizacao
+
+- `Authorization: Bearer <CRON_SECRET>` para chamadas agendadas
+- sessao humana nao e aceita nesta rota
+
+#### Resposta de sucesso
+
+```json
+{
+  "ok": true,
+  "data": {
+    "watchRenewed": true,
+    "expiration": "2026-06-10T00:00:00.000Z"
+  }
+}
+```
+
+---
+
+### 10. Job Agendado de Retencao LGPD
+
+**Metodo:** `GET`
+**Rota:** `/api/v1/cron/lgpd-retention`
+
+#### Descricao
+
+Executa a politica de retencao e anonimizacao de dados conforme ADR 006. Anonimiza registros de associados que solicitaram exclusao ou atingiram o prazo de retencao legal. Executado por Vercel Cron.
+
+#### Autorizacao
+
+- `Authorization: Bearer <CRON_SECRET>` para chamadas agendadas
+- sessao humana nao e aceita nesta rota
+
+#### Resposta de sucesso
+
+```json
+{
+  "ok": true,
+  "data": {
+    "anonymized": 0,
+    "retentionApplied": 5,
+    "errors": []
+  }
+}
+```
+
+---
+
+### 11. Geracao de Etiquetas Pimaco
+
+**Metodo:** `GET`
+**Rota:** `/api/labels/pimaco`
+
+#### Descricao
+
+Gera um arquivo PDF com etiquetas no formato Pimaco para impressao. Utilizado para malas diretas e correspondencia fisica.
+
+#### Autorizacao
+
+- Requer sessao autenticada
+- Roles permitidas: `admin`, `diretoria`, `secretaria`
+
+#### Query Parameters
+
+| Parametro | Tipo | Obrigatorio | Descricao |
+|-----------|------|-------------|-----------|
+| `associateIds` | `number[]` | Sim | IDs dos associados — formato: `?associateIds=1&associateIds=2&associateIds=3` (repetido) |
+| `model` | `string` | Nao | Modelo Pimaco (default: `P2008`) |
+
+#### Auditoria
+
+Esta rota registra evento em `audit_logs` a cada requisição (quem gerou, quantas etiquetas, modelo). Consultar `/app/config/auditoria` para histórico.
+
+#### Resposta de sucesso
+
+**Status:** `200 OK`
+**Content-Type:** `application/pdf`
+**Body:** bytes do PDF com as etiquetas formatadas.
+
+---
+
+### 12. Webhook de Retorno de Assinatura Digital (Assinafy)
+
+**Metodo:** `POST`
+**Rota:** `/api/webhooks/assinafy`
+
+#### Descricao
+
+Recebe callbacks da plataforma Assinafy quando um documento e assinado ou rejeitado. Atualiza o status do oficio na intranet e registra o evento de auditoria.
+
+#### Autorizacao
+
+- Verifica assinatura HMAC do payload conforme configurado na integracao com Assinafy
+- Endpoint publico (nao requer sessao)
+
+#### Payload esperado
+
+```json
+{
+  "event": "document_signed",
+  "documentId": "assinafy-doc-123",
+  "status": "signed",
+  "signedAt": "2026-06-03T12:00:00Z",
+  "signers": [
+    { "name": "Nome do Signatario", "email": "signatario@example.com" }
+  ]
+}
+```
+
+#### Resposta de sucesso
+
+**Status:** `200 OK`
+```json
+{ "ok": true }
+```
 
 ---
 

@@ -76,6 +76,10 @@ test-results/
 playwright-report/
 playwright/.cache/
 
+# Playwright MCP artifacts (transient snapshots with PII — never commit)
+.playwright-mcp/
+associados-list.md
+
 # Claude Code local settings (personal overrides, never share)
 .claude/settings.local.json
 .mcp.json
