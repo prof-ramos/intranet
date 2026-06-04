@@ -33,6 +33,9 @@ function makeDelete(eventName: string) {
   };
 }
 
+/** Resolve a pending promise (flushes one tick of microtasks). */
+const flush = () => new Promise<void>((r) => setImmediate(r));
+
 const txUpdateReturningRows: unknown[][] = [];
 const txAdminUpdateWhere = vi.fn(async () => {
   events.push('tx:update-admin');
@@ -166,6 +169,7 @@ describe('password reset', () => {
   });
 
   it('revokes older reset tokens only after the new email is delivered', async () => {
+    vi.useFakeTimers();
     dbMock.select.mockReturnValue(
       makeSelect([{ id: 7, name: 'Admin', email: 'admin@asof.local', isActive: true }]),
     );
@@ -182,12 +186,18 @@ describe('password reset', () => {
     });
 
     const { requestPasswordReset } = await import('./password-reset');
-    await requestPasswordReset('admin@asof.local');
+    const promise = requestPasswordReset('admin@asof.local');
+
+    // Flush microtasks + advance timers until the function completes
+    await vi.advanceTimersByTimeAsync(1200);
+    await promise;
 
     expect(events).toEqual(['db:delete:cleanup', 'email:sent', 'tx:start', 'tx:delete-old-tokens', 'tx:audit']);
+    vi.useRealTimers();
   });
 
   it('keeps older reset tokens when email delivery fails', async () => {
+    vi.useFakeTimers();
     dbMock.select.mockReturnValue(
       makeSelect([{ id: 7, name: 'Admin', email: 'admin@asof.local', isActive: true }]),
     );
@@ -202,9 +212,14 @@ describe('password reset', () => {
     mockSendEmail.mockRejectedValue(new Error('mailjet unavailable'));
 
     const { requestPasswordReset } = await import('./password-reset');
-    await requestPasswordReset('admin@asof.local');
+    const promise = requestPasswordReset('admin@asof.local');
+
+    // Flush microtasks + advance timers until the function completes
+    await vi.advanceTimersByTimeAsync(1200);
+    await promise;
 
     expect(events).toEqual(['db:delete:cleanup', 'db:delete']);
     expect(dbMock.transaction).not.toHaveBeenCalled();
+    vi.useRealTimers();
   });
 });

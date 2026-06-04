@@ -17,7 +17,7 @@ const TOKEN_BYTES = 32;
 const TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hora
 const RATE_LIMIT_MAX_ATTEMPTS = 3;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
-const TIMING_JITTER_MS = 200; // jitter para mitigar timing attack
+const RESPONSE_TIME_FLOOR_MS = 800; // floor para mitigar timing attack — cobre latência típica do path ativo
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -69,6 +69,7 @@ async function checkRateLimit(email: string): Promise<boolean> {
 // ---------------------------------------------------------------------------
 
 export async function requestPasswordReset(email: string): Promise<void> {
+  const startTime = Date.now();
   const normalizedEmail = email.trim().toLowerCase();
 
   // Best-effort cleanup de tokens expirados
@@ -115,12 +116,12 @@ export async function requestPasswordReset(email: string): Promise<void> {
       .limit(1),
   );
 
-  // Timing-safe: se admin não existe ou está inativo, adiciona jitter e retorna sem erro
+  // Timing-safe: se admin não existe ou está inativo, espera o floor e retorna sem erro
   if (!admin || !admin.isActive) {
-    // Jitter para mitigar timing attack — evita que a ausência de envio de email
-    // seja distinguível por tempo de resposta
-    const jitter = Math.floor(Math.random() * TIMING_JITTER_MS) + 50;
-    await new Promise((resolve) => setTimeout(resolve, jitter));
+    const jitter = Math.floor(Math.random() * 150) + 50;
+    const elapsed = Date.now() - startTime;
+    const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed + jitter);
+    await new Promise((resolve) => setTimeout(resolve, wait));
     return;
   }
 
@@ -128,6 +129,10 @@ export async function requestPasswordReset(email: string): Promise<void> {
     logger.warn('[requestPasswordReset] Email not configured; keeping existing reset tokens.', {
       adminId: admin.id,
     });
+    // Timing-safe: espera o floor para não distinguir deste path
+    const elapsed = Date.now() - startTime;
+    const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed);
+    await new Promise((resolve) => setTimeout(resolve, wait));
     return;
   }
 
@@ -176,6 +181,10 @@ export async function requestPasswordReset(email: string): Promise<void> {
       { adminId: admin.id, error: toSafeErrorLog(emailError) },
       ensureError(emailError),
     );
+    // Timing-safe: espera o floor para não distinguir deste path
+    const elapsed = Date.now() - startTime;
+    const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed);
+    await new Promise((resolve) => setTimeout(resolve, wait));
     return;
   }
 
@@ -198,6 +207,12 @@ export async function requestPasswordReset(email: string): Promise<void> {
       });
     }),
   );
+
+  // Timing-safe: espera até completar o floor + jitter para manter consistência
+  const jitter = Math.floor(Math.random() * 150) + 50;
+  const elapsed = Date.now() - startTime;
+  const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed + jitter);
+  await new Promise((resolve) => setTimeout(resolve, wait));
 }
 
 // ---------------------------------------------------------------------------
