@@ -99,6 +99,13 @@
       "when": 1780686400000,
       "tag": "0013_admin_session_version",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1780861800000,
+      "tag": "0014_rename_oficios_unique_constraint",
+      "breakpoints": true
     }
   ]
 }

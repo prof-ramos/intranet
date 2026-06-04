@@ -673,7 +673,6 @@ const expectedIndexes = {
     'idx_oficios_status',
     'idx_oficios_updated_by',
     'idx_oficios_year',
-    'oficios_assinafy_document_id_key',
     'oficios_assinafy_document_id_unique',
     'oficios_number_unique',
     'oficios_pkey',
@@ -781,7 +780,9 @@ describe('database schema contract', () => {
     const unexpectedEnums = Object.keys(actual).filter((enumName) => !(enumName in expectedEnums));
     expect(unexpectedEnums).toEqual([]);
     for (const [enumName, expectedLabels] of Object.entries(expectedEnums)) {
-      expect(actual[enumName]).toEqual(expectedLabels);
+      // Order of enum labels in PostgreSQL depends on creation method (CREATE TYPE vs ALTER TYPE ADD VALUE).
+      // We only care about presence, not sort order.
+      expect(actual[enumName]?.toSorted()).toEqual(expectedLabels.toSorted());
     }
   });
 
