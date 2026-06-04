@@ -1,6 +1,6 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import { type CSSProperties, memo } from 'react';
 import { AlertTriangle, Calendar, Check } from 'lucide-react';
 import {
   borderMuted,
@@ -20,7 +20,14 @@ import {
 import { formatDueDate, initials } from './helpers';
 import type { BoardActivity, BoardPerson } from './types';
 
-export function Avatar({ person, compact = false }: { person?: BoardPerson; compact?: boolean }) {
+// Memoized to prevent re-renders of identical avatars when board items are dragged
+export const Avatar = memo(function Avatar({
+  person,
+  compact = false,
+}: {
+  person?: BoardPerson;
+  compact?: boolean;
+}) {
   if (!person)
     return (
       <span
@@ -42,9 +49,11 @@ export function Avatar({ person, compact = false }: { person?: BoardPerson; comp
       {initials(person.name)}
     </span>
   );
-}
+});
 
-export function ActivityCardContent({
+// Memoized to drastically reduce re-renders when dragging items across the board
+// since only the moving item needs to re-render, not the entire list.
+export const ActivityCardContent = memo(function ActivityCardContent({
   activity,
   peopleById,
   compact,
@@ -156,4 +165,4 @@ export function ActivityCardContent({
       </div>
     </div>
   );
-}
+});
