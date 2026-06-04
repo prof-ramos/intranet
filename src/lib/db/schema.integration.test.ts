@@ -484,7 +484,7 @@ const expectedEnums = {
   legal_process_type: ['judicial', 'administrativo'],
   legal_satisfaction: ['satisfeito', 'insatisfeito', 'sem_resposta'],
   legal_note_entity_type: ['consultation', 'process'],
-  notification_entity_type: ['activity', 'legal_consultation'],
+  notification_entity_type: ['activity', 'legal_consultation', 'email_triagem'],
   notification_type: [
     'activity.completed',
     'legal_consultation.answered',
