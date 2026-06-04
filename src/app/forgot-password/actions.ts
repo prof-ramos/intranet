@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { forgotPasswordSchema } from '@/lib/validation/schemas';
-import { requestPasswordReset } from '@/lib/auth/password-reset';
+import { requestPasswordReset, RESPONSE_TIME_FLOOR_MS } from '@/lib/auth/password-reset';
 import { firstZodError } from '@/lib/server-actions/utils';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
@@ -10,6 +10,8 @@ import { createLogger } from '@/lib/logger';
 const logger = createLogger('auth:forgot-password');
 
 export async function requestReset(formData: FormData) {
+  const startTime = Date.now();
+
   const parsed = forgotPasswordSchema.safeParse({
     email: formData.get('email'),
   });
@@ -30,6 +32,11 @@ export async function requestReset(formData: FormData) {
     );
     // Não revelar erro ao cliente por segurança
   }
+
+  // Garante tempo mínimo de resposta para mitigar timing attack
+  const elapsed = Date.now() - startTime;
+  const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed + Math.floor(Math.random() * 150) + 50);
+  await new Promise((resolve) => setTimeout(resolve, wait));
 
   // Sempre redireciona com mensagem de sucesso (timing-safe)
   redirect('/forgot-password?sent=1');

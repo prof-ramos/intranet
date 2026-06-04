@@ -17,6 +17,7 @@ export const passwordResetTokens = pgTable(
     uniqueIndex('idx_password_reset_tokens_hash_unique').on(table.tokenHash),
     index('idx_password_reset_tokens_admin_id').on(table.adminId),
     index('idx_password_reset_tokens_expires_at').on(table.expiresAt),
+    index('idx_password_reset_tokens_admin_unused').on(table.adminId, table.usedAt),
   ],
 );
 

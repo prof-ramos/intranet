@@ -1,7 +1,17 @@
 import Link from 'next/link';
 import { login } from '@/app/login/actions';
 import { SubmitButton } from '@/app/login/SubmitButton';
-import { focusRingClass, hairline } from '@/lib/ui/tokens';
+import {
+  dangerText,
+  errorBg,
+  dangerBorder,
+  focusRingClass,
+  hairline,
+  navy,
+  successBg,
+  successText,
+  textMuted,
+} from '@/lib/ui/tokens';
 
 export default async function LoginPage({
   searchParams,
@@ -10,18 +20,19 @@ export default async function LoginPage({
 }) {
   const { error, reset } = await searchParams;
   return (
-    <main id="main-content" className="flex min-h-screen items-center justify-center bg-[#040920] px-4">
+    <main id="main-content" className="flex min-h-screen items-center justify-center px-4" style={{ backgroundColor: navy }}>
       <div className="w-full max-w-sm rounded-[10px] bg-white shadow-xl">
         <div className="flex flex-col gap-6 p-6">
           <div>
             <h1 className="font-serif text-3xl font-bold">ASOF</h1>
-            <p className="text-sm text-[rgba(13,31,60,0.65)]">Intranet — Acesso restrito</p>
+            <p className="text-sm" style={{ color: textMuted }}>Intranet — Acesso restrito</p>
           </div>
 
           {error && (
             <div
               role="alert"
-              className="rounded-[8px] border border-[#fca5a5] bg-[#fee2e2] px-4 py-3 text-sm text-[#7f1d1d]"
+              className="rounded-[8px] border px-4 py-3 text-sm"
+              style={{ borderColor: dangerBorder, backgroundColor: errorBg, color: dangerText }}
             >
               Email ou senha inválidos.
             </div>
@@ -30,7 +41,8 @@ export default async function LoginPage({
           {reset === 'success' && (
             <div
               role="alert"
-              className="rounded-[8px] border border-[#86efac] bg-[#dcfce7] px-4 py-3 text-sm text-[#166534]"
+              className="rounded-[8px] border px-4 py-3 text-sm"
+              style={{ borderColor: successText, backgroundColor: successBg, color: successText }}
             >
               Senha redefinida com sucesso. Faça login com sua nova senha.
             </div>
@@ -40,7 +52,8 @@ export default async function LoginPage({
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="email"
-                className="text-[11px] font-semibold tracking-[0.06em] text-[rgba(13,31,60,0.65)] uppercase"
+                className="text-[11px] font-semibold tracking-[0.06em] uppercase"
+                style={{ color: textMuted }}
               >
                 Email
               </label>
@@ -60,13 +73,15 @@ export default async function LoginPage({
               <div className="flex items-center justify-between">
                 <label
                   htmlFor="password"
-                  className="text-[11px] font-semibold tracking-[0.06em] text-[rgba(13,31,60,0.65)] uppercase"
+                  className="text-[11px] font-semibold tracking-[0.06em] uppercase"
+                  style={{ color: textMuted }}
                 >
                   Senha
                 </label>
                 <Link
                   href="/forgot-password"
-                  className="text-[11px] text-[rgba(13,31,60,0.65)] underline hover:text-[#040920]"
+                  className="text-[11px] underline"
+                  style={{ color: textMuted }}
                 >
                   Esqueci minha senha
                 </Link>

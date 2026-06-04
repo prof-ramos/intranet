@@ -166,10 +166,12 @@ export async function getSession(): Promise<SessionData | null> {
     .limit(1);
 
   if (!admin || !admin.isActive || !isAuthRole(admin.role)) {
+    cookieStore.delete(SESSION_COOKIE_NAME);
     return null;
   }
 
   if (admin.sessionVersion !== token.sessionVersion) {
+    cookieStore.delete(SESSION_COOKIE_NAME);
     return null;
   }
 

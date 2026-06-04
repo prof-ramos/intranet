@@ -28,8 +28,15 @@ export const PRIVATE_IPV4_RANGES = [
   /^25[0-5]\./,
 ];
 
+export const emailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(1, 'E-mail é obrigatório.')
+  .email('E-mail inválido.');
+
 export const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().min(1, 'E-mail é obrigatório.').email('E-mail inválido.'),
+  email: emailSchema,
   password: z.string().min(1, 'Senha é obrigatória.'),
 });
 
@@ -45,7 +52,7 @@ export const changePasswordSchema = z
   });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().trim().toLowerCase().min(1, 'E-mail é obrigatório.').email('E-mail inválido.'),
+  email: emailSchema,
 });
 
 export const resetPasswordSchema = z

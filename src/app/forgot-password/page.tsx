@@ -6,7 +6,12 @@ import {
   focusRingClass,
   hairline,
   mobileTouchTargetClass,
+  navy,
+  primaryContainerHover,
+  successBg,
   successText,
+  textMuted,
+  dangerBorder,
 } from '@/lib/ui/tokens';
 
 export default async function ForgotPasswordPage({
@@ -17,20 +22,20 @@ export default async function ForgotPasswordPage({
   const { error, sent } = await searchParams;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#040920] px-4">
+    <main className="flex min-h-screen items-center justify-center px-4" style={{ backgroundColor: navy }}>
       <div className="w-full max-w-sm rounded-[10px] bg-white shadow-xl">
         <div className="flex flex-col gap-6 p-6">
           <div>
             <h1 className="font-serif text-3xl font-bold">ASOF</h1>
-            <p className="text-sm text-[rgba(13,31,60,0.65)]">Recuperar senha</p>
+            <p className="text-sm" style={{ color: textMuted }}>Recuperar senha</p>
           </div>
 
           {sent ? (
             <div className="flex flex-col gap-4">
               <div
                 role="alert"
-                className="rounded-[8px] border border-[#86efac] bg-[#dcfce7] px-4 py-3 text-sm"
-                style={{ color: successText }}
+                className="rounded-[8px] border px-4 py-3 text-sm"
+                style={{ borderColor: successText, backgroundColor: successBg, color: successText }}
               >
                 Se o email estiver cadastrado, enviaremos um link para redefinir sua senha.
                 Verifique sua caixa de entrada e spam.
@@ -48,14 +53,14 @@ export default async function ForgotPasswordPage({
               {error && (
                 <div
                   role="alert"
-                  className="rounded-[8px] border border-[#fca5a5] px-4 py-3 text-sm"
-                  style={{ backgroundColor: errorBg, color: dangerText }}
+                  className="rounded-[8px] border px-4 py-3 text-sm"
+                  style={{ borderColor: dangerBorder, backgroundColor: errorBg, color: dangerText }}
                 >
                   {error}
                 </div>
               )}
 
-              <p className="text-sm text-[rgba(13,31,60,0.65)]">
+              <p className="text-sm" style={{ color: textMuted }}>
                 Informe o email associado à sua conta. Enviaremos um link para redefinir sua senha.
               </p>
 
@@ -63,7 +68,8 @@ export default async function ForgotPasswordPage({
                 <div className="flex flex-col gap-1.5">
                   <label
                     htmlFor="email"
-                    className="text-[11px] font-semibold tracking-[0.06em] text-[rgba(13,31,60,0.65)] uppercase"
+                    className="text-[11px] font-semibold tracking-[0.06em] uppercase"
+                    style={{ color: textMuted }}
                   >
                     Email
                   </label>
@@ -81,7 +87,8 @@ export default async function ForgotPasswordPage({
 
                 <button
                   type="submit"
-                  className={`inline-flex ${mobileTouchTargetClass} w-full items-center justify-center rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260]`}
+                  className={`inline-flex ${mobileTouchTargetClass} w-full items-center justify-center rounded-[8px] px-5 text-sm font-semibold text-white transition-colors`}
+                  style={{ backgroundColor: navy }}
                 >
                   Enviar link de redefinição
                 </button>
@@ -89,7 +96,8 @@ export default async function ForgotPasswordPage({
 
               <Link
                 href="/login"
-                className="text-center text-sm text-[rgba(13,31,60,0.65)] underline hover:text-[#040920]"
+                className="text-center text-sm underline"
+                style={{ color: textMuted }}
               >
                 Voltar ao login
               </Link>

@@ -17,7 +17,7 @@ const TOKEN_BYTES = 32;
 const TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hora
 const RATE_LIMIT_MAX_ATTEMPTS = 3;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
-const RESPONSE_TIME_FLOOR_MS = 800; // floor para mitigar timing attack — cobre latência típica do path ativo
+export const RESPONSE_TIME_FLOOR_MS = 800; // floor para mitigar timing attack — cobre latência típica do path ativo
 
 // ---------------------------------------------------------------------------
 // Helpers

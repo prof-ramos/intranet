@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { events, mockBcryptHash, mockLogger, mockSendEmail } = vi.hoisted(() => ({
   events: [] as string[],
@@ -32,9 +32,6 @@ function makeDelete(eventName: string) {
     }),
   };
 }
-
-/** Resolve a pending promise (flushes one tick of microtasks). */
-const flush = () => new Promise<void>((r) => setImmediate(r));
 
 const txUpdateReturningRows: unknown[][] = [];
 const txAdminUpdateWhere = vi.fn(async () => {
@@ -141,6 +138,10 @@ describe('password reset', () => {
     mockSendEmail.mockResolvedValue(undefined);
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('consumes a reset token before updating the password', async () => {
     txUpdateReturningRows.push([{ id: 5, adminId: 7 }]);
 
@@ -193,7 +194,6 @@ describe('password reset', () => {
     await promise;
 
     expect(events).toEqual(['db:delete:cleanup', 'email:sent', 'tx:start', 'tx:delete-old-tokens', 'tx:audit']);
-    vi.useRealTimers();
   });
 
   it('keeps older reset tokens when email delivery fails', async () => {
@@ -220,6 +220,5 @@ describe('password reset', () => {
 
     expect(events).toEqual(['db:delete:cleanup', 'db:delete']);
     expect(dbMock.transaction).not.toHaveBeenCalled();
-    vi.useRealTimers();
   });
 });
