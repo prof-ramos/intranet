@@ -42,6 +42,7 @@ const expectedColumns = {
     'role:admin_role:NO',
     'is_active:bool:NO',
     'must_change_password:bool:NO',
+    'session_version:int4:NO',
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
   ],
@@ -384,6 +385,22 @@ const expectedColumns = {
     'error_count:int4:YES',
     'recorded_at:timestamptz:NO',
   ],
+  password_reset_attempts: [
+    'id:int8:NO',
+    'email_hash:text:NO',
+    'attempts:int4:NO',
+    'expires_at:timestamptz:NO',
+    'created_at:timestamptz:NO',
+    'updated_at:timestamptz:NO',
+  ],
+  password_reset_tokens: [
+    'id:int8:NO',
+    'admin_id:int8:NO',
+    'token_hash:text:NO',
+    'expires_at:timestamptz:NO',
+    'used_at:timestamptz:YES',
+    'created_at:timestamptz:NO',
+  ],
 } as const;
 
 const expectedEnums = {
@@ -491,7 +508,6 @@ const expectedEnums = {
     'activity.assigned',
     'legal_consultation.sla_warning',
     'lgpd_request',
-    'email_triage_pending',
   ],
   official_letter_status: ['gerado', 'cancelado', 'rascunho'],
   assinafy_document_status: [
@@ -589,6 +605,7 @@ const expectedIndexes = {
     'idx_integration_api_keys_name_unique',
     'integration_api_keys_pkey',
   ],
+  lawyers: ['idx_lawyers_name_trgm', 'lawyers_email_unique', 'lawyers_pkey'],
   legal_consultations: [
     'idx_legal_consultations_associate',
     'idx_legal_consultations_created_at',
@@ -625,7 +642,6 @@ const expectedIndexes = {
     'legal_processes_internal_number_unique',
     'legal_processes_pkey',
   ],
-  lawyers: ['idx_lawyers_name_trgm', 'lawyers_email_unique', 'lawyers_pkey'],
   login_attempts: [
     'idx_login_attempts_email_hash_unique',
     'idx_login_attempts_expires_at',
@@ -656,10 +672,21 @@ const expectedIndexes = {
     'idx_oficios_status',
     'idx_oficios_updated_by',
     'idx_oficios_year',
-    'oficios_assinafy_document_id_key',
+    'oficios_assinafy_document_id_unique',
     'oficios_number_unique',
     'oficios_pkey',
     'uq_oficios_year_sequence',
+  ],
+  password_reset_attempts: [
+    'idx_password_reset_attempts_email_hash_unique',
+    'idx_password_reset_attempts_expires_at',
+    'password_reset_attempts_pkey',
+  ],
+  password_reset_tokens: [
+    'idx_password_reset_tokens_admin_id',
+    'idx_password_reset_tokens_expires_at',
+    'idx_password_reset_tokens_hash_unique',
+    'password_reset_tokens_pkey',
   ],
   rate_limits: ['idx_rate_limits_expires_at', 'idx_rate_limits_key_scope', 'rate_limits_pkey'],
   webhook_deliveries: [

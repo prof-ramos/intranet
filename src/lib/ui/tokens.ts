@@ -42,10 +42,12 @@ export const priorityStyles: Record<string, { label: string; fg: string; bg: str
 // Feedback colors
 export const error = '#ef4444';
 export const errorBg = '#fee2e2';
+export const errorBorder = '#fca5a5';
 export const warning = '#eab308';
 export const warningBg = '#fef3c7';
 export const success = '#22c55e';
 export const successBg = '#dcfce7';
+export const successBorder = '#86efac';
 export const info = '#2563eb';
 export const infoBg = '#eff6ff';
 

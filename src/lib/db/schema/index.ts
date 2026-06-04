@@ -19,3 +19,5 @@ export * from './oficios';
 export * from './documents';
 export * from './email-triage';
 export * from './test-metrics';
+export * from './password-reset-tokens';
+export * from './password-reset-attempts';
