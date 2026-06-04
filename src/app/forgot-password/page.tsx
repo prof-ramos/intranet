@@ -7,7 +7,6 @@ import {
   hairline,
   mobileTouchTargetClass,
   navy,
-  primaryContainerHover,
   successBg,
   successText,
   textMuted,

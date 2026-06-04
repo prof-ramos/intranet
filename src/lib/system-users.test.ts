@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Drizzle mock chains require any for self-referencing builders */
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { resolveSystemBotUser } from './system-users';
+// resolveSystemBotUser is imported dynamically inside each test to work with vi.mock
 
 vi.mock('@/lib/db', () => ({
   db: {

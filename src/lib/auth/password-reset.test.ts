@@ -177,7 +177,7 @@ describe('password reset', () => {
     dbMock.insert.mockReturnValue(makeInsert([{ id: 99 }]));
     // cleanup de tokens expirados (best-effort) + rollback token em caso de falha de email
     let deleteCallCount = 0;
-    dbMock.delete.mockImplementation((...args: unknown[]) => {
+    dbMock.delete.mockImplementation((..._args: unknown[]) => {
       deleteCallCount += 1;
       events.push(deleteCallCount === 1 ? 'db:delete:cleanup' : 'db:delete');
       return { where: vi.fn(async () => {}) };
@@ -204,7 +204,7 @@ describe('password reset', () => {
     dbMock.insert.mockReturnValue(makeInsert([{ id: 99 }]));
     // cleanup de tokens expirados (best-effort) + rollback token em caso de falha de email
     let deleteCallCount = 0;
-    dbMock.delete.mockImplementation((...args: unknown[]) => {
+    dbMock.delete.mockImplementation((..._args: unknown[]) => {
       deleteCallCount += 1;
       events.push(deleteCallCount === 1 ? 'db:delete:cleanup' : 'db:delete');
       return { where: vi.fn(async () => {}) };

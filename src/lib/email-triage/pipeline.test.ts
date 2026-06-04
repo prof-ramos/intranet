@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Drizzle mock chains require any for self-referencing builders */
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { processEmail } from './pipeline';
-import type { EmailPayload, EmailTriageResult } from './schema';
+import type { EmailTriageResult } from './schema';
 
 // ─── Module mocks ────────────────────────────────────────────────────────
 
