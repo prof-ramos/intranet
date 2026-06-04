@@ -65,7 +65,7 @@ ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
 
 `CREATE INDEX CONCURRENTLY` e `DROP INDEX CONCURRENTLY` **não** podem ser executados dentro de transações PostgreSQL. Como o Drizzle Kit (`npm run db:migrate`) aplica migrações envolvendo cada statement em uma transação, esses comandos falham nesse fluxo. Para esses casos: backup → teste em staging → execução direta via `psql "$DATABASE_MIGRATION_URL"` → validação com `npm run test:db`.
 
-### Migrações aplicadas (10)
+### Migrações aplicadas (11)
 
 | # | Arquivo | Descrição |
 |---|---------|-----------|
@@ -79,6 +79,7 @@ ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
 | 0007 | `0007_email_triage_mvp.sql` | Módulo de triagem de email |
 | 0008 | `0008_mute_the_twelve.sql` | Ajustes diversos |
 | 0009 | `0009_email_triage_notifications.sql` | Notificações de triagem de email |
+| 0010 | `0010_lawyers_name_trgm.sql` | Índice GIN trigram em lawyers.name |
 
 ### Nomenclatura
 
@@ -304,6 +305,7 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 | `activities` | `idx_activities_status_due_date` | Composto | Kanban por status + data |
 | `documents` | `idx_documents_name_trgm` | GIN | Busca textual por nome |
 | `documents` | `idx_documents_description_trgm` | GIN | Busca textual por descrição |
+| `lawyers` | `idx_lawyers_name_trgm` | GIN | Busca textual por nome |
 
 ---
 
