@@ -1,7 +1,16 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
-import './src/lib/env';
+
+// Side-effect import './src/lib/env' causes failures in Next.js 16 config compilation
+// because Node.js cannot resolve .ts files in the compiled config.
+// Validation still runs when src/lib/env is imported by app code at runtime.
+if (!process.env.DATABASE_URL || !process.env.DATABASE_MIGRATION_URL) {
+  const missing = [];
+  if (!process.env.DATABASE_URL) missing.push('DATABASE_URL');
+  if (!process.env.DATABASE_MIGRATION_URL) missing.push('DATABASE_MIGRATION_URL');
+  console.warn(`⚠ ${missing.join(' e ')} não definida(s) — app falhará em runtime se precisar de DB`);
+}
 
 import withBundleAnalyzer from '@next/bundle-analyzer';
 

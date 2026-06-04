@@ -9,7 +9,7 @@ Next.js 16 App Router source directory. Contains all application code: pages, la
 ## Key Files
 | File | Description |
 |------|-------------|
-| `proxy.ts` | API proxy utility — forwards requests to internal services, used by Server Actions for cross-service communication |
+| `proxy.ts` | Route guard de autenticação — verifica cookie de sessão, redireciona para /login (substitui middleware.ts do Next.js 16) |
 | `app/` | App Router pages, layouts, and API routes (authenticated area under `app/`, login at `app/login`) |
 | `components/` | Shared UI components (Button, Modal, Table, Form, etc.) |
 | `hooks/` | Custom React hooks (auth, data fetching, form state) |

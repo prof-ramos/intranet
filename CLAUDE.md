@@ -25,7 +25,7 @@ npm run build            # next build --webpack
 npm run build:turbo      # next build --turbopack (diagnóstico)
 npm run lint             # ESLint
 npm run typecheck        # tsc --noEmit
-npm run test             # vitest run (824+ testes)
+npm run test             # vitest run (testes unitários)
 npm run test:e2e         # playwright — usa 127.0.0.1:3001, não 3000
 npm run test:db          # schema contract contra PostgreSQL ao vivo
 npm run db:generate      # drizzle-kit generate
@@ -52,6 +52,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 - Multi-tabela: sempre usar `db.transaction()`.
 - PII: `encryptPii()` + `piiBlindIndex()` para CPF, SIAPE, email, telefone, endereço. Plaintext nunca em logs.
 - RLS: fora do gate do dia 1. Barreira de segurança = app server + credentials PostgreSQL restritas + LGPD.
+- Para referência completa de tabelas, enums, índices e migrações, veja [`DATABASE.md`](./DATABASE.md).
 
 ## Estrutura
 
@@ -121,6 +122,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 
 - `CONTEXT.md` — glossário e regras de negócio
 - `README.md` — quick start
+- `DATABASE.md` — schema, migrações, índices e convenções de banco
 - `TODO-PROD.md` — checklist de go-live
 - `docs/runbook.md` — runbook operacional
 - `docs/adr/` — ADRs 001-012

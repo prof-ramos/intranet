@@ -32,6 +32,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 next-dev*.log
+dev.log
 crabbit.txt
 lighthouse-report.json
 repomix-output.*
@@ -74,6 +75,10 @@ screenshot-*.png
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Playwright MCP artifacts (transient snapshots with PII — never commit)
+.playwright-mcp/
+associados-list.md
 
 # Claude Code local settings (personal overrides, never share)
 .claude/settings.local.json
