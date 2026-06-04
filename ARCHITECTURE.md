@@ -1,6 +1,6 @@
 # Arquitetura
 
-Atualizado em 2026-05-30 para incluir o módulo de triagem de e-mails.
+Atualizado em 2026-06-01 para alinhar a triagem de e-mails ao controle operacional de prazos e demandas.
 
 ## Visao Geral
 
@@ -15,16 +15,16 @@ A intranet ASOF e uma aplicacao Next.js 16 App Router, server-side, com Drizzle 
 - `src/app/app/secretaria/oficios` e `src/lib/oficios`: oficios, rich text e PDF.
 - `src/app/app/notifications` e `src/lib/notifications`: alertas persistidos.
 - `src/app/app/config`: usuarios, lotacoes, auditoria, API keys e webhooks outbound.
-- `src/app/app/email-triage` e `src/lib/email-triage`: triagem automatica de e-mails com Gemini AI. Busca emails via Gmail API, analisa com IA, persiste resultado, notifica admins.
+- `src/app/app/email-triage` e `src/lib/email-triage`: triagem automatica de e-mails com Gemini AI. Busca emails via Gmail API, analisa com IA, persiste resultado operacional, correlaciona consultas abertas quando seguro e notifica admins.
 
 ## Modulo Email Triage
 
 ### Fluxo
 1. **Gmail API** — busca emails nao lidos de `controller@asof.org.br`
 2. **Extracao** — HTML-to-text, decodificacao Base64, anexos
-3. **Gemini AI** — classifica categoria, prazo, risco, acao recomendada
+3. **Gemini AI** — classifica categoria, extrai prazos, resume demandas e organiza evidencias operacionais
 4. **Persistencia** — salva em `email_triagens` com audit trail
-5. **Correlacao** — cria notas juridicas automaticas quando aplicavel
+5. **Correlacao** — cria nota operacional automatica apenas quando houver exatamente uma consulta aberta vinculada ao associado remetente
 6. **Labeling** — marca email como triado no Gmail
 
 ### Componentes
@@ -45,7 +45,7 @@ A intranet ASOF e uma aplicacao Next.js 16 App Router, server-side, com Drizzle 
 |--------|-----------|
 | `novo` | Recem-chegado, nao processado |
 | `analisado` | Processado pela IA, sem validacao pendente |
-| `aguardando_validacao` | IA sugere validacao humana |
+| `aguardando_validacao` | Triagem exige revisao operacional excepcional |
 | `validado` | Validado por admin |
 | `em_andamento` | Sendo trabalhado |
 | `concluido` | Finalizado |
@@ -60,8 +60,11 @@ A intranet ASOF e uma aplicacao Next.js 16 App Router, server-side, com Drizzle 
 ### Regras de Negocio
 - Todos veem a list page (`requireAuth()`)
 - Só `admin` altera status, observações e prazos (`requireRole(['admin'])`)
-- `vencido` é automático: `processBatch()` marca emails com prazo expirado
-- Notificação: admins notificados quando `exige_validacao_humana = true`
+- `vencido` é automático: `processBatch()` marca emails com prazo expirado.
+- `exige_validacao_humana` significa revisao operacional excepcional, nao validacao juridica de merito.
+- Conteudo juridico, prazo, risco alto/critico ou confianca baixa/media nao obrigam revisao humana por si so.
+- Notificação: admins notificados quando `exige_validacao_humana = true`.
+- A IA nao recomenda tese, resposta juridica, arquivamento, conclusao, responsavel juridico ou decisao de merito.
 
 ## Banco
 
@@ -70,7 +73,8 @@ A intranet ASOF e uma aplicacao Next.js 16 App Router, server-side, com Drizzle 
 - Runtime: `DATABASE_URL`.
 - Migrations: `DATABASE_MIGRATION_URL`.
 - Guardrail: `scripts/guarded-migrate.ts`.
-- Email triage migration: `drizzle/postgres/0007_email_triage_mvp.sql`.
+- Email triage migrations: `drizzle/postgres/0007_email_triage_mvp.sql`, `drizzle/postgres/0009_email_triage_notifications.sql` e `drizzle/postgres/0010_relax_email_triage_operational_review.sql`.
+- A migration `0010` remove as constraints antigas que obrigavam validacao humana para `juridico`, risco `alto`/`critico` ou confianca diferente de `alta`; permanecem os checks anti-alucinacao de prazo e evidencia.
 
 O baseline nao depende de roles, policies, publications ou recursos de plataforma externa. RLS pode voltar depois como hardening, mas nao bloqueia a estreia.
 
@@ -86,7 +90,7 @@ O baseline nao depende de roles, policies, publications ou recursos de plataform
 
 Notificacoes sao registros persistidos. O cliente carrega via Server Actions e atualiza periodicamente. Entrega em tempo real nao faz parte do caminho critico do go-live.
 
-O tipo `email_triage_pending` notifica admins quando uma triagem exige validacao humana.
+O tipo `email_triage_pending` notifica admins quando uma triagem exige revisao operacional excepcional.
 
 ## Documentos E Storage
 

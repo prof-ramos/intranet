@@ -23,22 +23,21 @@ vi.mock('@/lib/env', () => ({
   },
 }));
 
-describe('POST /api/v1/cron/gmail-watch', () => {
+describe('GET /api/v1/cron/gmail-watch', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('returns 200 for valid cron request', async () => {
-    const { POST } = await import('./route');
+    const { GET } = await import('./route');
     const request = new Request('http://localhost/api/v1/cron/gmail-watch', {
-      method: 'POST',
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         'x-cron-secret': 'test-secret',
       },
     });
 
-    const response = await POST(request);
+    const response = await GET(request);
     expect(response.status).toBe(200);
 
     const text = await response.text();
@@ -56,12 +55,12 @@ describe('POST /api/v1/cron/gmail-watch', () => {
       ) as unknown as NextResponse<JsonErrorEnvelope>,
     });
 
-    const { POST } = await import('./route');
+    const { GET } = await import('./route');
     const request = new Request('http://localhost/api/v1/cron/gmail-watch', {
-      method: 'POST',
+      method: 'GET',
     });
 
-    const response = await POST(request);
+    const response = await GET(request);
     expect(response.status).toBe(401);
   });
 });

@@ -14,7 +14,7 @@ Documentation directory covering architecture decisions, design guidelines, comp
 ## Subdirectories
 | Directory | Purpose |
 |-----------|---------|
-| `adr/` | Architecture Decision Records — 7 ADRs covering auth, DB, RLS, PII, notifications, kanban, and LGPD (see `adr/AGENTS.md`) |
+| `adr/` | Architecture Decision Records — 12 ADRs covering auth, DB, RLS, PII, notifications, kanban, LGPD, go-live, rollback, incident ownership, and DMS/Papra (see `adr/AGENTS.md`) |
 | `agents/` | Agent-facing domain documentation — associates, issue-tracker, triage-labels (see `agents/AGENTS.md`) |
 | `compliance/` | LGPD compliance checklist and data handling policies (see `compliance/AGENTS.md`) |
 | `design/` | Design system — theme tokens, oficios padrao templates, UI screenshots (see `design/AGENTS.md`) |
@@ -31,7 +31,7 @@ Documentation directory covering architecture decisions, design guidelines, comp
 
 ### Testing Requirements
 - Docs changes do not require tests, but validate links and formatting before committing.
-- If adding new ADR, follow the naming convention in `adr/` (e.g., `0007-*.md`).
+- If adding new ADR, follow the naming convention in `adr/` (e.g., `013-*.md`).
 
 ### Common Patterns
 - ADRs use a title line followed by Status, Context, Decision, Consequences.

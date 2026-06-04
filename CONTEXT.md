@@ -238,9 +238,10 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 2. **Status Flow**: Uma consulta pode transitar entre status definidos pelo enum `legal_consultation_status` (`aberta`, `aguardando_escritorio`, `respondida`, `arquivada`).
 3. **Notas Vinculadas**: Cada interação (nota) deve atualizar o timestamp `last_interaction_at` da consulta/processos.
 4. **Roles de Acesso**: `admin` e `diretoria` têm acesso; `secretaria` é bloqueada no layout do módulo.
-5. **Ingestão de E-mail**: E-mails processados automaticamente seguem política de dois caminhos:
-   - **Consulta correlacionada + remetente do escritório conhecido** → Nota adicionada automaticamente, sem aprovação humana.
-   - **E-mail sem Consulta correlacionada** → Cria rascunho de triagem com `status: pendente_classificacao`; coordenador vincula a uma Consulta existente, abre uma nova, ou descarta. Nenhuma entidade de domínio é criada sem decisão humana explícita.
+5. **Ingestão de E-mail**: E-mails processados automaticamente podem registrar controle operacional de prazos e demandas, sem decisão de mérito jurídico.
+   - **Exatamente uma Consulta aberta correlacionada ao associado remetente** → Nota operacional adicionada automaticamente, sem alterar status final, resposta, satisfação, responsável ou conclusão.
+   - **E-mail sem Consulta correlacionada, com múltiplas Consultas abertas ou com Consulta arquivada/respondida** → Permanece como triagem operacional pendente; coordenador vincula, abre nova Consulta, descarta ou decide o próximo passo.
+   - Notas automáticas devem se identificar como triagem operacional de e-mail e não como orientação jurídica, parecer, resposta oficial ou decisão de mérito.
 
 ### Módulo de Associados
 

@@ -7,6 +7,9 @@ Atualizado em 2026-05-26 apos reset da camada de banco/autenticacao.
 - Next.js 16, React 19 e TypeScript.
 - Drizzle ORM + `postgres` para PostgreSQL.
 - `bcryptjs` para hashes de senha administrativa.
+- `@google/genai` para analise de triagem de e-mails com Gemini.
+- `mailparser` para parsing estruturado de remetentes de e-mail.
+- `@novu/react` para inbox de notificacoes quando configurado.
 - Tiptap para editor rico de oficios.
 - Mailjet via helper interno de email.
 - Playwright/Vitest/ESLint/Prettier para validacao.

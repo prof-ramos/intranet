@@ -166,7 +166,8 @@ export function buildModelInput(payload: EmailPayload): Record<string, unknown> 
     lgpd_constraints: {
       full_body_is_not_persisted_by_default: true,
       legal_basis_is_ai_suggestion_only: true,
-      human_validation_required_for_deadlines_and_legal_content: true,
+      ai_does_not_make_legal_merit_decisions: true,
+      human_review_is_exceptional_operational_review: true,
     },
   };
 }
@@ -302,9 +303,9 @@ const RESPONSE_JSON_SCHEMA: Record<string, unknown> = {
     },
     nivel_risco: { type: 'string', enum: ['baixo', 'medio', 'alto', 'critico'], description: 'Risco operacional ou juridico.' },
     confianca: { type: 'string', enum: ['baixa', 'media', 'alta'], description: 'Confianca geral na interpretacao do e-mail.' },
-    acao_recomendada: { type: 'string', description: 'Proxima acao operacional para humano.' },
+    acao_recomendada: { type: 'string', description: 'Proxima acao operacional sugerida.' },
     responsavel_sugerido: { type: 'string', enum: ['juridico', 'administrativo', 'financeiro', 'diretoria'], description: 'Setor sugerido.' },
-    exige_validacao_humana: { type: 'boolean', description: 'Indica necessidade de validacao humana.' },
+    exige_validacao_humana: { type: 'boolean', description: 'Indica necessidade excepcional de revisao operacional humana.' },
     legal_basis: { type: 'string', enum: ['interesse_legitimo', 'cumprimento_obrigacao_legal', 'execucao_contrato', 'avaliacao_humana_necessaria'], description: 'Sugestao operacional de base legal LGPD, sujeita a validacao.' },
     processed_purpose: { type: 'string', description: 'Finalidade explicita do processamento.' },
   },

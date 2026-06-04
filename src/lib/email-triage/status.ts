@@ -36,7 +36,7 @@ export type EmailTriageRisco = (typeof EMAIL_TRIAGE_RISCOS)[number];
 export const EMAIL_TRIAGE_STATUS_LABELS: Record<EmailTriageStatus, string> = {
   novo: 'Novo',
   analisado: 'Analisado',
-  aguardando_validacao: 'Aguardando validação',
+  aguardando_validacao: 'Aguardando revisão',
   validado: 'Validado',
   em_andamento: 'Em andamento',
   concluido: 'Concluído',

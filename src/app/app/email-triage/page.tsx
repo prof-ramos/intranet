@@ -86,7 +86,7 @@ export default async function EmailTriagePage({
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: 'Total', value: total, color: 'text-[#040920]' },
-          { label: 'Aguardando validação', value: aguardando, color: 'text-[#a16207]' },
+          { label: 'Aguardando revisão', value: aguardando, color: 'text-[#a16207]' },
           { label: 'Vencidos', value: vencidas, color: 'text-[#b91c1c]' },
           { label: 'Alto/Crítico risco', value: altoRisco, color: 'text-[#b91c1c]' },
         ].map((kpi) => (

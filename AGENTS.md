@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-26 | Updated: 2026-05-26 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-06-01 -->
 <!-- Parent: none (root) -->
 
 # ASOF Intranet — AI Agent Directory
@@ -15,10 +15,15 @@ Next.js 16 App Router application for ASOF (associação) internal management �
 | `AGENTS.md` | This file — AI agent directory navigation |
 | `CONTEXT.md` | Glossary, domain rules, institutional context |
 | `TODO-PROD.md` | Go-live checklist and production readiness |
-| `package.json` | Dependencies and scripts (dev, build, test, e2e, typecheck, lint, migrate) |
-| `next.config.ts` | Next.js 16.2.6 config |
-| `drizzle.config.ts` | Drizzle Kit with Neon Postgres |
-| `vercel.json` | Vercel deployment config |
+| `package.json` | Dependencies and scripts (dev, build, test, e2e, typecheck, lint, migrate, validate) |
+| `next.config.ts` | Next.js 16.2.6 config — security headers, E2E `distDir` swap, fixed `turbopack.root` |
+| `src/lib/env.ts` | Zod-validated env; **throws on startup** if required vars are missing (blocks build) |
+| `src/proxy.ts` | Route guard (Next.js 16 `proxy.ts`); redirects to `/login` for `/app/*` and `/change-password` when no session cookie |
+| `drizzle.config.ts` | Drizzle Kit — rejects transaction-mode pooler URLs (port 6543); use `DATABASE_MIGRATION_URL` |
+| `playwright.config.ts` | baseURL `http://localhost:3001`, `expect.timeout: 15_000`, workers=1, retries 2 in CI |
+| `vitest.config.ts` | Unit config — `src/**/*.test.{ts,tsx}` + `scripts/**/*.test.ts`; mocks `server-only` |
+| `vitest.integration.config.ts` | Integration config — `src/**/*.integration.test.{ts,tsx}` |
+| `vercel.json` | Vercel deployment + cron schedules (5 cron jobs) |
 
 ## Subdirectories
 
@@ -79,13 +84,15 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 
 ---
 
-## Convensões de Desenvolvimento
+## Convenções de Desenvolvimento
 
 ### Tooling
 
 - Use `npm` para este projeto; tem `package-lock.json`.
 - Para Python, use `uv`: `uv run`, `uv add`, `uv sync`.
 - Use Context7 automaticamente para queries sobre bibliotecas/frameworks/APIs externas. Não confie no conhecimento de treinamento.
+- **Validation gates (use exatamente nesta ordem):** `npm run lint` → `npm run typecheck` → `npm run test` → `npm run test:db` → `npm run build`. Os agregadores `validate:quick` (lint+typecheck+test) e `validate:full` (+test:db+build) executam nessa ordem; `pr:check` adiciona `scope:check` e é o melhor gate único antes de abrir PR.
+- Rodar um único teste: `npx vitest run src/lib/auth/password.test.ts`. Rodar um spec E2E: `npx playwright test e2e/tests/associados.spec.ts`.
 
 ### Banco de dados
 
@@ -102,7 +109,8 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 
 - Server-side própria: `SESSION_SECRET`, `admins.password_hash`, cookie `httpOnly` assinado.
 - `requireAuth()` / `requireRole()` para proteção de rotas.
-- Dev local: `SKIP_AUTH=true` + `DEV_USER_ID`, `DEV_USER_ROLE` em `.env.local`.
+- Dev local: `SKIP_AUTH=true` + `DEV_USER_ID`, `DEV_USER_ROLE` em `.env.local`. `SKIP_AUTH=true` é **ignorado quando `NODE_ENV=production`**.
+- `src/lib/env.ts` exige `SESSION_SECRET` (mín. 32 chars) quando `SKIP_AUTH` não está ativo, e exige `CRON_SECRET` + `ASOF_INTRANET_URL` quando `VERCEL_ENV=production`. Esquecer qualquer um deles quebra o build em produção.
 
 ### PII e LGPD
 
@@ -113,18 +121,20 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 
 ### Testing
 
-- Unitários: Vitest, `src/**/*.test.{ts,tsx}`.
-- Integração: `vitest.integration.config.ts` contra PostgreSQL real.
+- Unitários: Vitest, `src/**/*.test.{ts,tsx}`. Suite atual: 824+ testes.
+- Integração: `vitest.integration.config.ts` contra PostgreSQL real (banco dedicado, ex: `asof_intranet_test`).
 - E2E: Playwright, `http://127.0.0.1:3001` (não 3000), database `asof_test` criado por `e2e/global-setup.ts`.
-- `npm run test:db` — schema contract contra PostgreSQL ao vivo.
-- `npm run test:e2e` nunca contra `http://localhost:3000`; apontar para `3001` com `NEXT_E2E=1`.
+- `npm run test:db` — schema contract contra PostgreSQL ao vivo (valida tables, columns, enums, indexes, extensions e alinhamento de migrations).
+- `npm run test:e2e` nunca contra `http://localhost:3000`; apontar para `3001` com `NEXT_E2E=1` e `.next-e2e` como `distDir`. Gotchas não-triviais (JIT warmup, órfãos EADDRINUSE, hardcoded `associationStatus='ativo'`) estão em `e2e/AGENTS.md` — leia antes de tocar em specs.
 
 ### Gotchas
 
 - Next.js `16.2.6` — não fazer downgrade. Verificar `node_modules/next/dist/docs/` antes de mudar APIs.
-- `next.config.ts` fixa `turbopack.root` para evitar resolução de Tailwind pelo diretório pai.
-- Dev server pesado em 8 GB RAM: usar `scripts/run-dev-60s.sh` para diagnósticos.
+- `next.config.ts` fixa `turbopack.root` para evitar resolução de Tailwind pelo diretório pai. O padrão é Webpack; Turbopack é modo de diagnóstico explícito (problema de resolução de Tailwind reproduzido em máquinas com 8 GB RAM).
+- Dev server pesado em 8 GB RAM: usar `scripts/run-dev-60s.sh` para diagnósticos de freeze.
 - Após mudanças em dependências, Next ou Tailwind: rodar `lint` + `typecheck` + `test` + `build`.
+- Migrations PostgreSQL em `drizzle/postgres/` são transacionais; `CREATE INDEX CONCURRENTLY` / `DROP INDEX CONCURRENTLY` **não** entram em `npm run db:migrate` — executar via `psql "$DATABASE_MIGRATION_URL"` em janela controlada (ver `docs/runbook.md`).
+- Não apontar E2E/Playwright para o dev server em 3000; usuários `e2e-*@asof.local` não existem naquele banco e tentativas falhadas acumulam em `login_attempts` até gerar `?error=rate-limit`. Se isso acontecer, limpar apenas tentativas E2E: `DELETE FROM login_attempts WHERE email LIKE 'e2e-%@asof.local';`.
 
 ### Documentação
 
@@ -134,7 +144,7 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 | `README.md` | Quick start |
 | `TODO-PROD.md` | Checklist de go-live |
 | `docs/runbook.md` | Runbook operacional |
-| `docs/adr/` | ADRs 001-011 |
+| `docs/adr/` | ADRs 001-012 |
 | `API.md` | Superfície HTTP pública |
 | `PAGES.md` | Páginas e funcionalidades |
 | `ARCHITECTURE.md` | Diagrama, deployment, glossário |

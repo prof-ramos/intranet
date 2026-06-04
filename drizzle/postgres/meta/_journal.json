@@ -71,6 +71,13 @@
       "when": 1780400000000,
       "tag": "0009_email_triage_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1780444800000,
+      "tag": "0010_relax_email_triage_operational_review",
+      "breakpoints": true
     }
   ]
 }
