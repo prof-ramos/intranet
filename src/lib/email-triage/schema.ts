@@ -130,13 +130,15 @@ export const emailTriageResultSchema = z
     // --- Risk & confidence ---
     nivel_risco: z.enum(NIVEL_RISCO).describe('Risco operacional ou juridico.'),
     confianca: z.enum(CONFIANCA).describe('Confianca geral na interpretacao do e-mail.'),
-    acao_recomendada: z.string().describe('Proxima acao operacional para humano.'),
+    acao_recomendada: z.string().describe('Proxima acao operacional sugerida.'),
     responsavel_sugerido: z
       .enum(RESPONSAVEL)
       .nullable()
       .default(null)
       .describe('Setor sugerido.'),
-    exige_validacao_humana: z.boolean().describe('Indica necessidade de validacao humana.'),
+    exige_validacao_humana: z
+      .boolean()
+      .describe('Indica necessidade excepcional de revisao operacional humana.'),
 
     // --- LGPD ---
     legal_basis: z
@@ -181,69 +183,7 @@ export const emailTriageResultSchema = z
       });
     }
 
-    // Rule 4: categoria=juridico requires exige_validacao_humana=true
-    if (data.categoria === 'juridico' && !data.exige_validacao_humana) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'categoria juridico exige validacao humana.',
-        path: ['exige_validacao_humana'],
-      });
-    }
-
-    // Rule 5: ha_prazo=true requires exige_validacao_humana=true
-    if (data.ha_prazo && !data.exige_validacao_humana) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'qualquer prazo identificado exige validacao humana.',
-        path: ['exige_validacao_humana'],
-      });
-    }
-
-    // Rule 6: alto/critico risk requires exige_validacao_humana=true
-    if (
-      (data.nivel_risco === 'alto' || data.nivel_risco === 'critico') &&
-      !data.exige_validacao_humana
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'risco alto/critico exige validacao humana.',
-        path: ['exige_validacao_humana'],
-      });
-    }
-
-    // Rule 7: baixa/media confidence requires exige_validacao_humana=true
-    if (
-      (data.confianca === 'baixa' || data.confianca === 'media') &&
-      !data.exige_validacao_humana
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'confianca baixa/media exige validacao humana.',
-        path: ['exige_validacao_humana'],
-      });
-    }
-
-    // Rule 8: baixa/media prazo_confianca_data requires exige_validacao_humana=true
-    if (
-      (data.prazo_confianca_data === 'baixa' || data.prazo_confianca_data === 'media') &&
-      !data.exige_validacao_humana
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'prazo_confianca_data baixa/media exige validacao humana.',
-        path: ['exige_validacao_humana'],
-      });
-    }
-
-    // Rule 9: any attachment with ha_prazo_no_anexo requires exige_validacao_humana=true
-    const hasAttachmentDeadline = data.resumo_anexos.some((a) => a.ha_prazo_no_anexo);
-    if (hasAttachmentDeadline && !data.exige_validacao_humana) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'prazo em anexo exige validacao humana.',
-        path: ['exige_validacao_humana'],
-      });
-    }
+    // `exige_validacao_humana` means exceptional operational review, not legal merit review.
   });
 
 export type EmailTriageResult = z.infer<typeof emailTriageResultSchema>;

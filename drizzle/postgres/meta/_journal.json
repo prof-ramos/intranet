@@ -75,8 +75,15 @@
     {
       "idx": 10,
       "version": "7",
+      "when": 1780444800000,
+      "tag": "0010_relax_email_triage_operational_review",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
       "when": 1780445000000,
-      "tag": "0010_lawyers_name_trgm",
+      "tag": "0011_lawyers_name_trgm",
       "breakpoints": true
     }
   ]

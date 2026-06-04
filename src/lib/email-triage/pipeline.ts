@@ -10,12 +10,9 @@
  *  - summarizeResults() — structured summary string
  */
 import { env } from '@/lib/env';
-import { db } from '@/lib/db';
-import { emailTriagens, emailStatusTriagem as _emailStatusTriagem } from '@/lib/db/schema/email-triage';
-import { legalConsultations } from '@/lib/db/schema/legal-consultations';
-import { admins, associates } from '@/lib/db/schema';
+import { correlate } from './correlate';
 import { createLogger } from '@/lib/logger';
-import { eq, and as _and, sql } from 'drizzle-orm';
+import { redactPiiString } from '@/lib/sanitize-pii';
 import { createHash } from 'node:crypto';
 import {
   getGmailAccessToken,
@@ -32,11 +29,13 @@ import {
   buildPersistedExcerpt,
   redactExcerpt,
 } from './analyzer';
+import type { AttachmentInfo } from './analyzer';
 import type { EmailPayload, EmailTriageResult } from './schema';
-import { EMAIL_TRIAGE_VERSION } from './system-prompt';
-import { insertNote } from '@/lib/juridico/repository';
 import { markOverdueTriages } from './repository';
-import { createNotificationFromEvent } from '@/lib/notifications/service';
+import { buildCorrelationContext } from './correlation-context';
+import { applyCorrelationActions } from './correlation-actions';
+import { persistTriage, persistFailure } from './persister';
+import { notifyNeedsValidation } from './notifier';
 
 const log = createLogger('email-triage');
 
@@ -59,339 +58,6 @@ export interface BatchResult {
   errors: number;
   skipped: number;
   results: ProcessEmailResult[];
-}
-
-// ─── System Bot User ─────────────────────────────────────────────────────
-
-let _systemBotUserId: number | null = null;
-
-/**
- * Find or create the system bot admin user ('Sistema de Triagem').
- *
- * The bot user is used as `createdBy` for legal notes created by the
- * correlation engine. Created once per process lifetime; cached in memory.
- */
-async function getSystemBotUserId(): Promise<number> {
-  if (_systemBotUserId !== null) return _systemBotUserId;
-
-  const systemBot = await db
-    .select()
-    .from(admins)
-    .where(eq(admins.name, 'Sistema de Triagem'))
-    .limit(1);
-
-  if (systemBot.length > 0) {
-    _systemBotUserId = systemBot[0].id;
-    return _systemBotUserId;
-  }
-
-  const [created] = await db
-    .insert(admins)
-    .values({
-      name: 'Sistema de Triagem',
-      email: 'sistema-triagem@asof.local',
-      passwordHash: `__SYSTEM_BOT__${createHash('sha256').update('sistema-triagem@asof.local').digest('hex').slice(0, 16)}`,
-      role: 'admin',
-      isActive: false,
-      mustChangePassword: false,
-    })
-    .onConflictDoNothing()
-    .returning({ id: admins.id });
-
-  if (created) {
-    _systemBotUserId = created.id;
-    log.info('Created system bot user for triage.', { userId: created.id });
-    return created.id;
-  }
-
-  const existing = await db
-    .select({ id: admins.id })
-    .from(admins)
-    .where(eq(admins.email, 'sistema-triagem@asof.local'))
-    .limit(1);
-
-  if (existing.length > 0) {
-    _systemBotUserId = existing[0].id;
-    return existing[0].id;
-  }
-
-  throw new Error('Failed to create or find system bot user.');
-}
-
-// ─── DB Persistence ──────────────────────────────────────────────────────
-
-/**
- * Build the common insert/update values for email_triagens from a triage
- * result and its payload.
- */
-function buildTriagemValues(
-  payload: EmailPayload,
-  result: EmailTriageResult,
-  modelName: string,
-  responseId: string | null,
-) {
-  const attachmentHashes: string[] = payload.attachments
-    .map((a) => a.sha256)
-    .filter((h): h is string => h !== null);
-
-  const status = result.exige_validacao_humana
-    ? ('aguardando_validacao' as const)
-    : ('analisado' as const);
-
-  return {
-    messageId: payload.message_id,
-    threadId: payload.thread_id,
-    historyId: payload.history_id || null,
-    receivedAt: new Date(payload.received_at),
-    sender: payload.sender,
-    originalRecipient: payload.original_recipient || null,
-    subject: payload.subject,
-    bodyHash: payload.body_hash,
-    bodyExcerpt: payload.body_excerpt,
-    rawBodyStored: false,
-    redactionApplied: true,
-    categoria: result.categoria,
-    resumo: result.resumo,
-    threadContextSummary: result.thread_context_summary ?? null,
-    haPrazo: result.ha_prazo,
-    prazoData: result.prazo_data ?? null,
-    prazoHora: result.prazo_hora ?? null,
-    prazoConfiancaData: result.prazo_confianca_data ?? null,
-    tipoPrazo: result.tipo_prazo ?? null,
-    trechoFonteDoPrazo: result.trecho_fonte_do_prazo ?? null,
-    resumoAnexos: result.resumo_anexos,
-    sourceEvidence: result.source_evidence,
-    attachmentsHashes: attachmentHashes,
-    nivelRisco: result.nivel_risco,
-    confianca: result.confianca,
-    acaoRecomendada: result.acao_recomendada,
-    responsavelSugerido: result.responsavel_sugerido ?? null,
-    exigeValidacaoHumana: result.exige_validacao_humana,
-    legalBasis: result.legal_basis,
-    processedPurpose: result.processed_purpose,
-    dataRetentionUntil: null,
-    processingVersion: EMAIL_TRIAGE_VERSION,
-    modelName,
-    modelResponseId: responseId,
-    status,
-  };
-}
-
-async function persistTriage(
-  payload: EmailPayload,
-  result: EmailTriageResult,
-  modelName: string,
-  responseId: string | null,
-): Promise<number> {
-  const values = buildTriagemValues(payload, result, modelName, responseId);
-
-  const [row] = await db
-    .insert(emailTriagens)
-    .values(values)
-    .onConflictDoUpdate({
-      target: emailTriagens.messageId,
-      set: {
-        threadId: values.threadId,
-        historyId: values.historyId,
-        receivedAt: values.receivedAt,
-        sender: values.sender,
-        originalRecipient: values.originalRecipient,
-        subject: values.subject,
-        bodyHash: values.bodyHash,
-        bodyExcerpt: values.bodyExcerpt,
-        categoria: values.categoria,
-        resumo: values.resumo,
-        threadContextSummary: values.threadContextSummary,
-        haPrazo: values.haPrazo,
-        prazoData: values.prazoData,
-        prazoHora: values.prazoHora,
-        prazoConfiancaData: values.prazoConfiancaData,
-        tipoPrazo: values.tipoPrazo,
-        trechoFonteDoPrazo: values.trechoFonteDoPrazo,
-        resumoAnexos: values.resumoAnexos,
-        sourceEvidence: values.sourceEvidence,
-        attachmentsHashes: values.attachmentsHashes,
-        nivelRisco: values.nivelRisco,
-        confianca: values.confianca,
-        acaoRecomendada: values.acaoRecomendada,
-        responsavelSugerido: values.responsavelSugerido,
-        exigeValidacaoHumana: values.exigeValidacaoHumana,
-        legalBasis: values.legalBasis,
-        processedPurpose: values.processedPurpose,
-        processingVersion: values.processingVersion,
-        modelName: values.modelName,
-        modelResponseId: values.modelResponseId,
-        status: values.status,
-        updatedAt: sql`current_timestamp`,
-      },
-    })
-    .returning({ id: emailTriagens.id });
-
-  return row.id;
-}
-
-/**
- * Persist a partial record for an email that failed AI analysis.
- */
-async function persistFailure(
-  payload: EmailPayload,
-  failureReason: string,
-  modelName: string,
-): Promise<void> {
-  const attachmentHashes: string[] = payload.attachments
-    .map((a) => a.sha256)
-    .filter((h): h is string => h !== null);
-
-  await db
-    .insert(emailTriagens)
-    .values({
-      messageId: payload.message_id,
-      threadId: payload.thread_id,
-      historyId: payload.history_id || null,
-      receivedAt: new Date(payload.received_at),
-      sender: payload.sender,
-      originalRecipient: payload.original_recipient || null,
-      subject: payload.subject,
-      bodyHash: payload.body_hash,
-      bodyExcerpt: payload.body_excerpt,
-      rawBodyStored: false,
-      redactionApplied: true,
-      categoria: 'irrelevante',
-      resumo: 'Falha na validacao da resposta da IA; analise valida nao foi salva.',
-      haPrazo: false,
-      resumoAnexos: [],
-      sourceEvidence: [],
-      attachmentsHashes: attachmentHashes,
-      nivelRisco: 'medio',
-      confianca: 'baixa',
-      acaoRecomendada: 'Reprocessar e encaminhar para validacao humana se persistir.',
-      exigeValidacaoHumana: true,
-      legalBasis: 'avaliacao_humana_necessaria',
-      processedPurpose: 'registro de falha tecnica da triagem interna',
-      processingVersion: EMAIL_TRIAGE_VERSION,
-      modelName,
-      status: 'erro_validacao_ia',
-    })
-    .onConflictDoUpdate({
-      target: emailTriagens.messageId,
-      set: {
-        status: sql`'erro_validacao_ia'`,
-        updatedAt: sql`current_timestamp`,
-      },
-    });
-}
-
-// ─── Correlation Engine ──────────────────────────────────────────────────
-
-/**
- * Rule-based correlation against existing `legalConsultations`.
- *
- * Rules:
- *  1. Match by sender — look up the associate by the sender's email,
- *     then find consultations linked to that associate.
- *  2. Only correlate if the email `categoria` is juridico or administrativo.
- *
- * For each match a `legal_note` is created with the triage summary.
- * Note creation failures are logged but do not throw (error isolation).
- */
-async function correlateAndCreateNotes(
-  payload: EmailPayload,
-  result: EmailTriageResult,
-): Promise<void> {
-  // Only correlate emails that likely relate to existing consultations
-  if (result.categoria !== 'juridico' && result.categoria !== 'administrativo') {
-    return;
-  }
-
-  // Extract sender email from "Display Name <email@example.com>" or plain email
-  const senderMatch = payload.sender.match(/<([^>]+)>/);
-  const senderEmail = senderMatch
-    ? senderMatch[1].toLowerCase().trim()
-    : payload.sender.toLowerCase().trim();
-
-  if (!senderEmail || senderEmail.length === 0) return;
-
-  // Find associate by primary email
-  const matchingAssociates = await db
-    .select({ id: associates.id })
-    .from(associates)
-    .where(eq(associates.primaryEmail, senderEmail))
-    .limit(1);
-
-  if (matchingAssociates.length === 0) return;
-
-  const associateId = matchingAssociates[0].id;
-
-  // Find consultations linked to this associate
-  const consultations = await db
-    .select({ id: legalConsultations.id })
-    .from(legalConsultations)
-    .where(eq(legalConsultations.associateId, associateId));
-
-  if (consultations.length === 0) return;
-
-  // Get the system bot user for note authorship
-  const botUserId = await getSystemBotUserId();
-
-  // Build structured note content from the triage result
-  const noteParts: string[] = [
-    '=== Triagem Automatica de E-mail ===',
-    `Categoria: ${result.categoria}`,
-    `Resumo: ${result.resumo}`,
-    `Prazo: ${result.ha_prazo ? 'Sim' : 'Nao'}`,
-  ];
-
-  if (result.prazo_data) {
-    noteParts.push(`Data do prazo: ${result.prazo_data}`);
-  }
-  if (result.prazo_hora) {
-    noteParts.push(`Hora do prazo: ${result.prazo_hora}`);
-  }
-  if (result.tipo_prazo) {
-    noteParts.push(`Tipo de prazo: ${result.tipo_prazo}`);
-  }
-
-  noteParts.push(
-    `Nivel de Risco: ${result.nivel_risco}`,
-    `Confianca: ${result.confianca}`,
-    `Acao Recomendada: ${result.acao_recomendada}`,
-  );
-
-  if (result.responsavel_sugerido) {
-    noteParts.push(`Responsavel Sugerido: ${result.responsavel_sugerido}`);
-  }
-
-  noteParts.push(
-    `Validacao Humana: ${result.exige_validacao_humana ? 'Necessaria' : 'Nao necessaria'}`,
-  );
-
-  const noteContent = noteParts.join('\n');
-
-  // Create a note for each matching consultation (error-isolated)
-  for (const consultation of consultations) {
-    try {
-      await insertNote({
-        entityType: 'consultation',
-        entityId: consultation.id,
-        content: noteContent,
-        createdBy: botUserId,
-        isEscritorioResponse: false,
-      });
-      log.info('Legal note created from email triage correlation.', {
-        consultationId: consultation.id,
-        messageId: payload.message_id,
-      });
-    } catch (noteError) {
-      log.error('Failed to create legal note from email triage.', {
-        consultationId: consultation.id,
-        messageId: payload.message_id,
-        error:
-          noteError instanceof Error
-            ? noteError.message
-            : String(noteError),
-      });
-    }
-  }
 }
 
 // ─── processEmail ────────────────────────────────────────────────────────
@@ -432,7 +98,7 @@ export async function processEmail(
 
   // ── Step 2: Extract text & attachments ────────────────────────────────
   let text: string;
-  let attachmentInfos: import('./analyzer').AttachmentInfo[];
+  let attachmentInfos: AttachmentInfo[];
   try {
     const extracted = extractTextAndAttachments(message);
     text = extracted.text;
@@ -459,7 +125,12 @@ export async function processEmail(
     message_id: message.id as string,
     thread_id: message.threadId as string,
     history_id: (message.historyId as string) ?? '',
-    received_at: getHeader(message, 'Date') ?? new Date().toISOString(),
+    received_at: (() => {
+      const dateHeader = getHeader(message, 'Date');
+      return dateHeader && !Number.isNaN(Date.parse(dateHeader))
+        ? dateHeader
+        : new Date().toISOString();
+    })(),
     sender: getHeader(message, 'From') ?? '',
     original_recipient:
       getHeader(message, 'Delivered-To') ?? getHeader(message, 'To') ?? '',
@@ -516,52 +187,25 @@ export async function processEmail(
   }
 
   if (triageResult.exige_validacao_humana) {
-    try {
-      const [botUser] = await db
-        .select({ id: admins.id })
-        .from(admins)
-        .where(eq(admins.name, 'Sistema de Triagem'))
-        .limit(1);
-
-      const actorId = botUser?.id ?? 1;
-
-      const adminUsers = await db
-        .select({ id: admins.id })
-        .from(admins)
-        .where(eq(admins.role, 'admin'));
-
-      const results = await Promise.allSettled(
-        adminUsers.map((admin) =>
-          createNotificationFromEvent('email_triage_pending', {
-            recipientId: admin.id,
-            actorId,
-            title: 'Nova triagem aguardando validação',
-            message: `E-mail "${payload.subject}" de ${payload.sender} foi classificado como ${triageResult.categoria} (risco ${triageResult.nivel_risco}) e exige validação.`,
-            href: `/app/email-triage/${triageId}`,
-            entityType: 'email_triagem',
-            entityId: triageId,
-          }),
-        ),
-      );
-
-      const failed = results.filter((r) => r.status === 'rejected');
-      if (failed.length > 0) {
-        log.warn(`${failed.length} triage notifications failed (non-fatal).`);
-      }
-    } catch (nErr) {
-      log.warn('Failed to notify admins of new triage (non-fatal).', { error: String(nErr) });
+    const notifyResult = await notifyNeedsValidation(triageResult, triageId, payload);
+    if (!notifyResult.ok) {
+      log.warn('Failed to notify admins of new triage (non-fatal).', {
+        error: redactPiiString(notifyResult.error ?? ''),
+      });
     }
   }
 
   // ── Step 6: Correlation engine ────────────────────────────────────────
-  try {
-    await correlateAndCreateNotes(payload, triageResult);
+  // Skipped when operational review is required; automatic notes are only
+  // created for low-ambiguity control of existing open demands.
+  if (!triageResult.exige_validacao_humana) {
+    try {
+      const context = await buildCorrelationContext(payload);
+      const actions = correlate(payload, triageResult, context);
+      await applyCorrelationActions(actions);
   } catch (err) {
-    // Non-fatal: correlation failure should not mark the email as untriaged.
-    log.warn('Correlation engine failed (non-fatal).', {
-      messageId,
-      error: String(err),
-    });
+    log.warn('Correlation engine failed (non-fatal).', { messageId }, err instanceof Error ? err : undefined);
+  }
   }
 
   // ── Step 7: Mark as triaged ───────────────────────────────────────────

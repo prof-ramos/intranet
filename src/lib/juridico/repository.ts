@@ -357,8 +357,9 @@ export interface ConsultationSummary {
 
 export async function getConsultationsByAssociate(
   associateId: number,
+  executor: DbExecutor = db,
 ): Promise<ConsultationSummary[]> {
-  const rows = await db
+  const rows = await executor
     .select({
       id: legalConsultations.id,
       internalNumber: legalConsultations.internalNumber,
@@ -369,6 +370,36 @@ export async function getConsultationsByAssociate(
     })
     .from(legalConsultations)
     .where(eq(legalConsultations.associateId, associateId))
+    .orderBy(desc(legalConsultations.createdAt))
+    .limit(10);
+
+  return rows.map((r) => ({
+    id: r.id,
+    internalNumber: r.internalNumber,
+    title: r.title,
+    status: r.status,
+    createdAt: r.createdAt,
+    lastInteractionAt: r.lastInteractionAt ?? null,
+  }));
+}
+
+export async function getOpenConsultationsByAssociate(
+  associateId: number,
+  executor: DbExecutor = db,
+): Promise<ConsultationSummary[]> {
+  const rows = await executor
+    .select({
+      id: legalConsultations.id,
+      internalNumber: legalConsultations.internalNumber,
+      title: legalConsultations.title,
+      status: legalConsultations.status,
+      createdAt: legalConsultations.createdAt,
+      lastInteractionAt: legalConsultations.lastInteractionAt,
+    })
+    .from(legalConsultations)
+    .where(
+      and(eq(legalConsultations.associateId, associateId), eq(legalConsultations.status, 'aberta')),
+    )
     .orderBy(desc(legalConsultations.createdAt))
     .limit(10);
 

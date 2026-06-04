@@ -211,11 +211,11 @@ Lista de emails triados automaticamente com Gemini AI:
 
 Detalhamento de uma triagem de email:
 
-- Conteúdo completo do email (remetente, destinatário, assunto, corpo) com mascaramento LGPD para perfil secretaria
+- Conteúdo completo do email (remetente, destinatário, assunto, corpo)
 - Classificação da IA (categoria, prazo, risco, ação recomendada)
 - Observações e notas internas
 - Atualização de status e validação manual
-- Apenas admin/diretoria tem acesso irrestrito; secretaria vê com campos mascarados
+- Apenas admin/diretoria/secretaria tem acesso (PII visível para todos os usuários autenticados)
 - Auditoria automática de acesso ao conteúdo sensível (LGPD)
 
 ### `/app/etiquetas`
