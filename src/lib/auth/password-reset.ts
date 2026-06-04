@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { eq, and, gt, isNull, ne, sql } from 'drizzle-orm';
+import { eq, and, gt, lt, isNull, ne, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { admins, passwordResetTokens, passwordResetAttempts, auditLogs } from '@/lib/db/schema';
@@ -17,6 +17,7 @@ const TOKEN_BYTES = 32;
 const TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hora
 const RATE_LIMIT_MAX_ATTEMPTS = 3;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutos
+const TIMING_JITTER_MS = 200; // jitter para mitigar timing attack
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -70,6 +71,17 @@ async function checkRateLimit(email: string): Promise<boolean> {
 export async function requestPasswordReset(email: string): Promise<void> {
   const normalizedEmail = email.trim().toLowerCase();
 
+  // Best-effort cleanup de tokens expirados
+  try {
+    await retryTransientConnection(() =>
+      db
+        .delete(passwordResetTokens)
+        .where(lt(passwordResetTokens.expiresAt, new Date())),
+    );
+  } catch {
+    // Falha silenciosa — não bloqueia o fluxo principal
+  }
+
   // Rate limit por email (usa hash do login-rate-limit existente)
   let allowed = true;
   try {
@@ -103,8 +115,12 @@ export async function requestPasswordReset(email: string): Promise<void> {
       .limit(1),
   );
 
-  // Timing-safe: se admin não existe ou está inativo, retorna sem erro
+  // Timing-safe: se admin não existe ou está inativo, adiciona jitter e retorna sem erro
   if (!admin || !admin.isActive) {
+    // Jitter para mitigar timing attack — evita que a ausência de envio de email
+    // seja distinguível por tempo de resposta
+    const jitter = Math.floor(Math.random() * TIMING_JITTER_MS) + 50;
+    await new Promise((resolve) => setTimeout(resolve, jitter));
     return;
   }
 

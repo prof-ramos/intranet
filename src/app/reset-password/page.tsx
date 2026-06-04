@@ -1,7 +1,12 @@
 import Link from 'next/link';
 import { validateResetToken } from '@/lib/auth/password-reset';
 import { resetPassword } from '@/app/reset-password/actions';
-import { focusRingClass, hairline } from '@/lib/ui/tokens';
+import {
+  dangerText,
+  errorBg,
+  focusRingClass,
+  hairline,
+} from '@/lib/ui/tokens';
 
 export default async function ResetPasswordPage({
   searchParams,
@@ -26,7 +31,8 @@ export default async function ResetPasswordPage({
             <div className="flex flex-col gap-4">
               <div
                 role="alert"
-                className="rounded-[8px] border border-[#fca5a5] bg-[#fee2e2] px-4 py-3 text-sm text-[#7f1d1d]"
+                className="rounded-[8px] border border-[#fca5a5] px-4 py-3 text-sm"
+                style={{ backgroundColor: errorBg, color: dangerText }}
               >
                 Este link de redefinição é inválido ou expirado. Solicite um novo link.
               </div>
@@ -48,7 +54,8 @@ export default async function ResetPasswordPage({
               {error && (
                 <div
                   role="alert"
-                  className="rounded-[8px] border border-[#fca5a5] bg-[#fee2e2] px-4 py-3 text-sm text-[#7f1d1d]"
+                  className="rounded-[8px] border border-[#fca5a5] px-4 py-3 text-sm"
+                  style={{ backgroundColor: errorBg, color: dangerText }}
                 >
                   {error}
                 </div>

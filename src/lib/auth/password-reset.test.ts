@@ -170,6 +170,13 @@ describe('password reset', () => {
       makeSelect([{ id: 7, name: 'Admin', email: 'admin@asof.local', isActive: true }]),
     );
     dbMock.insert.mockReturnValue(makeInsert([{ id: 99 }]));
+    // cleanup de tokens expirados (best-effort) + rollback token em caso de falha de email
+    let deleteCallCount = 0;
+    dbMock.delete.mockImplementation((...args: unknown[]) => {
+      deleteCallCount += 1;
+      events.push(deleteCallCount === 1 ? 'db:delete:cleanup' : 'db:delete');
+      return { where: vi.fn(async () => {}) };
+    });
     mockSendEmail.mockImplementation(async () => {
       events.push('email:sent');
     });
@@ -177,7 +184,7 @@ describe('password reset', () => {
     const { requestPasswordReset } = await import('./password-reset');
     await requestPasswordReset('admin@asof.local');
 
-    expect(events).toEqual(['email:sent', 'tx:start', 'tx:delete-old-tokens', 'tx:audit']);
+    expect(events).toEqual(['db:delete:cleanup', 'email:sent', 'tx:start', 'tx:delete-old-tokens', 'tx:audit']);
   });
 
   it('keeps older reset tokens when email delivery fails', async () => {
@@ -185,12 +192,19 @@ describe('password reset', () => {
       makeSelect([{ id: 7, name: 'Admin', email: 'admin@asof.local', isActive: true }]),
     );
     dbMock.insert.mockReturnValue(makeInsert([{ id: 99 }]));
+    // cleanup de tokens expirados (best-effort) + rollback token em caso de falha de email
+    let deleteCallCount = 0;
+    dbMock.delete.mockImplementation((...args: unknown[]) => {
+      deleteCallCount += 1;
+      events.push(deleteCallCount === 1 ? 'db:delete:cleanup' : 'db:delete');
+      return { where: vi.fn(async () => {}) };
+    });
     mockSendEmail.mockRejectedValue(new Error('mailjet unavailable'));
 
     const { requestPasswordReset } = await import('./password-reset');
     await requestPasswordReset('admin@asof.local');
 
-    expect(events).toEqual(['db:delete']);
+    expect(events).toEqual(['db:delete:cleanup', 'db:delete']);
     expect(dbMock.transaction).not.toHaveBeenCalled();
   });
 });
