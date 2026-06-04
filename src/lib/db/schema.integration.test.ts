@@ -228,6 +228,17 @@ const expectedColumns = {
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
   ],
+  lawyers: [
+    'id:int8:NO',
+    'name:text:NO',
+    'email:text:NO',
+    'oab:text:YES',
+    'firm:text:YES',
+    'specialty:text:YES',
+    'status:lawyer_status:NO',
+    'created_at:timestamptz:NO',
+    'updated_at:timestamptz:NO',
+  ],
   login_attempts: [
     'id:int8:NO',
     'email:text:YES',
@@ -466,6 +477,7 @@ const expectedEnums = {
     'outro',
   ],
   functional_status: ['ativo', 'aposentado', 'cedido', 'em_licenca'],
+  lawyer_status: ['ativo', 'inativo'],
   legal_consultation_status: ['aberta', 'aguardando_escritorio', 'respondida', 'arquivada'],
   legal_process_status: ['ativo', 'concluido', 'suspenso'],
   legal_process_subtype: ['justica_federal', 'stf', 'mre', 'cgu', 'tcu'],
@@ -612,6 +624,7 @@ const expectedIndexes = {
     'legal_processes_internal_number_unique',
     'legal_processes_pkey',
   ],
+  lawyers: ['lawyers_email_unique', 'lawyers_pkey'],
   login_attempts: [
     'idx_login_attempts_email_hash_unique',
     'idx_login_attempts_expires_at',
