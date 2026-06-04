@@ -1,13 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NextResponse } from 'next/server';
-import type { JsonErrorEnvelope } from '@/lib/integrations/types';
-
-vi.mock('@/lib/cron/auth', () => ({
-  authorizeCronRequest: vi.fn().mockReturnValue({
-    ok: true,
-    requestId: 'test-request-id',
-  }),
-}));
 
 vi.mock('@/lib/email-triage/gmail', () => ({
   getGmailAccessToken: vi.fn().mockResolvedValue('mock-token'),
@@ -20,6 +11,7 @@ vi.mock('@/lib/email-triage/gmail', () => ({
 vi.mock('@/lib/env', () => ({
   env: {
     GMAIL_WATCH_TOPIC: 'projects/test/topics/gmail-inbox',
+    CRON_SECRET: 'test-secret',
   },
 }));
 
@@ -28,12 +20,12 @@ describe('GET /api/v1/cron/gmail-watch', () => {
     vi.clearAllMocks();
   });
 
-  it('returns 200 for valid cron request', async () => {
+  it('returns 200 for valid cron bearer authorization', async () => {
     const { GET } = await import('./route');
     const request = new Request('http://localhost/api/v1/cron/gmail-watch', {
       method: 'GET',
       headers: {
-        'x-cron-secret': 'test-secret',
+        authorization: 'Bearer test-secret',
       },
     });
 
@@ -45,16 +37,7 @@ describe('GET /api/v1/cron/gmail-watch', () => {
     expect(data.data.status).toBe('ok');
   });
 
-  it('returns 401 for invalid cron secret', async () => {
-    const { authorizeCronRequest } = await import('@/lib/cron/auth');
-    vi.mocked(authorizeCronRequest).mockReturnValue({
-      ok: false,
-      response: NextResponse.json(
-        { ok: false, error: { code: 'unauthorized', message: 'Unauthorized' } },
-        { status: 401 }
-      ) as unknown as NextResponse<JsonErrorEnvelope>,
-    });
-
+  it('returns 401 when no bearer token is provided', async () => {
     const { GET } = await import('./route');
     const request = new Request('http://localhost/api/v1/cron/gmail-watch', {
       method: 'GET',
@@ -62,6 +45,27 @@ describe('GET /api/v1/cron/gmail-watch', () => {
 
     const response = await GET(request);
     expect(response.status).toBe(401);
+
+    const text = await response.text();
+    const data = JSON.parse(text);
+    expect(data.error.code).toBe('unauthorized');
+  });
+
+  it('returns 401 for an invalid bearer token', async () => {
+    const { GET } = await import('./route');
+    const request = new Request('http://localhost/api/v1/cron/gmail-watch', {
+      method: 'GET',
+      headers: {
+        authorization: 'Bearer wrong-secret',
+      },
+    });
+
+    const response = await GET(request);
+    expect(response.status).toBe(401);
+
+    const text = await response.text();
+    const data = JSON.parse(text);
+    expect(data.error.code).toBe('unauthorized');
   });
 });
 
