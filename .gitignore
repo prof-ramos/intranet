@@ -75,6 +75,11 @@ screenshot-*.png
 test-results/
 playwright-report/
 playwright/.cache/
+.playwright-mcp/
+
+# Local UI/export artifacts that can contain LGPD-protected associate data
+associados-list.md
+*-list.md
 
 # Playwright MCP artifacts (transient snapshots with PII — never commit)
 .playwright-mcp/

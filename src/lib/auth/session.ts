@@ -17,6 +17,7 @@ const SESSION_TTL_SECONDS = 60 * 60 * 8;
 interface SessionTokenPayload {
   userId: number;
   email: string;
+  sessionVersion: number;
   iat: number;
   exp: number;
 }
@@ -62,10 +63,13 @@ function parseSessionToken(token: string | undefined): SessionTokenPayload | nul
   try {
     const parsed = JSON.parse(decodeBase64Url(payload)) as Partial<SessionTokenPayload>;
     const { userId, email, iat, exp } = parsed;
+    const sessionVersion = parsed.sessionVersion ?? 0;
     if (
       typeof userId !== 'number' ||
       !Number.isInteger(userId) ||
       typeof email !== 'string' ||
+      typeof sessionVersion !== 'number' ||
+      !Number.isInteger(sessionVersion) ||
       typeof iat !== 'number' ||
       !Number.isInteger(iat) ||
       typeof exp !== 'number' ||
@@ -81,6 +85,7 @@ function parseSessionToken(token: string | undefined): SessionTokenPayload | nul
     return {
       userId,
       email: email.trim().toLowerCase(),
+      sessionVersion,
       iat,
       exp,
     };
@@ -89,12 +94,17 @@ function parseSessionToken(token: string | undefined): SessionTokenPayload | nul
   }
 }
 
-function createSessionToken(input: { userId: number; email: string }): string {
+function createSessionToken(input: {
+  userId: number;
+  email: string;
+  sessionVersion: number;
+}): string {
   const now = Math.floor(Date.now() / 1000);
   const payload = encodeBase64Url(
     JSON.stringify({
       userId: input.userId,
       email: input.email.trim().toLowerCase(),
+      sessionVersion: input.sessionVersion,
       iat: now,
       exp: now + SESSION_TTL_SECONDS,
     } satisfies SessionTokenPayload),
@@ -104,14 +114,30 @@ function createSessionToken(input: { userId: number; email: string }): string {
 }
 
 export async function createSession(input: { userId: number; email: string }): Promise<void> {
+  const [admin] = await db
+    .select({
+      sessionVersion: admins.sessionVersion,
+    })
+    .from(admins)
+    .where(and(eq(admins.id, input.userId), eq(admins.email, input.email.trim().toLowerCase())))
+    .limit(1);
+
+  if (!admin) {
+    throw new Error('Cannot create a session for an unknown admin.');
+  }
+
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE_NAME, createSessionToken(input), {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: SESSION_TTL_SECONDS,
-  });
+  cookieStore.set(
+    SESSION_COOKIE_NAME,
+    createSessionToken({ ...input, sessionVersion: admin.sessionVersion }),
+    {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: SESSION_TTL_SECONDS,
+    },
+  );
 }
 
 export async function getSession(): Promise<SessionData | null> {
@@ -133,12 +159,19 @@ export async function getSession(): Promise<SessionData | null> {
       role: admins.role,
       isActive: admins.isActive,
       mustChangePassword: admins.mustChangePassword,
+      sessionVersion: admins.sessionVersion,
     })
     .from(admins)
     .where(and(eq(admins.id, token.userId), eq(admins.email, token.email)))
     .limit(1);
 
   if (!admin || !admin.isActive || !isAuthRole(admin.role)) {
+    cookieStore.delete(SESSION_COOKIE_NAME);
+    return null;
+  }
+
+  if (admin.sessionVersion !== token.sessionVersion) {
+    cookieStore.delete(SESSION_COOKIE_NAME);
     return null;
   }
 

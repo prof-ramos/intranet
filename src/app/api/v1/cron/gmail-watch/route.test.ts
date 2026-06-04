@@ -68,4 +68,3 @@ describe('GET /api/v1/cron/gmail-watch', () => {
     expect(data.error.code).toBe('unauthorized');
   });
 });
-

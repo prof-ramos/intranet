@@ -28,14 +28,36 @@ export const PRIVATE_IPV4_RANGES = [
   /^25[0-5]\./,
 ];
 
+export const emailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(1, 'E-mail é obrigatório.')
+  .email('E-mail inválido.');
+
 export const loginSchema = z.object({
-  email: z.string().min(1, 'E-mail é obrigatório.').email('E-mail inválido.').toLowerCase().trim(),
+  email: emailSchema,
   password: z.string().min(1, 'Senha é obrigatória.'),
 });
 
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, 'Senha atual é obrigatória.'),
+    newPassword: z.string().min(8, 'A nova senha deve ter pelo menos 8 caracteres.'),
+    confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória.'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'A confirmação não confere.',
+    path: ['confirmPassword'],
+  });
+
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, 'Token é obrigatório.'),
     newPassword: z.string().min(8, 'A nova senha deve ter pelo menos 8 caracteres.'),
     confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória.'),
   })
