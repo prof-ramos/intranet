@@ -66,7 +66,13 @@ npm run test:db
 npm run build
 ```
 
-Para uma prova isolada de banco limpo, aponte `DATABASE_URL` e `DATABASE_MIGRATION_URL` para um banco descartavel, rode `npm run db:migrate`, `npm run db:seed` e depois `npm run test:db`.
+Para uma prova isolada de banco limpo, aponte `DATABASE_URL` e `DATABASE_MIGRATION_URL` para um banco descartavel (ex: `asof_intranet_test` ou clone temporário), rode `npm run db:migrate`, `npm run db:seed` e depois `npm run test:db`.
+
+Ao final da validação, descarte o banco temporário explicitamente (ex: `dropdb asof_intranet_test_temp` ou o nome usado) para evitar acumular clones descartáveis.
+
+No desenvolvimento diário, recomenda-se o clone `asof_intranet_neon_clone` do Neon para dados realistas (associados, kanban etc.) — veja README.md.
+
+**Aviso:** O clone traz PII completa. Siga os controles de segurança/LGPD documentados no README (delete dumps, uso restrito, etc.).
 
 ## 5. Smoke Manual
 
