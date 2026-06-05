@@ -1,7 +1,7 @@
 # Database — ASOF Intranet
 
 > Schema reference e guia operacional do banco de dados.
-> Última atualização: 2026-06-03
+> Última atualização: 2026-06-05 (inclui clone local asof_intranet_neon_clone)
 
 ---
 
@@ -22,6 +22,14 @@
 | Migrations | `DATABASE_MIGRATION_URL` | Direta (Neon direct) — `ep-empty-cake-ac26vl6w.sa-east-1.aws.neon.tech` |
 
 O cliente Drizzle (`src/lib/db/index.ts`) também aceita fallbacks legados: `DATABASE_POSTGRES_URL`, `POSTGRES_PRISMA_URL`, `POSTGRES_URL`.
+
+### Desenvolvimento local
+
+- **Recomendado (dados reais):** Clone do Neon em `asof_intranet_neon_clone` (veja README.md > Banco de dados e CONTRIBUTING.md para o procedimento completo de dump/restore usando cliente PostgreSQL 17).
+  - **Aviso LGPD (crítico):** O clone contém PII sensível (CPF, SIAPE, endereços, etc.). Siga controles estritos do README (delete dumps de /tmp imediatamente, use apenas em máquinas autorizadas com FDE, nunca compartilhe ou persista sem proteção). Prefira setup mínimo. Consulte `src/lib/lgpd/`, `sanitizePii()`, `lib/crypto/pii.ts` e ADRs (ex. 006).
+- **Mínimo:** Banco vazio `asof_intranet` + `npm run db:seed`.
+- Sempre use URLs locais (sem sslmode=require) e usuário do sistema (ex: `postgres://gabrielramos@localhost:5432/asof_intranet_neon_clone`).
+- Testes de integração e E2E usam bancos dedicados separados (`asof_intranet_test`, `asof_test`).
 
 ### Configuração do client
 

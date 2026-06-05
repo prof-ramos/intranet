@@ -50,16 +50,20 @@ npm install
 # 2. Configurar variáveis de ambiente
 cp .env.example .env.local
 # edite .env.local conforme a seção abaixo
-# Para desenvolvimento local, ajuste DATABASE_URL e DATABASE_MIGRATION_URL
-# para apontar para o seu PostgreSQL local (ex: postgres://<user>@localhost:5432/asof_intranet)
 
-# 3. Criar o banco local (se ainda não existir)
+# 3. Criar o banco local
+# - Setup mínimo (banco vazio + seed):
 createdb asof_intranet
+# - Recomendado para desenvolvimento realista (kanban, associados, etc.):
+#   Clone completo do Neon (produção) no Postgres local (veja seção "Banco de dados" abaixo):
+#   createdb asof_intranet_neon_clone
+#   (use pg_dump do Neon com cliente PostgreSQL 17 e psql para restaurar)
+#   Depois aponte .env.local para asof_intranet_neon_clone
 
-# 4. Aplicar migrações
+# 4. Aplicar migrações (use o clone ou o mínimo)
 npm run db:migrate
 
-# 5. Popular com dados iniciais
+# 5. Popular com dados iniciais (para setup mínimo; o clone já vem populado)
 npm run db:seed
 
 # 6. Subir o servidor de desenvolvimento
@@ -138,7 +142,30 @@ Para o primeiro go-live, integrações/webhooks não são obrigatórios e produ�
 
 O projeto usa PostgreSQL via Drizzle.
 
-- **Desenvolvimento local:** PostgreSQL via Homebrew. Use `DATABASE_URL=postgres://<user>@localhost:5432/asof_intranet` e a mesma URL para `DATABASE_MIGRATION_URL` (não há pooler local, então a URL direta serve para ambos).
+- **Desenvolvimento local (recomendado para trabalho realista):** Use o clone completo do Neon no Postgres local (`asof_intranet_neon_clone`). Isso traz dados reais de associados (~1662 registros), ofícios, etc., ideal para kanban/atividades, filtros, performance e testes manuais.
+
+  **⚠️ AVISO CRÍTICO DE SEGURANÇA / LGPD:** O banco Neon de produção contém dados pessoais sensíveis (CPF, SIAPE, emails primários/secundários, endereços, telefones, datas de nascimento, notas internas, registros funcionais, etc.) protegidos pela LGPD e tratados com criptografia em `src/lib/crypto/pii.ts`, `sanitizePii()`, retenção em `lib/lgpd/retention.ts` e ADRs (ex: 006 sobre desfiação/anonimização). Seguir as instruções abaixo **cria um dump plaintext completo em `/tmp`** no seu disco local.
+
+  - **Apenas para desenvolvedores autorizados internos da ASOF**, em máquinas com full-disk encryption.
+  - **Nunca** deixe o dump em `/tmp` após o restore: `rm -f /tmp/neon_clone.sql` imediatamente.
+  - **Nunca** commit, compartilhe, envie por email/chat, ou armazene sem criptografia forte.
+  - Após restore no clone local, os dados permanecem sensíveis — aplique os mesmos controles de acesso, logs e retenção do projeto.
+  - Prefira o setup **mínimo** (`asof_intranet` + `npm run db:seed`) sempre que possível. Use o clone **somente** quando precisar de volume real de associados/ofícios para testes específicos de kanban, relatórios ou performance.
+  - Se precisar de dump para diagnóstico, use snapshot/branch do Neon quando possível (mais seguro que dump local).
+
+  - Crie: `createdb asof_intranet_neon_clone`
+  - Dump do Neon (use cliente PostgreSQL 17 compatível com o servidor do Neon): `pg_dump "$DATABASE_MIGRATION_URL" --clean --if-exists --no-owner --no-acl -f /tmp/neon_clone.sql` (após `vercel env pull /tmp/.env.neon --environment=production` ou equivalente para obter a URL; **delete o .env.neon e o dump imediatamente após**).
+  - Restore: `psql -d asof_intranet_neon_clone -f /tmp/neon_clone.sql`
+  - Validação rápida (sanity check): `psql -d asof_intranet_neon_clone -c "SELECT COUNT(*) FROM associates;"`  (esperado ~1662 linhas; confirme antes de prosseguir)
+  - `.env.local`:
+    ```
+    DATABASE_URL=postgres://<user>@localhost:5432/asof_intranet_neon_clone
+    DATABASE_MIGRATION_URL=postgres://<user>@localhost:5432/asof_intranet_neon_clone
+    ```
+  - Limpeza: `rm -f /tmp/neon_clone.sql /tmp/.env.neon`
+- **Desenvolvimento local mínimo (banco vazio):** PostgreSQL via Homebrew com `asof_intranet` + `npm run db:seed`.
+  - `createdb asof_intranet`
+  - `.env.local`: `DATABASE_URL=postgres://<user>@localhost:5432/asof_intranet` (e mesma para MIGRATION_URL).
 - **Produção / remoto:** Neon Postgres. Use a URL pooled em `DATABASE_URL` e a URL direta/non-pooling em `DATABASE_MIGRATION_URL`.
 - **Staging / preview:** use banco separado. No setup atual, o ambiente `Preview` da Vercel nao deve carregar envs gerais de banco.
 
@@ -228,7 +255,7 @@ O servidor E2E define `NEXT_E2E=1`, fazendo o Next.js usar
 `.next/dev` quando já houver um servidor aberto em `3000`.
 
 O servidor de desenvolvimento em `3000` usa o banco normal da `.env.local`
-(`asof_intranet` no setup local). Se os testes E2E forem rodados contra `3000`,
+(`asof_intranet` ou o clone `asof_intranet_neon_clone` no setup local). Se os testes E2E forem rodados contra `3000`,
 os usuários `e2e-*@asof.local` podem não existir nesse banco; o login retorna
 `/login?error=1` e tentativas repetidas podem acumular em `login_attempts` até
 gerar `/login?error=rate-limit`. Nesse caso, rode novamente pelo comando

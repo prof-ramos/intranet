@@ -12,7 +12,7 @@ ASOF Intranet — Sistema interno da Associação dos Oficiais de Chancelaria do
 
 ```bash
 npm install
-cp .env.example .env.local   # preencha SESSION_SECRET, DATABASE_URL etc.
+cp .env.example .env.local   # preencha SESSION_SECRET, DATABASE_URL etc. (use clone asof_intranet_neon_clone para dev realista — veja README)
 npm run dev
 ```
 
@@ -46,7 +46,10 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 
 ## Banco de Dados
 
-- PostgreSQL gerenciado (Neon, `ep-empty-cake-ac26vl6w`, sa-east-1).
+- PostgreSQL gerenciado (Neon, `ep-empty-cake-ac26vl6w`, sa-east-1) em produção.
+- **Desenvolvimento local:** Recomendado usar clone completo do Neon (`asof_intranet_neon_clone`) para dados reais (associados, etc.). Veja instruções completas em README.md (seção Banco de dados) e CONTRIBUTING.md. 
+  - **Aviso LGPD:** Siga controles estritos (PII sensível — delete dumps, autorizado apenas, etc.). Prefira mínimo. Consulte lib/lgpd e ADRs.
+- Alternativa mínima: `asof_intranet` vazio + `npm run db:seed`.
 - Pooled (`DATABASE_URL`) para runtime, direct (`DATABASE_MIGRATION_URL`) para migrations.
 - Conexão: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'`.
 - Multi-tabela: sempre usar `db.transaction()`.

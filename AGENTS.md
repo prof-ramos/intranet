@@ -123,7 +123,7 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 ### Testing
 
 - Unitários: Vitest, `src/**/*.test.{ts,tsx}`. Suite atual: 824+ testes.
-- Integração: `vitest.integration.config.ts` contra PostgreSQL real (banco dedicado, ex: `asof_intranet_test`).
+- Integração: `vitest.integration.config.ts` contra PostgreSQL real (banco dedicado, ex: `asof_intranet_test`). O DB principal de dev local costuma ser o clone `asof_intranet_neon_clone` (veja README/CONTRIBUTING para setup; atenção aos avisos LGPD/PII no clone).
 - E2E: Playwright, `http://127.0.0.1:3001` (não 3000), database `asof_test` criado por `e2e/global-setup.ts`.
 - `npm run test:db` — schema contract contra PostgreSQL ao vivo (valida tables, columns, enums, indexes, extensions e alinhamento de migrations).
 - `npm run test:e2e` nunca contra `http://localhost:3000`; apontar para `3001` com `NEXT_E2E=1` e `.next-e2e` como `distDir`. Gotchas não-triviais (JIT warmup, órfãos EADDRINUSE, hardcoded `associationStatus='ativo'`) estão em `e2e/AGENTS.md` — leia antes de tocar em specs.
