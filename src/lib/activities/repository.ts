@@ -147,15 +147,14 @@ export async function updateActivityById(
   patch: Partial<Pick<Activity, 'status' | 'priority' | 'dueDate' | 'completedAt' | 'assigneeId'>>,
   expectedUpdatedAt?: Date | null,
 ): Promise<Activity | null> {
-  const whereClause = expectedUpdatedAt
-    ? (() => {
-        const expectedIso = expectedUpdatedAt.toISOString();
-        return and(
-          eq(activities.id, id),
-          sql`${activities.updatedAt} >= ${expectedIso}::timestamptz AND ${activities.updatedAt} < (${expectedIso}::timestamptz + interval '1 millisecond')`,
-        );
-      })()
-    : eq(activities.id, id);
+  let whereClause = eq(activities.id, id);
+  if (expectedUpdatedAt) {
+    const expectedIso = expectedUpdatedAt.toISOString();
+    whereClause = and(
+      eq(activities.id, id),
+      sql`${activities.updatedAt} >= ${expectedIso}::timestamptz AND ${activities.updatedAt} < (${expectedIso}::timestamptz + interval '1 millisecond')`,
+    );
+  }
 
   const [row] = await db
     .update(activities)
