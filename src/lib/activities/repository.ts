@@ -150,10 +150,13 @@ export async function updateActivityById(
   let whereClause = eq(activities.id, id);
   if (expectedUpdatedAt) {
     const expectedIso = expectedUpdatedAt.toISOString();
-    whereClause = and(
+    const combined = and(
       eq(activities.id, id),
       sql`${activities.updatedAt} >= ${expectedIso}::timestamptz AND ${activities.updatedAt} < (${expectedIso}::timestamptz + interval '1 millisecond')`,
     );
+    if (combined) {
+      whereClause = combined;
+    }
   }
 
   const [row] = await db
