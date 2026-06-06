@@ -13,7 +13,10 @@ try {
 }
 
 const isLocal =
-  hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  hostname === 'localhost' ||
+  hostname === '127.0.0.1' ||
+  hostname === '[::1]' || // WHATWG URL parser wraps IPv6 in brackets
+  hostname === '::1'; // fallback for non-standard parsers
 
 if (!isLocal && !override) {
   console.error(
