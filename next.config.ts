@@ -50,7 +50,15 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: [],
   experimental: {
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: [
+      'lucide-react',
+      '@tiptap/core',
+      '@tiptap/react',
+      '@tiptap/starter-kit',
+      '@hello-pangea/dnd',
+      '@novu/react',
+      'pdf-lib',
+    ],
   },
   async headers() {
     return [
