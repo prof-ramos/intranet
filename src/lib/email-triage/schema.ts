@@ -136,6 +136,19 @@ export const emailTriageResultSchema = z
       .nullable()
       .default(null)
       .describe('Setor sugerido.'),
+
+    // --- Identificação do advogado ---
+    advogado_nome: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe('Nome do advogado identificado no e-mail ou cabeçalho de encaminhamento. null se não identificado.'),
+    advogado_email: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe('E-mail do advogado identificado. Priorizar remetente original em e-mails encaminhados.'),
+
     exige_validacao_humana: z
       .boolean()
       .describe('Indica necessidade excepcional de revisao operacional humana.'),

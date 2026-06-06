@@ -501,6 +501,8 @@ export async function insertConsultation(
     slaDueDate: Date;
     createdBy: number;
     lastInteractionAt: Date;
+    lawyerId?: number | null;
+    threadId?: string | null;
   },
   executor: DbExecutor = db,
 ) {
@@ -515,6 +517,8 @@ export async function insertConsultation(
       slaDueDate: values.slaDueDate,
       createdBy: values.createdBy,
       lastInteractionAt: values.lastInteractionAt,
+      lawyerId: values.lawyerId ?? null,
+      threadId: values.threadId ?? null,
     })
     .returning({ id: legalConsultations.id });
 
