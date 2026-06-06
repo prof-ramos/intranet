@@ -43,7 +43,7 @@ describe('juridico service', () => {
     // so retry-exhaust tests that override it don't pollute subsequent tests.
     const { db } = await import('@/lib/db');
     vi.mocked(db.transaction).mockImplementation(
-      async (...args: any[]) => args[0](transactionMock.tx),
+      async (...args: unknown[]) => (args[0] as (tx: typeof transactionMock.tx) => Promise<unknown>)(transactionMock.tx),
     );
   });
 
