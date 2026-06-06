@@ -20,7 +20,7 @@
     "audit": "npm audit",
     "test": "vitest run",
     "test:db": "node --env-file=.env.local ./node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts src/lib/db/schema.integration.test.ts",
-    "test:integration": "node --env-file=.env.test.local scripts/guard-integration-db.js && node --env-file=.env.test.local ./node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts src/lib/email-triage/persister.integration.test.ts",
+    "test:integration": "node -e \"if(!require('fs').existsSync('.env.test.local')){console.warn('[test:integration] .env.test.local not found — skipping DML tests (see README)');process.exit(0)}\" && node --env-file=.env.test.local scripts/guard-integration-db.js && node --env-file=.env.test.local ./node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts src/lib/email-triage/persister.integration.test.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
