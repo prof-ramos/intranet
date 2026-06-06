@@ -37,8 +37,14 @@ vi.mock('@/lib/integrations/outbox', () => ({
 }));
 
 describe('juridico service', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    // Restore db.transaction to the default callback-invoking implementation
+    // so retry-exhaust tests that override it don't pollute subsequent tests.
+    const { db } = await import('@/lib/db');
+    vi.mocked(db.transaction).mockImplementation(
+      async (callback: (tx: unknown) => Promise<unknown>) => callback(transactionMock.tx),
+    );
   });
 
   describe('createConsultationService validation', () => {
@@ -105,6 +111,35 @@ describe('juridico service', () => {
           createdBy: 0,
         }),
       ).rejects.toThrow('Usuário criador inválido.');
+    });
+  });
+
+  describe('generateInternalNumber retry exhaust', () => {
+    it('throws after MAX_RETRIES attempts on unique constraint violation', async () => {
+      const { db } = await import('@/lib/db');
+      const uniqueError = new Error('unique constraint violation');
+
+      vi.mocked(db.transaction).mockRejectedValue(uniqueError);
+
+      await expect(
+        (await import('./service')).generateInternalNumber(),
+      ).rejects.toThrow('unique constraint violation');
+
+      // MAX_RETRIES is 3 — transaction must be attempted exactly 3 times
+      expect(db.transaction).toHaveBeenCalledTimes(3);
+    });
+
+    it('does not retry on non-unique-constraint errors', async () => {
+      const { db } = await import('@/lib/db');
+      const genericError = new Error('connection refused');
+
+      vi.mocked(db.transaction).mockRejectedValue(genericError);
+
+      await expect(
+        (await import('./service')).generateInternalNumber(),
+      ).rejects.toThrow('connection refused');
+
+      expect(db.transaction).toHaveBeenCalledTimes(1);
     });
   });
 

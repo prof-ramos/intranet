@@ -137,4 +137,44 @@ describe('notifyNeedsValidation', () => {
       error: expect.stringContaining('Bot user not found'),
     });
   });
+
+  it('returns ok with notifiedCount 0 when there are no admins', async () => {
+    const { createNotificationFromEvent } = await import('@/lib/notifications/service');
+    const { db } = await import('@/lib/db');
+    const { resolveSystemBotUser } = await import('@/lib/system-users');
+
+    vi.mocked(resolveSystemBotUser).mockResolvedValue(99);
+    vi.mocked(db.select).mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([]),
+      }),
+    } as any);
+
+    const result = await notifyNeedsValidation(mockTriageResult, 42, mockPayload);
+
+    expect(result).toEqual({ ok: true });
+    expect(createNotificationFromEvent).not.toHaveBeenCalled();
+  });
+
+  it('does not throw when one of two admin notifications fails (partial failure)', async () => {
+    const { createNotificationFromEvent } = await import('@/lib/notifications/service');
+    const { db } = await import('@/lib/db');
+    const { resolveSystemBotUser } = await import('@/lib/system-users');
+
+    vi.mocked(resolveSystemBotUser).mockResolvedValue(99);
+    vi.mocked(db.select).mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([{ id: 1 }, { id: 2 }]),
+      }),
+    } as any);
+
+    vi.mocked(createNotificationFromEvent)
+      .mockResolvedValueOnce({ id: 1 } as any)
+      .mockRejectedValueOnce(new Error('notification insert failed'));
+
+    const result = await notifyNeedsValidation(mockTriageResult, 42, mockPayload);
+
+    expect(result).toEqual({ ok: true });
+    expect(createNotificationFromEvent).toHaveBeenCalledTimes(2);
+  });
 });

@@ -16,6 +16,22 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],
     exclude: ['src/**/*.integration.test.{ts,tsx}'],
     reporters: ['default', new VitestMetricsReporter({ suite: 'unit' })],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      exclude: [
+        'src/**/*.test.*',
+        'src/**/*.integration.test.*',
+        'src/**/*.d.ts',
+        'scripts/**',
+        'e2e/**',
+      ],
+      thresholds: {
+        lines: 70,
+        functions: 75,
+        branches: 65,
+      },
+    },
   },
   resolve: {
     alias: {

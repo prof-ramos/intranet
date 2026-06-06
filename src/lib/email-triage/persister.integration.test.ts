@@ -156,8 +156,8 @@ describe('email-triage persister integration', () => {
     expect(row.data_retention_until).toBeNull();
 
     // ── Timestamps ──
-    expect(row.created_at).not.toBeNull();
-    expect(row.updated_at).not.toBeNull();
+    expect(row.created_at).toBeInstanceOf(Date);
+    expect(row.updated_at).toBeInstanceOf(Date);
   });
 
   // ─── Test 2: Upsert on duplicate message_id ────────────────────
