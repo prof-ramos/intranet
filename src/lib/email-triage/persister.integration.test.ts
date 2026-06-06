@@ -240,44 +240,47 @@ describe('email-triage persister integration', () => {
 
     await persistTriage(payload, result, 'model-v1', 'resp-001');
 
-    // Capture createdAt from the initial insert
+    // After insert both timestamps originate from the same transaction's
+    // current_timestamp — identical at microsecond precision via ::text cast.
     const [before] = await sql`
-      SELECT created_at, updated_at FROM email_triagens WHERE message_id = ${messageId}
+      SELECT
+        created_at::text AS ca,
+        updated_at::text AS ua
+      FROM email_triagens WHERE message_id = ${messageId}
     `;
-    const createdAtBefore = new Date(before.created_at).getTime();
-    const updatedAtBefore = new Date(before.updated_at).getTime();
+    expect(before.ca).toBe(before.ua);
+    const createdAtRaw = before.ca as string;
 
-    // Small delay to ensure timestamps would differ if overwritten
-    await new Promise((r) => setTimeout(r, 50));
-
-    // Upsert with same message_id but different data
+    // Upsert — no sleep needed; ::text comparison is deterministic at
+    // microsecond precision regardless of wall-clock speed.
     const updatedResult = makeResult({
       categoria: 'administrativo',
       resumo: 'Resumo atualizado para testar preservacao de createdAt.',
     });
-    await persistTriage(
-      payload,
-      updatedResult,
-      'model-v2',
-      'resp-002',
-    );
+    await persistTriage(payload, updatedResult, 'model-v2', 'resp-002');
 
-    // Read createdAt again — must be unchanged
     const [after] = await sql`
-      SELECT created_at, updated_at, categoria, resumo
-      FROM email_triagens
-      WHERE message_id = ${messageId}
+      SELECT
+        created_at::text AS ca,
+        updated_at::text AS ua,
+        categoria,
+        resumo
+      FROM email_triagens WHERE message_id = ${messageId}
     `;
-    const createdAtAfter = new Date(after.created_at).getTime();
 
-    expect(createdAtAfter).toBe(createdAtBefore);
+    // created_at must be unchanged (excluded from ON CONFLICT update set)
+    expect(after.ca).toBe(createdAtRaw);
 
-    // Other fields SHOULD have been updated
+    // updated_at must have advanced: upsert opens a new transaction whose
+    // current_timestamp is strictly later than the insert's (Postgres
+    // microsecond precision makes this true even on fast machines).
+    expect(after.ua).not.toBe(after.ca);
+
+    // Mutable fields must reflect the update
     expect(after.categoria).toBe('administrativo');
     expect(after.resumo).toBe(
       'Resumo atualizado para testar preservacao de createdAt.',
     );
-    expect(new Date(after.updated_at).getTime()).toBeGreaterThan(updatedAtBefore);
   });
 
   // ─── Test 4: persistFailure creates failure record ────────────
