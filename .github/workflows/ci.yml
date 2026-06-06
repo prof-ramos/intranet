@@ -98,9 +98,16 @@ jobs:
             echo "DATABASE_URL=$DATABASE_URL"
             echo "DATABASE_MIGRATION_URL=$DATABASE_MIGRATION_URL"
           } > .env.local
+          cp .env.local .env.test.local
 
       - name: Run database contract tests
         run: npm run test:db
+
+      - name: Run DML integration tests
+        run: npm run test:integration
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/asof_intranet
+          SESSION_SECRET: test-secret-32-chars-minimum-here
 
   e2e:
     name: E2E Tests (Playwright)

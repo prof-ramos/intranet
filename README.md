@@ -212,9 +212,10 @@ npm run format        # formata código com Prettier
 npm run format:check  # valida formatação
 npm run test          # Vitest (testes unitários)
 npm run test:watch    # Vitest em modo watch
+npm run test:coverage # cobertura de código com v8 (thresholds: lines 70%, fn 75%, branch 65%)
 npm run audit         # npm audit
 npm run validate:quick  # typecheck + lint + testes unitários
-npm run validate:full   # quick validation + testes de DB + build
+npm run validate:full   # quick + test:db + test:integration (pula se sem .env.test.local) + build
 npm run scope:check   # verifica escopo de arquivos alterados
 npm run pr:check      # verificações de prontidão para PR
 ```
@@ -224,10 +225,11 @@ npm run pr:check      # verificações de prontidão para PR
 ### Banco e testes dependentes de serviços
 
 ```bash
-npm run test:db       # schema contract contra PostgreSQL real
-npm run test:e2e      # Playwright (sobe app e banco E2E próprios)
-npm run test:e2e:ui   # Playwright modo interativo
-npm run test:e2e:debug # Playwright modo debug
+npm run test:db           # schema contract read-only contra PostgreSQL (seguro com qualquer .env.local)
+npm run test:integration  # DML integration tests (INSERT/UPSERT/DELETE) — requer .env.test.local
+npm run test:e2e          # Playwright (sobe app e banco E2E próprios)
+npm run test:e2e:ui       # Playwright modo interativo
+npm run test:e2e:debug    # Playwright modo debug
 npm run db:generate   # gera migrações Drizzle
 npm run db:migrate    # aplica migrações com guardrails de produção
 npm run db:seed       # insere admin inicial (use --force para sobrescrever role/isActive)
@@ -284,7 +286,15 @@ createdb asof_intranet_test
 DATABASE_MIGRATION_URL=postgres://<user>@localhost:5432/asof_intranet_test npm run db:migrate
 ```
 
-Execute os testes de integração:
+Execute os testes de integração DML:
+
+```bash
+npm run test:integration
+```
+
+> O script verifica automaticamente se `DATABASE_URL` aponta para `localhost`. Se `.env.test.local` não existir, pula com um aviso (exit 0) para não quebrar `validate:full` em máquinas sem banco de testes configurado.
+
+Para rodar todos os integration tests (incluindo os não-DML) diretamente via vitest:
 
 ```bash
 npx vitest run --config vitest.integration.config.ts

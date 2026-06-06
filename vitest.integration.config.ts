@@ -13,6 +13,7 @@ export default defineConfig({
         process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/postgres',
       SESSION_SECRET: process.env.SESSION_SECRET ?? 'a'.repeat(32),
     },
+    testTimeout: 15000,
     include: ['src/**/*.integration.test.{ts,tsx}'],
     reporters: ['default', new VitestMetricsReporter({ suite: 'integration' })],
   },
