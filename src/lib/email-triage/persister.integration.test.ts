@@ -12,6 +12,19 @@ if (!databaseUrl) {
   );
 }
 
+// Guard: block DML against non-local databases regardless of invocation method
+// (npm run test:integration, npx vitest run, or IDE test runner).
+const _h = (() => { try { return new URL(databaseUrl).hostname; } catch { return ''; } })();
+if (
+  _h !== 'localhost' && _h !== '127.0.0.1' && _h !== '[::1]' && _h !== '::1' &&
+  process.env.INTEGRATION_TESTS_ALLOW_REMOTE !== 'true'
+) {
+  throw new Error(
+    `[persister.integration.test] BLOCKED: DATABASE_URL host "${_h}" is not localhost.\n` +
+      'This test performs real DML. Set INTEGRATION_TESTS_ALLOW_REMOTE=true to override.',
+  );
+}
+
 const sql = postgres(databaseUrl, { max: 1 });
 
 afterAll(async () => {

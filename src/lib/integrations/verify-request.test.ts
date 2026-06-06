@@ -287,7 +287,10 @@ describe('verifyIntegrationRequest — expired timestamp', () => {
     mockGetIntegrationConfig.mockReturnValue(defaultConfig());
     mockIsIntegrationAuthConfigured.mockReturnValue(true);
 
-    const borderTimestamp = String(NOW_SECONDS - 299); // 1 s inside the 300 s window
+    // Compute fresh timestamp inside the test (not from module-load NOW_SECONDS)
+    // and use 150 s margin so CI scheduling delays cannot flip the assertion.
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const borderTimestamp = String(nowSeconds - 150); // midpoint of 300 s window
     const sig = computeSignature('GET', '/api/v1/events', borderTimestamp, '', HMAC_SECRET);
     const request = makeRequest(API_KEY, borderTimestamp, sig);
 
