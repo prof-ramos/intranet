@@ -242,6 +242,8 @@ describe('materializarNoDominio', () => {
     await materializarNoDominio(payload, result, 4);
 
     expect(mockCreateConsultationService).not.toHaveBeenCalled();
+    // Atividade não deve ser criada para e-mails de follow-up (isNewConsultation=false)
+    expect(mockCreateActivityService).not.toHaveBeenCalled();
     // db.update deve ter sido chamado (para legalConsultations e emailTriagens)
     expect(mockDbUpdate).toHaveBeenCalled();
   });
@@ -357,8 +359,8 @@ describe('materializarNoDominio', () => {
 
     await expect(materializarNoDominio(payload, result, 11)).resolves.toBeUndefined();
 
-    // Atividade ainda deve ser criada mesmo que consulta falhe
-    expect(mockCreateActivityService).toHaveBeenCalledOnce();
+    // Atividade não deve ser criada se a consulta falhou (isNewConsultation=false)
+    expect(mockCreateActivityService).not.toHaveBeenCalled();
   });
 
   it('pula materialização quando email já foi processado (consultationId preenchido)', async () => {

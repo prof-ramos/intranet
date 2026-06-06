@@ -12,15 +12,22 @@ import type { EmailPayload, EmailTriageResult } from './schema';
 
 const log = createLogger('domain-materializer');
 
+// Extracts bare email address from RFC 5322 headers like "Name <email@host>" or "email@host".
+function extractBareEmail(value: string): string {
+  const match = value.match(/<([^>]+)>/);
+  return (match ? match[1] : value).toLowerCase().trim();
+}
+
 async function identifyLawyerId(
   advogadoEmail: string | null,
   sender: string,
 ): Promise<number | null> {
-  for (const email of [advogadoEmail, sender].filter(Boolean) as string[]) {
+  for (const raw of [advogadoEmail, sender].filter(Boolean) as string[]) {
+    const email = extractBareEmail(raw);
     const [row] = await db
       .select({ id: lawyers.id })
       .from(lawyers)
-      .where(eq(lawyers.email, email.toLowerCase().trim()))
+      .where(eq(lawyers.email, email))
       .limit(1);
     if (row) return row.id;
   }
@@ -124,8 +131,13 @@ export async function materializarNoDominio(
   const context = await buildCorrelationContext(payload).catch(() => ({ associate: null, consultations: [] as { id: number }[] }));
   const associateId = context.associate?.id ?? null;
 
+  const receivedAt = new Date(payload.received_at);
+  const slaDueDate = new Date(receivedAt);
+  slaDueDate.setDate(slaDueDate.getDate() + 5);
+
   // 3. Find or create consultation
   let consultationId: number | null = null;
+  let isNewConsultation = false;
   try {
     const existingId = await findOpenConsultationId(payload.thread_id, associateId, lawyerId);
 
@@ -137,11 +149,9 @@ export async function materializarNoDominio(
         .where(eq(legalConsultations.id, consultationId));
       log.info('Linked email to existing consultation.', { triageId, consultationId });
     } else {
-      // Known edge case: if two messages from the same new thread are processed
-      // concurrently in the same batch (MAX_CONCURRENCY=3), both can reach here
-      // and create separate consultations. The probability is very low (same
-      // thread, same chunk, both juridico without human-validation). Acceptable
-      // for MVP; a DB-level advisory lock would eliminate it if needed.
+      // Known edge case: two messages from the same new thread in the same batch
+      // (MAX_CONCURRENCY=3) can both reach here and create separate consultations.
+      // Probability is very low; a DB advisory lock would eliminate it if needed.
       const created = await createConsultationService({
         title: payload.subject.slice(0, 255) || 'Consulta via Controller ASOF',
         questionSummary: result.resumo,
@@ -149,38 +159,41 @@ export async function materializarNoDominio(
         associateId,
         lawyerId,
         threadId: payload.thread_id,
+        slaDueDate,
         slaDays: 5,
         createdBy: botUserId,
       });
       consultationId = created.id;
+      isNewConsultation = true;
       log.info('Created new consultation from email.', { triageId, consultationId });
     }
   } catch (err) {
     log.warn('Failed to find/create consultation (non-fatal).', { triageId }, err instanceof Error ? err : undefined);
   }
 
-  // 4. Create Atividade with 5-day deadline
-  try {
-    const dueDate = new Date(payload.received_at);
-    dueDate.setDate(dueDate.getDate() + 5);
-    const priority =
-      result.nivel_risco === 'critico' || result.nivel_risco === 'alto'
-        ? ('urgente' as const)
-        : ('normal' as const);
+  // 4. Create Atividade — only for NEW consultations; follow-up emails on existing
+  // threads would otherwise flood the Kanban with duplicate tasks.
+  if (isNewConsultation) {
+    try {
+      const priority =
+        result.nivel_risco === 'critico' || result.nivel_risco === 'alto'
+          ? ('urgente' as const)
+          : ('normal' as const);
 
-    await createActivityService({
-      title: `[Controller] ${payload.subject}`.slice(0, 255),
-      description: result.resumo,
-      status: 'em_andamento',
-      priority,
-      assigneeId: null,
-      associateId,
-      dueDate: dueDate.toISOString(),
-      tags: ['controller', 'email', 'juridico'],
-      createdBy: botUserId,
-    });
-  } catch (err) {
-    log.warn('Failed to create activity for email (non-fatal).', { triageId }, err instanceof Error ? err : undefined);
+      await createActivityService({
+        title: `[Controller] ${payload.subject}`.slice(0, 255),
+        description: result.resumo,
+        status: 'em_andamento',
+        priority,
+        assigneeId: null,
+        associateId,
+        dueDate: slaDueDate.toISOString(),
+        tags: ['controller', 'email', 'juridico'],
+        createdBy: botUserId,
+      });
+    } catch (err) {
+      log.warn('Failed to create activity for email (non-fatal).', { triageId }, err instanceof Error ? err : undefined);
+    }
   }
 
   // 5. Link email_triagens to consultation

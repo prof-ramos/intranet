@@ -69,6 +69,7 @@ interface CreateConsultationInput {
   questionFullText: string | null;
   associateId: number | null;
   slaDays: number;
+  slaDueDate?: Date;
   createdBy: number;
   lawyerId?: number | null;
   threadId?: string | null;
@@ -93,8 +94,11 @@ export async function createConsultationService(input: CreateConsultationInput) 
     try {
       return await db.transaction(async (tx) => {
         const internalNumber = await generateInternalNumber(tx);
-        const slaDueDate = new Date();
-        slaDueDate.setDate(slaDueDate.getDate() + input.slaDays);
+        const slaDueDate = input.slaDueDate ?? (() => {
+          const d = new Date();
+          d.setDate(d.getDate() + input.slaDays);
+          return d;
+        })();
 
         const inserted = await insertConsultation(
           {
