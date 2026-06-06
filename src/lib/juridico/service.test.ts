@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type PgTransaction } from 'drizzle-orm/pg-core';
+import { type PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
+import * as schema from '@/lib/db/schema';
+import { type ExtractTablesWithRelations } from 'drizzle-orm';
 import {
   addNoteService,
   createConsultationService,
@@ -19,8 +22,8 @@ const FIXED_UPDATED_AT = '2026-05-13T11:00:00.000Z';
 
 vi.mock('@/lib/db', () => ({
   db: {
-    transaction: vi.fn(async (callback: any) =>
-      callback(transactionMock.tx),
+    transaction: vi.fn(async (callback: (tx: PgTransaction<PostgresJsQueryResultHKT, typeof schema, ExtractTablesWithRelations<typeof schema>>) => Promise<unknown>) =>
+      callback(transactionMock.tx as unknown as PgTransaction<PostgresJsQueryResultHKT, typeof schema, ExtractTablesWithRelations<typeof schema>>),
     ),
   },
 }));
@@ -43,8 +46,8 @@ describe('juridico service', () => {
     // Restore db.transaction to the default callback-invoking implementation
     // so retry-exhaust tests that override it don't pollute subsequent tests.
     const { db } = await import('@/lib/db');
-    vi.mocked(db.transaction as any).mockImplementation(
-      async (callback: any) => callback(transactionMock.tx),
+    vi.mocked(db.transaction).mockImplementation(
+      async (callback: unknown) => (callback as (tx: PgTransaction<PostgresJsQueryResultHKT, typeof schema, ExtractTablesWithRelations<typeof schema>>) => Promise<unknown>)(transactionMock.tx as unknown as PgTransaction<PostgresJsQueryResultHKT, typeof schema, ExtractTablesWithRelations<typeof schema>>),
     );
   });
 
