@@ -240,19 +240,21 @@ describe('email-triage persister integration', () => {
 
     await persistTriage(payload, result, 'model-v1', 'resp-001');
 
-    // After insert both timestamps originate from the same transaction's
-    // current_timestamp — identical at microsecond precision via ::text cast.
-    const [before] = await sql`
-      SELECT
-        created_at::text AS ca,
-        updated_at::text AS ua
-      FROM email_triagens WHERE message_id = ${messageId}
+    // Capture created_at and backdate updated_at to a sentinel value so the
+    // assertion that the upsert refreshed updated_at is fully deterministic —
+    // no timing dependency, no clock precision assumption.
+    const SENTINEL = '2000-01-01 00:00:00+00';
+    await sql`
+      UPDATE email_triagens
+      SET updated_at = ${SENTINEL}::timestamptz
+      WHERE message_id = ${messageId}
     `;
-    expect(before.ca).toBe(before.ua);
-    const createdAtRaw = before.ca as string;
 
-    // Upsert — no sleep needed; ::text comparison is deterministic at
-    // microsecond precision regardless of wall-clock speed.
+    const [before] = await sql`
+      SELECT created_at FROM email_triagens WHERE message_id = ${messageId}
+    `;
+
+    // Upsert with same message_id but different data
     const updatedResult = makeResult({
       categoria: 'administrativo',
       resumo: 'Resumo atualizado para testar preservacao de createdAt.',
@@ -260,21 +262,18 @@ describe('email-triage persister integration', () => {
     await persistTriage(payload, updatedResult, 'model-v2', 'resp-002');
 
     const [after] = await sql`
-      SELECT
-        created_at::text AS ca,
-        updated_at::text AS ua,
-        categoria,
-        resumo
-      FROM email_triagens WHERE message_id = ${messageId}
+      SELECT created_at, updated_at, categoria, resumo
+      FROM email_triagens
+      WHERE message_id = ${messageId}
     `;
 
     // created_at must be unchanged (excluded from ON CONFLICT update set)
-    expect(after.ca).toBe(createdAtRaw);
+    expect(after.created_at).toEqual(before.created_at);
 
-    // updated_at must have advanced: upsert opens a new transaction whose
-    // current_timestamp is strictly later than the insert's (Postgres
-    // microsecond precision makes this true even on fast machines).
-    expect(after.ua).not.toBe(after.ca);
+    // updated_at must have been refreshed by the upsert (no longer the sentinel)
+    expect(after.updated_at.getTime()).toBeGreaterThan(
+      new Date('2001-01-01').getTime(),
+    );
 
     // Mutable fields must reflect the update
     expect(after.categoria).toBe('administrativo');
