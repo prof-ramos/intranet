@@ -2,6 +2,7 @@ import { jsonError, jsonOk } from '@/lib/integrations/http';
 import { createLogger } from '@/lib/logger';
 import { getGmailAccessToken, getHistoryChanges } from '@/lib/email-triage/gmail';
 import { processEmail } from '@/lib/email-triage/pipeline';
+import { createWebhookHandler, parseJsonWebhook } from '@/lib/integrations/webhook-handler';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,10 +39,12 @@ async function processWebhookAsync(historyId: string) {
   }
 }
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-
+export const POST = createWebhookHandler<{
+  message?: { data?: string };
+}>({
+  parse: parseJsonWebhook,
+  catchHandleErrors: true,
+  handle: async (body) => {
     if (!body.message?.data) {
       log.warn('Invalid Pub/Sub payload — no message.data');
       return jsonOk({ status: 'ignored', reason: 'no_message_data' });
@@ -62,14 +65,15 @@ export async function POST(request: Request) {
     });
 
     return jsonOk({ status: 'accepted', historyId });
-  } catch (error) {
+  },
+  onError: (error) => {
     log.error('Gmail webhook failed.', {
       error: error instanceof Error ? error.message : String(error),
     });
 
     return jsonError(500, 'invalid_request', 'Gmail webhook failed.');
-  }
-}
+  },
+});
 
 export async function GET(_request: Request) {
   return jsonOk({ status: 'healthy', service: 'gmail-webhook' });

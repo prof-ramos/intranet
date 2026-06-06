@@ -355,6 +355,24 @@ export interface ConsultationSummary {
   lastInteractionAt: Date | null;
 }
 
+function toConsultationSummary(row: {
+  id: number;
+  internalNumber: string;
+  title: string;
+  status: string;
+  createdAt: Date;
+  lastInteractionAt: Date | null;
+}): ConsultationSummary {
+  return {
+    id: row.id,
+    internalNumber: row.internalNumber,
+    title: row.title,
+    status: row.status,
+    createdAt: row.createdAt,
+    lastInteractionAt: row.lastInteractionAt ?? null,
+  };
+}
+
 export async function getConsultationsByAssociate(
   associateId: number,
   executor: DbExecutor = db,
@@ -373,14 +391,7 @@ export async function getConsultationsByAssociate(
     .orderBy(desc(legalConsultations.createdAt))
     .limit(10);
 
-  return rows.map((r) => ({
-    id: r.id,
-    internalNumber: r.internalNumber,
-    title: r.title,
-    status: r.status,
-    createdAt: r.createdAt,
-    lastInteractionAt: r.lastInteractionAt ?? null,
-  }));
+  return rows.map(toConsultationSummary);
 }
 
 export async function getOpenConsultationsByAssociate(
@@ -403,14 +414,81 @@ export async function getOpenConsultationsByAssociate(
     .orderBy(desc(legalConsultations.createdAt))
     .limit(10);
 
-  return rows.map((r) => ({
-    id: r.id,
-    internalNumber: r.internalNumber,
-    title: r.title,
-    status: r.status,
-    createdAt: r.createdAt,
-    lastInteractionAt: r.lastInteractionAt ?? null,
-  }));
+  return rows.map(toConsultationSummary);
+}
+
+export async function findAssociateWithOpenConsultationsByEmailHash(
+  primaryEmailHash: string,
+  executor: DbExecutor = db,
+): Promise<{ associate: { id: number } | null; consultations: ConsultationSummary[] }> {
+  const selectedAssociate = alias(associates, 'selected_associate');
+  const rows = await executor
+    .select({
+      associateId: selectedAssociate.id,
+      consultationId: legalConsultations.id,
+      internalNumber: legalConsultations.internalNumber,
+      title: legalConsultations.title,
+      status: legalConsultations.status,
+      createdAt: legalConsultations.createdAt,
+      lastInteractionAt: legalConsultations.lastInteractionAt,
+    })
+    .from(selectedAssociate)
+    .leftJoin(
+      legalConsultations,
+      and(
+        eq(legalConsultations.associateId, selectedAssociate.id),
+        eq(legalConsultations.status, 'aberta'),
+      ),
+    )
+    .where(
+      eq(
+        selectedAssociate.id,
+        sql<number>`(
+          select ${associates.id}
+          from ${associates}
+          where ${associates.primaryEmailHash} = ${primaryEmailHash}
+          order by ${associates.id} asc
+          limit 1
+        )`,
+      ),
+    )
+    .orderBy(desc(legalConsultations.createdAt))
+    .limit(10);
+
+  if (rows.length === 0) {
+    return { associate: null, consultations: [] };
+  }
+
+  return {
+    associate: { id: rows[0].associateId },
+    consultations: rows
+      .filter(
+        (
+          row,
+        ): row is typeof row & {
+          consultationId: number;
+          internalNumber: string;
+          title: string;
+          status: string;
+          createdAt: Date;
+        } =>
+          row.consultationId !== null &&
+          row.internalNumber !== null &&
+          row.title !== null &&
+          row.status !== null &&
+          row.createdAt !== null,
+      )
+      .map((row) =>
+        toConsultationSummary({
+          id: row.consultationId,
+          internalNumber: row.internalNumber,
+          title: row.title,
+          status: row.status,
+          createdAt: row.createdAt,
+          lastInteractionAt: row.lastInteractionAt,
+        }),
+      ),
+  };
 }
 
 export async function insertConsultation(

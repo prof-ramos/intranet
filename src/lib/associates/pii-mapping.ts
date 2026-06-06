@@ -1,4 +1,4 @@
-import { encryptPii, piiBlindIndex } from '@/lib/crypto/pii';
+import { encryptPii, piiBlindIndex, decryptPiiField } from '@/lib/crypto/pii';
 import type { UpdateAssociateValues } from './repository';
 
 /**
@@ -46,6 +46,9 @@ type PiiInputShape = Pick<
   UpdateAssociateValues,
   'cpf' | 'siape' | 'primaryEmail' | 'phone' | 'whatsapp' | 'address'
 >;
+
+type PiiDecryptedShape = Record<keyof PiiInputShape, string | null>;
+type PiiReadableRow = Record<PiiPatchKeys, string | null>;
 
 /**
  * Registry of all PII fields that follow the standard encryption pattern.
@@ -118,6 +121,20 @@ export function buildPiiPatch(input: Partial<PiiInputShape>): Pick<
   }
 
   return patch as ReturnType<typeof buildPiiPatch>;
+}
+
+/**
+ * Decrypt the standard PII fields for read paths using the same registry as writes.
+ * Ciphertext wins when present; plaintext is kept only as a legacy/import fallback.
+ */
+export function decryptAssociatePii(row: PiiReadableRow): PiiDecryptedShape {
+  const decrypted: Partial<PiiDecryptedShape> = {};
+
+  for (const field of PII_FIELDS) {
+    decrypted[field.name] = decryptPiiField(row[field.ciphertextCol], row[field.plaintextCol]);
+  }
+
+  return decrypted as PiiDecryptedShape;
 }
 
 /**

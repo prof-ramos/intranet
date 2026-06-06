@@ -1,9 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { buildPiiPatch, PII_FIELDS } from './pii-mapping';
+import { buildPiiPatch, decryptAssociatePii, PII_FIELDS } from './pii-mapping';
 
 vi.mock('@/lib/crypto/pii', () => ({
   encryptPii: vi.fn((v: string) => `enc:${v}`),
   piiBlindIndex: vi.fn((v: string) => `hash:${v}`),
+  decryptPiiField: vi.fn((ciphertext: string | null, plaintext: string | null) =>
+    ciphertext ? ciphertext.replace(/^enc:/, '') : plaintext,
+  ),
 }));
 
 describe('buildPiiPatch', () => {
@@ -110,5 +113,71 @@ describe('PII_FIELDS registry', () => {
   it('has unique columns across all entries', () => {
     const allCols = PII_FIELDS.flatMap((f) => [f.plaintextCol, f.ciphertextCol, f.hashCol]);
     expect(new Set(allCols).size).toBe(allCols.length);
+  });
+});
+
+describe('decryptAssociatePii', () => {
+  it('decrypts all registered PII fields from ciphertext', () => {
+    const decrypted = decryptAssociatePii({
+      cpf: null,
+      cpfCiphertext: 'enc:1',
+      cpfHash: 'hash:1',
+      siape: null,
+      siapeCiphertext: 'enc:2',
+      siapeHash: 'hash:2',
+      primaryEmail: null,
+      primaryEmailCiphertext: 'enc:3',
+      primaryEmailHash: 'hash:3',
+      phone: null,
+      phoneCiphertext: 'enc:4',
+      phoneHash: 'hash:4',
+      whatsapp: null,
+      whatsappCiphertext: 'enc:5',
+      whatsappHash: 'hash:5',
+      address: null,
+      addressCiphertext: 'enc:6',
+      addressHash: 'hash:6',
+    });
+
+    expect(decrypted).toEqual({
+      cpf: '1',
+      siape: '2',
+      primaryEmail: '3',
+      phone: '4',
+      whatsapp: '5',
+      address: '6',
+    });
+  });
+
+  it('keeps plaintext as legacy fallback when ciphertext is missing', () => {
+    const decrypted = decryptAssociatePii({
+      cpf: '1',
+      cpfCiphertext: null,
+      cpfHash: null,
+      siape: '2',
+      siapeCiphertext: null,
+      siapeHash: null,
+      primaryEmail: '3',
+      primaryEmailCiphertext: null,
+      primaryEmailHash: null,
+      phone: '4',
+      phoneCiphertext: null,
+      phoneHash: null,
+      whatsapp: '5',
+      whatsappCiphertext: null,
+      whatsappHash: null,
+      address: '6',
+      addressCiphertext: null,
+      addressHash: null,
+    });
+
+    expect(decrypted).toEqual({
+      cpf: '1',
+      siape: '2',
+      primaryEmail: '3',
+      phone: '4',
+      whatsapp: '5',
+      address: '6',
+    });
   });
 });

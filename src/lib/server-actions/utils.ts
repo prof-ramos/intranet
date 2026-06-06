@@ -1,4 +1,4 @@
-import type { ZodIssue } from 'zod';
+import type { ZodIssue, ZodType } from 'zod';
 
 /**
  * Convert a FormData object into a plain Record<string, unknown>.
@@ -19,4 +19,16 @@ export function formDataToRecord(formData: FormData): Record<string, unknown> {
  */
 export function firstZodError(issues: ZodIssue[]): string {
   return issues[0]?.message ?? 'Dados inválidos.';
+}
+
+export function parseFormAction<T>(
+  formData: FormData,
+  schema: ZodType<T>,
+  preprocess: (raw: Record<string, unknown>) => unknown = (raw) => raw,
+): T {
+  const parsed = schema.safeParse(preprocess(formDataToRecord(formData)));
+  if (!parsed.success) {
+    throw new Error(firstZodError(parsed.error.issues));
+  }
+  return parsed.data;
 }

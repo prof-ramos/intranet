@@ -11,7 +11,7 @@ import {
 import { requireRole } from '@/lib/auth/authorization';
 import { consumeIpRateLimit } from '@/lib/rate-limit';
 import { getTrustedClientIp } from '@/lib/ip';
-import { formDataToRecord, firstZodError } from '@/lib/server-actions/utils';
+import { firstZodError, parseFormAction } from '@/lib/server-actions/utils';
 import {
   createConsultationSchema,
   updateConsultationStatusSchema,
@@ -39,17 +39,12 @@ export async function createConsultation(formData: FormData) {
   await checkJuridicoRateLimit();
   const user = await requireRole(['admin', 'diretoria', 'secretaria']);
 
-  const raw = formDataToRecord(formData);
-
-  const parsed = createConsultationSchema.safeParse(raw);
-  if (!parsed.success) {
-    throw new Error(firstZodError(parsed.error.issues));
-  }
+  const data = parseFormAction(formData, createConsultationSchema);
 
   const inserted = await createConsultationService({
-    ...parsed.data,
-    questionFullText: parsed.data.questionFullText ?? null,
-    associateId: parsed.data.associateId ?? null,
+    ...data,
+    questionFullText: data.questionFullText ?? null,
+    associateId: data.associateId ?? null,
     createdBy: user.userId,
   });
 
@@ -88,14 +83,9 @@ async function updateConsultationStatus(id: number, status: string) {
  * @throws Error se ID ou status estiverem ausentes
  */
 export async function updateConsultationStatusFromForm(formData: FormData) {
-  const raw = formDataToRecord(formData);
+  const data = parseFormAction(formData, updateConsultationStatusSchema);
 
-  const parsed = updateConsultationStatusSchema.safeParse(raw);
-  if (!parsed.success) {
-    throw new Error(firstZodError(parsed.error.issues));
-  }
-
-  await updateConsultationStatus(parsed.data.id, parsed.data.status);
+  await updateConsultationStatus(data.id, data.status);
 }
 
 /**
@@ -107,25 +97,20 @@ export async function addNote(formData: FormData) {
   await checkJuridicoRateLimit();
   const user = await requireRole(['admin', 'diretoria', 'secretaria']);
 
-  const raw = formDataToRecord(formData);
-
-  const parsed = addNoteSchema.safeParse({
+  const data = parseFormAction(formData, addNoteSchema, (raw) => ({
     ...raw,
     isEscritorioResponse:
       raw.isEscritorioResponse === 'true' || raw.isEscritórioResponse === 'true',
-  });
-  if (!parsed.success) {
-    throw new Error(firstZodError(parsed.error.issues));
-  }
+  }));
 
   await addNoteService({
-    ...parsed.data,
+    ...data,
     createdBy: user.userId,
   });
 
   revalidatePath('/app/juridico');
   revalidatePath('/app/juridico/consultas');
-  revalidatePath(`/app/juridico/consultas/${parsed.data.entityId}`);
+  revalidatePath(`/app/juridico/consultas/${data.entityId}`);
   revalidateTag('legal-notes', {});
   revalidateTag('consultation-detail', {});
 }

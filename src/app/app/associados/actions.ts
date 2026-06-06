@@ -3,20 +3,14 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/auth/authorization';
-import { formDataToRecord, firstZodError } from '@/lib/server-actions/utils';
+import { parseFormAction } from '@/lib/server-actions/utils';
 import { updateAssociateSchema } from '@/lib/validation/schemas';
 import { updateAssociateData } from '@/lib/associates/service';
 
 export async function updateAssociate(formData: FormData) {
   const actor = await requireRole(['admin', 'diretoria']);
 
-  const raw = formDataToRecord(formData);
-  const parsed = updateAssociateSchema.safeParse(raw);
-  if (!parsed.success) {
-    throw new Error(firstZodError(parsed.error.issues));
-  }
-
-  const data = parsed.data;
+  const data = parseFormAction(formData, updateAssociateSchema);
   const functionalStatus = data.functionalStatus === '' ? null : data.functionalStatus;
 
   await updateAssociateData({

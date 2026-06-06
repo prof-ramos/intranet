@@ -15,8 +15,7 @@ import {
 } from '@/lib/db/schema';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { logDataAccess } from '@/lib/audit/service';
-import { decryptPiiField } from '@/lib/crypto/pii';
-import { buildPiiPatch } from './pii-mapping';
+import { buildPiiPatch, decryptAssociatePii } from './pii-mapping';
 
 type FsEnum = (typeof fsEnum.enumValues)[number];
 type AsEnum = (typeof asEnum.enumValues)[number];
@@ -95,16 +94,13 @@ export async function getAssociateForEdit(
   const row = await findAssociateById(id);
   if (!row) return null;
 
+  const decrypted = decryptAssociatePii(row);
   const cpf = canViewSensitiveFields(role)
-    ? decryptPiiField(row.cpfCiphertext, row.cpf)
-    : maskCpf(decryptPiiField(row.cpfCiphertext, row.cpf));
+    ? decrypted.cpf
+    : maskCpf(decrypted.cpf);
   const siape = canViewSensitiveFields(role)
-    ? decryptPiiField(row.siapeCiphertext, row.siape)
-    : maskSiape(decryptPiiField(row.siapeCiphertext, row.siape));
-  const primaryEmail = decryptPiiField(row.primaryEmailCiphertext, row.primaryEmail);
-  const phone = decryptPiiField(row.phoneCiphertext, row.phone);
-  const address = decryptPiiField(row.addressCiphertext, row.address);
-  const whatsapp = decryptPiiField(row.whatsappCiphertext, row.whatsapp);
+    ? decrypted.siape
+    : maskSiape(decrypted.siape);
 
   // LGPD Art. 30/37: log PII data access
   await logDataAccess({
@@ -120,12 +116,12 @@ export async function getAssociateForEdit(
     fullName: row.fullName,
     cpf,
     siape,
-    primaryEmail,
+    primaryEmail: decrypted.primaryEmail,
     secondaryEmail: row.secondaryEmail,
-    phone,
-    whatsapp,
+    phone: decrypted.phone,
+    whatsapp: decrypted.whatsapp,
     birthDate: row.birthDate,
-    address,
+    address: decrypted.address,
     locationCity: row.locationCity,
     locationCountry: row.locationCountry,
     assignment: row.assignment,

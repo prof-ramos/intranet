@@ -7,6 +7,12 @@
       "skillPath": "svg-logo-designer/SKILL.md",
       "computedHash": "c591208a052cc9f7deb77be1183e4627daf54dbf575ea2653f519f29fe3bd4c8"
     },
+    "autoreview": {
+      "source": "steipete/clawdis",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/autoreview/SKILL.md",
+      "computedHash": "aaf964f0ec7ee15c2a69a67e56ac88d27ca8ed7739cb8fa8831a6576f72a08b6"
+    },
     "caveman": {
       "source": "mattpocock/skills",
       "sourceType": "github",

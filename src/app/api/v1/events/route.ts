@@ -7,6 +7,7 @@ import {
   dispatchDomainEventById,
   dispatchPendingDomainEvents,
 } from '@/lib/integrations/webhooks/service';
+import { createWebhookHandler } from '@/lib/integrations/webhook-handler';
 import { getIntegrationRateLimitKey, integrationRateLimiter } from '@/lib/integrations/rate-limit';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
@@ -89,80 +90,91 @@ export async function GET(request: Request) {
   );
 }
 
-export async function POST(request: Request) {
-  const rateLimitResult = await integrationRateLimiter.consume(getIntegrationRateLimitKey(request));
-  if (!rateLimitResult.allowed) {
-    return jsonError(429, 'rate_limit_exceeded', 'Too many requests. Please try again later.', {
-      details: { retryAfterMs: rateLimitResult.retryAfterMs },
+export const POST = createWebhookHandler<
+  z.infer<typeof dispatchEventSchema>,
+  Extract<Awaited<ReturnType<typeof authorizeIntegrationRequest>>, { ok: true }>
+>({
+  authenticate: async (request) => {
+    const rateLimitResult = await integrationRateLimiter.consume(getIntegrationRateLimitKey(request));
+    if (!rateLimitResult.allowed) {
+      return {
+        ok: false,
+        response: jsonError(429, 'rate_limit_exceeded', 'Too many requests. Please try again later.', {
+          details: { retryAfterMs: rateLimitResult.retryAfterMs },
+        }),
+      };
+    }
+
+    const authorization = await authorizeIntegrationRequest(request, {
+      allowSessionRoles: ['admin'],
+      requiredScopes: ['events:write'],
     });
-  }
 
-  const authorization = await authorizeIntegrationRequest(request, {
-    allowSessionRoles: ['admin'],
-    requiredScopes: ['events:write'],
-  });
+    if (!authorization.ok) {
+      return { ok: false, response: authorization.response };
+    }
 
-  if (!authorization.ok) {
-    return authorization.response;
-  }
+    return { ok: true, context: authorization };
+  },
+  parse: async (request) => {
+    const text = await request.text();
+    const trimmed = text.trim();
 
-  let parsedBody: unknown = {};
+    const parsedBody = trimmed.length === 0 ? {} : JSON.parse(trimmed);
 
-  try {
-    parsedBody = await request.json();
-  } catch {
-    parsedBody = {};
-  }
+    const parseResult = dispatchEventSchema.safeParse(parsedBody);
+    if (!parseResult.success) {
+      throw new Error('invalid_request');
+    }
 
-  const parseResult = dispatchEventSchema.safeParse(parsedBody);
-  if (!parseResult.success) {
-    return jsonError(400, 'invalid_request', 'Invalid payload.', {
-      requestId: authorization.requestId,
-    });
-  }
+    return parseResult.data;
+  },
+  handle: async (body, { auth: authorization }) => {
+    if (body.eventId != null) {
+      const result = await dispatchDomainEventById(body.eventId);
+      await auditEventDispatch({
+        action: 'domain_event_dispatch_single',
+        performedBy: getOperatorId(authorization),
+        eventId: body.eventId,
+        limit: null,
+        result,
+      });
 
-  const body = parseResult.data;
+      return jsonOk(
+        {
+          mode: 'single',
+          result,
+        },
+        {
+          requestId: authorization.requestId,
+        },
+      );
+    }
 
-  if (body.eventId != null) {
-    const result = await dispatchDomainEventById(body.eventId);
+    const result = await dispatchPendingDomainEvents(body.limit ?? 20);
     await auditEventDispatch({
-      action: 'domain_event_dispatch_single',
+      action: 'domain_event_dispatch_batch',
       performedBy: getOperatorId(authorization),
-      eventId: body.eventId,
-      limit: null,
+      eventId: null,
+      limit: body.limit ?? 20,
       result,
     });
 
     return jsonOk(
       {
-        mode: 'single',
+        mode: 'batch',
         result,
       },
       {
         requestId: authorization.requestId,
       },
     );
-  }
-
-  const result = await dispatchPendingDomainEvents(body.limit ?? 20);
-  await auditEventDispatch({
-    action: 'domain_event_dispatch_batch',
-    performedBy: getOperatorId(authorization),
-    eventId: null,
-    limit: body.limit ?? 20,
-    result,
-  });
-
-  return jsonOk(
-    {
-      mode: 'batch',
-      result,
-    },
-    {
-      requestId: authorization.requestId,
-    },
-  );
-}
+  },
+  onError: (_error, request, { auth: authorization }) =>
+    jsonError(400, 'invalid_request', 'Invalid payload.', {
+      requestId: authorization?.requestId ?? request.headers.get('x-request-id') ?? undefined,
+    }),
+});
 
 export async function PUT(request: Request) {
   return jsonMethodNotAllowed(ALLOWED_METHODS, {

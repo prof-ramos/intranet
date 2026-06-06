@@ -1,7 +1,6 @@
 import type { CorrelationContext } from './correlate';
 import { extractSenderEmailForCorrelation } from './address';
-import { findAssociateByPrimaryEmailHash } from '@/lib/associates/repository';
-import { getOpenConsultationsByAssociate } from '@/lib/juridico/repository';
+import { findAssociateWithOpenConsultationsByEmailHash } from '@/lib/juridico/repository';
 import { piiBlindIndex } from '@/lib/crypto/pii';
 
 /**
@@ -15,9 +14,5 @@ export async function buildCorrelationContext(payload: { sender: string }): Prom
   if (!senderEmail) return { associate: null, consultations: [] };
 
   const emailHash = piiBlindIndex(senderEmail);
-  const associate = await findAssociateByPrimaryEmailHash(emailHash);
-  if (!associate) return { associate: null, consultations: [] };
-
-  const consultations = await getOpenConsultationsByAssociate(associate.id);
-  return { associate: { id: associate.id }, consultations };
+  return findAssociateWithOpenConsultationsByEmailHash(emailHash);
 }

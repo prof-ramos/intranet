@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zoom-Out: email-triage — ASOF Intranet</title>
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+  color: #1a1a1a;
+  background: #fafafa;
+  line-height: 1.65;
+  padding: 0;
+}
+
+/* ===== SKIP LINK ===== */
+.skip-link {
+  position: absolute; top: -100px; left: 1rem;
+  background: #1e3a5f; color: #fff;
+  padding: 0.5rem 1rem; z-index: 1000;
+  border-radius: 0 0 4px 4px;
+  font-weight: 600; text-decoration: none;
+}
+.skip-link:focus { top: 0; outline: 3px solid #c9a961; }
+
+/* ===== NAV ===== */
+nav.sticky-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: #1e3a5f; color: #fff;
+  padding: 0.75rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+}
+nav.sticky-nav .nav-title {
+  font-weight: 700; font-size: 0.85rem;
+  margin-right: 0.75rem; white-space: nowrap;
+  color: #c9a961; letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+nav.sticky-nav a {
+  color: #d4d8dd; text-decoration: none;
+  font-size: 0.8rem; padding: 0.25rem 0.5rem;
+  border-radius: 3px; transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+nav.sticky-nav a:hover, nav.sticky-nav a:focus {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+}
+
+/* ===== LAYOUT ===== */
+.container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+/* ===== HEADINGS ===== */
+h1 {
+  color: #1e3a5f; font-size: 2rem; font-weight: 800;
+  margin-bottom: 0.25rem; letter-spacing: -0.3px;
+}
+.subtitle {
+  color: #5a6a7a; font-size: 1rem; margin-bottom: 0.75rem;
+  border-bottom: 2px solid #e5e7eb; padding-bottom: 1rem;
+}
+blockquote {
+  border-left: 4px solid #c9a961;
+  background: #fefcf5;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  border-radius: 0 6px 6px 0;
+  color: #3a3a3a;
+  font-size: 0.95rem;
+}
+blockquote p { margin: 0; }
+
+h2 {
+  color: #1e3a5f; font-size: 1.4rem; font-weight: 700;
+  margin: 2rem 0 0.75rem; padding-bottom: 0.4rem;
+  border-bottom: 3px solid #c9a961;
+}
+h3 {
+  color: #1e3a5f; font-size: 1.05rem; font-weight: 600;
+  margin: 1.5rem 0 0.5rem;
+  background: #f0f4f8; padding: 0.4rem 0.75rem;
+  border-radius: 4px; display: inline-block;
+}
+
+/* ===== SECTIONS ===== */
+section {
+  background: #fff; border: 1px solid #e5e7eb;
+  border-radius: 8px; padding: 1.5rem 2rem;
+  margin: 1.5rem 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+section > :first-child { margin-top: 0; }
+
+/* ===== TABLES ===== */
+.table-wrap { overflow-x: auto; margin: 1rem 0; }
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.9rem; border: 1px solid #e5e7eb;
+}
+thead th {
+  background: #1e3a5f; color: #fff;
+  padding: 0.6rem 0.75rem; text-align: left;
+  font-weight: 600; font-size: 0.82rem;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+tbody td {
+  padding: 0.55rem 0.75rem; border-bottom: 1px solid #eef0f2;
+  vertical-align: top;
+}
+tbody tr:nth-child(even) { background: #f8f9fb; }
+tbody tr:hover { background: #eef4fb; }
+tbody tr:last-child td { border-bottom: none; }
+
+/* ===== CODE / PRE (ASCII & INLINE) ===== */
+code {
+  font-family: "SF Mono", "Cascadia Code", "Fira Code", "JetBrains Mono", "Menlo", "Consolas", monospace;
+  font-size: 0.85em;
+}
+p code, li code, td code {
+  background: #f0f2f5; padding: 0.15em 0.4em;
+  border-radius: 3px; color: #1e3a5f;
+}
+pre {
+  position: relative;
+  background: #0f172a; color: #e2e8f0;
+  padding: 1rem 1rem 1rem 1rem;
+  border-radius: 6px; overflow-x: auto;
+  margin: 1rem 0; line-height: 1.45;
+  font-size: 0.82rem;
+  border: 1px solid #1e293b;
+}
+pre code {
+  background: none; padding: 0; color: inherit;
+  font-size: inherit; border-radius: 0;
+}
+.copy-btn {
+  position: absolute; top: 0.4rem; right: 0.5rem;
+  background: rgba(255,255,255,0.08); color: #94a3b8;
+  border: 1px solid #334155; border-radius: 4px;
+  padding: 0.2rem 0.55rem; font-size: 0.7rem;
+  cursor: pointer; transition: background 0.2s, color 0.2s;
+  font-family: inherit; line-height: 1.5;
+}
+.copy-btn:hover { background: rgba(255,255,255,0.15); color: #e2e8f0; }
+.copy-btn.copied { background: #1a5c3b; color: #b0e8c8; border-color: #1a5c3b; }
+
+/* ===== BACK TO TOP ===== */
+.back-to-top {
+  position: fixed; bottom: 2rem; right: 2rem;
+  width: 44px; height: 44px;
+  background: #1e3a5f; color: #fff;
+  border: none; border-radius: 50%;
+  cursor: pointer; font-size: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: opacity 0.3s, transform 0.3s, visibility 0.3s;
+  opacity: 0; visibility: hidden; transform: translateY(10px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; line-height: 1;
+}
+.back-to-top.visible { opacity: 1; visibility: visible; transform: translateY(0); }
+.back-to-top:hover { background: #2a4f7a; transform: translateY(-2px); }
+.back-to-top:focus-visible { outline: 3px solid #c9a961; outline-offset: 2px; }
+
+/* ===== FOOTER ===== */
+footer {
+  text-align: center; font-size: 0.8rem;
+  color: #6b7c8e; padding: 2rem 1.5rem 3rem;
+  border-top: 1px solid #e5e7eb; margin-top: 1rem;
+}
+
+/* ===== SECTION DIVIDER ===== */
+hr { border: none; border-top: 1px solid #e5e7eb; margin: 0.5rem 0; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 767px) {
+  .container { padding: 1rem 1rem 3rem; }
+  section { padding: 1rem; }
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.15rem; }
+  nav.sticky-nav .nav-title { display: none; }
+  nav.sticky-nav { gap: 0.25rem; padding: 0.5rem 0.75rem; }
+  nav.sticky-nav a { font-size: 0.72rem; padding: 0.2rem 0.35rem; }
+  pre { font-size: 0.72rem; padding: 0.75rem; }
+  .back-to-top { bottom: 1rem; right: 1rem; width: 40px; height: 40px; font-size: 1rem; }
+}
+
+/* ===== PRINT ===== */
+@media print {
+  nav.sticky-nav, .back-to-top, .copy-btn { display: none !important; }
+  body { background: #fff; color: #000; font-size: 11pt; }
+  section { break-inside: avoid; border: 1px solid #ccc; box-shadow: none; padding: 1rem; }
+  pre { background: #f5f5f5 !important; color: #000 !important; border: 1px solid #ccc; break-inside: avoid; }
+  code { color: #000 !important; }
+  thead th { background: #333 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  tbody tr:nth-child(even) { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .container { max-width: none; padding: 0.5in; }
+  h1, h2 { color: #000; }
+  h2 { border-bottom-color: #999; }
+}
+</style>
+</head>
+<body>
+
+<!-- SKIP LINK -->
+<a href="#main-content" class="skip-link">Ir para o conteúdo principal</a>
+
+<!-- STICKY NAV -->
+<nav class="sticky-nav" aria-label="Navegação rápida das seções">
+  <span class="nav-title">Zoom-Out</span>
+  <a href="#sec-1">1. Onde estamos</a>
+  <a href="#sec-2">2. Vocabulário</a>
+  <a href="#sec-3">3. Mapa</a>
+  <a href="#sec-4">4. Irmãos</a>
+  <a href="#sec-5">5. email_triagens</a>
+  <a href="#sec-6">6. Fluxo</a>
+  <a href="#sec-7">7. Percepção</a>
+  <a href="#sec-8">8. Resumo</a>
+  <a href="#sec-9">9. Estatísticas</a>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="container">
+  <main id="main-content">
+
+    <h1>Zoom-Out: Módulo <code>email-triage</code></h1>
+    <p class="subtitle">ASOF Intranet — Visão de cima para baixo do Controller de E-mails</p>
+
+    <blockquote>
+      <p><strong>Visão de cima para baixo</strong> do Controller de E-mails. Use este mapa para entender como <code>email-triage</code> se encaixa no ecossistema antes de modificar.</p>
+    </blockquote>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 1: ONDE ESTAMOS                                      -->
+    <!-- ============================================================ -->
+    <section id="sec-1">
+      <h2>1. Onde estamos</h2>
+      <p>O <strong>Controller de E-mails</strong> (<code>/app/email-triage</code>) é uma das 8 áreas autenticadas da intranet. Ele <strong>ingeri</strong> e-mails do Gmail do controlador, <strong>analisa com Gemini 2.5 Flash</strong>, e produz <strong>triagens operacionais</strong> que a coordenação usa para detectar prazos, riscos e demandas — sem substituir o julgamento humano.</p>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 2: VOCABULÁRIO DE DOMÍNIO                            -->
+    <!-- ============================================================ -->
+    <section id="sec-2">
+      <h2>2. Vocabulário de Domínio</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Termo</th>
+              <th scope="col">Significado</th>
+              <th scope="col">Mapeamento no módulo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Triagem de e-mail</strong></td>
+              <td>Registro operacional de um e-mail recebido, classificado por IA, com categoria, risco, prazo e responsável sugerido. <strong>Não é orientação jurídica.</strong></td>
+              <td>Tabela <code>email_triagens</code></td>
+            </tr>
+            <tr>
+              <td><strong>Triagem operacional pendente</strong></td>
+              <td>Estado em que um e-mail aguarda ação da coordenação.</td>
+              <td><code>status: 'aguardando_validacao'</code></td>
+            </tr>
+            <tr>
+              <td><strong>Consulta correlacionada</strong></td>
+              <td><code>legal_consultations</code> aberta que pode receber nota automática quando a triagem casa.</td>
+              <td>Tabela <code>legal_consultations</code></td>
+            </tr>
+            <tr>
+              <td><strong>Nota de triagem</strong></td>
+              <td>Anotação operacional em <code>legal_notes</code> quando a correlação casa.</td>
+              <td>Tabela <code>legal_notes</code></td>
+            </tr>
+            <tr>
+              <td><strong>exige_validacao_humana</strong></td>
+              <td>Flag que dispara notificação para <code>admin</code> e <code>diretoria</code>.</td>
+              <td><code>email_triagens.exige_validacao_humana</code></td>
+            </tr>
+            <tr>
+              <td><strong>Processing version</strong></td>
+              <td>Tag de schema/prompt para reprocessamento.</td>
+              <td><code>EMAIL_TRIAGE_VERSION = 'email-controller-mvp-v1'</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 3: MAPA DO MÓDULO (CAMADAS)                          -->
+    <!-- ============================================================ -->
+    <section id="sec-3">
+      <h2>3. Mapa do Módulo (camadas)</h2>
+
+      <pre><code>╔══════════════════════════════════════════════════════════════════════╗
+║  EXTERNAL TRIGGERS (4 entry points)                                  ║
+║  ─────────────────────                                               ║
+║                                                                       ║
+║  1. Vercel Cron (0 6 * * *)                                          ║
+║     └─→ GET /api/v1/email-triage/process [CRON_SECRET bearer]        ║
+║                                                                       ║
+║  2. Vercel Cron                                                       ║
+║     └─→ GET /api/v1/cron/gmail-watch [renova Gmail watch]            ║
+║                                                                       ║
+║  3. Gmail Pub/Sub push                                                ║
+║     └─→ POST /api/v1/gmail-webhook [history changes]                 ║
+║                                                                       ║
+║  4. UI action (admin/diretoria)                                       ║
+║     └─→ Server actions em /app/email-triage/actions.ts                ║
+╚══════════════════════════════════════════════════════════════════════╝
+                              │
+                              ▼
+╔══════════════════════════════════════════════════════════════════════╗
+║  src/lib/email-triage/ — 14 arquivos de produção                     ║
+║                                                                       ║
+║  ┌─ INGEST ─────────────────────────────────────────────────────┐    ║
+║  │  gmail.ts            OAuth, fetch, label, watch, history       │    ║
+║  │  address.ts          extractSenderEmailForCorrelation()        │    ║
+║  └───────────────────────────────────────────────────────────────┘    ║
+║                              │                                         ║
+║                              ▼                                         ║
+║  ┌─ ANALYZE ────────────────────────────────────────────────────┐    ║
+║  │  system-prompt.ts    Prompt Gemini (constante embed)           │    ║
+║  │  analyzer.ts         redactPII → htmlToText → analyzeEmail     │    ║
+║  │                      (Gemini structured output via @google/genai)│   ║
+║  └───────────────────────────────────────────────────────────────┘    ║
+║                              │                                         ║
+║                              ▼                                         ║
+║  ┌─ VALIDATE / TYPING ───────────────────────────────────────────┐    ║
+║  │  schema.ts           Zod schemas: EmailPayload, EmailTriageResult│  ║
+║  └───────────────────────────────────────────────────────────────┘    ║
+║                              │                                         ║
+║                              ▼                                         ║
+║  ┌─ PERSIST ─────────────────────────────────────────────────────┐   ║
+║  │  persister.ts        upsert idempotente em email_triagens      │    ║
+║  │                      (on conflict (message_id) do update)       │    ║
+║  └───────────────────────────────────────────────────────────────┘    ║
+║                              │                                         ║
+║                              ▼                                         ║
+║  ┌─ CORRELATE ───────────────────────────────────────────────────┐    ║
+║  │  correlation-context.ts   buildCorrelationContext(payload)     │    ║
+║  │  correlate.ts             correlate(ctx) → CorrelationAction[] │    ║
+║  │  correlation-actions.ts   applyCorrelationActions()             │    ║
+║  │                           → insertNote() em legal_notes         │    ║
+║  └───────────────────────────────────────────────────────────────┘    ║
+║                              │                                         ║
+║                              ▼                                         ║
+║  ┌─ NOTIFY ──────────────────────────────────────────────────────┐    ║
+║  │  notifier.ts         notifyNeedsValidation()                    │    ║
+║  │                      → emit 'email_triage_pending' event        │    ║
+║  │                      → createNotification() para admins         │    ║
+║  └───────────────────────────────────────────────────────────────┘    ║
+║                              │                                         ║
+║                              ▼                                         ║
+║  ┌─ ORCHESTRATE ────────────────────────────────────────────────┐     ║
+║  │  pipeline.ts         processEmail() / processBatch()            │    ║
+║  │                      (Promise.allSettled, max 3 concurrent)     │    ║
+║  └───────────────────────────────────────────────────────────────┘    ║
+║                              │                                         ║
+║                              ▼                                         ║
+║  ┌─ UI SUPPORT ─────────────────────────────────────────────────┐    ║
+║  │  repository.ts       Data access para /app/email-triage         │    ║
+║  │  search-params.ts    Parser de URL search params                 │    ║
+║  │  status.ts           Enums, labels, badge classes                │    ║
+║  └───────────────────────────────────────────────────────────────┘    ║
+║                                                                       ║
+║  index.ts  ← Barrel export (90 re-exports)                            ║
+╚══════════════════════════════════════════════════════════════════════╝
+                              │
+                              ▼
+╔══════════════════════════════════════════════════════════════════════╗
+║  CONSUMIDORES (8 surfaces que dependem do módulo)                    ║
+║  ────────────                                                         ║
+║                                                                       ║
+║  API Routes:                                                          ║
+║   • /api/v1/email-triage/process/route.ts ── processBatch()           ║
+║   • /api/v1/cron/gmail-watch/route.ts    ── watchGmail()              ║
+║   • /api/v1/gmail-webhook/route.ts       ── getHistoryChanges()       ║
+║                                                                       ║
+║  UI Pages:                                                            ║
+║   • /app/email-triage/page.tsx           ── getTriagesPaginated()     ║
+║   • /app/email-triage/[id]/page.tsx      ── getTriageById()           ║
+║   • /app/email-triage/[id]/StatusUpdater.tsx ── updateTriageStatus()  ║
+║   • /app/email-triage/[id]/DeadlineEditor.tsx ── updateTriageDeadline()║
+║   • /app/email-triage/actions.ts         ── addTriageObservacao()     ║
+║                                                                       ║
+║  Sidebar (navegação):                                                 ║
+║   • src/components/Sidebar.tsx           ── Link para /app/email-triage║
+║                                                                       ║
+║  Validação:                                                           ║
+║   • src/lib/validation/schemas.ts        ── EMAIL_TRIAGE_STATUSES     ║
+║                                                                       ║
+║  Schema (relações de tabela):                                        ║
+║   • src/lib/db/schema/email-triage.ts    ── Drizzle schema            ║
+║   • src/lib/db/schema/index.ts          ── barrel                     ║
+╚══════════════════════════════════════════════════════════════════════╝</code></pre>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 4: MÓDULOS IRMÃOS                                    -->
+    <!-- ============================================================ -->
+    <section id="sec-4">
+      <h2>4. Módulos Irmãos (relacionamentos)</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Módulo</th>
+              <th scope="col">Acoplamento</th>
+              <th scope="col">Direção</th>
+              <th scope="col">Propósito</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong><code>ai/</code></strong> (Gemini)</td>
+              <td>Forte</td>
+              <td><code>email-triage → ai</code></td>
+              <td><code>analyzeEmail()</code> chama <code>@google/genai</code></td>
+            </tr>
+            <tr>
+              <td><strong><code>db/</code></strong> (Drizzle)</td>
+              <td>Forte</td>
+              <td><code>email-triage ↔ db</code></td>
+              <td><code>persister.ts</code> e <code>repository.ts</code> leem/escrevem em <code>email_triagens</code></td>
+            </tr>
+            <tr>
+              <td><strong><code>juridico/</code></strong></td>
+              <td>Médio</td>
+              <td><code>email-triage → juridico</code></td>
+              <td><code>correlation-actions.ts</code> chama <code>insertNote()</code></td>
+            </tr>
+            <tr>
+              <td><strong><code>notifications/</code></strong></td>
+              <td>Médio</td>
+              <td><code>email-triage → notifications</code></td>
+              <td><code>notifier.ts</code> chama <code>createNotification()</code></td>
+            </tr>
+            <tr>
+              <td><strong><code>events.ts</code></strong></td>
+              <td>Médio</td>
+              <td><code>email-triage → events</code></td>
+              <td><code>notifier.ts</code> emite <code>'email_triage_pending'</code></td>
+            </tr>
+            <tr>
+              <td><strong><code>sanitize-pii.ts</code></strong></td>
+              <td>Fraco</td>
+              <td><code>email-triage → sanitize</code></td>
+              <td><code>gmail.ts</code> e <code>pipeline.ts</code> usam <code>sanitizePiiValue()</code></td>
+            </tr>
+            <tr>
+              <td><strong><code>logger.ts</code></strong></td>
+              <td>Fraco</td>
+              <td><code>email-triage → logger</code></td>
+              <td>Todos usam <code>createLogger('email-triage')</code></td>
+            </tr>
+            <tr>
+              <td><strong><code>validation/</code></strong></td>
+              <td>Fraco</td>
+              <td><code>validation → email-triage</code></td>
+              <td><code>schemas.ts</code> re-exporta <code>EMAIL_TRIAGE_STATUSES</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 5: TABELA EMAIL_TRIAGENS                              -->
+    <!-- ============================================================ -->
+    <section id="sec-5">
+      <h2>5. Tabela <code>email_triagens</code> <span style="font-weight:400;font-size:0.85rem;color:#5a6a7a;">(o coração do módulo)</span></h2>
+      <p>Localização: <code>src/lib/db/schema/email-triage.ts</code> (187 linhas, enums, índices, checks)</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Categoria de campo</th>
+              <th scope="col">Campos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Identidade</strong></td>
+              <td><code>id</code>, <code>message_id</code> (unique), <code>thread_id</code>, <code>history_id</code>, <code>received_at</code></td>
+            </tr>
+            <tr>
+              <td><strong>Metadata Gmail</strong></td>
+              <td><code>sender</code>, <code>original_recipient</code>, <code>subject</code>, <code>body_hash</code></td>
+            </tr>
+            <tr>
+              <td><strong>Corpo</strong></td>
+              <td><code>body_excerpt</code> (curto), <code>raw_body_stored</code> (flag), <code>redaction_applied</code></td>
+            </tr>
+            <tr>
+              <td><strong>Resultado Gemini</strong></td>
+              <td><code>categoria</code>, <code>resumo</code>, <code>nivel_risco</code>, <code>confianca</code>, <code>acao_recomendada</code>, <code>responsavel_sugerido</code></td>
+            </tr>
+            <tr>
+              <td><strong>Prazo</strong></td>
+              <td><code>ha_prazo</code>, <code>prazo_data</code>, <code>prazo_hora</code>, <code>prazo_confianca_data</code>, <code>tipo_prazo</code>, <code>trecho_fonte_do_prazo</code></td>
+            </tr>
+            <tr>
+              <td><strong>Evidência</strong></td>
+              <td><code>source_evidence</code> (jsonb), <code>attachments_hashes</code>, <code>resumo_anexos</code></td>
+            </tr>
+            <tr>
+              <td><strong>LGPD</strong></td>
+              <td><code>legal_basis</code>, <code>processed_purpose</code>, <code>data_retention_until</code></td>
+            </tr>
+            <tr>
+              <td><strong>Modelo</strong></td>
+              <td><code>model_name</code>, <code>model_response_id</code>, <code>processing_version</code></td>
+            </tr>
+            <tr>
+              <td><strong>Status</strong></td>
+              <td><code>status</code> (enum: <code>aguardando_validacao</code>, <code>analisado</code>, <code>em_analise</code>, <code>erro_validacao_ia</code>, <code>descartado</code>, <code>vencido</code>)</td>
+            </tr>
+            <tr>
+              <td><strong>Auditoria</strong></td>
+              <td><code>usuario_validador_id</code>, <code>validated_at</code>, <code>observacoes_validacao</code>, <code>created_at</code>, <code>updated_at</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 6: FLUXO END-TO-END                                  -->
+    <!-- ============================================================ -->
+    <section id="sec-6">
+      <h2>6. Fluxo end-to-end <span style="font-weight:400;font-size:0.85rem;color:#5a6a7a;">(o que acontece quando o cron dispara)</span></h2>
+      <pre><code>[Vercel Cron 06:00 UTC]
+        │
+        ▼
+GET /api/v1/email-triage/process
+        │  authorizeCronRequest(request) ← CRON_SECRET bearer
+        ▼
+processBatch() [pipeline.ts]
+        │
+        ├─→ fetchUnreadMessages() [gmail.ts]
+        │   query: "to:controller@asof.org.br -label:asof-triaged"
+        │
+        ├─→ Promise.allSettled(3 concurrent) ──┐
+        │                                      │
+        ▼                                      ▼
+   processEmail()                       processEmail()
+        │                                      │
+        ├─→ getMessage()                      ├─→ getMessage()
+        ├─→ extractTextAndAttachments()       ├─→ ...
+        ├─→ redactExcerpt()                    │
+        ├─→ buildModelInput()                  │
+        ├─→ analyzeEmail() ── Gemini 2.5      │
+        ├─→ emailTriageResultSchema.parse()    │
+        ├─→ persistTriage() ───────────────────┤
+        │   upsert into email_triagens          │
+        │   (on conflict message_id)           │
+        ├─→ buildCorrelationContext()          │
+        ├─→ correlate() → actions[]            │
+        ├─→ applyCorrelationActions()          │
+        │   └─→ insertNote() em legal_notes    │
+        ├─→ notifyNeedsValidation()            │
+        │   └─→ emit 'email_triage_pending'    │
+        │   └─→ createNotification()           │
+        └─→ markAsTriaged()                    │
+            └─→ Gmail label "asof-triaged"</code></pre>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 7: ONDE É PERCEBIDO PELO USUÁRIO                      -->
+    <!-- ============================================================ -->
+    <section id="sec-7">
+      <h2>7. Onde o módulo é "percebido" pelo usuário</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Persona</th>
+              <th scope="col">Surface</th>
+              <th scope="col">O que vê</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>admin / diretoria</strong></td>
+              <td><code>/app/email-triage</code></td>
+              <td>Lista filtrada por status/categoria/risco</td>
+            </tr>
+            <tr>
+              <td><strong>admin / diretoria</strong></td>
+              <td><code>/app/email-triage/[id]</code></td>
+              <td>Detalhe + StatusUpdater + DeadlineEditor</td>
+            </tr>
+            <tr>
+              <td><strong>coordenador jurídico</strong></td>
+              <td><code>/app/email-triage</code> (filtros)</td>
+              <td>Triagens categoria=juridico, <code>exige_validacao_humana=true</code></td>
+            </tr>
+            <tr>
+              <td><strong>Associado (via jurídico)</strong></td>
+              <td><code>/app/juridico/consultas/[id]</code></td>
+              <td><code>legal_notes</code> com badge "triagem operacional de e-mail"</td>
+            </tr>
+            <tr>
+              <td><strong>Vercel</strong></td>
+              <td>cron logs</td>
+              <td><code>{"processed":N, "errors":N, "skipped":N, "duration":"...ms"}</code></td>
+            </tr>
+            <tr>
+              <td><strong>Gmail</strong></td>
+              <td><code>controller@asof.org.br</code></td>
+              <td>Label <code>asof-triaged</code> aplicada após processamento</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 8: RESUMO EXECUTIVO                                  -->
+    <!-- ============================================================ -->
+    <section id="sec-8">
+      <h2>8. Resumo Executivo</h2>
+      <p>O <strong>email-triage</strong> é um <strong>módulo de borda</strong> que:</p>
+      <ol style="margin:0.75rem 0 0.75rem 1.5rem;">
+        <li><strong>Ingeri</strong> e-mails externos (Gmail) via OAuth + Pub/Sub</li>
+        <li><strong>Transforma</strong> com Gemini + Zod em triagens estruturadas</li>
+        <li><strong>Persiste</strong> idempotentemente em <code>email_triagens</code></li>
+        <li><strong>Correlaciona</strong> com consultas jurídicas existentes</li>
+        <li><strong>Notifica</strong> admins/diretoria quando precisa de ação humana</li>
+        <li><strong>Expõe</strong> UI para a coordenação operar</li>
+      </ol>
+      <p>É <strong>isolado</strong> de <code>associates</code> (não toca dados pessoais) e de <code>financeiro</code>/<code>oficios</code> (escopo focado em triagem). O acoplamento mais forte é com <code>ai/</code> (Gemini) e <code>db/</code> (Drizzle).</p>
+      <p style="margin-top:1rem;padding:0.75rem;background:#eef4fb;border-left:4px solid #1e3a5f;border-radius:4px;">
+        <strong>⚡ Quando você voltar a este código, comece por:</strong> <code>src/lib/email-triage/pipeline.ts</code> — ele é o <code>main()</code> do módulo.
+      </p>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SECTION 9: ESTATÍSTICAS RÁPIDAS                              -->
+    <!-- ============================================================ -->
+    <section id="sec-9">
+      <h2>9. Estatísticas Rápidas</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Métrica</th>
+              <th scope="col">Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Arquivos de produção</td><td>14</td></tr>
+            <tr><td>Arquivos de teste</td><td>12 (11 unit + 1 integration)</td></tr>
+            <tr><td>Testes totais</td><td>1028+ (109 em email-triage)</td></tr>
+            <tr><td>Endpoints API</td><td>3</td></tr>
+            <tr><td>Páginas UI</td><td>3 (list, detail, actions)</td></tr>
+            <tr><td>Componentes de detalhe</td><td>2 (StatusUpdater, DeadlineEditor)</td></tr>
+            <tr><td>Entradas (entry points)</td><td>4 (cron diário, cron watch, pub/sub, UI action)</td></tr>
+            <tr><td>Tabelas DB</td><td>1 principal (<code>email_triagens</code>) + correlação via <code>legal_notes</code></td></tr>
+            <tr><td>Env vars</td><td>6 (5 GMAIL_* + 1 GMAIL_WATCH_TOPIC)</td></tr>
+            <tr><td>Modelo IA</td><td>Gemini 2.5 Flash</td></tr>
+            <tr><td>Concorrência</td><td>max 3 simultâneas via <code>Promise.allSettled</code></td></tr>
+            <tr><td>LGPD</td><td>PII redacted antes do Gemini + enums <code>legal_basis</code> + retention policy</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>Documento gerado a partir de <code>.omo/drafts/email-triage-zoom-out.md</code> — ASOF Intranet</p>
+  <p style="margin-top:0.25rem;">Última atualização: junho de 2026</p>
+</footer>
+
+<!-- BACK TO TOP BUTTON -->
+<button class="back-to-top" id="backToTopBtn" aria-label="Voltar ao topo">↑</button>
+
+<!-- VANILLA JS -->
+<script>
+(function() {
+  'use strict';
+
+  // --- BACK TO TOP ---
+  var backBtn = document.getElementById('backToTopBtn');
+  var scrollThreshold = 300;
+
+  window.addEventListener('scroll', function() {
+    if (window.scrollY > scrollThreshold) {
+      backBtn.classList.add('visible');
+    } else {
+      backBtn.classList.remove('visible');
+    }
+  }, { passive: true });
+
+  backBtn.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // --- COPY BUTTONS on PRE blocks ---
+  var preBlocks = document.querySelectorAll('pre');
+  preBlocks.forEach(function(pre) {
+    var btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copiar';
+    btn.setAttribute('aria-label', 'Copiar conteúdo do bloco');
+    pre.style.position = 'relative';
+    pre.appendChild(btn);
+
+    btn.addEventListener('click', function() {
+      var code = pre.querySelector('code');
+      var text = code ? code.textContent : pre.textContent;
+      if (typeof navigator.clipboard !== 'undefined' && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+          btn.textContent = 'Copiado!';
+          btn.classList.add('copied');
+          setTimeout(function() {
+            btn.textContent = 'Copiar';
+            btn.classList.remove('copied');
+          }, 2000);
+        }).catch(function() {
+          fallbackCopy(text, btn);
+        });
+      } else {
+        fallbackCopy(text, btn);
+      }
+    });
+  });
+
+  function fallbackCopy(text, btn) {
+    var textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      btn.textContent = 'Copiado!';
+      btn.classList.add('copied');
+      setTimeout(function() {
+        btn.textContent = 'Copiar';
+        btn.classList.remove('copied');
+      }, 2000);
+    } catch (e) {
+      btn.textContent = 'Erro';
+      setTimeout(function() { btn.textContent = 'Copiar'; }, 2000);
+    }
+    document.body.removeChild(textarea);
+  }
+})();
+</script>
+
+</body>
+</html>

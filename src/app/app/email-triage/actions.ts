@@ -5,7 +5,7 @@ import { headers } from 'next/headers';
 import { requireRole } from '@/lib/auth/authorization';
 import { consumeIpRateLimit } from '@/lib/rate-limit';
 import { getTrustedClientIp } from '@/lib/ip';
-import { formDataToRecord, firstZodError } from '@/lib/server-actions/utils';
+import { parseFormAction } from '@/lib/server-actions/utils';
 import {
   updateTriageStatusSchema,
   addTriageObservacaoSchema,
@@ -33,51 +33,39 @@ export async function updateTriageStatusFromForm(formData: FormData) {
   await checkTriageRateLimit();
   const user = await requireRole(['admin']);
 
-  const raw = formDataToRecord(formData);
-  const parsed = updateTriageStatusSchema.safeParse(raw);
-  if (!parsed.success) {
-    throw new Error(firstZodError(parsed.error.issues));
-  }
+  const data = parseFormAction(formData, updateTriageStatusSchema);
 
   await updateTriageStatus(
-    parsed.data.id,
-    parsed.data.status,
+    data.id,
+    data.status,
     user.userId,
-    parsed.data.observacoes,
+    data.observacoes,
   );
 
   revalidatePath('/app/email-triage');
-  revalidatePath(`/app/email-triage/${parsed.data.id}`);
+  revalidatePath(`/app/email-triage/${data.id}`);
 }
 
 export async function addTriageObservacaoFromForm(formData: FormData) {
   await checkTriageRateLimit();
   const user = await requireRole(['admin']);
 
-  const raw = formDataToRecord(formData);
-  const parsed = addTriageObservacaoSchema.safeParse(raw);
-  if (!parsed.success) {
-    throw new Error(firstZodError(parsed.error.issues));
-  }
+  const data = parseFormAction(formData, addTriageObservacaoSchema);
 
-  await addTriageObservacao(parsed.data.id, parsed.data.observacoes, user.userId);
+  await addTriageObservacao(data.id, data.observacoes, user.userId);
 
   revalidatePath('/app/email-triage');
-  revalidatePath(`/app/email-triage/${parsed.data.id}`);
+  revalidatePath(`/app/email-triage/${data.id}`);
 }
 
 export async function updateTriageDeadlineFromForm(formData: FormData) {
   await checkTriageRateLimit();
   await requireRole(['admin']);
 
-  const raw = formDataToRecord(formData);
-  const parsed = updateTriageDeadlineSchema.safeParse(raw);
-  if (!parsed.success) {
-    throw new Error(firstZodError(parsed.error.issues));
-  }
+  const data = parseFormAction(formData, updateTriageDeadlineSchema);
 
-  await updateTriageDeadline(parsed.data.id, parsed.data.prazoData, parsed.data.prazoHora);
+  await updateTriageDeadline(data.id, data.prazoData, data.prazoHora);
 
   revalidatePath('/app/email-triage');
-  revalidatePath(`/app/email-triage/${parsed.data.id}`);
+  revalidatePath(`/app/email-triage/${data.id}`);
 }

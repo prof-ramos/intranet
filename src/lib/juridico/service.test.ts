@@ -18,8 +18,8 @@ const FIXED_UPDATED_AT = '2026-05-13T11:00:00.000Z';
 
 vi.mock('@/lib/db', () => ({
   db: {
-    transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
-      callback(transactionMock.tx),
+    transaction: vi.fn(async (callback: (tx: never) => Promise<unknown>) =>
+      callback(transactionMock.tx as never),
     ),
   },
 }));
@@ -43,7 +43,8 @@ describe('juridico service', () => {
     // so retry-exhaust tests that override it don't pollute subsequent tests.
     const { db } = await import('@/lib/db');
     vi.mocked(db.transaction).mockImplementation(
-      async (callback: (tx: unknown) => Promise<unknown>) => callback(transactionMock.tx),
+      async (callback: (tx: never) => Promise<unknown>) =>
+        callback(transactionMock.tx as never),
     );
   });
 
