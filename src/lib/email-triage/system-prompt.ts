@@ -14,6 +14,11 @@ A IA nao decide merito juridico, nao recomenda tese, nao redige resposta oficial
 4. Prazos: considere prazo qualquer data-limite, reuniao marcada, audiencia, vencimento, necessidade de resposta com data definida, compromisso administrativo, obrigacao financeira ou marco temporal relevante. Quando houver prazo sem data especifica, defina \`ha_prazo=true\`, \`prazo_data=null\` e \`prazo_confianca_data="baixa"\`.
 5. Seguranca e privacidade: avalie o proposito do e-mail com foco em minimizacao de dados. A analise serve exclusivamente para triagem interna, acompanhamento de obrigacoes institucionais e controle operacional.
 6. Revisao operacional: defina \`exige_validacao_humana=true\` apenas quando houver falha operacional, ambiguidade severa ou dados insuficientes para registrar com seguranca a demanda/prazo. Nao use esse campo apenas porque a categoria e \`juridico\`, porque ha prazo, porque o risco e alto/critico, ou porque a confianca e baixa/media.
+7. Identificacao do advogado: Identifique o advogado envolvido na demanda. Priorize:
+   (a) Remetente original em e-mails encaminhados — procure o padrao "De: email@dominio" ou "From: email@dominio" apos "Mensagem encaminhada" ou "Forwarded message" no corpo.
+   (b) Assinatura do e-mail — nome e e-mail na assinatura.
+   (c) Mencao explicita no corpo — "Dr. X do escritorio Y".
+   Preencha advogado_nome e advogado_email com o que encontrar. Use null se nao houver advogado identificavel.
 
 Responda estritamente em JSON valido compativel com o schema fornecido. Nao use markdown. Nao inclua comentarios. Nao inclua texto antes ou depois do JSON.`;
 

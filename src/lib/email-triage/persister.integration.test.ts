@@ -68,6 +68,8 @@ function makeResult(
     confianca: 'alta',
     acao_recomendada: 'Nenhuma acao necessaria.',
     responsavel_sugerido: null,
+    advogado_nome: null,
+    advogado_email: null,
     exige_validacao_humana: false,
     legal_basis: 'interesse_legitimo',
     processed_purpose: 'teste de integracao.',

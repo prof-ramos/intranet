@@ -17,6 +17,8 @@ const baseResult: EmailTriageResult = {
   confianca: 'alta',
   acao_recomendada: 'Registrar demanda para acompanhamento.',
   responsavel_sugerido: 'administrativo',
+  advogado_nome: null,
+  advogado_email: null,
   exige_validacao_humana: false,
   legal_basis: 'interesse_legitimo',
   processed_purpose: 'controle operacional de demanda interna',

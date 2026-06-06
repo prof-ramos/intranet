@@ -38,6 +38,8 @@ const result: EmailTriageResult = {
   confianca: 'alta',
   acao_recomendada: 'Registrar prazo e acompanhar demanda.',
   responsavel_sugerido: 'juridico',
+  advogado_nome: null,
+  advogado_email: null,
   exige_validacao_humana: false,
   legal_basis: 'interesse_legitimo',
   processed_purpose: 'controle operacional de demanda interna',

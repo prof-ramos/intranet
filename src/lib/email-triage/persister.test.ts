@@ -84,6 +84,8 @@ describe('persistTriage', () => {
       tipo_prazo: null,
       trecho_fonte_do_prazo: null,
       responsavel_sugerido: null,
+      advogado_nome: null,
+      advogado_email: null,
     };
 
     const id = await persistTriage(payload, result, 'gemini-2.5-flash', null);
@@ -137,6 +139,8 @@ describe('persistTriage', () => {
       tipo_prazo: null,
       trecho_fonte_do_prazo: null,
       responsavel_sugerido: null,
+      advogado_nome: null,
+      advogado_email: null,
     };
 
     await persistTriage(payload, result, 'gemini-2.5-flash', null);

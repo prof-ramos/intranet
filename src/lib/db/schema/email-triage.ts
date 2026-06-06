@@ -15,6 +15,8 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 import { admins } from './admins';
+import { legalConsultations } from '@/lib/db/schema/legal-consultations';
+import { lawyers } from '@/lib/db/schema/lawyers';
 
 export const emailCategoria = pgEnum('email_categoria', [
   'juridico',
@@ -129,6 +131,13 @@ export const emailTriagens = pgTable(
     modelName: varchar('model_name', { length: 255 }),
     modelResponseId: varchar('model_response_id', { length: 255 }),
     status: emailStatusTriagem('status').notNull().default('novo'),
+    consultationId: bigint('consultation_id', { mode: 'number' }).references(
+      () => legalConsultations.id,
+      { onDelete: 'set null' },
+    ),
+    lawyerId: bigint('lawyer_id', { mode: 'number' }).references(() => lawyers.id, {
+      onDelete: 'set null',
+    }),
     usuarioValidadorId: bigint('usuario_validador_id', { mode: 'number' }).references(
       () => admins.id,
       { onDelete: 'set null' },
@@ -154,6 +163,8 @@ export const emailTriagens = pgTable(
       .where(sql`${table.exigeValidacaoHumana} = true`),
     index('idx_email_triagens_source_evidence_gin').using('gin', table.sourceEvidence),
     index('idx_email_triagens_resumo_anexos_gin').using('gin', table.resumoAnexos),
+    index('idx_email_triagens_consultation').on(table.consultationId),
+    index('idx_email_triagens_lawyer').on(table.lawyerId),
     check('chk_email_triagens_body_hash_sha256', sql`${table.bodyHash} ~ '^[a-f0-9]{64}$'`),
     check('chk_email_triagens_body_excerpt_len', sql`char_length(${table.bodyExcerpt}) <= 600`),
     check(
