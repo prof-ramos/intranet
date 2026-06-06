@@ -14,6 +14,7 @@ export default defineConfig({
       SESSION_SECRET: process.env.SESSION_SECRET ?? 'a'.repeat(32),
     },
     testTimeout: 15000,
+    setupFiles: ['./scripts/vitest-integration-guard.ts'],
     include: ['src/**/*.integration.test.{ts,tsx}'],
     reporters: ['default', new VitestMetricsReporter({ suite: 'integration' })],
   },
