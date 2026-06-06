@@ -121,8 +121,9 @@ function setupDefaultHappyPath(consultationId = 42) {
   mockBuildCorrelationContext.mockResolvedValue({ associate: null, consultations: [] });
   mockCreateConsultationService.mockResolvedValue({ id: consultationId });
   mockCreateActivityService.mockResolvedValue(undefined);
-  // lawyers → empty; thread consultation → empty
+  // idempotency → not yet materialized; lawyers → empty; thread → empty
   mockDbSelect
+    .mockReturnValueOnce(makeSelectChain([{ consultationId: null }]))
     .mockReturnValueOnce(makeSelectChain([]))
     .mockReturnValueOnce(makeSelectChain([]));
   mockDbUpdate.mockReturnValue(makeUpdateChain());
@@ -156,8 +157,9 @@ describe('materializarNoDominio', () => {
     mockCreateActivityService.mockResolvedValue(undefined);
     mockDbUpdate.mockReturnValue(makeUpdateChain());
 
-    // advogado_email → id=7; então thread consultation → empty
+    // idempotency → not yet materialized; advogado_email → id=7; thread → empty
     mockDbSelect
+      .mockReturnValueOnce(makeSelectChain([{ consultationId: null }]))
       .mockReturnValueOnce(makeSelectChain([{ id: 7 }]))
       .mockReturnValueOnce(makeSelectChain([]));
 
@@ -178,8 +180,9 @@ describe('materializarNoDominio', () => {
     mockCreateActivityService.mockResolvedValue(undefined);
     mockDbUpdate.mockReturnValue(makeUpdateChain());
 
-    // advogado_email é null → itera só pelo sender → id=5; thread consultation → empty
+    // idempotency → not yet materialized; sender → id=5; thread → empty
     mockDbSelect
+      .mockReturnValueOnce(makeSelectChain([{ consultationId: null }]))
       .mockReturnValueOnce(makeSelectChain([{ id: 5 }]))
       .mockReturnValueOnce(makeSelectChain([]));
 
@@ -198,8 +201,9 @@ describe('materializarNoDominio', () => {
     mockBuildCorrelationContext.mockResolvedValue({ associate: { id: 3 }, consultations: [] });
     mockCreateConsultationService.mockResolvedValue({ id: 55 });
     mockCreateActivityService.mockResolvedValue(undefined);
-    // lawyers → empty; thread consultation → empty
+    // idempotency → not yet materialized; lawyers → empty; thread → empty
     mockDbSelect
+      .mockReturnValueOnce(makeSelectChain([{ consultationId: null }]))
       .mockReturnValueOnce(makeSelectChain([]))
       .mockReturnValueOnce(makeSelectChain([]));
     mockDbUpdate.mockReturnValue(makeUpdateChain());
@@ -228,8 +232,9 @@ describe('materializarNoDominio', () => {
     const updateChain = makeUpdateChain();
     mockDbUpdate.mockReturnValue(updateChain);
 
-    // lawyers → empty; thread consultation → encontra id=88
+    // idempotency → not yet materialized; lawyers → empty; thread → id=88
     mockDbSelect
+      .mockReturnValueOnce(makeSelectChain([{ consultationId: null }]))
       .mockReturnValueOnce(makeSelectChain([]))
       .mockReturnValueOnce(makeSelectChain([{ id: 88 }]));
 
@@ -292,8 +297,9 @@ describe('materializarNoDominio', () => {
     mockBuildCorrelationContext.mockResolvedValue({ associate: null, consultations: [] });
     mockCreateConsultationService.mockResolvedValue({ id: 42 });
     mockCreateActivityService.mockResolvedValue(undefined);
-    // lawyers → empty; thread → empty
+    // idempotency → not yet materialized; lawyers → empty; thread → empty
     mockDbSelect
+      .mockReturnValueOnce(makeSelectChain([{ consultationId: null }]))
       .mockReturnValueOnce(makeSelectChain([]))
       .mockReturnValueOnce(makeSelectChain([]));
 
@@ -319,8 +325,9 @@ describe('materializarNoDominio', () => {
     mockBuildCorrelationContext.mockRejectedValue(new Error('Correlation error'));
     mockCreateConsultationService.mockResolvedValue({ id: 50 });
     mockCreateActivityService.mockResolvedValue(undefined);
-    // lawyers → empty; thread → empty
+    // idempotency → not yet materialized; lawyers → empty; thread → empty
     mockDbSelect
+      .mockReturnValueOnce(makeSelectChain([{ consultationId: null }]))
       .mockReturnValueOnce(makeSelectChain([]))
       .mockReturnValueOnce(makeSelectChain([]));
     mockDbUpdate.mockReturnValue(makeUpdateChain());
@@ -340,8 +347,9 @@ describe('materializarNoDominio', () => {
     mockBuildCorrelationContext.mockResolvedValue({ associate: null, consultations: [] });
     mockCreateConsultationService.mockRejectedValue(new Error('DB timeout'));
     mockCreateActivityService.mockResolvedValue(undefined);
-    // lawyers → empty; thread → empty
+    // idempotency → not yet materialized; lawyers → empty; thread → empty
     mockDbSelect
+      .mockReturnValueOnce(makeSelectChain([{ consultationId: null }]))
       .mockReturnValueOnce(makeSelectChain([]))
       .mockReturnValueOnce(makeSelectChain([]));
     mockDbUpdate.mockReturnValue(makeUpdateChain());
@@ -350,5 +358,20 @@ describe('materializarNoDominio', () => {
 
     // Atividade ainda deve ser criada mesmo que consulta falhe
     expect(mockCreateActivityService).toHaveBeenCalledOnce();
+  });
+
+  it('pula materialização quando email já foi processado (consultationId preenchido)', async () => {
+    const payload = makePayload();
+    const result = makeResult();
+
+    // idempotency → já materializado
+    mockDbSelect.mockReturnValueOnce(makeSelectChain([{ consultationId: 99 }]));
+
+    await materializarNoDominio(payload, result, 12);
+
+    expect(mockResolveSystemBotUser).not.toHaveBeenCalled();
+    expect(mockCreateConsultationService).not.toHaveBeenCalled();
+    expect(mockCreateActivityService).not.toHaveBeenCalled();
+    expect(mockDbUpdate).not.toHaveBeenCalled();
   });
 });

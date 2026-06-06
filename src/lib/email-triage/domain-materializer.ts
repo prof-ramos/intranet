@@ -45,7 +45,9 @@ async function findOpenConsultationId(
   if (byThread) return byThread.id;
 
   if (associateId && lawyerId) {
-    const [byParties] = await db
+    // Only auto-link when exactly 1 open consultation exists for this pair.
+    // 0 → create new; 2+ → ambiguous matters, create new to avoid wrong linkage.
+    const candidates = await db
       .select({ id: legalConsultations.id })
       .from(legalConsultations)
       .where(
@@ -55,8 +57,8 @@ async function findOpenConsultationId(
           inArray(legalConsultations.status, ['aberta', 'aguardando_escritorio']),
         ),
       )
-      .limit(1);
-    if (byParties) return byParties.id;
+      .limit(2);
+    if (candidates.length === 1) return candidates[0].id;
   }
 
   return null;
@@ -77,6 +79,19 @@ export async function materializarNoDominio(
   triageId: number,
 ): Promise<void> {
   if (result.categoria !== 'juridico') return;
+
+  // Idempotency: skip if this triage was already materialized.
+  // persistTriage upserts on message_id, so retries reuse the same triageId;
+  // a pre-set consultationId means activities and domain links already exist.
+  const [triageRow] = await db
+    .select({ consultationId: emailTriagens.consultationId })
+    .from(emailTriagens)
+    .where(eq(emailTriagens.id, triageId))
+    .limit(1);
+  if (triageRow?.consultationId != null) {
+    log.info('Email already materialized, skipping.', { triageId });
+    return;
+  }
 
   let botUserId: number;
   try {
