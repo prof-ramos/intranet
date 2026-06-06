@@ -70,6 +70,8 @@ interface CreateConsultationInput {
   associateId: number | null;
   slaDays: number;
   createdBy: number;
+  lawyerId?: number | null;
+  threadId?: string | null;
 }
 
 /**
@@ -104,6 +106,8 @@ export async function createConsultationService(input: CreateConsultationInput) 
             slaDueDate,
             createdBy: input.createdBy,
             lastInteractionAt: new Date(),
+            lawyerId: input.lawyerId ?? null,
+            threadId: input.threadId ?? null,
           },
           tx as unknown as Tx,
         );

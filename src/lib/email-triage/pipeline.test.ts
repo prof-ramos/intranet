@@ -100,6 +100,10 @@ vi.mock('./notifier', () => ({
   notifyNeedsValidation: (...args: any[]) => mockNotifyNeedsValidation(...args),
 }));
 
+vi.mock('./domain-materializer', () => ({
+  materializarNoDominio: vi.fn(() => Promise.resolve()),
+}));
+
 // ─── Tests ───────────────────────────────────────────────────────────────
 
 describe('processEmail', () => {
@@ -156,6 +160,8 @@ describe('processEmail', () => {
       tipo_prazo: null,
       trecho_fonte_do_prazo: null,
       responsavel_sugerido: null,
+      advogado_nome: null,
+      advogado_email: null,
     };
 
     mockAnalyzeEmail.mockResolvedValue(triageResult);
@@ -223,6 +229,8 @@ describe('processEmail', () => {
       tipo_prazo: null,
       trecho_fonte_do_prazo: null,
       responsavel_sugerido: null,
+      advogado_nome: null,
+      advogado_email: null,
     };
 
     mockAnalyzeEmail.mockResolvedValue(triageResult);
@@ -293,6 +301,8 @@ describe('processEmail', () => {
       tipo_prazo: null,
       trecho_fonte_do_prazo: null,
       responsavel_sugerido: null,
+      advogado_nome: null,
+      advogado_email: null,
     };
 
     mockAnalyzeEmail.mockResolvedValue(triageResult);

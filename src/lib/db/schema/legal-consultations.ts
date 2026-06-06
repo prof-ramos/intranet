@@ -1,7 +1,8 @@
 import { sql } from 'drizzle-orm';
-import { bigint, index, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { bigint, index, jsonb, pgEnum, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core';
 import { admins } from '@/lib/db/schema/admins';
 import { associates } from '@/lib/db/schema/associates';
+import { lawyers } from '@/lib/db/schema/lawyers';
 import { LEGAL_CONSULTATION_STATUSES } from '@/lib/juridico/status';
 import { legalSatisfaction } from './enums';
 
@@ -31,6 +32,10 @@ export const legalConsultations = pgTable(
     slaDueDate: timestamp('sla_due_date', { withTimezone: true }),
     status: legalConsultationStatus('status').notNull().default('aberta'),
     satisfaction: legalSatisfaction('satisfaction'),
+    lawyerId: bigint('lawyer_id', { mode: 'number' }).references(() => lawyers.id, {
+      onDelete: 'set null',
+    }),
+    threadId: varchar('thread_id', { length: 255 }),
     lastInteractionAt: timestamp('last_interaction_at', { withTimezone: true }),
     createdBy: bigint('created_by', { mode: 'number' })
       .notNull()
@@ -48,6 +53,8 @@ export const legalConsultations = pgTable(
     index('idx_legal_consultations_sla').on(table.slaDueDate),
     index('idx_legal_consultations_last_interaction').on(table.lastInteractionAt),
     index('idx_legal_consultations_created_at').on(table.createdAt),
+    index('idx_legal_consultations_lawyer').on(table.lawyerId),
+    index('idx_legal_consultations_thread').on(table.threadId),
   ],
 );
 

@@ -61,6 +61,8 @@ const mockTriageResult: EmailTriageResult = {
   tipo_prazo: null,
   trecho_fonte_do_prazo: null,
   responsavel_sugerido: null,
+  advogado_nome: null,
+  advogado_email: null,
 };
 
 describe('notifyNeedsValidation', () => {
