@@ -188,12 +188,14 @@ export async function processEmail(
   }
 
   // ── Step 5b: Materialize into domain (Controller ASOF) ──────────────
-  // Runs for all juridico emails (materializarNoDominio guards internally).
-  // Non-fatal: failure does not block notification or labeling.
-  try {
-    await materializarNoDominio(payload, triageResult, triageId);
-  } catch (err) {
-    log.warn('materializarNoDominio failed (non-fatal).', { messageId }, err instanceof Error ? err : undefined);
+  // Skipped when human validation is required: ambiguous triages must not
+  // create domain records automatically (mirrors the correlation gate below).
+  if (!triageResult.exige_validacao_humana) {
+    try {
+      await materializarNoDominio(payload, triageResult, triageId);
+    } catch (err) {
+      log.warn('materializarNoDominio failed (non-fatal).', { messageId }, err instanceof Error ? err : undefined);
+    }
   }
 
   if (triageResult.exige_validacao_humana) {
