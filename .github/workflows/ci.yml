@@ -98,6 +98,7 @@ jobs:
             echo "DATABASE_URL=$DATABASE_URL"
             echo "DATABASE_MIGRATION_URL=$DATABASE_MIGRATION_URL"
           } > .env.local
+          cp .env.local .env.test.local
 
       - name: Run database contract tests
         run: npm run test:db
