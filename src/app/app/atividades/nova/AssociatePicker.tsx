@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { BoardAssociate } from '../AtividadesBoard';
 import { focusRingClass } from '@/lib/ui/tokens';
 
@@ -19,9 +19,14 @@ export function AssociatePicker({
 }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
-  const filtered = associates
-    .filter((associate) => associate.name.toLowerCase().includes(query.toLowerCase()))
-    .slice(0, 8);
+
+  // Memoize filtered associates to avoid redundant calculations on every render,
+  // especially useful when the list is large or when component re-renders
+  const filtered = useMemo(() => {
+    return associates
+      .filter((associate) => associate.name.toLowerCase().includes(query.toLowerCase()))
+      .slice(0, 8);
+  }, [associates, query]);
 
   if (value) {
     return (
