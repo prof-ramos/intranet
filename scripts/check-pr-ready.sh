@@ -17,5 +17,6 @@ npm run typecheck
 npm run lint
 npm run test
 npm run test:db
+npm run test:integration
 npm run build
 

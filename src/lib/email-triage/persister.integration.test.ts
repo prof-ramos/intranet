@@ -242,9 +242,10 @@ describe('email-triage persister integration', () => {
 
     // Capture createdAt from the initial insert
     const [before] = await sql`
-      SELECT created_at FROM email_triagens WHERE message_id = ${messageId}
+      SELECT created_at, updated_at FROM email_triagens WHERE message_id = ${messageId}
     `;
     const createdAtBefore = new Date(before.created_at).getTime();
+    const updatedAtBefore = new Date(before.updated_at).getTime();
 
     // Small delay to ensure timestamps would differ if overwritten
     await new Promise((r) => setTimeout(r, 50));
@@ -263,7 +264,7 @@ describe('email-triage persister integration', () => {
 
     // Read createdAt again — must be unchanged
     const [after] = await sql`
-      SELECT created_at, categoria, resumo
+      SELECT created_at, updated_at, categoria, resumo
       FROM email_triagens
       WHERE message_id = ${messageId}
     `;
@@ -276,6 +277,7 @@ describe('email-triage persister integration', () => {
     expect(after.resumo).toBe(
       'Resumo atualizado para testar preservacao de createdAt.',
     );
+    expect(new Date(after.updated_at).getTime()).toBeGreaterThan(updatedAtBefore);
   });
 
   // ─── Test 4: persistFailure creates failure record ────────────

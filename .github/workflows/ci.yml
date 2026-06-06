@@ -102,6 +102,12 @@ jobs:
       - name: Run database contract tests
         run: npm run test:db
 
+      - name: Run DML integration tests
+        run: npm run test:integration
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/asof_intranet
+          SESSION_SECRET: test-secret-32-chars-minimum-here
+
   e2e:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
