@@ -26,9 +26,11 @@ npm run build:turbo      # next build --turbopack (diagnóstico)
 npm run lint             # ESLint
 npm run typecheck        # tsc --noEmit
 npm run test             # vitest run (testes unitários)
+npm run test:coverage    # vitest run --coverage (requer @vitest/coverage-v8)
 npm run test:e2e         # playwright — usa 127.0.0.1:3001, não 3000
-npm run test:db          # schema contract (read-only) — seguro contra staging
-npm run test:integration # DML integration tests — somente contra DB efêmero
+npm run test:db          # schema contract read-only — seguro contra staging e .env.local
+npm run test:integration # DML integration tests — requer .env.test.local com DB localhost
+                         # pula graciosamente se .env.test.local não existir
 npm run db:generate      # drizzle-kit generate
 npm run db:migrate       # guarded — exige ALLOW_PRODUCTION_MIGRATIONS=true em produção
 npm run db:seed          # seed admin via INITIAL_ADMIN_EMAIL / INITIAL_ADMIN_PASSWORD
