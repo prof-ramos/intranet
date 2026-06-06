@@ -35,7 +35,12 @@ async function findOpenConsultationId(
   const [byThread] = await db
     .select({ id: legalConsultations.id })
     .from(legalConsultations)
-    .where(eq(legalConsultations.threadId, threadId))
+    .where(
+      and(
+        eq(legalConsultations.threadId, threadId),
+        inArray(legalConsultations.status, ['aberta', 'aguardando_escritorio']),
+      ),
+    )
     .limit(1);
   if (byThread) return byThread.id;
 
