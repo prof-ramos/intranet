@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { bigint, index, jsonb, pgEnum, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { bigint, index, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, varchar } from 'drizzle-orm/pg-core';
 import { admins } from '@/lib/db/schema/admins';
 import { associates } from '@/lib/db/schema/associates';
 import { lawyers } from '@/lib/db/schema/lawyers';
@@ -54,7 +54,9 @@ export const legalConsultations = pgTable(
     index('idx_legal_consultations_last_interaction').on(table.lastInteractionAt),
     index('idx_legal_consultations_created_at').on(table.createdAt),
     index('idx_legal_consultations_lawyer').on(table.lawyerId),
-    index('idx_legal_consultations_thread').on(table.threadId),
+    uniqueIndex('idx_legal_consultations_thread')
+      .on(table.threadId)
+      .where(sql`thread_id IS NOT NULL`),
   ],
 );
 

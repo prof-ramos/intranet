@@ -201,9 +201,10 @@ describe('materializarNoDominio', () => {
     mockBuildCorrelationContext.mockResolvedValue({ associate: { id: 3 }, consultations: [] });
     mockCreateConsultationService.mockResolvedValue({ id: 55 });
     mockCreateActivityService.mockResolvedValue(undefined);
-    // idempotency → not yet materialized; lawyers → empty; thread → empty
+    // idempotency → not yet materialized; lawyers → empty; thread → empty; associate-only → empty
     mockDbSelect
       .mockReturnValueOnce(makeSelectChain([{ consultationId: null }]))
+      .mockReturnValueOnce(makeSelectChain([]))
       .mockReturnValueOnce(makeSelectChain([]))
       .mockReturnValueOnce(makeSelectChain([]));
     mockDbUpdate.mockReturnValue(makeUpdateChain());

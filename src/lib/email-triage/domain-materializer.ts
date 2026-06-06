@@ -44,9 +44,11 @@ async function findOpenConsultationId(
     .limit(1);
   if (byThread) return byThread.id;
 
+  const openStatuses = ['aberta', 'aguardando_escritorio'] as const;
+
   if (associateId && lawyerId) {
-    // Only auto-link when exactly 1 open consultation exists for this pair.
-    // 0 → create new; 2+ → ambiguous matters, create new to avoid wrong linkage.
+    // Exactly 1 open consultation for this associate+lawyer pair → safe to link.
+    // 0 → create new; 2+ → ambiguous matters, create new.
     const candidates = await db
       .select({ id: legalConsultations.id })
       .from(legalConsultations)
@@ -54,7 +56,21 @@ async function findOpenConsultationId(
         and(
           eq(legalConsultations.associateId, associateId),
           eq(legalConsultations.lawyerId, lawyerId),
-          inArray(legalConsultations.status, ['aberta', 'aguardando_escritorio']),
+          inArray(legalConsultations.status, openStatuses),
+        ),
+      )
+      .limit(2);
+    if (candidates.length === 1) return candidates[0].id;
+  } else if (associateId) {
+    // Lawyer not identified: fall back to associate-only lookup.
+    // Same rule: exactly 1 open = safe, 0/2+ = create new.
+    const candidates = await db
+      .select({ id: legalConsultations.id })
+      .from(legalConsultations)
+      .where(
+        and(
+          eq(legalConsultations.associateId, associateId),
+          inArray(legalConsultations.status, openStatuses),
         ),
       )
       .limit(2);
@@ -121,18 +137,37 @@ export async function materializarNoDominio(
         .where(eq(legalConsultations.id, consultationId));
       log.info('Linked email to existing consultation.', { triageId, consultationId });
     } else {
-      const created = await createConsultationService({
-        title: payload.subject.slice(0, 255) || 'Consulta via Controller ASOF',
-        questionSummary: result.resumo,
-        questionFullText: null,
-        associateId,
-        lawyerId,
-        threadId: payload.thread_id,
-        slaDays: 5,
-        createdBy: botUserId,
-      });
-      consultationId = created.id;
-      log.info('Created new consultation from email.', { triageId, consultationId });
+      try {
+        const created = await createConsultationService({
+          title: payload.subject.slice(0, 255) || 'Consulta via Controller ASOF',
+          questionSummary: result.resumo,
+          questionFullText: null,
+          associateId,
+          lawyerId,
+          threadId: payload.thread_id,
+          slaDays: 5,
+          createdBy: botUserId,
+        });
+        consultationId = created.id;
+        log.info('Created new consultation from email.', { triageId, consultationId });
+      } catch (createErr) {
+        // Race condition: concurrent batch run may have already created this thread's
+        // consultation (unique partial index on thread_id). Use the winner.
+        const isThreadConflict =
+          createErr instanceof Error &&
+          /unique.*thread_id|duplicate.*thread_id|idx_legal_consultations_thread/i.test(createErr.message);
+        if (isThreadConflict) {
+          const [winner] = await db
+            .select({ id: legalConsultations.id })
+            .from(legalConsultations)
+            .where(eq(legalConsultations.threadId, payload.thread_id))
+            .limit(1);
+          consultationId = winner?.id ?? null;
+          log.info('Resolved concurrent consultation creation via thread lookup.', { triageId, consultationId });
+        } else {
+          throw createErr;
+        }
+      }
     }
   } catch (err) {
     log.warn('Failed to find/create consultation (non-fatal).', { triageId }, err instanceof Error ? err : undefined);
