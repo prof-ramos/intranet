@@ -1,6 +1,7 @@
 'use client';
 
-import { LogOut } from 'lucide-react';
+import { LogOut, Loader2 } from 'lucide-react';
+import { useFormStatus } from 'react-dom';
 import { logout } from '@/lib/auth/actions';
 
 export function LogoutButton() {
@@ -31,19 +32,37 @@ export function LogoutButton() {
               </button>
             </form>
             <form action={logout}>
-              <button
-                type="submit"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[#b91c1c] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#991b1b] focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:outline-none"
-              >
-                Sair
-              </button>
+              <LogoutSubmitButton />
             </form>
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button>fechar</button>
+          <button tabIndex={-1} aria-label="Fechar modal">fechar</button>
         </form>
       </dialog>
     </>
+  );
+}
+
+
+function LogoutSubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      aria-busy={pending}
+      className="inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[#b91c1c] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#991b1b] focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-80"
+    >
+      {pending ? (
+        <>
+          <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+          Saindo...
+        </>
+      ) : (
+        'Sair'
+      )}
+    </button>
   );
 }
