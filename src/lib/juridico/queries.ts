@@ -1,4 +1,4 @@
-import { unstable_cache } from 'next/cache';
+import { withCache } from '@/lib/cache/with-cache';
 import {
   countConsultationsByStatus as repoCountByStatus,
   countConsultationsStale as repoCountStale,
@@ -11,48 +11,60 @@ import { legalConsultationStatus } from '@/lib/db/schema';
 
 const TTL_VOLATILE = 30;
 
-export const countConsultationsByStatus = (status: Parameters<typeof repoCountByStatus>[0]) =>
-  unstable_cache(
-    async () => repoCountByStatus(status),
-    ['consultations-count-by-status', String(status)],
-    { revalidate: TTL_VOLATILE, tags: ['legal', 'dashboard'] },
-  )();
+export const countConsultationsByStatus = withCache({
+  fn: repoCountByStatus,
+  keyFn: (status) => ['consultations-count-by-status', String(status)],
+  ttl: TTL_VOLATILE,
+  tags: ['legal', 'dashboard'],
+});
 
 export const countConsultationsStale = (days = 7) =>
-  unstable_cache(async () => repoCountStale(days), ['consultations-stale-count', String(days)], {
-    revalidate: TTL_VOLATILE,
+  withCache({
+    fn: () => repoCountStale(days),
+    keyFn: () => ['consultations-stale-count', String(days)],
+    ttl: TTL_VOLATILE,
     tags: ['legal', 'dashboard'],
   })();
 
 export const countConsultationsSlaDueSoon = (days = 2) =>
-  unstable_cache(
-    async () => repoCountSlaDueSoon(days),
-    ['consultations-sla-due-soon', String(days)],
-    { revalidate: TTL_VOLATILE, tags: ['legal', 'dashboard'] },
-  )();
+  withCache({
+    fn: () => repoCountSlaDueSoon(days),
+    keyFn: () => ['consultations-sla-due-soon', String(days)],
+    ttl: TTL_VOLATILE,
+    tags: ['legal', 'dashboard'],
+  })();
 
-export const countConsultationsRespondedThisMonth = unstable_cache(
-  repoCountResponded,
-  ['consultations-responded-month'],
-  { revalidate: TTL_VOLATILE, tags: ['legal', 'dashboard'] },
-);
+export const countConsultationsRespondedThisMonth = withCache({
+  fn: repoCountResponded,
+  keyFn: () => ['consultations-responded-month'],
+  ttl: TTL_VOLATILE,
+  tags: ['legal', 'dashboard'],
+});
 
 export type { ConsultationListItem, GetConsultationsFilters } from './repository';
 export { getConsultationsPaginated } from './repository';
 export type { ConsultationDetail } from './repository';
-export const getConsultationById = (id: number) =>
-  unstable_cache(async () => repoGetById(id), ['consultation-detail', String(id)], {
-    revalidate: 30,
-    tags: ['legal', 'consultation-detail'],
-  })();
+
+export const getConsultationById = withCache({
+  fn: repoGetById,
+  keyFn: (id: number) => ['consultation-detail', String(id)],
+  ttl: 30,
+  tags: ['legal', 'consultation-detail'],
+});
 
 export type { NoteItem } from './repository';
-export const getNotesByEntity = (entityType: 'consultation' | 'process', entityId: number) =>
-  unstable_cache(
-    async () => repoGetNotes(entityType, entityId),
-    ['legal-notes', entityType, String(entityId)],
-    { revalidate: 15, tags: ['legal', 'legal-notes'] },
-  )();
+
+export const getNotesByEntity = withCache({
+  fn: repoGetNotes,
+  keyFn: (entityType: 'consultation' | 'process', entityId: number) => [
+    'legal-notes',
+    entityType,
+    String(entityId),
+  ],
+  ttl: 15,
+  tags: ['legal', 'legal-notes'],
+});
+
 export type { PendingAction } from './repository';
 export { getPendingActions } from './repository';
 
