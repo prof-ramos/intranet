@@ -30,6 +30,10 @@ const eslintConfig = defineConfig([
     '.worktrees/**',
     '.agents/**',
     'next-env.d.ts',
+    // Playwright / test artifacts
+    'smoke-report/**',
+    'test-results/**',
+    'playwright-report/**',
   ]),
 ]);
 

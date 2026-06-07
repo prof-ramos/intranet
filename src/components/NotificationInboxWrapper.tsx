@@ -13,5 +13,9 @@ interface NotificationInboxWrapperProps {
 }
 
 export function NotificationInboxWrapper({ subscriberId }: NotificationInboxWrapperProps) {
-  return <NotificationInbox subscriberId={subscriberId} />;
+  return (
+    <div data-testid="notification-inbox">
+      <NotificationInbox subscriberId={subscriberId} />
+    </div>
+  );
 }
