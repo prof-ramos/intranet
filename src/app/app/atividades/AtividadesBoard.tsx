@@ -269,7 +269,7 @@ export function AtividadesBoard({
     );
   }
 
-  async function handleAdd(title: string, status: Status) {
+  const handleAdd = useCallback(async (title: string, status: Status) => {
     setErrorMessage(null);
     try {
       const created = await createQuickActivityAction({ title, status });
@@ -285,7 +285,11 @@ export function AtividadesBoard({
         error instanceof Error ? error.message : 'Não foi possível criar a atividade.',
       );
     }
-  }
+  }, []);
+
+  const handleLateClick = useCallback(() => {
+    setFilters((current) => ({ ...current, dueLate: true, dueWeek: false }));
+  }, []);
 
   return (
     <main className="mx-auto w-full max-w-[1180px] min-w-0 px-5 py-7 sm:px-8 lg:px-10">
@@ -309,7 +313,7 @@ export function AtividadesBoard({
 
       <SummaryStrip
         activities={filtered}
-        onLateClick={() => setFilters({ ...filters, dueLate: true, dueWeek: false })}
+        onLateClick={handleLateClick}
       />
 
       <FilterBar

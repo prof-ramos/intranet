@@ -1,11 +1,11 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import { memo, type CSSProperties } from 'react';
 import { canvas, dangerText, focusRingClass, hairline, textSubtle } from '@/lib/ui/tokens';
 import { summarizeActivities } from './helpers';
 import type { BoardActivity } from './types';
 
-export function SummaryStrip({
+export const SummaryStrip = memo(function SummaryStrip({
   activities,
   onLateClick,
 }: {
@@ -88,4 +88,4 @@ export function SummaryStrip({
       })}
     </section>
   );
-}
+});

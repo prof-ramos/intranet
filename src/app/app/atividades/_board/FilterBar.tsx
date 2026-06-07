@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { Search } from 'lucide-react';
 import {
   borderSoft,
@@ -22,7 +23,7 @@ function isPriorityFilter(value: string): value is Filters['priority'] {
   return value === '' || value in priorityStyles;
 }
 
-export function FilterBar({
+export const FilterBar = memo(function FilterBar({
   filters,
   people,
   associates,
@@ -235,4 +236,4 @@ export function FilterBar({
       )}
     </div>
   );
-}
+});
