@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import {
   borderMuted,
   buttonPrimaryText,
@@ -14,7 +14,7 @@ import {
 } from '@/lib/ui/tokens';
 import type { Status } from './types';
 
-export function QuickAdd({
+export const QuickAdd = memo(function QuickAdd({
   columnKey,
   onAdd,
 }: {
@@ -118,4 +118,4 @@ export function QuickAdd({
       </div>
     </div>
   );
-}
+});
