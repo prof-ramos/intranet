@@ -1,6 +1,8 @@
 # TODO-PROD
 
-Checklist canonica de go-live da intranet ASOF.
+Checklist canonica de go-live da intranet ASOF. Itens historicos ja executados
+permanecem aqui apenas quando ainda orientam operacao ou auditoria; evidencias
+pontuais antigas ficam em `docs/operations/archive/`.
 
 Atualizado em 2026-06-07. Última verificação de gates locais: 2026-06-07.
 
@@ -30,7 +32,7 @@ Atualizado em 2026-06-07. Última verificação de gates locais: 2026-06-07.
 - [x] Troca de senha obrigatoria realizada pelo admin apos primeiro login. (gabriel@asof.org.br → nova senha definida em 2026-05-26 via intranet.asof.com.br/change-password)
 - [x] Rodar gates locais — `typecheck`, `lint`, `test` (1154 testes): todos passaram em 2026-06-07.
 - [x] Rodar `npm run test:db` contra Neon produção antes do go-live — schema contract passou em 2026-05-26.
-- [ ] Fazer smoke manual em producao, em janela controlada, antes da liberacao para usuarios finais (ADR 009):
+- [ ] Fazer smoke manual em producao, em janela controlada, antes de ampliar acesso operacional (ADR 009):
   - pre-janela: snapshot Neon e rollback documentado.
   - smoke: login do admin inicial + troca obrigatoria de senha, dashboard, associados, atividades, juridico, oficios, financeiro, auditoria, reset de senha e notificacoes persistidas.
   - pos-smoke: limpeza dos dados marcados (`SMOKE_*`) via SQL direto antes da liberacao; auditoria preservada.
@@ -40,7 +42,7 @@ Atualizado em 2026-06-07. Última verificação de gates locais: 2026-06-07.
 ## Recomendado Antes Do Go-Live
 
 - [x] Documentos fora do go-live: modulo de upload/download de arquivos legados nao entra no dia 1 (ADR 008). Storage de objetos sera frente separada pos-estreia.
-- [ ] Avaliar Papra como DMS externo para Documentos da ASOF, mantendo Neon/PostgreSQL como banco transacional da intranet — frente pos-estreia, nao bloqueante para go-live; ADR 012 aceita; implementacao/spike rastreada pela issue: https://github.com/prof-ramos/intranet/issues/116.
+- [ ] Avaliar Papra como DMS externo para Documentos da ASOF, mantendo Neon/PostgreSQL como banco transacional da intranet — frente pos-estreia, nao bloqueante para operacao atual; ADR 012 aceita; implementacao/spike rastreada pela issue: https://github.com/prof-ramos/intranet/issues/116.
   - [ ] Subir prova de conceito self-hosted do Papra em VPS isolada, com banco, storage e auth/admin separados da intranet.
   - [ ] Restringir exposicao da VPS: Papra nao deve ser interface publica; API/endpoint apenas para a intranet e administracao via VPN ou allowlist de IP, com TLS.
   - [ ] Definir backend de storage privado para documentos do Papra com software open source e self-hosted, preferencialmente S3 compativel (ex: MinIO ou Garage); evitar filesystem local simples e servico proprietario gerenciado na POC.
@@ -100,7 +102,7 @@ Marcar a janela de go-live (ADR 009) somente quando todos os itens abaixo estive
 **3. Associados**
 - [ ] Criar associado `SMOKE_NOME_FULL` com dados marcados (nome: `SMOKE_ Teste Go-Live`, email: `smoke@asof.org.br`).
 - [ ] Editar associado criado.
-- [ ] Buscar associado por nome/SIAPE/CPF.
+- [ ] Buscar associado por nome.
 - [ ] Confirmar dados sensiveis (CPF, SIAPE) visiveis para admin autenticado.
 
 **4. Atividades (Kanban)**
@@ -123,7 +125,7 @@ Marcar a janela de go-live (ADR 009) somente quando todos os itens abaixo estive
 - [ ] Confirmar PDF gerado.
 
 **8. Auditoria**
-- [ ] Verificar `audit_log` — acoes do smoke registradas (login, criacao de associado, etc.).
+- [ ] Verificar `audit_logs` — acoes do smoke registradas (login, criacao de associado, etc.).
 - [ ] Navegar para pagina de auditoria.
 
 **9. Notificacoes**
@@ -134,21 +136,47 @@ Marcar a janela de go-live (ADR 009) somente quando todos os itens abaixo estive
 - [ ] Solicitar reset de senha para `smoke@asof.org.br`.
 - [ ] Confirmar email enviado (Mailjet).
 
-**Pos-smoke:** Executar SQL de limpeza no Neon (via console Neon ou `psql` com `DATABASE_MIGRATION_URL`):
+**Pos-smoke:** revisar os registros candidatos e executar SQL de limpeza no Neon
+(via console Neon ou `psql` com `DATABASE_MIGRATION_URL`). Auditoria deve ser preservada.
 ```sql
--- # audit_log e preservado integralmente por exigencia do ADR 009 — nao apagar.
+BEGIN;
+
+-- Atividades
+DELETE FROM activities WHERE title ILIKE 'SMOKE_%';
+
+-- Consultas juridicas e notas vinculadas
+DELETE FROM legal_notes
+  WHERE entity_type = 'consultation'
+    AND entity_id IN (
+      SELECT id FROM legal_consultations WHERE title ILIKE 'SMOKE_%'
+    );
+DELETE FROM legal_consultations WHERE title ILIKE 'SMOKE_%';
+
+-- Oficios
+DELETE FROM oficios WHERE subject ILIKE 'SMOKE_%';
+
+-- Mensalidades do associado smoke
+DELETE FROM monthly_payments
+  WHERE associate_id IN (
+    SELECT id FROM associates WHERE full_name ILIKE 'SMOKE_%'
+  );
+
+-- Notificacoes de smoke
 DELETE FROM notifications WHERE message ILIKE '%SMOKE_%';
-DELETE FROM monthly_payments WHERE associate_id IN (SELECT id FROM associates WHERE email = 'smoke@asof.org.br');
-DELETE FROM juridico_consultas WHERE description ILIKE '%SMOKE_%';
-DELETE FROM board_activities WHERE title ILIKE '%SMOKE_%';
-DELETE FROM associates WHERE email = 'smoke@asof.org.br';
+
+-- Associados de smoke
+DELETE FROM associates WHERE full_name ILIKE 'SMOKE_%';
+
+-- audit_logs e preservado integralmente por exigencia do ADR 009 — nao apagar.
+-- Trocar ROLLBACK por COMMIT somente depois de revisar as linhas candidatas.
+ROLLBACK;
 ```
-_Nota: `audit_log` e preservado (ADR 009). Se necessario identificar registros de smoke posteriormente, usar tag `SMOKE_` na descricao e consultar por ela, sem deletar._
+_Nota: `audit_logs` e preservado (ADR 009). Se necessario identificar registros de smoke posteriormente, usar tag `SMOKE_` na descricao e consultar por ela, sem deletar._
 
 ## Evidencia Desta Frente
 
 - Removidos helpers/scripts operacionais de Auth externa, entrega em tempo real externa e storage externo.
-- Criado baseline inicial `drizzle/postgres/0000_green_glorian.sql`; migrações incrementais atuais seguem em `drizzle/postgres/0001_living_hobgoblin.sql` e `drizzle/postgres/0002_fix_assignment_type_enum_labels.sql`.
+- Criado baseline inicial `drizzle/postgres/0000_green_glorian.sql`; migrações incrementais atuais seguem o historico em `drizzle/postgres/` e o journal Drizzle.
 - `npm run typecheck`, `npm run lint`, `npm run test`, `npm run test:e2e` e `npm audit` passaram apos a troca para auth propria.
 
 ### Melhorias pós-go-live (2026-06-07)

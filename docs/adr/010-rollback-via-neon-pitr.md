@@ -23,7 +23,7 @@ Disparar rollback se qualquer um dos abaixo ocorrer **sem mitigacao em ate 30 mi
 
 - Falha em login do admin ou em `requireAuth()`/`requireRole()` em rotas criticas.
 - Falha em escrita ou leitura nos fluxos criticos do smoke: associados, mensalidades, oficios, juridico, atividades.
-- Falha de registro em `audit_log` ou em notificacoes persistidas.
+- Falha de registro em `audit_logs` ou em notificacoes persistidas.
 - Falha de execucao do cron com `CRON_SECRET`.
 - Corrupcao de dados detectada (ex.: violacao de unicidade, mistura de PII, status inconsistente).
 

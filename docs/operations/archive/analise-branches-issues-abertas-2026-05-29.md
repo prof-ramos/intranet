@@ -1,5 +1,8 @@
 # Análise de Branches e Issues Abertas — ASOF Intranet
 
+> Arquivo historico da higiene de branches/issues de 29/05/2026. Nao usar como
+> fonte viva de PRs, issues ou prioridades atuais; consultar GitHub diretamente.
+
 **Data da análise:** 29/05/2026  
 **Atualizado em:** 29/05/2026 (FINAL - após execução completa do plano de higiene)  
 **Repositório:** `prof-ramos/intranet` (branch `main`)

@@ -271,7 +271,7 @@ test('10. Reset de Senha — disparo da action', async ({ page }) => {
 test.afterAll(() => {
   console.log(`
 ╔══════════════════════════════════════════════════════════════╗
-║            SQL DE LIMPEZA PÓS-SMOKE (audit_log intacto)     ║
+║            SQL DE LIMPEZA PÓS-SMOKE (audit_logs intacto)    ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  Executar via console Neon ou psql com DATABASE_MIGRATION_URL ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -281,9 +281,10 @@ DELETE FROM activities WHERE title ILIKE 'SMOKE_%';
 
 -- Consultas jurídicas e suas notas
 DELETE FROM legal_notes
-  WHERE entity_id IN (
-    SELECT id FROM legal_consultations WHERE title ILIKE 'SMOKE_%'
-  );
+  WHERE entity_type = 'consultation'
+    AND entity_id IN (
+      SELECT id FROM legal_consultations WHERE title ILIKE 'SMOKE_%'
+    );
 DELETE FROM legal_consultations WHERE title ILIKE 'SMOKE_%';
 
 -- Ofícios
@@ -292,7 +293,7 @@ DELETE FROM oficios WHERE subject ILIKE 'SMOKE_%';
 -- Notificações de smoke
 DELETE FROM notifications WHERE message ILIKE '%SMOKE_%';
 
--- NÃO apagar audit_log (ADR 009).
+-- NÃO apagar audit_logs (ADR 009).
 -- Para identificar registros do smoke: WHERE description ILIKE '%SMOKE_%'
 `);
 });

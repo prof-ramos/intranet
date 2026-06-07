@@ -6,7 +6,7 @@ import {
   associationStatus,
   contributionStatus,
 } from '@/lib/db/schema';
-import { eq, and, count, asc, sql } from 'drizzle-orm';
+import { eq, and, count, asc, ilike } from 'drizzle-orm';
 import { buildAssociateNameSearchPattern } from './search-params';
 import { decryptPiiField } from '@/lib/crypto/pii';
 
@@ -45,10 +45,12 @@ export async function findAssociatesPaginated(
   filters?: AssociatesFilters,
   includeEmail = false,
 ): Promise<{ rows: AssociateListItem[]; total: number }> {
+  const normalizedSearchQuery = searchQuery?.trim();
+
   const baseWhere = and(
-    eq(associates.associationStatus, 'ativo'),
-    searchQuery
-      ? sql`${associates.fullName} like ${buildAssociateNameSearchPattern(searchQuery)} escape '\\'`
+    normalizedSearchQuery ? undefined : eq(associates.associationStatus, 'ativo'),
+    normalizedSearchQuery
+      ? ilike(associates.fullName, buildAssociateNameSearchPattern(normalizedSearchQuery))
       : undefined,
     filters?.contributionStatus
       ? eq(associates.contributionStatus, filters.contributionStatus)
