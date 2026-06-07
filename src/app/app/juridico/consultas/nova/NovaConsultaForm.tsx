@@ -25,6 +25,12 @@ export function NovaConsultaForm({ associates }: Props) {
     try {
       await createConsultation(formData);
     } catch (e) {
+      const isRedirect =
+        typeof e === 'object' &&
+        e !== null &&
+        'digest' in e &&
+        String((e as { digest?: unknown }).digest).startsWith('NEXT_REDIRECT');
+      if (isRedirect) throw e;
       setError(e instanceof Error ? e.message : 'Erro ao salvar.');
       setSaving(false);
     }

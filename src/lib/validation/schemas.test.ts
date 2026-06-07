@@ -344,6 +344,18 @@ describe('createConsultationSchema', () => {
       expect(result.error.issues[0].message).toBe('Resumo da pergunta é obrigatório.');
     }
   });
+
+  test('aceita associateId como string vazia (converte para undefined)', () => {
+    const result = createConsultationSchema.safeParse({
+      title: 'Título',
+      questionSummary: 'Resumo',
+      associateId: '',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.associateId).toBeUndefined();
+    }
+  });
 });
 
 describe('updateConsultationStatusSchema', () => {
