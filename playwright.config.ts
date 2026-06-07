@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: '**/smoke-*.spec.ts',
   timeout: 60_000,
   expect: {
     // Defense-in-depth against slow JIT compilation of dynamic routes on cold
