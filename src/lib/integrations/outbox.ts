@@ -22,7 +22,7 @@ const payloadSchemaByEventType = {
     .object({
       internalNumber: z.string().min(1),
       status: z.string().min(1),
-      associateId: z.number().int().positive().nullable(),
+      associateId: z.number().int().positive().nullable().optional(),
       slaDueDate: z.string().datetime(),
       title: z.string().min(1),
       links: linksSchema,

@@ -125,7 +125,7 @@ export async function createConsultationService(input: CreateConsultationInput) 
             payload: {
               internalNumber,
               status: 'aberta',
-              associateId: input.associateId,
+              associateId: input.associateId ?? null,
               slaDueDate: slaDueDate.toISOString(),
               title: input.title.trim(),
               links: {
