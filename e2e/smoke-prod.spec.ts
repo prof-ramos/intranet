@@ -201,13 +201,13 @@ test('7. Ofícios — criar e confirmar na lista', async ({ page }) => {
   await fillIfVisible(page, '#vocativo', 'Senhor Diretor,');
   await fillIfVisible(page, '#subject', OFICIO_SUBJECT);
   await fillIfVisible(page, '#itamaratySector', 'SGP');
+  await fillIfVisible(page, '#signatoryName', 'Administrador');
+  await fillIfVisible(page, '#signatoryRole', 'Presidente');
 
-  // Rich text editor (contenteditable) — corpo mínimo
-  const richText = page.locator('[contenteditable="true"]');
-  if (await richText.first().isVisible({ timeout: 2_000 }).catch(() => false)) {
-    await richText.first().click();
-    await page.keyboard.type(`Texto do ofício smoke test criado em ${TS}.`);
-  }
+  // Rich text editor (TipTap) — clicar no contenteditable e digitar
+  const editor = page.locator('[contenteditable="true"]').first();
+  await editor.click();
+  await editor.fill(`Texto do ofício smoke test criado em ${TS}.`);
 
   await page.getByRole('button', { name: /Salvar Ofício/i }).click();
   await page.waitForURL(/\/app\/secretaria\/oficios/, { timeout: 20_000 });
