@@ -41,13 +41,17 @@ vi.mock('drizzle-orm', () => ({
   eq: vi.fn((column: keyof MockAssociateRow, value: unknown) => {
     return (row: MockAssociateRow) => row[column] === value;
   }),
-  ilike: vi.fn((column: keyof MockAssociateRow, pattern: string) => {
+  sql: vi.fn((_strings: TemplateStringsArray, ...values: unknown[]) => {
+    // sql`${associates.fullName} ilike ${pattern} escape '\\'`
+    const pattern = String(values[1] ?? '');
     const textPattern = pattern
       .replace(/([.+^${}()|[\]\\])/g, '\\$1')
+      .replace(/\\%/g, '%')
+      .replace(/\\_/g, '_')
       .replace(/%/g, '.*')
       .replace(/_/g, '.');
     const regex = new RegExp(`^${textPattern}$`, 'i');
-    return (row: MockAssociateRow) => regex.test(String(row[column] ?? ''));
+    return (row: MockAssociateRow) => regex.test(String(row.fullName ?? ''));
   }),
 }));
 
