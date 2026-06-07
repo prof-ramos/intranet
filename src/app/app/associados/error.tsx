@@ -16,7 +16,7 @@ export default function AssociadosError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logger.error('Associados error boundary caught', { error: toSafeErrorLog(error) });
+    logger.error('Associados error boundary caught', { error: toSafeErrorLog(error) }, error);
   }, [error]);
 
   return (

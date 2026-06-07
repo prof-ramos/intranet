@@ -2,7 +2,7 @@
 
 Checklist canonica de go-live da intranet ASOF.
 
-Atualizado em 2026-05-26 apos decisao de resetar a camada de banco/autenticacao para PostgreSQL gerenciado limpo, com baseline Drizzle novo e auth propria.
+Atualizado em 2026-06-07. Última verificação de gates locais: 2026-06-07.
 
 ## Decisao Atual
 
@@ -28,7 +28,7 @@ Atualizado em 2026-05-26 apos decisao de resetar a camada de banco/autenticacao 
 - [x] Admin gabriel.org.br seedado no Neon com must_change_password=true.
 - [x] Login do admin validado em producao: gabriel.org.br acessou intranet.asof.com.br com redirect para troca de senha obrigatoria.
 - [x] Troca de senha obrigatoria realizada pelo admin apos primeiro login. (gabriel@asof.org.br → nova senha definida em 2026-05-26 via intranet.asof.com.br/change-password)
-- [x] Rodar gates locais — `typecheck`, `lint`, `test` (824 testes): todos passaram em 2026-05-26.
+- [x] Rodar gates locais — `typecheck`, `lint`, `test` (1154 testes): todos passaram em 2026-06-07.
 - [x] Rodar `npm run test:db` contra Neon produção antes do go-live — schema contract passou em 2026-05-26.
 - [ ] Fazer smoke manual em producao, em janela controlada, antes da liberacao para usuarios finais (ADR 009):
   - pre-janela: snapshot Neon e rollback documentado.
@@ -150,5 +150,13 @@ _Nota: `audit_log` e preservado (ADR 009). Se necessario identificar registros d
 - Removidos helpers/scripts operacionais de Auth externa, entrega em tempo real externa e storage externo.
 - Criado baseline inicial `drizzle/postgres/0000_green_glorian.sql`; migrações incrementais atuais seguem em `drizzle/postgres/0001_living_hobgoblin.sql` e `drizzle/postgres/0002_fix_assignment_type_enum_labels.sql`.
 - `npm run typecheck`, `npm run lint`, `npm run test`, `npm run test:e2e` e `npm audit` passaram apos a troca para auth propria.
+
+### Melhorias pós-go-live (2026-06-07)
+
+- **Error handling unificado:** `src/lib/errors/` — hierarquia `DomainError` com `NotFoundError`, `ValidationError`, `RateLimitError`, `ExternalServiceError`, `UnauthorizedError`; `toSafeErrorLog` em todas as error boundaries; handlers globais de crash (`unhandledRejection` + `uncaughtException` com `process.exit(1)`) registrados via `src/instrumentation.ts`.
+- **Error boundaries completos:** `error.tsx` em todas as rotas autenticadas; `not-found.tsx` em todas as rotas dinâmicas com `notFound()`.
+- **Logging estruturado:** eliminado `console.error` direto em route handlers e server actions; PII nunca exposta em mensagens de erro retornadas ao cliente.
+- **PAGES.md reescrito:** documentação completa de todas as páginas com funções, requisitos funcionais (checklists) e diagramas Mermaid (fluxo de autenticação, mapa de navegação, sequência de integrações).
+- Gates locais: `typecheck` ✓ · `lint` ✓ · `test` 1154/1154 ✓ · autoreview Codex clean ✓ (2026-06-07).
 
 Este arquivo substitui as pendencias antigas de smoke de tempo real e reconciliacao de projetos de banco. Elas nao sao mais caminho de go-live.

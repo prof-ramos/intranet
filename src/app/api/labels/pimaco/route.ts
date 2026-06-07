@@ -3,6 +3,10 @@ import { generateLabelsPdf } from '@/lib/labels/generate-labels-pdf';
 import { LABEL_PRESETS } from '@/lib/labels/presets';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth/authorization';
+import { createLogger } from '@/lib/logger';
+import { toSafeErrorLog } from '@/lib/error-log';
+
+const logger = createLogger('labels:pimaco');
 
 const requestSchema = z.object({
   presetId: z.string(),
@@ -61,7 +65,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error generating labels PDF:', error);
+    logger.error('Error generating labels PDF', { error: toSafeErrorLog(error) }, error instanceof Error ? error : undefined);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

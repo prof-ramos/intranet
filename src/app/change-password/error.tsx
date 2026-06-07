@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Settings, RotateCcw } from 'lucide-react';
+import { ShieldCheck, RotateCcw } from 'lucide-react';
 import { focusRingClass } from '@/lib/ui/tokens';
-import { createLogger } from '@/lib/logger';
 import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
 
-const logger = createLogger('config:error');
+const logger = createLogger('error-boundary:change-password');
 
-export default function ConfigError({
+export default function ChangePasswordError({
   error,
   reset,
 }: {
@@ -16,25 +16,26 @@ export default function ConfigError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logger.error('Config error boundary caught', { error: toSafeErrorLog(error) }, error);
+    logger.error('Change password error boundary caught', { error: toSafeErrorLog(error) }, error);
   }, [error]);
 
   return (
-    <div className="mx-auto flex min-h-[60vh] w-full max-w-[1180px] flex-col items-center justify-center px-5 py-7">
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
       <div className="flex flex-col items-center gap-6 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-          <Settings className="h-8 w-8 text-amber-600" aria-hidden="true" />
+          <ShieldCheck className="h-8 w-8 text-amber-600" />
         </div>
-        <h1 className="font-serif text-2xl font-bold text-[#040920]">Erro nas configurações</h1>
+        <h1 className="text-2xl font-bold text-[#040920]">Erro ao carregar troca de senha</h1>
         <p className="max-w-md text-[#59677a]">
-          Não foi possível carregar esta seção. Verifique sua conexão e tente novamente.
+          Não foi possível carregar a página de troca de senha. Tente novamente ou contate o suporte.
         </p>
         {error.digest && <p className="text-sm text-[#59677a]/60">Código: {error.digest}</p>}
         <button
+          type="button"
           onClick={reset}
           className={`inline-flex items-center gap-2 rounded-lg bg-[#040920] px-4 py-2 text-white transition hover:bg-[#06284f] ${focusRingClass}`}
         >
-          <RotateCcw className="h-4 w-4" aria-hidden="true" />
+          <RotateCcw className="h-4 w-4" />
           Tentar novamente
         </button>
       </div>

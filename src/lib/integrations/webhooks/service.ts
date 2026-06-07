@@ -16,7 +16,9 @@ import { signIntegrationRequest } from '@/lib/integrations/auth';
 import type { DomainEventType } from '@/lib/integrations/outbox';
 import { decryptWebhookSecret } from '@/lib/integrations/webhooks/secrets';
 import { sanitizePiiValue } from '@/lib/sanitize-pii';
+import { createLogger } from '@/lib/logger';
 
+const logger = createLogger('webhooks:service');
 const MAX_WEBHOOK_ATTEMPTS = 5;
 const RESPONSE_EXCERPT_LIMIT = 500;
 const WEBHOOK_TIMEOUT_MS = 10_000;
@@ -110,7 +112,7 @@ async function deliverEventToSubscription(
   // if the URL was modified in the database after creation.
   if (!isPublicWebhookUrl(subscription.targetUrl)) {
     const failureReason = `Webhook target URL failed security validation: ${subscription.targetUrl}`;
-    console.error('[webhook] ' + failureReason);
+    logger.error('Webhook target URL failed security validation', { subscriptionId: subscription.id });
     await insertWebhookDelivery(
       {
         domainEventId: eventId,

@@ -172,7 +172,7 @@ describe('secretaria oficios actions', () => {
           digest: undefined,
         },
       },
-      expect.anything(),
+      undefined,
     );
     consoleErrorSpy.mockRestore();
   });
@@ -216,7 +216,7 @@ describe('secretaria oficios actions', () => {
           digest: undefined,
         },
       },
-      expect.anything(),
+      undefined,
     );
     consoleErrorSpy.mockRestore();
   });

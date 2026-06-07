@@ -9,6 +9,7 @@ import { officialLetterFormSchema, type OfficialLetterFormValues } from '@/lib/o
 import { revalidatePath } from 'next/cache';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
+import { ZodError } from 'zod';
 
 const logger = createLogger('oficios:actions');
 
@@ -50,7 +51,7 @@ export async function generateAiTextAction(params: {
     logger.error(
       '[generateAiTextAction] AI generation failed',
       { error: toSafeErrorLog(error) },
-      error as Error,
+      error instanceof Error ? error : undefined,
     );
     return { success: false, error: 'Falha ao gerar sugestão com IA.' };
   }
@@ -59,18 +60,17 @@ export async function generateAiTextAction(params: {
 export async function saveOfficialLetterAction(values: OfficialLetterFormValues) {
   const user = await requireRole(ALLOWED_ROLES);
 
-  const validated = officialLetterFormSchema.parse(values);
-
   try {
+    const validated = officialLetterFormSchema.parse(values);
     const result = await service.saveOfficialLetter(validated, user.userId);
     revalidatePath('/app/secretaria/oficios');
     return { success: true, data: result };
   } catch (error) {
-    logger.error(
-      '[saveOfficialLetterAction] save failed',
-      { error: toSafeErrorLog(error) },
-      error as Error,
-    );
+    if (error instanceof ZodError) {
+      logger.error('[saveOfficialLetterAction] validation failed', { error: toSafeErrorLog(error) });
+      return { success: false, error: 'Dados inválidos. Verifique o formulário.' };
+    }
+    logger.error('[saveOfficialLetterAction] save failed', { error: toSafeErrorLog(error) }, error instanceof Error ? error : undefined);
     return { success: false, error: 'Falha ao salvar o ofício.' };
   }
 }
@@ -90,7 +90,7 @@ export async function updateOfficialLetterAction(
     logger.error(
       '[updateOfficialLetterAction] update failed',
       { error: toSafeErrorLog(error) },
-      error as Error,
+      error instanceof Error ? error : undefined,
     );
     return { success: false, error: 'Falha ao atualizar o ofício.' };
   }
@@ -107,7 +107,7 @@ export async function cancelOfficialLetterAction(id: number) {
     logger.error(
       '[cancelOfficialLetterAction] cancel failed',
       { error: toSafeErrorLog(error) },
-      error as Error,
+      error instanceof Error ? error : undefined,
     );
     return { success: false, error: 'Falha ao cancelar o ofício.' };
   }

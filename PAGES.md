@@ -1,288 +1,741 @@
-# Páginas da Intranet ASOF
+# PAGES.md — Intranet ASOF
 
-Documentação das funcionalidades de cada rota da aplicação.
+Funcionalidades de cada página e requisitos para que sejam consideradas funcionais.
+
+**Roles:** `admin` · `diretoria` · `secretaria`  
+**Convenção de acesso:** `*` = qualquer autenticado · roles listadas = mínimo necessário
+
+---
+
+## Fluxo de autenticação
+
+```mermaid
+flowchart TD
+    A([Usuário]) --> B{Tem sessão?}
+    B -- não --> C[/login]
+    B -- sim --> D{mustChangePassword?}
+    D -- sim --> E[/change-password]
+    D -- não --> F[/app]
+    C --> G{Credenciais válidas?}
+    G -- não --> C
+    G -- sim --> D
+    E --> F
+    F --> H{Esqueceu a senha?}
+    H -- sim --> I[/forgot-password]
+    I --> J[/reset-password?token=...]
+    J --> C
+```
+
+---
 
 ## Rotas Públicas
 
-### `/` (Root)
+### `/`
+Redireciona para `/login` (sem sessão) ou `/app` (com sessão).
 
-Redireciona automaticamente para `/login` se o usuário não estiver autenticado, ou para `/app` se estiver.
+**Funcional quando:** o redirect ocorre em < 100 ms sem piscar a página.
+
+---
 
 ### `/login`
 
-Página de autenticação. Aceita email e senha, valida via Server Action `login` e cria sessão via cookie assinado. Exibe mensagem de erro para credenciais inválidas. Protegida contra enumeração de usuários via timing attack (bcrypt dummy hash).
+Autenticação via email + senha.
+
+**Funcionalidades:**
+- Validação de credenciais com bcrypt + dummy hash anti-enumeração
+- Cookie de sessão `httpOnly` assinado com `SESSION_SECRET`
+- Rate limit de 5 tentativas/15 min por IP (bloqueio com mensagem genérica)
+- Redirect pós-login para destino original (query `?next=`)
+
+**Funcional quando:**
+- [ ] Login com credenciais corretas cria sessão e redireciona para `/app`
+- [ ] Credenciais erradas exibem mensagem de erro sem vazar qual campo falhou
+- [ ] Após 5 tentativas, exibe mensagem de bloqueio temporário
+- [ ] Cookie expira corretamente após período configurado
+
+---
+
+### `/forgot-password`
+
+Solicita token de reset por email.
+
+**Funcionalidades:**
+- Aceita email, envia link com token HMAC de uso único
+- Resposta genérica independente de o email existir (anti-enumeração)
+
+**Funcional quando:**
+- [ ] Email válido registrado: recebe link de reset
+- [ ] Email não registrado: resposta indistinguível do caso de sucesso
+- [ ] Token expira após 1 hora
+
+---
+
+### `/reset-password`
+
+Redefine senha via token da URL.
+
+**Funcionalidades:**
+- Valida token HMAC e expiry
+- Aceita nova senha (mín. 8 chars) + confirmação
+- Invalida token após uso
+
+**Funcional quando:**
+- [ ] Token válido: redireciona para `/login` após redefinição
+- [ ] Token expirado ou inválido: exibe erro sem stack trace
+- [ ] Reutilização de token: bloqueada
+
+---
 
 ### `/change-password`
 
-Fluxo obrigatório de troca de senha para usuários com `mustChangePassword=true`. Requer autenticação. Valida senha atual, nova senha (mínimo 8 caracteres) e confirmação.
+Troca obrigatória de senha para usuários com `mustChangePassword = true`.
+
+**Funcionalidades:**
+- Requer autenticação
+- Valida senha atual antes de aceitar nova
+- Limpa flag `mustChangePassword` ao concluir
+
+**Funcional quando:**
+- [ ] Usuário sem a flag é redirecionado para `/app`
+- [ ] Senha atual errada: exibe erro
+- [ ] Troca bem-sucedida: redireciona para `/app`
+
+---
 
 ## Área Autenticada (`/app/*`)
 
-### `/app` (Dashboard)
+Todas as rotas abaixo exigem autenticação. Usuário sem sessão é redirecionado para `/login`.
 
-Página inicial após login. Exibe métricas do quadro associativo e atividades administrativas:
+### Mapa de navegação
 
-- Stripe com total de associados ativos, pendentes de migração, atividades em aberto, atrasadas e taxa de contribuições
-- Colunas de status das atividades (kanban resumido)
+```mermaid
+graph LR
+    APP[/app<br/>Dashboard]
+    ASSOC[/app/associados]
+    ASSOC_ID[/app/associados/id]
+    ASSOC_EDIT[/app/associados/id/editar]
+    ASSOC_REL[/app/associados/relatorio]
+    ATIV[/app/atividades]
+    ATIV_NOVA[/app/atividades/nova]
+    FIN[/app/financeiro/mensalidades]
+    JUR[/app/juridico]
+    JUR_LIST[/app/juridico/consultas]
+    JUR_NOVA[/app/juridico/consultas/nova]
+    JUR_ID[/app/juridico/consultas/id]
+    TRIAGE[/app/email-triage]
+    TRIAGE_ID[/app/email-triage/id]
+    ETIQ[/app/etiquetas]
+    SEARCH[/app/search]
+    SEC_OF[/app/secretaria/oficios]
+    SEC_OF_NOVO[/app/secretaria/oficios/novo]
+    SEC_OF_EDIT[/app/secretaria/oficios/id/editar]
+    SEC_DOC[/app/secretaria/documentos]
+    SEC_EMAIL[/app/secretaria/emails/gerar]
+    CFG[/app/config]
+    CFG_USR[/app/config/usuarios]
+    CFG_LOT[/app/config/lotacoes]
+    CFG_AUD[/app/config/auditoria]
+    CFG_WH[/app/config/integracoes/webhooks]
+    CFG_API[/app/config/integracoes/api-keys]
+    CFG_IA[/app/config/integracoes/ia]
+    PRIV[/app/privacidade]
+
+    APP --> ASSOC --> ASSOC_ID --> ASSOC_EDIT
+    ASSOC --> ASSOC_REL
+    APP --> ATIV --> ATIV_NOVA
+    APP --> FIN
+    APP --> JUR --> JUR_LIST --> JUR_ID
+    JUR_LIST --> JUR_NOVA
+    APP --> TRIAGE --> TRIAGE_ID
+    APP --> ETIQ
+    APP --> SEARCH
+    APP --> SEC_OF --> SEC_OF_NOVO
+    SEC_OF --> SEC_OF_EDIT
+    APP --> SEC_DOC
+    APP --> SEC_EMAIL
+    APP --> CFG --> CFG_USR
+    CFG --> CFG_LOT
+    CFG --> CFG_AUD
+    CFG --> CFG_WH
+    CFG --> CFG_API
+    CFG --> CFG_IA
+    APP --> PRIV
+```
+
+---
+
+### `/app` — Dashboard
+
+**Acesso:** `*`
+
+**Funcionalidades:**
+- KPIs do quadro associativo: total de ativos, inadimplentes, pendentes de migração
+- Atividades em aberto, atrasadas e urgentes
+- Mini-kanban com contagem por status
 - Top regiões de lotação
-- Atividades urgentes (vencidas)
+- Sidebar com perfil do usuário logado
 
-### `/app/associados`
+**Funcional quando:**
+- [ ] KPIs refletem dados reais do banco (não valores fixos)
+- [ ] Atividades urgentes (vencidas) aparecem em destaque
+- [ ] Página carrega em < 3 s com dados reais
 
-Lista paginada de associados ativos. Funcionalidades:
+---
 
-- Busca por nome (LIKE com escape de caracteres especiais)
-- Paginação (20 itens por página)
-- Link para perfil do associado
-- Link para editar (visível apenas para admin/diretoria)
-- Botão para exportar relatório CSV
+### `/app/associados` — Lista de Associados
 
-### `/app/associados/[id]`
+**Acesso:** `*`
 
-Perfil completo do associado com:
+**Funcionalidades:**
+- Lista paginada (20/pág) de associados ativos
+- Busca por nome (LIKE escapado)
+- Link para perfil; link para editar visível apenas para admin/diretoria
+- Botão para exportar relatório CSV (redireciona para `/app/associados/relatorio`)
 
-- Dados de identificação (nome, CPF, SIAPE, contato)
-- Endereço e localização
-- Dados administrativos (lotação, classe, situação funcional/contribuição)
-- Linha do tempo (adesão, lotação, última atualização)
-- Observações internas (apenas admin)
+**Funcional quando:**
+- [ ] Busca retorna resultados parciais e é insensível a acentos
+- [ ] Paginação navega corretamente sem perder o filtro de busca
+- [ ] Usuário `secretaria` não vê o link de edição
+
+---
+
+### `/app/associados/[id]` — Perfil do Associado
+
+**Acesso:** `*`
+
+**Funcionalidades:**
+- Dados de identificação: nome, CPF, SIAPE (mascarados para `secretaria`)
+- Endereço, lotação, classe, situação funcional e contribuição
+- Observações internas (visíveis apenas para `admin`)
 - Atividades vinculadas
-- Mascaramento LGPD para perfil `secretaria`
+- Linha do tempo (adesão, última atualização)
 
-### `/app/associados/[id]/editar`
+**Funcional quando:**
+- [ ] `secretaria` vê CPF e SIAPE mascarados (`***.***.***-**`)
+- [ ] `admin` vê observações internas; demais roles não veem
+- [ ] ID inexistente retorna página `not-found` (não erro 500)
 
-Formulário de edição completo dos dados do associado. Permite alterar:
+---
 
-- Identificação, endereço, dados administrativos
-- Situação funcional, associativa e contribuição
-- Observações internas (apenas admin)
+### `/app/associados/[id]/editar` — Edição de Associado
+
+**Acesso:** `admin`, `diretoria`
+
+**Funcionalidades:**
+- Formulário completo: identificação, endereço, dados administrativos, situação
 - Validação de CPF, SIAPE, datas e emails
-- Apenas admin e diretoria têm acesso
+- Observações internas (somente `admin`)
+- Auditoria automática ao salvar
 
-### `/app/associados/relatorio`
+**Funcional quando:**
+- [ ] Dados inválidos (CPF malformado, email duplicado) bloqueiam o submit com mensagem específica
+- [ ] Salvar redireciona para o perfil e exibe feedback de sucesso
+- [ ] `secretaria` recebe 403 ao tentar acessar
 
-Interface para gerar relatório CSV de associados:
+---
 
-- Seleção de campos a exportar (com classificação LGPD)
-- Filtros por situação funcional, associativa, contribuição e mês de aniversário
-- Download do arquivo CSV com BOM UTF-8
-- Auditoria automática do download (LGPD)
-- Rate limit de 10 downloads/minuto por IP
+### `/app/associados/relatorio` — Relatório CSV
 
-### `/app/atividades`
+**Acesso:** `admin`, `diretoria`
 
-Quadro kanban de atividades administrativas com:
+**Funcionalidades:**
+- Seleção de campos com classificação LGPD por campo
+- Filtros: situação funcional, associativa, contribuição, mês de aniversário
+- Download CSV com BOM UTF-8
+- Rate limit: 10 downloads/min por IP
+- Audit log automático (LGPD)
 
-- Cards organizados por status
-- Drag-and-drop entre colunas
-- Filtros por responsável e associado
-- Resumo de contagem por prioridade
-- Quick add de novas atividades
+**Funcional quando:**
+- [ ] CSV gerado abre corretamente em Excel (BOM + separador `;`)
+- [ ] Campos não selecionados não aparecem no arquivo
+- [ ] 11ª requisição no mesmo minuto retorna 429
 
-### `/app/atividades/nova`
+---
 
-Formulário para criar nova atividade com:
+### `/app/atividades` — Quadro Kanban
 
-- Título, descrição, status, prioridade
-- Vinculação a responsável (admin) e associado
-- Data de vencimento e tags
+**Acesso:** `*`
 
-### `/app/financeiro/mensalidades`
+**Funcionalidades:**
+- Cards por status: `backlog`, `em_andamento`, `em_revisao`, `concluida`
+- Drag-and-drop entre colunas (atualiza posição e status)
+- Filtros por responsável e por associado vinculado
+- Contagem de cards por prioridade na coluna
+- Quick-add de nova atividade inline
 
-Dashboard financeiro de mensalidades com:
+**Funcional quando:**
+- [ ] Drag-and-drop persiste o novo status após recarregar a página
+- [ ] Filtros combinados funcionam (responsável + associado)
+- [ ] Card movido para `concluida` registra `completedAt`
 
-- Inicialização mensal de pagamentos (`initializeMonthAction`)
-- Tabela de pagamentos com status (`em_dia`, `inadimplente`, `isento`)
+---
+
+### `/app/atividades/nova` — Nova Atividade
+
+**Acesso:** `admin`, `diretoria`
+
+**Funcionalidades:**
+- Campos: título, descrição, status, prioridade, responsável, associado, data de vencimento
+- Vinculação opcional a associado via `AssociatePicker`
+
+**Funcional quando:**
+- [ ] Título obrigatório é validado no cliente e no servidor
+- [ ] Salvar redireciona para `/app/atividades` com o card visível na coluna correta
+
+---
+
+### `/app/financeiro/mensalidades` — Mensalidades
+
+**Acesso:** `admin`, `diretoria`
+
+**Funcionalidades:**
+- Inicialização mensal: cria registros de pagamento para todos os associados ativos (`initializeMonthAction`)
+- Tabela de pagamentos: status por associado (`em_dia`, `inadimplente`, `isento`)
 - KPIs: total recebido, inadimplentes, isentos, taxa de adimplência
-- Navegação mensal (mês anterior/próximo)
-- Acesso restrito a admin/diretoria
+- Navegação mês a mês (anterior/próximo)
+- Atualização individual de status de pagamento
 
-### `/app/juridico`
+**Funcional quando:**
+- [ ] Inicialização cria exatamente um registro por associado ativo
+- [ ] KPIs somam corretamente (sem dupla contagem)
+- [ ] Navegação mensal mantém os dados do mês selecionado
 
-Dashboard do módulo jurídico com:
+---
 
-- Indicadores: consultas abertas, aguardando escritório, sem atualização >7 dias, SLA vencendo, respondidas no mês
-- Lista de ações pendentes (SLA vencendo, sem atualização, aguardando escritório)
-- Distribuição por status
-- Acesso restrito a admin/diretoria
+### `/app/juridico` — Dashboard Jurídico
 
-### `/app/juridico/consultas`
+**Acesso:** `admin`, `diretoria`
 
-Lista paginada de consultas jurídicas com:
+**Funcionalidades:**
+- Indicadores: consultas abertas, aguardando escritório, sem atualização > 7 dias, SLA vencendo em 48 h, respondidas no mês
+- Lista de ações pendentes (ordenadas por urgência)
+- Distribuição visual por status
 
+**Funcional quando:**
+- [ ] Contador "SLA vencendo" reflete consultas com `slaDeadline` nos próximos 2 dias
+- [ ] Consultas stale (> 7 dias sem nota) aparecem destacadas
+
+---
+
+### `/app/juridico/consultas` — Lista de Consultas
+
+**Acesso:** `admin`, `diretoria`
+
+**Funcionalidades:**
+- Paginação (20/pág)
 - Busca por título ou número interno
 - Filtro por status
-- Colunas: número, título, associado, status, SLA, última atualização
-- Destaque visual para consultas stale (>7 dias) e SLA vencido
+- Destaque visual: stale (> 7 dias) e SLA vencido
 
-### `/app/juridico/consultas/nova`
+**Funcional quando:**
+- [ ] Busca funciona para número parcial (ex: `JUR-2026`)
+- [ ] Filtro de status preserva-se ao navegar entre páginas
 
-Formulário para criar nova consulta jurídica:
+---
 
-- Título e resumo da pergunta
-- Texto completo da questão
-- Vinculação a associado
-- Prazo SLA (dias)
-- Geração automática de número interno sequencial (JUR-YYYY-NNN)
+### `/app/juridico/consultas/nova` — Nova Consulta
 
-### `/app/juridico/consultas/[id]`
+**Acesso:** `admin`, `diretoria`
 
-Detalhamento de uma consulta jurídica:
+**Funcionalidades:**
+- Campos: título, resumo, texto completo, associado, prazo SLA (dias)
+- Número interno gerado automaticamente (JUR-YYYY-NNN sequencial)
 
-- Dados da consulta (status, título, resumo, texto completo)
-- Informações do associado vinculado
-- SLA e datas
-- Histórico de notas/interações
+**Funcional quando:**
+- [ ] Número gerado é único e sequencial dentro do ano
+- [ ] Prazo SLA calculado como `createdAt + slaDeadlineDays`
+- [ ] Salvar redireciona para o detalhe da consulta criada
+
+---
+
+### `/app/juridico/consultas/[id]` — Detalhe de Consulta
+
+**Acesso:** `admin`, `diretoria`
+
+**Funcionalidades:**
+- Dados completos da consulta (status, título, texto, associado, SLA)
+- Histórico de notas em ordem cronológica
 - Formulário para adicionar nova nota
-- Atualização de status
-- Painel lateral com resumo
+- Atualização de status (dropdown com transições válidas)
+- Painel lateral com resumo e SLA
 
-### `/app/config`
+**Funcional quando:**
+- [ ] Nova nota aparece imediatamente no histórico após submit
+- [ ] Mudança de status persiste após recarregar
+- [ ] ID inexistente retorna página `not-found`
 
-Hub de configurações do sistema. Hoje expõe integrações e webhooks e mantém uma área reservada para futuras preferências operacionais.
+---
 
-### `/app/config/auditoria`
+### `/app/email-triage` — Triagem de E-mails
 
-Consulta paginada de eventos de auditoria. Acesso restrito a admin/diretoria.
+**Acesso:** `admin`, `diretoria`
 
-- Filtro por ação, tipo de entidade e intervalo de datas
-- Exibe ator, ação, entidade e data/hora em America/Sao_Paulo
-- Paginação de 50 eventos por página
-
-### `/app/config/usuarios`
-
-Gerenciamento de usuários administrativos:
-
-- Lista de todos os usuários (nome, email, perfil, status)
-- Reset de senha (gera senha temporária, força troca)
-- Ativação/desativação de conta
-- Apenas admin tem acesso
-- Auditoria de todas as ações
-
-### `/app/config/lotacoes`
-
-Gerenciamento de lotações (postos):
-
-- Cadastro de nova lotação (nome, tipo: domestic/abroad)
-- Edição de lotação existente
-- Ativação/desativação
-- Validação de duplicidade de nome
-- Apenas admin/diretoria tem acesso
-- Auditoria de todas as ações
-
-### `/app/config/integracoes/api-keys`
-
-Gerenciamento de chaves de API para integrações M2M:
-
-- Criação de chave com escopos (events:read, events:write, webhooks:manage, admin)
-- Exibição única do segredo HMAC na criação/rotação
-- Cópia do comando curl de exemplo
-- Desativação/reativação de chave
-- Apenas admin tem acesso
-
-### `/app/config/integracoes/ia`
-
-Configurações de inteligência artificial (Gemini):
-
-- Exibição do status da integração Gemini
-- Indicador visual se a chave está configurada
-- Apenas admin tem acesso
-
-### `/app/config/integracoes/webhooks`
-
-Gerenciamento de subscriptions de webhooks outbound:
-
-- Lista de webhooks cadastrados com URL de destino e status
-- Criação de subscription com targetUrl HTTPS pública
-- Rotação de segredo do webhook
-- Ativação/desativação de subscription
-- Apenas admin tem acesso
-
-### `/app/email-triage`
-
-Lista de emails triados automaticamente com Gemini AI:
-
+**Funcionalidades:**
 - KPIs: total de emails, por status, taxa de conclusão
-- Tabela paginada com filtros por status, prioridade e pesquisa textual (blind indexes para campos PII como remetente/destinatário)
+- Tabela paginada (20/pág) com filtros por status, prioridade e busca textual
 - Ações em massa: validar, concluir, arquivar
-- Acesso restrito a admin/diretoria
+- Classificação automática via Gemini AI (categoria, prazo, risco, ação recomendada)
 
-### `/app/email-triage/[id]`
+**Funcional quando:**
+- [ ] Filtros combinados (status + prioridade + texto) funcionam juntos
+- [ ] Ação em massa atualiza status de todos os itens selecionados
+- [ ] Busca textual funciona com blind indexes (não expõe PII em query)
 
-Detalhamento de uma triagem de email:
+---
 
-- Conteúdo completo do email (remetente, destinatário, assunto, corpo)
-- Classificação da IA (categoria, prazo, risco, ação recomendada)
-- Observações e notas internas
-- Atualização de status e validação manual
-- Apenas admin/diretoria/secretaria tem acesso (PII visível para todos os usuários autenticados)
-- Auditoria automática de acesso ao conteúdo sensível (LGPD)
+### `/app/email-triage/[id]` — Detalhe de Triagem
 
-### `/app/etiquetas`
+**Acesso:** `*` (conteúdo PII visível para todos os autenticados)
 
-Geração de etiquetas (Pimaco):
+**Funcionalidades:**
+- Conteúdo completo do email (remetente, assunto, corpo)
+- Classificação da IA com campos editáveis
+- Observações internas e notas
+- Atualização de status e deadline
+- Audit log automático de acesso (LGPD)
 
-- Configuração do modelo de etiqueta (Pimaco)
-- Seleção de layout e orientação
-- Impressão via navegador
+**Funcional quando:**
+- [ ] Audit log registrado a cada acesso ao conteúdo
+- [ ] Atualização de status refletida na lista
+- [ ] ID inexistente retorna página `not-found`
 
-### `/app/privacidade`
+---
 
-Política de privacidade e termos de uso da intranet:
+### `/app/etiquetas` — Etiquetas Pimaco
 
-- Exibição da política LGPD
-- Informações sobre tratamento de dados pessoais
-- Canal de contato para exercício de direitos do titular
+**Acesso:** `*`
 
-### `/app/secretaria/oficios`
+**Funcionalidades:**
+- Seleção de modelo Pimaco (presets configurados)
+- Configuração de layout e conteúdo
+- Geração de PDF via API (`POST /api/labels/pimaco`)
+- Impressão via browser
 
-Lista de ofícios cadastrados:
+**Funcional quando:**
+- [ ] PDF gerado tem dimensões corretas para o modelo selecionado
+- [ ] Download funciona sem erro 500
 
-- Tabela paginada com número, destinatário, data, status
+---
+
+### `/app/search` — Busca Global
+
+**Acesso:** `*`
+
+**Funcionalidades:**
+- Busca unificada por associados, oficios e consultas jurídicas
+- Resultados agrupados por entidade
+- Navegação direta para o item encontrado
+
+**Funcional quando:**
+- [ ] Retorna resultados de pelo menos uma entidade para termos válidos
+- [ ] Resultados de entidades restritas (ex: jurídico) são filtrados por role
+
+---
+
+### `/app/secretaria/oficios` — Lista de Ofícios
+
+**Acesso:** `admin`, `diretoria`, `secretaria`
+
+**Funcionalidades:**
+- Tabela paginada: número, destinatário, data, status
 - Filtros por status e período
 - Ações: visualizar, baixar PDF, editar, cancelar
-- Acesso restrito a admin/diretoria/secretaria
+- Download do PDF gerado (`GET /api/oficios/[id]/download`)
 
-### `/app/secretaria/oficios/novo`
+**Funcional quando:**
+- [ ] PDF baixado segue o Padrão Ofício com numeração correta
+- [ ] Ofício cancelado não pode ser editado (botão desabilitado)
 
-Formulário de criação de ofício seguindo o Padrão Ofício:
+---
 
-- Identificação do documento (número sequencial automático)
-- Destinatário, cargo, vocativo, assunto
-- Editor rich text para corpo do ofício
-- Fecho e identificação do signatário
-- Geração de PDF sob demanda
+### `/app/secretaria/oficios/novo` — Novo Ofício
 
-### `/app/secretaria/oficios/[id]/editar`
+**Acesso:** `admin`, `diretoria`, `secretaria`
 
-Edição de ofício existente:
+**Funcionalidades:**
+- Campos: destinatário, cargo, vocativo, assunto, setor Itamaraty
+- Editor rich text para o corpo
+- Fecho e signatário
+- Número sequencial automático
+- Sugestão de texto via IA Gemini (opcional, requer configuração)
 
-- Mesmo formulário da criação, com dados preenchidos
-- Permite alterar destinatário, assunto, texto e signatário
-- Apenas ofícios não cancelados podem ser editados
+**Funcional quando:**
+- [ ] Número gerado é único e sequencial
+- [ ] Salvar sem IA configurada funciona normalmente (IA é opcional)
+- [ ] Campos obrigatórios validados antes do submit
 
-### `/app/secretaria/documentos`
+---
 
-Gerenciamento de documentos institucionais:
+### `/app/secretaria/oficios/[id]/editar` — Editar Ofício
 
-- Upload de arquivos com categorias (contrato, ata, oficio, rh, etc.)
+**Acesso:** `admin`, `diretoria`, `secretaria`
+
+**Funcionalidades:**
+- Mesmo formulário do novo, com dados preenchidos
+- Apenas ofícios com status não-cancelado podem ser editados
+
+**Funcional quando:**
+- [ ] Ofício cancelado retorna 404/not-found ao tentar editar
+- [ ] Salvar redireciona para a lista com dados atualizados
+
+---
+
+### `/app/secretaria/documentos` — Documentos Institucionais
+
+**Acesso:** `admin`, `diretoria`, `secretaria`
+
+**Funcionalidades:**
+- Upload com categorias: contrato, ata, oficio, rh, estatuto, etc.
 - Lista paginada com busca por nome e filtro por categoria
-- Download e exclusão de documentos
-- Vinculação a entidades (associado, ofício, consulta)
-- Acesso restrito a admin/diretoria/secretaria
+- Download com URL assinada (expiração configurável)
+- Exclusão com confirmação
+- Vinculação opcional a entidade (associado, ofício, consulta)
 
-### `/app/secretaria/emails/gerar`
+**Funcional quando:**
+- [ ] Upload de arquivo > 10 MB rejeita com mensagem clara
+- [ ] URL de download expira após o período configurado
+- [ ] Exclusão remove o arquivo do storage e o registro do banco
 
-Ferramenta de geração de emails em lote:
+---
 
-- Seleção de destinatários por filtro (ativo, inadimplente, etc.)
-- Editor de assunto e corpo do email
-- Envio em lote via Mailjet (rate limit: 10 requisições/minuto por IP, max 50 destinatários por lote)
-- Histórico de envios com auditoria
-- Ações registradas em audit_logs
+### `/app/secretaria/emails/gerar` — Gerador de E-mails com IA
 
-## Route Handlers
+**Acesso:** `admin`, `secretaria`
 
-### `/app/associados/relatorio/download` (GET)
+**Funcionalidades:**
+- Seleção de tipo de email
+- Prompt livre para instruções à IA (Gemini)
+- Geração de assunto + corpo HTML
+- Rate limit: integrado ao rate limiter por IP
+- Requer `NEXT_PUBLIC_AI_ENABLED = true` e Gemini configurado
 
-Gera e faz download do relatório CSV de associados. Rate limitado por IP. Auditoria automática.
+**Funcional quando:**
+- [ ] Gemini não configurado: exibe mensagem de erro adequada (não 500)
+- [ ] Resposta da IA exibe preview antes de qualquer envio
+- [ ] Erros da API Gemini retornam mensagem genérica (sem vazar detalhes internos)
+
+---
+
+### `/app/config` — Hub de Configurações
+
+**Acesso:** `admin`
+
+Cards de navegação para sub-módulos: Usuários, Lotações, Auditoria, Webhooks, API Keys, IA.
+
+**Funcional quando:**
+- [ ] `diretoria` e `secretaria` recebem 403 ao tentar acessar
+
+---
+
+### `/app/config/usuarios` — Usuários Administrativos
+
+**Acesso:** `admin`
+
+**Funcionalidades:**
+- Lista de admins: nome, email, role, status ativo/inativo
+- Reset de senha (gera senha temporária, força `mustChangePassword`)
+- Ativação/desativação de conta
+- Audit log de todas as ações
+
+**Funcional quando:**
+- [ ] Admin não pode desativar a própria conta
+- [ ] Senha temporária exige troca no próximo login
+
+---
+
+### `/app/config/lotacoes` — Lotações
+
+**Acesso:** `admin`, `diretoria`
+
+**Funcionalidades:**
+- Cadastro com nome e tipo (`domestic`/`abroad`)
+- Edição e ativação/desativação
+- Validação de nome duplicado
+
+**Funcional quando:**
+- [ ] Nome duplicado bloqueado com mensagem específica
+- [ ] Lotação desativada não aparece no `AssociatePicker`
+
+---
+
+### `/app/config/auditoria` — Auditoria
+
+**Acesso:** `admin`, `diretoria`
+
+**Funcionalidades:**
+- Consulta paginada (50/pág) de `audit_logs`
+- Filtros por ação, tipo de entidade e intervalo de datas
+- Timestamps exibidos em `America/Sao_Paulo`
+
+**Funcional quando:**
+- [ ] Filtros combinados reduzem corretamente o conjunto de resultados
+- [ ] Registro de ações sensíveis (edição de associado, reset de senha) está presente
+
+---
+
+### `/app/config/integracoes/webhooks` — Webhooks
+
+**Acesso:** `admin`
+
+**Funcionalidades:**
+- Lista de subscriptions com URL e status
+- Criação com `targetUrl` HTTPS pública (validação SSRF)
+- Rotação de segredo HMAC
+- Ativação/desativação
+
+**Funcional quando:**
+- [ ] URL privada (RFC-1918, localhost) é rejeitada na criação
+- [ ] Segredo exibido apenas uma vez após criação/rotação
+
+---
+
+### `/app/config/integracoes/api-keys` — API Keys
+
+**Acesso:** `admin`
+
+**Funcionalidades:**
+- Criação com escopos: `events:read`, `events:write`, `webhooks:manage`, `admin`
+- Exibição única do segredo após criação
+- Rotação e desativação
+
+**Funcional quando:**
+- [ ] Segredo não recuperável após fechar o modal de criação
+- [ ] Chave desativada retorna 401 nas APIs
+
+---
+
+### `/app/config/integracoes/ia` — Configuração de IA
+
+**Acesso:** `admin`
+
+**Funcionalidades:**
+- Status da integração Gemini (chave configurada ou não)
+- Indicador visual de saúde
+
+**Funcional quando:**
+- [ ] Com `GEMINI_API_KEY` ausente: exibe aviso claro
+- [ ] Com chave configurada: exibe status ativo
+
+---
+
+### `/app/privacidade` — Política de Privacidade
+
+**Acesso:** `*`
+
+Exibe política LGPD e canal de contato para exercício de direitos do titular.
+
+**Funcional quando:**
+- [ ] Página carrega sem erro para qualquer role autenticada
+
+---
+
+## APIs e Route Handlers
+
+### Fluxo de integrações
+
+```mermaid
+sequenceDiagram
+    participant C as Cliente M2M
+    participant API as Intranet API
+    participant DB as PostgreSQL
+    participant WH as Webhook Targets
+
+    C->>API: POST /api/v1/events (API Key)
+    API->>API: Autenticação + Rate limit
+    API->>DB: Cria domain_event (outbox)
+    API->>WH: Dispatch para subscriptions ativas
+    WH-->>API: HTTP 2xx / erro
+    API->>DB: Registra webhook_delivery
+    API-->>C: 200 OK
+```
+
+### `GET /api/v1/health`
+Health check autenticado para integrações M2M. Requer escopo `health:read` ou role `admin`/`diretoria`.
+
+**Funcional quando:** retorna `{ status: "ok" }` com 200 em < 500 ms.
+
+---
+
+### `GET|POST /api/v1/events`
+- `GET`: lista domain events pendentes
+- `POST`: dispara eventos por ID ou processa fila pendente
+
+Autenticação: API Key com escopos `events:read` / `events:write`. Rate limit por chave.
+
+**Funcional quando:**
+- [ ] Evento dispatched persiste `webhook_delivery` com resultado
+- [ ] Evento inexistente retorna 404 estruturado
+
+---
+
+### `POST /api/v1/email-triage/process`
+Processa emails da fila Gmail via Gemini AI. Requer `CRON_SECRET`.
+
+**Funcional quando:** classificação persiste no banco e não expõe PII em logs.
+
+---
+
+### `GET /api/v1/cron/gmail-watch`
+Renova subscription Gmail Watch (cron). Requer `CRON_SECRET`.
+
+---
+
+### `GET /api/v1/cron/lgpd-retention`
+Executa rotina de retenção LGPD (anonimização/exclusão de dados vencidos). Requer `CRON_SECRET`.
+
+**Funcional quando:** registros além do período de retenção são anonimizados sem falha silenciosa.
+
+---
+
+### `GET /api/v1/juridico/sla-warnings`
+Emite notificações de SLA vencendo para consultas jurídicas. Requer `CRON_SECRET`.
+
+**Funcional quando:** emite ao menos uma notificação por consulta com SLA em < 48 h, sem duplicatas.
+
+---
+
+### `POST /api/v1/gmail-webhook`
+Recebe push notifications do Gmail (Pub/Sub). Valida payload e enfileira para triagem.
+
+---
+
+### `POST /api/v1/events/dispatch`
+Endpoint alternativo para disparo manual de domain events.
+
+---
+
+### `POST /api/labels/pimaco`
+Gera PDF de etiquetas Pimaco. Requer autenticação + role `admin`/`diretoria`/`secretaria`.
+
+**Funcional quando:** PDF com dimensões corretas para o preset retornado em < 5 s.
+
+---
+
+### `GET /api/oficios/[id]/download`
+Download do PDF de um ofício. Requer autenticação.
+
+**Funcional quando:** PDF gerado segue o Padrão Ofício; ofício cancelado retorna 404.
+
+---
+
+### `POST /api/webhooks/assinafy`
+Recebe eventos do serviço de assinatura digital Assinafy. Valida `X-Webhook-Secret`.
+
+**Funcional quando:** payload inválido ou secret errado retorna 401 sem processar o evento.
+
+---
+
+## Requisitos Transversais
+
+Estes requisitos se aplicam a todas as páginas e APIs:
+
+| Requisito | Critério |
+|---|---|
+| **Autenticação** | Qualquer rota `/app/*` sem sessão redireciona para `/login` |
+| **Autorização** | Role insuficiente retorna 403 (não 404 ou 500) |
+| **Error boundaries** | Toda rota tem `error.tsx`; erros não expõem stack trace no browser |
+| **Not-found** | Rotas dinâmicas com ID inválido têm `not-found.tsx` |
+| **PII em logs** | Nenhum CPF, email, SIAPE em texto plano em `stdout`/`stderr` |
+| **Audit log** | Criação, edição e exclusão de associados, usuários, ofícios e consultas são registrados |
+| **Acessibilidade** | Formulários com `label` associado; navegação por teclado funcional |
+| **Performance** | Páginas com dados reais carregam em < 3 s em conexão 4G |

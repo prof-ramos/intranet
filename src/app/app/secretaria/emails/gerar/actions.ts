@@ -8,6 +8,10 @@ import { getTrustedClientIp } from '@/lib/ip';
 import { headers } from 'next/headers';
 
 import { ALLOWED_EMAIL_TYPES, type EmailType } from '@/lib/ai/constants';
+import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('secretaria:emails:gerar');
 
 function isValidEmailType(value: unknown): value is EmailType {
   return (ALLOWED_EMAIL_TYPES as readonly unknown[]).includes(value);
@@ -59,7 +63,7 @@ export async function generateEmailAction(
     const { subject, html } = await generateEmailContent({ emailType, prompt: trimmedPrompt });
     return { success: true, subject, html };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Falha ao gerar e-mail.';
-    return { success: false, error: message };
+    logger.error('Failed to generate email', { error: toSafeErrorLog(error) }, error instanceof Error ? error : undefined);
+    return { success: false, error: 'Falha ao gerar e-mail.' };
   }
 }

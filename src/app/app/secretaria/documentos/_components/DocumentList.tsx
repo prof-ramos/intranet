@@ -16,15 +16,17 @@ import {
   AlertTriangle,
   FolderOpen
 } from 'lucide-react';
+import { createLogger } from '@/lib/logger';
+import { toSafeErrorLog } from '@/lib/error-log';
 import { deleteDocumentAction, downloadDocumentAction } from '@/app/app/secretaria/documentos/actions';
 import { UploadDocumentModal } from '@/app/app/secretaria/documentos/_components/UploadDocumentModal';
-import { 
-  hairline, 
-  textMuted, 
-  focusRingClass, 
-  navy, 
-  primaryContainerHover, 
-  dangerText, 
+import {
+  hairline,
+  textMuted,
+  focusRingClass,
+  navy,
+  primaryContainerHover,
+  dangerText,
   cardShadow,
   fileIconPdf,
   fileIconSpreadsheet,
@@ -36,6 +38,8 @@ import {
 } from '@/lib/ui/tokens';
 import { CSSProperties } from 'react';
 import type { DocumentWithUploader } from '@/lib/documents/queries';
+
+const logger = createLogger('documentos:DocumentList');
 
 const CATEGORY_LABELS: Record<string, string> = {
   modelo_contrato: 'Modelo de Contrato',
@@ -97,7 +101,7 @@ export function DocumentList({ initialDocuments, userRole }: DocumentListProps) 
         window.open(res.signedUrl, '_blank');
       }
     } catch (err) {
-      console.error('Erro ao gerar link de download:', err);
+      logger.error('Erro ao gerar link de download', { error: toSafeErrorLog(err) }, err instanceof Error ? err : undefined);
       alert('Erro ao gerar link de download.');
     } finally {
       setDownloadingId(null);
