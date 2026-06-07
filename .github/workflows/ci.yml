@@ -137,7 +137,7 @@ jobs:
       - name: Verify smoke credentials
         id: verify
         run: |
-          if [ -z "${{ secrets.SMOKE_ADMIN_EMAIL }}" ] || [ -z "${{ secrets.SMOKE_ADMIN_PASSWORD }}" ]; then
+          if [ -z "$SMOKE_ADMIN_EMAIL" ] || [ -z "$SMOKE_ADMIN_PASSWORD" ]; then
             echo "::warning::SMOKE_ADMIN_EMAIL e/ou SMOKE_ADMIN_PASSWORD não configurados como secrets. Smoke test será pulado."
             echo "skipped=true" >> "$GITHUB_OUTPUT"
             exit 0
