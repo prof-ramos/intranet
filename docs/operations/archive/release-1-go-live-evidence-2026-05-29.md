@@ -1,5 +1,8 @@
 # Evidência de Go-Live Operacional - Release 1.0
 
+> Arquivo historico. Nao seguir como runbook atual e nao copiar instrucoes
+> operacionais daqui para novas janelas. Use `docs/release-1-operational-go-live.md`.
+
 ## Status: Parcialmente Executado (Robô E2E)
 
 **Janela:** 29 de Maio de 2026 (UTC)
@@ -25,5 +28,6 @@ Iniciei o robô headless usando Playwright para realizar a jornada:
 - [x] Rotas `/api/v1/events/dispatch` testadas localmente. Retornam corretamente `401 Unauthorized` sem o bearer token. O bearer exato deve ser injetado manualmente no terminal com o token da Vercel Dashboard para validar o `200`.
 
 ### Próximos Passos
-As credenciais atualizadas e prontas para uso estão no final do seu `.env.local` na máquina de desenvolvimento.
-Use-as para abrir a página `https://intranet.asof.com.br/` e clicar rapidamente em 1 botão de cada módulo (kanban, ofícios, etc) caso queira fechar a homologação da interface!
+Substituido por `docs/release-1-operational-go-live.md`. Credenciais e secrets
+nunca devem ser descritos como disponíveis em arquivos locais versionados ou em
+evidencias compartilhaveis.

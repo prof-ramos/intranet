@@ -1,6 +1,6 @@
 # Checklist LGPD-ready
 
-Versao: 2026-05-26
+Versao: 2026-06-07
 
 Escopo: intranet ASOF com Next.js, PostgreSQL gerenciado, auth server-side propria e Mailjet para email transacional.
 
@@ -10,13 +10,14 @@ Escopo: intranet ASOF com Next.js, PostgreSQL gerenciado, auth server-side propr
 - Senhas administrativas com hash bcrypt em `admins.password_hash`.
 - Sessao por cookie `httpOnly` assinado com `SESSION_SECRET`.
 - Mascaramento por role para campos sensiveis.
-- Criptografia e índices cegos para dados sensíveis.
-  - Implementado: `associates.cpf_hash_blinded`, `associates.address_encrypted`, `associates.siape_encrypted`.
-  - Não implementado: `associates.email`, `associates.name` (requerido para login, exibição na UI e busca textual, risco mitigado via RLS e logs).
+- Criptografia e indices cegos para dados sensiveis quando a camada de escrita suporta.
+  - Implementado nas rotas de escrita atuais: pares `*Ciphertext` e `*Hash` para CPF, SIAPE, email primario, telefone, WhatsApp e endereco em `associates`.
+  - Plaintext legado/importado ainda existe para campos operacionais como `fullName`, `primaryEmail`, `secondaryEmail`, `cpf`, `siape`, `phone`, `whatsapp`, `address` e `birthDate`; o risco aceito e mitigado por app server, controle de acesso ao Neon, auditoria e sanitizacao de logs.
+  - RLS esta fora do gate operacional atual por ADR 001/007; nao documentar RLS como mitigacao ativa ate uma decisao futura reabrir essa frente.
 - Logger e sanitizador de PII para reduzir vazamento em logs e eventos.
 - Auditoria em `audit_logs`.
 
-## Pendencias LGPD Antes Do Go-Live
+## Pendencias LGPD Operacionais
 
 - [ ] ROPA formal com finalidade, base legal, categorias de dados e operadores.
 - [ ] Politica de privacidade publicada.

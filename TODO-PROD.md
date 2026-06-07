@@ -1,6 +1,8 @@
 # TODO-PROD
 
-Checklist canonica de go-live da intranet ASOF.
+Checklist canonica de go-live da intranet ASOF. Itens historicos ja executados
+permanecem aqui apenas quando ainda orientam operacao ou auditoria; evidencias
+pontuais antigas ficam em `docs/operations/archive/`.
 
 Atualizado em 2026-06-07. Última verificação de gates locais: 2026-06-07.
 
@@ -41,7 +43,7 @@ Atualizado em 2026-06-07. Última verificação de gates locais: 2026-06-07.
 ## Recomendado Antes Do Go-Live
 
 - [x] Documentos fora do go-live: modulo de upload/download de arquivos legados nao entra no dia 1 (ADR 008). Storage de objetos sera frente separada pos-estreia.
-- [ ] Avaliar Papra como DMS externo para Documentos da ASOF, mantendo Neon/PostgreSQL como banco transacional da intranet — frente pos-estreia, nao bloqueante para go-live; ADR 012 aceita; implementacao/spike rastreada pela issue: https://github.com/prof-ramos/intranet/issues/116.
+- [ ] Avaliar Papra como DMS externo para Documentos da ASOF, mantendo Neon/PostgreSQL como banco transacional da intranet — frente pos-estreia, nao bloqueante para operacao atual; ADR 012 aceita; implementacao/spike rastreada pela issue: https://github.com/prof-ramos/intranet/issues/116.
   - [ ] Subir prova de conceito self-hosted do Papra em VPS isolada, com banco, storage e auth/admin separados da intranet.
   - [ ] Restringir exposicao da VPS: Papra nao deve ser interface publica; API/endpoint apenas para a intranet e administracao via VPN ou allowlist de IP, com TLS.
   - [ ] Definir backend de storage privado para documentos do Papra com software open source e self-hosted, preferencialmente S3 compativel (ex: MinIO ou Garage); evitar filesystem local simples e servico proprietario gerenciado na POC.
@@ -121,7 +123,7 @@ _Nota: `audit_log` e preservado (ADR 009)._
 ## Evidencia Desta Frente
 
 - Removidos helpers/scripts operacionais de Auth externa, entrega em tempo real externa e storage externo.
-- Criado baseline inicial `drizzle/postgres/0000_green_glorian.sql`; migrações incrementais atuais seguem em `drizzle/postgres/0001_living_hobgoblin.sql` e `drizzle/postgres/0002_fix_assignment_type_enum_labels.sql`.
+- Criado baseline inicial `drizzle/postgres/0000_green_glorian.sql`; migrações incrementais atuais seguem o historico em `drizzle/postgres/` e o journal Drizzle.
 - `npm run typecheck`, `npm run lint`, `npm run test`, `npm run test:e2e` e `npm audit` passaram apos a troca para auth propria.
 
 ### Melhorias pós-go-live (2026-06-07)
