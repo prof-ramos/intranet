@@ -152,6 +152,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     <div ref={panelRef} className="relative">
       <button
         type="button"
+        data-testid="notification-bell"
         aria-label={buttonLabel}
         aria-expanded={open}
         aria-haspopup="dialog"

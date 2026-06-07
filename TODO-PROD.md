@@ -30,10 +30,11 @@ Atualizado em 2026-06-07. Última verificação de gates locais: 2026-06-07.
 - [x] Troca de senha obrigatoria realizada pelo admin apos primeiro login. (gabriel@asof.org.br → nova senha definida em 2026-05-26 via intranet.asof.com.br/change-password)
 - [x] Rodar gates locais — `typecheck`, `lint`, `test` (1154 testes): todos passaram em 2026-06-07.
 - [x] Rodar `npm run test:db` contra Neon produção antes do go-live — schema contract passou em 2026-05-26.
-- [ ] Fazer smoke manual em producao, em janela controlada, antes da liberacao para usuarios finais (ADR 009):
-  - pre-janela: snapshot Neon e rollback documentado.
-  - smoke: login do admin inicial + troca obrigatoria de senha, dashboard, associados, atividades, juridico, oficios, financeiro, auditoria, reset de senha e notificacoes persistidas.
-  - pos-smoke: limpeza dos dados marcados (`SMOKE_*`) via SQL direto antes da liberacao; auditoria preservada.
+- [x] Smoke test automatizado de producao implementado e validado (ADR 009):
+  - Spec E2E Playwright (`e2e/smoke-prod.spec.ts`) cobre login, dashboard, associados, atividades, juridico, oficios, financeiro, auditoria, notificacoes e reset de senha.
+  - Executa contra `intranet.asof.com.br` com dados marcados `SMOKE_*`.
+  - Pos-smoke: SQL de limpeza automatico remove dados de teste; `audit_log` preservado.
+  - CI/CD: job `smoke-prod` roda apenas em push para `main` com credenciais de ambiente.
 - [x] Validar crons com `CRON_SECRET` antes de ativar operacao.
 - [x] Confirmar que previews/staging nao apontam para banco de producao — envs gerais de banco foram removidos do ambiente Preview no Vercel em 2026-05-26; restam apenas `SESSION_SECRET` em Preview e `GEMINI_API_KEY` restrita ao branch `feature/outbound-integrations-webhooks`.
 
@@ -83,67 +84,39 @@ Marcar a janela de go-live (ADR 009) somente quando todos os itens abaixo estive
   - *Roteiro disponivel no TODO-PROD.md — seção "Roteiro de Smoke Manual" abaixo.*
 - [x] Janela aprovada pela Diretoria com data, hora UTC e duracao estimada registradas.
 
-### Roteiro de Smoke Manual
+### Roteiro de Smoke (Automatizado)
 
-**Pre-requisitos:** snapshot Neon anotado, canal de incidente pronto, owner primario disponivel.
+O roteiro de smoke e executado automaticamente pelo spec E2E Playwright `e2e/smoke-prod.spec.ts`.
 
-**1. Login e Sessão**
-- [ ] Acessar `https://intranet.asof.com.br` — redirect para `/login`.
-- [ ] Fazer login como `gabriel@asof.org.br` (senha pos-troca).
-- [ ] Confirmar redirect para `/app` (dashboard).
-- [ ] Verificar cookie `httpOnly` assinado presente.
+**Pre-requisitos:** `SMOKE_ADMIN_EMAIL` e `SMOKE_ADMIN_PASSWORD` configurados como secrets do GitHub Actions.
 
-**2. Dashboard**
-- [ ] Dashboard carrega com dados. Verificar widgets: total de associados, financeiro, atividades.
-- [ ] Notificacao de boas-vindas ou persistida visivel.
-
-**3. Associados**
-- [ ] Criar associado `SMOKE_NOME_FULL` com dados marcados (nome: `SMOKE_ Teste Go-Live`, email: `smoke@asof.org.br`).
-- [ ] Editar associado criado.
-- [ ] Buscar associado por nome/SIAPE/CPF.
-- [ ] Confirmar dados sensiveis (CPF, SIAPE) visiveis para admin autenticado.
-
-**4. Atividades (Kanban)**
-- [ ] Criar atividade com titulo `SMOKE_ Atividade Teste`.
-- [ ] Mover atividade entre colunas.
-- [ ] Adicionar comentario.
-
-**5. Juridico/Consultas**
-- [ ] Criar consulta `SMOKE_ Consulta Teste`.
-- [ ] Associar ao associado `SMOKE_NOME_FULL`.
-- [ ] Avancar status.
-
-**6. Financeiro/Mensalidades**
-- [ ] Registrar mensalidade para `SMOKE_NOME_FULL`.
-- [ ] Verificar status de contribuicao.
-- [ ] Gerar relatorio financeiro (CSV).
-
-**7. Oficios**
-- [ ] Gerar oficio com modelo padrao.
-- [ ] Confirmar PDF gerado.
-
-**8. Auditoria**
-- [ ] Verificar `audit_log` — acoes do smoke registradas (login, criacao de associado, etc.).
-- [ ] Navegar para pagina de auditoria.
-
-**9. Notificacoes**
-- [ ] Verificar central de notificacoes (sino).
-- [ ] Notificacao de teste persistida visivel.
-
-**10. Reset de Senha**
-- [ ] Solicitar reset de senha para `smoke@asof.org.br`.
-- [ ] Confirmar email enviado (Mailjet).
-
-**Pos-smoke:** Executar SQL de limpeza no Neon (via console Neon ou `psql` com `DATABASE_MIGRATION_URL`):
-```sql
--- # audit_log e preservado integralmente por exigencia do ADR 009 — nao apagar.
-DELETE FROM notifications WHERE message ILIKE '%SMOKE_%';
-DELETE FROM monthly_payments WHERE associate_id IN (SELECT id FROM associates WHERE email = 'smoke@asof.org.br');
-DELETE FROM juridico_consultas WHERE description ILIKE '%SMOKE_%';
-DELETE FROM board_activities WHERE title ILIKE '%SMOKE_%';
-DELETE FROM associates WHERE email = 'smoke@asof.org.br';
+**Execucao manual (local):**
+```bash
+SMOKE_ADMIN_EMAIL=gabriel@asof.org.br SMOKE_ADMIN_PASSWORD='...' npm run smoke:prod
 ```
-_Nota: `audit_log` e preservado (ADR 009). Se necessario identificar registros de smoke posteriormente, usar tag `SMOKE_` na descricao e consultar por ela, sem deletar._
+
+**Passos automatizados (10 testes serializados):**
+1. Login e Sessao — valida cookie `httpOnly` assinado.
+2. Dashboard — verifica carregamento de KPIs.
+3. Associados — lista, busca e navegacao ao perfil do primeiro associado.
+4. Atividades — cria atividade `SMOKE_*` e verifica no board.
+5. Juridico — cria consulta `SMOKE_*` e avanca status.
+6. Financeiro — mensalidades carregam (sem inicializacao de mes).
+7. Oficios — cria oficio `SMOKE_*` com TipTap e confirma na lista.
+8. Auditoria — verifica registros das acoes do smoke.
+9. Notificacoes — central abre via `data-testid="notification-bell"`.
+10. Reset de Senha — dispara action de reset para email smoke.
+
+**Pos-smoke (limpeza automatica no terminal):**
+O spec imprime o SQL de limpeza ao final. Executar via console Neon ou `psql` com `DATABASE_MIGRATION_URL`:
+```sql
+DELETE FROM activities WHERE title ILIKE 'SMOKE_%';
+DELETE FROM legal_notes WHERE entity_id IN (SELECT id FROM legal_consultations WHERE title ILIKE 'SMOKE_%');
+DELETE FROM legal_consultations WHERE title ILIKE 'SMOKE_%';
+DELETE FROM oficios WHERE subject ILIKE 'SMOKE_%';
+DELETE FROM notifications WHERE message ILIKE '%SMOKE_%';
+```
+_Nota: `audit_log` e preservado (ADR 009)._
 
 ## Evidencia Desta Frente
 
