@@ -16,6 +16,14 @@ import {
 } from '@/lib/ui/tokens';
 import { Download, Trash2, ShieldAlert } from 'lucide-react';
 
+const wrappedRequestDataDownload = async (_formData: FormData) => {
+  await requestDataDownload();
+};
+
+const wrappedRequestAccountDeletion = async (_formData: FormData) => {
+  await requestAccountDeletion();
+};
+
 export const metadata = {
   title: 'Privacidade e LGPD - ASOF',
 };
@@ -42,7 +50,7 @@ export default async function PrivacidadePage() {
           contendo suas informações cadastrais, histórico de contribuições e demais registros vinculados
           ao seu titular, e os enviará para o seu e-mail cadastrado.
         </p>
-        <form action={requestDataDownload}>
+        <form action={wrappedRequestDataDownload}>
           <button
             type="submit"
             className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
@@ -82,7 +90,7 @@ export default async function PrivacidadePage() {
           em processos judiciais ou financeiros.
         </div>
 
-        <form action={requestAccountDeletion}>
+        <form action={wrappedRequestAccountDeletion}>
           <button
             type="submit"
             className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border bg-white px-5 text-sm font-semibold transition-colors hover:bg-[#fef2f2] hover:border-[#f87171] ${focusRingClass}`}

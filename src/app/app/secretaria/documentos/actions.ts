@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { requireAuth } from '@/lib/auth/require-auth';
+import { defineServerAction } from '@/lib/server-actions/define-form-action';
 import {
   uploadDocument,
   downloadDocument,
@@ -28,83 +28,74 @@ const uploadSchema = z.object({
   ]),
 });
 
-export async function uploadDocumentAction(formData: FormData) {
-  const user = await requireAuth();
-  if (user.role !== 'admin' && user.role !== 'secretaria') {
-    throw new Error('Acesso negado. Apenas administradores e secretários podem realizar upload.');
-  }
+export const uploadDocumentAction = defineServerAction({
+  auth: ['admin', 'secretaria'],
+  service: async (formData: FormData, user) => {
+    const name = formData.get('name') as string;
+    const description = (formData.get('description') as string) || undefined;
+    const category = formData.get('category') as string;
+    const file = formData.get('file') as File | null;
 
-  const name = formData.get('name') as string;
-  const description = (formData.get('description') as string) || undefined;
-  const category = formData.get('category') as string;
-  const file = formData.get('file') as File | null;
+    if (!file || file.size === 0) {
+      throw new Error('Nenhum arquivo enviado.');
+    }
 
-  if (!file || file.size === 0) {
-    throw new Error('Nenhum arquivo enviado.');
-  }
+    const parsed = uploadSchema.safeParse({ name, description, category });
+    if (!parsed.success) {
+      throw new Error(parsed.error.issues[0].message);
+    }
 
-  const parsed = uploadSchema.safeParse({ name, description, category });
-  if (!parsed.success) {
-    throw new Error(parsed.error.issues[0].message);
-  }
+    if (file.size > 15 * 1024 * 1024) {
+      throw new Error('O arquivo não pode exceder 15MB.');
+    }
 
-  // Limite de 15MB
-  if (file.size > 15 * 1024 * 1024) {
-    throw new Error('O arquivo não pode exceder 15MB.');
-  }
+    const bytes = await file.arrayBuffer();
 
-  const bytes = await file.arrayBuffer();
+    const input: UploadDocumentInput = {
+      name: parsed.data.name,
+      description: parsed.data.description,
+      category: parsed.data.category,
+      file: {
+        bytes,
+        size: file.size,
+        type: file.type,
+        originalName: file.name,
+      },
+      uploadedBy: user.userId,
+    };
 
-  const input: UploadDocumentInput = {
-    name: parsed.data.name,
-    description: parsed.data.description,
-    category: parsed.data.category,
-    file: {
-      bytes,
-      size: file.size,
-      type: file.type,
-      originalName: file.name,
-    },
-    uploadedBy: user.userId,
-  };
+    const result = await uploadDocument(input);
 
-  const result = await uploadDocument(input);
+    if (result.success) {
+      revalidatePath('/app/secretaria/documentos');
+    }
 
-  if (result.success) {
-    revalidatePath('/app/secretaria/documentos');
-  }
+    return result;
+  },
+});
 
-  return result;
-}
+export const downloadDocumentAction = defineServerAction({
+  auth: ['admin', 'secretaria'],
+  service: async (id: number, user) => {
+    const result = await downloadDocument(id, user.userId);
 
-export async function downloadDocumentAction(id: number) {
-  const user = await requireAuth();
-  if (user.role !== 'admin' && user.role !== 'secretaria') {
-    throw new Error('Acesso negado. Apenas administradores e secretários podem baixar documentos.');
-  }
+    if (!result.success) {
+      throw new Error(result.message);
+    }
 
-  const result = await downloadDocument(id, user.userId);
+    return { signedUrl: result.signedUrl };
+  },
+});
 
-  if (!result.success) {
-    throw new Error(result.message);
-  }
+export const deleteDocumentAction = defineServerAction({
+  auth: ['admin', 'secretaria'],
+  service: async (id: number, user) => {
+    const result = await deleteDocument(id, user.userId);
 
-  return { signedUrl: result.signedUrl };
-}
+    if (result.success) {
+      revalidatePath('/app/secretaria/documentos');
+    }
 
-export async function deleteDocumentAction(id: number) {
-  const user = await requireAuth();
-  if (user.role !== 'admin' && user.role !== 'secretaria') {
-    throw new Error(
-      'Acesso negado. Apenas administradores e secretários podem excluir documentos.',
-    );
-  }
-
-  const result = await deleteDocument(id, user.userId);
-
-  if (result.success) {
-    revalidatePath('/app/secretaria/documentos');
-  }
-
-  return result;
-}
+    return result;
+  },
+});

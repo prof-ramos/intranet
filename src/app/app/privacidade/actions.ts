@@ -2,10 +2,10 @@
 
 import { db } from '@/lib/db';
 import { activities, admins } from '@/lib/db/schema';
-import { getSession } from '@/lib/auth/session';
-import { createNotification } from '@/lib/notifications/repository';
 import { inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { defineServerAction } from '@/lib/server-actions/define-form-action';
+import { createNotification } from '@/lib/notifications/repository';
 
 async function getAdminRecipientIds() {
   const rows = await db
@@ -42,60 +42,56 @@ async function notifyAdmins(
   );
 }
 
-export async function requestDataDownload() {
-  const session = await getSession();
-  if (!session) {
-    throw new Error('Unauthorized');
-  }
+export const requestDataDownload = defineServerAction({
+  auth: 'any',
+  service: async (_input: void, session) => {
+    const [activity] = await db
+      .insert(activities)
+      .values({
+        title: 'Requisição LGPD: Baixar Dados',
+        description:
+          'Solicitação de cópia de dados (Direito de Acesso/Portabilidade). Compile os relatórios disponíveis e envie de forma segura.',
+        status: 'a_fazer',
+        priority: 'alta',
+        createdBy: session.userId,
+        tags: ['LGPD', 'Acesso'],
+      })
+      .returning({ id: activities.id });
 
-  const [activity] = await db
-    .insert(activities)
-    .values({
-      title: 'Requisição LGPD: Baixar Dados',
-      description:
-        'Solicitação de cópia de dados (Direito de Acesso/Portabilidade). Compile os relatórios disponíveis e envie de forma segura.',
-      status: 'a_fazer',
-      priority: 'alta',
-      createdBy: session.userId,
-      tags: ['LGPD', 'Acesso'],
-    })
-    .returning({ id: activities.id });
+    await notifyAdmins(
+      session.userId,
+      activity.id,
+      'Requisição LGPD: Acesso a dados',
+      'Um usuário solicitou cópia dos seus dados. Acesse Atividades para processar a requisição.',
+    );
 
-  await notifyAdmins(
-    session.userId,
-    activity.id,
-    'Requisição LGPD: Acesso a dados',
-    'Um usuário solicitou cópia dos seus dados. Acesse Atividades para processar a requisição.',
-  );
+    revalidatePath('/app/privacidade');
+  },
+});
 
-  revalidatePath('/app/privacidade');
-}
+export const requestAccountDeletion = defineServerAction({
+  auth: 'any',
+  service: async (_input: void, session) => {
+    const [activity] = await db
+      .insert(activities)
+      .values({
+        title: 'Solicitação de Exclusão - Direito ao Esquecimento',
+        description:
+          'Solicitação de EXCLUSÃO / ANONIMIZAÇÃO de conta (Direito ao Esquecimento). Revise pendências financeiras e jurídicas de acordo com o Art. 14 do Estatuto da ASOF antes de aprovar ou recusar o pedido.',
+        status: 'a_fazer',
+        priority: 'urgente',
+        createdBy: session.userId,
+        tags: ['LGPD', 'Exclusão'],
+      })
+      .returning({ id: activities.id });
 
-export async function requestAccountDeletion() {
-  const session = await getSession();
-  if (!session) {
-    throw new Error('Unauthorized');
-  }
+    await notifyAdmins(
+      session.userId,
+      activity.id,
+      'Requisição LGPD: Exclusão de conta',
+      'Um usuário solicitou exclusão/anonimização da sua conta. Acesse Atividades para processar a requisição.',
+    );
 
-  const [activity] = await db
-    .insert(activities)
-    .values({
-      title: 'Solicitação de Exclusão - Direito ao Esquecimento',
-      description:
-        'Solicitação de EXCLUSÃO / ANONIMIZAÇÃO de conta (Direito ao Esquecimento). Revise pendências financeiras e jurídicas de acordo com o Art. 14 do Estatuto da ASOF antes de aprovar ou recusar o pedido.',
-      status: 'a_fazer',
-      priority: 'urgente',
-      createdBy: session.userId,
-      tags: ['LGPD', 'Exclusão'],
-    })
-    .returning({ id: activities.id });
-
-  await notifyAdmins(
-    session.userId,
-    activity.id,
-    'Requisição LGPD: Exclusão de conta',
-    'Um usuário solicitou exclusão/anonimização da sua conta. Acesse Atividades para processar a requisição.',
-  );
-
-  revalidatePath('/app/privacidade');
-}
+    revalidatePath('/app/privacidade');
+  },
+});
