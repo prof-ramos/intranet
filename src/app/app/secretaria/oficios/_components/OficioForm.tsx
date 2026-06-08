@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useMemo, useTransition } from 'react';
 import { useEscapeKey } from '@/hooks/use-escape-key';
 import { useRouter } from 'next/navigation';
 import { useForm, useWatch } from 'react-hook-form';
@@ -63,7 +63,6 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
   const [aiError, setAiError]           = useState<string | null>(null);
   const [isAiPending, startAiTransition] = useTransition();
   const [isSubmitPending, startSubmitTransition] = useTransition();
-  const [impersonalityWarnings, setImpersonalityWarnings] = useState<ImpersonalityWarning[]>([]);
 
   const closeAiModal = () => {
     setIsAiModalOpen(false);
@@ -86,13 +85,10 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
   const bodyRichText = useWatch({ control, name: 'bodyRichText' }) ?? '';
   const bodyPlainText = useWatch({ control, name: 'bodyPlainText' }) ?? '';
 
-  useEffect(() => {
-    if (bodyPlainText.trim()) {
-      setImpersonalityWarnings(checkImpersonality(bodyPlainText));
-    } else {
-      setImpersonalityWarnings([]);
-    }
-  }, [bodyPlainText]);
+  const impersonalityWarnings = useMemo<ImpersonalityWarning[]>(
+    () => (bodyPlainText.trim() ? checkImpersonality(bodyPlainText) : []),
+    [bodyPlainText],
+  );
 
   const onSubmit = (values: OfficialLetterFormValues) => {
     setSubmitError(null);
