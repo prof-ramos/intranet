@@ -99,11 +99,6 @@ const MESES_PT = [
 ];
 
 function formatDatePtBr(dateStr: string): string {
-  const months: Record<string, number> = {
-    janeiro: 0, fevereiro: 1, março: 2, abril: 3, maio: 4, junho: 5,
-    julho: 6, agosto: 7, setembro: 8, outubro: 9, novembro: 10, dezembro: 11,
-  };
-
   const ddmmyyyy = dateStr.match(/^(\d{1,2})[/.](\d{1,2})[/.](\d{4})$/);
   if (ddmmyyyy) {
     const day = parseInt(ddmmyyyy[1], 10);
@@ -111,14 +106,6 @@ function formatDatePtBr(dateStr: string): string {
     const year = parseInt(ddmmyyyy[3], 10);
     if (month >= 0 && month < 12) {
       return `${day} de ${MESES_PT[month]} de ${year}`;
-    }
-  }
-
-  const extenso = dateStr.match(/(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/i);
-  if (extenso) {
-    const monthKey = extenso[2].toLowerCase();
-    if (months[monthKey] !== undefined) {
-      return dateStr;
     }
   }
 
@@ -224,8 +211,11 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
     const firstLineWidth = contentWidth - firstLineIndent;
     const firstLine = wrapText(pText, font, 12, firstLineWidth);
     
-    // Subsequent lines wrapped at full content width
-    const remainingText = pText.slice(firstLine.join('').length).trim();
+    // Count words in first line to compute correct slice offset
+    const firstLineWords = firstLine[0].split(/\s+/).filter(Boolean);
+    const allWords = pText.split(/\s+/).filter(Boolean);
+    const remainingWords = allWords.slice(firstLineWords.length);
+    const remainingText = remainingWords.join(' ');
     const remainingLines = remainingText ? wrapText(remainingText, font, 12, contentWidth) : [];
     
     const allLines = [...firstLine, ...remainingLines];
