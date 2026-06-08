@@ -10,3 +10,6 @@
 **Learning:** Unmemoized complex components like `FilterBar`, `SummaryStrip`, and `QuickAdd` in the `AtividadesBoard` cause unnecessary re-renders when the parent's state changes (like when typing in an input field or dragging a board item). This affects the responsiveness of the app, especially as the number of items and interactions grows.
 
 **Action:** Wrap these components with `React.memo` and ensure that the callbacks passed to them from `AtividadesBoard` are stabilized using `useCallback`. This prevents the components from re-rendering unless their props change. Use memoization selectively for expensive sub-components.
+## 2026-06-08 - useCallback in Board Preferences
+**Learning:** Exporting unmemoized state setters from a custom hook like `useBoardPreferences` causes downstream components wrapped in `React.memo` (e.g., `FilterBar`) to re-render unnecessarily on every state change because the setter function references change.
+**Action:** Use `useCallback` when returning state setters from custom hooks to maintain referential equality, ensuring that `React.memo` optimizations in child components work effectively and prevent layout thrashing during interactions.
