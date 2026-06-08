@@ -218,7 +218,7 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
     const remainingText = remainingWords.join(' ');
     const remainingLines = remainingText ? wrapText(remainingText, font, 12, contentWidth) : [];
     
-    const allLines = [...firstLine, ...remainingLines];
+    const allLines = [firstLine[0], ...remainingLines];
     
     for (let j = 0; j < allLines.length; j++) {
       if (currentY < marginBottom + 50) break;

@@ -227,6 +227,15 @@ export async function sendForSignature(
 
     const signingUrl = assignment.signing_urls[0]!.url;
 
+    if (!signingUrl) {
+      logger.error('Assinafy returned signing_url element without url', {
+        oficioId,
+        documentId: doc.id,
+        assignmentId: assignment.id,
+      });
+      return { success: false, error: 'Falha ao obter URL de assinatura.' };
+    }
+
     // 11. DB transaction: update oficio + audit log
     const updated = await db.transaction(async (tx) => {
       const result = await assinafyRepository.updateAssinafyFields(
