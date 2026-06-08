@@ -13,7 +13,10 @@ const logger = createLogger('assinafy:service');
 
 const EVENT_STATUS_MAP: Record<string, string> = {
   signer_signed_document: 'partially_signed',
+  document_signed: 'certificating',
   document_ready: 'certificated',
+  document_expired: 'failed',
+  document_cancelled: 'failed',
   signer_rejected_document: 'rejected_by_signer',
   user_rejected_document: 'rejected_by_user',
   document_processing_failed: 'failed',

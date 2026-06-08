@@ -277,6 +277,7 @@ export async function sendForSignature(
           old: { assinafyDocumentId: null },
           new: { assinafyDocumentId: doc.id, assinafyStatus: 'pending_signature' },
         },
+        executor: tx,
       });
 
       return result;
