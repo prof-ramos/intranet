@@ -93,6 +93,38 @@ export function htmlToPlainText(html: string) {
   );
 }
 
+const MESES_PT = [
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+];
+
+function formatDatePtBr(dateStr: string): string {
+  const months: Record<string, number> = {
+    janeiro: 0, fevereiro: 1, março: 2, abril: 3, maio: 4, junho: 5,
+    julho: 6, agosto: 7, setembro: 8, outubro: 9, novembro: 10, dezembro: 11,
+  };
+
+  const ddmmyyyy = dateStr.match(/^(\d{1,2})[/.](\d{1,2})[/.](\d{4})$/);
+  if (ddmmyyyy) {
+    const day = parseInt(ddmmyyyy[1], 10);
+    const month = parseInt(ddmmyyyy[2], 10) - 1;
+    const year = parseInt(ddmmyyyy[3], 10);
+    if (month >= 0 && month < 12) {
+      return `${day} de ${MESES_PT[month]} de ${year}`;
+    }
+  }
+
+  const extenso = dateStr.match(/(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/i);
+  if (extenso) {
+    const monthKey = extenso[2].toLowerCase();
+    if (months[monthKey] !== undefined) {
+      return dateStr;
+    }
+  }
+
+  return dateStr;
+}
+
 export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   const pdfDoc = await PDFDocument.create();
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -137,8 +169,9 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   // 2. Number (left) and Date (right)
   page.drawText(oficio.number, { x: marginLeft, y: currentY, size: 12, font });
 
-  const dateWidth = font.widthOfTextAtSize(oficio.letterDate, 12);
-  page.drawText(oficio.letterDate, {
+  const formattedDate = formatDatePtBr(oficio.letterDate);
+  const dateWidth = font.widthOfTextAtSize(formattedDate, 12);
+  page.drawText(formattedDate, {
     x: width - marginRight - dateWidth,
     y: currentY,
     size: 12,

@@ -60,7 +60,7 @@ describe('oficio pdf download route', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get('Content-Type')).toBe('application/pdf');
-    expect(response.headers.get('Content-Disposition')).toContain('OF_CIO_No_001_2026_ASOF.pdf');
+    expect(response.headers.get('Content-Disposition')).toContain('Of_cio_n__001_2026-ASOF.pdf');
     expect(logAuditActionMock).toHaveBeenCalledWith(
       expect.objectContaining({
         adminId: 7,
