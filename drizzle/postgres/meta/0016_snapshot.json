@@ -1,6 +1,6 @@
 {
-  "id": "6799f734-7d1c-4984-abfb-a17e18c86a39",
-  "prevId": "00A63F5A-12B1-4827-8E3A-235170736FE8",
+  "id": "00A63F5A-12B1-4827-8E3A-235170736FE8",
+  "prevId": "d3c9da12-6adb-40d2-a228-faa43d8d0cc9",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -5402,9 +5402,8 @@
         "legal_consultation.created",
         "legal_consultation.status_changed",
         "official_letter.created",
-        "official_letter.published",
-        "official_letter.status_changed",
-        "monthly_payment.updated"
+        "monthly_payment.updated",
+        "official_letter.published"
       ]
     },
     "public.webhook_delivery_status": {
@@ -5515,7 +5514,6 @@
         "certificating",
         "certificated",
         "expired",
-        "partially_signed",
         "rejected_by_signer",
         "rejected_by_user",
         "failed"

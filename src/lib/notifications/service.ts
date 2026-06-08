@@ -36,7 +36,7 @@ export async function createNotificationFromEvent(
   tx?: NotificationsTx,
 ) {
   assertPositiveInteger(payload.recipientId, 'recipientId');
-  assertPositiveInteger(payload.actorId, 'actorId');
+  if (payload.actorId !== null) assertPositiveInteger(payload.actorId, 'actorId');
 
   if (!payload.title.trim()) {
     throw new Error('Título da notificação é obrigatório.');

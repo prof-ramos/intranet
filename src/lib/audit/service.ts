@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import { auditLogs, type NewAuditLog } from '@/lib/db/schema/audit';
 import { sanitizePiiValue } from '@/lib/sanitize-pii';
 import { createLogger } from '@/lib/logger';
@@ -6,12 +6,13 @@ import { createLogger } from '@/lib/logger';
 const logger = createLogger('audit');
 
 export interface LogAuditOptions {
-  adminId: number;
+  adminId: number | null;
   action: string;
   entityType: NewAuditLog['entityType'];
   entityId?: number | null;
   changes?: NewAuditLog['changes'];
   metadata?: Record<string, unknown>;
+  executor?: DbExecutor;
 }
 
 /**
@@ -21,12 +22,12 @@ export interface LogAuditOptions {
 export type AuditLogInput = LogAuditOptions;
 
 export async function logAuditAction(options: LogAuditOptions): Promise<void> {
-  if (!Number.isInteger(options.adminId) || options.adminId <= 0) {
+  if (options.adminId !== null && (!Number.isInteger(options.adminId) || options.adminId <= 0)) {
     throw new Error('Invalid audit actor.');
   }
 
   try {
-    await db.insert(auditLogs).values({
+    await (options.executor ?? db).insert(auditLogs).values({
       performedBy: options.adminId,
       action: options.action,
       entityType: options.entityType,
@@ -48,6 +49,7 @@ export type DataAccessAction = 'view' | 'export' | 'edit';
 
 export interface LogDataAccessOptions {
   adminId: number;
+  executor?: DbExecutor;
   action: DataAccessAction;
   entityType: NewAuditLog['entityType'];
   entityId?: number | null;
@@ -71,5 +73,6 @@ export async function logDataAccess(options: LogDataAccessOptions): Promise<void
     entityType: options.entityType,
     entityId: options.entityId,
     metadata: options.metadata,
+    executor: options.executor,
   });
 }

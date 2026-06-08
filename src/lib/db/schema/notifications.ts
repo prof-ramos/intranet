@@ -18,12 +18,14 @@ export const notificationType = pgEnum('notification_type', [
   'legal_consultation.sla_warning',
   'email_triage_pending',
   'lgpd_request',
+  'oficio.status_changed',
 ]);
 
 export const notificationEntityType = pgEnum('notification_entity_type', [
   'activity',
   'legal_consultation',
   'email_triagem',
+  'oficio',
 ]);
 
 export const notifications = pgTable(
