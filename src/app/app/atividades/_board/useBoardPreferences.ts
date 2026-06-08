@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 const STORAGE_KEY = 'asof-board-preferences';
 
@@ -46,16 +46,16 @@ export function useBoardPreferences() {
     setPreferencesState(readPreferences());
   }, []);
 
-  function setCompact(compact: boolean | ((prev: boolean) => boolean)) {
+  const setCompact = useCallback((compact: boolean | ((prev: boolean) => boolean)) => {
     setPreferencesState((prev) => {
       const next = typeof compact === 'function' ? compact(prev.compact) : compact;
       const updated = { ...prev, compact: next };
       writePreferences(updated);
       return updated;
     });
-  }
+  }, []);
 
-  function setCollapsedDone(collapsedDone: boolean | ((prev: boolean) => boolean)) {
+  const setCollapsedDone = useCallback((collapsedDone: boolean | ((prev: boolean) => boolean)) => {
     setPreferencesState((prev) => {
       const next =
         typeof collapsedDone === 'function' ? collapsedDone(prev.collapsedDone) : collapsedDone;
@@ -63,7 +63,7 @@ export function useBoardPreferences() {
       writePreferences(updated);
       return updated;
     });
-  }
+  }, []);
 
   return {
     compact: preferences.compact,
