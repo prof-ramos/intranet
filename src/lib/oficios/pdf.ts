@@ -101,9 +101,11 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   const page = pdfDoc.addPage([21 * CM_TO_PT, 29.7 * CM_TO_PT]); // A4
   const { width, height } = page.getSize();
 
+  // ABNT margins: 3cm top, 2cm bottom, 3cm left, 2cm right
   const marginLeft = 3 * CM_TO_PT;
-  const marginRight = 1.5 * CM_TO_PT;
-  const marginTop = 2 * CM_TO_PT;
+  const marginRight = 2 * CM_TO_PT;
+  const marginTop = 3 * CM_TO_PT;
+  const marginBottom = 2 * CM_TO_PT;
   const contentWidth = width - marginLeft - marginRight;
 
   let currentY = height - marginTop;
@@ -168,14 +170,14 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
     contentWidth,
     fontBold,
     12,
-    16,
+    18, // ABNT: 1.5× line spacing for 12pt font
   );
 
   currentY -= 30;
 
   // 5. Body — with proper line wrapping
-  const bodyIndent = 2.5 * CM_TO_PT;
-  const bodyMaxWidth = contentWidth - bodyIndent;
+  // ABNT: first line indent 1.25cm, subsequent lines at left margin
+  const firstLineIndent = 1.25 * CM_TO_PT;
   const bodyText = oficio.bodyRichText?.trim()
     ? htmlToPlainText(oficio.bodyRichText)
     : oficio.bodyPlainText;
@@ -184,28 +186,32 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
 
   for (let i = 0; i < paragraphs.length; i++) {
     const pText = useNumbering ? `${i + 1}. ${paragraphs[i]}` : paragraphs[i];
-
-    currentY = drawWrappedText(
-      page,
-      pText,
-      marginLeft + bodyIndent,
-      currentY,
-      bodyMaxWidth,
-      font,
-      12,
-      16,
-    );
+    
+    // First line has indent, subsequent lines start at marginLeft
+    const firstLineWidth = contentWidth - firstLineIndent;
+    const lines = wrapText(pText, font, 12, firstLineWidth);
+    
+    for (let j = 0; j < lines.length; j++) {
+      if (currentY < marginBottom + 50) break;
+      const x = j === 0 ? marginLeft + firstLineIndent : marginLeft;
+      page.drawText(lines[j], {
+        x,
+        y: currentY,
+        size: 12,
+        font,
+      });
+      currentY -= 18; // ABNT: 1.5× line spacing for 12pt font
+    }
 
     currentY -= 6; // spacing between paragraphs
 
-    // Simple page break: if we're near the bottom, stop
-    if (currentY < marginTop + 50) break;
+    if (currentY < marginBottom + 50) break;
   }
 
   currentY -= 20;
 
-  // 6. Closure
-  page.drawText(oficio.closure, { x: marginLeft + bodyIndent, y: currentY, size: 12, font });
+  // 6. Closure (fecho) — at first line indent position
+  page.drawText(oficio.closure, { x: marginLeft + firstLineIndent, y: currentY, size: 12, font });
 
   currentY -= 60;
 
@@ -214,7 +220,7 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   const sigNameWidth = font.widthOfTextAtSize(sigName, 12);
   page.drawText(sigName, { x: (width - sigNameWidth) / 2, y: currentY, size: 12, font });
 
-  currentY -= 15;
+  currentY -= 18; // ABNT: 1.5× line spacing
   const sigRoleWidth = font.widthOfTextAtSize(oficio.signatoryRole, 12);
   page.drawText(oficio.signatoryRole, {
     x: (width - sigRoleWidth) / 2,

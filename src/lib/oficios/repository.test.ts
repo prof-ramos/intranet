@@ -11,7 +11,7 @@ import {
 const { dbMock, MOCK_RESULT } = vi.hoisted(() => {
   const MOCK_RESULT = {
     id: 1,
-    number: 'OFÍCIO No 001/2026/ASOF',
+    number: 'Ofício nº 001/2026-ASOF',
     year: 2026,
     sequence: 1,
     recipient: 'Destinatário',

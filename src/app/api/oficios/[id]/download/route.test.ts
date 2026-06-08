@@ -29,7 +29,7 @@ describe('oficio pdf download route', () => {
     requireRoleMock.mockResolvedValue({ userId: 7 });
     findOfficialLetterByIdMock.mockResolvedValue({
       id: 1,
-      number: 'OFÍCIO No 001/2026/ASOF',
+      number: 'Ofício nº 001/2026-ASOF',
     });
     generateOfficialLetterPdfMock.mockResolvedValue(new Uint8Array([1, 2, 3]));
     logAuditActionMock.mockResolvedValue(undefined);

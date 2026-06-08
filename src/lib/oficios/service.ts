@@ -24,8 +24,8 @@ export async function generateOfficialLetterNumber(year: number, tx: Tx = db) {
   const nextSequence = lastSequence + 1;
   const paddedSequence = String(nextSequence).padStart(3, '0');
 
-  // Format: OFÍCIO No 001/2026/ASOF
-  const number = `OFÍCIO No ${paddedSequence}/${year}/ASOF`;
+  // Format: Ofício nº 001/2026-ASOF (ABNT standard)
+  const number = `Ofício nº ${paddedSequence}/${year}-ASOF`;
 
   return { number, sequence: nextSequence };
 }
