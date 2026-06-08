@@ -36,6 +36,9 @@ const defaultFormValues: Partial<OfficialLetterFormValues> = {
   closure: 'Atenciosamente,',
   bodyRichText: '',
   bodyPlainText: '',
+  recipientAddress: '',
+  recipientCity: '',
+  recipientZip: '',
 };
 
 function textToParagraphHtml(text: string) {
@@ -197,6 +200,46 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
             />
             {errors.itamaratySector && (
               <p className="mt-1 text-xs" style={{ color: error }}>{errors.itamaratySector.message}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="recipientAddress" className={labelClass}>Endereço</label>
+              <input
+                id="recipientAddress"
+                {...register('recipientAddress')}
+                className={inputClass}
+                placeholder="Ex: Palácio Itamaraty"
+              />
+              {errors.recipientAddress && (
+                <p className="mt-1 text-xs" style={{ color: error }}>{errors.recipientAddress.message}</p>
+              )}
+            </div>
+            <div>
+              <label htmlFor="recipientCity" className={labelClass}>Cidade</label>
+              <input
+                id="recipientCity"
+                {...register('recipientCity')}
+                className={inputClass}
+                placeholder="Ex: Brasília/DF"
+              />
+              {errors.recipientCity && (
+                <p className="mt-1 text-xs" style={{ color: error }}>{errors.recipientCity.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="recipientZip" className={labelClass}>CEP</label>
+            <input
+              id="recipientZip"
+              {...register('recipientZip')}
+              className={inputClass}
+              placeholder="Ex: 70170-900"
+            />
+            {errors.recipientZip && (
+              <p className="mt-1 text-xs" style={{ color: error }}>{errors.recipientZip.message}</p>
             )}
           </div>
         </div>

@@ -2,10 +2,12 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { handleWebhookEvent } from './service';
 import type { AssinafyWebhookEvent } from './types';
 
-const { mockUpdateAssinafyStatus, mockFindOficioByAssinafyDocumentId } = vi.hoisted(() => ({
-  mockUpdateAssinafyStatus: vi.fn(),
-  mockFindOficioByAssinafyDocumentId: vi.fn(),
-}));
+const { mockUpdateAssinafyStatus, mockFindOficioByAssinafyDocumentId, mockAdminQueryResult } =
+  vi.hoisted(() => ({
+    mockUpdateAssinafyStatus: vi.fn(),
+    mockFindOficioByAssinafyDocumentId: vi.fn(),
+    mockAdminQueryResult: { current: [] as Array<{ id: number }> },
+  }));
 
 vi.mock('./repository', () => ({
   findOficioByAssinafyDocumentId: mockFindOficioByAssinafyDocumentId,
@@ -23,7 +25,8 @@ vi.mock('@/lib/db', () => {
       limit: () => Promise.resolve([]),
     }),
   };
-  (queryBuilder as Record<string, unknown>).then = (resolve: (val: unknown) => void) => resolve([]);
+  (queryBuilder as Record<string, unknown>).then = (resolve: (val: unknown) => void) =>
+    resolve(mockAdminQueryResult.current);
 
   const mockTx = new Proxy({} as Record<string, unknown>, {
     get(_target, prop: string) {
@@ -39,7 +42,7 @@ vi.mock('@/lib/db', () => {
 
   return {
     db: {
-      transaction: vi.fn((cb: (tx: unknown) => unknown) => cb(mockTx)),
+      transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb(mockTx)),
     },
   };
 });
@@ -50,6 +53,10 @@ vi.mock('@/lib/audit/service', () => ({
 
 vi.mock('@/lib/integrations/outbox', () => ({
   emitDomainEvent: vi.fn(),
+}));
+
+vi.mock('@/lib/notifications/repository', () => ({
+  createNotification: vi.fn(),
 }));
 
 const BASE_EVENT: AssinafyWebhookEvent = {
@@ -77,6 +84,7 @@ const mockOficio = {
 describe('assinafy/service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAdminQueryResult.current = [];
     mockFindOficioByAssinafyDocumentId.mockResolvedValue({ ...mockOficio });
     mockUpdateAssinafyStatus.mockResolvedValue({ id: 1 });
   });
@@ -182,6 +190,60 @@ describe('assinafy/service', () => {
       const result = await handleWebhookEvent(BASE_EVENT);
       expect(mockUpdateAssinafyStatus).toHaveBeenCalled();
       expect(result).toEqual(expect.objectContaining({ id: 1 }));
+    });
+
+    it('creates notifications for all active admins', async () => {
+      const { createNotification } = await import('@/lib/notifications/repository');
+      mockAdminQueryResult.current = [{ id: 5 }, { id: 7 }];
+
+      await handleWebhookEvent(BASE_EVENT);
+
+      expect(createNotification).toHaveBeenCalledTimes(2);
+      expect(createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 5,
+          actorId: null,
+          type: 'oficio.status_changed',
+          title: 'Status do ofício alterado',
+          dedupeKey: 'oficio.status_changed:1:partially_signed',
+          entityType: 'oficio',
+          entityId: 1,
+        }),
+        expect.anything(),
+      );
+      expect(createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 7,
+          actorId: null,
+          dedupeKey: 'oficio.status_changed:1:partially_signed',
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('includes dedupeKey in notification to prevent duplicates', async () => {
+      const { createNotification } = await import('@/lib/notifications/repository');
+      mockAdminQueryResult.current = [{ id: 5 }];
+
+      await handleWebhookEvent(BASE_EVENT);
+
+      expect(createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dedupeKey: 'oficio.status_changed:1:partially_signed',
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('returns null when transaction fails (e.g. notification creation error)', async () => {
+      const { createNotification } = await import('@/lib/notifications/repository');
+      mockAdminQueryResult.current = [{ id: 5 }];
+      vi.mocked(createNotification).mockRejectedValueOnce(new Error('DB insert failed'));
+
+      const result = await handleWebhookEvent(BASE_EVENT);
+
+      // Transaction rejection is caught by outer try/catch
+      expect(result).toBeNull();
     });
   });
 });

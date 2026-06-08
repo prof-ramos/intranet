@@ -1,27 +1,34 @@
-# ADR 003: Geração de Ofícios em Memória com Fonte Padrão
+# ADR 003: Geração de Ofícios em Memória com Fontes ABNT
 
 ## Status
 
-Aceito
+Aceito / Revisado (Junho 2026)
 
 ## Contexto
 
-A ASOF necessita de um sistema de geração de Ofícios que siga rigorosamente o Manual de Redação da Presidência da República. O sistema deve suportar edição, cancelamento e visualização histórica, com alta performance e baixo consumo de recursos no servidor.
+A ASOF necessita de um sistema de geração de Ofícios que siga rigorosamente o Manual de Redação da Presidência da República (MRPR). O sistema suporta edição, cancelamento e visualização histórica. Inicialmente, utilizamos fontes padrão do PDF (Helvetica) para evitar carregamento de arquivos externos. No entanto, a integração com a plataforma de assinaturas (Assinafy) quebrou a renderização dos textos quando as fontes nativas foram utilizadas sem o devido embutimento completo.
 
 ## Decisão
 
-Adotamos a geração de arquivos PDF de forma **puramente dinâmica (on-the-fly)** utilizando a biblioteca `pdf-lib` no lado do servidor (Node.js).
+Adotamos a geração de arquivos PDF de forma **puramente dinâmica (on-the-fly)** utilizando a biblioteca `pdf-lib` no lado do servidor (Node.js), mas **alteramos a estratégia de fontes** e renderização.
 
 Principais pontos da decisão:
 
-1. **Uso de StandardFonts (Helvetica)**: Confirmado via documentação da `pdf-lib` (/websites/pdf-lib_js), utilizaremos a enumeração `StandardFonts.Helvetica`. Estas fontes fazem parte da especificação base do PDF (Standard 14 Fonts), o que significa que:
-   - Não requerem o carregamento de arquivos externos (`.ttf` ou `.otf`).
-   - Não aumentam o tamanho final do arquivo binário, pois não precisam ser "incorporadas" (embedded).
-   - Garantem renderização instantânea e baixo consumo de memória no servidor.
-2. **Estado**: O PDF não será armazenado fisicamente em disco ou storage. Ele será reconstruído a partir dos dados do banco de dados a cada requisição de download via `NextResponse`, garantindo que o documento sempre reflita a última versão editada sem riscos de dessincronização.
-3. **Conformidade**: As margens e recuos serão implementados via código (precisão em pontos) seguindo as medidas do manual (3cm esquerda, 1.5cm direita).
+1. **Uso de Fontes ABNT Customizadas**:
+   - Deixamos de usar `StandardFonts.Helvetica` e adotamos a **Carlito** (substituta open-source da Calibri) em formato `.ttf`, conforme recomendação do MRPR.
+2. **Embutimento Completo (Disable Subsetting)**:
+   - Para evitar que assinadores de terceiros (como a Assinafy) corrompam o dicionário de caracteres ou apresentem letras invisíveis, utilizamos `embedFont(fontBytes)` com o subsetting desativado (`subset: false` ou omitido). Isso anexa a fonte inteira ao binário do PDF.
+3. **Matemática de Renderização e Layout MRPR**:
+   - O PDF aplica rigorosamente as margens oficiais (3cm esquerda, 1.5cm direita).
+   - Ao renderizar blocos de texto após imagens (`drawImage`), sempre somamos a altura da imagem **mais um buffer de linha** ao eixo Y, pois a coordenada `y` do `pdf-lib` aponta para a `baseline` (linha base) da fonte, evitando sobreposição de textos.
+4. **Estado em Memória**:
+   - O arquivo PDF não é salvo no S3. Ele é reconstruído a partir do banco de dados na hora do download (`NextResponse`), garantindo refletir a última edição instantaneamente.
 
 ## Consequências
 
-- **Positivas**: Arquitetura mais simples e resiliente; deploy facilitado; consistência garantida entre banco e documento.
-- **Negativas**: Leve aumento no processamento da CPU no momento do download (insignificante para o volume esperado da ASOF).
+- **Positivas**: 
+  - Conformidade perfeita com o MRPR usando fontes aprovadas (Carlito).
+  - 100% de confiabilidade na integração com plataformas externas de assinatura (sem letras invisíveis).
+  - Layout preciso sem sobreposição de cabeçalhos.
+- **Negativas**: 
+  - O PDF gerado tem um tamanho maior (~500KB) devido ao embutimento completo da fonte `.ttf`, comparado aos míseros KBs da StandardFont. Isso é aceitável para o nosso contexto institucional.

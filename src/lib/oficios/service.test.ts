@@ -12,11 +12,14 @@ import type { NewOfficialLetter, OfficialLetter } from '@/lib/db/schema/oficios'
 const transactionMock = vi.hoisted(() => ({ tx: { __tx: true } }));
 const BASE_OFFICIAL_LETTER: OfficialLetter = {
   id: 12,
-number: 'Ofício nº 001/2026-ASOF',
+number: 'OFÍCIO Nº 001/2026/ASOF',
   year: 2026,
   sequence: 1,
   recipient: 'Destinatário',
   recipientRole: 'Cargo',
+  recipientAddress: null,
+  recipientCity: null,
+  recipientZip: null,
   vocativo: 'Senhor',
   letterDate: '13 de maio de 2026',
   subject: 'Assunto',
@@ -171,7 +174,7 @@ describe('oficios service', () => {
     vi.mocked(repository.getLastSequenceForYear).mockResolvedValue(5);
 
     const result = await generateOfficialLetterNumber(2026);
-    expect(result).toEqual({ number: 'Ofício nº 006/2026-ASOF', sequence: 6 });
+    expect(result).toEqual({ number: 'OFÍCIO Nº 006/2026/ASOF', sequence: 6 });
   });
 
   it('generates sequence 001 when no letters exist for the year', async () => {
@@ -179,7 +182,7 @@ describe('oficios service', () => {
     vi.mocked(repository.getLastSequenceForYear).mockResolvedValue(0);
 
     const result = await generateOfficialLetterNumber(2026);
-    expect(result).toEqual({ number: 'Ofício nº 001/2026-ASOF', sequence: 1 });
+    expect(result).toEqual({ number: 'OFÍCIO Nº 001/2026/ASOF', sequence: 1 });
   });
 
   it('does not emit event when a draft is created', async () => {
@@ -289,7 +292,7 @@ describe('oficios service', () => {
       expect(assinafyMocks.mockUploadDocument).toHaveBeenCalledOnce();
       expect(assinafyMocks.mockUploadDocument).toHaveBeenCalledWith(
         expect.any(Buffer),
-        'Ofício_nº_001_2026-ASOF.pdf',
+        'OFÍCIO_Nº_001_2026_ASOF.pdf',
       );
       expect(assinafyMocks.mockCreateSigner).toHaveBeenCalledWith('Clean Name', SIGNER_EMAIL);
       expect(assinafyMocks.mockCreateAssignment).toHaveBeenCalledWith('doc-123', expect.objectContaining({ method: 'virtual' }));

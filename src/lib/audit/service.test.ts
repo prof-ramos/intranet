@@ -89,6 +89,41 @@ describe('logAuditAction', () => {
     ).rejects.toThrow('Invalid audit actor');
   });
 
+  it('accepts adminId null and inserts with performedBy null', async () => {
+    await logAuditAction({
+      adminId: null,
+      action: 'auto_mark_overdue',
+      entityType: 'monthly_payment',
+      entityId: 42,
+    });
+
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        performedBy: null,
+        action: 'auto_mark_overdue',
+        entityType: 'monthly_payment',
+        entityId: 42,
+      }),
+    );
+  });
+
+  it('uses executor when provided', async () => {
+    const mockTxInsert = vi.fn().mockReturnValue({ values: vi.fn().mockResolvedValue(undefined) });
+    const mockTx = { insert: mockTxInsert } as never;
+
+    await logAuditAction({
+      adminId: 5,
+      action: 'test',
+      entityType: 'associate',
+      executor: mockTx,
+    });
+
+    // Should call insert on the executor, not on the default db mock
+    expect(mockTxInsert).toHaveBeenCalled();
+    // Ensure the default db.insert was also still available (just not used)
+    expect(mockInsert).not.toHaveBeenCalledWith(expect.anything());
+  });
+
   it('does not throw on DB error (logs and swallows)', async () => {
     const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     mockInsert.mockReturnValue({

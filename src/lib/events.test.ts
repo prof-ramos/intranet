@@ -61,6 +61,24 @@ describe('events', () => {
     expect(createNotificationFromEvent).not.toHaveBeenCalled();
   });
 
+  it('accepts actorId null for oficio.status_changed (assertValidPayload bypass)', async () => {
+    await emitEvent('oficio.status_changed', {
+      actorId: null,
+      recipientId: 2,
+      entityType: 'oficio',
+      entityId: 7,
+      title: 'Status alterado',
+      message: 'Ofício alterado.',
+      dedupeKey: 'oficio.status_changed:7:signed',
+    });
+
+    expect(createNotificationFromEvent).toHaveBeenCalledWith(
+      'oficio.status_changed',
+      expect.objectContaining({ actorId: null }),
+      undefined,
+    );
+  });
+
   it('supports the activity-completed compatibility emitter used by activities service', async () => {
     await emitActivityCompleted({
       activityId: 12,

@@ -108,30 +108,47 @@ export class AssinafyClient {
     const form = new FormData();
     form.set('file', new Blob([pdf as unknown as BlobPart], { type: 'application/pdf' }), filename);
 
-    return this.request<{ id: string; name: string; status: string }>(
+    const resp = await this.request<{ status: number; data: { id: string; name: string; status: string } }>(
       `/accounts/${this.accountId}/documents`,
       { method: 'POST', body: form },
-    );
-  }
-
-  async createSigner(fullName: string, email: string) {
-    const resp = await this.request<{ status: number; data: { id: string; full_name: string; email: string } }>(
-      `/accounts/${this.accountId}/signers`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ full_name: fullName, email }),
-      },
     );
     return resp.data;
   }
 
+  async createSigner(fullName: string, email: string) {
+    try {
+      const resp = await this.request<{ status: number; data: { id: string; full_name: string; email: string } }>(
+        `/accounts/${this.accountId}/signers`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ full_name: fullName, email }),
+        },
+      );
+      return resp.data;
+    } catch (error) {
+      if (error instanceof Error && error.message?.includes('já existe')) {
+        // Fallback: list signers and find the existing one
+        const listResp = await this.request<{ data: { id: string; full_name: string; email: string }[] }>(
+          `/accounts/${this.accountId}/signers`,
+          { method: 'GET' }
+        );
+        const existing = listResp.data.find(s => s.email === email);
+        if (existing) return existing;
+      }
+      throw error;
+    }
+  }
+
   async createAssignment(documentId: string, options: AssignmentOptions) {
-    return this.request<{
-      id: string;
-      method: string;
-      signers: unknown[];
-      signing_urls: { signer_id: string; url: string }[];
+    const resp = await this.request<{
+      status: number;
+      data: {
+        id: string;
+        method: string;
+        signers: unknown[];
+        signing_urls: { signer_id: string; url: string }[];
+      };
     }>(
       `/documents/${documentId}/assignments`,
       {
@@ -140,6 +157,7 @@ export class AssinafyClient {
         body: JSON.stringify(options),
       },
     );
+    return resp.data;
   }
 
   async getDocumentStatus(documentId: string) {
