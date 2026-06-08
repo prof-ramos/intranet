@@ -118,6 +118,8 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
         recipientRole:   currentValues.recipientRole,
         subject:         currentValues.subject,
         itamaratySector: currentValues.itamaratySector,
+        signatory:       currentValues.signatoryName,
+        signatoryRole:   currentValues.signatoryRole,
         instruction:     aiInstruction,
       });
       if (res.success && res.text) {
@@ -305,7 +307,7 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
             <h2 className="font-serif text-lg font-bold">Corpo do Ofício</h2>
             <button
               type="button"
-              onClick={() => { setAiError(null); setIsAiModalOpen(true); }}
+              onClick={() => { setAiError(null); setAiInstruction(bodyPlainText); setIsAiModalOpen(true); }}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide uppercase transition-colors ${focusRingClass}`}
               style={{
                 background: 'rgba(4,9,32,0.06)',
@@ -414,7 +416,7 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
                     Auxiliar com IA
                   </h3>
                   <p className="mt-0.5 text-[10px] tracking-widest text-slate-400 uppercase">
-                    Gemini 2.5 Flash
+                    Gemini 3.5 Flash
                   </p>
                 </div>
               </div>
@@ -429,8 +431,9 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
             </div>
 
             <p className="mb-3 text-sm leading-relaxed text-slate-600">
-              Descreva em linguagem natural o que o ofício deve comunicar. Os campos de destinatário
-              e assunto já preenchidos serão usados como contexto.
+              O conteúdo atual do corpo do ofício foi carregado abaixo como referência. Edite
+              ou substitua para orientar a IA. Os campos de destinatário e assunto já preenchidos
+              serão usados como contexto.
             </p>
 
             <textarea

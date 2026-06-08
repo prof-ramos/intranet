@@ -45,6 +45,8 @@ export const generateAiTextAction = defineServerAction({
     recipientRole: string;
     subject: string;
     itamaratySector: string;
+    signatory: string;
+    signatoryRole: string;
     instruction: string;
   }) => {
     if (!(await isGeminiConfigured())) {

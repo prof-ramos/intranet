@@ -113,6 +113,8 @@ describe('secretaria oficios actions', () => {
       recipientRole: 'Presidente',
       subject: 'Assunto',
       itamaratySector: 'SGP',
+      signatory: 'João Silva',
+      signatoryRole: 'Diretor',
       instruction: 'Escreva um ofício',
     });
 
@@ -127,6 +129,8 @@ describe('secretaria oficios actions', () => {
       recipientRole: 'Presidente',
       subject: 'Assunto',
       itamaratySector: 'SGP',
+      signatory: 'João Silva',
+      signatoryRole: 'Diretor',
       instruction: 'Escreva um ofício',
     });
 
@@ -149,6 +153,8 @@ describe('secretaria oficios actions', () => {
       recipientRole: 'Presidente',
       subject: 'Assunto',
       itamaratySector: 'SGP',
+      signatory: 'João Silva',
+      signatoryRole: 'Diretor',
       instruction: 'Escreva um ofício',
     });
 
