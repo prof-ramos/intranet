@@ -3,6 +3,7 @@
 import { X } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useEffect, useRef } from 'react';
+import { useEscapeKey } from '@/hooks/use-escape-key';
 import {
   buttonOutlineBorder,
   buttonOutlineHoverBg,
@@ -71,6 +72,8 @@ export function Drawer({
     };
   }, [activity]);
 
+  useEscapeKey(onClose, !!activity);
+
   useEffect(() => {
     if (!activity) return;
 
@@ -83,10 +86,6 @@ export function Drawer({
     ].join(',');
 
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        onClose();
-        return;
-      }
       if (e.key === 'Tab') {
         const el = drawerRef.current;
         if (!el) return;

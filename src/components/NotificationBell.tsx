@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEscapeKey } from '@/hooks/use-escape-key';
 import { Bell, CheckCheck, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -102,6 +103,8 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     return 'Notificações';
   }, [unreadCount]);
 
+  useEscapeKey(() => setOpen(false), open);
+
   useEffect(() => {
     if (!open) {
       return;
@@ -113,18 +116,10 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       }
     }
 
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setOpen(false);
-      }
-    }
-
     document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleEscape);
 
     return () => {
       document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleEscape);
     };
   }, [open]);
 

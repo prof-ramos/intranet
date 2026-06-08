@@ -8,23 +8,3 @@ vi.mock('next/headers', () => ({
     delete: vi.fn(),
   }),
 }));
-
-vi.mock('@/lib/auth/require-auth', () => ({
-  requireAuth: vi.fn().mockResolvedValue({
-    userId: 1,
-    name: 'Admin',
-    email: 'admin@asof.local',
-    role: 'admin',
-    mustChangePassword: false,
-  }),
-}));
-
-vi.mock('@/lib/auth/authorization', () => ({
-  requireRole: vi.fn().mockResolvedValue({
-    userId: 1,
-    name: 'Admin',
-    email: 'admin@asof.local',
-    role: 'admin',
-    mustChangePassword: false,
-  }),
-}));

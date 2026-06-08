@@ -13,6 +13,7 @@ const optionalBooleanString = z.preprocess(
 export const envSchema = z
   .object({
     DATABASE_URL: optionalUrl,
+    DATABASE_MIGRATION_URL: optionalUrl,
     DATABASE_POSTGRES_URL: optionalUrl,
     POSTGRES_URL: optionalUrl,
     POSTGRES_PRISMA_URL: optionalUrl,
@@ -51,6 +52,9 @@ export const envSchema = z
     DEV_USER_EMAIL: optionalString,
     DEV_USER_ROLE: optionalString,
     DEV_USER_MUST_CHANGE_PASSWORD: optionalString.default('false'),
+
+    INITIAL_ADMIN_EMAIL: optionalString,
+    INITIAL_ADMIN_PASSWORD: optionalString,
 
     NODE_ENV: optionalString,
     VERCEL_ENV: optionalString,

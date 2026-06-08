@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { defineFormAction } from '@/lib/server-actions/define-form-action';
 import { updateAssociateSchema } from '@/lib/validation/schemas';
 import { updateAssociateData } from '@/lib/associates/service';

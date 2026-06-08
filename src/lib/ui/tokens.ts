@@ -19,7 +19,6 @@ export const canvas = '#f8fafc';
 export const white = '#ffffff';
 export const borderMuted = '#c9d2df';
 export const borderSoft = '#dde3ec';
-export const activityColumnBg = '#eef1f6';
 export const overlayScrim = 'rgba(4, 9, 32, 0.35)';
 export const surfaceMuted = '#f8fafc';
 export const borderSubtle = 'rgba(4, 9, 32, 0.15)';
@@ -48,7 +47,6 @@ export const warning = '#eab308';
 export const warningBg = '#fef3c7';
 export const success = '#22c55e';
 export const successBg = '#dcfce7';
-export const successBorder = '#86efac';
 export const info = '#2563eb';
 export const infoBg = '#eff6ff';
 
@@ -57,7 +55,6 @@ export const cardShadow = '0 1px 3px rgba(4, 9, 32, 0.08), 0 1px 2px rgba(4, 9, 
 export const elevatedShadow =
   '0 10px 15px -3px rgba(4, 9, 32, 0.08), 0 4px 6px -4px rgba(4, 9, 32, 0.04)';
 export const drawerShadow = '-12px 0 30px rgba(4, 9, 32, 0.12)';
-export const floatingBadgeShadow = `0 0 0 2px ${white}`;
 
 // Borders
 export const cardBorder = `1px solid ${hairline}`;
@@ -70,8 +67,6 @@ export const buttonOutlineBorder = 'rgba(4, 9, 32, 0.15)';
 export const buttonOutlineHoverBg = 'rgba(4, 9, 32, 0.04)';
 
 // Input tokens
-export const inputBorder = '#e2e8f0';
-export const inputFocusBorder = skyBlue;
 export const inputBg = '#ffffff';
 
 // Text colors
@@ -86,16 +81,8 @@ export const slateText = '#59677a';
 export const dangerText = '#b91c1c';
 export const warningText = '#a16207';
 export const successText = '#15803d';
-export const successTextHover = '#166534';
 export const progressBg = surfaceMuted;
 export const progressFg = navy;
-
-export const reassignmentNotice = {
-  border: statusStyles.aguardando_terceiros.accent,
-  bg: priorityStyles.alta.bg,
-  label: '#7a4a08',
-  text: '#5a3a08',
-};
 
 export const infoNotice = {
   border: '#93c5fd',
@@ -135,5 +122,3 @@ export const alertDangerNoteBg = '#fef2f2';
 export const alertDangerNoteText = '#991b1b';
 export const alertDangerNoteBorder = '#fecaca';
 export const alertDangerButtonBorder = '#fca5a5';
-export const alertDangerButtonHoverBg = '#fef2f2';
-export const alertDangerButtonHoverBorder = '#f87171';

@@ -6,6 +6,7 @@ import {
   buildAssociatesSearchParams,
 } from '@/lib/associates/search-params';
 import { canViewSensitiveFields } from '@/lib/associates/lgpd';
+import { calculatePaginationBounds } from '@/lib/pagination';
 import { AssociadosFilters } from './AssociadosFilters';
 import { ChevronLeft, ChevronRight, Download, Pencil, Search } from 'lucide-react';
 import Link from 'next/link';
@@ -49,9 +50,7 @@ export default async function AssociadosPage({
 
   const showEmail = canViewSensitiveFields(user.role);
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-  const from = total === 0 ? 0 : Math.min((page - 1) * PAGE_SIZE + 1, total);
-  const to = total === 0 ? 0 : Math.min(page * PAGE_SIZE, total);
+  const { totalPages, from, to } = calculatePaginationBounds(page, PAGE_SIZE, total);
 
   const today = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',

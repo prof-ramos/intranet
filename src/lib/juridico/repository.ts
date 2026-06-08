@@ -11,6 +11,7 @@ import { alias } from 'drizzle-orm/pg-core';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
 import { isSlaDueSoonSql } from './sla';
 import type { LegalConsultationStatus } from './status';
+import { normalizePagination } from '@/lib/pagination';
 
 export interface ConsultationListItem {
   id: number;
@@ -30,10 +31,7 @@ export interface GetConsultationsFilters {
 }
 
 export function normalizeConsultationsPagination(page: number, pageSize: number) {
-  return {
-    page: Number.isInteger(page) && page > 0 ? page : 1,
-    pageSize: Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 20,
-  };
+  return normalizePagination(page, pageSize);
 }
 
 export async function countConsultationsByStatus(

@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import { ArrowLeft, ExternalLink, Pencil } from 'lucide-react';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { focusRingClass, hairline, infoNotice } from '@/lib/ui/tokens';
 import { parsePositiveIntParam } from '@/lib/routing/params';
+import { requireEntityById } from '@/lib/routing/require-entity';
 import {
   formatAssociateDate,
   getAssociateProfile,
@@ -103,15 +103,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
   const user = await requireAuth();
   const { id } = await params;
   const associateId = parsePositiveIntParam(id);
-
-  if (associateId == null) {
-    notFound();
-  }
-
-  const profile = await getAssociateProfile(associateId, user.role);
-  if (!profile) {
-    notFound();
-  }
+  const profile = await requireEntityById(associateId, (id) => getAssociateProfile(id, user.role));
   const {
     associate,
     linkedActivities,

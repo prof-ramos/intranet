@@ -1,17 +1,13 @@
 import { OficioForm } from '../../_components/OficioForm';
 import { getOfficialLetterAction } from '../../actions';
 import { textMuted } from '@/lib/ui/tokens';
-import { notFound } from 'next/navigation';
 import { parsePositiveIntParam } from '@/lib/routing/params';
+import { requireEntityById } from '@/lib/routing/require-entity';
 
 export default async function EditarOficioPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const officialLetterId = parsePositiveIntParam(id);
-
-  if (officialLetterId == null) notFound();
-
-  const oficio = await getOfficialLetterAction(officialLetterId);
-  if (!oficio) notFound();
+  const oficio = await requireEntityById(officialLetterId, getOfficialLetterAction);
   const closure = oficio.closure === 'Respeitosamente,' ? 'Respeitosamente,' : 'Atenciosamente,';
 
   return (

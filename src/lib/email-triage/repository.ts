@@ -75,11 +75,10 @@ export interface TriageDetail {
   updatedAt: string;
 }
 
+import { normalizePagination } from '@/lib/pagination';
+
 export function normalizeTriagesPagination(page: number, pageSize: number) {
-  return {
-    page: Number.isInteger(page) && page > 0 ? page : 1,
-    pageSize: Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 20,
-  };
+  return normalizePagination(page, pageSize);
 }
 
 export async function countTriagesByStatus(status: EmailTriageStatus): Promise<number> {

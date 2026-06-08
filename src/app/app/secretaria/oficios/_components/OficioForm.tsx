@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useTransition } from 'react';
+import { useEscapeKey } from '@/hooks/use-escape-key';
 import { useRouter } from 'next/navigation';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -67,13 +68,7 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
     setAiInstruction('');
     setAiError(null);
   };
-
-  useEffect(() => {
-    if (!isAiModalOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeAiModal(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [isAiModalOpen]);
+  useEscapeKey(closeAiModal, isAiModalOpen);
 
   const {
     register,
