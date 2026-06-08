@@ -10,9 +10,19 @@ Este documento descreve os termos de domínio e regras de negócio da Intranet d
 
 Documento oficial de comunicação institucional seguindo o **Padrão Ofício** (Manual de Redação da Presidência da República). Utilizado para comunicações formais entre a ASOF e órgãos externos (MRE, Embaixadas, etc).
 
-- **Identificação**: Composta por `NOME DO DOCUMENTO No [número]/[ano]/[setor]`.
+- **Identificação**: Composta por `Ofício nº [número]/[ano]-ASOF`.
 - **Partes**: Cabeçalho, Identificação, Local/Data, Endereçamento (Destinatário, Cargo, Vocativo), Assunto, Texto (Introdução, Desenvolvimento, Conclusão), Fecho e Identificação do Signatário.
 - **Arquivamento**: O Ofício é criado e numerado pela intranet; seu PDF final ou assinado pode ser arquivado como Documento para consulta futura.
+
+#### Assinatura Digital (Assinafy)
+
+Plataforma de assinatura eletrônica integrada à intranet para assinatura de ofícios.
+
+- **Fluxo**: Ofício (status `gerado`/`rascunho`) → Geração PDF → Upload Assinafy → Criação Signatário → Assignment (30 dias) → Persistência `assinafy_signing_url` → Email ao signatário → Webhook callbacks (`document_signed`, `signer_signed_document`, `document_rejected`, etc.) → Atualização status + notificação admins
+- **Status Assinafy** (`assinafy_document_status`): `pending`, `uploaded`, `pending_signature`, `partially_signed`, `signed`, `rejected`, `expired`, `cancelled`, `failed`, `certificated`, `ready`
+- **Campos persistidos**: `assinafyDocumentId`, `assinafyStatus`, `assinafySigningUrl`, `assinafyAssignmentId`, `assinafySignerId`, `assinafySentAt`
+- **Idempotência**: Guarda `assinafyDocumentId === null` antes de envio; webhook faz early return se status inalterado
+- **Notificação**: Cria notificação `oficio.status_changed` para todos admins ativos dentro da mesma transação do webhook
 
 #### Documento
 
@@ -34,6 +44,7 @@ Documento geral da Secretaria sem vínculo com uma entidade única da intranet, 
 A autoridade que assina e expede o documento.
 
 - **Campos**: Nome (em maiúsculas) e Cargo (apenas iniciais maiúsculas).
+- **Limpeza para Assinafy**: `cleanSignatoryName()` remove cargo/função após separadores " — ", " - ", "–" (ex: "João Silva — Presidente" → "João Silva"). Fallback: nome completo se regex não encontrar separador.
 
 #### Fecho (Closure)
 
@@ -297,6 +308,7 @@ O sistema suporta dois caminhos de autenticação para APIs:
 - `monthly_payment.updated`
 - `official_letter.created`
 - `official_letter.published`
+- `official_letter.status_changed` — status alterado via webhook Assinafy
 
 ---
 

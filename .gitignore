@@ -123,3 +123,6 @@ migrate_output.log
 capture-snapshots.js
 panorama-scenario.js
 test-execpath.js
+
+# Transient PDF/font debug artifacts
+tmp/

@@ -845,13 +845,13 @@ curl -L \
 - Nao existem endpoints JSON publicos amplos de consulta ou mutacao de dominio
 - A fundacao M2M atual e minima e restrita a `/api/v1/health` e `/api/v1/events`; os crons `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings` usam bearer `CRON_SECRET`
 - Nao existe OAuth de integracao
-- Nao existe endpoint inbound publico para receber eventos de terceiros
-- Nao existe ingestao inbound de eventos
+- Excecao: `/api/webhooks/assinafy` e um endpoint inbound publico para webhooks da plataforma Assinafy (validacao HMAC)
 - A superficie atual foi desenhada para uso por usuarios autenticados na propria intranet
 - Como a base contem dados protegidos pela LGPD, qualquer ampliacao de superficie HTTP deve partir de payload minimo, auditoria e controle estrito de permissao
 - O cron atual processa pendencias por lote; nao ha fila dedicada externa nem concorrencia distribuida
 - No plano Free/Hobby da Vercel, o cron e limitado a execucao diaria; para dispatch mais frequente, use `POST /api/v1/events` manualmente ou migre para Vercel Pro/worker externo
 - A UI administrativa de webhook subscriptions e interna e restrita a `admin`; nao ha CRUD publico de subscriptions
+- Mutacoes de dominio (ex: enviar ofício para assinatura) sao implementadas como **Server Actions**, nao como endpoints HTTP publicos
 
 ---
 
@@ -870,10 +870,11 @@ Parcialmente iniciado no codigo:
 - auditoria de dispatch manual de eventos
 - auditoria de subscription CRUD/rotacao de segredo
 - allowlist de payloads por tipo de evento
+- **webhook inbound Assinafy** (`/api/webhooks/assinafy`) — implementado, validação HMAC, processamento transacional com notificações
 
 Ainda nao implementado:
 
 - contratos publicos amplos de eventos para terceiros
-- endpoints inbound para comandos externos
+- endpoints inbound para comandos externos (além do Assinafy)
 
 As rotas novas existem apenas como groundwork; nao devem ser tratadas como API de negocio completa.
