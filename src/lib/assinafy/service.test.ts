@@ -166,7 +166,7 @@ describe('assinafy/service', () => {
       await handleWebhookEvent(BASE_EVENT);
       expect(logAuditAction).toHaveBeenCalledWith(
         expect.objectContaining({
-          adminId: 1,
+          adminId: null,
           action: 'official_letter_status_changed',
           entityType: 'official_letter',
           entityId: 1,

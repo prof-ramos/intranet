@@ -87,7 +87,7 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
       // Extra try-catch because logAuditAction mock throws in tests.
       try {
         await logAuditAction({
-          adminId: oficio.createdBy,
+          adminId: null,
           action: 'official_letter_status_changed',
           entityType: 'official_letter',
           entityId: oficio.id,

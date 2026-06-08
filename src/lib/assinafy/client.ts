@@ -127,7 +127,10 @@ export class AssinafyClient {
       );
       return resp.data;
     } catch (error) {
-      if (error instanceof Error && error.message?.includes('já existe')) {
+      const isDuplicate =
+        (error instanceof AssinafyError && (error.statusCode === 400 || error.statusCode === 409)) ||
+        (error instanceof Error && error.message?.includes('já existe'));
+      if (isDuplicate) {
         // Fallback: list signers and find the existing one
         const listResp = await this.request<{ data: { id: string; full_name: string; email: string }[] }>(
           `/accounts/${this.accountId}/signers`,

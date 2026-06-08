@@ -4,6 +4,7 @@ import fontkit from '@pdf-lib/fontkit';
 import {
   PDFDocument,
   PageSizes,
+  StandardFonts,
   type PDFPage,
   type PDFFont,
 } from 'pdf-lib';
@@ -36,12 +37,16 @@ export function resetOficioPdfAssetCacheForTests() {
   cachedLogoBytes = undefined;
 }
 
-function getCarlitoFontBytes() {
+function getCarlitoFontBytes(): { regular: Uint8Array; bold: Uint8Array } | null {
   if (!cachedCarlitoFonts) {
-    cachedCarlitoFonts = {
-      regular: fs.readFileSync(path.join(CARLITO_FONTS_DIR, 'Carlito-Regular.ttf')),
-      bold: fs.readFileSync(path.join(CARLITO_FONTS_DIR, 'Carlito-Bold.ttf')),
-    };
+    try {
+      cachedCarlitoFonts = {
+        regular: fs.readFileSync(path.join(CARLITO_FONTS_DIR, 'Carlito-Regular.ttf')),
+        bold: fs.readFileSync(path.join(CARLITO_FONTS_DIR, 'Carlito-Bold.ttf')),
+      };
+    } catch {
+      return null;
+    }
   }
   return cachedCarlitoFonts;
 }
@@ -73,10 +78,15 @@ async function loadLogoBytes(): Promise<Uint8Array | ArrayBuffer> {
 async function embedOficioFonts(pdfDoc: PDFDocument) {
   pdfDoc.registerFontkit(fontkit);
 
-  const { regular, bold } = getCarlitoFontBytes();
-  const font = await pdfDoc.embedFont(regular);
-  const fontBold = await pdfDoc.embedFont(bold);
+  const carlito = getCarlitoFontBytes();
+  if (carlito) {
+    const font = await pdfDoc.embedFont(carlito.regular);
+    const fontBold = await pdfDoc.embedFont(carlito.bold);
+    return { font, fontBold };
+  }
 
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   return { font, fontBold };
 }
 
