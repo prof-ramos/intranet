@@ -158,7 +158,7 @@ async function main() {
       createdBy: adminId,
     },
     {
-      number: 'OFÍCIO No 002/2026/ASOF',
+      number: 'Ofício nº 002/2026-ASOF',
       year: 2026,
       sequence: 2,
       recipient: 'Secretário-Geral',
