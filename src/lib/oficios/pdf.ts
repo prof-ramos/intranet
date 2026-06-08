@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import fontkit from '@pdf-lib/fontkit';
 import {
   PDFDocument,
@@ -10,8 +11,8 @@ import {
 } from 'pdf-lib';
 import { type OfficialLetter } from '@/lib/db/schema/oficios';
 
-const CARLITO_FONTS_DIR = path.join(process.cwd(), 'public/fonts/carlito');
-const LOGO_PATH = path.join(process.cwd(), 'public/logo.png');
+const CARLITO_FONTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'public', 'fonts', 'carlito');
+const LOGO_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'public', 'logo.png');
 
 // Conversions
 const CM_TO_PT = 28.3465;
@@ -69,22 +70,19 @@ async function loadLogoBytes(): Promise<Uint8Array | ArrayBuffer> {
   if (cachedLogoBytes) {
     return cachedLogoBytes;
   }
-
   try {
     cachedLogoBytes = fs.readFileSync(LOGO_PATH);
     return cachedLogoBytes;
   } catch {
+    // Serverless fallback: fetch logo via HTTP from the app URL
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
     try {
-      const bytes = await fetch(`${baseUrl}/logo.png`, { signal: controller.signal }).then((r) =>
-        r.arrayBuffer(),
-      );
-      cachedLogoBytes = new Uint8Array(bytes);
+      const resp = await fetch(`${baseUrl}/logo.png`, { signal: AbortSignal.timeout(5000) });
+      if (!resp.ok) throw new Error('Logo fetch failed');
+      cachedLogoBytes = new Uint8Array(await resp.arrayBuffer());
       return cachedLogoBytes;
-    } finally {
-      clearTimeout(timeoutId);
+    } catch {
+      return new Uint8Array();
     }
   }
 }
@@ -344,8 +342,11 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
 
   // ── 2. Ofício Number (left-aligned, bold, uppercase — MRPR) ──
   const numberSize = 14;
-  const displayNumber = oficio.number.includes('N.º') || oficio.number.includes('Nº')
-    ? oficio.number.toUpperCase()
+  const upperNumber = oficio.number.toUpperCase();
+  const hasOrdinal = /N[.º]?\s*\d/.test(upperNumber);
+  const hasPrefix = /^OF[ÍI]CIO/.test(upperNumber);
+  const displayNumber = hasOrdinal
+    ? (hasPrefix ? upperNumber : `OFÍCIO ${upperNumber}`)
     : `OFÍCIO N.º ${oficio.number.replace(/^OF[ÍI]CIO\s+/i, '').toUpperCase()}`;
   page.drawText(displayNumber, {
     x: marginLeft,
