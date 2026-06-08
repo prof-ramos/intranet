@@ -1,7 +1,7 @@
-import { db } from '../src/lib/db';
-import { oficios } from '../src/lib/db/schema/oficios';
-import { sendForSignature } from '../src/lib/oficios/service';
-import { admins } from '../src/lib/db/schema/admins';
+import { db } from '../../src/lib/db';
+import { oficios } from '../../src/lib/db/schema/oficios';
+import { sendForSignature } from '../../src/lib/oficios/service';
+import { admins } from '../../src/lib/db/schema/admins';
 
 async function main() {
   console.log('Fetching an admin user...');

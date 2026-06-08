@@ -8,6 +8,14 @@
 
 const MS_PER_DAY = 86_400_000;
 
+function parseDateParts(value: string | Date | null | undefined): { year: number; month: number; day: number } | null {
+  const d = dateOnly(value);
+  if (!d) return null;
+  const [year, month, day] = d.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return { year, month, day };
+}
+
 /**
  * Extract the date portion from a string or Date, returning YYYY-MM-DD or null.
  * Returns null for strings that don't contain a valid date pattern.
@@ -46,11 +54,9 @@ export function formatDate(value: string | Date | null | undefined): string {
  * Returns null for nullish/invalid input.
  */
 export function formatLongDate(value: string | Date | null | undefined): string | null {
-  const d = dateOnly(value);
-  if (!d) return null;
-  const [year, month, day] = d.split('-').map(Number);
-  if (!year || !month || !day) return null;
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('pt-BR', {
+  const parts = parseDateParts(value);
+  if (!parts) return null;
+  return new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
@@ -117,16 +123,14 @@ export function daysSince(value: string | Date | null | undefined): number | nul
  * Returns null for nullish/invalid input.
  */
 export function yearsSinceDate(value: string | Date | null | undefined): number | null {
-  const d = dateOnly(value);
-  if (!d) return null;
-  const [year, month, day] = d.split('-').map(Number);
-  if (!year || !month || !day) return null;
+  const parts = parseDateParts(value);
+  if (!parts) return null;
   const now = new Date();
   const currentYear = now.getUTCFullYear();
   const currentMonth = now.getUTCMonth() + 1;
   const currentDay = now.getUTCDate();
-  let years = currentYear - year;
-  if (currentMonth < month || (currentMonth === month && currentDay < day)) {
+  let years = currentYear - parts.year;
+  if (currentMonth < parts.month || (currentMonth === parts.month && currentDay < parts.day)) {
     years--;
   }
   return years;

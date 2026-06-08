@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import { generateOfficialLetterPdf } from '../src/lib/oficios/pdf';
-import { type OfficialLetter } from '../src/lib/db/schema/oficios';
+import { generateOfficialLetterPdf } from '../../src/lib/oficios/pdf';
+import { type OfficialLetter } from '../../src/lib/db/schema/oficios';
 
 const sampleOficio: OfficialLetter = {
   id: 1,
