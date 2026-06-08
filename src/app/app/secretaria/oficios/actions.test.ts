@@ -75,6 +75,7 @@ vi.mock('@/lib/ai/settings', () => ({
 vi.mock('@/lib/oficios/validations', () => ({
   officialLetterFormSchema: {
     parse: (value: unknown) => value,
+    safeParse: (value: unknown) => ({ success: true, data: value }),
   },
 }));
 

@@ -48,7 +48,6 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot,
   },
-  serverExternalPackages: [],
   experimental: {
     optimizePackageImports: [
       'lucide-react',

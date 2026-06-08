@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { getTriageById } from '@/lib/email-triage/repository';
 import {
@@ -28,6 +27,7 @@ import {
 } from 'lucide-react';
 import { hairline, focusRingClass } from '@/lib/ui/tokens';
 import { parsePositiveIntParam } from '@/lib/routing/params';
+import { requireEntityById } from '@/lib/routing/require-entity';
 import { StatusUpdater } from './StatusUpdater';
 import { DeadlineEditor } from './DeadlineEditor';
 
@@ -39,11 +39,7 @@ export default async function TriageDetalhePage({
   await requireAuth();
   const { id } = await params;
   const triageId = parsePositiveIntParam(id);
-
-  if (triageId == null) notFound();
-
-  const triage = await getTriageById(triageId);
-  if (!triage) notFound();
+  const triage = await requireEntityById(triageId, (id) => getTriageById(id));
 
   const overdueDays =
     triage.status === 'vencido' && triage.prazoData
@@ -72,7 +68,7 @@ export default async function TriageDetalhePage({
         </div>
 
         <form action={updateTriageStatusFromForm} className="flex items-center gap-2">
-          <input type="hidden" name="id" value={triageId} />
+          <input type="hidden" name="id" value={triage.id} />
           <StatusUpdater defaultValue={triage.status}>
             {EMAIL_TRIAGE_STATUS_FILTER_OPTIONS.filter((o) => o.value !== '').map((s) => (
               <option key={s.value} value={s.value}>
@@ -154,7 +150,7 @@ export default async function TriageDetalhePage({
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="font-serif text-lg font-bold">Prazo</h3>
                 <form action={updateTriageDeadlineFromForm} className="flex items-center gap-2">
-                  <input type="hidden" name="id" value={triageId} />
+                  <input type="hidden" name="id" value={triage.id} />
                   <DeadlineEditor
                     currentData={triage.prazoData}
                     currentHora={triage.prazoHora}
@@ -273,7 +269,7 @@ export default async function TriageDetalhePage({
           <div className="rounded-[16px] bg-white p-5" style={{ border: `1px solid ${hairline}` }}>
             <h3 className="mb-4 font-serif text-lg font-bold">Adicionar observação</h3>
             <form action={addTriageObservacaoFromForm} className="flex flex-col gap-3">
-              <input type="hidden" name="id" value={triageId} />
+              <input type="hidden" name="id" value={triage.id} />
               <textarea
                 name="observacoes"
                 rows={3}

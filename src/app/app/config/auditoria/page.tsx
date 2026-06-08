@@ -7,6 +7,7 @@ import { desc, eq, and, gte, lt, ilike, count } from 'drizzle-orm';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
 import type { SQL } from 'drizzle-orm';
 import { focusRingClass } from '@/lib/ui/tokens';
+import { calculatePaginationBounds } from '@/lib/pagination';
 
 const PAGE_SIZE = 50;
 
@@ -75,7 +76,7 @@ export default async function AuditoriaPage({
   // Count first so we can clamp page before fetching rows (avoids empty-table
   // with misleading footer when a manual URL supplies page > totalPages).
   const [{ total }] = await db.select({ total: count() }).from(auditLogs).where(where);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const { totalPages, from, to } = calculatePaginationBounds(page, PAGE_SIZE, total);
   const effectivePage = total > 0 ? Math.min(page, totalPages) : 1;
 
   const rows = await db
@@ -93,9 +94,6 @@ export default async function AuditoriaPage({
     .orderBy(desc(auditLogs.createdAt))
     .limit(PAGE_SIZE)
     .offset((effectivePage - 1) * PAGE_SIZE);
-
-  const from = total === 0 ? 0 : (effectivePage - 1) * PAGE_SIZE + 1;
-  const to = Math.min(effectivePage * PAGE_SIZE, total);
 
   function pageUrl(p: number) {
     const sp = new URLSearchParams();

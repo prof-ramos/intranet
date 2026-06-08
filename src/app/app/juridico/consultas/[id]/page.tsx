@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { getConsultationById, getNotesByEntity } from '@/lib/juridico/queries';
 import {
@@ -12,23 +11,16 @@ import { formatDate, daysSince } from '@/lib/utils/date';
 import { ArrowLeft, Clock, FileText, MessageSquare, Send, User } from 'lucide-react';
 import { hairline, focusRingClass } from '@/lib/ui/tokens';
 import { parsePositiveIntParam } from '@/lib/routing/params';
+import { requireEntityById } from '@/lib/routing/require-entity';
 import { StatusUpdater } from './StatusUpdater';
 
 export default async function ConsultaDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   await requireAuth();
   const { id } = await params;
   const consultationId = parsePositiveIntParam(id);
+  const consultation = await requireEntityById(consultationId, (id) => getConsultationById(id));
 
-  if (consultationId == null) {
-    notFound();
-  }
-
-  const consultation = await getConsultationById(consultationId);
-  if (!consultation) {
-    notFound();
-  }
-
-  const notes = await getNotesByEntity('consultation', consultationId);
+  const notes = await getNotesByEntity('consultation', consultation.id);
   const stale = daysSince(consultation.lastInteractionAt);
 
   return (
@@ -51,7 +43,7 @@ export default async function ConsultaDetalhePage({ params }: { params: Promise<
         </div>
 
         <form action={updateConsultationStatusFromForm} className="flex items-center gap-2">
-          <input type="hidden" name="id" value={consultationId} />
+          <input type="hidden" name="id" value={consultation.id} />
           <StatusUpdater defaultValue={consultation.status}>
             {LEGAL_CONSULTATION_STATUS_OPTIONS.map((s) => (
               <option key={s.value} value={s.value}>
@@ -148,7 +140,7 @@ export default async function ConsultaDetalhePage({ params }: { params: Promise<
             <h3 className="mb-4 font-serif text-lg font-bold">Adicionar nota</h3>
             <form action={addNote} className="flex flex-col gap-3">
               <input type="hidden" name="entityType" value="consultation" />
-              <input type="hidden" name="entityId" value={consultationId} />
+              <input type="hidden" name="entityId" value={consultation.id} />
 
               <textarea
                 name="content"

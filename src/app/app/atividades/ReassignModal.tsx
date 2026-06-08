@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { useEscapeKey } from '@/hooks/use-escape-key';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 import { focusRingClass } from '@/lib/ui/tokens';
 
@@ -31,17 +32,7 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
   const [isPending, setIsPending] = useState(false);
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
-    closeRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  useEscapeKey(onClose);
 
   return (
     <>

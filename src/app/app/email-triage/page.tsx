@@ -17,6 +17,7 @@ import {
 import type { EmailTriageStatus, EmailTriageCategoria, EmailTriageRisco } from '@/lib/email-triage/status';
 import { ArrowLeft, Search } from 'lucide-react';
 import { hairline, focusRingClass } from '@/lib/ui/tokens';
+import { calculatePaginationBounds } from '@/lib/pagination';
 import { StatusFilter } from '@/app/app/juridico/consultas/StatusFilter';
 
 const PAGE_SIZE = 20;
@@ -47,7 +48,7 @@ export default async function EmailTriagePage({
     countTriagesAltoRisco(),
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const { totalPages } = calculatePaginationBounds(filters.page, PAGE_SIZE, total);
   const currentPage = Math.min(Math.max(1, filters.page), totalPages);
 
   const buildHref = (overrides: Record<string, string>) => {

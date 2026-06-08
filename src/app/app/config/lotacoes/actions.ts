@@ -16,8 +16,6 @@ function parseAssignmentId(formData: Record<string, unknown>): number {
   return Number.parseInt(raw, 10);
 }
 
-type AssignmentState = { success: boolean; message: string };
-
 export const createAssignment = defineFormStateAction({
   auth: ['admin', 'diretoria'],
   service: async (data, actor) => {

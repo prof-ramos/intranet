@@ -10,6 +10,7 @@ import {
 } from '@/lib/juridico/status';
 import { ArrowLeft, Plus, Search } from 'lucide-react';
 import { hairline, focusRingClass } from '@/lib/ui/tokens';
+import { calculatePaginationBounds } from '@/lib/pagination';
 import { StatusFilter } from './StatusFilter';
 
 const PAGE_SIZE = 20;
@@ -28,7 +29,7 @@ export default async function ConsultasPage({
     search: q || undefined,
   });
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const { totalPages } = calculatePaginationBounds(page, PAGE_SIZE, total);
 
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">

@@ -38,7 +38,7 @@ describe('config integracoes api key actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireAuthMock.mockResolvedValue({ userId: 7 });
-    requireRoleMock.mockResolvedValue(undefined);
+    requireRoleMock.mockResolvedValue({ userId: 7 });
     createApiKeyServiceMock.mockResolvedValue({
       id: 10,
       name: 'Prod Key',
