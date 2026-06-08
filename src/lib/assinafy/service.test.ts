@@ -12,11 +12,37 @@ vi.mock('./repository', () => ({
   updateAssinafyStatus: mockUpdateAssinafyStatus,
 }));
 
-vi.mock('@/lib/db', () => ({
-  db: {
-    transaction: vi.fn((cb: (tx: unknown) => unknown) => cb({})),
-  },
-}));
+vi.mock('@/lib/db', () => {
+  // Chainable mock for Drizzle's query builder inside transactions.
+  // Supports select().from().where() and insert().values().onConflictDoNothing().returning().
+  const thenable = { then: (resolve: (val: unknown) => void) => resolve([]) };
+
+  const queryBuilder: Record<string, unknown> = {
+    orderBy: () => ({
+      ...thenable,
+      limit: () => Promise.resolve([]),
+    }),
+  };
+  (queryBuilder as Record<string, unknown>).then = (resolve: (val: unknown) => void) => resolve([]);
+
+  const mockTx = new Proxy({} as Record<string, unknown>, {
+    get(_target, prop: string) {
+      if (prop === 'then') return undefined;
+      return () => {
+        if (prop === 'where') return queryBuilder;
+        if (prop === 'limit') return Promise.resolve([]);
+        if (prop === 'returning') return Promise.resolve([]);
+        return mockTx;
+      };
+    },
+  });
+
+  return {
+    db: {
+      transaction: vi.fn((cb: (tx: unknown) => unknown) => cb(mockTx)),
+    },
+  };
+});
 
 vi.mock('@/lib/audit/service', () => ({
   logAuditAction: vi.fn(),

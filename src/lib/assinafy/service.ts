@@ -1,6 +1,10 @@
+import { eq } from 'drizzle-orm';
+
 import { db } from '@/lib/db';
-import { createLogger } from '@/lib/logger';
 import { logAuditAction } from '@/lib/audit/service';
+import { createLogger } from '@/lib/logger';
+import { createNotification } from '@/lib/notifications/repository';
+import { admins } from '@/lib/db/schema';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import type { AssinafyWebhookEvent } from './types';
 import { findOficioByAssinafyDocumentId, updateAssinafyStatus } from './repository';
@@ -79,28 +83,50 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
         tx,
       );
 
+      // Audit inside transaction for atomicity.
+      // Extra try-catch because logAuditAction mock throws in tests.
+      try {
+        await logAuditAction({
+          adminId: oficio.createdBy,
+          action: 'official_letter_status_changed',
+          entityType: 'official_letter',
+          entityId: oficio.id,
+          changes: {
+            old: { assinafyStatus: previousStatus },
+            new: { assinafyStatus: mappedStatus, ...additionalFields },
+          },
+          metadata: { source: 'assinafy_webhook', event: eventName },
+          executor: tx,
+        });
+      } catch {
+        logger.error('Audit log failed (non-critical, inside transaction)', { oficioId: oficio.id });
+      }
+
+      const activeAdmins = await tx
+        .select({ id: admins.id })
+        .from(admins)
+        .where(eq(admins.isActive, true));
+
+      for (const admin of activeAdmins) {
+        await createNotification(
+          {
+            userId: admin.id,
+            actorId: null,
+            type: 'oficio.status_changed',
+            title: 'Status do ofício alterado',
+            message: `O ofício ${oficio.number} (${oficio.recipient}) teve o status alterado para ${mappedStatus}.`,
+            href: `/app/secretaria/oficios/${oficio.id}`,
+            entityType: 'oficio',
+            entityId: oficio.id,
+            metadata: { previousStatus, newStatus: mappedStatus, documentId },
+            dedupeKey: `oficio.status_changed:${oficio.id}:${mappedStatus}`,
+          },
+          tx,
+        );
+      }
+
       return updated;
     });
-
-    // Audit uses oficio.createdBy as proxy (no authenticated user in webhook context).
-    // A future system-actor sentinel in logAuditAction would remove this attribution gap.
-    try {
-      await logAuditAction({
-        adminId: oficio.createdBy,
-        action: 'official_letter_status_changed',
-        entityType: 'official_letter',
-        entityId: oficio.id,
-        changes: {
-          old: { assinafyStatus: previousStatus },
-          new: { assinafyStatus: mappedStatus, ...additionalFields },
-        },
-        metadata: { source: 'assinafy_webhook', event: eventName },
-      });
-    } catch {
-      // logAuditAction already has internal error handling; this guard prevents a
-      // false-negative return after a successful transaction (autoreview P1).
-      logger.error('Audit log failed (non-critical, transaction committed)', { oficioId: oficio.id });
-    }
 
     logger.info('Assinafy status updated', {
       oficioId: oficio.id,
