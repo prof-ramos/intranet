@@ -220,9 +220,8 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   for (let i = 0; i < paragraphs.length; i++) {
     const pText = useNumbering ? `${i + 1}. ${paragraphs[i]}` : paragraphs[i];
     
-    // First line has indent, subsequent lines start at marginLeft
-    const firstLineWidth = contentWidth - firstLineIndent;
-    const lines = wrapText(pText, font, 12, firstLineWidth);
+    // Wrap at full content width; only first line gets indent shift
+    const lines = wrapText(pText, font, 12, contentWidth);
     
     for (let j = 0; j < lines.length; j++) {
       if (currentY < marginBottom + 50) break;

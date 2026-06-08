@@ -32,7 +32,7 @@ export function checkImpersonality(text: string): ImpersonalityWarning[] {
   const seen = new Set<string>();
 
   for (const { pattern, label } of PRIMEIRA_PESSOA) {
-    if (pattern.test(text) && !seen.has(label)) {
+    if (text.match(pattern) && !seen.has(label)) {
       seen.add(label);
       warnings.push({
         term: label,
@@ -42,7 +42,7 @@ export function checkImpersonality(text: string): ImpersonalityWarning[] {
   }
 
   for (const { pattern, label } of COLOQUIALISMOS) {
-    if (pattern.test(text) && !seen.has(label)) {
+    if (text.match(pattern) && !seen.has(label)) {
       seen.add(label);
       warnings.push({
         term: label,
