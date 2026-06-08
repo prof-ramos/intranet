@@ -9,6 +9,7 @@ import {
 
 const {
   requireRoleMock,
+  requireAuthMock,
   findOfficialLettersMock,
   findOfficialLetterByIdMock,
   generateOfficialLetterContentMock,
@@ -20,6 +21,7 @@ const {
   isGeminiConfiguredMock,
 } = vi.hoisted(() => ({
   requireRoleMock: vi.fn(),
+  requireAuthMock: vi.fn(),
   findOfficialLettersMock: vi.fn(),
   findOfficialLetterByIdMock: vi.fn(),
   generateOfficialLetterContentMock: vi.fn(),
@@ -33,6 +35,22 @@ const {
 
 vi.mock('@/lib/auth/authorization', () => ({
   requireRole: (...args: unknown[]) => requireRoleMock(...args),
+}));
+
+vi.mock('@/lib/auth/require-auth', () => ({
+  requireAuth: (...args: unknown[]) => requireAuthMock(...args),
+}));
+
+vi.mock('@/lib/rate-limit', () => ({
+  consumeIpRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
+}));
+
+vi.mock('@/lib/ip', () => ({
+  getTrustedClientIp: vi.fn(() => '127.0.0.1'),
+}));
+
+vi.mock('next/headers', () => ({
+  headers: vi.fn().mockResolvedValue(new Headers()),
 }));
 
 vi.mock('@/lib/oficios/repository', () => ({
@@ -72,6 +90,7 @@ describe('secretaria oficios actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireRoleMock.mockResolvedValue({ userId: 7 });
+    requireAuthMock.mockResolvedValue({ userId: 7, role: 'admin', name: 'Admin' });
     findOfficialLettersMock.mockResolvedValue([]);
     findOfficialLetterByIdMock.mockResolvedValue(null);
     generateOfficialLetterContentMock.mockResolvedValue('texto gerado');

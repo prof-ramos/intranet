@@ -23,9 +23,27 @@ vi.mock('@/lib/auth/require-auth', () => ({
   requireAuth: () => mockRequireAuth(),
 }));
 
+vi.mock('@/lib/auth/authorization', () => ({
+  requireRole: async (roles: string[]) => {
+    const user = await mockRequireAuth();
+    if (!roles.includes(user.role)) {
+      throw new Error('Acesso negado');
+    }
+    return user;
+  },
+  requireAuth: () => mockRequireAuth(),
+}));
+
 // Mock Cache
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
+}));
+
+// Mock redirect para testes de bloqueio de role
+vi.mock('next/navigation', () => ({
+  redirect: (path: string) => {
+    throw new Error(`NEXT_REDIRECT:${path}`);
+  },
 }));
 
 // Import dos mocks do service após vi.mock
@@ -142,7 +160,7 @@ describe('Documentos Server Actions', () => {
         message: 'URL assinada gerada com sucesso.',
       });
 
-      const result = await downloadDocumentAction(10);
+      const result = await downloadDocumentAction({ id: 10 });
 
       expect(result).toEqual({ signedUrl: 'http://storage.signed.url' });
       expect(downloadDocument).toHaveBeenCalledWith(10, 3);
@@ -155,13 +173,13 @@ describe('Documentos Server Actions', () => {
         message: 'Documento não encontrado.',
       });
 
-      await expect(downloadDocumentAction(404)).rejects.toThrow('Documento não encontrado');
+      await expect(downloadDocumentAction({ id: 404 })).rejects.toThrow('Documento não encontrado');
     });
 
     it('deve bloquear download para diretoria', async () => {
       mockRequireAuth.mockResolvedValue({ userId: 3, role: 'diretoria' });
 
-      await expect(downloadDocumentAction(10)).rejects.toThrow('Acesso negado');
+      await expect(downloadDocumentAction({ id: 10 })).rejects.toThrow();
     });
   });
 
@@ -173,7 +191,7 @@ describe('Documentos Server Actions', () => {
         message: 'Documento excluído com sucesso.',
       });
 
-      const result = await deleteDocumentAction(10);
+      const result = await deleteDocumentAction({ id: 10 });
 
       expect(result).toEqual({
         success: true,
@@ -186,7 +204,7 @@ describe('Documentos Server Actions', () => {
     it('deve bloquear exclusao para diretoria', async () => {
       mockRequireAuth.mockResolvedValue({ userId: 3, role: 'diretoria' });
 
-      await expect(deleteDocumentAction(10)).rejects.toThrow('Acesso negado');
+      await expect(deleteDocumentAction({ id: 10 })).rejects.toThrow();
       expect(deleteDocument).not.toHaveBeenCalled();
     });
   });

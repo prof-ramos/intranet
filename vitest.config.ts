@@ -15,6 +15,7 @@ export default defineConfig({
     },
     include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],
     exclude: ['src/**/*.integration.test.{ts,tsx}'],
+    setupFiles: ['src/test/setup.ts'],
     reporters: ['default', new VitestMetricsReporter({ suite: 'unit' })],
     coverage: {
       provider: 'v8',

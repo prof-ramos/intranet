@@ -95,7 +95,7 @@ export function DocumentList({ initialDocuments, userRole }: DocumentListProps) 
   const handleDownload = async (id: number) => {
     setDownloadingId(id);
     try {
-      const res = await downloadDocumentAction(id);
+      const res = await downloadDocumentAction({ id });
       if (res.signedUrl) {
         // Abre o arquivo em nova aba para visualização/download seguro
         window.open(res.signedUrl, '_blank');
@@ -113,7 +113,7 @@ export function DocumentList({ initialDocuments, userRole }: DocumentListProps) 
     setIsDeletePending(true);
     setDeleteError(null);
     try {
-      const res = await deleteDocumentAction(deletingId);
+      const res = await deleteDocumentAction({ id: deletingId });
       if (res.success) {
         setDeletingId(null);
         router.refresh();

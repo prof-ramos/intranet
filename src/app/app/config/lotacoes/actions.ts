@@ -1,95 +1,94 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { requireRole } from '@/lib/auth/authorization';
+import { defineFormStateAction } from '@/lib/server-actions/define-form-action';
 import {
   createAssignment as createAssignmentService,
   updateAssignment as updateAssignmentService,
   toggleAssignmentActive as toggleAssignmentActiveService,
 } from '@/lib/assignments/service';
 
-function parseAssignmentId(formData: FormData): number {
-  const raw = formData.get('id')?.toString() ?? '';
+function parseAssignmentId(formData: Record<string, unknown>): number {
+  const raw = (formData.id as string) ?? '';
   if (!/^\d+$/.test(raw)) {
     return Number.NaN;
   }
   return Number.parseInt(raw, 10);
 }
 
-export async function createAssignment(
-  _prevState: { success: boolean; message: string } | null,
-  formData: FormData,
-): Promise<{ success: boolean; message: string }> {
-  const actor = await requireRole(['admin', 'diretoria']);
+type AssignmentState = { success: boolean; message: string };
 
-  const name = formData.get('name')?.toString().trim();
-  const type = formData.get('type')?.toString();
+export const createAssignment = defineFormStateAction({
+  auth: ['admin', 'diretoria'],
+  service: async (data, actor) => {
+    const formData = data as Record<string, unknown>;
+    const name = (formData.name as string)?.trim();
+    const type = formData.type as string;
 
-  if (!name || name.length < 2) {
-    return { success: false, message: 'Nome da lotação é obrigatório (mínimo 2 caracteres).' };
-  }
+    if (!name || name.length < 2) {
+      return { success: false, message: 'Nome da lotação é obrigatório (mínimo 2 caracteres).' };
+    }
 
-  if (type !== 'nacional' && type !== 'exterior') {
-    return { success: false, message: 'Tipo de lotação inválido.' };
-  }
+    if (type !== 'nacional' && type !== 'exterior') {
+      return { success: false, message: 'Tipo de lotação inválido.' };
+    }
 
-  const result = await createAssignmentService({ name, type }, actor.userId);
+    const result = await createAssignmentService({ name, type }, actor.userId);
 
-  if (result.success) {
-    revalidatePath('/app/config/lotacoes');
-  }
+    if (result.success) {
+      revalidatePath('/app/config/lotacoes');
+    }
+    return result;
+  },
+  onError: () => ({ success: false, message: 'Falha ao criar lotação.' }),
+});
 
-  return result;
-}
+export const updateAssignment = defineFormStateAction({
+  auth: ['admin', 'diretoria'],
+  service: async (data, actor) => {
+    const formData = data as Record<string, unknown>;
+    const id = parseAssignmentId(formData);
+    const name = (formData.name as string)?.trim();
+    const type = formData.type as string;
 
-export async function updateAssignment(
-  _prevState: { success: boolean; message: string } | null,
-  formData: FormData,
-): Promise<{ success: boolean; message: string }> {
-  const actor = await requireRole(['admin', 'diretoria']);
+    if (!Number.isInteger(id) || id < 1) {
+      return { success: false, message: 'Lotação inválida.' };
+    }
 
-  const id = parseAssignmentId(formData);
-  const name = formData.get('name')?.toString().trim();
-  const type = formData.get('type')?.toString();
+    if (!name || name.length < 2) {
+      return { success: false, message: 'Nome da lotação é obrigatório (mínimo 2 caracteres).' };
+    }
 
-  if (!Number.isInteger(id) || id < 1) {
-    return { success: false, message: 'Lotação inválida.' };
-  }
+    if (type !== 'nacional' && type !== 'exterior') {
+      return { success: false, message: 'Tipo de lotação inválido.' };
+    }
 
-  if (!name || name.length < 2) {
-    return { success: false, message: 'Nome da lotação é obrigatório (mínimo 2 caracteres).' };
-  }
+    const result = await updateAssignmentService({ id, name, type }, actor.userId);
 
-  if (type !== 'nacional' && type !== 'exterior') {
-    return { success: false, message: 'Tipo de lotação inválido.' };
-  }
+    if (result.success) {
+      revalidatePath('/app/config/lotacoes');
+    }
+    return result;
+  },
+  onError: () => ({ success: false, message: 'Falha ao atualizar lotação.' }),
+});
 
-  const result = await updateAssignmentService({ id, name, type }, actor.userId);
+export const toggleAssignmentActive = defineFormStateAction({
+  auth: ['admin', 'diretoria'],
+  service: async (data, actor) => {
+    const formData = data as Record<string, unknown>;
+    const id = parseAssignmentId(formData);
 
-  if (result.success) {
-    revalidatePath('/app/config/lotacoes');
-  }
+    if (!Number.isInteger(id) || id < 1) {
+      return { success: false, message: 'Lotação inválida.' };
+    }
 
-  return result;
-}
+    const result = await toggleAssignmentActiveService(id, actor.userId);
 
-export async function toggleAssignmentActive(
-  _prevState: { success: boolean; message: string } | null,
-  formData: FormData,
-): Promise<{ success: boolean; message: string }> {
-  const actor = await requireRole(['admin', 'diretoria']);
-
-  const id = parseAssignmentId(formData);
-
-  if (!Number.isInteger(id) || id < 1) {
-    return { success: false, message: 'Lotação inválida.' };
-  }
-
-  const result = await toggleAssignmentActiveService(id, actor.userId);
-
-  if (result.success) {
-    revalidatePath('/app/config/lotacoes');
-  }
-
-  return result;
-}
+    if (result.success) {
+      revalidatePath('/app/config/lotacoes');
+    }
+    return result;
+  },
+  onError: () => ({ success: false, message: 'Falha ao alterar status da lotação.' }),
+});

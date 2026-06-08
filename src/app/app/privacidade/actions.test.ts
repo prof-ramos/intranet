@@ -17,8 +17,12 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
-vi.mock('@/lib/auth/session', () => ({
-  getSession: () => mockSession(),
+vi.mock('@/lib/auth/require-auth', () => ({
+  requireAuth: () => {
+    const session = mockSession();
+    if (!session) throw new Error('Unauthorized');
+    return session;
+  },
 }));
 
 vi.mock('@/lib/notifications/repository', () => ({

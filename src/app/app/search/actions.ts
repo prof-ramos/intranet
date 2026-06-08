@@ -1,6 +1,6 @@
 'use server';
 
-import { requireAuth } from '@/lib/auth/require-auth';
+import { defineServerAction } from '@/lib/server-actions/define-form-action';
 import { searchAssociates, searchActivities } from '@/lib/search/queries';
 
 export interface GlobalSearchResults {
@@ -8,16 +8,17 @@ export interface GlobalSearchResults {
   activities: Array<{ id: number; title: string; subtitle: string | null; href: string }>;
 }
 
-export async function globalSearchAction(query: string): Promise<GlobalSearchResults> {
-  await requireAuth();
+export const globalSearchAction = defineServerAction({
+  auth: 'any',
+  service: async (query: string) => {
+    const trimmed = query.trim().slice(0, 80);
+    if (trimmed.length < 2) return { associates: [], activities: [] } satisfies GlobalSearchResults;
 
-  const trimmed = query.trim().slice(0, 80);
-  if (trimmed.length < 2) return { associates: [], activities: [] };
+    const [associates, activities] = await Promise.all([
+      searchAssociates(trimmed),
+      searchActivities(trimmed),
+    ]);
 
-  const [associates, activities] = await Promise.all([
-    searchAssociates(trimmed),
-    searchActivities(trimmed),
-  ]);
-
-  return { associates, activities };
-}
+    return { associates, activities };
+  },
+});
