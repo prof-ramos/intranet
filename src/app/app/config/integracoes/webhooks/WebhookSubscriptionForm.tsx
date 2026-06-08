@@ -24,6 +24,7 @@ const eventLabels: Record<DomainEventType, string> = {
   'official_letter.created': 'Ofício criado',
   'monthly_payment.updated': 'Mensalidade atualizada',
   'official_letter.published': 'Ofício publicado',
+  'official_letter.status_changed': 'Status de ofício alterado',
 };
 
 export function WebhookSubscriptionForm({

@@ -27,6 +27,7 @@ export const assinafyDocumentStatus = pgEnum('assinafy_document_status', [
   'certificating',
   'certificated',
   'expired',
+  'partially_signed',
   'rejected_by_signer',
   'rejected_by_user',
   'failed',

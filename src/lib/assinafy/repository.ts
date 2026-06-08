@@ -15,8 +15,9 @@ export async function updateAssinafyStatus(
   oficioId: number,
   status: string,
   additionalFields?: Record<string, unknown>,
+  tx: Tx = db,
 ) {
-  const [result] = await db
+  const [result] = await tx
     .update(oficios)
     .set({
       assinafyStatus: status as typeof oficios.$inferSelect.assinafyStatus,

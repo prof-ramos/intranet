@@ -120,6 +120,13 @@
       "tag": "0016_add_assinafy_signing_url",
       "when": 1780862100000,
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1780923888761,
+      "tag": "0017_hesitant_corsair",
+      "breakpoints": true
     }
   ]
 }
