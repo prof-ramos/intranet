@@ -3,6 +3,15 @@ import * as repository from './repository';
 import { type NewOfficialLetter } from '@/lib/db/schema/oficios';
 import { logAuditAction } from '@/lib/audit/service';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
+import { generateOfficialLetterPdf } from './pdf';
+import { cleanSignatoryName } from './utils';
+import { AssinafyClient } from '@/lib/assinafy/client';
+import * as assinafyRepository from '@/lib/assinafy/repository';
+import { toSafeErrorLog } from '@/lib/error-log';
+import { createLogger } from '@/lib/logger';
+import { env } from '@/lib/env';
+
+const logger = createLogger('oficios:service');
 
 const OFFICIAL_LETTER_OPERATIONAL_STATUS = 'gerado' satisfies NewOfficialLetter['status'];
 
@@ -141,4 +150,132 @@ export async function cancelOfficialLetter(id: number, userId: number) {
 
     return result;
   });
+}
+
+export async function sendForSignature(
+  oficioId: number,
+  signerEmail: string,
+  userId: number,
+): Promise<{ success: true; data: unknown } | { success: false; error: string }> {
+  // 1. Assinafy not configured guard
+  const apiKey = env.ASSINAFY_API_KEY;
+  const accountId = env.ASSINAFY_ACCOUNT_ID;
+  if (!apiKey || !accountId) {
+    return { success: false, error: 'Assinafy não está configurado. Verifique as variáveis de ambiente.' };
+  }
+
+  // 2. Fetch oficio
+  const oficio = await repository.findOfficialLetterById(oficioId);
+  if (!oficio) {
+    return { success: false, error: 'Ofício não encontrado.' };
+  }
+
+  // 3. Eligibility check: only gerado or rascunho
+  if (oficio.status !== 'gerado' && oficio.status !== 'rascunho') {
+    return { success: false, error: `Ofício com status "${oficio.status}" não pode ser enviado para assinatura.` };
+  }
+
+  // 4. Idempotency check
+  if (oficio.assinafyDocumentId !== null) {
+    return { success: false, error: 'Este ofício já foi enviado para assinatura.' };
+  }
+
+  try {
+    // 5. Generate PDF
+    const pdfBytes = await generateOfficialLetterPdf(oficio);
+    const pdfBuffer = Buffer.from(pdfBytes);
+
+    // 6. Init client
+    const client = new AssinafyClient({
+      apiKey,
+      accountId,
+      baseUrl: env.ASSINAFY_BASE_URL,
+    });
+
+    // 7. Upload document
+    const docFilename = `${oficio.number.replace(/[\s/]+/g, '_')}.pdf`;
+    const doc = await client.uploadDocument(pdfBuffer, docFilename);
+
+    // 8. Create signer
+    const cleanName = cleanSignatoryName(oficio.signatoryName);
+    const signer = await client.createSigner(cleanName, signerEmail);
+
+    // 9. Create assignment (virtual method, 30 days expiration)
+    const expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
+    const assignment = await client.createAssignment(doc.id, {
+      method: 'virtual',
+      signers: [
+        {
+          id: signer.id,
+          verification_method: 'Email',
+          notification_methods: ['Email'],
+          step: 1,
+        },
+      ],
+      expires_at: expiresAt,
+    });
+
+    // 10. Validate signing_urls
+    if (!assignment.signing_urls || assignment.signing_urls.length === 0) {
+      logger.error('Assinafy returned empty signing_urls', {
+        oficioId,
+        documentId: doc.id,
+        assignmentId: assignment.id,
+      });
+      return { success: false, error: 'Falha ao obter URL de assinatura. Recursos órfãos criados na Assinafy.' };
+    }
+
+    const signingUrl = assignment.signing_urls[0]!.url;
+
+    // 11. DB transaction: update oficio + audit log
+    const updated = await db.transaction(async (tx) => {
+      const result = await assinafyRepository.updateAssinafyFields(
+        oficioId,
+        {
+          assinafyDocumentId: doc.id,
+          assinafyStatus: 'pending_signature',
+          assinafySigningUrl: signingUrl,
+          assinafyAssignmentId: assignment.id,
+          assinafySignerId: signer.id,
+          assinafySentAt: new Date(),
+          updatedBy: userId,
+        },
+        tx,
+      );
+
+      await logAuditAction({
+        adminId: userId,
+        action: 'official_letter_sent_for_signature',
+        entityType: 'official_letter',
+        entityId: oficioId,
+        changes: {
+          old: { assinafyDocumentId: null },
+          new: { assinafyDocumentId: doc.id, assinafyStatus: 'pending_signature' },
+        },
+      });
+
+      return result;
+    });
+
+    if (!updated) {
+      return { success: false, error: 'Ofício não encontrado ao atualizar.' };
+    }
+
+    logger.info('Ofício sent for signature', {
+      oficioId,
+      documentId: doc.id,
+      signerId: signer.id,
+      assignmentId: assignment.id,
+    });
+
+    // 12. Return success
+    return { success: true, data: updated };
+  } catch (error) {
+    logger.error(
+      '[sendForSignature] failed',
+      { oficioId, error: toSafeErrorLog(error) },
+      error instanceof Error ? error : undefined,
+    );
+    return { success: false, error: 'Falha ao enviar ofício para assinatura.' };
+  }
 }

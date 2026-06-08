@@ -71,6 +71,7 @@ export const oficios = pgTable(
     assinafySentAt: timestamp('assinafy_sent_at', { withTimezone: true }),
     assinafySignedAt: timestamp('assinafy_signed_at', { withTimezone: true }),
     assinafyError: text('assinafy_error'),
+    assinafySigningUrl: text('assinafy_signing_url'),
   },
   (table) => [
     unique('uq_oficios_year_sequence').on(table.year, table.sequence),

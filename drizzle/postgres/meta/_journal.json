@@ -113,6 +113,13 @@
       "when": 1780862000000,
       "tag": "0015_greedy_robin_chapel",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1749388800000,
+      "tag": "0016_add_assinafy_signing_url",
+      "breakpoints": true
     }
   ]
 }
