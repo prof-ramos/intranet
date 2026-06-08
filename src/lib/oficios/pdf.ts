@@ -36,6 +36,7 @@ function wrapText(
  */
 function drawWrappedText(
   page: ReturnType<PDFDocument['addPage']>,
+  pdfDoc: PDFDocument,
   text: string,
   x: number,
   y: number,
@@ -43,14 +44,20 @@ function drawWrappedText(
   font: { widthOfTextAtSize: (text: string, size: number) => number },
   size: number,
   lineHeight: number,
+  height: number,
+  marginTop: number,
   options?: {
     color?: ReturnType<typeof rgb>;
     font?: Parameters<typeof page.drawText>[1] extends { font?: infer F } ? F : never;
   },
-): number {
+): { y: number; page: ReturnType<PDFDocument['addPage']> } {
   const lines = wrapText(text, font, size, maxWidth);
+  const PAGE_AREA = height - marginTop;
   for (const line of lines) {
-    if (y < 50) break; // page boundary guard
+    if (y < 50) {
+      page = pdfDoc.addPage([21 * CM_TO_PT, 29.7 * CM_TO_PT]);
+      y = PAGE_AREA;
+    }
     page.drawText(line, {
       x,
       y,
@@ -60,7 +67,7 @@ function drawWrappedText(
     });
     y -= lineHeight;
   }
-  return y;
+  return { y, page };
 }
 
 function decodeHtmlEntities(value: string) {
@@ -182,8 +189,9 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
 
   // 4. Subject (bold)
   const subjectLine = `Assunto: ${oficio.subject}`;
-  currentY = drawWrappedText(
+  const wrappedResult = drawWrappedText(
     page,
+    pdfDoc,
     subjectLine,
     marginLeft,
     currentY,
@@ -191,7 +199,11 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
     fontBold,
     12,
     18, // ABNT: 1.5× line spacing for 12pt font
+    height,
+    marginTop,
   );
+  currentY = wrappedResult.y;
+  page = wrappedResult.page;
 
   currentY -= 30;
 

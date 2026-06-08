@@ -13,7 +13,7 @@ import {
 } from '../actions';
 import { Sparkles, Save, X, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
 import { checkImpersonality, type ImpersonalityWarning } from '@/lib/oficios/utils';
-import { navy, primaryContainerHover, hairline, focusRingClass, error, warning, warningBg, warningText } from '@/lib/ui/tokens';
+import { navy, primaryContainerHover, hairline, focusRingClass, error, warning, warningBg, warningBorder, warningText } from '@/lib/ui/tokens';
 import { CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
 
@@ -291,7 +291,7 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
             <p className="mt-1 text-xs" style={{ color: error }}>{errors.bodyPlainText.message}</p>
           )}
           {impersonalityWarnings.length > 0 && (
-            <div className="mt-3 rounded-lg border px-4 py-3" style={{ backgroundColor: warningBg, borderColor: '#fde68a' }}>
+            <div className="mt-3 rounded-lg border px-4 py-3" style={{ backgroundColor: warningBg, borderColor: warningBorder }}>
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle size={14} className="flex-shrink-0" style={{ color: warning }} aria-hidden="true" />
                 <p className="text-xs font-semibold" style={{ color: warningText }}>Linguagem pessoal/coloquial detectada</p>

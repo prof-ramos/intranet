@@ -45,6 +45,7 @@ export const errorBorder = '#fca5a5';
 export const dangerBorder = errorBorder;
 export const warning = '#eab308';
 export const warningBg = '#fef3c7';
+export const warningBorder = '#fde68a';
 export const success = '#22c55e';
 export const successBg = '#dcfce7';
 export const info = '#2563eb';

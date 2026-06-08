@@ -190,22 +190,23 @@ export async function sendForSignature(
     const pdfBytes = await generateOfficialLetterPdf(oficio);
     const pdfBuffer = Buffer.from(pdfBytes);
 
-    // 6. Init client
+    // 7. Init client
     const client = new AssinafyClient({
       apiKey,
       accountId,
       baseUrl: env.ASSINAFY_BASE_URL,
     });
 
-    // 7. Upload document — filename sanitized for API safety
+    // 8. Upload document — filename sanitized for API safety
     const docFilename = `${oficio.number.replace(/[\s/]+/g, '_')}.pdf`;
     const doc = await client.uploadDocument(pdfBuffer, docFilename);
 
-    // 8. Create signer
+    // 9. Create signer
     const cleanName = cleanSignatoryName(oficio.signatoryName);
     const signer = await client.createSigner(cleanName, signerEmail);
 
-    // 9. Create assignment (virtual method, 30 days expiration)
+    // 10. Create assignment (virtual method, 30 days expiration)
+
     const expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
     const assignment = await client.createAssignment(doc.id, {
       method: 'virtual',
@@ -220,7 +221,7 @@ export async function sendForSignature(
       expires_at: expiresAt,
     });
 
-    // 10. Validate signing_urls
+    // 11. Validate signing_urls
     if (!assignment.signing_urls || assignment.signing_urls.length === 0) {
       logger.error('Assinafy returned empty signing_urls', {
         oficioId,
@@ -241,7 +242,7 @@ export async function sendForSignature(
       return { success: false, error: 'Falha ao obter URL de assinatura.' };
     }
 
-    // 11. DB transaction: update oficio + audit log
+    // 12. DB transaction: update oficio + audit log
     const updated = await db.transaction(async (tx) => {
       const result = await assinafyRepository.updateAssinafyFields(
         oficioId,
@@ -282,7 +283,7 @@ export async function sendForSignature(
       assignmentId: assignment.id,
     });
 
-    // 12. Return success
+    // 13. Return success
     return { success: true, data: updated };
   } catch (error) {
     logger.error(
