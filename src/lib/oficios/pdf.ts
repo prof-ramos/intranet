@@ -220,13 +220,20 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   for (let i = 0; i < paragraphs.length; i++) {
     const pText = useNumbering ? `${i + 1}. ${paragraphs[i]}` : paragraphs[i];
     
-    // Wrap at full content width; only first line gets indent shift
-    const lines = wrapText(pText, font, 12, contentWidth);
+    // First line wrapped at reduced width (accounting for indent)
+    const firstLineWidth = contentWidth - firstLineIndent;
+    const firstLine = wrapText(pText, font, 12, firstLineWidth);
     
-    for (let j = 0; j < lines.length; j++) {
+    // Subsequent lines wrapped at full content width
+    const remainingText = pText.slice(firstLine.join('').length).trim();
+    const remainingLines = remainingText ? wrapText(remainingText, font, 12, contentWidth) : [];
+    
+    const allLines = [...firstLine, ...remainingLines];
+    
+    for (let j = 0; j < allLines.length; j++) {
       if (currentY < marginBottom + 50) break;
       const x = j === 0 ? marginLeft + firstLineIndent : marginLeft;
-      page.drawText(lines[j], {
+      page.drawText(allLines[j], {
         x,
         y: currentY,
         size: 12,

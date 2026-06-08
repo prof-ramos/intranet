@@ -1,6 +1,6 @@
 import { db, type Tx } from '@/lib/db';
 import * as repository from './repository';
-import { type NewOfficialLetter } from '@/lib/db/schema/oficios';
+import { type NewOfficialLetter, type OfficialLetter } from '@/lib/db/schema/oficios';
 import { logAuditAction } from '@/lib/audit/service';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { generateOfficialLetterPdf } from './pdf';
@@ -156,7 +156,7 @@ export async function sendForSignature(
   oficioId: number,
   signerEmail: string,
   userId: number,
-): Promise<{ success: true; data: unknown } | { success: false; error: string }> {
+): Promise<{ success: true; data: OfficialLetter } | { success: false; error: string }> {
   // 1. Assinafy not configured guard
   const apiKey = env.ASSINAFY_API_KEY;
   const accountId = env.ASSINAFY_ACCOUNT_ID;
