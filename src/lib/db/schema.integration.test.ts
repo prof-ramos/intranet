@@ -321,6 +321,7 @@ const expectedColumns = {
     'assinafy_signer_id:text:YES',
     'assinafy_sent_at:timestamptz:YES',
     'assinafy_signed_at:timestamptz:YES',
+    'assinafy_signing_url:text:YES',
     'assinafy_error:text:YES',
   ],
   documents: [
