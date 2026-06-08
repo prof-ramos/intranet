@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useEscapeKey } from '@/hooks/use-escape-key';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 import { focusRingClass } from '@/lib/ui/tokens';
@@ -33,6 +33,10 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
   useEscapeKey(onClose);
+
+  useEffect(() => {
+    closeRef.current?.focus();
+  }, []);
 
   return (
     <>

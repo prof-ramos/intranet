@@ -76,8 +76,9 @@ export default async function AuditoriaPage({
   // Count first so we can clamp page before fetching rows (avoids empty-table
   // with misleading footer when a manual URL supplies page > totalPages).
   const [{ total }] = await db.select({ total: count() }).from(auditLogs).where(where);
-  const { totalPages, from, to } = calculatePaginationBounds(page, PAGE_SIZE, total);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
   const effectivePage = total > 0 ? Math.min(page, totalPages) : 1;
+  const { from, to } = calculatePaginationBounds(effectivePage, PAGE_SIZE, total);
 
   const rows = await db
     .select({
