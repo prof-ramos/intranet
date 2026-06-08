@@ -713,7 +713,7 @@ Recebe callbacks da plataforma Assinafy quando um documento e assinado ou rejeit
 
 #### Autorizacao
 
-- Verifica assinatura HMAC do payload conforme configurado na integracao com Assinafy
+- Verifica header de segredo compartilhado (X-Webhook-Secret) conforme configurado na integracao com Assinafy
 - Endpoint publico (nao requer sessao)
 
 #### Payload esperado
@@ -845,7 +845,7 @@ curl -L \
 - Nao existem endpoints JSON publicos amplos de consulta ou mutacao de dominio
 - A fundacao M2M atual e minima e restrita a `/api/v1/health` e `/api/v1/events`; os crons `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings` usam bearer `CRON_SECRET`
 - Nao existe OAuth de integracao
-- Excecao: `/api/webhooks/assinafy` e um endpoint inbound publico para webhooks da plataforma Assinafy (validacao HMAC)
+- Excecao: `/api/webhooks/assinafy` e um endpoint inbound publico para webhooks da plataforma Assinafy (validacao por header de segredo compartilhado (X-Webhook-Secret))
 - A superficie atual foi desenhada para uso por usuarios autenticados na propria intranet
 - Como a base contem dados protegidos pela LGPD, qualquer ampliacao de superficie HTTP deve partir de payload minimo, auditoria e controle estrito de permissao
 - O cron atual processa pendencias por lote; nao ha fila dedicada externa nem concorrencia distribuida

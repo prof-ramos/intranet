@@ -37,7 +37,7 @@ export function resetOficioPdfAssetCacheForTests() {
   cachedLogoBytes = undefined;
 }
 
-function getCarlitoFontBytes(): { regular: Uint8Array; bold: Uint8Array } | null {
+async function getCarlitoFontBytes(): Promise<{ regular: Uint8Array; bold: Uint8Array } | null> {
   if (!cachedCarlitoFonts) {
     try {
       cachedCarlitoFonts = {
@@ -45,7 +45,21 @@ function getCarlitoFontBytes(): { regular: Uint8Array; bold: Uint8Array } | null
         bold: fs.readFileSync(path.join(CARLITO_FONTS_DIR, 'Carlito-Bold.ttf')),
       };
     } catch {
-      return null;
+      // Serverless fallback: fetch fonts via HTTP from the app URL
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      try {
+        const [regularResp, boldResp] = await Promise.all([
+          fetch(`${baseUrl}/fonts/carlito/Carlito-Regular.ttf`, { signal: AbortSignal.timeout(5000) }),
+          fetch(`${baseUrl}/fonts/carlito/Carlito-Bold.ttf`, { signal: AbortSignal.timeout(5000) }),
+        ]);
+        if (!regularResp.ok || !boldResp.ok) throw new Error('Font fetch failed');
+        cachedCarlitoFonts = {
+          regular: new Uint8Array(await regularResp.arrayBuffer()),
+          bold: new Uint8Array(await boldResp.arrayBuffer()),
+        };
+      } catch {
+        return null;
+      }
     }
   }
   return cachedCarlitoFonts;
@@ -78,7 +92,7 @@ async function loadLogoBytes(): Promise<Uint8Array | ArrayBuffer> {
 async function embedOficioFonts(pdfDoc: PDFDocument) {
   pdfDoc.registerFontkit(fontkit);
 
-  const carlito = getCarlitoFontBytes();
+  const carlito = await getCarlitoFontBytes();
   if (carlito) {
     const font = await pdfDoc.embedFont(carlito.regular);
     const fontBold = await pdfDoc.embedFont(carlito.bold);
@@ -330,7 +344,10 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
 
   // ── 2. Ofício Number (left-aligned, bold, uppercase — MRPR) ──
   const numberSize = 14;
-  page.drawText(oficio.number.toUpperCase(), {
+  const displayNumber = oficio.number.includes('N.º') || oficio.number.includes('Nº')
+    ? oficio.number.toUpperCase()
+    : `OFÍCIO N.º ${oficio.number.replace(/^OF[ÍI]CIO\s+/i, '').toUpperCase()}`;
+  page.drawText(displayNumber, {
     x: marginLeft,
     y: currentY,
     size: numberSize,
@@ -394,13 +411,15 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
     ? htmlToPlainText(oficio.bodyRichText)
     : oficio.bodyPlainText;
   const paragraphs = bodyText.split('\n').filter((p) => p.trim() !== '');
-  const useNumbering = paragraphs.length >= 3;
+  const useNumbering = false; // MRPR: paragraphs use first-line indent, not explicit numbering
 
   const firstLineIndent = 2.5 * CM_TO_PT; // MRPR: 2,5 cm recuo primeira linha
 
-  // Vocativo (não numerado — MRPR)
-  page.drawText(oficio.vocativo, { x: marginLeft, y: currentY, size: BODY_FONT_SIZE, font });
-  currentY -= bodyLineSpacing + 6;
+  // Vocativo (não numerado — MRPR)  
+  if (oficio.vocativo) {
+    page.drawText(oficio.vocativo, { x: marginLeft, y: currentY, size: BODY_FONT_SIZE, font });
+    currentY -= bodyLineSpacing + 6;
+  }
 
   for (let i = 0; i < paragraphs.length; i++) {
     // Determine numbering

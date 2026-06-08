@@ -304,7 +304,7 @@ O sistema suporta dois caminhos de autenticação para APIs:
 
 ### Webhook Inbound Assinafy
 
-- Endpoint: `POST /api/webhooks/assinafy` (público, validação HMAC)
+- Endpoint: `POST /api/webhooks/assinafy` (público, validação por header de segredo compartilhado X-Webhook-Secret)
 - Eventos processados: `document_signed`, `signer_signed_document`, `document_rejected`, `document_expired`, `document_cancelled`, `document_failed`, `document_ready`, `signer_declined`, `signer_viewed`, `assignment_created`, `assignment_completed`
 - Processamento transacional: atualiza `oficios`, loga `audit_logs`, emite `domain_events.official_letter.status_changed`, cria `notifications.oficio.status_changed` para todos admins ativos
 - Idempotência: early return se `oficio.assinafyStatus` já igual ao mapeado

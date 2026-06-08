@@ -1,4 +1,6 @@
 import { db, type Tx } from '@/lib/db';
+import { eq } from 'drizzle-orm';
+import { oficios } from '@/lib/db/schema/oficios';
 import * as repository from './repository';
 import { type NewOfficialLetter, type OfficialLetter } from '@/lib/db/schema/oficios';
 import { logAuditAction } from '@/lib/audit/service';
@@ -244,6 +246,14 @@ export async function sendForSignature(
 
     // 12. DB transaction: update oficio + audit log
     const updated = await db.transaction(async (tx) => {
+      // Auto-transition rascunho → gerado before sending (ARCHITECTURE.md §101)
+      if (oficio.status === 'rascunho') {
+        await tx
+          .update(oficios)
+          .set({ status: 'gerado', updatedAt: new Date() })
+          .where(eq(oficios.id, oficioId));
+      }
+
       const result = await assinafyRepository.updateAssinafyFields(
         oficioId,
         {

@@ -439,12 +439,17 @@ graph LR
 **Funcionalidades:**
 - Tabela paginada: número, destinatário, data, status
 - Filtros por status e período
-- Ações: visualizar, baixar PDF, editar, cancelar
+- Ações: visualizar, baixar PDF, editar, cancelar, **enviar para assinatura**
 - Download do PDF gerado (`GET /api/oficios/[id]/download`)
+- Badge "Abrir página de assinatura" para ofícios com `assinafy_status = pending_signature` (abre `assinafy_signing_url` em nova aba)
+- Botão "Enviar para Assinatura" visível apenas para ofícios com status `gerado` ou `rascunho`
 
 **Funcional quando:**
-- [ ] PDF baixado segue o Padrão Ofício com numeração correta
+- [ ] PDF baixado segue o Padrão Ofício com numeração correta (`Ofício nº 001/2026-ASOF`)
 - [ ] Ofício cancelado não pode ser editado (botão desabilitado)
+- [ ] Botão "Enviar para Assinatura" aparece apenas para status `gerado`/`rascunho`
+- [ ] Badge "Abrir página de assinatura" aparece para `pending_signature` e abre em nova aba
+- [ ] Assinafy não configurado: mensagem de erro adequada (não 500)
 
 ---
 
@@ -456,13 +461,15 @@ graph LR
 - Campos: destinatário, cargo, vocativo, assunto, setor Itamaraty
 - Editor rich text para o corpo
 - Fecho e signatário
-- Número sequencial automático
+- Número sequencial automático (`Ofício nº NNN/YYYY-ASOF`)
 - Sugestão de texto via IA Gemini (opcional, requer configuração)
+- Validação de impessoalidade client-side (warnings para primeira pessoa, coloquialismos)
 
 **Funcional quando:**
 - [ ] Número gerado é único e sequencial
 - [ ] Salvar sem IA configurada funciona normalmente (IA é opcional)
 - [ ] Campos obrigatórios validados antes do submit
+- [ ] Warnings de impessoalidade aparecem mas não bloqueiam envio
 
 ---
 
@@ -473,10 +480,12 @@ graph LR
 **Funcionalidades:**
 - Mesmo formulário do novo, com dados preenchidos
 - Apenas ofícios com status não-cancelado podem ser editados
+- Validação de impessoalidade client-side
 
 **Funcional quando:**
 - [ ] Ofício cancelado retorna 404/not-found ao tentar editar
 - [ ] Salvar redireciona para a lista com dados atualizados
+- [ ] Warnings de impessoalidade aparecem mas não bloqueiam envio
 
 ---
 
@@ -719,9 +728,24 @@ Download do PDF de um ofício. Requer autenticação.
 ---
 
 ### `POST /api/webhooks/assinafy`
-Recebe eventos do serviço de assinatura digital Assinafy. Valida `X-Webhook-Secret`.
+Recebe eventos do serviço de assinatura digital Assinafy. Valida `X-Webhook-Secret` (HMAC SHA-256).
 
-**Funcional quando:** payload inválido ou secret errado retorna 401 sem processar o evento.
+**Eventos suportados:** `document_signed`, `signer_signed_document`, `document_rejected`, `document_expired`, `document_cancelled`, `document_failed`, `document_ready`, `signer_declined`, `signer_viewed`, `assignment_created`, `assignment_completed`
+
+**Processamento (transacional):**
+1. Mapeia status Assinafy → `oficios.assinafyStatus`
+2. Early return se status inalterado (idempotência)
+3. Atualiza `oficios` com novo status + timestamp
+4. Loga `audit_logs` (`action: assinafy_webhook`, `executor: tx`)
+5. Emite `domain_events.official_letter.status_changed`
+6. Cria `notifications.oficio.status_changed` para **todos admins ativos** (`actorId: null`)
+
+**Funcional quando:**
+- [ ] Payload inválido ou secret errado retorna 401 sem processar
+- [ ] Status idêntico = early return (sem duplicatas)
+- [ ] Notificação criada para todos admins ativos dentro da transação
+- [ ] Auditoria logada dentro da transação
+- [ ] Signatários existentes na Assinafy: fallback silencioso via GET /signers
 
 ---
 

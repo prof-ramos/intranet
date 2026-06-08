@@ -35,7 +35,7 @@ export const POST = createWebhookHandler<AssinafyWebhookEvent>({
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Process event (idempotent ack — always return 200)
+    // Process event (return 500 on failure so Assinafy can retry)
     try {
       await handleWebhookEvent(event);
       logger.info('Webhook processed', {
@@ -43,15 +43,15 @@ export const POST = createWebhookHandler<AssinafyWebhookEvent>({
         event: event.event,
         documentId: event.object.id,
       });
+      return NextResponse.json({ received: true });
     } catch (error) {
-      logger.error('Webhook handler error (acknowledged)', {
+      logger.error('Webhook handler error', {
         eventId: event.id,
         event: event.event,
         error: error instanceof Error ? error.message : String(error),
       });
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-
-    return NextResponse.json({ received: true });
   },
   onError: () => {
     logger.error('Invalid JSON body');
