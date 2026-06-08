@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Edit2, Download, Ban, Loader2, PenSquare } from 'lucide-react';
 import { SendForSignatureModal } from './SendForSignatureModal';
 import { cancelOfficialLetterAction } from '../actions';
-import { success, error, warning, hairline, focusRingClass } from '@/lib/ui/tokens';
+import { success, successBg, error, errorBg, warning, warningBg, info, infoBg, hairline, focusRingClass } from '@/lib/ui/tokens';
 
 interface OficioRow {
   id: number;
@@ -179,8 +179,8 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                         href={oficio.assinafySigningUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`mt-1.5 inline-flex items-center gap-1 rounded-[6px] px-2 py-0.5 text-xs font-medium transition-colors hover:bg-[#dbeafe] ${focusRingClass}`}
-                        style={{ backgroundColor: '#eff6ff', color: '#1e40af' }}
+                        className={`mt-1.5 inline-flex items-center gap-1 rounded-[6px] px-2 py-0.5 text-xs font-medium transition-colors hover:opacity-80 ${focusRingClass}`}
+                        style={{ backgroundColor: infoBg, color: info }}
                         title="Abrir página de assinatura"
                       >
                         Assinatura pendente
@@ -210,8 +210,23 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                         'rejected_by_user',
                         'failed',
                       ].includes(oficio.assinafyStatus) && (
-                        <span className="mt-1.5 inline-flex items-center rounded-[6px] px-2 py-0.5 text-xs font-medium"
-                          style={{ backgroundColor: '#f1f5f9', color: '#475569' }}>
+                        <span
+                          className="mt-1.5 inline-flex items-center rounded-[6px] px-2 py-0.5 text-xs font-medium"
+                          style={{
+                            backgroundColor:
+                              oficio.assinafyStatus === 'certificated'
+                                ? successBg
+                                : oficio.assinafyStatus === 'expired'
+                                  ? warningBg
+                                  : errorBg,
+                            color:
+                              oficio.assinafyStatus === 'certificated'
+                                ? success
+                                : oficio.assinafyStatus === 'expired'
+                                  ? warning
+                                  : error,
+                          }}
+                        >
                           {oficio.assinafyStatus === 'certificated'
                             ? 'Assinado'
                             : oficio.assinafyStatus === 'expired'

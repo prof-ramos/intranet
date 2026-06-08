@@ -219,9 +219,11 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 
 ### Módulo de Ofícios
 
-1. **Numeração Sequencial**: O número do ofício é sequencial e reinicia a cada ano civil (ex: 001/2026, 002/2026).
+1. **Numeração Sequencial**: O número do ofício é sequencial e reinicia a cada ano civil (ex: 001/2026, 002/2026). Formato: `Ofício nº 001/2026-ASOF`.
 2. **Imutabilidade de Identificação**: Uma vez gerado o número de um ofício, ele deve ser preservado. Se o ofício for cancelado, o número não deve ser reutilizado para evitar lacunas ou duplicidades na cronologia oficial.
 3. **Roles de Acesso**: Operado por `admin`, `diretoria` e `secretaria`.
+4. **Assinatura Digital (Assinafy)**: Ofícios com status `gerado` ou `rascunho` podem ser enviados para assinatura digital. O PDF é gerado on-the-fly com fontes Carlito (conforme ABNT/MRPR), embutimento completo (`subset: false`). Signatário único por envio; email não persistido no banco. Webhook Assinafy processa callbacks transacionalmente: atualiza ofício, loga auditoria, emite domain event, notifica admins.
+5. **Conformidade ABNT/MRPR**: Margens 3cm (sup/esq), 2cm (inf/dir), espaçamento 1.5x (18pt), recuo primeira linha 1.25cm, fecho hierárquico, data por extenso opcional, validação de impessoalidade client-side (warnings).
 
 ### Módulo de Documentos
 
