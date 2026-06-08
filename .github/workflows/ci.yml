@@ -141,7 +141,6 @@ jobs:
             echo "::error::SMOKE_ADMIN_EMAIL e/ou SMOKE_ADMIN_PASSWORD não configurados como secrets. Smoke test abortado."
             exit 1
           fi
-          echo "skipped=false" >> "$GITHUB_OUTPUT"
 
       - name: Run smoke test
         run: npm run smoke:prod
