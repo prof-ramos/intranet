@@ -1,42 +1,20 @@
 'use client';
 
-import { useEffect } from 'react';
-import { FileText, RotateCcw } from 'lucide-react';
-import { createLogger } from '@/lib/logger';
-import { toSafeErrorLog } from '@/lib/error-log';
+import { FileText } from 'lucide-react';
+import { createErrorBoundary } from '@/components/ErrorBoundary';
 
-const logger = createLogger('juridico:consultas:error');
-
-export default function ConsultasError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  useEffect(() => {
-    logger.error('Consultas error boundary caught', { error: toSafeErrorLog(error) }, error);
-  }, [error]);
-
-  return (
-    <div className="mx-auto flex min-h-[60vh] w-full max-w-[1180px] flex-col items-center justify-center px-5 py-7">
-      <div className="flex flex-col items-center gap-6 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-          <FileText className="h-8 w-8 text-amber-600" />
-        </div>
-        <h1 className="font-serif text-2xl font-bold text-[#040920]">Erro ao carregar consultas</h1>
-        <p className="max-w-md text-[#59677a]">
-          Não foi possível carregar a lista de consultas. Verifique sua conexão e tente novamente.
-        </p>
-        {error.digest && <p className="text-sm text-[#59677a]/60">Código: {error.digest}</p>}
-        <button
-          onClick={reset}
-          className="inline-flex items-center gap-2 rounded-lg bg-[#040920] px-4 py-2 text-white transition hover:bg-[#06284f]"
-        >
-          <RotateCcw className="h-4 w-4" />
-          Tentar novamente
-        </button>
-      </div>
-    </div>
-  );
-}
+export default createErrorBoundary({
+  icon: FileText,
+  title: 'Erro ao carregar consultas',
+  message: 'Não foi possível carregar as consultas jurídicas. Verifique sua conexão e tente novamente.',
+  logMessage: 'Juridico consultas error boundary caught',
+  loggerName: 'juridico:consultas:error',
+  useFocusRing: false,
+  containerClass: 'flex min-h-[60vh] flex-col items-center justify-center px-4',
+  iconBgClass: 'bg-amber-100',
+  iconTextClass: 'text-amber-600',
+  buttonHoverClass: 'hover:bg-[#06284f]',
+  useSerif: false,
+  messageClass: 'max-w-md text-[#59677a]',
+  digestClass: 'text-sm text-[#59677a]/60',
+});

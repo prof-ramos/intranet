@@ -1,44 +1,20 @@
 'use client';
 
-import { useEffect } from 'react';
-import { DollarSign, RotateCcw } from 'lucide-react';
-import { focusRingClass } from '@/lib/ui/tokens';
-import { toSafeErrorLog } from '@/lib/error-log';
-import { createLogger } from '@/lib/logger';
+import { DollarSign } from 'lucide-react';
+import { createErrorBoundary } from '@/components/ErrorBoundary';
 
-const logger = createLogger('error-boundary:mensalidades');
-
-export default function MensalidadesError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  useEffect(() => {
-    logger.error('Mensalidades error boundary caught', { error: toSafeErrorLog(error) }, error);
-  }, [error]);
-
-  return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
-      <div className="flex flex-col items-center gap-6 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-          <DollarSign className="h-8 w-8 text-amber-600" />
-        </div>
-        <h1 className="text-2xl font-bold text-[#040920]">Erro ao carregar mensalidades</h1>
-        <p className="max-w-md text-[#59677a]">
-          Não foi possível carregar as mensalidades. Verifique sua conexão e tente novamente.
-        </p>
-        {error.digest && <p className="text-sm text-[#59677a]/60">Código: {error.digest}</p>}
-        <button
-          type="button"
-          onClick={reset}
-          className={`inline-flex items-center gap-2 rounded-lg bg-[#040920] px-4 py-2 text-white transition hover:bg-[#06284f] ${focusRingClass}`}
-        >
-          <RotateCcw className="h-4 w-4" />
-          Tentar novamente
-        </button>
-      </div>
-    </div>
-  );
-}
+export default createErrorBoundary({
+  icon: DollarSign,
+  title: 'Erro ao carregar mensalidades',
+  message: 'Não foi possível carregar as mensalidades. Verifique sua conexão e tente novamente.',
+  logMessage: 'Mensalidades error boundary caught',
+  loggerName: 'error-boundary:mensalidades',
+  useFocusRing: true,
+  containerClass: 'flex min-h-[60vh] flex-col items-center justify-center px-4',
+  iconBgClass: 'bg-amber-100',
+  iconTextClass: 'text-amber-600',
+  buttonHoverClass: 'hover:bg-[#06284f]',
+  useSerif: false,
+  messageClass: 'max-w-md text-[#59677a]',
+  digestClass: 'text-sm text-[#59677a]/60',
+});
