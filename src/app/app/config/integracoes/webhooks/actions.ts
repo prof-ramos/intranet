@@ -48,8 +48,6 @@ function parseSubscriptionForm(formData: Record<string, unknown>) {
   };
 }
 
-type ActionState = { success: boolean; message: string };
-
 export const createWebhookSubscription = defineFormStateAction({
   auth: ['admin'],
   service: async (data, actor) => {

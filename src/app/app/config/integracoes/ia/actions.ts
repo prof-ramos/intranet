@@ -4,8 +4,6 @@ import { revalidatePath } from 'next/cache';
 import { defineFormStateAction } from '@/lib/server-actions/define-form-action';
 import { upsertGeminiApiKey, deleteGeminiApiKey } from '@/lib/ai/settings';
 
-type ActionState = { success: boolean; message: string };
-
 export const saveGeminiApiKeyAction = defineFormStateAction({
   auth: ['admin'],
   service: async (_data, actor) => {

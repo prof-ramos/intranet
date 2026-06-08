@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { defineFormAction } from '@/lib/server-actions/define-form-action';
 import {
   addNoteService,
