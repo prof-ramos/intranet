@@ -181,7 +181,12 @@ export async function sendForSignature(
   }
 
   try {
-    // 5. Generate PDF
+    // 5. Validate signer email
+    if (!signerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail)) {
+      return { success: false, error: 'Email do signatário inválido.' };
+    }
+
+    // 6. Generate PDF
     const pdfBytes = await generateOfficialLetterPdf(oficio);
     const pdfBuffer = Buffer.from(pdfBytes);
 
@@ -192,7 +197,7 @@ export async function sendForSignature(
       baseUrl: env.ASSINAFY_BASE_URL,
     });
 
-    // 7. Upload document
+    // 7. Upload document — filename sanitized for API safety
     const docFilename = `${oficio.number.replace(/[\s/]+/g, '_')}.pdf`;
     const doc = await client.uploadDocument(pdfBuffer, docFilename);
 

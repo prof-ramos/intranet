@@ -38,7 +38,7 @@ export async function updateAssinafyFields(
     assinafySignerId: string;
     assinafySentAt: Date;
     assinafyError?: string | null;
-    updatedBy?: number;
+    updatedBy: number;
   },
   tx: Tx = db,
 ) {
@@ -52,7 +52,7 @@ export async function updateAssinafyFields(
       assinafySignerId: fields.assinafySignerId,
       assinafySentAt: fields.assinafySentAt,
       assinafyError: fields.assinafyError ?? null,
-      updatedBy: fields.updatedBy ?? null,
+      updatedBy: fields.updatedBy,
       updatedAt: new Date(),
     })
     .where(eq(oficios.id, oficioId))

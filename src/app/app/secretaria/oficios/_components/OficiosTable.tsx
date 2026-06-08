@@ -179,7 +179,8 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                         href={oficio.assinafySigningUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`mt-1.5 inline-flex items-center gap-1 rounded-[6px] bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 ${focusRingClass}`}
+                        className={`mt-1.5 inline-flex items-center gap-1 rounded-[6px] px-2 py-0.5 text-xs font-medium transition-colors hover:bg-[#dbeafe] ${focusRingClass}`}
+                        style={{ backgroundColor: '#eff6ff', color: '#1e40af' }}
                         title="Abrir página de assinatura"
                       >
                         Assinatura pendente
@@ -209,7 +210,8 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                         'rejected_by_user',
                         'failed',
                       ].includes(oficio.assinafyStatus) && (
-                        <span className="mt-1.5 inline-flex items-center rounded-[6px] bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                        <span className="mt-1.5 inline-flex items-center rounded-[6px] px-2 py-0.5 text-xs font-medium"
+                          style={{ backgroundColor: '#f1f5f9', color: '#475569' }}>
                           {oficio.assinafyStatus === 'certificated'
                             ? 'Assinado'
                             : oficio.assinafyStatus === 'expired'

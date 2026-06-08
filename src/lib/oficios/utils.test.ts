@@ -25,6 +25,11 @@ describe('cleanSignatoryName', () => {
   it('trims whitespace', () => {
     expect(cleanSignatoryName('  João Silva  ')).toBe('João Silva');
   });
+
+  it('preserves hyphenated given names', () => {
+    expect(cleanSignatoryName('Maria-José — Diretora')).toBe('Maria-José');
+    expect(cleanSignatoryName('Maria-José - Diretora')).toBe('Maria-José');
+  });
 });
 
 describe('checkImpersonality', () => {
@@ -70,5 +75,13 @@ describe('checkImpersonality', () => {
     const warnings = checkImpersonality('Eu fiz. Eu quis.');
     expect(warnings).toHaveLength(1);
     expect(warnings[0].term).toBe('"eu"');
+  });
+
+  it('has no residual state between invocations', () => {
+    const result1 = checkImpersonality('Eu fiz.');
+    const result2 = checkImpersonality('Eu fiz.');
+    expect(result1).toEqual(result2);
+    expect(result1).toHaveLength(1);
+    expect(result1[0].term).toBe('"eu"');
   });
 });

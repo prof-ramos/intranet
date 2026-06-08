@@ -117,7 +117,7 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  const page = pdfDoc.addPage([21 * CM_TO_PT, 29.7 * CM_TO_PT]); // A4
+  let page = pdfDoc.addPage([21 * CM_TO_PT, 29.7 * CM_TO_PT]); // A4
   const { width, height } = page.getSize();
 
   // ABNT margins: 3cm top, 2cm bottom, 3cm left, 2cm right
@@ -221,7 +221,10 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
     const allLines = [firstLine[0], ...remainingLines];
     
     for (let j = 0; j < allLines.length; j++) {
-      if (currentY < marginBottom + 50) break;
+      if (currentY < marginBottom + 50) {
+        page = pdfDoc.addPage([21 * CM_TO_PT, 29.7 * CM_TO_PT]);
+        currentY = height - marginTop;
+      }
       const x = j === 0 ? marginLeft + firstLineIndent : marginLeft;
       page.drawText(allLines[j], {
         x,
@@ -234,7 +237,10 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
 
     currentY -= 6; // spacing between paragraphs
 
-    if (currentY < marginBottom + 50) break;
+    if (currentY < marginBottom + 50) {
+      page = pdfDoc.addPage([21 * CM_TO_PT, 29.7 * CM_TO_PT]);
+      currentY = height - marginTop;
+    }
   }
 
   currentY -= 20;

@@ -301,6 +301,7 @@ describe('oficios service', () => {
           assinafySigningUrl: 'https://assinafy.com/sign/abc',
           assinafyAssignmentId: 'assign-789',
           assinafySignerId: 'signer-456',
+          updatedBy: USER_ID,
         }),
         expect.anything(),
       );
