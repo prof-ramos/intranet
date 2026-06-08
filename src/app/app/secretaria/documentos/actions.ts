@@ -76,8 +76,9 @@ export const uploadDocumentAction = defineServerAction({
 
 export const downloadDocumentAction = defineServerAction({
   auth: ['admin', 'secretaria'],
-  service: async (id: number, user) => {
-    const result = await downloadDocument(id, user.userId);
+  schema: z.object({ id: z.number().int().positive('ID inválido.') }),
+  service: async (data, user) => {
+    const result = await downloadDocument(data.id, user.userId);
 
     if (!result.success) {
       throw new Error(result.message);
@@ -89,8 +90,9 @@ export const downloadDocumentAction = defineServerAction({
 
 export const deleteDocumentAction = defineServerAction({
   auth: ['admin', 'secretaria'],
-  service: async (id: number, user) => {
-    const result = await deleteDocument(id, user.userId);
+  schema: z.object({ id: z.number().int().positive('ID inválido.') }),
+  service: async (data, user) => {
+    const result = await deleteDocument(data.id, user.userId);
 
     if (result.success) {
       revalidatePath('/app/secretaria/documentos');
