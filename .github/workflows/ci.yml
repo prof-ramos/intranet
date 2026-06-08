@@ -110,7 +110,7 @@ jobs:
           SESSION_SECRET: test-secret-32-chars-minimum-here
 
   smoke-prod:
-    name: Smoke Test — Produção
+    name: Smoke Test — Production
     runs-on: ubuntu-latest
     needs: [build, e2e]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -138,14 +138,12 @@ jobs:
         id: verify
         run: |
           if [ -z "$SMOKE_ADMIN_EMAIL" ] || [ -z "$SMOKE_ADMIN_PASSWORD" ]; then
-            echo "::warning::SMOKE_ADMIN_EMAIL e/ou SMOKE_ADMIN_PASSWORD não configurados como secrets. Smoke test será pulado."
-            echo "skipped=true" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "::error::SMOKE_ADMIN_EMAIL e/ou SMOKE_ADMIN_PASSWORD não configurados como secrets. Smoke test abortado."
+            exit 1
           fi
           echo "skipped=false" >> "$GITHUB_OUTPUT"
 
       - name: Run smoke test
-        if: steps.verify.outputs.skipped == 'false'
         run: npm run smoke:prod
 
   e2e:
