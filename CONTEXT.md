@@ -191,7 +191,7 @@ Criação rápida de atividade diretamente no board, sem abrir formulário compl
 
 #### Notificação
 
-Alerta persistido para o usuário sobre reatribuição de atividades ou atualização de consulta jurídica. A entrega em tempo real é uma capacidade opcional, não parte essencial do conceito. Tipos (`notificationType`): `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`.
+Alerta persistido para o usuário sobre reatribuição de atividades ou atualização de consulta jurídica. A entrega em tempo real é uma capacidade opcional, não parte essencial do conceito. Tipos (`notificationType`): `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`, `oficio.status_changed` (novo — webhook Assinafy notifica todos admins ativos).
 
 _Avoid_: tratar "notificação" como sinônimo de "evento em tempo real".
 
@@ -275,6 +275,8 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 1. **Data Access Logging**: Cada acesso a dados PII (view, export, edit) é registrado em `audit_logs` para compliance com Art. 30/37 da LGPD.
 2. **Sanitização de PII**: Logs de erro e payloads de eventos passam por redação automática de dados sensíveis.
 3. **PII View** (`publicAssociateListColumns` em `src/lib/associates/repository.ts`): Seleção de colunas Drizzle ORM que exclui campos `_ciphertext` e `_hash`, fornecendo uma visão segura para listagens paginadas de associados.
+4. **Ator Sistema**: `logAuditAction` aceita `adminId: null` para operações automáticas (ex: webhook Assinafy, marcação automática de inadimplência, dispatch agendado). Dois bypass sites migrados: `finance/service.ts` (`auto_mark_overdue`) e `dispatch/route.ts` (`domain_event_dispatch_scheduled`).
+5. **Transação de Auditoria**: `logAuditAction` suporta parâmetro `executor` (Tx) para inclusão dentro de transações existentes (ex: webhook handler).
 
 ---
 
@@ -300,6 +302,14 @@ O sistema suporta dois caminhos de autenticação para APIs:
 - Target URLs devem ser HTTPS públicos; localhost e redes privadas são rejeitados.
 - Dispatch agendado via Vercel Cron: eventos em `/api/v1/events/dispatch` (diário às 03:00 UTC) e alertas de SLA em `/api/v1/juridico/sla-warnings` (diário às 04:00 UTC).
 
+### Webhook Inbound Assinafy
+
+- Endpoint: `POST /api/webhooks/assinafy` (público, validação HMAC)
+- Eventos processados: `document_signed`, `signer_signed_document`, `document_rejected`, `document_expired`, `document_cancelled`, `document_failed`, `document_ready`, `signer_declined`, `signer_viewed`, `assignment_created`, `assignment_completed`
+- Processamento transacional: atualiza `oficios`, loga `audit_logs`, emite `domain_events.official_letter.status_changed`, cria `notifications.oficio.status_changed` para todos admins ativos
+- Idempotência: early return se `oficio.assinafyStatus` já igual ao mapeado
+- Signatários existentes na Assinafy: fallback silencioso via `GET /signers` se POST retornar 400
+
 ---
 
 ## Eventos de Domínio Suportados
@@ -321,6 +331,8 @@ Além dos módulos de domínio listados acima, o sistema inclui módulos auxilia
 - **`email/`** — Envio de e-mail via Mailjet (index.ts, templates.ts).
 - **`search/`** — Busca de associados e atividades (queries.ts).
 - **`storage/`** — Interface de armazenamento de documentos; o provedor de objetos privado é decisão de infraestrutura.
+- **`assinafy/`** — Cliente Assinafy, webhook handler, repository e service para assinatura digital de ofícios.
+- **`errors/`** — Hierarquia de erros tipados (`DomainError`, `ConcurrencyConflictError`, `NotFoundError`, `ValidationError`, `RateLimitError`, `ExternalServiceError`, `UnauthorizedError`) com handlers globais `unhandledRejection`/`uncaughtException`.
 
 ---
 
