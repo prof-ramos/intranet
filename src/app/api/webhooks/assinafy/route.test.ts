@@ -79,12 +79,12 @@ describe('POST /api/webhooks/assinafy', () => {
     expect(res.status).toBe(200);
   });
 
-  it('returns 200 even when DB update fails (idempotent ack)', async () => {
+  it('returns 500 when DB update fails (signals retry to Assinafy)', async () => {
     process.env.ASSINAFY_WEBHOOK_SECRET = VALID_SECRET;
     mockHandleWebhookEvent.mockRejectedValue(new Error('DB connection failed'));
     const req = makeRequest(VALID_EVENT, VALID_SECRET);
     const res = await POST(req);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
   });
 
   it('returns 400 on invalid JSON body', async () => {

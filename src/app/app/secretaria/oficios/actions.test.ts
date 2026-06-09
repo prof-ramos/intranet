@@ -4,6 +4,7 @@ import {
   cancelOfficialLetterAction,
   generateAiTextAction,
   saveOfficialLetterAction,
+  sendForSignatureAction,
   updateOfficialLetterAction,
 } from './actions';
 
@@ -16,6 +17,7 @@ const {
   saveOfficialLetterMock,
   updateOfficialLetterMock,
   cancelOfficialLetterMock,
+  sendForSignatureMock,
   revalidatePathMock,
   envMock,
   isGeminiConfiguredMock,
@@ -28,6 +30,7 @@ const {
   saveOfficialLetterMock: vi.fn(),
   updateOfficialLetterMock: vi.fn(),
   cancelOfficialLetterMock: vi.fn(),
+  sendForSignatureMock: vi.fn(),
   revalidatePathMock: vi.fn(),
   envMock: { NEXT_PUBLIC_AI_ENABLED: true as boolean },
   isGeminiConfiguredMock: vi.fn(),
@@ -62,6 +65,7 @@ vi.mock('@/lib/oficios/service', () => ({
   saveOfficialLetter: (...args: unknown[]) => saveOfficialLetterMock(...args),
   updateOfficialLetter: (...args: unknown[]) => updateOfficialLetterMock(...args),
   cancelOfficialLetter: (...args: unknown[]) => cancelOfficialLetterMock(...args),
+  sendForSignature: (...args: unknown[]) => sendForSignatureMock(...args),
 }));
 
 vi.mock('@/lib/ai/gemini', () => ({
@@ -98,6 +102,7 @@ describe('secretaria oficios actions', () => {
     saveOfficialLetterMock.mockResolvedValue({ id: 1 });
     updateOfficialLetterMock.mockResolvedValue({ id: 1 });
     cancelOfficialLetterMock.mockResolvedValue({ id: 1 });
+    sendForSignatureMock.mockResolvedValue({ success: true, data: { id: 12 } });
     isGeminiConfiguredMock.mockResolvedValue(true);
     envMock.NEXT_PUBLIC_AI_ENABLED = true;
   });
@@ -108,6 +113,8 @@ describe('secretaria oficios actions', () => {
       recipientRole: 'Presidente',
       subject: 'Assunto',
       itamaratySector: 'SGP',
+      signatory: 'João Silva',
+      signatoryRole: 'Diretor',
       instruction: 'Escreva um ofício',
     });
 
@@ -122,6 +129,8 @@ describe('secretaria oficios actions', () => {
       recipientRole: 'Presidente',
       subject: 'Assunto',
       itamaratySector: 'SGP',
+      signatory: 'João Silva',
+      signatoryRole: 'Diretor',
       instruction: 'Escreva um ofício',
     });
 
@@ -144,6 +153,8 @@ describe('secretaria oficios actions', () => {
       recipientRole: 'Presidente',
       subject: 'Assunto',
       itamaratySector: 'SGP',
+      signatory: 'João Silva',
+      signatoryRole: 'Diretor',
       instruction: 'Escreva um ofício',
     });
 
@@ -239,5 +250,38 @@ describe('secretaria oficios actions', () => {
       undefined,
     );
     consoleErrorSpy.mockRestore();
+  });
+
+  describe('sendForSignatureAction', () => {
+    const VALID_INPUT = { oficioId: 12, signerEmail: 'signer@example.com' };
+
+    it('calls service with correct params and returns success', async () => {
+      const mockData = { id: 12, assinafyStatus: 'pending_signature' };
+      sendForSignatureMock.mockResolvedValue({ success: true, data: mockData });
+
+      const result = await sendForSignatureAction(VALID_INPUT);
+
+      expect(sendForSignatureMock).toHaveBeenCalledWith(12, 'signer@example.com', 7);
+      expect(result).toEqual({ success: true, data: mockData });
+    });
+
+    it('rejects invalid email via Zod schema', async () => {
+      await expect(
+        sendForSignatureAction({ oficioId: 12, signerEmail: 'invalid' }),
+      ).rejects.toThrow('Email inválido.');
+
+      expect(sendForSignatureMock).not.toHaveBeenCalled();
+    });
+
+    it('propagates service error response', async () => {
+      sendForSignatureMock.mockResolvedValue({
+        success: false,
+        error: 'Assinafy não está configurado.',
+      });
+
+      const result = await sendForSignatureAction(VALID_INPUT);
+
+      expect(result).toEqual({ success: false, error: 'Assinafy não está configurado.' });
+    });
   });
 });

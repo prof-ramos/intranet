@@ -12,6 +12,10 @@ interface OficioRow {
   recipient: string;
   letterDate: string;
   subject: string;
+  signatoryName: string;
+  assinafyDocumentId: string | null;
+  assinafyStatus: string | null;
+  assinafySigningUrl: string | null;
 }
 
 export function OficiosSearchableList({ oficios }: { oficios: OficioRow[] }) {

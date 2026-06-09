@@ -134,7 +134,7 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 - `next.config.ts` fixa `turbopack.root` para evitar resolução de Tailwind pelo diretório pai. O padrão é Webpack; Turbopack é modo de diagnóstico explícito (problema de resolução de Tailwind reproduzido em máquinas com 8 GB RAM).
 - Dev server pesado em 8 GB RAM: usar `scripts/run-dev-60s.sh` para diagnósticos de freeze.
 - Após mudanças em dependências, Next ou Tailwind: rodar `lint` + `typecheck` + `test` + `build`.
-- Migrations PostgreSQL em `drizzle/postgres/` são transacionais; `CREATE INDEX CONCURRENTLY` / `DROP INDEX CONCURRENTLY` **não** entram em `npm run db:migrate` — executar via `psql "$DATABASE_MIGRATION_URL"` em janela controlada (ver `docs/runbook.md`).
+- Migrations PostgreSQL em `drizzle/postgres/` são transacionais; `CREATE INDEX CONCURRENTLY` / `DROP INDEX CONCURRENTLY` e `ALTER TYPE ... ADD VALUE` **não** entram em `npm run db:migrate` — executar via `psql "$DATABASE_MIGRATION_URL"` em janela controlada (ver `docs/runbook.md`) e inserir o hash da migração manualmente em `drizzle.__drizzle_migrations`.
 - Não apontar E2E/Playwright para o dev server em 3000; usuários `e2e-*@asof.local` não existem naquele banco e tentativas falhadas acumulam em `login_attempts` até gerar `?error=rate-limit`. Se isso acontecer, limpar apenas tentativas E2E: `DELETE FROM login_attempts WHERE email LIKE 'e2e-%@asof.local';`.
 
 ### Documentação

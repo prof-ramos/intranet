@@ -126,12 +126,16 @@ _Nota: `audit_log` e preservado (ADR 009)._
 - Criado baseline inicial `drizzle/postgres/0000_green_glorian.sql`; migrações incrementais atuais seguem o historico em `drizzle/postgres/` e o journal Drizzle.
 - `npm run typecheck`, `npm run lint`, `npm run test`, `npm run test:e2e` e `npm audit` passaram apos a troca para auth propria.
 
-### Melhorias pós-go-live (2026-06-07)
+### Melhorias pós-go-live (2026-06-08)
 
-- **Error handling unificado:** `src/lib/errors/` — hierarquia `DomainError` com `NotFoundError`, `ValidationError`, `RateLimitError`, `ExternalServiceError`, `UnauthorizedError`; `toSafeErrorLog` em todas as error boundaries; handlers globais de crash (`unhandledRejection` + `uncaughtException` com `process.exit(1)`) registrados via `src/instrumentation.ts`.
-- **Error boundaries completos:** `error.tsx` em todas as rotas autenticadas; `not-found.tsx` em todas as rotas dinâmicas com `notFound()`.
-- **Logging estruturado:** eliminado `console.error` direto em route handlers e server actions; PII nunca exposta em mensagens de erro retornadas ao cliente.
+- **Error handling unificado:** `src/lib/errors/` — hierarquia `DomainError` com `ConcurrencyConflictError`, `NotFoundError`, `ValidationError`, `RateLimitError`, `ExternalServiceError`, `UnauthorizedError`; `toSafeErrorLog` em todas as error boundaries; handlers globais de crash (`unhandledRejection` + `uncaughtException` com `process.exit(1)`) registrados via `src/instrumentation.ts`.
+- **Error boundaries completos:** 18 boundaries consolidados via `src/components/ErrorBoundary.tsx` factory; `error.tsx` em todas as rotas autenticadas; `not-found.tsx` em rotas dinâmicas (`associados/[id]`, `secretaria/oficios/[id]/editar`).
+- **Logging estruturado:** eliminado `console.error` direto em route handlers e server actions; PII nunca exposta em mensagens de erro retornadas ao cliente; `webhooks/service.ts` corrigido para não vazar `targetUrl`.
 - **PAGES.md reescrito:** documentação completa de todas as páginas com funções, requisitos funcionais (checklists) e diagramas Mermaid (fluxo de autenticação, mapa de navegação, sequência de integrações).
-- Gates locais: `typecheck` ✓ · `lint` ✓ · `test` 1154/1154 ✓ · autoreview Codex clean ✓ (2026-06-07).
+- **Assinafy (assinatura digital):** fluxo completo implementado — envio para assinatura (PDF Carlito/ABNT, embutimento completo), webhook handler transacional (atualiza ofício + auditoria + domain event + notificação admins), idempotência, fallback signatários existentes, badge "Abrir página de assinatura".
+- **Notificações de ofício:** novo tipo `oficio.status_changed` notifica todos admins ativos quando webhook altera status.
+- **Ator sistema em auditoria:** `logAuditAction` aceita `adminId: null` + `executor: Tx`; 2 bypass sites migrados (`finance/service.ts`, `dispatch/route.ts`).
+- **Conformidade ABNT/MRPR:** PDF de ofícios alinhado — margens 3/2cm, espaçamento 1.5x, recuo 1.25cm primeira linha, fecho hierárquico, numeração `Ofício nº NNN/YYYY-ASOF`, validação impessoalidade client-side.
+- Gates locais: `typecheck` ✓ · `lint` ✓ · `test` 1223/1223 ✓ · autoreview Codex clean ✓ (2026-06-08).
 
 Este arquivo substitui as pendencias antigas de smoke de tempo real e reconciliacao de projetos de banco. Elas nao sao mais caminho de go-live.

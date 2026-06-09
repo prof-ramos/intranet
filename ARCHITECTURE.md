@@ -1,10 +1,10 @@
 # Arquitetura
 
-Atualizado em 2026-06-01 para alinhar a triagem de e-mails ao controle operacional de prazos e demandas.
+Atualizado em 2026-06-08 para refletir a integração Assinafy, refatoração de error boundaries e melhorias de webhooks.
 
 ## Visao Geral
 
-A intranet ASOF e uma aplicacao Next.js 16 App Router, server-side, com Drizzle ORM e PostgreSQL gerenciado. O repo atual e a fonte canonica de dominio, schema e UI.
+A intranet ASOF e uma aplicacao Next.js 16.2.6 App Router, server-side, com Drizzle ORM e PostgreSQL gerenciado (Neon). O repo atual e a fonte canonica de dominio, schema e UI.
 
 ## Modulos De Dominio
 
@@ -12,10 +12,11 @@ A intranet ASOF e uma aplicacao Next.js 16 App Router, server-side, com Drizzle 
 - `src/app/app/atividades` e `src/lib/activities`: board administrativo, responsaveis, prioridades e prazos.
 - `src/app/app/financeiro` e `src/lib/finance`: mensalidades e status de pagamento.
 - `src/app/app/juridico` e `src/lib/juridico`: consultas, processos, notas e SLA.
-- `src/app/app/secretaria/oficios` e `src/lib/oficios`: oficios, rich text e PDF.
+- `src/app/app/secretaria/oficios` e `src/lib/oficios`: oficios, rich text, PDF e assinatura digital via Assinafy.
 - `src/app/app/notifications` e `src/lib/notifications`: alertas persistidos.
 - `src/app/app/config`: usuarios, lotacoes, auditoria, API keys e webhooks outbound.
 - `src/app/app/email-triage` e `src/lib/email-triage`: triagem automatica de e-mails com Gemini AI. Busca emails via Gmail API, analisa com IA, persiste resultado operacional, correlaciona consultas abertas quando seguro e notifica admins.
+- `src/lib/assinafy`: cliente Assinafy, webhook handler, repository e service para assinatura digital de ofícios.
 
 ## Modulo Email Triage
 
@@ -57,6 +58,53 @@ A intranet ASOF e uma aplicacao Next.js 16 App Router, server-side, com Drizzle 
 | `descartado_por_irrelevancia` | Marcado como irrelevante |
 | `pendente_validacao_lgpd` | Pendente de revisao LGPD |
 
+---
+
+## Modulo Assinafy (Assinatura Digital)
+
+### Fluxo
+1. **Envio para Assinatura** — Admin seleciona ofício (status `gerado` ou `rascunho`), informa email do signatário
+2. **Geração PDF** — PDF gerado on-the-fly com fontes Carlito (ABNT) e embutimento completo
+3. **Upload Assinafy** — Documento enviado via API Assinafy (`uploadDocument`)
+4. **Criação Signatário** — Signatário criado/recuperado via `createSigner` (fallback silencioso para emails existentes)
+5. **Assignment** — Solicitação de assinatura criada com `expires_at` 30 dias
+6. **Persistência** — `assinafy_signing_url`, `assinafyDocumentId`, `assinafyAssignmentId`, `assinafySignerId` salvos em transação
+7. **Webhook** — Assinafy envia callbacks para `/api/webhooks/assinafy` (eventos: `document_signed`, `signer_signed_document`, `document_rejected`, etc.)
+8. **Processamento Webhook** — Dentro de transação: atualiza ofício, loga auditoria, emite domain event, notifica admins
+
+### Componentes
+- `src/lib/assinafy/client.ts` — Cliente HTTP com extração defensiva de payload e recuperação de signatários
+- `src/lib/assinafy/types.ts` — Enums `AssinafyDocumentStatus` (11 estados), tipos de webhook
+- `src/lib/assinafy/repository.ts` — `findOficioByAssinafyDocumentId`, `updateAssinafyStatus`, `updateAssinafyFields`
+- `src/lib/assinafy/service.ts` — `handleWebhookEvent` (processamento transacional), `sendForSignature` (orquestração envio)
+- `src/app/api/webhooks/assinafy/route.ts` — Endpoint público para webhooks Assinafy
+- `src/app/app/secretaria/oficios/_components/SendForSignatureModal.tsx` — Modal de envio
+- `src/app/app/secretaria/oficios/_components/OficiosTable.tsx` — Botão "Enviar para Assinatura" + badge "Abrir página de assinatura"
+
+### Status Assinafy (enum `assinafy_document_status`)
+| Status | Descricao |
+|--------|-----------|
+| `pending` | Aguardando processamento |
+| `uploaded` | Documento carregado |
+| `pending_signature` | Aguardando assinatura |
+| `partially_signed` | Parcialmente assinado |
+| `signed` | Assinado |
+| `rejected` | Rejeitado |
+| `expired` | Expirado |
+| `cancelled` | Cancelado |
+| `failed` | Falha |
+| `certificated` | Certificado |
+| `ready` | Pronto |
+
+### Regras de Negocio
+- Apenas ofícios com status `gerado` ou `rascunho` podem ser enviados
+- `rascunho` transiciona automaticamente para `gerado` ao enviar
+- Guarda de idempotência: `assinafyDocumentId === null` antes de qualquer chamada API
+- Guarda "Assinafy não configurado": verifica env vars antes de chamadas
+- Webhook é idempotente: mesmo status = early return
+- Notificação criada para todos admins ativos dentro da mesma transação
+- `assinafy_signing_url` persistida para badge "Abrir página de assinatura" (target=_blank)
+
 ### Regras de Negocio
 - Todos veem a list page (`requireAuth()`)
 - Só `admin` altera status, observações e prazos (`requireRole(['admin'])`)
@@ -75,6 +123,8 @@ A intranet ASOF e uma aplicacao Next.js 16 App Router, server-side, com Drizzle 
 - Guardrail: `scripts/guarded-migrate.ts`.
 - Email triage migrations: `drizzle/postgres/0007_email_triage_mvp.sql`, `drizzle/postgres/0009_email_triage_notifications.sql` e `drizzle/postgres/0010_relax_email_triage_operational_review.sql`.
 - A migration `0010` remove as constraints antigas que obrigavam validacao humana para `juridico`, risco `alto`/`critico` ou confianca diferente de `alta`; permanecem os checks anti-alucinacao de prazo e evidencia.
+- Assinafy migrations: `drizzle/postgres/0006_add_assinafy_signing_url.sql`, `drizzle/postgres/0017_expand_domain_events_and_assinafy.sql` (webhook handling), `drizzle/postgres/0018_add_oficio_notification_types.sql` (notification enums), `drizzle/postgres/0019_add_recipient_address_fields.sql`.
+- Notification enums: `notification_type` inclui `oficio.status_changed`, `notification_entity_type` inclui `oficio`.
 
 O baseline nao depende de roles, policies, publications ou recursos de plataforma externa. RLS pode voltar depois como hardening, mas nao bloqueia a estreia.
 
@@ -88,11 +138,20 @@ O baseline nao depende de roles, policies, publications ou recursos de plataform
 - `requireRole()` controla autorizacao por `admin`, `diretoria` e `secretaria`.
 - `SKIP_AUTH=true` existe apenas para desenvolvimento e e ignorado em producao.
 
+## Error Boundaries
+
+- Componente base `src/components/ErrorBoundary.tsx` — factory `createErrorBoundary` com logging via `toSafeErrorLog` (PII-safe)
+- 18 boundaries consolidados: `app/error.tsx`, `app/change-password/error.tsx`, `app/app/error.tsx`, `app/app/config/error.tsx`, `app/app/associados/error.tsx`, `app/app/atividades/error.tsx`, `app/app/financeiro/error.tsx`, `app/app/financeiro/mensalidades/error.tsx`, `app/app/juridico/error.tsx`, `app/app/juridico/consultas/error.tsx`, `app/app/juridico/consultas/nova/error.tsx`, `app/app/juridico/consultas/[id]/error.tsx`, `app/app/secretaria/error.tsx`, `app/app/secretaria/oficios/error.tsx`, `app/app/secretaria/documentos/error.tsx`, `app/app/email-triage/error.tsx`, `app/app/search/error.tsx`, `app/app/privacidade/error.tsx`, `app/app/etiquetas/error.tsx`
+- `not-found.tsx` em rotas dinâmicas: `app/app/associados/[id]/not-found.tsx`, `app/app/secretaria/oficios/[id]/editar/not-found.tsx`
+
 ## Notificacoes
 
 Notificacoes sao registros persistidos. O cliente carrega via Server Actions e atualiza periodicamente. Entrega em tempo real nao faz parte do caminho critico do go-live.
 
-O tipo `email_triage_pending` notifica admins quando uma triagem exige revisao operacional excepcional.
+Tipos de notificação:
+- `email_triage_pending` — triagem exige revisao operacional
+- `oficio.status_changed` — status de ofício alterado via webhook Assinafy (notifica todos admins ativos)
+- `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning` — existentes
 
 ## Documentos E Storage
 
@@ -114,5 +173,7 @@ Metadados de documentos permanecem no PostgreSQL. Arquivos fisicos devem usar st
 5. Validar gates e smoke manual.
 6. Configurar credenciais Gmail (CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN).
 7. Configurar GEMINI_API_KEY para analysis.
+8. Configurar Assinafy (ASSINAFY_API_KEY, ASSINAFY_ACCOUNT_ID, ASSINAFY_BASE_URL, ASSINAFY_WEBHOOK_SECRET) — opcional, para assinatura digital.
+9. Configurar webhook Assinafy na plataforma apontando para `https://intranet.asof.com.br/api/webhooks/assinafy`.
 
 Detalhes operacionais ficam em `docs/runbook.md`; pendencias ficam em `TODO-PROD.md`.

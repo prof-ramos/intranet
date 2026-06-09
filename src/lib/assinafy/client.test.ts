@@ -33,7 +33,8 @@ describe('AssinafyClient', () => {
 
   describe('uploadDocument', () => {
     it('sends multipart form data with X-Api-Key header', async () => {
-      const mockResponse = { id: 'doc123', name: 'test.pdf', status: 'uploaded' };
+      const mockPayload = { id: 'doc123', name: 'test.pdf', status: 'uploaded' };
+      const mockResponse = { status: 200, data: mockPayload };
       fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify(mockResponse), { status: 200 }));
 
       const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
@@ -47,7 +48,7 @@ describe('AssinafyClient', () => {
           headers: expect.objectContaining({ 'X-Api-Key': API_KEY }),
         }),
       );
-      expect(result).toEqual(mockResponse);
+      expect(result).toEqual(mockPayload);
     });
 
     it('throws AssinafyError on non-JSON response (502)', async () => {
@@ -92,12 +93,13 @@ describe('AssinafyClient', () => {
 
   describe('createAssignment', () => {
     it('sends POST with method, signers, and expiration', async () => {
-      const mockResponse = {
+      const mockPayload = {
         id: 'assign1',
         method: 'virtual',
         signers: [{ id: 'signer1' }],
         signing_urls: [{ signer_id: 'signer1', url: 'https://sign.url' }],
       };
+      const mockResponse = { status: 200, data: mockPayload };
       fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify(mockResponse), { status: 200 }));
 
       const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
@@ -107,7 +109,7 @@ describe('AssinafyClient', () => {
         expires_at: '2026-12-31T23:59:00Z',
       });
 
-      expect(result).toEqual(mockResponse);
+      expect(result).toEqual(mockPayload);
     });
   });
 

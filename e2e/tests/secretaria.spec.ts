@@ -5,8 +5,8 @@ test.describe('Secretaria — Ofícios', () => {
     await loginAsAdmin();
     await page.goto('/app/secretaria/oficios');
     await expect(page.locator('h1')).toContainText('Ofícios');
-    await expect(page.locator('table')).toContainText('OFÍCIO No 001/2026/ASOF');
-    await expect(page.locator('table')).toContainText('OFÍCIO No 002/2026/ASOF');
+    await expect(page.locator('table')).toContainText('Ofício nº 001/2026-ASOF');
+    await expect(page.locator('table')).toContainText('Ofício nº 002/2026-ASOF');
     await expect(page.locator('table')).toContainText('Ministro das Relações Exteriores');
     await expect(page.locator('table')).toContainText('Secretário-Geral');
   });
@@ -35,7 +35,7 @@ test.describe('Secretaria — Ofícios', () => {
     await loginAsAdmin();
     await page.goto('/app/secretaria/oficios');
     const downloadLink = page.locator(
-      'tr:has-text("OFÍCIO No 001/2026/ASOF") a[title="Download PDF"]',
+      'tr:has-text("Ofício nº 001/2026-ASOF") a[title="Download PDF"]',
     );
     await expect(downloadLink).toBeVisible();
     await expect(downloadLink).toHaveAttribute('href', /\/api\/oficios\/\d+\/download/);
@@ -45,7 +45,7 @@ test.describe('Secretaria — Ofícios', () => {
     await loginAsAdmin();
     await page.goto('/app/secretaria/oficios');
     const cancelButton = page
-      .locator('tr:has-text("OFÍCIO No 001/2026/ASOF")')
+      .locator('tr:has-text("Ofício nº 001/2026-ASOF")')
       .getByRole('button', { name: 'Cancelar ofício' });
     await expect(cancelButton).toBeVisible();
   });

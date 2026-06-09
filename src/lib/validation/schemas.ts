@@ -46,7 +46,7 @@ export const changePasswordSchema = z
     newPassword: z.string().min(8, 'A nova senha deve ter pelo menos 8 caracteres.'),
     confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória.'),
   })
-  .refine((data) => data.newPassword === data.confirmPassword, {
+  .refine(passwordMatchRefine, {
     message: 'A confirmação não confere.',
     path: ['confirmPassword'],
   });
@@ -61,7 +61,7 @@ export const resetPasswordSchema = z
     newPassword: z.string().min(8, 'A nova senha deve ter pelo menos 8 caracteres.'),
     confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória.'),
   })
-  .refine((data) => data.newPassword === data.confirmPassword, {
+  .refine(passwordMatchRefine, {
     message: 'A confirmação não confere.',
     path: ['confirmPassword'],
   });
@@ -115,6 +115,10 @@ function cpfValidator(cpf: string | null) {
   check = 11 - (sum % 11);
   if (check >= 10) check = 0;
   return check === parseInt(digits[10]);
+}
+
+function passwordMatchRefine(data: { newPassword: string; confirmPassword: string }) {
+  return data.newPassword === data.confirmPassword;
 }
 
 export function isPublicWebhookUrl(value: string): boolean {

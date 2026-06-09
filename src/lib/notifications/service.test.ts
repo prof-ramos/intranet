@@ -42,6 +42,29 @@ describe('notifications service', () => {
     expect(createNotification).not.toHaveBeenCalled();
   });
 
+  it('creates notification with actorId null for oficio.status_changed', async () => {
+    await createNotificationFromEvent('oficio.status_changed', {
+      actorId: null,
+      recipientId: 7,
+      entityType: 'oficio',
+      entityId: 10,
+      title: 'Status do ofício alterado',
+      message: 'O ofício 001/2026 teve status alterado.',
+      dedupeKey: 'oficio.status_changed:10:partially_signed',
+    });
+
+    expect(createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorId: null,
+        type: 'oficio.status_changed',
+        entityType: 'oficio',
+        entityId: 10,
+        dedupeKey: 'oficio.status_changed:10:partially_signed',
+      }),
+      undefined,
+    );
+  });
+
   it('validates notification payload before creating', async () => {
     await expect(
       createNotificationFromEvent('activity.completed', {

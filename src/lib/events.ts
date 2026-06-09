@@ -12,13 +12,14 @@ export const NOTIFICATION_EVENT_TYPES = [
   'legal_consultation.sla_warning',
   'lgpd_request',
   'email_triage_pending',
+  'oficio.status_changed',
 ] as const;
 
 export type NotificationEventType = (typeof NOTIFICATION_EVENT_TYPES)[number];
-export type NotificationEntity = 'activity' | 'legal_consultation' | 'email_triagem';
+export type NotificationEntity = 'activity' | 'legal_consultation' | 'email_triagem' | 'oficio';
 
 export interface NotificationEventPayload {
-  actorId: number;
+  actorId: number | null;
   recipientId: number;
   entityType: NotificationEntity;
   entityId: number;
@@ -60,6 +61,8 @@ const eventHandlers: Record<NotificationEventType, EventHandler> = {
     createNotificationFromEvent('lgpd_request', payload, options.tx),
   'email_triage_pending': (payload, options) =>
     createNotificationFromEvent('email_triage_pending', payload, options.tx),
+  'oficio.status_changed': (payload, options) =>
+    createNotificationFromEvent('oficio.status_changed', payload, options.tx),
 };
 
 export async function emitEvent(
@@ -187,7 +190,7 @@ function assertValidPayload(type: NotificationEventType, payload: NotificationEv
     throw new Error('Tipo de evento inválido.');
   }
 
-  if (!Number.isInteger(payload.actorId) || payload.actorId <= 0) {
+  if (payload.actorId !== null && (!Number.isInteger(payload.actorId) || payload.actorId <= 0)) {
     throw new Error('actorId inválido.');
   }
   if (!Number.isInteger(payload.recipientId) || payload.recipientId <= 0) {

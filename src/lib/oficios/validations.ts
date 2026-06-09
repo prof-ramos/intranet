@@ -197,6 +197,9 @@ export const officialLetterFormSchema = z.object({
     .trim()
     .min(1, 'O setor no Itamaraty é obrigatório.')
     .max(200, 'Setor: máx. 200 caracteres.'),
+  recipientAddress: z.string().trim().max(300, 'Endereço: máx. 300 caracteres.').optional(),
+  recipientCity: z.string().trim().max(200, 'Cidade: máx. 200 caracteres.').optional(),
+  recipientZip: z.string().trim().max(20, 'CEP: máx. 20 caracteres.').optional(),
   signatoryName: z
     .string()
     .trim()

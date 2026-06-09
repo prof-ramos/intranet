@@ -27,19 +27,13 @@ function assertValidOptions(options: IpRateLimitOptions) {
   }
 }
 
-export async function consumeIpRateLimit(
-  ip: string,
+async function insertRateLimitRow(
+  key: string,
   scope: string,
-  options: IpRateLimitOptions,
-  now = Date.now(),
-): Promise<IpRateLimitResult> {
-  assertValidOptions(options);
-
-  const key = normalizeKey(ip, scope);
-  const nowDate = new Date(now);
-  const expiresAt = new Date(now + options.windowMs);
-
-  const [inserted] = await db
+  expiresAt: Date,
+  nowDate: Date,
+): Promise<{ attempts: number; expiresAt: Date } | undefined> {
+  const [row] = await db
     .insert(rateLimits)
     .values({
       key,
@@ -53,6 +47,22 @@ export async function consumeIpRateLimit(
       attempts: rateLimits.attempts,
       expiresAt: rateLimits.expiresAt,
     });
+  return row;
+}
+
+export async function consumeIpRateLimit(
+  ip: string,
+  scope: string,
+  options: IpRateLimitOptions,
+  now = Date.now(),
+): Promise<IpRateLimitResult> {
+  assertValidOptions(options);
+
+  const key = normalizeKey(ip, scope);
+  const nowDate = new Date(now);
+  const expiresAt = new Date(now + options.windowMs);
+
+  const inserted = await insertRateLimitRow(key, scope, expiresAt, nowDate);
 
   if (inserted) {
     return { allowed: true, remaining: options.maxRequests - 1 };
@@ -109,20 +119,7 @@ export async function consumeIpRateLimit(
     .limit(1);
 
   if (!row) {
-    const [retriedInsert] = await db
-      .insert(rateLimits)
-      .values({
-        key,
-        scope,
-        attempts: 1,
-        expiresAt,
-        updatedAt: nowDate,
-      })
-      .onConflictDoNothing()
-      .returning({
-        attempts: rateLimits.attempts,
-        expiresAt: rateLimits.expiresAt,
-      });
+    const retriedInsert = await insertRateLimitRow(key, scope, expiresAt, nowDate);
 
     if (retriedInsert) {
       return { allowed: true, remaining: options.maxRequests - 1 };

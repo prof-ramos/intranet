@@ -10,9 +10,19 @@ Este documento descreve os termos de domínio e regras de negócio da Intranet d
 
 Documento oficial de comunicação institucional seguindo o **Padrão Ofício** (Manual de Redação da Presidência da República). Utilizado para comunicações formais entre a ASOF e órgãos externos (MRE, Embaixadas, etc).
 
-- **Identificação**: Composta por `NOME DO DOCUMENTO No [número]/[ano]/[setor]`.
+- **Identificação**: Composta por `Ofício nº [número]/[ano]-ASOF`.
 - **Partes**: Cabeçalho, Identificação, Local/Data, Endereçamento (Destinatário, Cargo, Vocativo), Assunto, Texto (Introdução, Desenvolvimento, Conclusão), Fecho e Identificação do Signatário.
 - **Arquivamento**: O Ofício é criado e numerado pela intranet; seu PDF final ou assinado pode ser arquivado como Documento para consulta futura.
+
+#### Assinatura Digital (Assinafy)
+
+Plataforma de assinatura eletrônica integrada à intranet para assinatura de ofícios.
+
+- **Fluxo**: Ofício (status `gerado`/`rascunho`) → Geração PDF → Upload Assinafy → Criação Signatário → Assignment (30 dias) → Persistência `assinafy_signing_url` → Email ao signatário → Webhook callbacks (`document_signed`, `signer_signed_document`, `document_rejected`, etc.) → Atualização status + notificação admins
+- **Status Assinafy** (`assinafy_document_status`): `pending`, `uploaded`, `pending_signature`, `partially_signed`, `signed`, `rejected`, `expired`, `cancelled`, `failed`, `certificated`, `ready`
+- **Campos persistidos**: `assinafyDocumentId`, `assinafyStatus`, `assinafySigningUrl`, `assinafyAssignmentId`, `assinafySignerId`, `assinafySentAt`
+- **Idempotência**: Guarda `assinafyDocumentId === null` antes de envio; webhook faz early return se status inalterado
+- **Notificação**: Cria notificação `oficio.status_changed` para todos admins ativos dentro da mesma transação do webhook
 
 #### Documento
 
@@ -34,6 +44,7 @@ Documento geral da Secretaria sem vínculo com uma entidade única da intranet, 
 A autoridade que assina e expede o documento.
 
 - **Campos**: Nome (em maiúsculas) e Cargo (apenas iniciais maiúsculas).
+- **Limpeza para Assinafy**: `cleanSignatoryName()` remove cargo/função após separadores " — ", " - ", "–" (ex: "João Silva — Presidente" → "João Silva"). Fallback: nome completo se regex não encontrar separador.
 
 #### Fecho (Closure)
 
@@ -180,7 +191,7 @@ Criação rápida de atividade diretamente no board, sem abrir formulário compl
 
 #### Notificação
 
-Alerta persistido para o usuário sobre reatribuição de atividades ou atualização de consulta jurídica. A entrega em tempo real é uma capacidade opcional, não parte essencial do conceito. Tipos (`notificationType`): `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`.
+Alerta persistido para o usuário sobre reatribuição de atividades ou atualização de consulta jurídica. A entrega em tempo real é uma capacidade opcional, não parte essencial do conceito. Tipos (`notificationType`): `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`, `oficio.status_changed` (novo — webhook Assinafy notifica todos admins ativos).
 
 _Avoid_: tratar "notificação" como sinônimo de "evento em tempo real".
 
@@ -208,9 +219,11 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 
 ### Módulo de Ofícios
 
-1. **Numeração Sequencial**: O número do ofício é sequencial e reinicia a cada ano civil (ex: 001/2026, 002/2026).
+1. **Numeração Sequencial**: O número do ofício é sequencial e reinicia a cada ano civil (ex: 001/2026, 002/2026). Formato: `Ofício nº 001/2026-ASOF`.
 2. **Imutabilidade de Identificação**: Uma vez gerado o número de um ofício, ele deve ser preservado. Se o ofício for cancelado, o número não deve ser reutilizado para evitar lacunas ou duplicidades na cronologia oficial.
 3. **Roles de Acesso**: Operado por `admin`, `diretoria` e `secretaria`.
+4. **Assinatura Digital (Assinafy)**: Ofícios com status `gerado` ou `rascunho` podem ser enviados para assinatura digital. O PDF é gerado on-the-fly com fontes Carlito (conforme ABNT/MRPR), embutimento completo (`subset: false`). Signatário único por envio; email não persistido no banco. Webhook Assinafy processa callbacks transacionalmente: atualiza ofício, loga auditoria, emite domain event, notifica admins.
+5. **Conformidade ABNT/MRPR**: Margens 3cm (sup/esq), 2cm (inf/dir), espaçamento 1.5x (18pt), recuo primeira linha 1.25cm, fecho hierárquico, data por extenso opcional, validação de impessoalidade client-side (warnings).
 
 ### Módulo de Documentos
 
@@ -262,6 +275,8 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 1. **Data Access Logging**: Cada acesso a dados PII (view, export, edit) é registrado em `audit_logs` para compliance com Art. 30/37 da LGPD.
 2. **Sanitização de PII**: Logs de erro e payloads de eventos passam por redação automática de dados sensíveis.
 3. **PII View** (`publicAssociateListColumns` em `src/lib/associates/repository.ts`): Seleção de colunas Drizzle ORM que exclui campos `_ciphertext` e `_hash`, fornecendo uma visão segura para listagens paginadas de associados.
+4. **Ator Sistema**: `logAuditAction` aceita `adminId: null` para operações automáticas (ex: webhook Assinafy, marcação automática de inadimplência, dispatch agendado). Dois bypass sites migrados: `finance/service.ts` (`auto_mark_overdue`) e `dispatch/route.ts` (`domain_event_dispatch_scheduled`).
+5. **Transação de Auditoria**: `logAuditAction` suporta parâmetro `executor` (Tx) para inclusão dentro de transações existentes (ex: webhook handler).
 
 ---
 
@@ -287,6 +302,14 @@ O sistema suporta dois caminhos de autenticação para APIs:
 - Target URLs devem ser HTTPS públicos; localhost e redes privadas são rejeitados.
 - Dispatch agendado via Vercel Cron: eventos em `/api/v1/events/dispatch` (diário às 03:00 UTC) e alertas de SLA em `/api/v1/juridico/sla-warnings` (diário às 04:00 UTC).
 
+### Webhook Inbound Assinafy
+
+- Endpoint: `POST /api/webhooks/assinafy` (público, validação por header de segredo compartilhado X-Webhook-Secret)
+- Eventos processados: `document_signed`, `signer_signed_document`, `document_rejected`, `document_expired`, `document_cancelled`, `document_failed`, `document_ready`, `signer_declined`, `signer_viewed`, `assignment_created`, `assignment_completed`
+- Processamento transacional: atualiza `oficios`, loga `audit_logs`, emite `domain_events.official_letter.status_changed`, cria `notifications.oficio.status_changed` para todos admins ativos
+- Idempotência: early return se `oficio.assinafyStatus` já igual ao mapeado
+- Signatários existentes na Assinafy: fallback silencioso via `GET /signers` se POST retornar 400
+
 ---
 
 ## Eventos de Domínio Suportados
@@ -297,6 +320,7 @@ O sistema suporta dois caminhos de autenticação para APIs:
 - `monthly_payment.updated`
 - `official_letter.created`
 - `official_letter.published`
+- `official_letter.status_changed` — status alterado via webhook Assinafy
 
 ---
 
@@ -307,6 +331,8 @@ Além dos módulos de domínio listados acima, o sistema inclui módulos auxilia
 - **`email/`** — Envio de e-mail via Mailjet (index.ts, templates.ts).
 - **`search/`** — Busca de associados e atividades (queries.ts).
 - **`storage/`** — Interface de armazenamento de documentos; o provedor de objetos privado é decisão de infraestrutura.
+- **`assinafy/`** — Cliente Assinafy, webhook handler, repository e service para assinatura digital de ofícios.
+- **`errors/`** — Hierarquia de erros tipados (`DomainError`, `ConcurrencyConflictError`, `NotFoundError`, `ValidationError`, `RateLimitError`, `ExternalServiceError`, `UnauthorizedError`) com handlers globais `unhandledRejection`/`uncaughtException`.
 
 ---
 

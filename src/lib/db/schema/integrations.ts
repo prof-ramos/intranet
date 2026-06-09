@@ -19,8 +19,9 @@ export const domainEventType = pgEnum('domain_event_type', [
   'legal_consultation.created',
   'legal_consultation.status_changed',
   'official_letter.created',
-  'monthly_payment.updated',
   'official_letter.published',
+  'official_letter.status_changed',
+  'monthly_payment.updated',
 ]);
 
 export const domainEventEntityType = pgEnum('domain_event_entity_type', [

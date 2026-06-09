@@ -74,13 +74,14 @@ async function logSystemOverdueTransition(payment: OverduePaymentTransition, exe
     month: payment.month,
   };
 
-  await executor.insert(auditLogs).values({
-    performedBy: null,
+  await logAuditAction({
+    adminId: null,
     action: 'auto_mark_overdue',
     entityType: 'monthly_payment',
     entityId: payment.id,
-    changes: sanitizePiiValue(changes) as NewAuditLog['changes'],
-    metadata: sanitizePiiValue(metadata) as NewAuditLog['metadata'],
+    changes,
+    metadata,
+    executor,
   });
 }
 

@@ -5,7 +5,7 @@ import { findOficioByAssinafyDocumentId, updateAssinafyStatus } from './reposito
 const { dbMock, MOCK_OFICIO } = vi.hoisted(() => {
   const MOCK_OFICIO = {
     id: 1,
-    number: 'OFÍCIO No 001/2026/ASOF',
+    number: 'Ofício nº 001/2026-ASOF',
     year: 2026,
     sequence: 1,
     recipient: 'Destinatário',

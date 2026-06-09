@@ -64,7 +64,7 @@ describe('emitDomainEvent', () => {
         entityId: 12,
         actorAdminId: 1,
         payload: {
-          number: 'OFÍCIO No 001/2026/ASOF',
+          number: 'Ofício nº 001/2026-ASOF',
           status: 'gerado',
           year: 2026,
           sequence: 1,

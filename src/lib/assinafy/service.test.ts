@@ -2,14 +2,61 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { handleWebhookEvent } from './service';
 import type { AssinafyWebhookEvent } from './types';
 
-const { mockUpdateAssinafyStatus, mockFindOficioByAssinafyDocumentId } = vi.hoisted(() => ({
-  mockUpdateAssinafyStatus: vi.fn(),
-  mockFindOficioByAssinafyDocumentId: vi.fn(),
-}));
+const { mockUpdateAssinafyStatus, mockFindOficioByAssinafyDocumentId, mockAdminQueryResult } =
+  vi.hoisted(() => ({
+    mockUpdateAssinafyStatus: vi.fn(),
+    mockFindOficioByAssinafyDocumentId: vi.fn(),
+    mockAdminQueryResult: { current: [] as Array<{ id: number }> },
+  }));
 
 vi.mock('./repository', () => ({
   findOficioByAssinafyDocumentId: mockFindOficioByAssinafyDocumentId,
   updateAssinafyStatus: mockUpdateAssinafyStatus,
+}));
+
+vi.mock('@/lib/db', () => {
+  // Chainable mock for Drizzle's query builder inside transactions.
+  // Supports select().from().where() and insert().values().onConflictDoNothing().returning().
+  const thenable = { then: (resolve: (val: unknown) => void) => resolve([]) };
+
+  const queryBuilder: Record<string, unknown> = {
+    orderBy: () => ({
+      ...thenable,
+      limit: () => Promise.resolve([]),
+    }),
+  };
+  (queryBuilder as Record<string, unknown>).then = (resolve: (val: unknown) => void) =>
+    resolve(mockAdminQueryResult.current);
+
+  const mockTx = new Proxy({} as Record<string, unknown>, {
+    get(_target, prop: string) {
+      if (prop === 'then') return undefined;
+      return () => {
+        if (prop === 'where') return queryBuilder;
+        if (prop === 'limit') return Promise.resolve([]);
+        if (prop === 'returning') return Promise.resolve([]);
+        return mockTx;
+      };
+    },
+  });
+
+  return {
+    db: {
+      transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb(mockTx)),
+    },
+  };
+});
+
+vi.mock('@/lib/audit/service', () => ({
+  logAuditAction: vi.fn(),
+}));
+
+vi.mock('@/lib/integrations/outbox', () => ({
+  emitDomainEvent: vi.fn(),
+}));
+
+vi.mock('@/lib/notifications/repository', () => ({
+  createNotification: vi.fn(),
 }));
 
 const BASE_EVENT: AssinafyWebhookEvent = {
@@ -24,10 +71,21 @@ const BASE_EVENT: AssinafyWebhookEvent = {
   account_id: 'acc1',
 };
 
+const mockOficio = {
+  id: 1,
+  createdBy: 1,
+  number: 'Ofício nº 001/2026-ASOF',
+  year: 2026,
+  sequence: 1,
+  assinafyStatus: null,
+  status: 'gerado',
+};
+
 describe('assinafy/service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFindOficioByAssinafyDocumentId.mockResolvedValue({ id: 1 });
+    mockAdminQueryResult.current = [];
+    mockFindOficioByAssinafyDocumentId.mockResolvedValue({ ...mockOficio });
     mockUpdateAssinafyStatus.mockResolvedValue({ id: 1 });
   });
 
@@ -37,8 +95,9 @@ describe('assinafy/service', () => {
       expect(mockFindOficioByAssinafyDocumentId).toHaveBeenCalledWith('doc123');
       expect(mockUpdateAssinafyStatus).toHaveBeenCalledWith(
         1,
-        expect.any(String),
+        'partially_signed',
         expect.objectContaining({ assinafySignedAt: expect.any(Date) }),
+        expect.anything(),
       );
     });
 
@@ -49,6 +108,7 @@ describe('assinafy/service', () => {
         1,
         'certificated',
         expect.objectContaining({ assinafySignedAt: expect.any(Date) }),
+        expect.anything(),
       );
     });
 
@@ -59,6 +119,7 @@ describe('assinafy/service', () => {
         1,
         'rejected_by_signer',
         expect.objectContaining({ assinafyError: expect.any(String) }),
+        expect.anything(),
       );
     });
 
@@ -69,6 +130,7 @@ describe('assinafy/service', () => {
         1,
         'failed',
         expect.objectContaining({ assinafyError: 'PDF corrupt' }),
+        expect.anything(),
       );
     });
 
@@ -82,6 +144,105 @@ describe('assinafy/service', () => {
     it('handles unknown event gracefully', async () => {
       const event = { ...BASE_EVENT, event: 'unknown_event' };
       const result = await handleWebhookEvent(event);
+      expect(result).toBeNull();
+    });
+
+    it('emits domain event on status change', async () => {
+      const { emitDomainEvent } = await import('@/lib/integrations/outbox');
+      await handleWebhookEvent(BASE_EVENT);
+      expect(emitDomainEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'official_letter.status_changed',
+          entityType: 'official_letter',
+          entityId: 1,
+          payload: expect.objectContaining({ status: 'partially_signed' }),
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('logs audit action on status change', async () => {
+      const { logAuditAction } = await import('@/lib/audit/service');
+      await handleWebhookEvent(BASE_EVENT);
+      expect(logAuditAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          adminId: null,
+          action: 'official_letter_status_changed',
+          entityType: 'official_letter',
+          entityId: 1,
+        }),
+      );
+    });
+
+    it('skips update when status is already the mapped value (idempotency)', async () => {
+      mockFindOficioByAssinafyDocumentId.mockResolvedValue({
+        ...mockOficio,
+        assinafyStatus: 'partially_signed',
+      });
+      const result = await handleWebhookEvent(BASE_EVENT);
+      expect(mockUpdateAssinafyStatus).not.toHaveBeenCalled();
+      expect(result).toEqual(expect.objectContaining({ id: 1 }));
+    });
+
+    it('returns transaction result when audit log fails (no false-negative)', async () => {
+      const { logAuditAction } = await import('@/lib/audit/service');
+      vi.mocked(logAuditAction).mockRejectedValueOnce(new Error('Audit DB unavailable'));
+      const result = await handleWebhookEvent(BASE_EVENT);
+      expect(mockUpdateAssinafyStatus).toHaveBeenCalled();
+      expect(result).toEqual(expect.objectContaining({ id: 1 }));
+    });
+
+    it('creates notifications for all active admins', async () => {
+      const { createNotification } = await import('@/lib/notifications/repository');
+      mockAdminQueryResult.current = [{ id: 5 }, { id: 7 }];
+
+      await handleWebhookEvent(BASE_EVENT);
+
+      expect(createNotification).toHaveBeenCalledTimes(2);
+      expect(createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 5,
+          actorId: null,
+          type: 'oficio.status_changed',
+          title: 'Status do ofício alterado',
+          dedupeKey: 'oficio.status_changed:1:partially_signed',
+          entityType: 'oficio',
+          entityId: 1,
+        }),
+        expect.anything(),
+      );
+      expect(createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 7,
+          actorId: null,
+          dedupeKey: 'oficio.status_changed:1:partially_signed',
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('includes dedupeKey in notification to prevent duplicates', async () => {
+      const { createNotification } = await import('@/lib/notifications/repository');
+      mockAdminQueryResult.current = [{ id: 5 }];
+
+      await handleWebhookEvent(BASE_EVENT);
+
+      expect(createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dedupeKey: 'oficio.status_changed:1:partially_signed',
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('returns null when transaction fails (e.g. notification creation error)', async () => {
+      const { createNotification } = await import('@/lib/notifications/repository');
+      mockAdminQueryResult.current = [{ id: 5 }];
+      vi.mocked(createNotification).mockRejectedValueOnce(new Error('DB insert failed'));
+
+      const result = await handleWebhookEvent(BASE_EVENT);
+
+      // Transaction rejection is caught by outer try/catch
       expect(result).toBeNull();
     });
   });

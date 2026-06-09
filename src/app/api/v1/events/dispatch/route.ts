@@ -1,5 +1,4 @@
-import { db } from '@/lib/db';
-import { auditLogs } from '@/lib/db/schema';
+import { logAuditAction } from '@/lib/audit/service';
 import { authorizeCronRequest, parseLimit } from '@/lib/cron/auth';
 import { jsonError, jsonMethodNotAllowed, jsonOk } from '@/lib/integrations/http';
 import { dispatchPendingDomainEvents } from '@/lib/integrations/webhooks/service';
@@ -24,16 +23,11 @@ export async function GET(request: Request) {
 
   const result = await dispatchPendingDomainEvents(limit);
 
-  await db.insert(auditLogs).values({
+  await logAuditAction({
+    adminId: null,
     action: 'domain_event_dispatch_scheduled',
     entityType: 'domain_event',
-    entityId: null,
-    performedBy: null,
-    changes: null,
-    metadata: {
-      limit,
-      result,
-    },
+    metadata: { limit, result },
   });
 
   return jsonOk(

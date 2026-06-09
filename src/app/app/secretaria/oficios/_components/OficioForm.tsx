@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useMemo, useTransition } from 'react';
 import { useEscapeKey } from '@/hooks/use-escape-key';
 import { useRouter } from 'next/navigation';
 import { useForm, useWatch } from 'react-hook-form';
@@ -11,8 +11,9 @@ import {
   updateOfficialLetterAction,
   generateAiTextAction,
 } from '../actions';
-import { Sparkles, Save, X, Loader2, AlertCircle } from 'lucide-react';
-import { navy, primaryContainerHover, hairline, focusRingClass, error } from '@/lib/ui/tokens';
+import { Sparkles, Save, X, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
+import { checkImpersonality, type ImpersonalityWarning } from '@/lib/oficios/utils';
+import { navy, primaryContainerHover, hairline, focusRingClass, error, warning, warningBg, warningBorder, warningText } from '@/lib/ui/tokens';
 import { CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
 
@@ -35,6 +36,9 @@ const defaultFormValues: Partial<OfficialLetterFormValues> = {
   closure: 'Atenciosamente,',
   bodyRichText: '',
   bodyPlainText: '',
+  recipientAddress: '',
+  recipientCity: '',
+  recipientZip: '',
 };
 
 function textToParagraphHtml(text: string) {
@@ -82,6 +86,12 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
     defaultValues: { ...defaultFormValues, ...initialData },
   });
   const bodyRichText = useWatch({ control, name: 'bodyRichText' }) ?? '';
+  const bodyPlainText = useWatch({ control, name: 'bodyPlainText' }) ?? '';
+
+  const impersonalityWarnings = useMemo<ImpersonalityWarning[]>(
+    () => (bodyPlainText.trim() ? checkImpersonality(bodyPlainText) : []),
+    [bodyPlainText],
+  );
 
   const onSubmit = (values: OfficialLetterFormValues) => {
     setSubmitError(null);
@@ -108,6 +118,8 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
         recipientRole:   currentValues.recipientRole,
         subject:         currentValues.subject,
         itamaratySector: currentValues.itamaratySector,
+        signatory:       currentValues.signatoryName,
+        signatoryRole:   currentValues.signatoryRole,
         instruction:     aiInstruction,
       });
       if (res.success && res.text) {
@@ -192,6 +204,46 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
               <p className="mt-1 text-xs" style={{ color: error }}>{errors.itamaratySector.message}</p>
             )}
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="recipientAddress" className={labelClass}>Endereço</label>
+              <input
+                id="recipientAddress"
+                {...register('recipientAddress')}
+                className={inputClass}
+                placeholder="Ex: Palácio Itamaraty"
+              />
+              {errors.recipientAddress && (
+                <p className="mt-1 text-xs" style={{ color: error }}>{errors.recipientAddress.message}</p>
+              )}
+            </div>
+            <div>
+              <label htmlFor="recipientCity" className={labelClass}>Cidade</label>
+              <input
+                id="recipientCity"
+                {...register('recipientCity')}
+                className={inputClass}
+                placeholder="Ex: Brasília/DF"
+              />
+              {errors.recipientCity && (
+                <p className="mt-1 text-xs" style={{ color: error }}>{errors.recipientCity.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="recipientZip" className={labelClass}>CEP</label>
+            <input
+              id="recipientZip"
+              {...register('recipientZip')}
+              className={inputClass}
+              placeholder="Ex: 70170-900"
+            />
+            {errors.recipientZip && (
+              <p className="mt-1 text-xs" style={{ color: error }}>{errors.recipientZip.message}</p>
+            )}
+          </div>
         </div>
 
         {/* Informações do Ofício */}
@@ -255,7 +307,7 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
             <h2 className="font-serif text-lg font-bold">Corpo do Ofício</h2>
             <button
               type="button"
-              onClick={() => { setAiError(null); setIsAiModalOpen(true); }}
+              onClick={() => { setAiError(null); setAiInstruction(bodyPlainText); setIsAiModalOpen(true); }}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide uppercase transition-colors ${focusRingClass}`}
               style={{
                 background: 'rgba(4,9,32,0.06)',
@@ -282,6 +334,21 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
           )}
           {errors.bodyPlainText && (
             <p className="mt-1 text-xs" style={{ color: error }}>{errors.bodyPlainText.message}</p>
+          )}
+          {impersonalityWarnings.length > 0 && (
+            <div className="mt-3 rounded-lg border px-4 py-3" style={{ backgroundColor: warningBg, borderColor: warningBorder }}>
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle size={14} className="flex-shrink-0" style={{ color: warning }} aria-hidden="true" />
+                <p className="text-xs font-semibold" style={{ color: warningText }}>Linguagem pessoal/coloquial detectada</p>
+              </div>
+              <ul className="space-y-1">
+                {impersonalityWarnings.map((w) => (
+                  <li key={w.term} className="text-xs" style={{ color: warningText }}>
+                    <span className="font-medium">{w.term}</span> — {w.suggestion}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
 
@@ -349,7 +416,7 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
                     Auxiliar com IA
                   </h3>
                   <p className="mt-0.5 text-[10px] tracking-widest text-slate-400 uppercase">
-                    Gemini 2.5 Flash
+                    Gemini 3.5 Flash
                   </p>
                 </div>
               </div>
@@ -364,8 +431,9 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
             </div>
 
             <p className="mb-3 text-sm leading-relaxed text-slate-600">
-              Descreva em linguagem natural o que o ofício deve comunicar. Os campos de destinatário
-              e assunto já preenchidos serão usados como contexto.
+              O conteúdo atual do corpo do ofício foi carregado abaixo como referência. Edite
+              ou substitua para orientar a IA. Os campos de destinatário e assunto já preenchidos
+              serão usados como contexto.
             </p>
 
             <textarea

@@ -100,9 +100,9 @@ describe('finance service', () => {
 
     expect(count).toBe(1);
     expect(transactionMock.tx.update).toHaveBeenCalled();
-    expect(transactionMock.tx.insertValues).toHaveBeenCalledWith(
+    expect(logAuditAction).toHaveBeenCalledWith(
       expect.objectContaining({
-        performedBy: null,
+        adminId: null,
         action: 'auto_mark_overdue',
         entityType: 'monthly_payment',
         entityId: 5,
@@ -143,8 +143,7 @@ describe('finance service', () => {
       }),
       transactionMock.tx,
     );
-    expect(logAuditAction).not.toHaveBeenCalled();
-    expect(JSON.stringify(transactionMock.tx.insertValues.mock.calls[0][0])).not.toMatch(
+    expect(JSON.stringify(vi.mocked(logAuditAction).mock.calls[0][0])).not.toMatch(
       /cpf|siape|address/i,
     );
     expect(JSON.stringify(vi.mocked(emitDomainEvent).mock.calls[0][0])).not.toMatch(

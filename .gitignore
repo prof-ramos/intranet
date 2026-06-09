@@ -115,3 +115,14 @@ venv/
 .omo/
 opencode.json
 smoke-report/
+
+# transient dev artifacts (logs, pids, one-off scripts)
+dev[0-9]*.log
+dev[0-9]*.pid
+migrate_output.log
+capture-snapshots.js
+panorama-scenario.js
+test-execpath.js
+
+# Transient PDF/font debug artifacts
+tmp/

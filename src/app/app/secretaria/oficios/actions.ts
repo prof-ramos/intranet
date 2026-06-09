@@ -7,6 +7,7 @@ import * as repository from '@/lib/oficios/repository';
 import { generateOfficialLetterContent } from '@/lib/ai/gemini';
 import { isGeminiConfigured } from '@/lib/ai/settings';
 import { officialLetterFormSchema, type OfficialLetterFormValues } from '@/lib/oficios/validations';
+import { z } from 'zod';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 
@@ -44,6 +45,8 @@ export const generateAiTextAction = defineServerAction({
     recipientRole: string;
     subject: string;
     itamaratySector: string;
+    signatory: string;
+    signatoryRole: string;
     instruction: string;
   }) => {
     if (!(await isGeminiConfigured())) {
@@ -121,6 +124,37 @@ export const cancelOfficialLetterAction = defineServerAction({
         error instanceof Error ? error : undefined,
       );
       return { success: false, error: 'Falha ao cancelar o ofício.' };
+    }
+  },
+});
+
+const signerEmailSchema = z.object({
+  oficioId: z.number(),
+  signerEmail: z.string().trim().email('Email inválido.'),
+});
+
+export const sendForSignatureAction = defineServerAction({
+  auth: ALLOWED_ROLES,
+  schema: signerEmailSchema,
+  service: async (validated, user) => {
+    try {
+      const result = await service.sendForSignature(
+        validated.oficioId,
+        validated.signerEmail,
+        user.userId,
+      );
+      if (!result.success) {
+        return result;
+      }
+      revalidatePath('/app/secretaria/oficios');
+      return result;
+    } catch (error) {
+      logger.error(
+        '[sendForSignatureAction] send failed',
+        { error: toSafeErrorLog(error) },
+        error instanceof Error ? error : undefined,
+      );
+      return { success: false, error: 'Falha ao enviar ofício para assinatura.' };
     }
   },
 });

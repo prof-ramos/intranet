@@ -69,6 +69,16 @@ const payloadSchemaByEventType = {
       links: linksSchema,
     })
     .strict(),
+  'official_letter.status_changed': z
+    .object({
+      number: z.string().min(1),
+      status: z.string().min(1),
+      year: z.number().int().positive(),
+      sequence: z.number().int().positive(),
+      previousStatus: z.string().optional(),
+      links: linksSchema,
+    })
+    .strict(),
 } satisfies Record<DomainEventType, z.ZodType<Record<string, unknown>>>;
 
 export type DomainEventPayloadMap = {
