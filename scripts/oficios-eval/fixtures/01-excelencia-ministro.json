@@ -1,0 +1,14 @@
+{
+  "id": "01-excelencia-ministro",
+  "description": "Autoridade de alto escalão (Ministro) — exige 'Vossa Excelência'. Tom presidencial.",
+  "expect": { "pronoun": "excelencia" },
+  "input": {
+    "recipient": "Fulano de Tal",
+    "recipientRole": "Ministro de Estado das Relações Exteriores",
+    "subject": "Reestruturação da carreira de Oficial de Chancelaria",
+    "itamaratySector": "Gabinete do Ministro",
+    "signatory": "Beltrano de Souza",
+    "signatoryRole": "Presidente da ASOF",
+    "instruction": "Solicitar audiência para tratar da proposta de reestruturação da carreira de Oficial de Chancelaria, destacando a importância do diálogo institucional e pedindo agendamento até o fim do mês."
+  }
+}

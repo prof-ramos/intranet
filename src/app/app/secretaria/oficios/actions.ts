@@ -5,6 +5,7 @@ import { defineServerAction } from '@/lib/server-actions/define-form-action';
 import * as service from '@/lib/oficios/service';
 import * as repository from '@/lib/oficios/repository';
 import { generateOfficialLetterContent } from '@/lib/ai/gemini';
+import { GeminiError } from '@/lib/ai/errors';
 import { isGeminiConfigured } from '@/lib/ai/settings';
 import { officialLetterFormSchema, type OfficialLetterFormValues } from '@/lib/oficios/validations';
 import { z } from 'zod';
@@ -64,6 +65,9 @@ export const generateAiTextAction = defineServerAction({
         { error: toSafeErrorLog(error) },
         error instanceof Error ? error : undefined,
       );
+      if (error instanceof GeminiError) {
+        return { success: false, error: error.message };
+      }
       return { success: false, error: 'Falha ao gerar sugestão com IA.' };
     }
   },

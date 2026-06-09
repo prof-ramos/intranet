@@ -10,6 +10,7 @@
  *  - summarizeResults() — structured summary string
  */
 import { env } from '@/lib/env';
+import { EMAIL_TRIAGE_MODEL } from '@/lib/ai/constants';
 import { correlate } from './correlate';
 import { createLogger } from '@/lib/logger';
 import { redactPiiString } from '@/lib/sanitize-pii';
@@ -42,7 +43,7 @@ const log = createLogger('email-triage');
 
 // ─── Defaults ────────────────────────────────────────────────────────────
 
-const DEFAULT_MODEL = 'gemini-2.5-flash';
+const DEFAULT_MODEL = EMAIL_TRIAGE_MODEL;
 const MAX_CONCURRENCY = 3;
 
 // ─── Exported Types ──────────────────────────────────────────────────────

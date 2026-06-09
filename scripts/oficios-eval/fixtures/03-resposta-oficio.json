@@ -1,0 +1,14 @@
+{
+  "id": "03-resposta-oficio",
+  "description": "Resposta a ofício recebido — deve referenciar o ofício de origem e ter desenvolvimento argumentativo (>=3 parágrafos, numerados).",
+  "expect": { "pronoun": "senhoria" },
+  "input": {
+    "recipient": "Departamento de Administração",
+    "recipientRole": "Diretor de Administração",
+    "subject": "Resposta ao Ofício nº 012/2026/CGP",
+    "itamaratySector": "Diretoria de Administração",
+    "signatory": "Carlos Mendes",
+    "signatoryRole": "Diretor Jurídico da ASOF",
+    "instruction": "Responder ao Ofício nº 012/2026/CGP, esclarecendo que a ASOF acompanha o tema, apresentando os fundamentos da posição da entidade e propondo uma reunião técnica para alinhamento. O texto deve ser detalhado, com contexto, fundamentação e conclusão."
+  }
+}

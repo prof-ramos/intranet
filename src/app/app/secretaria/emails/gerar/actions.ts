@@ -2,6 +2,7 @@
 
 import { defineServerAction } from '@/lib/server-actions/define-form-action';
 import { generateEmailContent } from '@/lib/ai/gemini';
+import { GeminiError } from '@/lib/ai/errors';
 import { isGeminiConfigured } from '@/lib/ai/settings';
 import { ALLOWED_EMAIL_TYPES, type EmailType } from '@/lib/ai/constants';
 import { toSafeErrorLog } from '@/lib/error-log';
@@ -44,6 +45,9 @@ const _generateEmailAction = defineServerAction({
       return { success: true, subject, html };
     } catch (error) {
       logger.error('Failed to generate email', { error: toSafeErrorLog(error) }, error instanceof Error ? error : undefined);
+      if (error instanceof GeminiError) {
+        return { success: false, error: error.message };
+      }
       return { success: false, error: 'Falha ao gerar e-mail.' };
     }
   },

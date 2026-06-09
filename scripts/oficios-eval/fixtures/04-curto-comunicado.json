@@ -1,0 +1,14 @@
+{
+  "id": "04-curto-comunicado",
+  "description": "Comunicado curto (1-2 parágrafos) — não deve numerar parágrafos nem usar fórmulas proibidas.",
+  "expect": { "pronoun": "senhoria" },
+  "input": {
+    "recipient": "Chefe de Gabinete",
+    "recipientRole": "Chefe de Gabinete",
+    "subject": "Indicação de representante",
+    "itamaratySector": "Gabinete",
+    "signatory": "Ana Lima",
+    "signatoryRole": "Secretária Executiva da ASOF",
+    "instruction": "Comunicar, de forma breve, a indicação de um representante da ASOF para participar do grupo de trabalho mencionado, colocando-se à disposição."
+  }
+}

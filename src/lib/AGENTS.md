@@ -4,6 +4,7 @@
 # lib
 
 ## Purpose
+
 Domain library modules for business logic, data access, and DB schema. All modules follow service/repository/queries patterns. Authenticated intranet users have full operational PII visibility. Prefer ciphertext + hash storage for new write paths when supported; legacy/import plaintext is an accepted operational risk. Plaintext is never logged.
 
 ## Key Files
@@ -50,6 +51,7 @@ Domain library modules for business logic, data access, and DB schema. All modul
 ## For AI Agents
 
 ### Working In This Directory
+
 - Use `createLogger('module-name')` for structured logging — never use console.*
 - All domain modules follow service/repository/queries pattern
 - Use `db.transaction()` for multi-table writes
@@ -58,10 +60,12 @@ Domain library modules for business logic, data access, and DB schema. All modul
 - Plaintext is never logged or printed.
 
 ### Testing Requirements
+
 - `npm run test` runs Vitest unit tests
 - `npm run test:db` validates schema contract
 
 ### Common Patterns
+
 - Drizzle schema files in `db/schema/` — one schema file per domain
 - Barrel exports via `index.ts` per subdirectory
 - Zod schemas for form validation in `validation/`
@@ -69,9 +73,11 @@ Domain library modules for business logic, data access, and DB schema. All modul
 ## Dependencies
 
 ### Internal
+
 - `../AGENTS.md` — Parent project documentation
 
 ### External
+
 - `drizzle-orm` — Database ORM and schema
 - `zod` — Schema validation
 - `viem` / `ws` — Ethereum/wallet integrations (in `crypto/`)

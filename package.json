@@ -29,6 +29,8 @@
     "smoke:prod": "playwright test --config=playwright.smoke.config.ts",
     "test:metrics": "tsx scripts/test-metrics/summary.ts",
     "test:metrics:clean": "rm -rf .test-metrics",
+    "eval:oficios": "tsx scripts/oficios-eval/run.ts",
+    "eval:oficios:diff": "tsx scripts/oficios-eval/compare.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/guarded-migrate.ts",
     "db:migrate:unsafe": "drizzle-kit migrate",

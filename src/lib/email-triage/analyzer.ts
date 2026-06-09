@@ -6,6 +6,7 @@
  */
 
 import { createLogger } from '@/lib/logger';
+import { EMAIL_TRIAGE_MODEL } from '@/lib/ai/constants';
 import { SYSTEM_PROMPT } from './system-prompt';
 import {
   emailTriageResultSchema,
@@ -19,7 +20,7 @@ const log = createLogger('email-triage/analyzer');
 const ANALYSIS_EXCERPT_LIMIT = 4000;
 const PERSISTED_EXCERPT_LIMIT = 500;
 const GEMINI_TIMEOUT_MS = 30_000;
-const DEFAULT_MODEL = 'gemini-2.5-flash';
+const DEFAULT_MODEL = EMAIL_TRIAGE_MODEL;
 
 const EMAIL_RE = /\b[\w.+-]+@[\w-]+(?:\.[\w-]+)+\b/g;
 const CPF_RE = /\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g;
