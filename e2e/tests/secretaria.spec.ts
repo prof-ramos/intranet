@@ -6,7 +6,7 @@ test.describe('Secretaria — Ofícios', () => {
     await page.goto('/app/secretaria/oficios');
     await expect(page.locator('h1')).toContainText('Ofícios');
     await expect(page.locator('table')).toContainText('Ofício nº 001/2026-ASOF');
-    await expect(page.locator('table')).toContainText('OFÍCIO No 002/2026/ASOF');
+    await expect(page.locator('table')).toContainText('Ofício nº 002/2026-ASOF');
     await expect(page.locator('table')).toContainText('Ministro das Relações Exteriores');
     await expect(page.locator('table')).toContainText('Secretário-Geral');
   });
