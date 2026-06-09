@@ -9,7 +9,7 @@ export function LogoutButton() {
     <>
       <button
         type="button"
-        className="flex items-center gap-2 text-sm text-white/50 transition-colors duration-150 hover:text-white"
+        className="flex items-center gap-2 rounded-[4px] text-sm text-white/50 transition-colors duration-150 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:ring-offset-[#06284f]"
         onClick={() => {
           const dialog = document.getElementById('logout-modal') as HTMLDialogElement;
           dialog?.showModal();
