@@ -17,7 +17,8 @@ export function encryptWebhookSecret(secret: string): string {
 
 export function decryptWebhookSecret(secretCiphertext: string): string {
   // F-002 fix: Reject plaintext secrets that lack an encryption prefix.
-  if (!secretCiphertext.startsWith(V1_PREFIX) && !secretCiphertext.startsWith(V2_PREFIX)) {
+  const hasValidPrefix = secretCiphertext.startsWith(V1_PREFIX) || secretCiphertext.startsWith(V2_PREFIX);
+  if (!hasValidPrefix) {
     throw new Error(
       'Webhook secret is not encrypted. All webhook secrets must be stored with an encryption prefix (enc:v1: or enc:v2:). ' +
         'Run the migration to re-encrypt plaintext secrets before dispatching webhooks.',
