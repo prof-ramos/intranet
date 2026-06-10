@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomInt } from 'node:crypto';
 import { eq, and, gt, lt, isNull, ne, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
@@ -118,7 +118,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
 
   // Timing-safe: se admin não existe ou está inativo, espera o floor e retorna sem erro
   if (!admin || !admin.isActive) {
-    const jitter = Math.floor(Math.random() * 150) + 50;
+    const jitter = randomInt(50, 200);
     const elapsed = Date.now() - startTime;
     const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed + jitter);
     await new Promise((resolve) => setTimeout(resolve, wait));
@@ -209,7 +209,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
   );
 
   // Timing-safe: espera até completar o floor + jitter para manter consistência
-  const jitter = Math.floor(Math.random() * 150) + 50;
+  const jitter = randomInt(50, 200);
   const elapsed = Date.now() - startTime;
   const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed + jitter);
   await new Promise((resolve) => setTimeout(resolve, wait));
