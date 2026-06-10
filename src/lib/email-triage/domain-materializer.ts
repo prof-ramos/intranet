@@ -22,14 +22,20 @@ async function identifyLawyerId(
   advogadoEmail: string | null,
   sender: string,
 ): Promise<number | null> {
-  for (const raw of [advogadoEmail, sender].filter(Boolean) as string[]) {
-    const email = extractBareEmail(raw);
-    const [row] = await db
-      .select({ id: lawyers.id })
-      .from(lawyers)
-      .where(eq(lawyers.email, email))
-      .limit(1);
-    if (row) return row.id;
+  const candidates = [advogadoEmail, sender].filter(Boolean) as string[];
+  if (candidates.length === 0) return null;
+
+  const emails = candidates.map(extractBareEmail);
+  const rows = await db
+    .select({ id: lawyers.id, email: lawyers.email })
+    .from(lawyers)
+    .where(inArray(lawyers.email, emails));
+
+  if (rows.length === 0) return null;
+
+  for (const email of emails) {
+    const match = rows.find((r) => r.email.toLowerCase() === email.toLowerCase());
+    if (match) return match.id;
   }
   return null;
 }
