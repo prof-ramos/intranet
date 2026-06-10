@@ -57,6 +57,7 @@ vi.mock('@/lib/integrations/outbox', () => ({
 
 vi.mock('@/lib/notifications/repository', () => ({
   createNotification: vi.fn(),
+  createNotificationsBatch: vi.fn(),
 }));
 
 const BASE_EVENT: AssinafyWebhookEvent = {
@@ -193,52 +194,53 @@ describe('assinafy/service', () => {
     });
 
     it('creates notifications for all active admins', async () => {
-      const { createNotification } = await import('@/lib/notifications/repository');
+      const { createNotificationsBatch } = await import('@/lib/notifications/repository');
       mockAdminQueryResult.current = [{ id: 5 }, { id: 7 }];
 
       await handleWebhookEvent(BASE_EVENT);
 
-      expect(createNotification).toHaveBeenCalledTimes(2);
-      expect(createNotification).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: 5,
-          actorId: null,
-          type: 'oficio.status_changed',
-          title: 'Status do ofício alterado',
-          dedupeKey: 'oficio.status_changed:1:partially_signed',
-          entityType: 'oficio',
-          entityId: 1,
-        }),
-        expect.anything(),
-      );
-      expect(createNotification).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: 7,
-          actorId: null,
-          dedupeKey: 'oficio.status_changed:1:partially_signed',
-        }),
+      expect(createNotificationsBatch).toHaveBeenCalledTimes(1);
+      expect(createNotificationsBatch).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            userId: 5,
+            actorId: null,
+            type: 'oficio.status_changed',
+            title: 'Status do ofício alterado',
+            dedupeKey: 'oficio.status_changed:1:partially_signed',
+            entityType: 'oficio',
+            entityId: 1,
+          }),
+          expect.objectContaining({
+            userId: 7,
+            actorId: null,
+            dedupeKey: 'oficio.status_changed:1:partially_signed',
+          }),
+        ]),
         expect.anything(),
       );
     });
 
     it('includes dedupeKey in notification to prevent duplicates', async () => {
-      const { createNotification } = await import('@/lib/notifications/repository');
+      const { createNotificationsBatch } = await import('@/lib/notifications/repository');
       mockAdminQueryResult.current = [{ id: 5 }];
 
       await handleWebhookEvent(BASE_EVENT);
 
-      expect(createNotification).toHaveBeenCalledWith(
-        expect.objectContaining({
-          dedupeKey: 'oficio.status_changed:1:partially_signed',
-        }),
+      expect(createNotificationsBatch).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            dedupeKey: 'oficio.status_changed:1:partially_signed',
+          })
+        ]),
         expect.anything(),
       );
     });
 
     it('returns null when transaction fails (e.g. notification creation error)', async () => {
-      const { createNotification } = await import('@/lib/notifications/repository');
+      const { createNotificationsBatch } = await import('@/lib/notifications/repository');
       mockAdminQueryResult.current = [{ id: 5 }];
-      vi.mocked(createNotification).mockRejectedValueOnce(new Error('DB insert failed'));
+      vi.mocked(createNotificationsBatch).mockRejectedValueOnce(new Error('DB insert failed'));
 
       const result = await handleWebhookEvent(BASE_EVENT);
 

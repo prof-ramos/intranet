@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { logAuditAction } from '@/lib/audit/service';
 import { createLogger } from '@/lib/logger';
-import { createNotification } from '@/lib/notifications/repository';
+import { createNotificationsBatch } from '@/lib/notifications/repository';
 import { admins } from '@/lib/db/schema';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import type { AssinafyWebhookEvent } from './types';
@@ -110,22 +110,21 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
         .from(admins)
         .where(eq(admins.isActive, true));
 
-      for (const admin of activeAdmins) {
-        await createNotification(
-          {
-            userId: admin.id,
-            actorId: null,
-            type: 'oficio.status_changed',
-            title: 'Status do ofício alterado',
-            message: `O ofício ${oficio.number} (${oficio.recipient}) teve o status alterado para ${mappedStatus}.`,
-            href: `/app/secretaria/oficios/${oficio.id}`,
-            entityType: 'oficio',
-            entityId: oficio.id,
-            metadata: { previousStatus, newStatus: mappedStatus, documentId },
-            dedupeKey: `oficio.status_changed:${oficio.id}:${mappedStatus}`,
-          },
-          tx,
-        );
+      if (activeAdmins.length > 0) {
+        const notifications = activeAdmins.map(admin => ({
+          userId: admin.id,
+          actorId: null,
+          type: 'oficio.status_changed' as const,
+          title: 'Status do ofício alterado',
+          message: `O ofício ${oficio.number} (${oficio.recipient}) teve o status alterado para ${mappedStatus}.`,
+          href: `/app/secretaria/oficios/${oficio.id}`,
+          entityType: 'oficio' as const,
+          entityId: oficio.id,
+          metadata: { previousStatus, newStatus: mappedStatus, documentId },
+          dedupeKey: `oficio.status_changed:${oficio.id}:${mappedStatus}`,
+        }));
+
+        await createNotificationsBatch(notifications, tx);
       }
 
       return updated;

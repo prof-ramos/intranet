@@ -58,6 +58,21 @@ export async function createNotification(input: NewNotification, tx: Notificatio
   return existing ?? null;
 }
 
+export async function createNotificationsBatch(inputs: NewNotification[], tx: NotificationsTx = db) {
+  if (inputs.length === 0) return [];
+
+  const created = await tx
+    .insert(notifications)
+    .values(inputs)
+    .onConflictDoNothing({
+      target: [notifications.userId, notifications.dedupeKey],
+      where: sql`${notifications.dedupeKey} is not null`,
+    })
+    .returning();
+
+  return created;
+}
+
 export async function listNotificationsForUser(
   userId: number,
   limit = 20,
