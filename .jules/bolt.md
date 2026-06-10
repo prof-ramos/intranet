@@ -1,15 +1,5 @@
-## 2026-06-04 - Memoization in Kanban boards
-**Learning:** In highly interactive components like drag-and-drop Kanban boards, re-rendering every item during an interaction causes severe CPU usage. React's default behavior is to re-render all children when a parent state changes.
-**Action:** Use `React.memo` on individual card and avatar components within the board list so that only the items actually changing state or position are re-rendered, reducing layout thrashing and improving drag fluidity.
+## 2026-06-10 - Resolving N+1 Database Queries
 
-## 2026-06-05 - useMemo in Selectors/Dropdowns
-**Learning:** Dropdowns or pickers that filter lists based on queries often trigger re-renders even when the query doesn't change (e.g. toggling the dropdown state). Doing array operations on every render like `.filter().slice()` causes unnecessary CPU cycles, specially if the list might grow.
-**Action:** Use `useMemo` on list filtering operations inside components that contain internal state (like dropdowns) to prevent the derived data from being recalculated during unrelated state updates.
-## 2026-06-07 - Optimizing AtividadesBoard with Memoization
+**Learning:** When executing multiple independent actions in a loop, sequential database calls create a significant performance bottleneck (N+1 problem). Calling asynchronous DB-backed services sequentially causes cumulative IO latency.
 
-**Learning:** Unmemoized complex components like `FilterBar`, `SummaryStrip`, and `QuickAdd` in the `AtividadesBoard` cause unnecessary re-renders when the parent's state changes (like when typing in an input field or dragging a board item). This affects the responsiveness of the app, especially as the number of items and interactions grows.
-
-**Action:** Wrap these components with `React.memo` and ensure that the callbacks passed to them from `AtividadesBoard` are stabilized using `useCallback`. This prevents the components from re-rendering unless their props change. Use memoization selectively for expensive sub-components.
-## 2026-06-08 - useCallback in Board Preferences
-**Learning:** Exporting unmemoized state setters from a custom hook like `useBoardPreferences` causes downstream components wrapped in `React.memo` (e.g., `FilterBar`) to re-render unnecessarily on every state change because the setter function references change.
-**Action:** Use `useCallback` when returning state setters from custom hooks to maintain referential equality, ensuring that `React.memo` optimizations in child components work effectively and prevent layout thrashing during interactions.
+**Action:** Whenever looping over operations that do not depend on the previous iterations, hoist shared operations (like caching static user IDs) out of the loop. Map the collection to promises and use `Promise.all` or `Promise.allSettled` (with proper error boundaries to replicate independent execution contexts) to allow concurrent I/O.

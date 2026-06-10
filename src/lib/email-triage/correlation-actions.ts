@@ -13,15 +13,38 @@ const log = createLogger('correlation-actions');
  * so we do not call it separately here.
  */
 export async function applyCorrelationActions(actions: CorrelationAction[]): Promise<void> {
-  for (const action of actions) {
+  const hasInsertNote = actions.some((action) => action.type === 'insert_note');
+  let botUserId: number | undefined;
+
+  if (hasInsertNote) {
+    try {
+      botUserId = await resolveSystemBotUser();
+    } catch (err) {
+      log.warn(
+        'Failed to resolve system bot user (non-fatal, skipping notes).',
+        {},
+        err instanceof Error ? err : undefined,
+      );
+      // We can't insert notes without the bot user.
+      // Other action types would still process, but right now insert_note is the only one.
+      // The original code failed per-note if resolveSystemBotUser threw,
+      // we just skip the note inserts instead.
+    }
+  }
+
+  const promises = actions.map(async (action) => {
     if (action.type === 'insert_note') {
+      if (botUserId === undefined) {
+        return; // Bot user resolution failed; we logged it and skip safely
+      }
+
       try {
-        const botUserId = await resolveSystemBotUser();
         await addNoteService({
           entityType: 'consultation',
           entityId: action.consultationId,
           content: action.content,
-          createdBy: botUserId,
+          // Safe cast because we've checked for undefined above
+          createdBy: botUserId as number,
           isEscritorioResponse: false,
         });
         log.info('Nota criada por correlacao de triagem.', { consultationId: action.consultationId });
@@ -35,5 +58,7 @@ export async function applyCorrelationActions(actions: CorrelationAction[]): Pro
     } else {
       log.info('Correlacao ignorada.', { reason: action.reason });
     }
-  }
+  });
+
+  await Promise.all(promises);
 }
