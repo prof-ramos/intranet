@@ -243,7 +243,7 @@ export async function* generateEmailContentStream(params: {
 
   const ai = await getGeminiClient();
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let accumulated = '';
 
   try {
@@ -260,6 +260,8 @@ export async function* generateEmailContentStream(params: {
     });
 
     for await (const chunk of result) {
+      clearTimeout(timer);
+      timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
       if (chunk.text) {
         accumulated += chunk.text;
         yield chunk.text;
