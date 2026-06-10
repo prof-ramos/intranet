@@ -23,7 +23,6 @@ const MAX_WEBHOOK_ATTEMPTS = 5;
 const RESPONSE_EXCERPT_LIMIT = 500;
 const WEBHOOK_TIMEOUT_MS = 10_000;
 
-type DispatchDomainEventResult = Awaited<ReturnType<typeof dispatchDomainEventById>>;
 type DomainEventForDispatch = NonNullable<Awaited<ReturnType<typeof getDomainEventById>>>;
 
 function buildWebhookBody(event: Awaited<ReturnType<typeof getDomainEventById>>) {
@@ -336,14 +335,9 @@ export async function dispatchPendingDomainEvents(limit = 20) {
   // Atomically lock and claim dispatchable events using FOR UPDATE SKIP LOCKED
   // so concurrent dispatchers do not double-process the same events.
   const pendingEvents = await lockAndFetchDispatchableEvents(limit);
-  const results: DispatchDomainEventResult[] = [];
-
-  for (const event of pendingEvents) {
-    // F-006: dispatch already-claimed events directly to avoid the double-claim bug.
-    // Previously this called dispatchDomainEventById(event.id), which tried to
-    // re-claim the already-'processing' event and always returned 'not_dispatchable'.
-    results.push(await dispatchClaimedEvent(event));
-  }
+  const results = await Promise.all(
+    pendingEvents.map((event) => dispatchClaimedEvent(event))
+  );
 
   return {
     processed: pendingEvents.length,
