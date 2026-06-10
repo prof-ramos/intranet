@@ -28,7 +28,7 @@ describe('useNotifications', () => {
         notifications: [
           { id: '1', title: 'Test 1', createdAt: '2026-05-17T10:00:00.000Z' },
         ],
-      } as any);
+      } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
 
       const { result } = renderHook(() => useNotifications({ userId: 1 }));
 
@@ -44,7 +44,7 @@ describe('useNotifications', () => {
           { id: '1', title: 'Test 1', createdAt: '2026-05-17T10:00:00.000Z' },
           { id: '2', title: 'Test 2', createdAt: '2026-05-17T11:00:00.000Z' },
         ],
-      } as any);
+      } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
 
       await act(async () => {
         await result.current.refresh();
@@ -57,7 +57,7 @@ describe('useNotifications', () => {
 
     it('sets error state when loadNotifications throws in refresh', async () => {
       // First, let the initial load succeed or fail so we can test just refresh
-      vi.mocked(listNotificationsAction).mockResolvedValueOnce({ notifications: [] } as any);
+      vi.mocked(listNotificationsAction).mockResolvedValueOnce({ notifications: [] } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
 
       const { result } = renderHook(() => useNotifications({ userId: 1 }));
 
