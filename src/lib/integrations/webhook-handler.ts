@@ -1,3 +1,5 @@
+import { safeCompare } from '@/lib/crypto/safe-compare';
+
 type WebhookAuthResult<TAuth> = { ok: true; context: TAuth } | { ok: false; response: Response };
 
 export interface WebhookHandlerOptions<TPayload, TAuth = undefined> {
@@ -71,7 +73,7 @@ export function requireSecretHeader(options: {
   }
 
   const providedSecret = options.request.headers.get(options.headerName);
-  if (!providedSecret || providedSecret !== options.secret) {
+  if (!providedSecret || !safeCompare(options.secret, providedSecret)) {
     return {
       ok: false,
       response:
