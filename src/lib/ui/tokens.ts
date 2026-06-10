@@ -85,7 +85,9 @@ export const successText = '#15803d';
 export const progressBg = surfaceMuted;
 export const progressFg = navy;
 
-export const infoNotice = {
+export const // Dummy
+infoNotice = {
+  border: "#93c5fd",
   border: '#93c5fd',
   bg: infoBg,
   iconBg: info,
