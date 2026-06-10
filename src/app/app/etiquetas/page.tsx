@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LABEL_PRESETS } from '@/lib/labels/presets';
 import { LabelItem } from '@/lib/labels/types';
+import { fetchAssociatesForLabels } from './actions';
+import { Search } from 'lucide-react';
 
 export default function EtiquetasPage() {
   const [presetId, setPresetId] = useState('pimaco-a4054-approx');
@@ -11,30 +13,72 @@ export default function EtiquetasPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Todo: Integrar com a lista real de associados ou seleções da tabela
-  const [testData, setTestData] = useState(
-    'Associação Nacional\nRua Exemplo 123\nCEP 00000-000\nBrasília, DF\n---\nFulano de Tal\nMinistério das Relações Exteriores\nEsplanada dos Ministérios'
-  );
+  const [searchQuery, setSearchQuery] = useState('');
+  const [associates, setAssociates] = useState<LabelItem[]>([]);
+  const [selectedAssociatesMap, setSelectedAssociatesMap] = useState<Map<string, LabelItem>>(new Map());
+  const [isLoadingAssociates, setIsLoadingAssociates] = useState(false);
 
   const presetsList = Object.values(LABEL_PRESETS);
+
+  useEffect(() => {
+    const fetchAssociates = async () => {
+      setIsLoadingAssociates(true);
+      try {
+        const data = await fetchAssociatesForLabels(searchQuery);
+        setAssociates(data);
+      } catch (err) {
+        console.error('Error fetching associates:', err);
+      } finally {
+        setIsLoadingAssociates(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(() => {
+      fetchAssociates();
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
+
+  const handleToggleSelect = (associate: LabelItem) => {
+    const newMap = new Map(selectedAssociatesMap);
+    if (newMap.has(associate.id)) {
+      newMap.delete(associate.id);
+    } else {
+      newMap.set(associate.id, associate);
+    }
+    setSelectedAssociatesMap(newMap);
+  };
+
+  const handleSelectAll = () => {
+    // Check if all currently visible associates are already selected
+    const allVisibleSelected = associates.every((a) => selectedAssociatesMap.has(a.id));
+
+    const newMap = new Map(selectedAssociatesMap);
+
+    if (allVisibleSelected) {
+      // Deselect all visible
+      associates.forEach((a) => newMap.delete(a.id));
+    } else {
+      // Select all visible
+      associates.forEach((a) => newMap.set(a.id, a));
+    }
+
+    setSelectedAssociatesMap(newMap);
+  };
 
   const handleGenerate = async () => {
     setLoading(true);
     setError(null);
 
+    if (selectedAssociatesMap.size === 0) {
+      setError('Selecione ao menos um associado para gerar as etiquetas.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Parsear dados de teste manuais para itens
-      const blocks = testData.split('---').map((b) => b.trim()).filter(Boolean);
-      const items: LabelItem[] = blocks.map((block, i) => {
-        const lines = block.split('\n').map((l) => l.trim());
-        return {
-          id: String(i),
-          name: lines[0] || '',
-          line1: lines[1] || '',
-          line2: lines[2] || '',
-          line3: lines[3] || '',
-        };
-      });
+      const itemsToPrint = Array.from(selectedAssociatesMap.values());
 
       const response = await fetch('/api/labels/pimaco', {
         method: 'POST',
@@ -43,7 +87,7 @@ export default function EtiquetasPage() {
           presetId,
           startPosition,
           drawDebugGrid,
-          items,
+          items: itemsToPrint,
         }),
       });
 
@@ -116,16 +160,67 @@ export default function EtiquetasPage() {
           <div className="text-xs opacity-70 mt-1">Desenha uma borda vermelha ao redor da área de cada etiqueta para facilitar o alinhamento.</div>
         </div>
 
-        <div>
-          <label className="label font-semibold">
-            Dados para Teste 
-            <span className="text-xs font-normal ml-2 opacity-70">(Separe os blocos com `---`)</span>
-          </label>
-          <textarea 
-            className="textarea textarea-bordered w-full h-48 font-mono text-sm"
-            value={testData}
-            onChange={(e) => setTestData(e.target.value)}
-          />
+        <div className="mt-8 pt-4 border-t border-base-300">
+          <h2 className="text-lg font-semibold mb-4">Selecionar Associados</h2>
+
+          <div className="flex gap-2 items-center mb-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/50" />
+              <input
+                type="text"
+                placeholder="Buscar por nome..."
+                className="input input-bordered w-full pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            {isLoadingAssociates && (
+              <span className="loading loading-spinner loading-sm text-primary"></span>
+            )}
+          </div>
+
+          <div className="flex justify-between items-center mb-2">
+            <button
+              className="btn btn-xs btn-outline"
+              onClick={handleSelectAll}
+              disabled={associates.length === 0}
+            >
+              {associates.length > 0 && associates.every((a) => selectedAssociatesMap.has(a.id)) ? 'Limpar Visíveis' : 'Selecionar Visíveis'}
+            </button>
+            <span className="text-sm font-medium">
+              {selectedAssociatesMap.size} selecionado(s)
+            </span>
+          </div>
+
+          <div className="max-h-64 overflow-y-auto border border-base-300 rounded-lg bg-base-100">
+            {associates.length === 0 && !isLoadingAssociates ? (
+              <div className="p-4 text-center text-sm text-base-content/70">
+                Nenhum associado encontrado.
+              </div>
+            ) : (
+              <ul className="divide-y divide-base-300">
+                {associates.map((associate) => (
+                  <li key={associate.id} className="p-2 hover:bg-base-200 transition-colors flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-sm mt-1"
+                      checked={selectedAssociatesMap.has(associate.id)}
+                      onChange={() => handleToggleSelect(associate)}
+                    />
+                    <div>
+                      <div className="font-medium text-sm">{associate.name}</div>
+                      <div className="text-xs text-base-content/70">
+                        {associate.line1} {associate.line1 && associate.line2 && ' • '} {associate.line2}
+                      </div>
+                      {associate.line3 && (
+                        <div className="text-xs text-base-content/50 mt-0.5">{associate.line3}</div>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
         {error && (
