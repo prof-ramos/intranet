@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { randomInt } from 'node:crypto';
 import { forgotPasswordSchema } from '@/lib/validation/schemas';
 import { requestPasswordReset, RESPONSE_TIME_FLOOR_MS } from '@/lib/auth/password-reset';
 import { firstZodError } from '@/lib/server-actions/utils';
@@ -35,7 +36,7 @@ export async function requestReset(formData: FormData) {
 
   // Garante tempo mínimo de resposta para mitigar timing attack
   const elapsed = Date.now() - startTime;
-  const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed + Math.floor(Math.random() * 150) + 50);
+  const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed + randomInt(50, 200));
   await new Promise((resolve) => setTimeout(resolve, wait));
 
   // Sempre redireciona com mensagem de sucesso (timing-safe)
