@@ -86,7 +86,7 @@ describe('webhook secret encryption', () => {
   // F-002 fix: plaintext secrets are no longer accepted.
   it('rejects plaintext secrets without an encryption prefix', () => {
     expect(() => decryptWebhookSecret('legacy-plaintext-secret')).toThrow(
-      'Webhook secret is not encrypted',
+      'Webhook secret is not encrypted. All webhook secrets must be stored with an encryption prefix (enc:v1: or enc:v2:). Run the migration to re-encrypt plaintext secrets before dispatching webhooks.',
     );
   });
 });
