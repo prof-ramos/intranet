@@ -13,3 +13,7 @@
 ## 2026-06-08 - useCallback in Board Preferences
 **Learning:** Exporting unmemoized state setters from a custom hook like `useBoardPreferences` causes downstream components wrapped in `React.memo` (e.g., `FilterBar`) to re-render unnecessarily on every state change because the setter function references change.
 **Action:** Use `useCallback` when returning state setters from custom hooks to maintain referential equality, ensuring that `React.memo` optimizations in child components work effectively and prevent layout thrashing during interactions.
+
+## 2026-06-10 - Cache Database Lookup in Loop
+**Learning:** Calling an external dependency or database within a loop can drastically reduce performance if the value does not change within that loop execution scope. In standalone benchmarking scripts, attempting to mutate ES module exports (e.g., `systemUsers.resolveSystemBotUser = ...`) will throw a `TypeError` due to read-only getters.
+**Action:** When the value is static across iterations, either fetch the value prior to the loop, or initialize it lazily and cache it in a local variable outside the loop. Use `vitest` and `vi.mock()` for benchmarking rather than trying to dynamically mock ES module imports in a raw `.ts` script.

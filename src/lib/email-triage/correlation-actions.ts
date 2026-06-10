@@ -13,10 +13,15 @@ const log = createLogger('correlation-actions');
  * so we do not call it separately here.
  */
 export async function applyCorrelationActions(actions: CorrelationAction[]): Promise<void> {
+  let botUserId: number | undefined;
+
   for (const action of actions) {
     if (action.type === 'insert_note') {
       try {
-        const botUserId = await resolveSystemBotUser();
+        if (botUserId === undefined) {
+          botUserId = await resolveSystemBotUser();
+        }
+
         await addNoteService({
           entityType: 'consultation',
           entityId: action.consultationId,
