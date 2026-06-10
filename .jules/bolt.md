@@ -13,3 +13,7 @@
 ## 2026-06-08 - useCallback in Board Preferences
 **Learning:** Exporting unmemoized state setters from a custom hook like `useBoardPreferences` causes downstream components wrapped in `React.memo` (e.g., `FilterBar`) to re-render unnecessarily on every state change because the setter function references change.
 **Action:** Use `useCallback` when returning state setters from custom hooks to maintain referential equality, ensuring that `React.memo` optimizations in child components work effectively and prevent layout thrashing during interactions.
+
+## 2026-06-10 - Drizzle ORM Select Chain Mocking with Limit
+**Learning:** When writing tests that mock Drizzle ORM query chains that end in `.limit()`, ensuring they can also be awaited directly (like `.where(inArray(...))`) is tricky because returning `{ limit: vi.fn() }` prevents the Promise from resolving immediately.
+**Action:** Use `Object.assign(Promise.resolve(rows), { limit: vi.fn().mockResolvedValue(rows) })` when creating the mock chain. This ensures the mock works interchangeably for queries that immediately await `.where()` and those that chain `.limit()` before awaiting.

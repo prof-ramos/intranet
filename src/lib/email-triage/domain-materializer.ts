@@ -120,7 +120,11 @@ export async function materializarNoDominio(
   try {
     botUserId = await resolveSystemBotUser();
   } catch (err) {
-    log.error('Cannot materialize: system bot user unavailable.', { triageId }, err instanceof Error ? err : undefined);
+    log.error(
+      'Cannot materialize: system bot user unavailable.',
+      { triageId },
+      err instanceof Error ? err : undefined,
+    );
     return;
   }
 
@@ -128,7 +132,10 @@ export async function materializarNoDominio(
   const lawyerId = await identifyLawyerId(result.advogado_email, payload.sender).catch(() => null);
 
   // 2. Find associate via correlation context (sender may be Gabriel when forwarding)
-  const context = await buildCorrelationContext(payload).catch(() => ({ associate: null, consultations: [] as { id: number }[] }));
+  const context = await buildCorrelationContext(payload).catch(() => ({
+    associate: null,
+    consultations: [] as { id: number }[],
+  }));
   const associateId = context.associate?.id ?? null;
 
   const receivedAt = new Date(payload.received_at);
@@ -168,7 +175,11 @@ export async function materializarNoDominio(
       log.info('Created new consultation from email.', { triageId, consultationId });
     }
   } catch (err) {
-    log.warn('Failed to find/create consultation (non-fatal).', { triageId }, err instanceof Error ? err : undefined);
+    log.warn(
+      'Failed to find/create consultation (non-fatal).',
+      { triageId },
+      err instanceof Error ? err : undefined,
+    );
   }
 
   // 4. Create Atividade — only for NEW consultations; follow-up emails on existing
@@ -192,7 +203,11 @@ export async function materializarNoDominio(
         createdBy: botUserId,
       });
     } catch (err) {
-      log.warn('Failed to create activity for email (non-fatal).', { triageId }, err instanceof Error ? err : undefined);
+      log.warn(
+        'Failed to create activity for email (non-fatal).',
+        { triageId },
+        err instanceof Error ? err : undefined,
+      );
     }
   }
 
@@ -204,7 +219,11 @@ export async function materializarNoDominio(
         .set({ consultationId, lawyerId })
         .where(eq(emailTriagens.id, triageId));
     } catch (err) {
-      log.warn('Failed to link triage to consultation (non-fatal).', { triageId }, err instanceof Error ? err : undefined);
+      log.warn(
+        'Failed to link triage to consultation (non-fatal).',
+        { triageId },
+        err instanceof Error ? err : undefined,
+      );
     }
   }
 }
