@@ -1,5 +1,27 @@
-import { describe, it, expect } from 'vitest';
-import { getHeader, type GmailMessage } from './gmail';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { getHeader, getGmailAccessToken, type GmailMessage } from './gmail';
+
+describe('getGmailAccessToken', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it('throws an error if required environment variables are missing', async () => {
+    delete process.env.GMAIL_CLIENT_ID;
+    delete process.env.GMAIL_CLIENT_SECRET;
+    delete process.env.GMAIL_REFRESH_TOKEN;
+
+    await expect(getGmailAccessToken()).rejects.toThrow(
+      'Credenciais Gmail não configuradas. Verifique GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET e GMAIL_REFRESH_TOKEN.'
+    );
+  });
+});
 
 describe('getHeader', () => {
   it('extracts header value by name', () => {
