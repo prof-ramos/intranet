@@ -378,4 +378,168 @@ describe('processEmail', () => {
 
     expect(mockPersistFailure).toHaveBeenCalled();
   });
+
+  it('returns error when text extraction fails', async () => {
+    const gmailMessage = {
+      id: 'msg-extr-fail',
+      threadId: 'thread-999',
+      historyId: 'hist-111',
+      payload: { headers: [], body: { data: '' } },
+    };
+
+    mockGetMessage.mockResolvedValue(gmailMessage);
+    mockExtractTextAndAttachments.mockImplementation(() => {
+      throw new Error('Extraction error');
+    });
+
+    const result = await processEmail('fake-token', 'msg-extr-fail');
+
+    expect(result).toMatchObject({
+      success: false,
+      messageId: 'msg-extr-fail',
+      error: expect.stringContaining('Extraction failed: Extraction error'),
+    });
+  });
+
+  it('returns error when DB persist fails', async () => {
+    const gmailMessage = {
+      id: 'msg-persist-fail',
+      threadId: 'thread-999',
+      historyId: 'hist-111',
+      payload: { headers: [], body: { data: '' } },
+    };
+
+    mockGetMessage.mockResolvedValue(gmailMessage);
+    mockExtractTextAndAttachments.mockReturnValue({ text: 'test', attachments: [] });
+    mockAnalyzeEmail.mockResolvedValue({
+      categoria: 'juridico',
+      exige_validacao_humana: false,
+    });
+    mockPersistTriage.mockRejectedValue(new Error('DB connection lost'));
+
+    const result = await processEmail('fake-token', 'msg-persist-fail');
+
+    expect(result).toMatchObject({
+      success: false,
+      messageId: 'msg-persist-fail',
+      error: expect.stringContaining('DB persist failed: DB connection lost'),
+    });
+  });
+
+  it('handles failure when persisting analysis failure to DB', async () => {
+    const gmailMessage = {
+      id: 'msg-double-fail',
+      threadId: 'thread-999',
+      historyId: 'hist-111',
+      payload: { headers: [], body: { data: '' } },
+    };
+
+    mockGetMessage.mockResolvedValue(gmailMessage);
+    mockExtractTextAndAttachments.mockReturnValue({ text: 'test', attachments: [] });
+    mockAnalyzeEmail.mockRejectedValue(new Error('Gemini error'));
+    mockPersistFailure.mockRejectedValue(new Error('DB also down'));
+
+    const result = await processEmail('fake-token', 'msg-double-fail');
+
+    // Should return success: false with original analysis error
+    expect(result).toMatchObject({
+      success: false,
+      messageId: 'msg-double-fail',
+      error: expect.stringContaining('Analysis failed: Gemini error'),
+    });
+
+    expect(mockPersistFailure).toHaveBeenCalled();
+  });
+
+  it('logs warning and continues when correlation engine fails', async () => {
+    const gmailMessage = {
+      id: 'msg-corr-fail',
+      threadId: 'thread-999',
+      historyId: 'hist-111',
+      payload: { headers: [], body: { data: '' } },
+    };
+
+    mockGetMessage.mockResolvedValue(gmailMessage);
+    mockExtractTextAndAttachments.mockReturnValue({ text: 'test', attachments: [] });
+    mockAnalyzeEmail.mockResolvedValue({
+      categoria: 'juridico',
+      exige_validacao_humana: false,
+    });
+    mockPersistTriage.mockResolvedValue(42);
+    // materializarNoDominio succeeds
+    mockBuildCorrelationContext.mockRejectedValue(new Error('Correlation timeout'));
+    mockEnsureLabel.mockResolvedValue('label-id-123');
+    mockMarkAsTriaged.mockResolvedValue(undefined);
+
+    const result = await processEmail('fake-token', 'msg-corr-fail');
+
+    // Email still considered success because correlation is non-fatal
+    expect(result).toMatchObject({
+      success: true,
+      messageId: 'msg-corr-fail',
+      categoria: 'juridico',
+    });
+  });
+
+  it('logs warning and continues when marking as triaged fails', async () => {
+    const gmailMessage = {
+      id: 'msg-label-fail',
+      threadId: 'thread-999',
+      historyId: 'hist-111',
+      payload: { headers: [], body: { data: '' } },
+    };
+
+    mockGetMessage.mockResolvedValue(gmailMessage);
+    mockExtractTextAndAttachments.mockReturnValue({ text: 'test', attachments: [] });
+    mockAnalyzeEmail.mockResolvedValue({
+      categoria: 'juridico',
+      exige_validacao_humana: false,
+    });
+    mockPersistTriage.mockResolvedValue(42);
+    mockBuildCorrelationContext.mockResolvedValue({ associate: null, consultations: [] });
+    mockApplyCorrelationActions.mockResolvedValue(undefined);
+    mockEnsureLabel.mockRejectedValue(new Error('Gmail API limit'));
+
+    const result = await processEmail('fake-token', 'msg-label-fail');
+
+    // Email still considered success because labeling is non-fatal
+    expect(result).toMatchObject({
+      success: true,
+      messageId: 'msg-label-fail',
+      categoria: 'juridico',
+    });
+  });
+
+  it('logs warning and continues when materializarNoDominio fails', async () => {
+    const gmailMessage = {
+      id: 'msg-mat-fail',
+      threadId: 'thread-999',
+      historyId: 'hist-111',
+      payload: { headers: [], body: { data: '' } },
+    };
+
+    const { materializarNoDominio } = await import('./domain-materializer');
+
+    mockGetMessage.mockResolvedValue(gmailMessage);
+    mockExtractTextAndAttachments.mockReturnValue({ text: 'test', attachments: [] });
+    mockAnalyzeEmail.mockResolvedValue({
+      categoria: 'juridico',
+      exige_validacao_humana: false,
+    });
+    mockPersistTriage.mockResolvedValue(42);
+    vi.mocked(materializarNoDominio).mockRejectedValueOnce(new Error('Domain materialization error'));
+    mockBuildCorrelationContext.mockResolvedValue({ associate: null, consultations: [] });
+    mockApplyCorrelationActions.mockResolvedValue(undefined);
+    mockEnsureLabel.mockResolvedValue('label-id-123');
+    mockMarkAsTriaged.mockResolvedValue(undefined);
+
+    const result = await processEmail('fake-token', 'msg-mat-fail');
+
+    // Email still considered success because materialization is non-fatal
+    expect(result).toMatchObject({
+      success: true,
+      messageId: 'msg-mat-fail',
+      categoria: 'juridico',
+    });
+  });
 });
