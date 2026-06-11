@@ -83,18 +83,14 @@ export function normalizeNotification(raw: NotificationLike): NotificationItem |
   };
 }
 
-export function sortNotifications(items: NotificationItem[]) {
-  return [...items].sort((left, right) => {
-    return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
-  });
-}
-
 export function upsertNotification(
   current: NotificationItem[],
   nextItem: NotificationItem,
 ): NotificationItem[] {
   const withoutCurrent = current.filter((item) => item.id !== nextItem.id);
-  return sortNotifications([nextItem, ...withoutCurrent]);
+  return [nextItem, ...withoutCurrent].sort((left, right) => {
+    return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+  });
 }
 
 export function removeNotificationById(
@@ -122,7 +118,10 @@ export function extractNotifications(
     ? payload
     : (payload.notifications ?? payload.items ?? payload.data ?? []);
 
-  return sortNotifications(
-    rawItems.map(normalizeNotification).filter((item): item is NotificationItem => item !== null),
-  );
+  return rawItems
+    .map(normalizeNotification)
+    .filter((item): item is NotificationItem => item !== null)
+    .sort((left, right) => {
+      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+    });
 }
