@@ -1,16 +1,31 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   redactExcerpt,
   htmlToText,
   buildModelInput,
   buildPersistedExcerpt,
   extractTextAndAttachments,
+  analyzeEmail,
 } from './analyzer';
 import type { EmailPayload, AttachmentSummary } from './schema';
 import redactionInputs from './__fixtures__/redaction-inputs.json';
 import sampleMessage from './__fixtures__/sample-message.json';
 import multipartEmail from './__fixtures__/multipart-email.json';
 import htmlEmail from './__fixtures__/html-email.json';
+
+
+const mockGenerateContent = vi.fn();
+
+vi.mock('@google/genai', () => {
+  return {
+    GoogleGenAI: class {
+      models = {
+        generateContent: mockGenerateContent,
+      };
+    },
+  };
+});
+
 
 // ─── redactExcerpt ────────────────────────────────────────────────────
 
@@ -239,5 +254,67 @@ describe('extractTextAndAttachments', () => {
     expect(result.attachments).toHaveLength(1);
     expect(result.attachments[0].textExcerpt).not.toContain('123.456.789-00');
     expect(result.attachments[0].textExcerpt).toContain('[cpf-redacted]');
+  });
+});
+
+// ─── analyzeEmail ─────────────────────────────────────────────────────
+
+describe('analyzeEmail', () => {
+  const payload: EmailPayload = {
+    message_id: 'msg-123',
+    thread_id: 'thread-456',
+    history_id: '99',
+    received_at: '2026-06-01T10:00:00Z',
+    sender: 'remetente@example.com',
+    original_recipient: 'destinatario@asof.org.br',
+    subject: 'Assunto teste',
+    body_hash: 'sha256-hash',
+    body_excerpt: '[short-body-redacted; sha256 stored]',
+    analysis_excerpt: 'Texto para analise do modelo.',
+    attachments: [],
+  };
+
+  beforeEach(() => {
+    mockGenerateContent.mockClear();
+  });
+
+  it('should parse valid JSON from the model', async () => {
+    mockGenerateContent.mockResolvedValue({
+      text: JSON.stringify({
+        categoria: 'irrelevante',
+        resumo: 'Apenas um teste',
+        ha_prazo: false,
+        nivel_risco: 'baixo',
+        confianca: 'alta',
+        acao_recomendada: 'nenhuma',
+        exige_validacao_humana: false,
+        legal_basis: 'interesse_legitimo',
+        processed_purpose: 'triage',
+      }),
+    });
+
+    const result = await analyzeEmail(payload, 'fake-key');
+    expect(result.categoria).toBe('irrelevante');
+    expect(result.resumo).toBe('Apenas um teste');
+  });
+
+  it('should throw an error on invalid JSON', async () => {
+    mockGenerateContent.mockResolvedValue({ text: 'invalid json' });
+
+    await expect(analyzeEmail(payload, 'fake-key')).rejects.toThrow('Gemini response is not valid JSON');
+  });
+
+  it('should throw an error on invalid schema validation', async () => {
+    mockGenerateContent.mockResolvedValue({ text: '{"categoria": "irrelevante"}' });
+
+    await expect(analyzeEmail(payload, 'fake-key')).rejects.toThrow('Gemini response failed validation');
+  });
+
+  it('should throw an error on API timeout', async () => {
+    // Instead of waiting 30s or mocking timers, we mock the generateContent to throw an error
+    // simulating a timeout or API failure, as both bubble up exactly the same way.
+    mockGenerateContent.mockRejectedValue(new Error('Gemini timed out after 30s'));
+
+    await expect(analyzeEmail(payload, 'fake-key')).rejects.toThrow('Gemini timed out after 30s');
   });
 });
