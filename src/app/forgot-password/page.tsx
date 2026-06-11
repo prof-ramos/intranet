@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { requestReset } from '@/app/forgot-password/actions';
+import { SubmitButton } from '@/app/forgot-password/SubmitButton';
 import {
   dangerText,
   errorBg,
@@ -21,12 +22,17 @@ export default async function ForgotPasswordPage({
   const { error, sent } = await searchParams;
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4" style={{ backgroundColor: navy }}>
+    <main
+      className="flex min-h-screen items-center justify-center px-4"
+      style={{ backgroundColor: navy }}
+    >
       <div className="w-full max-w-sm rounded-[10px] bg-white shadow-xl">
         <div className="flex flex-col gap-6 p-6">
           <div>
             <h1 className="font-serif text-3xl font-bold">ASOF</h1>
-            <p className="text-sm" style={{ color: textMuted }}>Recuperar senha</p>
+            <p className="text-sm" style={{ color: textMuted }}>
+              Recuperar senha
+            </p>
           </div>
 
           {sent ? (
@@ -84,13 +90,7 @@ export default async function ForgotPasswordPage({
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  className={`inline-flex ${mobileTouchTargetClass} w-full items-center justify-center rounded-[8px] px-5 text-sm font-semibold text-white transition-colors`}
-                  style={{ backgroundColor: navy }}
-                >
-                  Enviar link de redefinição
-                </button>
+                <SubmitButton />
               </form>
 
               <Link
