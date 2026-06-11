@@ -62,6 +62,51 @@ describe('change password action', () => {
     expect(mockChangePasswordService).toHaveBeenCalledWith(7, 'Senha-Atual-2026!', 'Senha-Nova-2026!');
   });
 
+  it('redirects back with an error when input validation fails', async () => {
+    const { changePassword } = await import('@/app/change-password/actions');
+
+    await expect(
+      changePassword(buildFormData({ confirmPassword: 'Mismatched-Password!' })),
+    ).rejects.toThrow('NEXT_REDIRECT:/change-password?error=A%20confirma%C3%A7%C3%A3o%20n%C3%A3o%20confere.');
+  });
+
+  it('redirects back with an error when new password lacks required complexity', async () => {
+    const { changePassword } = await import('@/app/change-password/actions');
+
+    await expect(
+      changePassword(buildFormData({ newPassword: 'password123', confirmPassword: 'password123' })),
+    ).rejects.toThrow(
+      'NEXT_REDIRECT:/change-password?error=A%20senha%20deve%20conter%20pelo%20menos%20um%20n%C3%BAmero%20e%20um%20caractere%20especial.',
+    );
+  });
+
+  it('redirects back with an error when the user session lacks an email', async () => {
+    requireAuthMock.mockResolvedValue({
+      userId: 7,
+      role: 'admin',
+      name: 'Admin',
+      mustChangePassword: true,
+      // email is missing
+    });
+
+    const { changePassword } = await import('@/app/change-password/actions');
+
+    await expect(changePassword(buildFormData())).rejects.toThrow(
+      'NEXT_REDIRECT:/change-password?error=Sess%C3%A3o%20inv%C3%A1lida.',
+    );
+  });
+
+  it('redirects back with an error when the admin is not found in the database', async () => {
+    const { AdminNotFoundError } = await import('@/lib/auth/service');
+    mockChangePasswordService.mockRejectedValueOnce(new AdminNotFoundError());
+
+    const { changePassword } = await import('@/app/change-password/actions');
+
+    await expect(changePassword(buildFormData())).rejects.toThrow(
+      'NEXT_REDIRECT:/change-password?error=Sess%C3%A3o%20inv%C3%A1lida.',
+    );
+  });
+
   it('redirects back with an error when the current password is invalid', async () => {
     const { InvalidCurrentPasswordError } = await import('@/lib/auth/service');
     mockChangePasswordService.mockRejectedValueOnce(new InvalidCurrentPasswordError());
