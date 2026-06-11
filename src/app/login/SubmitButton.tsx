@@ -7,6 +7,7 @@ import {
   buttonPrimaryHover,
   mobileTouchTargetClass,
   desktopDenseControlClass,
+  focusRingClass,
 } from '@/lib/ui/tokens';
 import { useState } from 'react';
 
@@ -21,7 +22,7 @@ export function SubmitButton() {
       aria-busy={pending}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`${mobileTouchTargetClass} flex items-center justify-center gap-2 ${desktopDenseControlClass} w-full rounded-[8px] text-sm font-semibold text-white transition-colors disabled:cursor-wait disabled:opacity-80`}
+      className={`${mobileTouchTargetClass} flex items-center justify-center gap-2 ${desktopDenseControlClass} w-full rounded-[8px] text-sm font-semibold text-white transition-colors disabled:cursor-wait disabled:opacity-80 ${focusRingClass}`}
       style={{ backgroundColor: isHovered || pending ? buttonPrimaryHover : buttonPrimaryBg }}
     >
       {pending ? (
