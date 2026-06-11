@@ -126,3 +126,4 @@ test-execpath.js
 
 # Transient PDF/font debug artifacts
 tmp/
+pnpm-lock.yaml
