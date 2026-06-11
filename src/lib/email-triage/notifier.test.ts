@@ -128,6 +128,48 @@ describe('notifyNeedsValidation', () => {
     });
   });
 
+  it('returns error when db.select throws a non-Error object', async () => {
+    const { db } = await import('@/lib/db');
+    const selectMock = vi.mocked(db.select);
+    selectMock.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockRejectedValue('String error from DB'),
+      }),
+    } as any);
+
+    const result = await notifyNeedsValidation(mockTriageResult, 42, mockPayload);
+
+    expect(result).toMatchObject({
+      ok: false,
+      error: 'String error from DB',
+    });
+  });
+
+  it('returns error when createNotificationFromEvent throws a non-Error object', async () => {
+    const { createNotificationFromEvent } = await import('@/lib/notifications/service');
+    const { db } = await import('@/lib/db');
+    const { resolveSystemBotUser } = await import('@/lib/system-users');
+
+    vi.mocked(resolveSystemBotUser).mockResolvedValue(99);
+    vi.mocked(db.select).mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([{ id: 1 }]),
+      }),
+    } as any);
+
+    // Mock createNotificationFromEvent to throw a non-Error (string)
+    vi.mocked(createNotificationFromEvent).mockImplementation(() => {
+        throw 'String error from notification service';
+    });
+
+    const result = await notifyNeedsValidation(mockTriageResult, 42, mockPayload);
+
+    expect(result).toMatchObject({
+      ok: false,
+      error: 'String error from notification service',
+    });
+  });
+
   it('returns error when resolveSystemBotUser throws', async () => {
     const { resolveSystemBotUser } = await import('@/lib/system-users');
     vi.mocked(resolveSystemBotUser).mockRejectedValue(new Error('Bot user not found'));
