@@ -224,6 +224,30 @@ describe('dispatchDomainEventById', () => {
       mockTx,
     );
   });
+
+  it('fails dispatch when webhook target URL fails SSRF validation', async () => {
+    mockListActiveWebhookSubscriptionsForEvent.mockResolvedValue([
+      {
+        id: 5,
+        targetUrl: 'http://127.0.0.1:8080/webhook',
+        secretCiphertext: 'enc:v1:test',
+      },
+    ]);
+    mockListWebhookDeliveriesForEvent.mockResolvedValue([]);
+
+    const result = await dispatchDomainEventById(99);
+
+    expect(result).toMatchObject({ dispatched: true, results: ['failed'] });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(mockInsertWebhookDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'failed',
+        failureReason: 'Webhook target URL failed security validation: http://127.0.0.1:8080/webhook',
+        failedAt: expect.any(Date),
+      }),
+      mockTx,
+    );
+  });
 });
 
 describe('dispatchPendingDomainEvents', () => {
