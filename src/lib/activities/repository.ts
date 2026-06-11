@@ -49,11 +49,10 @@ export function mapActivityRowToBoardActivity(activity: ActivityBoardRow): Board
 export async function findActivities(options: { limit?: number; offset?: number } = {}) {
   const limit = Math.min(Math.max(options.limit ?? DEFAULT_ACTIVITY_LIMIT, 1), MAX_ACTIVITY_LIMIT);
   const offset = Math.max(options.offset ?? 0, 0);
-  const priorityOrderSql = sql.raw(
-    Object.entries(PRIORITY_ORDER)
-      .map(([priority, order]) => `when '${priority}' then ${order}`)
-      .join('\n          '),
+  const priorityOrderChunks = Object.entries(PRIORITY_ORDER).map(
+    ([priority, order]) => sql`when ${priority} then ${order}`,
   );
+  const priorityOrderSql = sql.join(priorityOrderChunks, sql` `);
 
   return db
     .select({
