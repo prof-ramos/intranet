@@ -1,5 +1,6 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { headers } from 'next/headers';
 import type { ZodType } from 'zod';
 import { requireRole } from '@/lib/auth/authorization';
@@ -119,6 +120,7 @@ export function defineFormStateAction<TInput, TReturn>(options: {
       if (options.revalidate) applyRevalidate(options.revalidate);
       return output;
     } catch (error) {
+      if (isRedirectError(error)) throw error;
       if (options.onError) return options.onError(error);
       throw error;
     }

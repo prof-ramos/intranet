@@ -45,7 +45,7 @@ async function getGeminiClient(): Promise<GoogleGenAI> {
 }
 
 /** Resolve o modelo a usar, validando seleções explícitas contra a allowlist. */
-function resolveModel(model: string | undefined, fallback: GeminiModel): string {
+export function resolveModel(model: string | undefined, fallback: GeminiModel): string {
   if (!model) return fallback;
   if (!(ALLOWED_MODELS as readonly string[]).includes(model)) {
     throw new GeminiError('Modelo de IA não suportado.');
@@ -58,7 +58,7 @@ function resolveModel(model: string | undefined, fallback: GeminiModel): string 
  * subjacente via AbortSignal (ao contrário de um Promise.race que apenas deixa
  * a chamada órfã rodando até o fim).
  */
-async function runWithAbort<T>(
+export async function runWithAbort<T>(
   task: (signal: AbortSignal) => Promise<T>,
   timeoutMs: number,
   timeoutMessage: string,
@@ -68,7 +68,8 @@ async function runWithAbort<T>(
   try {
     return await task(controller.signal);
   } catch (error) {
-    if (controller.signal.aborted) {
+    const isAbort = error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError');
+    if (isAbort && controller.signal.aborted) {
       throw new GeminiError(timeoutMessage);
     }
     throw error;
@@ -82,7 +83,7 @@ async function runWithAbort<T>(
  * interrupções de geração e respostas vazias — que, de outra forma, retornariam
  * uma string vazia silenciosamente.
  */
-function extractText(result: GenerateContentResponse): string {
+export function extractText(result: GenerateContentResponse): string {
   const blockReason = result.promptFeedback?.blockReason;
   if (blockReason) {
     throw new GeminiError(
@@ -242,7 +243,7 @@ export async function* generateEmailContentStream(params: {
 
   const ai = await getGeminiClient();
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let accumulated = '';
 
   try {
@@ -259,13 +260,16 @@ export async function* generateEmailContentStream(params: {
     });
 
     for await (const chunk of result) {
+      clearTimeout(timer);
+      timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
       if (chunk.text) {
         accumulated += chunk.text;
         yield chunk.text;
       }
     }
   } catch (error) {
-    if (controller.signal.aborted) {
+    const isAbort = error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError');
+    if (isAbort && controller.signal.aborted) {
       throw new GeminiError('Tempo esgotado. Tente novamente.');
     }
     if (error instanceof GeminiError) throw error;

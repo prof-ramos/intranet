@@ -12,6 +12,8 @@ export const MAX_INSTRUCTION_LENGTH = 2000;
 export function sanitizePromptInput(input: string): string {
   let sanitized = input.trim().slice(0, MAX_INSTRUCTION_LENGTH);
   sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+  sanitized = sanitized.replace(/<<<\s*INSTRUCAO/gi, '');
+  sanitized = sanitized.replace(/INSTRUCAO\s*>>>/gi, '');
   return sanitized;
 }
 

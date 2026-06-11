@@ -69,7 +69,7 @@ function checkPronoun(text: string, fixture: Fixture): CheckResult {
   const hasSenhoria = /Vossa Senhoria/i.test(text);
   const hasAbbrev = /\bV\.?\s?(Ex\.?a?|S\.?a?)\b/i.test(text);
   const forbiddenTreatment = FORBIDDEN_TREATMENTS.filter((t) =>
-    new RegExp(`\\b${t}`, 'i').test(text),
+    new RegExp(`\\b${t}\\b`, 'i').test(text),
   );
 
   if (hasAbbrev) {
