@@ -20,30 +20,32 @@ export async function autoMarkOverduePaymentsService(): Promise<number> {
   const rows = await db.transaction(async (tx) => {
     const transitioned = await markOverduePaymentsForAudit(tx);
 
-    for (const payment of transitioned) {
-      await logSystemOverdueTransition(payment, tx);
-      await emitDomainEvent(
-        {
-          type: 'monthly_payment.updated',
-          entityType: 'monthly_payment',
-          entityId: payment.id,
-          actorAdminId: null,
-          payload: {
-            associateId: payment.associateId,
-            year: payment.year,
-            month: payment.month,
-            previousStatus: 'pendente',
-            status: 'atrasado',
-            paymentMethod: payment.paymentMethod,
-            paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
-            links: {
-              app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
+    await Promise.all(
+      transitioned.map(async (payment) => {
+        await logSystemOverdueTransition(payment, tx);
+        await emitDomainEvent(
+          {
+            type: 'monthly_payment.updated',
+            entityType: 'monthly_payment',
+            entityId: payment.id,
+            actorAdminId: null,
+            payload: {
+              associateId: payment.associateId,
+              year: payment.year,
+              month: payment.month,
+              previousStatus: 'pendente',
+              status: 'atrasado',
+              paymentMethod: payment.paymentMethod,
+              paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
+              links: {
+                app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
+              },
             },
           },
-        },
-        tx,
-      );
-    }
+          tx,
+        );
+      })
+    );
 
     return transitioned;
   });
