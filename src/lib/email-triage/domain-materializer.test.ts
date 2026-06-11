@@ -99,11 +99,14 @@ function makeResult(overrides: Partial<EmailTriageResult> = {}): EmailTriageResu
 }
 
 function makeSelectChain(rows: any[]) {
-  const mockWhereResult = Promise.resolve(rows) as any;
-  mockWhereResult.limit = vi.fn().mockResolvedValue(rows);
   return {
     from: vi.fn().mockReturnValue({
-      where: vi.fn().mockReturnValue(mockWhereResult),
+      where: vi.fn().mockReturnValue(
+        // Allow it to be awaited directly OR to have a .limit() method
+        Object.assign(Promise.resolve(rows), {
+          limit: vi.fn().mockResolvedValue(rows),
+        })
+      ),
     }),
   };
 }
