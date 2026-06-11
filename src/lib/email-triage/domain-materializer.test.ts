@@ -99,11 +99,11 @@ function makeResult(overrides: Partial<EmailTriageResult> = {}): EmailTriageResu
 }
 
 function makeSelectChain(rows: any[]) {
+  const mockWhereResult = Promise.resolve(rows) as any;
+  mockWhereResult.limit = vi.fn().mockResolvedValue(rows);
   return {
     from: vi.fn().mockReturnValue({
-      where: vi.fn().mockReturnValue({
-        limit: vi.fn().mockResolvedValue(rows),
-      }),
+      where: vi.fn().mockReturnValue(mockWhereResult),
     }),
   };
 }
@@ -160,7 +160,7 @@ describe('materializarNoDominio', () => {
     // idempotency → not yet materialized; advogado_email → id=7; thread → empty
     mockDbSelect
       .mockReturnValueOnce(makeSelectChain([{ consultationId: null }]))
-      .mockReturnValueOnce(makeSelectChain([{ id: 7 }]))
+      .mockReturnValueOnce(makeSelectChain([{ id: 7, email: 'advogado@escritorio.com' }]))
       .mockReturnValueOnce(makeSelectChain([]));
 
     await materializarNoDominio(payload, result, 1);
@@ -183,7 +183,7 @@ describe('materializarNoDominio', () => {
     // idempotency → not yet materialized; sender → id=5; thread → empty
     mockDbSelect
       .mockReturnValueOnce(makeSelectChain([{ consultationId: null }]))
-      .mockReturnValueOnce(makeSelectChain([{ id: 5 }]))
+      .mockReturnValueOnce(makeSelectChain([{ id: 5, email: 'advogado-sender@escritorio.com' }]))
       .mockReturnValueOnce(makeSelectChain([]));
 
     await materializarNoDominio(payload, result, 2);
