@@ -108,8 +108,6 @@ async function deliverEventToSubscription(
   attempt: number,
   executor: DbExecutor,
 ) {
-  // Re-validate webhook target URL at dispatch time to prevent SSRF
-  // if the URL was modified in the database after creation.
   if (!isPublicWebhookUrl(subscription.targetUrl)) {
     const failureReason = `Webhook target URL failed security validation: ${subscription.targetUrl}`;
     logger.error('Webhook target URL failed security validation', { subscriptionId: subscription.id });
