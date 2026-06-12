@@ -141,7 +141,6 @@ describe('finance service', () => {
           },
         },
       }),
-      transactionMock.tx,
     );
     expect(JSON.stringify(vi.mocked(logAuditAction).mock.calls[0][0])).not.toMatch(
       /cpf|siape|address/i,

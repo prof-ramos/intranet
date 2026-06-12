@@ -17,40 +17,43 @@ import { sanitizePiiValue } from '@/lib/sanitize-pii';
 const logger = createLogger('finance:service');
 
 export async function autoMarkOverduePaymentsService(): Promise<number> {
-  const rows = await db.transaction(async (tx) => {
-    const transitioned = await markOverduePaymentsForAudit(tx);
+  const { transitioned, events } = await db.transaction(async (tx) => {
+    const rows = await markOverduePaymentsForAudit(tx);
 
-    await Promise.all(
-      transitioned.map(async (payment) => {
-        await logSystemOverdueTransition(payment, tx);
-        await emitDomainEvent(
-          {
-            type: 'monthly_payment.updated',
-            entityType: 'monthly_payment',
-            entityId: payment.id,
-            actorAdminId: null,
-            payload: {
-              associateId: payment.associateId,
-              year: payment.year,
-              month: payment.month,
-              previousStatus: 'pendente',
-              status: 'atrasado',
-              paymentMethod: payment.paymentMethod,
-              paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
-              links: {
-                app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
-              },
-            },
+    for (const payment of rows) {
+      await logSystemOverdueTransition(payment, tx);
+    }
+
+    const domainEvents = rows.map((payment) => ({
+      event: {
+        type: 'monthly_payment.updated' as const,
+        entityType: 'monthly_payment' as const,
+        entityId: payment.id,
+        actorAdminId: null,
+        payload: {
+          associateId: payment.associateId,
+          year: payment.year,
+          month: payment.month,
+          previousStatus: 'pendente' as const,
+          status: 'atrasado' as const,
+          paymentMethod: payment.paymentMethod,
+          paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
+          links: {
+            app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
           },
-          tx,
-        );
-      })
-    );
+        },
+      },
+    }));
 
-    return transitioned;
+    return { transitioned: rows, events: domainEvents };
   });
 
-  const count = rows.length;
+  // Emit domain events after transaction commit to reduce lock window
+  for (const { event } of events) {
+    await emitDomainEvent(event);
+  }
+
+  const count = transitioned.length;
 
   if (count > 0) {
     logger.info('[autoMarkOverdue] Transitioned payments pendente → atrasado', { count });
@@ -167,9 +170,10 @@ export async function updateMonthlyPayment(
         },
         // F-007: Include updated_at in the conflict predicate so concurrent writes
         // with a stale expectedUpdatedAt do not silently overwrite newer state.
-        setWhere: expectedUpdatedAt != null
-          ? sql`${monthlyPayments.updatedAt} = ${new Date(expectedUpdatedAt)}`
-          : undefined,
+        setWhere:
+          expectedUpdatedAt != null
+            ? sql`${monthlyPayments.updatedAt} = ${new Date(expectedUpdatedAt)}`
+            : undefined,
       })
       .returning();
     const updatedPayment = upserted[0];
@@ -356,7 +360,8 @@ export async function initializeMonth(adminId: number, year: number, month: numb
       }));
 
     if (updates.length > 0) {
-      await Promise.all(updates.map((update) => repository.upsertMonthlyPayment(update, tx)));
+      // Use DO NOTHING to avoid overwriting concurrent inserts from other transactions
+      await repository.insertMonthlyPaymentsIfMissing(updates, tx);
     }
 
     await logAuditAction({
