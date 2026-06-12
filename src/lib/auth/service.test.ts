@@ -47,6 +47,10 @@ vi.mock('@/lib/db', () => ({
     insert: vi.fn(() => ({
       values: mockInsertValues,
     })),
+    transaction: vi.fn(async (fn: (tx: unknown) => unknown) => {
+      const { db } = await import('@/lib/db');
+      return fn(db);
+    }),
   },
 }));
 
