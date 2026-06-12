@@ -34,7 +34,7 @@ const expectedColumns = {
   audit_logs: ['id:int8:NO', 'action:text:NO', 'entity_type:audit_entity_type:NO', 'entity_id:int8:YES', 'performed_by:int8:YES', 'changes:jsonb:YES', 'metadata:jsonb:YES', 'created_at:timestamptz:NO'],
   assignments: ['id:int8:NO', 'name:text:NO', 'type:assignment_type:NO', 'is_active:bool:NO', 'created_at:timestamptz:NO', 'updated_at:timestamptz:NO'],
   domain_events: ['id:int8:NO', 'event_type:domain_event_type:NO', 'entity_type:domain_event_entity_type:NO', 'entity_id:int8:NO', 'actor_admin_id:int8:YES', 'payload:jsonb:NO', 'delivery_status:domain_event_delivery_status:NO', 'expires_at:timestamptz:YES', 'occurred_at:timestamptz:NO', 'created_at:timestamptz:NO', 'updated_at:timestamptz:NO'],
-  email_triagens: ['id:int8:NO', 'message_id:varchar:NO', 'thread_id:varchar:NO', 'history_id:varchar:YES', 'received_at:timestamptz:NO', 'sender:varchar:NO', 'original_recipient:varchar:YES', 'subject:varchar:NO', 'body_hash:bpchar:NO', 'body_excerpt:text:NO', 'raw_body_stored:bool:NO', 'redaction_applied:bool:NO', 'categoria:email_categoria:NO', 'resumo:text:NO', 'thread_context_summary:text:YES', 'ha_prazo:bool:NO', 'prazo_data:date:YES', 'prazo_hora:time:YES', 'prazo_confianca_data:email_confianca:YES', 'tipo_prazo:email_tipo_prazo:YES', 'trecho_fonte_do_prazo:text:YES', 'resumo_anexos:jsonb:NO', 'source_evidence:jsonb:NO', 'attachments_hashes:jsonb:NO', 'nivel_risco:email_nivel_risco:NO', 'confianca:email_confianca:NO', 'acao_recomendada:text:NO', 'responsavel_sugerido:email_responsavel:YES', 'exige_validacao_humana:bool:NO', 'legal_basis:varchar:NO'],
+  email_triagens: ['id:int8:NO', 'message_id:varchar:NO', 'thread_id:varchar:NO', 'history_id:varchar:YES', 'received_at:timestamptz:NO', 'sender:varchar:NO', 'original_recipient:varchar:YES', 'subject:varchar:NO', 'body_hash:bpchar:NO', 'body_excerpt:text:NO', 'raw_body_stored:bool:NO', 'redaction_applied:bool:NO', 'categoria:email_categoria:NO', 'resumo:text:NO', 'thread_context_summary:text:YES', 'ha_prazo:bool:NO', 'prazo_data:date:YES', 'prazo_hora:time:YES', 'prazo_confianca_data:email_confianca:YES', 'tipo_prazo:email_tipo_prazo:YES', 'trecho_fonte_do_prazo:text:YES', 'resumo_anexos:jsonb:NO', 'source_evidence:jsonb:NO', 'attachments_hashes:jsonb:NO', 'nivel_risco:email_nivel_risco:NO', 'confianca:email_confianca:NO', 'acao_recomendada:text:NO', 'responsavel_sugerido:email_responsavel:YES', 'exige_validacao_humana:bool:NO', 'legal_basis:varchar:NO', 'processed_purpose:varchar:NO', 'data_retention_until:timestamptz:YES', 'processing_version:varchar:NO', 'model_name:varchar:YES', 'model_response_id:varchar:YES', 'status:email_status_triagem:NO', 'consultation_id:int8:YES', 'lawyer_id:int8:YES', 'usuario_validador_id:int8:YES', 'validated_at:timestamptz:YES', 'observacoes_validacao:text:YES', 'created_at:timestamptz:NO', 'updated_at:timestamptz:NO'],
   documents: ['id:int8:NO', 'associate_id:int8:YES', 'category:document_category:NO', 'title:text:NO', 'description:text:YES', 'content_type:text:NO', 'size_bytes:int4:NO', 'storage_path:text:NO', 'is_archived:bool:NO', 'created_by:int8:NO', 'created_at:timestamptz:NO', 'updated_at:timestamptz:NO'],
   integration_api_keys: ['id:int8:NO', 'name:text:NO', 'description:text:YES', 'api_key_hash:text:NO', 'is_active:bool:NO', 'last_used_at:timestamptz:YES', 'created_by:int8:NO', 'created_at:timestamptz:NO', 'updated_at:timestamptz:NO'],
   lawyers: ['id:int8:NO', 'name:text:NO', 'oab_number:text:NO', 'oab_state:varchar:NO', 'email:text:NO', 'phone:text:YES', 'status:lawyer_status:NO', 'created_at:timestamptz:NO', 'updated_at:timestamptz:NO'],
@@ -57,7 +57,7 @@ const expectedColumns = {
 };
 
 const expectedEnums = {
-  activity_status: ['pending', 'in_progress', 'completed', 'cancelled'],
+  activity_status: ['a_fazer', 'em_andamento', 'aguardando_terceiros', 'concluido', 'cancelado'],
   activity_priority: ['low', 'medium', 'high', 'urgent'],
   admin_role: ['admin', 'diretoria', 'secretaria'],
   functional_status: ['ativo', 'aposentado', 'cedido', 'em_licenca'],
@@ -100,7 +100,7 @@ const expectedIndexes = {
   activities: ['activities_pkey', 'idx_activities_assignee_id', 'idx_activities_associate_id', 'idx_activities_status'],
   audit_logs: ['audit_logs_pkey', 'idx_audit_logs_entity', 'idx_audit_logs_performed_by', 'idx_audit_logs_created_at'],
   domain_events: ['domain_events_pkey', 'idx_domain_events_delivery_status', 'idx_domain_events_entity', 'idx_domain_events_expires_at', 'idx_domain_events_occurred_at'],
-  email_triagens: ['email_triagens_pkey', 'idx_email_triagens_message_id_unique', 'idx_email_triagens_received_at', 'idx_email_triagens_sender', 'idx_email_triagens_categoria', 'idx_email_triagens_nivel_risco'],
+  email_triagens: ['email_triagens_pkey', 'idx_email_triagens_message_id_unique', 'idx_email_triagens_received_at', 'idx_email_triagens_thread_id', 'idx_email_triagens_history_id', 'idx_email_triagens_status', 'idx_email_triagens_prazo_data', 'idx_email_triagens_exige_validacao', 'idx_email_triagens_source_evidence_gin', 'idx_email_triagens_resumo_anexos_gin', 'idx_email_triagens_consultation', 'idx_email_triagens_lawyer'],
   app_settings: ['app_settings_pkey'],
   assignments: ['assignments_pkey'],
   documents: ['documents_pkey', 'idx_documents_associate', 'idx_documents_category'],
