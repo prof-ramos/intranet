@@ -1,29 +1,88 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { defineServerAction } from '@/lib/server-actions/define-form-action';
+import { defineFormAction, defineServerAction } from '@/lib/server-actions/define-form-action';
 import { AREAS } from '@/lib/activities/constants';
 import { listActivityTimeline } from '@/lib/activities/repository';
 import { createActivityService, updateActivityService } from '@/lib/activities/service';
-import { isActivityStatus } from '@/lib/activities/status';
+import {
+  ACTIVITY_PRIORITY_LABELS,
+  ACTIVITY_STATUS_LABELS,
+} from '@/lib/activities/status';
 import type { ActivityTimelineItem, Priority, Status } from '@/lib/activities/types';
-import { ACTIVITY_PRIORITIES } from '@/lib/activities/types';
+import { ACTIVITY_PRIORITIES, ACTIVITY_STATUSES } from '@/lib/activities/types';
+import { z } from 'zod';
 
 const ACTIVITY_AREA_KEYS = AREAS.map((area) => area.key);
 
-const ACTIVITY_STATUS_LABELS: Record<Status, string> = {
-  a_fazer: 'A fazer',
-  em_andamento: 'Em andamento',
-  aguardando_terceiros: 'Aguardando terceiros',
-  concluido: 'Concluído',
-};
+function optionalPositiveIdSchema(message: string) {
+  return z
+    .union([z.literal(''), z.string().regex(/^\d+$/, message)])
+    .optional()
+    .transform((value) => (value ? Number.parseInt(value, 10) : null))
+    .refine((value) => value === null || (Number.isSafeInteger(value) && value > 0), message);
+}
 
-const ACTIVITY_PRIORITY_LABELS: Record<Priority, string> = {
-  baixa: 'Baixa',
-  normal: 'Normal',
-  alta: 'Alta',
-  urgente: 'Urgente',
-};
+function parseTags(value: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed.filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+const createActivitySchema = z.object({
+  title: z
+    .string()
+    .refine((value) => value.trim().length > 0, 'O título da atividade é obrigatório.')
+    .refine((value) => value.length <= 255, 'O título não pode exceder 255 caracteres.'),
+  description: z
+    .string()
+    .optional()
+    .transform((value) => value ?? null),
+  status: z.enum(ACTIVITY_STATUSES).default('a_fazer'),
+  priority: z.enum(ACTIVITY_PRIORITIES).default('normal'),
+  assigneeId: optionalPositiveIdSchema('Responsável inválido.'),
+  associateId: optionalPositiveIdSchema('Associado inválido.'),
+  dueDate: z
+    .string()
+    .optional()
+    .transform((value) => value || null)
+    .refine(
+      (value) => value === null || !Number.isNaN(Date.parse(value)),
+      'Data de vencimento inválida.',
+    ),
+  area: z.string().optional(),
+  tags: z
+    .string()
+    .default('[]')
+    .transform((value) => parseTags(value)),
+});
+const quickActivitySchema = z.object({
+  title: z.string().trim().min(1, 'O título da atividade é obrigatório.'),
+  status: z.enum(ACTIVITY_STATUSES, { message: 'Status de atividade inválido.' }),
+});
+const updateActivitySchema = z.object({
+  id: z.number().int().positive('Atividade inválida.'),
+  status: z.enum(ACTIVITY_STATUSES, { message: 'Status de atividade inválido.' }).optional(),
+  priority: z
+    .enum(ACTIVITY_PRIORITIES, { message: 'Prioridade de atividade inválida.' })
+    .optional(),
+  dueDate: z
+    .string()
+    .nullable()
+    .optional()
+    .refine(
+      (value) => value == null || !Number.isNaN(Date.parse(value)),
+      'Data de vencimento inválida.',
+    ),
+  assigneeId: z.number().int().positive().nullable().optional(),
+  reassignmentMessage: z.string().nullable().optional(),
+});
+const activityIdSchema = z.number().int().positive('Atividade inválida.');
 
 function describeTimelineEntry(
   entry: Awaited<ReturnType<typeof listActivityTimeline>>[number],
@@ -71,103 +130,39 @@ function describeTimelineEntry(
   return 'Atividade atualizada.';
 }
 
-function parsePositiveOptionalId(value: string | null): number | null {
-  if (!value) {
-    return null;
-  }
-
-  if (!/^\d+$/.test(value)) {
-    return Number.NaN;
-  }
-
-  return Number.parseInt(value, 10);
-}
-
-export const createActivity = defineServerAction({
+export const createActivity = defineFormAction({
   auth: ['admin', 'diretoria', 'secretaria'],
-  service: async (formData: FormData, user) => {
-    const title = (formData.get('title') as string) ?? '';
-    const description = (formData.get('description') as string | null) ?? null;
-    const statusRaw = (formData.get('status') as string) ?? 'a_fazer';
-    const priorityRaw = (formData.get('priority') as string) ?? 'normal';
-    const assigneeIdRaw = formData.get('assigneeId') as string | null;
-    const associateIdRaw = formData.get('associateId') as string | null;
-    const dueDate = (formData.get('dueDate') as string | null) ?? null;
-    const areaRaw = (formData.get('area') as string | null) ?? null;
-    const tagsRaw = (formData.get('tags') as string) ?? '[]';
-
-    if (!isActivityStatus(statusRaw)) {
-      throw new Error('Status de atividade inválido.');
-    }
-
-    const isValidPriority = (ACTIVITY_PRIORITIES as readonly string[]).includes(priorityRaw);
-    if (!isValidPriority) {
-      throw new Error('Prioridade de atividade inválida.');
-    }
-
-    if (dueDate && isNaN(Date.parse(dueDate))) {
-      throw new Error('Data de vencimento inválida.');
-    }
-
-    const assigneeId = parsePositiveOptionalId(assigneeIdRaw);
-    const associateId = parsePositiveOptionalId(associateIdRaw);
-
+  schema: createActivitySchema,
+  service: async (data, user) => {
+    const tags = [...data.tags];
     if (
-      assigneeIdRaw &&
-      (typeof assigneeId !== 'number' || !Number.isInteger(assigneeId) || assigneeId <= 0)
+      data.area &&
+      ACTIVITY_AREA_KEYS.includes(data.area as (typeof ACTIVITY_AREA_KEYS)[number])
     ) {
-      throw new Error('Responsável inválido.');
-    }
-
-    if (
-      associateIdRaw &&
-      (typeof associateId !== 'number' || !Number.isInteger(associateId) || associateId <= 0)
-    ) {
-      throw new Error('Associado inválido.');
-    }
-
-    let tags: string[] = [];
-    try {
-      const parsed = JSON.parse(tagsRaw);
-      if (Array.isArray(parsed)) {
-        tags = parsed.filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
-      }
-    } catch {
-      tags = [];
-    }
-
-    if (areaRaw && ACTIVITY_AREA_KEYS.includes(areaRaw as (typeof ACTIVITY_AREA_KEYS)[number])) {
-      tags = [areaRaw, ...tags];
+      tags.unshift(data.area);
     }
 
     await createActivityService({
-      title,
-      description,
-      status: statusRaw as Status,
-      priority: priorityRaw as Priority,
-      assigneeId,
-      associateId,
-      dueDate,
+      title: data.title,
+      description: data.description,
+      status: data.status,
+      priority: data.priority,
+      assigneeId: data.assigneeId,
+      associateId: data.associateId,
+      dueDate: data.dueDate,
       tags,
       createdBy: user.userId,
     });
-
-    revalidatePath('/app/atividades');
   },
+  revalidate: '/app/atividades',
 });
 
 export const createQuickActivityAction = defineServerAction({
   auth: ['admin', 'diretoria', 'secretaria'],
-  service: async (input: { title: string; status: string }, user) => {
-    if (!input.title.trim()) {
-      throw new Error('O título da atividade é obrigatório.');
-    }
-    if (!isActivityStatus(input.status)) {
-      throw new Error('Status de atividade inválido.');
-    }
-
+  schema: quickActivitySchema,
+  service: async (input, user) => {
     const created = await createActivityService({
-      title: input.title.trim(),
+      title: input.title,
       description: null,
       status: input.status,
       priority: 'normal',
@@ -200,22 +195,13 @@ export const createQuickActivityAction = defineServerAction({
 
 export const updateActivityAction = defineServerAction({
   auth: ['admin', 'diretoria', 'secretaria'],
-  service: async (
-    input: {
-      id: number;
-      status?: string;
-      priority?: string;
-      dueDate?: string | null;
-      assigneeId?: number | null;
-      reassignmentMessage?: string | null;
-    },
-    user,
-  ) => {
+  schema: updateActivitySchema,
+  service: async (input, user) => {
     const result = await updateActivityService({
       id: input.id,
       actorId: user.userId,
-      status: input.status as Status | undefined,
-      priority: input.priority as Priority | undefined,
+      status: input.status,
+      priority: input.priority,
       dueDate: input.dueDate,
       assigneeId: input.assigneeId,
       reassignmentMessage: input.reassignmentMessage,
@@ -236,11 +222,8 @@ export const updateActivityAction = defineServerAction({
 
 export const getActivityTimelineAction = defineServerAction({
   auth: ['admin', 'diretoria', 'secretaria'],
+  schema: activityIdSchema,
   service: async (id: number): Promise<ActivityTimelineItem[]> => {
-    if (!Number.isInteger(id) || id <= 0) {
-      throw new Error('Atividade inválida.');
-    }
-
     const rows = await listActivityTimeline(id);
     return rows.map((row) => ({
       id: row.id,

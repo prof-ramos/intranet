@@ -202,25 +202,23 @@ export async function resetPassword(
   const tempPassword = generateTemporaryPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 12);
 
-  await retryTransientConnection(() =>
-    db
+  await db.transaction(async (tx) => {
+    await tx
       .update(admins)
       .set({
         passwordHash,
         mustChangePassword: true,
         updatedAt: sql`now()`,
       })
-      .where(eq(admins.id, targetId)),
-  );
+      .where(eq(admins.id, targetId));
 
-  await retryTransientConnection(() =>
-    db.insert(auditLogs).values({
+    await tx.insert(auditLogs).values({
       action: 'password_reset',
       entityType: 'admin',
       entityId: targetId,
       performedBy: actorId,
-    }),
-  );
+    });
+  });
 
   let emailDelivered = false;
   if (env.MAILJET_API_KEY && env.MAILJET_SECRET_KEY && env.MAILJET_SENDER_VALIDATED) {

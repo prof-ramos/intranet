@@ -1,7 +1,11 @@
 'use server';
 
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { defineServerAction } from '@/lib/server-actions/define-form-action';
+import { z } from 'zod';
+import {
+  defineNoInputServerAction,
+  defineServerAction,
+} from '@/lib/server-actions/define-form-action';
 import {
   getNotificationsForUser,
   getUnreadNotificationsCountForUser,
@@ -14,24 +18,25 @@ function revalidateNotifications() {
   revalidateTag('notifications', 'max');
 }
 
-function parseNotificationId(input: { id: string } | string | number) {
-  if (typeof input === 'number') {
-    return input;
-  }
+const notificationIdSchema = z
+  .union([z.number(), z.string(), z.object({ id: z.string() })])
+  .transform((input) => {
+    const value = typeof input === 'object' ? input.id : input;
+    if (typeof value === 'number') return value;
+    return /^\d+$/.test(value) ? Number.parseInt(value, 10) : Number.NaN;
+  })
+  .refine((id) => Number.isSafeInteger(id) && id > 0, 'Notificação inválida.');
+const notificationLimitSchema = z
+  .number()
+  .int()
+  .transform((limit) => Math.min(Math.max(limit, 1), 50));
 
-  if (typeof input === 'string') {
-    return /^\d+$/.test(input) ? Number.parseInt(input, 10) : Number.NaN;
-  }
-
-  return /^\d+$/.test(input.id) ? Number.parseInt(input.id, 10) : Number.NaN;
-}
-
-export const listNotificationsAction = defineServerAction({
+const _listNotificationsAction = defineServerAction({
   auth: 'any',
-  service: async (limit: number, user) => {
-    const safeLimit = Math.min(Math.max(limit, 1), 50);
+  schema: notificationLimitSchema,
+  service: async (limit, user) => {
     const [notifications, unreadCount] = await Promise.all([
-      getNotificationsForUser(user.userId, safeLimit),
+      getNotificationsForUser(user.userId, limit),
       getUnreadNotificationsCountForUser(user.userId),
     ]);
 
@@ -42,15 +47,14 @@ export const listNotificationsAction = defineServerAction({
   },
 });
 
+export async function listNotificationsAction(limit = 20) {
+  return _listNotificationsAction(limit);
+}
+
 export const markNotificationReadAction = defineServerAction({
   auth: 'any',
-  service: async (input: { id: string } | string | number, user) => {
-    const id = parseNotificationId(input);
-
-    if (!Number.isInteger(id) || id <= 0) {
-      throw new Error('Notificação inválida.');
-    }
-
+  schema: notificationIdSchema,
+  service: async (id, user) => {
     const updated = await markNotificationAsReadForUser({ id, userId: user.userId });
 
     if (updated) {
@@ -61,9 +65,9 @@ export const markNotificationReadAction = defineServerAction({
   },
 });
 
-export const markAllNotificationsReadAction = defineServerAction({
+export const markAllNotificationsReadAction = defineNoInputServerAction({
   auth: 'any',
-  service: async (_input: void, user) => {
+  service: async (user) => {
     const updatedCount = await markAllNotificationsAsReadForUser(user.userId);
 
     if (updatedCount > 0) {

@@ -2,12 +2,12 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { headers } from 'next/headers';
-import type { ZodType } from 'zod';
+import { type ZodType, z } from 'zod';
 import { requireRole } from '@/lib/auth/authorization';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { consumeIpRateLimit } from '@/lib/rate-limit';
 import { getTrustedClientIp } from '@/lib/ip';
-import { parseFormAction, firstZodError, formDataToRecord } from './utils';
+import { parseFormAction, firstZodError } from './utils';
 
 export type UserContext = Awaited<ReturnType<typeof requireAuth>>;
 
@@ -74,11 +74,11 @@ function applyRevalidate(spec: RevalidateSpec) {
   }
 }
 
-export function defineFormAction<TInput, TOutput = unknown>(options: {
+export function defineFormAction<TSchema extends ZodType, TOutput = unknown>(options: {
   auth: readonly string[] | 'any';
-  schema: ZodType<TInput>;
+  schema: TSchema;
   preprocess?: (raw: Record<string, unknown>) => unknown;
-  service: (input: TInput, user: UserContext) => Promise<TOutput>;
+  service: (input: z.output<TSchema>, user: UserContext) => Promise<TOutput>;
   revalidate?: RevalidateSpec;
   redirect?: string | ((output: TOutput) => string);
   rateLimit?: RateLimitConfig;
@@ -90,18 +90,19 @@ export function defineFormAction<TInput, TOutput = unknown>(options: {
     const output = await options.service(data, user);
     if (options.revalidate) applyRevalidate(options.revalidate);
     if (options.redirect) {
-      const target = typeof options.redirect === 'string' ? options.redirect : options.redirect(output);
+      const target =
+        typeof options.redirect === 'string' ? options.redirect : options.redirect(output);
       redirect(target);
     }
     return output;
   };
 }
 
-export function defineFormStateAction<TInput, TReturn>(options: {
+export function defineFormStateAction<TSchema extends ZodType, TReturn>(options: {
   auth: readonly string[] | 'any';
-  schema?: ZodType<TInput>;
+  schema: TSchema;
   preprocess?: (raw: Record<string, unknown>) => unknown;
-  service: (input: TInput, user: UserContext) => Promise<TReturn>;
+  service: (input: z.output<TSchema>, user: UserContext) => Promise<TReturn>;
   revalidate?: RevalidateSpec;
   rateLimit?: RateLimitConfig;
   onError?: (error: unknown) => TReturn;
@@ -110,12 +111,7 @@ export function defineFormStateAction<TInput, TReturn>(options: {
     try {
       if (options.rateLimit) await checkRateLimit(options.rateLimit);
       const user = await checkAuth(options.auth);
-      let data: TInput;
-      if (options.schema) {
-        data = parseFormAction(formData, options.schema, options.preprocess);
-      } else {
-        data = formDataToRecord(formData) as TInput;
-      }
+      const data = parseFormAction(formData, options.schema, options.preprocess);
       const output = await options.service(data, user);
       if (options.revalidate) applyRevalidate(options.revalidate);
       return output;
@@ -127,29 +123,47 @@ export function defineFormStateAction<TInput, TReturn>(options: {
   };
 }
 
-export function defineServerAction<TInput, TOutput = unknown>(options: {
+export function defineServerAction<TSchema extends ZodType, TOutput = unknown>(options: {
   auth: readonly string[] | 'any';
-  schema?: ZodType<TInput>;
-  service: (input: TInput, user: UserContext) => Promise<TOutput>;
+  schema: TSchema;
+  service: (input: z.output<TSchema>, user: UserContext) => Promise<TOutput>;
   revalidate?: RevalidateSpec;
   redirect?: string | ((output: TOutput) => string);
   rateLimit?: RateLimitConfig;
-}): (input?: TInput) => Promise<TOutput> {
-  return async (input?: TInput) => {
+}): (input: z.input<TSchema>) => Promise<TOutput> {
+  return async (input: z.input<TSchema>) => {
     if (options.rateLimit) await checkRateLimit(options.rateLimit);
     const user = await checkAuth(options.auth);
-    let data: TInput | undefined = input;
-    if (options.schema) {
-      const parsed = options.schema.safeParse(input);
-      if (!parsed.success) {
-        throw new Error(firstZodError(parsed.error.issues));
-      }
-      data = parsed.data;
+    const parsed = options.schema.safeParse(input);
+    if (!parsed.success) {
+      throw new Error(firstZodError(parsed.error.issues));
     }
-    const output = await options.service(data as TInput, user);
+    const output = await options.service(parsed.data, user);
     if (options.revalidate) applyRevalidate(options.revalidate);
     if (options.redirect) {
-      const target = typeof options.redirect === 'string' ? options.redirect : options.redirect(output);
+      const target =
+        typeof options.redirect === 'string' ? options.redirect : options.redirect(output);
+      redirect(target);
+    }
+    return output;
+  };
+}
+
+export function defineNoInputServerAction<TOutput = unknown>(options: {
+  auth: readonly string[] | 'any';
+  service: (user: UserContext) => Promise<TOutput>;
+  revalidate?: RevalidateSpec;
+  redirect?: string | ((output: TOutput) => string);
+  rateLimit?: RateLimitConfig;
+}): () => Promise<TOutput> {
+  return async () => {
+    if (options.rateLimit) await checkRateLimit(options.rateLimit);
+    const user = await checkAuth(options.auth);
+    const output = await options.service(user);
+    if (options.revalidate) applyRevalidate(options.revalidate);
+    if (options.redirect) {
+      const target =
+        typeof options.redirect === 'string' ? options.redirect : options.redirect(output);
       redirect(target);
     }
     return output;

@@ -10,9 +10,11 @@ import {
 import { db } from '@/lib/db';
 import { admins, auditLogs } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
+import { z } from 'zod';
 
-function parseAdminId(formData: Record<string, unknown>): number {
-  const raw = (formData.userId as string) ?? '';
+const adminIdSchema = z.object({ userId: z.string().default('') });
+
+function parseAdminId(raw: string): number {
   if (!/^\d+$/.test(raw)) {
     return Number.NaN;
   }
@@ -25,11 +27,11 @@ export interface ResetUserPasswordResult {
   tempPassword?: string;
 }
 
-export const resetUserPassword = defineFormStateAction<Record<string, unknown>, ResetUserPasswordResult>({
+export const resetUserPassword = defineFormStateAction({
   auth: ['admin'],
-  service: async (data, actor) => {
-    const formData = data as Record<string, unknown>;
-    const targetId = parseAdminId(formData);
+  schema: adminIdSchema,
+  service: async (data, actor): Promise<ResetUserPasswordResult> => {
+    const targetId = parseAdminId(data.userId);
 
     if (!Number.isInteger(targetId) || targetId < 1) {
       return { success: false, message: 'Usuário inválido.' };
@@ -64,17 +66,17 @@ export const resetUserPassword = defineFormStateAction<Record<string, unknown>, 
       throw error;
     }
   },
-  onError: (error) => ({
+  onError: (error): ResetUserPasswordResult => ({
     success: false,
     message: error instanceof Error ? error.message : 'Falha ao resetar senha.',
   }),
 });
 
-export const toggleUserActive = defineFormStateAction<Record<string, unknown>, ResetUserPasswordResult>({
+export const toggleUserActive = defineFormStateAction({
   auth: ['admin'],
-  service: async (data, actor) => {
-    const formData = data as Record<string, unknown>;
-    const targetId = parseAdminId(formData);
+  schema: adminIdSchema,
+  service: async (data, actor): Promise<ResetUserPasswordResult> => {
+    const targetId = parseAdminId(data.userId);
 
     if (!Number.isInteger(targetId) || targetId < 1) {
       return { success: false, message: 'Usuário inválido.' };
@@ -121,7 +123,7 @@ export const toggleUserActive = defineFormStateAction<Record<string, unknown>, R
       message: `Usuário ${target.name} foi ${newState ? 'ativado' : 'desativado'} com sucesso.`,
     };
   },
-  onError: (error) => ({
+  onError: (error): ResetUserPasswordResult => ({
     success: false,
     message: error instanceof Error ? error.message : 'Falha ao alterar status do usuário.',
   }),

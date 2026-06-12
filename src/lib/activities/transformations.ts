@@ -4,6 +4,16 @@ import { parsePositiveIntParam } from '@/lib/routing/params';
 
 export { dateOnly, daysFromToday };
 
+export function deriveCompletedAt(
+  nextStatus: string,
+  currentStatus: string,
+  currentCompletedAt: string | null,
+): string | null {
+  if (nextStatus === 'concluido') return currentCompletedAt ?? new Date().toISOString().slice(0, 10);
+  if (currentStatus === 'concluido') return null;
+  return currentCompletedAt;
+}
+
 export function normalizeActivity(activity: BoardActivity): BoardActivity {
   const dueDate = dateOnly(activity.dueDate);
   return {

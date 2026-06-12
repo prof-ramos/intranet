@@ -47,11 +47,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 // Import dos mocks do service após vi.mock
-import {
-  uploadDocument,
-  downloadDocument,
-  deleteDocument,
-} from '@/lib/documents/service';
+import { uploadDocument, downloadDocument, deleteDocument } from '@/lib/documents/service';
 
 describe('Documentos Server Actions', () => {
   beforeEach(() => {
@@ -147,6 +143,29 @@ describe('Documentos Server Actions', () => {
       await expect(uploadDocumentAction(formData)).rejects.toThrow(
         'O arquivo não pode exceder 15MB',
       );
+      expect(uploadDocument).not.toHaveBeenCalled();
+    });
+
+    it('deve rejeitar payload de arquivo que não seja File', async () => {
+      mockRequireAuth.mockResolvedValue({ userId: 1, role: 'admin' });
+
+      const formData = new FormData();
+      formData.append('name', 'Arquivo inválido');
+      formData.append('category', 'outro');
+      formData.append('file', 'conteúdo textual');
+
+      await expect(uploadDocumentAction(formData)).rejects.toThrow('Nenhum arquivo enviado.');
+      expect(uploadDocument).not.toHaveBeenCalled();
+    });
+
+    it('deve rejeitar upload sem arquivo como erro de validação', async () => {
+      mockRequireAuth.mockResolvedValue({ userId: 1, role: 'admin' });
+
+      const formData = new FormData();
+      formData.append('name', 'Arquivo ausente');
+      formData.append('category', 'outro');
+
+      await expect(uploadDocumentAction(formData)).rejects.toThrow('Nenhum arquivo enviado.');
       expect(uploadDocument).not.toHaveBeenCalled();
     });
   });

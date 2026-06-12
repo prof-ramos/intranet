@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   defineFormAction,
   defineFormStateAction,
+  defineNoInputServerAction,
   defineServerAction,
 } from './define-form-action';
 
@@ -72,7 +73,10 @@ describe('defineFormAction', () => {
     await expect(action(formData)).rejects.toThrow('NEXT_REDIRECT:/app/test/42');
 
     expect(requireRoleMock).toHaveBeenCalledWith(['admin']);
-    expect(serviceMock).toHaveBeenCalledWith({ name: 'Teste' }, { userId: 7, role: 'admin', name: 'Admin' });
+    expect(serviceMock).toHaveBeenCalledWith(
+      { name: 'Teste' },
+      { userId: 7, role: 'admin', name: 'Admin' },
+    );
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/test');
     expect(redirectMock).toHaveBeenCalledWith('/app/test/42');
   });
@@ -201,22 +205,20 @@ describe('defineFormStateAction', () => {
     expect(serviceMock).not.toHaveBeenCalled();
   });
 
-  it('passes raw formData when no schema is provided', async () => {
+  it('passes transformed schema output to the service', async () => {
     const serviceMock = vi.fn().mockResolvedValue({ success: true, message: 'OK' });
     const action = defineFormStateAction({
       auth: ['admin'],
+      schema: z.object({ count: z.coerce.number().int() }),
       service: serviceMock,
     });
 
     const formData = new FormData();
-    formData.set('custom', 'value');
+    formData.set('count', '4');
 
     await action(null, formData);
 
-    expect(serviceMock).toHaveBeenCalledWith(
-      expect.objectContaining({ custom: 'value' }),
-      expect.anything(),
-    );
+    expect(serviceMock).toHaveBeenCalledWith({ count: 4 }, expect.anything());
   });
 
   it('calls onError for service exceptions', async () => {
@@ -293,24 +295,12 @@ describe('defineServerAction', () => {
     expect(serviceMock).not.toHaveBeenCalled();
   });
 
-  it('works without schema for manual validation', async () => {
-    const serviceMock = vi.fn().mockResolvedValue('ok');
-    const action = defineServerAction({
-      auth: ['admin'],
-      service: serviceMock,
-    });
-
-    const result = await action('raw-input');
-
-    expect(result).toBe('ok');
-    expect(serviceMock).toHaveBeenCalledWith('raw-input', expect.anything());
-  });
-
   it('enforces rate limit', async () => {
     consumeIpRateLimitMock.mockResolvedValue({ allowed: false });
     const serviceMock = vi.fn();
     const action = defineServerAction({
       auth: 'any',
+      schema: z.string(),
       service: serviceMock,
       rateLimit: { key: 'server', windowMs: 60_000, maxRequests: 3 },
     });
@@ -323,6 +313,7 @@ describe('defineServerAction', () => {
     const serviceMock = vi.fn().mockResolvedValue({ id: 3 });
     const action = defineServerAction({
       auth: 'any',
+      schema: z.string(),
       service: serviceMock,
       revalidate: '/app/test',
       redirect: '/app/test/detail',
@@ -336,10 +327,71 @@ describe('defineServerAction', () => {
     const serviceMock = vi.fn().mockResolvedValue({ id: 5 });
     const action = defineServerAction({
       auth: 'any',
+      schema: z.string(),
       service: serviceMock,
       redirect: (output: { id: number }) => `/app/items/${output.id}`,
     });
 
     await expect(action('x')).rejects.toThrow('NEXT_REDIRECT:/app/items/5');
+  });
+});
+
+describe('defineNoInputServerAction', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    requireAuthMock.mockResolvedValue({ userId: 7, role: 'admin', name: 'Admin' });
+    requireRoleMock.mockResolvedValue({ userId: 7, role: 'admin', name: 'Admin' });
+    headersMock.mockResolvedValue(new Headers());
+    getTrustedClientIpMock.mockReturnValue('127.0.0.1');
+    consumeIpRateLimitMock.mockResolvedValue({ allowed: true });
+  });
+
+  it('calls a no-input service with only the authenticated user', async () => {
+    const serviceMock = vi.fn().mockResolvedValue('ok');
+    const action = defineNoInputServerAction({
+      auth: ['admin'],
+      service: serviceMock,
+    });
+
+    await expect(action()).resolves.toBe('ok');
+    expect(serviceMock).toHaveBeenCalledWith({ userId: 7, role: 'admin', name: 'Admin' });
+  });
+
+  it('enforces rate limits before calling a no-input service', async () => {
+    consumeIpRateLimitMock.mockResolvedValue({ allowed: false });
+    const serviceMock = vi.fn();
+    const action = defineNoInputServerAction({
+      auth: 'any',
+      service: serviceMock,
+      rateLimit: { key: 'no-input', windowMs: 60_000, maxRequests: 2 },
+    });
+
+    await expect(action()).rejects.toThrow('Muitas requisições. Aguarde um momento.');
+    expect(serviceMock).not.toHaveBeenCalled();
+  });
+
+  it('revalidates and redirects after a no-input service succeeds', async () => {
+    const serviceMock = vi.fn().mockResolvedValue({ id: 8 });
+    const action = defineNoInputServerAction({
+      auth: 'any',
+      service: serviceMock,
+      revalidate: '/app/test',
+      redirect: (output: { id: number }) => `/app/items/${output.id}`,
+    });
+
+    await expect(action()).rejects.toThrow('NEXT_REDIRECT:/app/items/8');
+    expect(revalidatePathMock).toHaveBeenCalledWith('/app/test');
+  });
+
+  it('does not call a no-input service when role authorization fails', async () => {
+    requireRoleMock.mockRejectedValue(new Error('Acesso negado'));
+    const serviceMock = vi.fn();
+    const action = defineNoInputServerAction({
+      auth: ['admin'],
+      service: serviceMock,
+    });
+
+    await expect(action()).rejects.toThrow('Acesso negado');
+    expect(serviceMock).not.toHaveBeenCalled();
   });
 });

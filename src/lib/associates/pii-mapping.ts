@@ -99,10 +99,7 @@ export function buildPiiPatch(input: Partial<PiiInputShape>): Pick<
     const value = input[field.name];
 
     if (value === undefined) {
-      // Field not present in input — set columns to undefined so the repository layer ignores them
-      patch[field.plaintextCol] = undefined;
-      patch[field.ciphertextCol] = undefined;
-      patch[field.hashCol] = undefined;
+      // Field not present in input — skip columns entirely (filtered below)
       continue;
     }
 
@@ -120,7 +117,9 @@ export function buildPiiPatch(input: Partial<PiiInputShape>): Pick<
     }
   }
 
-  return patch as ReturnType<typeof buildPiiPatch>;
+  return Object.fromEntries(
+    Object.entries(patch).filter(([, v]) => v !== undefined),
+  ) as ReturnType<typeof buildPiiPatch>;
 }
 
 /**

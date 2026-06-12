@@ -109,6 +109,14 @@ describe('atividades actions', () => {
     expect(createActivityServiceMock).not.toHaveBeenCalled();
   });
 
+  it('rejects non-string activity fields at the form boundary', async () => {
+    const formData = new FormData();
+    formData.set('title', new File(['bad'], 'title.txt'));
+
+    await expect(createActivity(formData)).rejects.toThrow('Invalid input');
+    expect(createActivityServiceMock).not.toHaveBeenCalled();
+  });
+
   it('falls back to empty tags when the payload is malformed json', async () => {
     const formData = new FormData();
     formData.set('title', 'Nova atividade');
@@ -170,6 +178,17 @@ describe('atividades actions', () => {
     });
   });
 
+  it('rejects an invalid quick activity status before calling the service', async () => {
+    await expect(
+      createQuickActivityAction({
+        title: 'Atalho rápido',
+        status: 'invalido' as never,
+      }),
+    ).rejects.toThrow('Status de atividade inválido.');
+
+    expect(createActivityServiceMock).not.toHaveBeenCalled();
+  });
+
   it('updates an activity through the server action and revalidates the board', async () => {
     const result = await updateActivityAction({
       id: 99,
@@ -196,6 +215,17 @@ describe('atividades actions', () => {
       reassignmentMessage: undefined,
     });
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/atividades');
+  });
+
+  it('rejects an invalid activity priority before calling the service', async () => {
+    await expect(
+      updateActivityAction({
+        id: 99,
+        priority: 'invalida' as never,
+      }),
+    ).rejects.toThrow('Prioridade de atividade inválida.');
+
+    expect(updateActivityServiceMock).not.toHaveBeenCalled();
   });
 
   it('passes reassignment data through the update action', async () => {
@@ -272,6 +302,11 @@ describe('atividades actions', () => {
         summary: 'Alterou status para Concluído, prioridade para Alta, vencimento atualizado.',
       },
     ]);
+  });
+
+  it('rejects an invalid timeline activity id before querying the repository', async () => {
+    await expect(getActivityTimelineAction(0)).rejects.toThrow('Atividade inválida.');
+    expect(listActivityTimelineMock).not.toHaveBeenCalled();
   });
 
   it('adds assignee changes to the timeline summary', async () => {

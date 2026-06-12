@@ -18,6 +18,7 @@ import {
   textSubtle,
 } from '@/lib/ui/tokens';
 import type { BoardAssociate, BoardPerson, Filters } from './types';
+import { defaultFilters } from './constants';
 
 function isPriorityFilter(value: string): value is Filters['priority'] {
   return value === '' || value in priorityStyles;
@@ -213,17 +214,7 @@ export const FilterBar = memo(function FilterBar({
       {hasFilters && (
         <button
           type="button"
-          onClick={() =>
-            setFilters({
-              scope: 'todas',
-              query: '',
-              assignee: '',
-              priority: '',
-              associate: '',
-              dueWeek: false,
-              dueLate: false,
-            })
-          }
+          onClick={() => setFilters(defaultFilters)}
           className={[
             'inline-flex items-center gap-1 rounded-full border px-3 text-xs font-semibold whitespace-nowrap transition',
             desktopDenseControlClass,

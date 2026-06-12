@@ -7,6 +7,7 @@ export {
   summarizeActivities,
   dateOnly,
   daysFromToday,
+  deriveCompletedAt,
 } from '@/lib/activities/transformations';
 export { initialsFromName as initials } from '@/lib/utils/initials';
 export { formatDueDate } from '@/lib/utils/date';

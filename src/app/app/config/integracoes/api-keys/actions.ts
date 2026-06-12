@@ -1,7 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { defineServerAction } from '@/lib/server-actions/define-form-action';
+import {
+  defineNoInputServerAction,
+  defineServerAction,
+} from '@/lib/server-actions/define-form-action';
+import { z } from 'zod';
 import {
   createApiKey as createApiKeyService,
   listApiKeys as listApiKeysService,
@@ -13,6 +17,10 @@ import type { IntegrationScope } from '@/lib/integrations/keys/service';
 
 const _createApiKeyAction = defineServerAction({
   auth: ['admin'],
+  schema: z.object({
+    name: z.string(),
+    scopes: z.array(z.string()),
+  }),
   service: async (input: { name: string; scopes: string[] }, actor) => {
     const { name, scopes } = input;
 
@@ -49,7 +57,7 @@ export async function createApiKeyAction(name: string, scopes: string[]) {
   return _createApiKeyAction({ name, scopes });
 }
 
-export const listApiKeysAction = defineServerAction({
+export const listApiKeysAction = defineNoInputServerAction({
   auth: ['admin'],
   service: async () => {
     try {
@@ -63,6 +71,7 @@ export const listApiKeysAction = defineServerAction({
 
 export const revokeApiKeyAction = defineServerAction({
   auth: ['admin'],
+  schema: z.number().int().positive('API key inválida.'),
   service: async (id: number) => {
     const revoked = await revokeApiKeyService(id);
     if (!revoked) {
@@ -75,6 +84,7 @@ export const revokeApiKeyAction = defineServerAction({
 
 export const rotateApiKeyAction = defineServerAction({
   auth: ['admin'],
+  schema: z.number().int().positive('API key inválida.'),
   service: async (id: number, actor) => {
     const result = await rotateApiKeyService(id, actor.userId);
     if (!result) {

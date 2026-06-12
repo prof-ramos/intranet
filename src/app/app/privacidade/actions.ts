@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { activities, admins } from '@/lib/db/schema';
 import { inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { defineServerAction } from '@/lib/server-actions/define-form-action';
+import { defineNoInputServerAction } from '@/lib/server-actions/define-form-action';
 import { createNotification } from '@/lib/notifications/repository';
 
 async function getAdminRecipientIds() {
@@ -15,12 +15,7 @@ async function getAdminRecipientIds() {
   return rows.map((r) => r.id);
 }
 
-async function notifyAdmins(
-  actorId: number,
-  activityId: number,
-  title: string,
-  message: string,
-) {
+async function notifyAdmins(actorId: number, activityId: number, title: string, message: string) {
   const recipientIds = await getAdminRecipientIds();
   await Promise.allSettled(
     recipientIds
@@ -42,9 +37,9 @@ async function notifyAdmins(
   );
 }
 
-export const requestDataDownload = defineServerAction({
+export const requestDataDownload = defineNoInputServerAction({
   auth: 'any',
-  service: async (_input: void, session) => {
+  service: async (session) => {
     const [activity] = await db
       .insert(activities)
       .values({
@@ -69,9 +64,9 @@ export const requestDataDownload = defineServerAction({
   },
 });
 
-export const requestAccountDeletion = defineServerAction({
+export const requestAccountDeletion = defineNoInputServerAction({
   auth: 'any',
-  service: async (_input: void, session) => {
+  service: async (session) => {
     const [activity] = await db
       .insert(activities)
       .values({

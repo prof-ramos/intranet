@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
-import type { BoardAssociate, BoardPerson } from '../AtividadesBoard';
+import type { BoardAssociate, BoardPerson } from '@/lib/activities/types';
 import { ACTIVITY_STATUS_OPTIONS } from '@/lib/activities/status';
 import { priorityStyles } from '@/lib/ui/tokens';
 import { AREAS } from '@/lib/activities/constants';

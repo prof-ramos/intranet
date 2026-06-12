@@ -7,6 +7,7 @@ import { isGeminiConfigured } from '@/lib/ai/settings';
 import { ALLOWED_EMAIL_TYPES, type EmailType } from '@/lib/ai/constants';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
+import { z } from 'zod';
 
 const logger = createLogger('secretaria:emails:gerar');
 
@@ -20,6 +21,10 @@ export type GenerateEmailResult =
 
 const _generateEmailAction = defineServerAction({
   auth: 'any',
+  schema: z.object({
+    emailType: z.string(),
+    prompt: z.string(),
+  }),
   rateLimit: { key: 'ai_generate_email', windowMs: 60_000, maxRequests: 5 },
   service: async (input: { emailType: string; prompt: string }): Promise<GenerateEmailResult> => {
     const trimmedPrompt = input.prompt?.trim();
@@ -41,10 +46,17 @@ const _generateEmailAction = defineServerAction({
     }
 
     try {
-      const { subject, html } = await generateEmailContent({ emailType: input.emailType, prompt: trimmedPrompt });
+      const { subject, html } = await generateEmailContent({
+        emailType: input.emailType,
+        prompt: trimmedPrompt,
+      });
       return { success: true, subject, html };
     } catch (error) {
-      logger.error('Failed to generate email', { error: toSafeErrorLog(error) }, error instanceof Error ? error : undefined);
+      logger.error(
+        'Failed to generate email',
+        { error: toSafeErrorLog(error) },
+        error instanceof Error ? error : undefined,
+      );
       if (error instanceof GeminiError) {
         return { success: false, error: error.message };
       }
@@ -53,6 +65,9 @@ const _generateEmailAction = defineServerAction({
   },
 });
 
-export async function generateEmailAction(emailType: string, prompt: string): Promise<GenerateEmailResult> {
+export async function generateEmailAction(
+  emailType: string,
+  prompt: string,
+): Promise<GenerateEmailResult> {
   return _generateEmailAction({ emailType, prompt });
 }

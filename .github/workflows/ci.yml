@@ -108,6 +108,7 @@ jobs:
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/asof_intranet
           SESSION_SECRET: test-secret-32-chars-minimum-here
+          ENCRYPTION_MASTER_KEY: test-encryption-master-key-at-least-32-chars
 
   smoke-prod:
     name: Smoke Test — Production

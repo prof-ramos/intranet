@@ -121,9 +121,14 @@ export function validateYearMonth(year: number, month: number): void {
   }
 }
 
+export type MonthlyPaymentUpdateInput = Pick<
+  MonthlyPayment,
+  'associateId' | 'year' | 'month' | 'status' | 'paymentMethod' | 'paidAt'
+>;
+
 export async function updateMonthlyPayment(
   adminId: number,
-  payment: Omit<NewMonthlyPayment, 'updatedBy' | 'updatedAt'>,
+  payment: MonthlyPaymentUpdateInput,
   expectedUpdatedAt?: string | null,
 ) {
   const result = await db.transaction(async (tx) => {
