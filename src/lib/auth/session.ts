@@ -133,7 +133,7 @@ export async function createSession(input: { userId: number; email: string }): P
     {
       httpOnly: true,
       sameSite: 'lax',
-      secure: env.NODE_ENV === 'production',
+      secure: env.NODE_ENV === 'production' || env.VERCEL_ENV === 'production' || env.VERCEL_ENV === 'preview',
       path: '/',
       maxAge: SESSION_TTL_SECONDS,
     },

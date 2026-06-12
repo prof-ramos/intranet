@@ -3,6 +3,14 @@
   "framework": "nextjs",
   "crons": [
     {
+      "path": "/api/v1/cron/finance-overdue",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/v1/cron/gmail-watch",
+      "schedule": "0 2 * * 0"
+    },
+    {
       "path": "/api/v1/events/dispatch",
       "schedule": "0 3 * * *"
     },
@@ -17,10 +25,6 @@
     {
       "path": "/api/v1/email-triage/process",
       "schedule": "0 6 * * *"
-    },
-    {
-      "path": "/api/v1/cron/gmail-watch",
-      "schedule": "0 2 * * 0"
     }
   ]
 }

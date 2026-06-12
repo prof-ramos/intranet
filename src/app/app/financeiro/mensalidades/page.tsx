@@ -1,5 +1,4 @@
 import { getMonthlyPaymentsData } from '@/lib/finance/queries';
-import { autoMarkOverduePaymentsService } from '@/lib/finance/service';
 import MonthlyPaymentsTable from './MonthlyPaymentsTable';
 import { FinanceKPIs } from './FinanceKPIs';
 import { initializeMonthAction } from './actions';
@@ -48,8 +47,6 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
     filters: currentFilters,
   } = parseMonthlyPaymentsPageSearchParams(await searchParams);
   const initializeCurrentMonthAction = initializeMonthAction.bind(null, currentYear, currentMonth);
-
-  await autoMarkOverduePaymentsService();
 
   const data = await getMonthlyPaymentsData(currentYear, currentMonth, {
     q: currentFilters.q,

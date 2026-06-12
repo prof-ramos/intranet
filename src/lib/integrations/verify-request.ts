@@ -170,7 +170,11 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
     );
 
     // Env-var keys have full access (no scopes restriction).
-    updateApiKeyLastUsed(sha256Hex(key)).catch(() => {});
+    updateApiKeyLastUsed(sha256Hex(key)).catch((err) => {
+      logger.warn('Failed to update lastUsedAt for legacy env-var key', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
 
     return {
       ok: true,
@@ -223,7 +227,11 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
   }
 
   // Update lastUsedAt for the table-backed key.
-  updateApiKeyLastUsed(keyHash).catch(() => {});
+  updateApiKeyLastUsed(keyHash).catch((err) => {
+    logger.warn('Failed to update lastUsedAt for table-backed key', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  });
 
   return {
     ok: true,

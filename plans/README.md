@@ -17,10 +17,16 @@ honor its STOP conditions, and update your row when done.
 | 007  | Prevent PII patch from setting columns to undefined | P2 | S | — | TODO | [#160](https://github.com/prof-ramos/intranet/issues/160) |
 | 008  | Wire orphaned integration tests into CI and npm scripts | P2 | S | — | TODO | [#163](https://github.com/prof-ramos/intranet/issues/163) |
 | 009  | Batch notification inserts in Assinafy webhook handler | P2 | S | — | TODO | [#164](https://github.com/prof-ramos/intranet/issues/164) |
+| 010  | Move autoMarkOverdue from page load to daily cron job | P1 | S | — | DONE | — |
+| 011  | Add error logging to fire-and-forget in verify-request | P1 | S | — | DONE | — |
+| 012  | Fix cookie Secure flag for Vercel Preview deploys | P1 | S | — | DONE | — |
+| 013  | Remove stale *.supabase.co from CSP | P2 | S | — | DONE | — |
+| 015  | Add unit tests for cron auth and autoMarkOverdue | P2 | S | 010 | DONE | — |
 
 ## Dependency notes
 
-- None
+- 015 depends on 010 (the finance-overdue cron route must exist before testing it).
+- 002, 003 remain BLOCKED — need revised approaches.
 
 ## Findings considered and rejected
 
@@ -36,4 +42,11 @@ honor its STOP conditions, and update your row when done.
 - [SEC-02] Gmail webhook endpoint no authentication: deferred — requires understanding Google Pub/Sub auth flow, M effort.
 - [SEC-04] `ENCRYPTION_MASTER_KEY` fallback to webhook key: deferred — requires coordinated env var migration, M effort.
 - [C-02] Audit error swallowing inside transactions: addressed partially by Plan 005 pattern; full fix needs `abortOnFailure` option in logAuditAction.
-- Direction findings: logged for product roadmap consideration, out of scope for immediate bug/perf fixes.
+- [BUG-04] secondaryEmail PII not in PII_FIELDS: deferred — depends on Plan 007 (PII patch safety) landing first.
+- [BUG-06] birthDate PII not in PII_FIELDS: deferred — same dependency as BUG-04.
+- [PERF-02] initializeMonth batch upsert: medium leverage, separate initiative.
+- [DEPS-01] Next.js version bump: needs coordination with Vercel deployment testing.
+- [DIR-06] Cron consolidation for Free plan: deferred — requires product decision on schedule.
+- [BUG-05] parseJsonWebhook Zod schema: medium leverage, separate initiative.
+- [BUG-02] signing_urls assertion order: low leverage, cosmetic.
+- Direction findings (DIR-A storage/Papra, DIR-B ASOF_INTEGRATIONS_ENABLED flip, DIR-C self-service portal): logged for product roadmap consideration, out of scope for immediate bug/perf fixes.
