@@ -226,4 +226,6 @@ export const officialLetterFormSchema = z.object({
     .max(50_000, 'Corpo em texto simples: máx. 50.000 caracteres.'),
 });
 
+export const officialLetterUpdateValuesSchema = officialLetterFormSchema.partial();
+
 export type OfficialLetterFormValues = z.infer<typeof officialLetterFormSchema>;

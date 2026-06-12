@@ -76,12 +76,13 @@ vi.mock('@/lib/ai/settings', () => ({
   isGeminiConfigured: (...args: unknown[]) => isGeminiConfiguredMock(...args),
 }));
 
-vi.mock('@/lib/oficios/validations', () => ({
-  officialLetterFormSchema: {
-    parse: (value: unknown) => value,
-    safeParse: (value: unknown) => ({ success: true, data: value }),
-  },
-}));
+vi.mock('@/lib/oficios/validations', async () => {
+  const { z } = await import('zod');
+  return {
+    officialLetterFormSchema: z.unknown(),
+    officialLetterUpdateValuesSchema: z.unknown(),
+  };
+});
 
 vi.mock('@/lib/env', () => ({
   env: envMock,

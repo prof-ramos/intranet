@@ -7,7 +7,11 @@ import * as repository from '@/lib/oficios/repository';
 import { generateOfficialLetterContent } from '@/lib/ai/gemini';
 import { GeminiError } from '@/lib/ai/errors';
 import { isGeminiConfigured } from '@/lib/ai/settings';
-import { officialLetterFormSchema, type OfficialLetterFormValues } from '@/lib/oficios/validations';
+import {
+  officialLetterFormSchema,
+  officialLetterUpdateValuesSchema,
+  type OfficialLetterFormValues,
+} from '@/lib/oficios/validations';
 import { z } from 'zod';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
@@ -16,9 +20,28 @@ const logger = createLogger('oficios:actions');
 
 const ALLOWED_ROLES = ['admin', 'diretoria', 'secretaria'] as const;
 const MAX_OFFICIAL_LETTERS_LIMIT = 1000;
+const officialLetterIdSchema = z.number().int().positive('Ofício inválido.');
+const listOfficialLettersSchema = z.object({
+  year: z.number().int().min(2000).max(2100).optional(),
+  limit: z.number().int().positive().optional(),
+});
+const generateOfficialLetterTextSchema = z.object({
+  recipient: z.string(),
+  recipientRole: z.string(),
+  subject: z.string(),
+  itamaratySector: z.string(),
+  signatory: z.string(),
+  signatoryRole: z.string(),
+  instruction: z.string(),
+});
+const updateOfficialLetterSchema = z.object({
+  id: officialLetterIdSchema,
+  values: officialLetterUpdateValuesSchema,
+});
 
 const _getOfficialLettersAction = defineServerAction({
   auth: ALLOWED_ROLES,
+  schema: listOfficialLettersSchema,
   service: async (input: { year?: number; limit?: number }) => {
     const safeLimit =
       input.limit != null
@@ -34,6 +57,7 @@ export async function getOfficialLettersAction(year?: number, limit?: number) {
 
 export const getOfficialLetterAction = defineServerAction({
   auth: ALLOWED_ROLES,
+  schema: officialLetterIdSchema,
   service: async (id: number) => {
     return repository.findOfficialLetterById(id);
   },
@@ -41,6 +65,7 @@ export const getOfficialLetterAction = defineServerAction({
 
 export const generateAiTextAction = defineServerAction({
   auth: ALLOWED_ROLES,
+  schema: generateOfficialLetterTextSchema,
   service: async (params: {
     recipient: string;
     recipientRole: string;
@@ -82,7 +107,11 @@ export const saveOfficialLetterAction = defineServerAction({
       revalidatePath('/app/secretaria/oficios');
       return { success: true, data: result };
     } catch (error) {
-      logger.error('[saveOfficialLetterAction] save failed', { error: toSafeErrorLog(error) }, error instanceof Error ? error : undefined);
+      logger.error(
+        '[saveOfficialLetterAction] save failed',
+        { error: toSafeErrorLog(error) },
+        error instanceof Error ? error : undefined,
+      );
       return { success: false, error: 'Falha ao salvar o ofício.' };
     }
   },
@@ -90,10 +119,8 @@ export const saveOfficialLetterAction = defineServerAction({
 
 const _updateOfficialLetterAction = defineServerAction({
   auth: ALLOWED_ROLES,
-  service: async (
-    input: { id: number; values: Partial<OfficialLetterFormValues> },
-    user,
-  ) => {
+  schema: updateOfficialLetterSchema,
+  service: async (input: { id: number; values: Partial<OfficialLetterFormValues> }, user) => {
     try {
       const result = await service.updateOfficialLetter(input.id, input.values, user.userId);
       revalidatePath('/app/secretaria/oficios');
@@ -110,12 +137,16 @@ const _updateOfficialLetterAction = defineServerAction({
   },
 });
 
-export async function updateOfficialLetterAction(id: number, values: Partial<OfficialLetterFormValues>) {
+export async function updateOfficialLetterAction(
+  id: number,
+  values: Partial<OfficialLetterFormValues>,
+) {
   return _updateOfficialLetterAction({ id, values });
 }
 
 export const cancelOfficialLetterAction = defineServerAction({
   auth: ALLOWED_ROLES,
+  schema: officialLetterIdSchema,
   service: async (id: number, user) => {
     try {
       const result = await service.cancelOfficialLetter(id, user.userId);

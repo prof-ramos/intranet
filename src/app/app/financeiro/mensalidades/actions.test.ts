@@ -80,6 +80,21 @@ describe('financeiro mensalidades actions', () => {
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
+  it('strips generated database fields before calling the service', async () => {
+    await updatePaymentAction({
+      id: 999,
+      associateId: 10,
+      year: 2026,
+      month: 5,
+      status: 'pago',
+      paymentMethod: 'boleto',
+      paidAt: null,
+      expectedUpdatedAt: null,
+    } as Parameters<typeof updatePaymentAction>[0] & { id: number });
+
+    expect(updateMonthlyPaymentMock.mock.calls[0]?.[1]).not.toHaveProperty('id');
+  });
+
   it('rejects invalid associate ids before touching the service', async () => {
     await expect(
       updatePaymentAction({
@@ -109,6 +124,24 @@ describe('financeiro mensalidades actions', () => {
       }),
     ).rejects.toThrow('Método de pagamento inválido.');
 
+    expect(updateMonthlyPaymentMock).not.toHaveBeenCalled();
+  });
+
+  it('preserves localized year and month validation messages', async () => {
+    const input = {
+      associateId: 10,
+      status: 'pago' as const,
+      paymentMethod: 'boleto' as const,
+      paidAt: null,
+      expectedUpdatedAt: null,
+    };
+
+    await expect(updatePaymentAction({ ...input, year: 1999, month: 5 })).rejects.toThrow(
+      'Ano inválido.',
+    );
+    await expect(updatePaymentAction({ ...input, year: 2026, month: 13 })).rejects.toThrow(
+      'Mês inválido.',
+    );
     expect(updateMonthlyPaymentMock).not.toHaveBeenCalled();
   });
 

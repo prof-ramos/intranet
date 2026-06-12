@@ -78,6 +78,13 @@ describe('notification actions', () => {
     expect(markNotificationAsReadForUser).not.toHaveBeenCalled();
   });
 
+  it('rejects notification ids outside the safe integer range', async () => {
+    await expect(markNotificationReadAction('999999999999999999999999')).rejects.toThrow(
+      'Notificação inválida.',
+    );
+    expect(markNotificationAsReadForUser).not.toHaveBeenCalled();
+  });
+
   it('marks all notifications as read for the authenticated user', async () => {
     markAllNotificationsAsReadForUser.mockResolvedValue(5);
 

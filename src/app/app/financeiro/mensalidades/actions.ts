@@ -8,44 +8,45 @@ import {
   initializeMonth,
   validateYearMonth,
 } from '@/lib/finance/service';
-import { type NewMonthlyPayment } from '@/lib/db/schema/finance';
+import { z } from 'zod';
 
 const validPaymentStatuses = ['pago', 'pendente', 'atrasado', 'isento'] as const;
 const validPaymentMethods = ['folha', 'boleto', 'pix', 'transferencia', 'outros'] as const;
 
-function validatePaymentInput(payment: Omit<NewMonthlyPayment, 'updatedBy' | 'updatedAt'>): void {
-  validateYearMonth(payment.year, payment.month);
-  if (!Number.isInteger(payment.associateId) || payment.associateId <= 0) {
-    throw new Error('Associado inválido.');
-  }
-  if (
-    !payment.status ||
-    !validPaymentStatuses.includes(payment.status as (typeof validPaymentStatuses)[number])
-  ) {
-    throw new Error('Status de pagamento inválido.');
-  }
-  if (!payment.paymentMethod || !validPaymentMethods.includes(payment.paymentMethod)) {
-    throw new Error('Método de pagamento inválido.');
-  }
-  if (
-    payment.paidAt !== null &&
-    payment.paidAt !== undefined &&
-    (!(payment.paidAt instanceof Date) || Number.isNaN(payment.paidAt.getTime()))
-  ) {
-    throw new Error('Data de pagamento inválida.');
-  }
-}
+const yearMonthSchema = {
+  year: z
+    .number({ message: 'Ano inválido.' })
+    .int('Ano inválido.')
+    .min(2000, 'Ano inválido.')
+    .max(2100, 'Ano inválido.'),
+  month: z
+    .number({ message: 'Mês inválido.' })
+    .int('Mês inválido.')
+    .min(1, 'Mês inválido.')
+    .max(12, 'Mês inválido.'),
+};
+
+const updatePaymentSchema = z.object({
+  associateId: z.number().int().positive('Associado inválido.'),
+  ...yearMonthSchema,
+  status: z.enum(validPaymentStatuses, { message: 'Status de pagamento inválido.' }),
+  paymentMethod: z.enum(validPaymentMethods, { message: 'Método de pagamento inválido.' }),
+  paidAt: z.date().nullable().default(null),
+  expectedUpdatedAt: z.string().datetime().nullable().optional(),
+});
+
+const initializeMonthSchema = z.object(yearMonthSchema);
+
+const cancelPaymentSchema = z.object({
+  paymentId: z.number().int().positive('Mensalidade inválida.'),
+  ...yearMonthSchema,
+  reason: z.string().trim().min(3, 'Informe um motivo com ao menos 3 caracteres.'),
+});
 
 export const updatePaymentAction = defineServerAction({
   auth: ['admin', 'diretoria'],
-  service: async (
-    payment: Omit<NewMonthlyPayment, 'updatedBy' | 'updatedAt'> & {
-      expectedUpdatedAt?: string | null;
-    },
-    user,
-  ) => {
-    validatePaymentInput(payment);
-
+  schema: updatePaymentSchema,
+  service: async (payment, user) => {
     const { expectedUpdatedAt, ...paymentData } = payment;
 
     try {
@@ -66,6 +67,7 @@ export const updatePaymentAction = defineServerAction({
 
 const _initializeMonthAction = defineServerAction({
   auth: ['admin', 'diretoria'],
+  schema: initializeMonthSchema,
   service: async (input: { year: number; month: number }, user) => {
     await initializeMonth(user.userId, input.year, input.month);
     revalidateTag(`finance-monthly-${input.year}-${input.month}`, 'max');
@@ -79,6 +81,7 @@ export async function initializeMonthAction(year: number, month: number) {
 
 export const cancelPaymentAction = defineServerAction({
   auth: ['admin', 'diretoria'],
+  schema: cancelPaymentSchema,
   service: async (
     input: { paymentId: number; year: number; month: number; reason: string },
     user,

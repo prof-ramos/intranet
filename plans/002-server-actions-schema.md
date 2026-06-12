@@ -11,7 +11,7 @@
 
 ## Status
 
-**BLOCKED**: Tornar o `schema` obrigatório em `defineServerAction` quebra a checagem de tipos em mais de 20 arquivos fora do escopo original (ex: `mensalidades`, `oficios`, `privacidade`, `search`, etc). Isso causa uma explosão de escopo. O plano precisará ser reescrito como uma migração incremental (ex: introduzir um `defineStrictServerAction` ou migrar os arquivos um a um).
+**DONE**: A migração foi concluída em todos os chamadores. `defineServerAction` agora exige schema, ações sem payload usam `defineNoInputServerAction`, e os formulários complexos preservam validação específica.
 
 - **Priority**: P1
 - **Effort**: S

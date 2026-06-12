@@ -9,7 +9,7 @@ honor its STOP conditions, and update your row when done.
 | Plan | Title | Priority | Effort | Depends on | Status | Issue |
 |------|-------|----------|--------|------------|--------|-------|
 | 001  | Fix form actions swallowing Next.js redirect errors | P1 | S | — | DONE | [#156](https://github.com/prof-ramos/intranet/issues/156) |
-| 002  | Mandate schema validation in defineServerAction | P1 | S | — | BLOCKED | [#157](https://github.com/prof-ramos/intranet/issues/157) |
+| 002  | Mandate schema validation in defineServerAction | P1 | S | — | DONE | [#157](https://github.com/prof-ramos/intranet/issues/157) |
 | 003  | Fix unstable_cache memory leak in withCache | P1 | M | — | BLOCKED | [#158](https://github.com/prof-ramos/intranet/issues/158) |
 | 004  | Replace absolute stream timeout with idle timeout | P2 | S | — | DONE | [#159](https://github.com/prof-ramos/intranet/issues/159) |
 | 005  | Make password reset atomic and add sendEmail coverage | P1 | S | — | DONE | [#161](https://github.com/prof-ramos/intranet/issues/161) |
