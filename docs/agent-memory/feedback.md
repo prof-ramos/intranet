@@ -30,3 +30,12 @@
 - **Evidência**: Sessão 2026-06-12 — a API v1alpha expõe apenas `create`, `get`, `list`, `sendMessage`, `approvePlan`. Sem `delete`, `cancel` ou `pause`.
 - **Regra preventiva**: Antes de iniciar uma operação com API externa, verifique se o endpoint existe e se o comportamento é o esperado. Se não existir, comunique a limitação ao usuário imediatamente e proponha alternativas.
 - **Confiança**: média
+
+## 2026-06-12 — Git não autorizado por default
+
+- **Tipo**: Erro de validação
+- **Escopo**: Comandos git fora do sandbox
+- **Memória**: O primeiro `git branch -d` ficou pendente por 386s aguardando aprovação. O usuário explicitou após o aborto que `uv`, `npm` e `gh` estão autorizados por default, mas `git` não estava incluído.
+- **Evidência**: Comando abortado após 386.8s, usuário precisou intervir manualmente.
+- **Regra preventiva**: Sempre solicitar aprovação explícita para comandos `git` que alteram o repositório (commit, push, branch -d, merge, reset). Não assumir que git está autorizado por default.
+- **Confiança**: alta

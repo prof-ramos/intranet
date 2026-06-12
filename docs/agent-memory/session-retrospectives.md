@@ -26,3 +26,20 @@
 ---
 
 *Template: `## YYYY-MM-DD — Título curto` seguido de Problema, Decisão, Lições promovidas, Pendências e Riscos.*
+
+## 2026-06-12 — Merge de documentação agent-memory
+
+**Problema**: Nenhum — revisão do patch aprovada sem bugs, 4 arquivos de documentação prontos para merge.
+
+**Decisão tomada**: Merge direto em `main` sem PR intermediário (documentação sem código).
+
+**Lições promovidas para memória permanente:**
+- → `docs/agent-memory/feedback.md`: Git não autorizado por default — requer aprovação explícita
+- → `docs/agent-memory/project.md`: Fluxo de merge de documentação validado
+
+**Pendências**: Nenhuma.
+
+**Riscos para próxima sessão**: Nenhum identificado.
+
+---
+
