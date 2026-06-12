@@ -122,6 +122,18 @@ export async function upsertMonthlyPaymentsBulk(
     .returning();
 }
 
+export async function insertMonthlyPaymentsIfMissing(
+  payments: NewMonthlyPayment[],
+  executor: DbExecutor = db,
+) {
+  if (payments.length === 0) return [];
+  return executor
+    .insert(monthlyPayments)
+    .values(payments)
+    .onConflictDoNothing()
+    .returning();
+}
+
 export async function markOverduePayments(): Promise<number> {
   const rows = await markOverduePaymentsForAudit();
   return rows.length;
