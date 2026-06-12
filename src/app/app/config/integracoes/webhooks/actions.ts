@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { defineFormStateAction } from '@/lib/server-actions/define-form-action';
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 import { webhookSecretSchema, webhookSubscriptionFormSchema } from '@/lib/validation/schemas';
 import {
   createManagedWebhookSubscription,
@@ -11,6 +11,35 @@ import {
   updateManagedWebhookSubscription,
   validateWebhookSubscriptionEvents,
 } from '@/lib/integrations/webhooks/subscriptions';
+
+const subscribedEventsSchema = z
+  .union([z.string(), z.array(z.string())])
+  .optional()
+  .transform((value) => (Array.isArray(value) ? value : value ? [value] : []));
+
+const webhookFormFields = {
+  name: z.string().default(''),
+  targetUrl: z.string().default(''),
+  subscribedEvents: subscribedEventsSchema,
+};
+
+const createWebhookSchema = z.object({
+  ...webhookFormFields,
+  secret: z.string().default(''),
+});
+const updateWebhookSchema = z.object({
+  id: z.string().default(''),
+  ...webhookFormFields,
+  isActive: z.string().default('false'),
+});
+const toggleWebhookSchema = z.object({
+  id: z.string().default(''),
+  isActive: z.string().default('false'),
+});
+const rotateWebhookSchema = z.object({
+  id: z.string().default(''),
+  secret: z.string().default(''),
+});
 
 function zodMessage(error: unknown, fallback: string) {
   if (error instanceof ZodError) {
@@ -22,8 +51,7 @@ function zodMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-function parseId(formData: Record<string, unknown>) {
-  const raw = (formData.id as string) ?? '';
+function parseId(raw: string) {
   const id = /^\d+$/.test(raw) ? Number.parseInt(raw, 10) : Number.NaN;
   if (!Number.isInteger(id) || id <= 0) {
     throw new Error('Webhook subscription inválida.');
@@ -31,15 +59,15 @@ function parseId(formData: Record<string, unknown>) {
   return id;
 }
 
-function parseSubscriptionForm(formData: Record<string, unknown>) {
+function parseSubscriptionForm(formData: {
+  name: string;
+  targetUrl: string;
+  subscribedEvents: string[];
+}) {
   const parsed = webhookSubscriptionFormSchema.parse({
-    name: (formData.name as string) ?? '',
-    targetUrl: (formData.targetUrl as string) ?? '',
-    subscribedEvents: Array.isArray(formData.subscribedEvents)
-      ? formData.subscribedEvents.map(String)
-      : formData.subscribedEvents
-        ? [String(formData.subscribedEvents)]
-        : [],
+    name: formData.name,
+    targetUrl: formData.targetUrl,
+    subscribedEvents: formData.subscribedEvents,
   });
 
   return {
@@ -50,12 +78,12 @@ function parseSubscriptionForm(formData: Record<string, unknown>) {
 
 export const createWebhookSubscription = defineFormStateAction({
   auth: ['admin'],
+  schema: createWebhookSchema,
   service: async (data, actor) => {
-    const formData = data as Record<string, unknown>;
     try {
       await createManagedWebhookSubscription(actor.userId, {
-        ...parseSubscriptionForm(formData),
-        secret: webhookSecretSchema.parse((formData.secret as string) ?? ''),
+        ...parseSubscriptionForm(data),
+        secret: webhookSecretSchema.parse(data.secret),
       });
       revalidatePath('/app/config/integracoes/webhooks');
       return { success: true, message: 'Webhook subscription criada.' };
@@ -68,13 +96,13 @@ export const createWebhookSubscription = defineFormStateAction({
 
 export const updateWebhookSubscription = defineFormStateAction({
   auth: ['admin'],
+  schema: updateWebhookSchema,
   service: async (data, actor) => {
-    const formData = data as Record<string, unknown>;
     try {
       await updateManagedWebhookSubscription(actor.userId, {
-        id: parseId(formData),
-        ...parseSubscriptionForm(formData),
-        isActive: formData.isActive === 'true',
+        id: parseId(data.id),
+        ...parseSubscriptionForm(data),
+        isActive: data.isActive === 'true',
       });
       revalidatePath('/app/config/integracoes/webhooks');
       return { success: true, message: 'Webhook subscription atualizada.' };
@@ -87,13 +115,13 @@ export const updateWebhookSubscription = defineFormStateAction({
 
 export const toggleWebhookSubscription = defineFormStateAction({
   auth: ['admin'],
+  schema: toggleWebhookSchema,
   service: async (data, actor) => {
-    const formData = data as Record<string, unknown>;
     try {
       await setManagedWebhookSubscriptionActive(
         actor.userId,
-        parseId(formData),
-        formData.isActive === 'true',
+        parseId(data.id),
+        data.isActive === 'true',
       );
       revalidatePath('/app/config/integracoes/webhooks');
       return { success: true, message: 'Status da webhook subscription atualizado.' };
@@ -106,13 +134,13 @@ export const toggleWebhookSubscription = defineFormStateAction({
 
 export const rotateWebhookSubscriptionSecret = defineFormStateAction({
   auth: ['admin'],
+  schema: rotateWebhookSchema,
   service: async (data, actor) => {
-    const formData = data as Record<string, unknown>;
     try {
       await rotateManagedWebhookSubscriptionSecret(
         actor.userId,
-        parseId(formData),
-        webhookSecretSchema.parse((formData.secret as string) ?? ''),
+        parseId(data.id),
+        webhookSecretSchema.parse(data.secret),
       );
       revalidatePath('/app/config/integracoes/webhooks');
       return { success: true, message: 'Segredo rotacionado.' };

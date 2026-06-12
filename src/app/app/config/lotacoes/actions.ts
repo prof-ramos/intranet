@@ -7,9 +7,21 @@ import {
   updateAssignment as updateAssignmentService,
   toggleAssignmentActive as toggleAssignmentActiveService,
 } from '@/lib/assignments/service';
+import { z } from 'zod';
 
-function parseAssignmentId(formData: Record<string, unknown>): number {
-  const raw = (formData.id as string) ?? '';
+const assignmentFields = {
+  name: z.string().default(''),
+  type: z.string().default(''),
+};
+
+const createAssignmentSchema = z.object(assignmentFields);
+const updateAssignmentSchema = z.object({
+  id: z.string().default(''),
+  ...assignmentFields,
+});
+const assignmentIdSchema = z.object({ id: z.string().default('') });
+
+function parseAssignmentId(raw: string): number {
   if (!/^\d+$/.test(raw)) {
     return Number.NaN;
   }
@@ -18,10 +30,10 @@ function parseAssignmentId(formData: Record<string, unknown>): number {
 
 export const createAssignment = defineFormStateAction({
   auth: ['admin', 'diretoria'],
+  schema: createAssignmentSchema,
   service: async (data, actor) => {
-    const formData = data as Record<string, unknown>;
-    const name = (formData.name as string)?.trim();
-    const type = formData.type as string;
+    const name = data.name.trim();
+    const type = data.type;
 
     if (!name || name.length < 2) {
       return { success: false, message: 'Nome da lotação é obrigatório (mínimo 2 caracteres).' };
@@ -43,11 +55,11 @@ export const createAssignment = defineFormStateAction({
 
 export const updateAssignment = defineFormStateAction({
   auth: ['admin', 'diretoria'],
+  schema: updateAssignmentSchema,
   service: async (data, actor) => {
-    const formData = data as Record<string, unknown>;
-    const id = parseAssignmentId(formData);
-    const name = (formData.name as string)?.trim();
-    const type = formData.type as string;
+    const id = parseAssignmentId(data.id);
+    const name = data.name.trim();
+    const type = data.type;
 
     if (!Number.isInteger(id) || id < 1) {
       return { success: false, message: 'Lotação inválida.' };
@@ -73,9 +85,9 @@ export const updateAssignment = defineFormStateAction({
 
 export const toggleAssignmentActive = defineFormStateAction({
   auth: ['admin', 'diretoria'],
+  schema: assignmentIdSchema,
   service: async (data, actor) => {
-    const formData = data as Record<string, unknown>;
-    const id = parseAssignmentId(formData);
+    const id = parseAssignmentId(data.id);
 
     if (!Number.isInteger(id) || id < 1) {
       return { success: false, message: 'Lotação inválida.' };

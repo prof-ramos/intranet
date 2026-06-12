@@ -3,12 +3,13 @@
 import { revalidatePath } from 'next/cache';
 import { defineFormStateAction } from '@/lib/server-actions/define-form-action';
 import { upsertGeminiApiKey, deleteGeminiApiKey } from '@/lib/ai/settings';
+import { z } from 'zod';
 
 export const saveGeminiApiKeyAction = defineFormStateAction({
   auth: ['admin'],
-  service: async (_data, actor) => {
-    const data = _data as Record<string, unknown>;
-    const apiKey = (data.apiKey as string)?.trim() ?? '';
+  schema: z.object({ apiKey: z.string().default('') }),
+  service: async (data, actor) => {
+    const apiKey = data.apiKey.trim();
     if (!apiKey) {
       return { success: false, message: 'A chave da API não pode ser vazia.' };
     }
@@ -33,6 +34,7 @@ export const saveGeminiApiKeyAction = defineFormStateAction({
 
 export const deleteGeminiApiKeyAction = defineFormStateAction({
   auth: ['admin'],
+  schema: z.object({}),
   service: async (_data, actor) => {
     try {
       await deleteGeminiApiKey(actor.userId);

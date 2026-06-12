@@ -7,7 +7,7 @@ import { requireRole } from '@/lib/auth/authorization';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { consumeIpRateLimit } from '@/lib/rate-limit';
 import { getTrustedClientIp } from '@/lib/ip';
-import { parseFormAction, firstZodError, formDataToRecord } from './utils';
+import { parseFormAction, firstZodError } from './utils';
 
 export type UserContext = Awaited<ReturnType<typeof requireAuth>>;
 
@@ -74,11 +74,11 @@ function applyRevalidate(spec: RevalidateSpec) {
   }
 }
 
-export function defineFormAction<TInput, TOutput = unknown>(options: {
+export function defineFormAction<TSchema extends ZodType, TOutput = unknown>(options: {
   auth: readonly string[] | 'any';
-  schema: ZodType<TInput>;
+  schema: TSchema;
   preprocess?: (raw: Record<string, unknown>) => unknown;
-  service: (input: TInput, user: UserContext) => Promise<TOutput>;
+  service: (input: z.output<TSchema>, user: UserContext) => Promise<TOutput>;
   revalidate?: RevalidateSpec;
   redirect?: string | ((output: TOutput) => string);
   rateLimit?: RateLimitConfig;
@@ -98,11 +98,11 @@ export function defineFormAction<TInput, TOutput = unknown>(options: {
   };
 }
 
-export function defineFormStateAction<TInput, TReturn>(options: {
+export function defineFormStateAction<TSchema extends ZodType, TReturn>(options: {
   auth: readonly string[] | 'any';
-  schema?: ZodType<TInput>;
+  schema: TSchema;
   preprocess?: (raw: Record<string, unknown>) => unknown;
-  service: (input: TInput, user: UserContext) => Promise<TReturn>;
+  service: (input: z.output<TSchema>, user: UserContext) => Promise<TReturn>;
   revalidate?: RevalidateSpec;
   rateLimit?: RateLimitConfig;
   onError?: (error: unknown) => TReturn;
@@ -111,12 +111,7 @@ export function defineFormStateAction<TInput, TReturn>(options: {
     try {
       if (options.rateLimit) await checkRateLimit(options.rateLimit);
       const user = await checkAuth(options.auth);
-      let data: TInput;
-      if (options.schema) {
-        data = parseFormAction(formData, options.schema, options.preprocess);
-      } else {
-        data = formDataToRecord(formData) as TInput;
-      }
+      const data = parseFormAction(formData, options.schema, options.preprocess);
       const output = await options.service(data, user);
       if (options.revalidate) applyRevalidate(options.revalidate);
       return output;

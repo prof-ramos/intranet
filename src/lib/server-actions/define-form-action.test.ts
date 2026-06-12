@@ -205,22 +205,20 @@ describe('defineFormStateAction', () => {
     expect(serviceMock).not.toHaveBeenCalled();
   });
 
-  it('passes raw formData when no schema is provided', async () => {
+  it('passes transformed schema output to the service', async () => {
     const serviceMock = vi.fn().mockResolvedValue({ success: true, message: 'OK' });
     const action = defineFormStateAction({
       auth: ['admin'],
+      schema: z.object({ count: z.coerce.number().int() }),
       service: serviceMock,
     });
 
     const formData = new FormData();
-    formData.set('custom', 'value');
+    formData.set('count', '4');
 
     await action(null, formData);
 
-    expect(serviceMock).toHaveBeenCalledWith(
-      expect.objectContaining({ custom: 'value' }),
-      expect.anything(),
-    );
+    expect(serviceMock).toHaveBeenCalledWith({ count: 4 }, expect.anything());
   });
 
   it('calls onError for service exceptions', async () => {
