@@ -90,6 +90,8 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 
 - Use `npm` para este projeto; tem `package-lock.json`.
 - Para Python, use `uv`: `uv run`, `uv add`, `uv sync`.
+- Para GitHub CLI, `gh` está autorizado por default.
+- Para Git, comandos que alteram o repositório (commit, push, branch -d, merge, reset) requerem aprovação explícita.
 - Use Context7 automaticamente para queries sobre bibliotecas/frameworks/APIs externas. Não confie no conhecimento de treinamento.
 - **Validation gates (use exatamente nesta ordem):** `npm run lint` → `npm run typecheck` → `npm run test` → `npm run test:db` → `npm run build`. Os agregadores `validate:quick` (lint+typecheck+test) e `validate:full` (+test:db+build) executam nessa ordem; `pr:check` adiciona `scope:check` e é o melhor gate único antes de abrir PR.
 - Rodar um único teste: `npx vitest run src/lib/auth/password.test.ts`. Rodar um spec E2E: `npx playwright test e2e/tests/associados.spec.ts`.

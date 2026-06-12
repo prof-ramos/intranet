@@ -21,3 +21,30 @@
 - **Evidência**: Sessão 2026-06-12 — 2 sessões foram de `AWAITING_USER_FEEDBACK → IN_PROGRESS` após `sendMessage` com "cancel", e permaneceram `IN_PROGRESS` indefinidamente.
 - **Regra preventiva**: Não confiar em `sendMessage` com comando de cancelamento para sessões `AWAITING_USER_FEEDBACK`. A resposta do agente é imprevisível.
 - **Confiança**: alta
+
+## 2026-06-12 — Fluxo de merge de documentação validado
+
+- **Tipo**: Fluxo operacional validado
+- **Escopo**: Git workflow para documentação
+- **Memória**: Fluxo de merge de branch de feature com documentação validado: `git checkout main` → `git commit -m "docs: ..."` → `git push origin main` → `git branch -d <feature>` → `git push origin --delete <feature>`. Comandos `uv`, `npm`, `gh` autorizados por default no projeto ASOF/intranet.
+- **Evidência**: Sessão 2026-06-12 — merge de 4 arquivos docs/agent-memory/ concluído sem conflitos, branch limpa local e remotamente.
+- **Regra preventiva**: Para merge de documentação sem código: seguir o fluxo acima. Git requer aprovação explícita por comando (não está no default).
+- **Confiança**: alta
+
+## 2026-06-12 — Cancelamento do modo deep-interview via `omx cancel`
+
+- **Tipo**: Procedimento operacional confirmado
+- **Escopo**: Workflow OMX
+- **Memória**: Quando o modo `deep-interview` bloqueia implementação e `$cancel` ou `$ultragoal` não funcionam via comando shell, usar `omx cancel` diretamente para sair do modo interview e liberar ferramentas de escrita.
+- **Evidência**: Sessão 2026-06-12 — `$cancel` e `$ultragoal` via shell não surtiram efeito; `omx cancel` cancelou `deep-interview` e `skill-active` imediatamente.
+- **Regra preventiva**: Para sair do deep-interview quando comandos `$*` falharem, usar `omx cancel` como fallback confiável.
+- **Confiança**: alta
+
+## 2026-06-12 — Modelo `kimi-k2.6:cloud` incompatível com Codex + ChatGPT
+
+- **Tipo**: Restrição técnica
+- **Escopo**: Configuração do autoreview
+- **Memória**: O modelo `kimi-k2.6:cloud` configurado no ambiente não é suportado quando usando Codex com conta ChatGPT. Erro retornado: `The 'kimi-k2.6:cloud' model is not supported when using Codex with a ChatGPT account.`
+- **Evidência**: Sessão 2026-06-12 — autoreview falhou com status 400 ao revisar commit `72b74e8`.
+- **Regra preventiva**: Se autoreview falhar com erro de modelo incompatível, verificar configuração em `.codex/config.toml` ou env `AUTOREVIEW_MODEL` e usar modelo compatível com ChatGPT (ex: `gpt-4.1`, `gpt-5.1`).
+- **Confiança**: alta
