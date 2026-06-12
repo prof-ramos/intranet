@@ -27,6 +27,27 @@
 
 *Template: `## YYYY-MM-DD — Título curto` seguido de Problema, Decisão, Lições promovidas, Pendências e Riscos.*
 
+## 2026-06-12 — Merge do PR #201 após rebase com conflitos
+
+**Problema**: Branch `claude/tasks-feature-refactor-5gksac` (PR #201) estava CONFLICTING com main. Rebase revelou 2 conflitos: (1) `schema.integration.test.ts` — commit f7392fa conflitou com origin/main; (2) `finance/service.ts` — padrão de domain events divergiu entre HEAD e branch.
+
+**Decisão tomada**:
+- Conflito em `finance/service.ts`: resolvido mantendo padrão HEAD (emitir domain events após commit da transação).
+- Conflito em `schema.integration.test.ts`: skip inicial do commit f7392fa foi **incorreto** — ambos HEAD e origin/main tinham valores errados, e o commit pulado tinha os corretos. Corrigido com novo commit restaurando os valores do f7392fa.
+- Mudanças staged (docs deletados + email test mock): stash antes do rebase, restauradas e commitadas separadamente.
+
+**Lições promovidas para memória permanente:**
+- → `docs/agent-memory/feedback.md`: Skip de commit durante rebase baseado em diff enganoso
+- → `docs/agent-memory/project.md`: Schema contract test usa valores em português; Domain events emitidos após commit; CI Database Contract roda contra PostgreSQL real
+
+**Pendências**: Nenhuma.
+
+**Riscos para próxima sessão**:
+- O `schema.integration.test.ts` em `origin/main` continua com valores incorretos (enums em inglês, tabelas desatualizadas). Branches futuras que rebaseiem de main terão o mesmo problema até que main seja atualizada com os valores corretos.
+- O teste de contrato é frágil — qualquer mudança no schema Drizzle exige atualização manual das expectativas.
+
+---
+
 ## 2026-06-12 — Merge de documentação agent-memory
 
 **Problema**: Nenhum — revisão do patch aprovada sem bugs, 4 arquivos de documentação prontos para merge.

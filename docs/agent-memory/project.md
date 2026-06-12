@@ -48,3 +48,30 @@
 - **Evidência**: Sessão 2026-06-12 — autoreview falhou com status 400 ao revisar commit `72b74e8`.
 - **Regra preventiva**: Se autoreview falhar com erro de modelo incompatível, verificar configuração em `.codex/config.toml` ou env `AUTOREVIEW_MODEL` e usar modelo compatível com ChatGPT (ex: `gpt-4.1`, `gpt-5.1`).
 - **Confiança**: alta
+
+## 2026-06-12 — Schema contract test usa valores em português
+
+- **Tipo**: Restrição técnica
+- **Escopo**: Testes de integração (schema.integration.test.ts)
+- **Memória**: O teste de contrato de banco de dados em `src/lib/db/schema.integration.test.ts` valida enums, colunas e índices contra o PostgreSQL real. Vários enums usam valores em português: `activity_priority` → `['baixa', 'normal', 'alta', 'urgente']`, `activity_status` → `['a_fazer', 'em_andamento', 'aguardando_terceiros', 'concluido']`, `official_letter_status` → `['gerado', 'cancelado', 'rascunho']`, etc. Valores em inglês como `['low', 'medium', 'high', 'urgent']` são **incorretos** e causam falha no CI Database Contract.
+- **Evidência**: Sessão 2026-06-12 — CI falhou com `expected [ Array(4) ] to deeply equal [ 'high', 'low', 'medium', 'urgent' ]`.
+- **Regra preventiva**: Nunca assumir valores em inglês para enums do banco; sempre verificar o Drizzle schema (`src/lib/db/schema/enums.ts`) ou migrações SQL para os valores corretos.
+- **Confiança**: alta
+
+## 2026-06-12 — Domain events emitidos após commit da transação
+
+- **Tipo**: Padrão arquitetural
+- **Escopo**: src/lib/finance/service.ts
+- **Memória**: Em `autoMarkOverduePaymentsService`, os domain events são coletados dentro da transação mas emitidos **após** o commit (`for (const { event } of events) { await emitDomainEvent(event); }`). O comentário explícito diz "reduce lock window". Já `updateMonthlyPayment` e `cancelMonthlyPayment` chamam `emitDomainEvent({ ... }, tx)` dentro da transação. Ao resolver conflitos de rebase neste arquivo, manter o padrão HEAD (emitir fora da transação) para `autoMarkOverduePaymentsService`.
+- **Evidência**: Sessão 2026-06-12 — conflito de rebase resolvido mantendo o padrão HEAD.
+- **Regra preventiva**: Não alterar o padrão de emissão de domain events em `autoMarkOverduePaymentsService` sem considerar o comentário sobre lock window.
+- **Confiança**: alta
+
+## 2026-06-12 — CI Database Contract roda contra PostgreSQL real
+
+- **Tipo**: Restrição técnica
+- **Escopo**: Pipeline CI
+- **Memória**: O job `Database Contract` no CI cria um PostgreSQL 16 em container, aplica todas as migrações e roda `src/lib/db/schema.integration.test.ts` validando tables, columns, enums e indexes. Qualquer divergência entre o Drizzle schema e as expectativas do teste causa falha. O teste NÃO usa banco mock — é um teste de contrato contra schema real.
+- **Evidência**: Sessão 2026-06-12 — CI falhou quando expectedColumns/expectedEnums/expectedIndexes não bateram com o banco.
+- **Regra preventiva**: Ao mudar migrações ou schemas Drizzle, sempre atualizar `schema.integration.test.ts` correspondente. Nunca assumir que o teste está correto sem validar contra o banco real.
+- **Confiança**: alta

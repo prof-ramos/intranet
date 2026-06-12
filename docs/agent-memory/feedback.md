@@ -39,3 +39,12 @@
 - **Evidência**: Comando abortado após 386.8s, usuário precisou intervir manualmente.
 - **Regra preventiva**: Sempre solicitar aprovação explícita para comandos `git` que alteram o repositório (commit, push, branch -d, merge, reset). Não assumir que git está autorizado por default.
 - **Confiança**: alta
+
+## 2026-06-12 — Skip de commit durante rebase baseado em diff enganoso
+
+- **Tipo**: Erro de estratégia
+- **Escopo**: Git rebase com conflito
+- **Memória**: Durante rebase, pulei o commit f7392fa porque `git diff origin/main HEAD -- schema.integration.test.ts` mostrou diferença zero, assumindo que o commit era redundante. Na verdade, ambos (origin/main e HEAD pré-rebase) tinham os mesmos valores **errados** — o commit pulado continha os valores **corretos**. Resultado: CI Database Contract falhou com 3 asserções. Tive que restaurar o arquivo do commit pulado e fazer novo commit.
+- **Evidência**: Sessão 2026-06-12 — CI falhou com `expected [ Array(4) ] to deeply equal [ 'high', 'low', 'medium', 'urgent' ]` (activity_priority enum) e outras divergências de schema.
+- **Regra preventiva**: Ao avaliar se um commit conflitante é redundante durante rebase, comparar o **conteúdo do commit** (`git show <hash>:<file>`) contra o resultado desejado, não apenas HEAD vs origin/main. Se o commit é um fix/teste de contrato, verificar se os valores corrigidos ainda estão presentes após resolução.
+- **Confiança**: alta
