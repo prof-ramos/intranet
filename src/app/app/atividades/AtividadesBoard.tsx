@@ -21,6 +21,7 @@ import { QuickAdd } from './_board/QuickAdd';
 import { SummaryStrip } from './_board/SummaryStrip';
 import {
   daysFromToday,
+  deriveCompletedAt,
   filterActivities,
   groupActivitiesByStatus,
   normalizeActivity,
@@ -45,8 +46,6 @@ import type {
 } from '@/lib/activities/types';
 
 const logger = createLogger('atividades-board');
-
-export type { BoardActivity, BoardAssociate, BoardPerson } from '@/lib/activities/types';
 
 const ReassignModal = dynamic(() =>
   import('./ReassignModal').then((mod) => ({ default: mod.ReassignModal })),
@@ -213,11 +212,12 @@ export function AtividadesBoard({
     const current = items.find((activity) => activity.id === drawerId);
     if (!current) return;
     const nextPatch = { ...patch };
-    if (nextPatch.status === 'concluido' && current?.status !== 'concluido') {
-      nextPatch.completedAt = new Date().toISOString().slice(0, 10);
-    }
-    if (current.status === 'concluido' && nextPatch.status && nextPatch.status !== 'concluido') {
-      nextPatch.completedAt = null;
+    if (nextPatch.status) {
+      nextPatch.completedAt = deriveCompletedAt(
+        nextPatch.status,
+        current.status,
+        current.completedAt,
+      );
     }
     updateActivity(drawerId, nextPatch);
     persistActivityPatch(
@@ -248,12 +248,7 @@ export function AtividadesBoard({
     if (!current) return;
     const nextPatch = {
       status: newStatus,
-      completedAt:
-        newStatus === 'concluido'
-          ? new Date().toISOString().slice(0, 10)
-          : current?.status === 'concluido'
-            ? null
-            : (current?.completedAt ?? null),
+      completedAt: deriveCompletedAt(newStatus, current.status, current.completedAt),
     } satisfies Partial<BoardActivity>;
     updateActivity(id, nextPatch);
     persistActivityPatch(

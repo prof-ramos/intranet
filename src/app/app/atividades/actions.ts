@@ -5,25 +5,15 @@ import { defineServerAction } from '@/lib/server-actions/define-form-action';
 import { AREAS } from '@/lib/activities/constants';
 import { listActivityTimeline } from '@/lib/activities/repository';
 import { createActivityService, updateActivityService } from '@/lib/activities/service';
-import { isActivityStatus } from '@/lib/activities/status';
+import {
+  ACTIVITY_PRIORITY_LABELS,
+  ACTIVITY_STATUS_LABELS,
+  isActivityStatus,
+} from '@/lib/activities/status';
 import type { ActivityTimelineItem, Priority, Status } from '@/lib/activities/types';
 import { ACTIVITY_PRIORITIES } from '@/lib/activities/types';
 
 const ACTIVITY_AREA_KEYS = AREAS.map((area) => area.key);
-
-const ACTIVITY_STATUS_LABELS: Record<Status, string> = {
-  a_fazer: 'A fazer',
-  em_andamento: 'Em andamento',
-  aguardando_terceiros: 'Aguardando terceiros',
-  concluido: 'Concluído',
-};
-
-const ACTIVITY_PRIORITY_LABELS: Record<Priority, string> = {
-  baixa: 'Baixa',
-  normal: 'Normal',
-  alta: 'Alta',
-  urgente: 'Urgente',
-};
 
 function describeTimelineEntry(
   entry: Awaited<ReturnType<typeof listActivityTimeline>>[number],

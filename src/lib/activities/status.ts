@@ -1,6 +1,6 @@
 import { ACTIVITY_STATUSES, ACTIVITY_PRIORITIES } from './types';
 import type { Priority, Status } from './types';
-import { statusStyles } from '@/lib/ui/tokens';
+import { priorityStyles, statusStyles } from '@/lib/ui/tokens';
 import { createEnumMetadata } from '@/lib/ui/create-enum-metadata';
 
 const meta = createEnumMetadata({
@@ -27,3 +27,7 @@ export function isActivityPriority(value: string): value is Priority {
 }
 
 export const getActivityStatusLabel = meta.getLabel;
+
+export const ACTIVITY_PRIORITY_LABELS: Record<Priority, string> = Object.fromEntries(
+  ACTIVITY_PRIORITIES.map((p) => [p, priorityStyles[p]?.label ?? p]),
+) as Record<Priority, string>;

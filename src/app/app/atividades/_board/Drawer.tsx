@@ -23,14 +23,7 @@ import {
 import { columns } from './constants';
 import { Avatar } from './ActivityCard';
 import type { ActivityTimelineItem, BoardActivity, BoardPerson, Priority, Status } from './types';
-
-function isStatus(value: string): value is Status {
-  return columns.some((column) => column.key === value);
-}
-
-function isPriority(value: string): value is Priority {
-  return value in priorityStyles;
-}
+import { isActivityPriority, isActivityStatus } from '@/lib/activities/status';
 
 export function Drawer({
   activity,
@@ -175,7 +168,7 @@ export function Drawer({
                 value={activity.status}
                 onChange={(event) => {
                   const status = event.target.value;
-                  if (isStatus(status)) onChange({ status });
+                  if (isActivityStatus(status)) onChange({ status });
                 }}
                 className={inputClass}
                 style={inputStyle}
@@ -201,7 +194,7 @@ export function Drawer({
                 value={activity.priority}
                 onChange={(event) => {
                   const priorityValue = event.target.value;
-                  if (isPriority(priorityValue)) onChange({ priority: priorityValue });
+                  if (isActivityPriority(priorityValue)) onChange({ priority: priorityValue });
                 }}
                 className={inputClass}
                 style={inputStyle}

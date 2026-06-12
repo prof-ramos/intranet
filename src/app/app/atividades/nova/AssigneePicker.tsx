@@ -1,6 +1,6 @@
 'use client';
 
-import type { BoardPerson } from '../AtividadesBoard';
+import type { BoardPerson } from '@/lib/activities/types';
 import { initialsFromName } from '@/lib/utils/initials';
 import { focusRingClass, navy } from '@/lib/ui/tokens';
 

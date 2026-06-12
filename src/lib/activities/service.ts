@@ -1,5 +1,6 @@
 import { isActivityPriority, isActivityStatus } from './status';
 import type { Priority, Status } from './types';
+import { deriveCompletedAt } from './transformations';
 import { findActivityById, insertActivity, updateActivityById } from './repository';
 import { logAuditAction } from '@/lib/audit/service';
 import { emitActivityAssigned, emitActivityCompleted } from '@/lib/events';
@@ -68,9 +69,6 @@ export async function createActivityService(input: CreateActivityInput) {
   if (input.dueDate && Number.isNaN(Date.parse(input.dueDate))) {
     throw new Error('Data de vencimento inválida.');
   }
-  if (input.assigneeId !== undefined && !isValidOptionalId(input.assigneeId)) {
-    throw new Error('Responsável inválido.');
-  }
   if (input.createdBy == null || Number.isNaN(input.createdBy)) {
     throw new Error('Usuário criador inválido.');
   }
@@ -136,12 +134,9 @@ export async function updateActivityService(input: UpdateActivityInput) {
   const nextPriority = input.priority ?? current.priority;
   const nextDueDate = input.dueDate === undefined ? current.dueDate : input.dueDate;
   const nextAssigneeId = input.assigneeId === undefined ? current.assigneeId : input.assigneeId;
-  const nextCompletedAt =
-    nextStatus === 'concluido'
-      ? (current.completedAt ?? new Date())
-      : input.status && current.status === 'concluido'
-        ? null
-        : current.completedAt;
+  const currentCompletedAtIso = current.completedAt?.toISOString().slice(0, 10) ?? null;
+  const nextCompletedAtStr = deriveCompletedAt(nextStatus, current.status, currentCompletedAtIso);
+  const nextCompletedAt = nextCompletedAtStr ? new Date(nextCompletedAtStr) : null;
 
   const updated = await updateActivityById(input.id, {
     status: nextStatus,

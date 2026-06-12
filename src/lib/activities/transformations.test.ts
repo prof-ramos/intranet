@@ -3,6 +3,7 @@ import {
   normalizeActivity,
   filterActivities,
   groupActivitiesByStatus,
+  deriveCompletedAt,
 } from '@/lib/activities/transformations';
 import type { BoardActivity, Filters } from '@/lib/activities/types';
 
@@ -174,5 +175,27 @@ describe('groupActivitiesByStatus', () => {
   it('throws on invalid status', () => {
     const activity = makeActivity({ status: 'invalid' as BoardActivity['status'] });
     expect(() => groupActivitiesByStatus([activity])).toThrow(/invalid status/);
+  });
+});
+
+describe('deriveCompletedAt', () => {
+  it('returns today when transitioning to concluido with no prior completedAt', () => {
+    const result = deriveCompletedAt('concluido', 'a_fazer', null);
+    expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('preserves existing completedAt when transitioning to concluido again', () => {
+    const result = deriveCompletedAt('concluido', 'em_andamento', '2026-05-01');
+    expect(result).toBe('2026-05-01');
+  });
+
+  it('clears completedAt when moving away from concluido', () => {
+    const result = deriveCompletedAt('a_fazer', 'concluido', '2026-05-01');
+    expect(result).toBeNull();
+  });
+
+  it('keeps existing completedAt when neither status is concluido', () => {
+    const result = deriveCompletedAt('em_andamento', 'a_fazer', null);
+    expect(result).toBeNull();
   });
 });

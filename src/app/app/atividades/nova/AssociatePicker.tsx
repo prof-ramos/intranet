@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { BoardAssociate } from '../AtividadesBoard';
+import type { BoardAssociate } from '@/lib/activities/types';
 import { focusRingClass } from '@/lib/ui/tokens';
 
 export function AssociatePicker({

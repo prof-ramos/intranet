@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ACTIVITY_PRIORITY_LABELS,
   ACTIVITY_STATUS_LABELS,
   ACTIVITY_STATUS_OPTIONS,
+  isActivityPriority,
   isActivityStatus,
   getActivityStatusLabel,
 } from '@/lib/activities/status';
@@ -31,6 +33,33 @@ describe('activities/status', () => {
 
     it('returns raw value for invalid statuses', () => {
       expect(getActivityStatusLabel('unknown')).toBe('unknown');
+    });
+  });
+
+  describe('isActivityPriority', () => {
+    it('returns true for valid priorities', () => {
+      for (const p of ['baixa', 'normal', 'alta', 'urgente'] as const) {
+        expect(isActivityPriority(p)).toBe(true);
+      }
+    });
+
+    it('returns false for invalid priorities', () => {
+      expect(isActivityPriority('medium')).toBe(false);
+      expect(isActivityPriority('')).toBe(false);
+    });
+  });
+
+  describe('ACTIVITY_PRIORITY_LABELS', () => {
+    it('has a label for each priority', () => {
+      expect(ACTIVITY_PRIORITY_LABELS.baixa).toBeDefined();
+      expect(ACTIVITY_PRIORITY_LABELS.normal).toBeDefined();
+      expect(ACTIVITY_PRIORITY_LABELS.alta).toBeDefined();
+      expect(ACTIVITY_PRIORITY_LABELS.urgente).toBeDefined();
+    });
+
+    it('labels match priorityStyles', () => {
+      expect(ACTIVITY_PRIORITY_LABELS.urgente).toBe('Urgente');
+      expect(ACTIVITY_PRIORITY_LABELS.alta).toBe('Alta');
     });
   });
 
