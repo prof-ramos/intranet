@@ -1,16 +1,32 @@
-import { describe, expect, it, afterAll } from 'vitest';
+import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { db } from '@/lib/db';
-import { legalConsultations } from '@/lib/db/schema';
+import { admins, legalConsultations } from '@/lib/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { createConsultationService, generateInternalNumber } from './service';
 
 describe('juridico service integration', () => {
   const testIds: number[] = [];
+  let testAdminId: number;
+
+  beforeAll(async () => {
+    const [admin] = await db
+      .insert(admins)
+      .values({
+        name: 'Test Admin Juridico',
+        email: `test-admin-juridico-${Date.now()}@example.com`,
+        passwordHash: 'hash-placeholder',
+        role: 'admin',
+      })
+      .returning({ id: admins.id });
+    testAdminId = admin.id;
+  });
 
   afterAll(async () => {
-    // Clean up test consultations by ID
     if (testIds.length > 0) {
       await db.delete(legalConsultations).where(inArray(legalConsultations.id, testIds));
+    }
+    if (testAdminId) {
+      await db.delete(admins).where(eq(admins.id, testAdminId));
     }
   });
 
@@ -42,7 +58,7 @@ describe('juridico service integration', () => {
         questionFullText: 'Texto completo da pergunta',
         associateId: null,
         slaDays: 14,
-        createdBy: 1,
+        createdBy: testAdminId,
       });
       const afterCreate = new Date();
 
@@ -62,7 +78,7 @@ describe('juridico service integration', () => {
       expect(consultation[0].questionSummary).toBe('Resumo da pergunta');
       expect(consultation[0].questionFullText).toBe('Texto completo da pergunta');
       expect(consultation[0].status).toBe('aberta');
-      expect(consultation[0].createdBy).toBe(1);
+      expect(consultation[0].createdBy).toBe(testAdminId);
 
       // Verify SLA due date (within 1 minute tolerance)
       expect(consultation[0].slaDueDate).not.toBeNull();
@@ -82,7 +98,7 @@ describe('juridico service integration', () => {
         questionFullText: null,
         associateId: null,
         slaDays: 7,
-        createdBy: 1,
+        createdBy: testAdminId,
       });
 
       expect(result.id).toBeDefined();
@@ -105,7 +121,7 @@ describe('juridico service integration', () => {
         questionFullText: '  Texto completo  ',
         associateId: null,
         slaDays: 3,
-        createdBy: 1,
+        createdBy: testAdminId,
       });
 
       expect(result.id).toBeDefined();
