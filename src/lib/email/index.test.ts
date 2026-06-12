@@ -33,7 +33,7 @@ describe('sendEmail', () => {
   });
 
   it('throws EmailSendError with the response status on HTTP failure', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response('Unauthorized', { status: 401 }),
     );
 
