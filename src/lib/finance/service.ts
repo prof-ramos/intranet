@@ -44,7 +44,7 @@ export async function autoMarkOverduePaymentsService(): Promise<number> {
           },
           tx,
         );
-      })
+      }),
     );
 
     return transitioned;
@@ -167,9 +167,10 @@ export async function updateMonthlyPayment(
         },
         // F-007: Include updated_at in the conflict predicate so concurrent writes
         // with a stale expectedUpdatedAt do not silently overwrite newer state.
-        setWhere: expectedUpdatedAt != null
-          ? sql`${monthlyPayments.updatedAt} = ${new Date(expectedUpdatedAt)}`
-          : undefined,
+        setWhere:
+          expectedUpdatedAt != null
+            ? sql`${monthlyPayments.updatedAt} = ${new Date(expectedUpdatedAt)}`
+            : undefined,
       })
       .returning();
     const updatedPayment = upserted[0];
@@ -356,7 +357,9 @@ export async function initializeMonth(adminId: number, year: number, month: numb
       }));
 
     if (updates.length > 0) {
-      await Promise.all(updates.map((update) => repository.upsertMonthlyPayment(update, tx)));
+      // ⚡ Bolt: Bulk upsert replacing Promise.all() loop to fix N+1 query issue
+      // and drastically reduce connection pool exhaustion and database roundtrips.
+      await repository.upsertMonthlyPaymentsBulk(updates, tx);
     }
 
     await logAuditAction({
