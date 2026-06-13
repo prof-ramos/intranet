@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { validateResetToken } from '@/lib/auth/password-reset';
 import { resetPassword } from '@/app/reset-password/actions';
+import { SubmitButton } from '@/app/reset-password/SubmitButton';
 import {
   dangerText,
   errorBg,
@@ -107,12 +108,7 @@ export default async function ResetPasswordPage({
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  className="inline-flex h-11 w-full items-center justify-center rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260]"
-                >
-                  Redefinir senha
-                </button>
+                <SubmitButton />
               </form>
 
               <Link
