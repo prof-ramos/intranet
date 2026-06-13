@@ -13,3 +13,6 @@
 ## 2024-05-24 - Missing Focus Rings on Standalone Buttons
 **Learning:** While `focusRingClass` from `tokens.ts` is widely used on form inputs and list items, standalone interactive components (like the sidebar's logout trigger and the login submit button) frequently omit focus-visible styles, breaking keyboard navigation visibility.
 **Action:** Always verify keyboard focus states specifically on root-level or abstracted interactive components to ensure `focusRingClass` or equivalent `focus-visible` utilities are applied.
+## 2026-06-13 - Missing Focus Rings on Reset Password Button
+**Learning:** While the login and forgot password submit buttons were updated to support async loading states and accessibility attributes, the reset password button lacked the `focusRingClass` to ensure consistent keyboard navigation visibility.
+**Action:** When creating or extracting interactive components like submit buttons, always verify that `focusRingClass` or equivalent focus-visible utilities are applied to maintain keyboard accessibility.
