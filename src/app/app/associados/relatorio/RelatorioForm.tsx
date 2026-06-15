@@ -2,43 +2,29 @@
 
 import { useState, useCallback, type FormEvent } from 'react';
 import { FileSpreadsheet } from 'lucide-react';
+import { ASSOCIATE_EXPORT_FIELDS, type AnnotatedField } from '@/lib/associates/lgpd';
 
-const FIELD_GROUPS = [
+// Group export fields into sections for the form UI
+const FIELD_GROUPS: { title: string; fields: AnnotatedField[] }[] = [
   {
     title: 'Dados Pessoais',
-    fields: [
-      { key: 'fullName', label: 'Nome' },
-      { key: 'primaryEmail', label: 'E-mail' },
-      { key: 'secondaryEmail', label: 'E-mail Secundário' },
-      { key: 'birthDate', label: 'Data de Nascimento' },
-      { key: 'cpf', label: 'CPF' },
-    ],
+    fields: ASSOCIATE_EXPORT_FIELDS.filter((f) =>
+      ['fullName', 'sex', 'maritalStatus', 'birthDate', 'birthCity', 'birthState', 'cpf', 'rg', 'rgIssuer', 'rgState', 'primaryEmail', 'secondaryEmail', 'phone', 'whatsapp'].includes(f.key),
+    ),
   },
   {
     title: 'Endereço',
-    fields: [
-      { key: 'address', label: 'Endereço' },
-      { key: 'locationCity', label: 'Cidade' },
-      { key: 'locationCountry', label: 'País' },
-      { key: 'phone', label: 'Telefone' },
-      { key: 'whatsapp', label: 'Celular/WhatsApp' },
-    ],
+    fields: ASSOCIATE_EXPORT_FIELDS.filter((f) =>
+      ['address', 'neighborhood', 'addressState', 'zipCode', 'locationCity', 'locationCountry'].includes(f.key),
+    ),
   },
   {
     title: 'Administrativo',
-    fields: [
-      { key: 'siape', label: 'Matrícula SIAPE' },
-      { key: 'assignment', label: 'Lotação' },
-      { key: 'assignmentStartDate', label: 'Data da Lotação' },
-      { key: 'classPattern', label: 'Classe e Padrão' },
-      { key: 'functionalStatus', label: 'Situação Funcional' },
-      { key: 'associationStatus', label: 'Situação Associativa' },
-      { key: 'contributionStatus', label: 'Contribuição' },
-      { key: 'joinedAt', label: 'Data de Adesão' },
-      { key: 'associationCategory', label: 'Categoria' },
-    ],
+    fields: ASSOCIATE_EXPORT_FIELDS.filter((f) =>
+      ['siape', 'assignment', 'assignmentStartDate', 'classPattern', 'functionalStatus', 'associationStatus', 'contributionStatus', 'joinedAt', 'associationCategory', 'missionType', 'careerOrigin', 'admissionDate', 'inaugurationDate', 'cancellationDate', 'paymentMethod', 'ceocMember', 'caocMember'].includes(f.key),
+    ),
   },
-] as const;
+];
 
 const allFieldKeys = FIELD_GROUPS.flatMap((g) => g.fields.map((f) => f.key));
 
@@ -46,17 +32,25 @@ type Filters = {
   functionalStatus: string;
   associationStatus: string;
   contributionStatus: string;
+  missionType: string;
+  careerOrigin: string;
+  paymentMethod: string;
   birthMonth: string;
+};
+
+const INITIAL_FILTERS: Filters = {
+  functionalStatus: 'todos',
+  associationStatus: 'todos',
+  contributionStatus: 'todos',
+  missionType: 'todos',
+  careerOrigin: 'todos',
+  paymentMethod: 'todos',
+  birthMonth: 'todos',
 };
 
 export function RelatorioForm() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [filters, setFilters] = useState<Filters>({
-    functionalStatus: 'todos',
-    associationStatus: 'todos',
-    contributionStatus: 'todos',
-    birthMonth: 'todos',
-  });
+  const [filters, setFilters] = useState<Filters>({ ...INITIAL_FILTERS });
 
   const isGroupFullySelected = useCallback(
     (groupIndex: number) => FIELD_GROUPS[groupIndex].fields.every((f) => selected.has(f.key)),
@@ -94,12 +88,7 @@ export function RelatorioForm() {
 
   function clearAll() {
     setSelected(new Set());
-    setFilters({
-      functionalStatus: 'todos',
-      associationStatus: 'todos',
-      contributionStatus: 'todos',
-      birthMonth: 'todos',
-    });
+    setFilters({ ...INITIAL_FILTERS });
   }
 
   function handleSubmit(event: FormEvent) {
@@ -196,14 +185,7 @@ export function RelatorioForm() {
           </h2>
           <button
             type="button"
-            onClick={() =>
-              setFilters({
-                functionalStatus: 'todos',
-                associationStatus: 'todos',
-                contributionStatus: 'todos',
-                birthMonth: 'todos',
-              })
-            }
+            onClick={() => setFilters({ ...INITIAL_FILTERS })}
             className="inline-flex h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold transition focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:outline-none"
             style={{ borderColor: '#c9d2df', background: '#fff', color: '#59677a' }}
           >
@@ -278,6 +260,76 @@ export function RelatorioForm() {
               <option value="em_dia">Em Dia</option>
               <option value="inadimplente">Inadimplente</option>
               <option value="pendente_migracao">Pendente de Migração</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="filter-mission-type"
+              className="text-[11px] font-bold tracking-[0.10em] uppercase"
+              style={{ color: '#59677a' }}
+            >
+              Tipo de Missão
+            </label>
+            <select
+              id="filter-mission-type"
+              name="missionType"
+              value={filters.missionType}
+              onChange={(e) => setFilters((f) => ({ ...f, missionType: e.target.value }))}
+              className="h-12 w-full rounded-[8px] border bg-white px-3 text-sm"
+              style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
+            >
+              <option value="todos">Todos</option>
+              <option value="permanente">Permanente</option>
+              <option value="transitoria">Transitória</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="filter-career-origin"
+              className="text-[11px] font-bold tracking-[0.10em] uppercase"
+              style={{ color: '#59677a' }}
+            >
+              Origem de Carreira
+            </label>
+            <select
+              id="filter-career-origin"
+              name="careerOrigin"
+              value={filters.careerOrigin}
+              onChange={(e) => setFilters((f) => ({ ...f, careerOrigin: e.target.value }))}
+              className="h-12 w-full rounded-[8px] border bg-white px-3 text-sm"
+              style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
+            >
+              <option value="todos">Todos</option>
+              <option value="brasil">Brasil</option>
+              <option value="exterior">Exterior</option>
+              <option value="outros_orgaos">Outros Órgãos</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="filter-payment-method"
+              className="text-[11px] font-bold tracking-[0.10em] uppercase"
+              style={{ color: '#59677a' }}
+            >
+              Forma de Pagamento
+            </label>
+            <select
+              id="filter-payment-method"
+              name="paymentMethod"
+              value={filters.paymentMethod}
+              onChange={(e) => setFilters((f) => ({ ...f, paymentMethod: e.target.value }))}
+              className="h-12 w-full rounded-[8px] border bg-white px-3 text-sm"
+              style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
+            >
+              <option value="todos">Todos</option>
+              <option value="folha">Folha</option>
+              <option value="boleto">Boleto</option>
+              <option value="pix">PIX</option>
+              <option value="transferencia">Transferência</option>
+              <option value="outros">Outros</option>
             </select>
           </div>
 

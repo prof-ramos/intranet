@@ -18,6 +18,18 @@ function isContributionStatus(v: string): v is 'em_dia' | 'inadimplente' | 'pend
   return ['em_dia', 'inadimplente', 'pendente_migracao'].includes(v);
 }
 
+function isMissionType(v: string): v is 'permanente' | 'transitoria' {
+  return ['permanente', 'transitoria'].includes(v);
+}
+
+function isCareerOrigin(v: string): v is 'brasil' | 'exterior' | 'outros_orgaos' {
+  return ['brasil', 'exterior', 'outros_orgaos'].includes(v);
+}
+
+function isPaymentMethod(v: string): v is 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros' {
+  return ['folha', 'boleto', 'pix', 'transferencia', 'outros'].includes(v);
+}
+
 export function parseReportExportParams(searchParams: URLSearchParams): {
   filters: ReportFilters;
   selectedKeys: string[];
@@ -49,6 +61,21 @@ export function parseReportExportParams(searchParams: URLSearchParams): {
     isContributionStatus(contributionStatusParam)
   ) {
     filters.contributionStatus = contributionStatusParam;
+  }
+
+  const missionTypeParam = searchParams.get('missionType');
+  if (missionTypeParam && missionTypeParam !== 'todos' && isMissionType(missionTypeParam)) {
+    filters.missionType = missionTypeParam;
+  }
+
+  const careerOriginParam = searchParams.get('careerOrigin');
+  if (careerOriginParam && careerOriginParam !== 'todos' && isCareerOrigin(careerOriginParam)) {
+    filters.careerOrigin = careerOriginParam;
+  }
+
+  const paymentMethodParam = searchParams.get('paymentMethod');
+  if (paymentMethodParam && paymentMethodParam !== 'todos' && isPaymentMethod(paymentMethodParam)) {
+    filters.paymentMethod = paymentMethodParam;
   }
 
   const birthMonthParam = searchParams.get('birthMonth');
