@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth/require-auth';
 import { focusRingClass, hairline } from '@/lib/ui/tokens';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 import { requireEntityById } from '@/lib/routing/require-entity';
+import { DependentManager, HealthAgreementManager } from './DependentManager';
 import {
   formatAssociateDate,
   getAssociateProfile,
@@ -498,76 +499,15 @@ export default async function AssociadoPerfilPage({
           <SectionCard
             id="dependentes"
             title={`Dependentes (${dependents.length})`}
-            action={<EditLink href={`/app/associados/${id}/editar`}>Gerenciar</EditLink>}
           >
-            {dependents.length === 0 ? (
-              <p className="text-base-content/55 m-0 text-sm">
-                Nenhum dependente cadastrado.
-              </p>
-            ) : (
-              <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                {dependents.map((dep) => (
-                  <li
-                    key={dep.id}
-                    className="flex items-center gap-3 rounded-[8px] border border-[rgba(4,9,32,0.05)] bg-white px-3.5 py-3"
-                  >
-                    <span
-                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f0f4f8] text-xs font-semibold text-[rgba(13,31,60,0.70)]"
-                      aria-hidden="true"
-                    >
-                      {dep.relationship === 'conjuge'
-                        ? 'C'
-                        : dep.relationship.startsWith('filho')
-                          ? 'F'
-                          : 'D'}
-                    </span>
-                    <p className="m-0 min-w-0 flex-1 text-sm font-medium">{dep.name}</p>
-                    <span className="text-base-content/55 text-xs capitalize">
-                      {dep.relationship}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <DependentManager associateId={associateId!} items={dependents} />
           </SectionCard>
 
           <SectionCard
             id="convenios"
             title={`Convênios (${healthAgreements.length})`}
           >
-            {healthAgreements.length === 0 ? (
-              <p className="text-base-content/55 m-0 text-sm">
-                Nenhum convênio cadastrado.
-              </p>
-            ) : (
-              <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                {healthAgreements.map((ha) => (
-                  <li
-                    key={ha.id}
-                    className="flex items-center gap-3 rounded-[8px] border border-[rgba(4,9,32,0.05)] bg-white px-3.5 py-3"
-                  >
-                    <span
-                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#dcfce7] text-xs font-semibold text-[#15803d]"
-                      aria-hidden="true"
-                    >
-                      +
-                    </span>
-                    <p className="m-0 min-w-0 flex-1 text-sm font-medium">{ha.provider}</p>
-                    {(ha.startDate || ha.endDate) && (
-                      <span className="text-base-content/55 text-xs">
-                        {ha.startDate && ha.endDate
-                          ? `${formatAssociateDate(ha.startDate)} – ${formatAssociateDate(ha.endDate)}`
-                          : ha.startDate
-                            ? `Desde ${formatAssociateDate(ha.startDate)}`
-                            : ha.endDate
-                              ? `Até ${formatAssociateDate(ha.endDate)}`
-                              : ''}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <HealthAgreementManager associateId={associateId!} items={healthAgreements} />
           </SectionCard>
 
           <SectionCard

@@ -290,6 +290,62 @@ export const updateAssociateSchema = z.object({
   internalNotes: z.string().trim().nullable().optional(),
 });
 
+// ─── Dependent & Health Agreement Schemas ────────────────────────────────
+
+export const createDependentSchema = z.object({
+  associateId: z.coerce.number().int().positive('ID do associado inválido.'),
+  name: z.string().trim().min(1, 'Nome do dependente é obrigatório.').max(200),
+  relationship: z.string().trim().min(1, 'Parentesco é obrigatório.').max(100),
+});
+
+export const updateDependentSchema = z.object({
+  id: z.coerce.number().int().positive('ID do dependente inválido.'),
+  name: z.string().trim().min(1, 'Nome do dependente é obrigatório.').max(200).optional(),
+  relationship: z.string().trim().min(1, 'Parentesco é obrigatório.').max(100).optional(),
+});
+
+export const deleteDependentSchema = z.object({
+  id: z.coerce.number().int().positive('ID do dependente inválido.'),
+});
+
+export const createHealthAgreementSchema = z.object({
+  associateId: z.coerce.number().int().positive('ID do associado inválido.'),
+  provider: z.string().trim().min(1, 'Convênio é obrigatório.').max(200),
+  startDate: z
+    .string()
+    .trim()
+    .refine((v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), 'Data de início inválida.')
+    .nullable()
+    .optional(),
+  endDate: z
+    .string()
+    .trim()
+    .refine((v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), 'Data de término inválida.')
+    .nullable()
+    .optional(),
+});
+
+export const updateHealthAgreementSchema = z.object({
+  id: z.coerce.number().int().positive('ID do convênio inválido.'),
+  provider: z.string().trim().min(1, 'Convênio é obrigatório.').max(200).optional(),
+  startDate: z
+    .string()
+    .trim()
+    .refine((v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), 'Data de início inválida.')
+    .nullable()
+    .optional(),
+  endDate: z
+    .string()
+    .trim()
+    .refine((v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), 'Data de término inválida.')
+    .nullable()
+    .optional(),
+});
+
+export const deleteHealthAgreementSchema = z.object({
+  id: z.coerce.number().int().positive('ID do convênio inválido.'),
+});
+
 export const validEntityTypes = ['consultation', 'process'] as const;
 
 export const createConsultationSchema = z.object({

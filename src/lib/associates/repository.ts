@@ -337,3 +337,91 @@ export async function findHealthAgreementsByAssociateId(
     .where(eq(healthAgreements.associateId, associateId))
     .orderBy(asc(healthAgreements.id));
 }
+
+// ─── Dependent CRUD ─────────────────────────────────────────────────────
+
+export interface CreateDependentInput {
+  associateId: number;
+  name: string;
+  relationship: string;
+}
+
+export interface UpdateDependentInput {
+  name?: string;
+  relationship?: string;
+}
+
+export async function createDependent(input: CreateDependentInput): Promise<DependentItem> {
+  const [row] = await db
+    .insert(dependents)
+    .values({
+      associateId: input.associateId,
+      name: input.name,
+      relationship: input.relationship,
+    })
+    .returning({ id: dependents.id, name: dependents.name, relationship: dependents.relationship });
+  return row;
+}
+
+export async function updateDependentById(
+  id: number,
+  values: UpdateDependentInput,
+): Promise<void> {
+  await db
+    .update(dependents)
+    .set({ ...values, updatedAt: new Date() })
+    .where(eq(dependents.id, id));
+}
+
+export async function deleteDependentById(id: number): Promise<void> {
+  await db.delete(dependents).where(eq(dependents.id, id));
+}
+
+// ─── Health Agreement CRUD ───────────────────────────────────────────────
+
+export interface CreateHealthAgreementInput {
+  associateId: number;
+  provider: string;
+  startDate?: string | null;
+  endDate?: string | null;
+}
+
+export interface UpdateHealthAgreementInput {
+  provider?: string;
+  startDate?: string | null;
+  endDate?: string | null;
+}
+
+export async function createHealthAgreement(
+  input: CreateHealthAgreementInput,
+): Promise<HealthAgreementItem> {
+  const [row] = await db
+    .insert(healthAgreements)
+    .values({
+      associateId: input.associateId,
+      provider: input.provider,
+      startDate: input.startDate ?? null,
+      endDate: input.endDate ?? null,
+    })
+    .returning({
+      id: healthAgreements.id,
+      provider: healthAgreements.provider,
+      startDate: healthAgreements.startDate,
+      endDate: healthAgreements.endDate,
+    });
+  return row;
+}
+
+export async function updateHealthAgreementById(
+  id: number,
+  values: UpdateHealthAgreementInput,
+): Promise<void> {
+  await db
+    .update(healthAgreements)
+    .set({ ...values, updatedAt: new Date() })
+    .where(eq(healthAgreements.id, id));
+}
+
+export async function deleteHealthAgreementById(id: number): Promise<void> {
+  await db.delete(healthAgreements).where(eq(healthAgreements.id, id));
+}
