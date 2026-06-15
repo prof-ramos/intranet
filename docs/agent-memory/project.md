@@ -75,3 +75,12 @@
 - **Evidência**: Sessão 2026-06-12 — CI falhou quando expectedColumns/expectedEnums/expectedIndexes não bateram com o banco.
 - **Regra preventiva**: Ao mudar migrações ou schemas Drizzle, sempre atualizar `schema.integration.test.ts` correspondente. Nunca assumir que o teste está correto sem validar contra o banco real.
 - **Confiança**: alta
+
+## 2026-06-15 — Server Actions são schema-first
+
+- **Tipo**: Padrão arquitetural
+- **Escopo**: `src/lib/server-actions/define-form-action.ts` e callers em `src/app/**/actions.ts`
+- **Memória**: Server Actions com entrada devem declarar schema Zod no helper (`defineServerAction` ou `defineFormStateAction`). Actions sem entrada devem usar `defineNoInputServerAction`. O fallback cru para `FormData`/payload sem schema foi removido no PR #201.
+- **Evidência**: PR #201, merge commit `a543e9c`; commits do PR `2864305` e `45d495c` tornaram schemas obrigatórios e migraram os callers.
+- **Regra preventiva**: Não adicionar overload opcional `schema?:`, não passar `Record<string, unknown>` cru para services e não reintroduzir parsing manual antes do schema. Para campos de formulário repetidos, lembrar que `formDataToRecord()` usa `FormData.getAll()` e preserva arrays.
+- **Confiança**: alta

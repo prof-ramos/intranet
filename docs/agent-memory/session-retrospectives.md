@@ -64,3 +64,23 @@
 
 ---
 
+## 2026-06-15 — Arquitetura de Server Actions do PR #201
+
+**Problema**: O refactor do PR #201 apertou a fronteira de Server Actions, mas a decisão arquitetural ainda estava documentada só em artefato temporário (`/tmp/refactor-intranet.md`) e no histórico do PR.
+
+**Decisão tomada**:
+- `defineServerAction` e `defineFormStateAction` agora são fronteiras schema-first: toda action com entrada deve declarar schema Zod.
+- `defineNoInputServerAction` é o helper canônico para Server Actions sem entrada.
+- O fallback cru de `FormData`/payload sem schema não deve ser reintroduzido.
+- Falso positivo importante de revisão: `formDataToRecord()` preserva chaves repetidas via `FormData.getAll()`, então campos como `subscribedEvents` continuam suportando múltiplos valores.
+
+**Lições promovidas para memória permanente:**
+- → `docs/agent-memory/project.md`: Server Actions com entrada exigem schema Zod; actions sem entrada usam `defineNoInputServerAction`.
+
+**Pendências**: Nenhuma.
+
+**Riscos para próxima sessão**:
+- Ao adicionar novas actions, não contornar o helper com casts ou parsing manual antes do schema.
+- Ao revisar campos multivalorados de formulário, verificar `formDataToRecord()` antes de assumir perda de arrays.
+
+---
