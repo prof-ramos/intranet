@@ -160,6 +160,7 @@ function CheckboxField({
         id={id}
         name={id}
         type="checkbox"
+        value="true"
         defaultChecked={defaultChecked ?? false}
         className="checkbox checkbox-sm"
       />

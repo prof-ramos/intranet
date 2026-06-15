@@ -5,14 +5,6 @@ import { defineFormAction } from '@/lib/server-actions/define-form-action';
 import { updateAssociateSchema } from '@/lib/validation/schemas';
 import { updateAssociateData } from '@/lib/associates/service';
 
-function booleanOrEmpty(value: FormDataEntryValue | undefined): boolean | null | undefined {
-  if (value === undefined) return undefined;
-  if (value === '' || value === 'null') return null;
-  if (value === 'true') return true;
-  if (value === 'false') return false;
-  return undefined;
-}
-
 export const updateAssociate = defineFormAction({
   auth: ['admin', 'diretoria'],
   schema: updateAssociateSchema,
@@ -22,6 +14,7 @@ export const updateAssociate = defineFormAction({
     const maritalStatus = data.maritalStatus === '' ? null : data.maritalStatus;
     const missionType = data.missionType === '' ? null : data.missionType;
     const careerOrigin = data.careerOrigin === '' ? null : data.careerOrigin;
+    const paymentMethod = data.paymentMethod === '' ? null : data.paymentMethod;
 
     await updateAssociateData({
       id: data.id,
@@ -54,7 +47,7 @@ export const updateAssociate = defineFormAction({
       functionalStatus: functionalStatus ?? null,
       associationStatus: data.associationStatus ?? null,
       contributionStatus: data.contributionStatus ?? null,
-      paymentMethod: data.paymentMethod ?? null,
+      paymentMethod,
       missionType,
       careerOrigin,
       admissionDate: data.admissionDate ?? null,

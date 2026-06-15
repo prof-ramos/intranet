@@ -252,7 +252,7 @@ export const updateAssociateSchema = z.object({
   functionalStatus: z.enum(validFunctionalStatuses).nullable().or(z.literal('')).optional(),
   associationStatus: z.enum(validAssociationStatuses).nullable().optional(),
   contributionStatus: z.enum(validContributionStatuses).nullable().optional(),
-  paymentMethod: z.enum(validPaymentMethodValues).nullable().optional(),
+  paymentMethod: z.enum(validPaymentMethodValues).nullable().or(z.literal('')).optional(),
   missionType: z.enum(validMissionTypeValues).nullable().or(z.literal('')).optional(),
   careerOrigin: z.enum(validCareerOriginValues).nullable().or(z.literal('')).optional(),
   admissionDate: z
