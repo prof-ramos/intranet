@@ -451,7 +451,8 @@ export function transformLegacyRecord(
   // CPF normalization
   const cpfResult = normalizeCpf(getString('C.P.F.'));
   if (cpfResult.issue !== 'ok' && getString('C.P.F.') !== '-') {
-    warnings.push(`CPF issue at row ${rowIndex}: ${cpfResult.issue} (${getString('C.P.F.')})`);
+    // PII: redact raw CPF — show only issue type, not the value
+    warnings.push(`CPF issue at row ${rowIndex}: ${cpfResult.issue}`);
   }
 
   // SIAPE normalization

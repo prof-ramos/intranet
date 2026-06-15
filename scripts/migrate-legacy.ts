@@ -298,9 +298,13 @@ async function main() {
           stats.updated++;
         }
 
-        // Delete + re-insert dependents (always fresh for this associate)
+        // Always delete existing dependents/health_agreements for this associate
+        // (handles stale data when source removes entries on re-run)
+        await tx.delete(dependents).where(eq(dependents.associateId, associateId));
+        await tx.delete(healthAgreements).where(eq(healthAgreements.associateId, associateId));
+
+        // Re-insert dependents if any
         if (transformed.dependents.length > 0) {
-          await tx.delete(dependents).where(eq(dependents.associateId, associateId));
           await tx.insert(dependents).values(
             transformed.dependents.map((d: Dependent) => ({
               associateId,
@@ -311,9 +315,8 @@ async function main() {
           stats.dependentsInserted += transformed.dependents.length;
         }
 
-        // Delete + re-insert health agreements (always fresh)
+        // Re-insert health agreements if any
         if (transformed.healthAgreements.length > 0) {
-          await tx.delete(healthAgreements).where(eq(healthAgreements.associateId, associateId));
           await tx.insert(healthAgreements).values(
             transformed.healthAgreements.map((provider: string) => ({
               associateId,
