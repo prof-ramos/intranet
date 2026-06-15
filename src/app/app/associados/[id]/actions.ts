@@ -59,7 +59,7 @@ export async function editDependentAction(formData: FormData) {
   const { id, ...values } = data;
   if (Object.keys(values).length === 0) return;
 
-  await updateDependentById(id, values);
+  await updateDependentById(id, values, associateId ? Number(associateId) : undefined);
 
   revalidatePath('/app/associados');
   if (associateId) {
@@ -77,7 +77,7 @@ export async function removeDependentAction(formData: FormData) {
     id: formData.get('id'),
   });
 
-  await deleteDependentById(data.id);
+  await deleteDependentById(data.id, associateId ? Number(associateId) : undefined);
 
   revalidatePath('/app/associados');
   if (associateId) {
@@ -120,7 +120,7 @@ export async function editHealthAgreementAction(formData: FormData) {
   const { id, ...values } = data;
   if (Object.keys(values).length === 0) return;
 
-  await updateHealthAgreementById(id, values);
+  await updateHealthAgreementById(id, values, associateId ? Number(associateId) : undefined);
 
   revalidatePath('/app/associados');
   if (associateId) {
@@ -138,7 +138,7 @@ export async function removeHealthAgreementAction(formData: FormData) {
     id: formData.get('id'),
   });
 
-  await deleteHealthAgreementById(data.id);
+  await deleteHealthAgreementById(data.id, associateId ? Number(associateId) : undefined);
 
   revalidatePath('/app/associados');
   if (associateId) {

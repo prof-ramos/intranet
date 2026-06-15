@@ -337,10 +337,13 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
     values.careerOrigin = input.careerOrigin as CoEnum | null;
   }
   if (input.paymentMethod !== undefined) {
-    if (input.paymentMethod === null || !isPmEnum(input.paymentMethod)) {
+    if (input.paymentMethod === null) {
+      // Column is NOT NULL with default 'folha' — skip update to preserve existing value
+    } else if (!isPmEnum(input.paymentMethod)) {
       throw new Error('paymentMethod inválido.');
+    } else {
+      values.paymentMethod = input.paymentMethod;
     }
-    values.paymentMethod = input.paymentMethod;
   }
   if (input.internalNotes !== undefined) values.internalNotes = input.internalNotes;
 
