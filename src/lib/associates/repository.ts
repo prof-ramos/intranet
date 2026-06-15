@@ -7,6 +7,11 @@ import {
   functionalStatus,
   associationStatus,
   contributionStatus,
+  sex,
+  maritalStatus,
+  missionType,
+  careerOrigin,
+  paymentMethod,
 } from '@/lib/db/schema';
 import { eq, and, count, asc, sql } from 'drizzle-orm';
 import { buildAssociateNameSearchPattern } from './search-params';
@@ -15,6 +20,11 @@ import { decryptPiiField } from '@/lib/crypto/pii';
 type FunctionalStatusEnum = (typeof functionalStatus.enumValues)[number];
 type AssociationStatusEnum = (typeof associationStatus.enumValues)[number];
 type ContributionStatusEnum = (typeof contributionStatus.enumValues)[number];
+type SexEnum = (typeof sex.enumValues)[number];
+type MaritalStatusEnum = (typeof maritalStatus.enumValues)[number];
+type MissionTypeEnum = (typeof missionType.enumValues)[number];
+type CareerOriginEnum = (typeof careerOrigin.enumValues)[number];
+type PaymentMethodEnum = (typeof paymentMethod.enumValues)[number];
 
 const publicAssociateListColumns = {
   id: associates.id,
@@ -157,6 +167,16 @@ export interface UpdateAssociateValues {
   rg?: string | null;
   rgCiphertext?: string | null;
   rgHash?: string | null;
+  rgIssuer?: string | null;
+  rgState?: string | null;
+  rgExpeditionDate?: string | null;
+  sex?: SexEnum | null;
+  maritalStatus?: MaritalStatusEnum | null;
+  birthCity?: string | null;
+  birthState?: string | null;
+  neighborhood?: string | null;
+  addressState?: string | null;
+  zipCode?: string | null;
   locationCity?: string | null;
   locationCountry?: string | null;
   assignment?: string | null;
@@ -166,6 +186,14 @@ export interface UpdateAssociateValues {
   functionalStatus?: FunctionalStatusEnum | null;
   associationStatus?: AssociationStatusEnum;
   contributionStatus?: ContributionStatusEnum;
+  missionType?: MissionTypeEnum | null;
+  careerOrigin?: CareerOriginEnum | null;
+  admissionDate?: string | null;
+  inaugurationDate?: string | null;
+  cancellationDate?: string | null;
+  ceocMember?: boolean | null;
+  caocMember?: boolean | null;
+  paymentMethod?: PaymentMethodEnum;
   internalNotes?: string | null;
 }
 

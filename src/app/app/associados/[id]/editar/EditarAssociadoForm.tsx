@@ -10,18 +10,92 @@ import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('associados:edit-form');
 
+const inputStyle = 'input input-bordered w-full';
+const selectStyle = 'select select-bordered w-full';
+const textareaStyle = 'textarea textarea-bordered w-full';
+
+const sexOptions = [
+  { value: '', label: 'Selecione...' },
+  { value: 'M', label: 'Masculino' },
+  { value: 'F', label: 'Feminino' },
+];
+
+const maritalStatusOptions = [
+  { value: '', label: 'Selecione...' },
+  { value: 'solteiro', label: 'Solteiro(a)' },
+  { value: 'casado', label: 'Casado(a)' },
+  { value: 'divorciado', label: 'Divorciado(a)' },
+  { value: 'viuvo', label: 'Viúvo(a)' },
+  { value: 'separado', label: 'Separado(a)' },
+  { value: 'outros', label: 'Outros' },
+];
+
+const missionTypeOptions = [
+  { value: '', label: 'Selecione...' },
+  { value: 'permanente', label: 'Permanente' },
+  { value: 'transitoria', label: 'Transitória' },
+];
+
+const careerOriginOptions = [
+  { value: '', label: 'Selecione...' },
+  { value: 'brasil', label: 'Brasil' },
+  { value: 'exterior', label: 'Exterior' },
+  { value: 'outros_orgaos', label: 'Outros Órgãos' },
+];
+
+const paymentMethodOptions = [
+  { value: '', label: 'Selecione...' },
+  { value: 'folha', label: 'Folha de pagamento' },
+  { value: 'boleto', label: 'Boleto' },
+  { value: 'pix', label: 'Pix' },
+  { value: 'transferencia', label: 'Transferência' },
+  { value: 'outros', label: 'Outros' },
+];
+
+const functionalStatusOptions = [
+  { value: '', label: 'Selecione...' },
+  { value: 'ativo', label: 'Ativo' },
+  { value: 'aposentado', label: 'Aposentado' },
+  { value: 'cedido', label: 'Cedido' },
+  { value: 'em_licenca', label: 'Em licença' },
+];
+
+const associationStatusOptions = [
+  { value: '', label: 'Selecione...' },
+  { value: 'ativo', label: 'Ativo' },
+  { value: 'inativo', label: 'Inativo' },
+];
+
+const contributionStatusOptions = [
+  { value: '', label: 'Selecione...' },
+  { value: 'em_dia', label: 'Em dia' },
+  { value: 'inadimplente', label: 'Inadimplente' },
+  { value: 'pendente_migracao', label: 'Pendente migração' },
+];
+
 interface Props {
   associate: {
     id: number;
     fullName: string;
     cpf: string | null;
+    rg: string | null;
+    rgIssuer: string | null;
+    rgState: string | null;
+    rgExpeditionDate: string | null;
     siape: string | null;
+    sex: string | null;
+    maritalStatus: string | null;
+    birthDate: string | null;
+    birthCity: string | null;
+    birthState: string | null;
     primaryEmail: string | null;
     secondaryEmail: string | null;
     phone: string | null;
     whatsapp: string | null;
-    birthDate: string | null;
     address: string | null;
+    neighborhood: string | null;
+    addressState: string | null;
+    zipCode: string | null;
     locationCity: string | null;
     locationCountry: string | null;
     assignment: string | null;
@@ -31,9 +105,69 @@ interface Props {
     functionalStatus: string | null;
     associationStatus: string;
     contributionStatus: string;
+    paymentMethod: string;
+    missionType: string | null;
+    careerOrigin: string | null;
+    admissionDate: string | null;
+    inaugurationDate: string | null;
+    cancellationDate: string | null;
+    ceocMember: boolean | null;
+    caocMember: boolean | null;
     internalNotes?: string | null;
   };
   canEditInternalNotes: boolean;
+}
+
+function SelectField({
+  id,
+  label,
+  options,
+  defaultValue,
+}: {
+  id: string;
+  label: string;
+  options: { value: string; label: string }[];
+  defaultValue?: string;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="label">
+        <span className="label-text font-semibold">{label}</span>
+      </label>
+      <select id={id} name={id} defaultValue={defaultValue ?? ''} className={selectStyle}>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function CheckboxField({
+  id,
+  label,
+  defaultChecked,
+}: {
+  id: string;
+  label: string;
+  defaultChecked?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3 pt-2">
+      <input
+        id={id}
+        name={id}
+        type="checkbox"
+        defaultChecked={defaultChecked ?? false}
+        className="checkbox checkbox-sm"
+      />
+      <label htmlFor={id} className="text-sm font-medium">
+        {label}
+      </label>
+    </div>
+  );
 }
 
 export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) {
@@ -96,7 +230,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 type="text"
                 required
                 defaultValue={associate.fullName}
-                className="input input-bordered w-full"
+                className={inputStyle}
               />
             </div>
 
@@ -109,10 +243,71 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="cpf"
                 type="text"
                 defaultValue={associate.cpf ?? ''}
-                className="input input-bordered w-full"
+                className={inputStyle}
                 placeholder="000.000.000-00"
                 spellCheck={false}
                 autoComplete="off"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="rg" className="label">
+                <span className="label-text font-semibold">RG</span>
+              </label>
+              <input
+                id="rg"
+                name="rg"
+                type="text"
+                defaultValue={associate.rg ?? ''}
+                className={inputStyle}
+                spellCheck={false}
+                autoComplete="off"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="rgIssuer" className="label">
+                <span className="label-text font-semibold">Órgão Expedidor</span>
+              </label>
+              <input
+                id="rgIssuer"
+                name="rgIssuer"
+                type="text"
+                defaultValue={associate.rgIssuer ?? ''}
+                className={inputStyle}
+                placeholder="SSP"
+                spellCheck={false}
+                autoComplete="off"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="rgState" className="label">
+                <span className="label-text font-semibold">UF RG</span>
+              </label>
+              <input
+                id="rgState"
+                name="rgState"
+                type="text"
+                defaultValue={associate.rgState ?? ''}
+                className={inputStyle}
+                maxLength={2}
+                placeholder="DF"
+                spellCheck={false}
+                autoComplete="off"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="rgExpeditionDate" className="label">
+                <span className="label-text font-semibold">Data expedição RG</span>
+              </label>
+              <input
+                id="rgExpeditionDate"
+                name="rgExpeditionDate"
+                type="date"
+                defaultValue={associate.rgExpeditionDate ?? ''}
+                className={inputStyle}
               />
             </div>
 
@@ -125,11 +320,25 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="siape"
                 type="text"
                 defaultValue={associate.siape ?? ''}
-                className="input input-bordered w-full"
+                className={inputStyle}
                 spellCheck={false}
                 autoComplete="off"
               />
             </div>
+
+            <SelectField
+              id="sex"
+              label="Sexo"
+              options={sexOptions}
+              defaultValue={associate.sex ?? ''}
+            />
+
+            <SelectField
+              id="maritalStatus"
+              label="Estado civil"
+              options={maritalStatusOptions}
+              defaultValue={associate.maritalStatus ?? ''}
+            />
 
             <div>
               <label htmlFor="birthDate" className="label">
@@ -140,7 +349,35 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="birthDate"
                 type="date"
                 defaultValue={associate.birthDate ?? ''}
-                className="input input-bordered w-full"
+                className={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="birthCity" className="label">
+                <span className="label-text font-semibold">Naturalidade</span>
+              </label>
+              <input
+                id="birthCity"
+                name="birthCity"
+                type="text"
+                defaultValue={associate.birthCity ?? ''}
+                className={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="birthState" className="label">
+                <span className="label-text font-semibold">UF Naturalidade</span>
+              </label>
+              <input
+                id="birthState"
+                name="birthState"
+                type="text"
+                defaultValue={associate.birthState ?? ''}
+                className={inputStyle}
+                maxLength={2}
+                placeholder="DF"
               />
             </div>
 
@@ -153,7 +390,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="primaryEmail"
                 type="email"
                 defaultValue={associate.primaryEmail ?? ''}
-                className="input input-bordered w-full"
+                className={inputStyle}
               />
             </div>
 
@@ -166,7 +403,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="secondaryEmail"
                 type="email"
                 defaultValue={associate.secondaryEmail ?? ''}
-                className="input input-bordered w-full"
+                className={inputStyle}
               />
             </div>
 
@@ -179,7 +416,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="phone"
                 type="tel"
                 defaultValue={associate.phone ?? ''}
-                className="input input-bordered w-full"
+                className={inputStyle}
               />
             </div>
 
@@ -192,7 +429,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="whatsapp"
                 type="tel"
                 defaultValue={associate.whatsapp ?? ''}
-                className="input input-bordered w-full"
+                className={inputStyle}
               />
             </div>
           </div>
@@ -211,7 +448,50 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="address"
                 rows={3}
                 defaultValue={associate.address ?? ''}
-                className="textarea textarea-bordered w-full"
+                className={textareaStyle}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="neighborhood" className="label">
+                <span className="label-text font-semibold">Bairro</span>
+              </label>
+              <input
+                id="neighborhood"
+                name="neighborhood"
+                type="text"
+                defaultValue={associate.neighborhood ?? ''}
+                className={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="addressState" className="label">
+                <span className="label-text font-semibold">Estado (UF)</span>
+              </label>
+              <input
+                id="addressState"
+                name="addressState"
+                type="text"
+                defaultValue={associate.addressState ?? ''}
+                className={inputStyle}
+                maxLength={2}
+                placeholder="DF"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="zipCode" className="label">
+                <span className="label-text font-semibold">CEP</span>
+              </label>
+              <input
+                id="zipCode"
+                name="zipCode"
+                type="text"
+                defaultValue={associate.zipCode ?? ''}
+                className={inputStyle}
+                spellCheck={false}
+                autoComplete="postal-code"
               />
             </div>
 
@@ -224,7 +504,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="locationCity"
                 type="text"
                 defaultValue={associate.locationCity ?? ''}
-                className="input input-bordered w-full"
+                className={inputStyle}
               />
             </div>
 
@@ -237,16 +517,50 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="locationCountry"
                 type="text"
                 defaultValue={associate.locationCountry ?? ''}
-                className="input input-bordered w-full"
+                className={inputStyle}
               />
             </div>
           </div>
         </section>
 
-        {/* Administrativo */}
+        {/* Dados Profissionais */}
         <section className="mb-6 rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-5 sm:p-7">
-          <h2 className="mb-4 font-serif text-[22px] leading-tight font-bold">Administrativo</h2>
+          <h2 className="mb-4 font-serif text-[22px] leading-tight font-bold">Dados Profissionais</h2>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <SelectField
+              id="functionalStatus"
+              label="Situação funcional"
+              options={functionalStatusOptions}
+              defaultValue={associate.functionalStatus ?? ''}
+            />
+
+            <SelectField
+              id="missionType"
+              label="Tipo de missão"
+              options={missionTypeOptions}
+              defaultValue={associate.missionType ?? ''}
+            />
+
+            <SelectField
+              id="careerOrigin"
+              label="Origem de carreira"
+              options={careerOriginOptions}
+              defaultValue={associate.careerOrigin ?? ''}
+            />
+
+            <div>
+              <label htmlFor="classPattern" className="label">
+                <span className="label-text font-semibold">Classe / Padrão</span>
+              </label>
+              <input
+                id="classPattern"
+                name="classPattern"
+                type="text"
+                defaultValue={associate.classPattern ?? ''}
+                className={inputStyle}
+              />
+            </div>
+
             <div>
               <label htmlFor="assignment" className="label">
                 <span className="label-text font-semibold">Lotação atual</span>
@@ -256,7 +570,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="assignment"
                 type="text"
                 defaultValue={associate.assignment ?? ''}
-                className="input input-bordered w-full"
+                className={inputStyle}
               />
             </div>
 
@@ -269,23 +583,55 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="assignmentStartDate"
                 type="date"
                 defaultValue={associate.assignmentStartDate ?? ''}
-                className="input input-bordered w-full"
+                className={inputStyle}
               />
             </div>
 
             <div>
-              <label htmlFor="classPattern" className="label">
-                <span className="label-text font-semibold">Classe / Padrão</span>
+              <label htmlFor="admissionDate" className="label">
+                <span className="label-text font-semibold">Data de admissão</span>
               </label>
               <input
-                id="classPattern"
-                name="classPattern"
-                type="text"
-                defaultValue={associate.classPattern ?? ''}
-                className="input input-bordered w-full"
+                id="admissionDate"
+                name="admissionDate"
+                type="date"
+                defaultValue={associate.admissionDate ?? ''}
+                className={inputStyle}
               />
             </div>
 
+            <div>
+              <label htmlFor="inaugurationDate" className="label">
+                <span className="label-text font-semibold">Data de posse</span>
+              </label>
+              <input
+                id="inaugurationDate"
+                name="inaugurationDate"
+                type="date"
+                defaultValue={associate.inaugurationDate ?? ''}
+                className={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="cancellationDate" className="label">
+                <span className="label-text font-semibold">Data de cancelamento</span>
+              </label>
+              <input
+                id="cancellationDate"
+                name="cancellationDate"
+                type="date"
+                defaultValue={associate.cancellationDate ?? ''}
+                className={inputStyle}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Administrativo */}
+        <section className="mb-6 rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-5 sm:p-7">
+          <h2 className="mb-4 font-serif text-[22px] leading-tight font-bold">Administrativo</h2>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
               <label htmlFor="associationCategory" className="label">
                 <span className="label-text font-semibold">Categoria</span>
@@ -295,60 +641,42 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="associationCategory"
                 type="text"
                 defaultValue={associate.associationCategory ?? ''}
-                className="input input-bordered w-full"
+                className={inputStyle}
               />
             </div>
 
-            <div>
-              <label htmlFor="functionalStatus" className="label">
-                <span className="label-text font-semibold">Situação funcional</span>
-              </label>
-              <select
-                id="functionalStatus"
-                name="functionalStatus"
-                defaultValue={associate.functionalStatus ?? ''}
-                className="select select-bordered w-full"
-              >
-                <option value="">Selecione...</option>
-                <option value="ativo">Ativo</option>
-                <option value="aposentado">Aposentado</option>
-                <option value="cedido">Cedido</option>
-                <option value="em_licenca">Em licença</option>
-              </select>
-            </div>
+            <SelectField
+              id="associationStatus"
+              label="Situação associativa"
+              options={associationStatusOptions}
+              defaultValue={associate.associationStatus}
+            />
 
-            <div>
-              <label htmlFor="associationStatus" className="label">
-                <span className="label-text font-semibold">Situação associativa</span>
-              </label>
-              <select
-                id="associationStatus"
-                name="associationStatus"
-                defaultValue={associate.associationStatus}
-                className="select select-bordered w-full"
-              >
-                <option value="">Selecione...</option>
-                <option value="ativo">Ativo</option>
-                <option value="inativo">Inativo</option>
-              </select>
-            </div>
+            <SelectField
+              id="contributionStatus"
+              label="Contribuição"
+              options={contributionStatusOptions}
+              defaultValue={associate.contributionStatus}
+            />
 
-            <div>
-              <label htmlFor="contributionStatus" className="label">
-                <span className="label-text font-semibold">Contribuição</span>
-              </label>
-              <select
-                id="contributionStatus"
-                name="contributionStatus"
-                defaultValue={associate.contributionStatus}
-                className="select select-bordered w-full"
-              >
-                <option value="">Selecione...</option>
-                <option value="em_dia">Em dia</option>
-                <option value="inadimplente">Inadimplente</option>
-                <option value="pendente_migracao">Pendente migração</option>
-              </select>
-            </div>
+            <SelectField
+              id="paymentMethod"
+              label="Método de pagamento"
+              options={paymentMethodOptions}
+              defaultValue={associate.paymentMethod}
+            />
+
+            <CheckboxField
+              id="ceocMember"
+              label="Membro CEOC"
+              defaultChecked={associate.ceocMember === true}
+            />
+
+            <CheckboxField
+              id="caocMember"
+              label="Membro CAOC"
+              defaultChecked={associate.caocMember === true}
+            />
           </div>
         </section>
 
@@ -367,7 +695,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="internalNotes"
                 rows={5}
                 defaultValue={associate.internalNotes ?? ''}
-                className="textarea textarea-bordered w-full"
+                className={textareaStyle}
                 placeholder="Notas internas sobre o associado..."
               />
             </div>

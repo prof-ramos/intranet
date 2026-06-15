@@ -6,7 +6,12 @@ import {
   functionalStatus,
   associationStatus,
   contributionStatus,
+  sex,
+  maritalStatus,
+  missionType,
+  careerOrigin,
 } from '@/lib/db/schema/associates';
+import { paymentMethod } from '@/lib/db/schema/enums';
 import { domainEventType } from '@/lib/db/schema/integrations';
 
 export const PRIVATE_IPV4_RANGES = [
@@ -175,16 +180,43 @@ export const yearMonthObjectSchema = z.object({
   month: monthSchema,
 });
 
+const validSexValues = sex.enumValues;
+const validMaritalStatusValues = maritalStatus.enumValues;
+const validMissionTypeValues = missionType.enumValues;
+const validCareerOriginValues = careerOrigin.enumValues;
+const validPaymentMethodValues = paymentMethod.enumValues;
+
 export const updateAssociateSchema = z.object({
   id: z.coerce.number().int().positive('ID do associado inválido.'),
   fullName: z.string().min(1, 'O nome completo é obrigatório.').trim(),
   cpf: z.string().trim().nullable().refine(cpfValidator, 'CPF em formato inválido.').optional(),
+  rg: z.string().trim().nullable().optional(),
+  rgIssuer: z.string().trim().nullable().optional(),
+  rgState: z.string().trim().max(2, 'UF deve ter 2 caracteres.').nullable().optional(),
+  rgExpeditionDate: z
+    .string()
+    .trim()
+    .refine(isValidDateString, 'Data de expedição do RG inválida.')
+    .nullable()
+    .or(z.literal(''))
+    .optional(),
   siape: z
     .string()
     .trim()
     .nullable()
     .refine((v) => !v || /^\d{6,10}$/.test(v.replace(/\D/g, '')), 'SIAPE em formato inválido.')
     .optional(),
+  sex: z.enum(validSexValues).nullable().or(z.literal('')).optional(),
+  maritalStatus: z.enum(validMaritalStatusValues).nullable().or(z.literal('')).optional(),
+  birthDate: z
+    .string()
+    .trim()
+    .refine(isValidDateString, 'Data de nascimento inválida.')
+    .nullable()
+    .or(z.literal(''))
+    .optional(),
+  birthCity: z.string().trim().nullable().optional(),
+  birthState: z.string().trim().max(2, 'UF deve ter 2 caracteres.').nullable().optional(),
   primaryEmail: z
     .string()
     .trim()
@@ -201,14 +233,10 @@ export const updateAssociateSchema = z.object({
     .optional(),
   phone: z.string().trim().nullable().optional(),
   whatsapp: z.string().trim().nullable().optional(),
-  birthDate: z
-    .string()
-    .trim()
-    .refine(isValidDateString, 'Data de nascimento inválida.')
-    .nullable()
-    .or(z.literal(''))
-    .optional(),
   address: z.string().trim().nullable().optional(),
+  neighborhood: z.string().trim().nullable().optional(),
+  addressState: z.string().trim().max(2, 'UF deve ter 2 caracteres.').nullable().optional(),
+  zipCode: z.string().trim().nullable().optional(),
   locationCity: z.string().trim().nullable().optional(),
   locationCountry: z.string().trim().nullable().optional(),
   assignment: z.string().trim().nullable().optional(),
@@ -224,6 +252,40 @@ export const updateAssociateSchema = z.object({
   functionalStatus: z.enum(validFunctionalStatuses).nullable().or(z.literal('')).optional(),
   associationStatus: z.enum(validAssociationStatuses).nullable().optional(),
   contributionStatus: z.enum(validContributionStatuses).nullable().optional(),
+  paymentMethod: z.enum(validPaymentMethodValues).nullable().optional(),
+  missionType: z.enum(validMissionTypeValues).nullable().or(z.literal('')).optional(),
+  careerOrigin: z.enum(validCareerOriginValues).nullable().or(z.literal('')).optional(),
+  admissionDate: z
+    .string()
+    .trim()
+    .refine(isValidDateString, 'Data de admissão inválida.')
+    .nullable()
+    .or(z.literal(''))
+    .optional(),
+  inaugurationDate: z
+    .string()
+    .trim()
+    .refine(isValidDateString, 'Data de posse inválida.')
+    .nullable()
+    .or(z.literal(''))
+    .optional(),
+  cancellationDate: z
+    .string()
+    .trim()
+    .refine(isValidDateString, 'Data de cancelamento inválida.')
+    .nullable()
+    .or(z.literal(''))
+    .optional(),
+  ceocMember: z
+    .union([z.boolean(), z.literal('true'), z.literal('false'), z.literal(''), z.null()])
+    .transform((v) => (v === '' ? null : v === 'true' ? true : v === 'false' ? false : v === null ? null : v))
+    .nullable()
+    .optional(),
+  caocMember: z
+    .union([z.boolean(), z.literal('true'), z.literal('false'), z.literal(''), z.null()])
+    .transform((v) => (v === '' ? null : v === 'true' ? true : v === 'false' ? false : v === null ? null : v))
+    .nullable()
+    .optional(),
   internalNotes: z.string().trim().nullable().optional(),
 });
 
