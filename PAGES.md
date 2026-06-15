@@ -188,13 +188,18 @@ graph LR
 
 **Funcionalidades:**
 - Lista paginada (20/pág) de associados ativos
-- Busca por nome (LIKE escapado)
-- Link para perfil; link para editar visível apenas para admin/diretoria
+- Busca por nome (LIKE escapado), CPF (hash-based exact match) ou SIAPE (hash-based exact match)
+- Toggle de modo de busca: Nome / CPF / SIAPE
+- Filtros persistidos via query string (`page`, `q`, `searchBy`, `functionalStatus`, `associationStatus`, `contributionStatus`)
+- Link para perfil com `returnTo` preservando filtros; link para editar visível apenas para admin/diretoria
 - Botão para exportar relatório CSV (redireciona para `/app/associados/relatorio`)
 
 **Funcional quando:**
-- [ ] Busca retorna resultados parciais e é insensível a acentos
+- [ ] Busca por nome retorna resultados parciais e é insensível a acentos
+- [ ] Busca por CPF retorna resultado exato (match por hash blind index)
+- [ ] Busca por SIAPE retorna resultado exato (match por hash blind index)
 - [ ] Paginação navega corretamente sem perder o filtro de busca
+- [ ] Navegação para detalhe/editar preserva filtros via `returnTo`; botão "Voltar" retorna à lista com filtros intactos
 - [ ] Usuário `secretaria` não vê o link de edição
 
 ---
@@ -204,16 +209,23 @@ graph LR
 **Acesso:** `*`
 
 **Funcionalidades:**
-- Dados de identificação: nome, CPF, SIAPE (mascarados para `secretaria`)
-- Endereço, lotação, classe, situação funcional e contribuição
+- Dados de identificação: nome, CPF, SIAPE, RG, sexo, estado civil, naturalidade (cidade/UF)
+- Endereço completo (logradouro, bairro, cidade, UF, CEP), lotação, classe, situação funcional e contribuição
+- Dados administrativos: tipo de missão, origem de carreira, data de admissão, posse e cancelamento, forma de pagamento, membro CEOC/CAOC
 - Observações internas (visíveis apenas para `admin`)
+- Dependentes: listagem com adição, edição e exclusão inline (admin/diretoria/secretaria)
+- Convênios de saúde: listagem com adição, edição e exclusão inline (admin/diretoria/secretaria)
 - Atividades vinculadas
 - Linha do tempo (adesão, última atualização)
+- Botão "Voltar" com `returnTo` preserva filtros da listagem de origem
 
 **Funcional quando:**
-- [ ] `secretaria` vê CPF e SIAPE mascarados (`***.***.***-**`)
+- [ ] Todos os dados PII são visíveis para usuários autenticados (política de visibilidade completa)
 - [ ] `admin` vê observações internas; demais roles não veem
+- [ ] Dependentes: adicionar, editar nome/parentesco, remover (com confirmação)
+- [ ] Convênios de saúde: adicionar, editar convênio/datas, remover (com confirmação)
 - [ ] ID inexistente retorna página `not-found` (não erro 500)
+- [ ] Botão "Voltar" retorna à listagem com filtros preservados
 
 ---
 
@@ -222,8 +234,8 @@ graph LR
 **Acesso:** `admin`, `diretoria`
 
 **Funcionalidades:**
-- Formulário completo: identificação, endereço, dados administrativos, situação
-- Validação de CPF, SIAPE, datas e emails
+- Formulário expandido (17 campos novos): sexo, estado civil, naturalidade (cidade/UF), RG (número, órgão expedidor, UF, data de expedição), bairro, UF do endereço, CEP, tipo de missão, origem de carreira, data de admissão, data de posse, data de cancelamento, forma de pagamento, membro CEOC/CAOC, email secundário
+- Validação de CPF, SIAPE, RG, datas e emails
 - Observações internas (somente `admin`)
 - Auditoria automática ao salvar
 
@@ -239,9 +251,11 @@ graph LR
 **Acesso:** `admin`, `diretoria`
 
 **Funcionalidades:**
-- Seleção de campos com classificação LGPD por campo
-- Filtros: situação funcional, associativa, contribuição, mês de aniversário
-- Download CSV com BOM UTF-8
+- Seleção de campos com classificação LGPD (37 campos em 3 grupos: Dados Pessoais, Endereço, Administrativo)
+- Filtros: situação funcional, associativa, contribuição, mês de aniversário, tipo de missão, origem de carreira, forma de pagamento
+- Download CSV com BOM UTF-8, separador `;`, formatação pt-BR (datas dd/MM/yyyy, booleanos Sim/Não, enums com labels)
+- Prevenção de injeção de fórmula em células (tab prefix)
+- Descriptografia PII: campos sensíveis lidos de colunas ciphertext, nunca de plaintext
 - Rate limit: 10 downloads/min por IP
 - Audit log automático (LGPD)
 
@@ -249,6 +263,10 @@ graph LR
 - [ ] CSV gerado abre corretamente em Excel (BOM + separador `;`)
 - [ ] Campos não selecionados não aparecem no arquivo
 - [ ] 11ª requisição no mesmo minuto retorna 429
+- [ ] Dados PII sensíveis são descriptografados do ciphertext (nunca lidos como plaintext)
+- [ ] Booleanos aparecem como "Sim"/"Não" em português
+- [ ] Datas aparecem no formato dd/MM/yyyy
+- [ ] Enums aparecem com labels em português (ex: "Masculino", "Permanente", "Folha")
 
 ---
 

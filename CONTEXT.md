@@ -99,7 +99,43 @@ Status de pagamento da anuidade ASOF: `em_dia`, `inadimplente`, `pendente_migrac
 
 #### SIAPE
 
-Número de matrícula do servidor federal. Campo: `siape`.
+Número de matrícula do servidor federal. Campo: `siape`. Buscável via blind index (`siape_hash`): busca exata por hash, não suporta busca parcial.
+
+#### RG (Registro Geral)
+
+Documento de identificação do associado. Campos: `rg` (número), `rg_issuer` (órgão expedidor), `rg_state` (UF), `rg_expedition_date` (data de expedição). Armazenado com PII encryption (`rg_ciphertext` + `rg_hash` para busca exata).
+
+#### Sexo
+
+Classificação de gênero do associado. Enum: `masculino`, `feminino`, `outro`. Campo: `sex`.
+
+#### Estado Civil
+
+Situação civil do associado. Enum: `solteiro`, `casado`, `divorciado`, `viuvo`, `outro`. Campo: `maritalStatus`.
+
+#### Naturalidade
+
+Cidade e UF de nascimento do associado. Campos: `birthCity`, `birthState`.
+
+#### Tipo de Missão
+
+Classificação do tipo de missão do associado. Enum: `permanente`, `transitoria`. Campo: `missionType`.
+
+#### Origem de Carreira
+
+Origem da carreira do associado. Enum: `concurso`, `nomeacao`, `outros_orgaos`. Campo: `careerOrigin`.
+
+#### Forma de Pagamento
+
+Método de pagamento da mensalidade. Enum: `folha`, `boleto`, `pix`, `transferencia`, `outros`. Campo: `paymentMethod` (compartilhado com o módulo financeiro).
+
+#### Dependente
+
+Pessoa vinculada a um associado. Tabela: `dependents`. Campos: `name`, `relationship` (parentesco). CRUD inline no perfil do associado. Acesso: `admin`, `diretoria`, `secretaria`.
+
+#### Convênio de Saúde
+
+Plano de saúde vinculado a um associado. Tabela: `health_agreements`. Campos: `provider` (operadora), `startDate`, `endDate` (opcionais). CRUD inline no perfil do associado. Acesso: `admin`, `diretoria`, `secretaria`.
 
 ---
 
@@ -261,6 +297,10 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 1. **Acesso Operacional a PII**: Todos os usuários da intranet são funcionários, secretaria ou diretoria da ASOF e precisam de acesso integral aos dados cadastrais dos associados para executar rotinas administrativas, financeiras, jurídicas e de atendimento. A política do produto é visibilidade completa para usuários autenticados e autorizados, sem máscara por role dentro da intranet.
 2. **Armazenamento de PII**: A visibilidade integral no app não autoriza exposição fora da intranet. Plaintext em campos legados/importados é uma exceção temporária do go-live, limitada ao banco Neon da intranet e sob responsabilidade da ASOF + manutenção técnica até a fase de hardening pós-go-live (alvo: 90 dias após produção). Durante a exceção, manter controle de acesso ao Neon, backups protegidos, auditoria, menor privilégio e `sanitizePii()` em logs; a remediação é recriptografar campos com `encryptPii()`, recriar índices de busca com `piiBlindIndex()`, remover dumps plaintext e manter novas rotas de escrita no padrão criptografado quando suportado.
 3. **Importação em Lote**: Associados podem ser importados via CSV com upsert por CPF/SIAPE.
+4. **Busca por CPF/SIAPE**: A busca por CPF e SIAPE usa blind indexes (`cpf_hash`, `siape_hash`, `rg_hash`) para lookup exato. Não suporta busca parcial. CPF deve ser normalizado (apenas dígitos) antes do hash. SIAPE deve ser normalizado (apenas dígitos) antes do hash. A busca por nome continua via `ILIKE` com escape.
+5. **Dependentes e Convênios**: Gerenciados inline no perfil do associado. Dependentes possuem nome e parentesco. Convênios de saúde possuem operadora, data de início e data de fim (opcionais). Ambos suportam adição, edição e exclusão por `admin`, `diretoria` e `secretaria`.
+6. **Exportação CSV Expandida**: 37 campos disponíveis em 3 grupos (Dados Pessoais, Endereço, Administrativo). Filtros por tipo de missão, origem de carreira e forma de pagamento. Dados PII sensíveis são descriptografados das colunas ciphertext para exportação, nunca lidos como plaintext.
+7. **Preservação de Filtros**: Navegação entre listagem e detalhe/editar preserva filtros e paginação via parâmetro `returnTo` na query string.
 
 ### Autenticação e Autorização
 
@@ -329,7 +369,8 @@ O sistema suporta dois caminhos de autenticação para APIs:
 Além dos módulos de domínio listados acima, o sistema inclui módulos auxiliares em `src/lib/`:
 
 - **`email/`** — Envio de e-mail via Mailjet (index.ts, templates.ts).
-- **`search/`** — Busca de associados e atividades (queries.ts).
+- **`search/`** — Busca global de associados e atividades (queries.ts). Busca por CPF/SIAPE usa blind indexes para lookup exato; busca por nome usa ILIKE.
+- **`reports/`** — Exportação CSV de associados com seleção de campos LGPD, filtros avançados, formatação pt-BR e descriptografia PII.
 - **`storage/`** — Interface de armazenamento de documentos; o provedor de objetos privado é decisão de infraestrutura.
 - **`assinafy/`** — Cliente Assinafy, webhook handler, repository e service para assinatura digital de ofícios.
 - **`errors/`** — Hierarquia de erros tipados (`DomainError`, `ConcurrencyConflictError`, `NotFoundError`, `ValidationError`, `RateLimitError`, `ExternalServiceError`, `UnauthorizedError`) com handlers globais `unhandledRejection`/`uncaughtException`.

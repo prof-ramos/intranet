@@ -67,6 +67,24 @@
 - **Regra preventiva**: Para projetos Neon conectados via Vercel Storage Integration, `neonctl` requer org_id. Se a CLI interativa não funciona em headless, usar a API REST direta (Node.js + `https.get`) com `?org_id=<org_id>` como fallback imediato. Não gastar mais de 2 tentativas com prompts interativos.
 - **Confiança**: alta
 
+## 2026-06-15 — Checkbox HTML envia "on", não "true" — Zod rejeita
+
+- **Tipo**: Bug de validação
+- **Escopo**: Formulários com checkbox + Zod schema
+- **Memória**: Checkbox `<input type="checkbox">` sem `value` attribute envia a string `"on"` quando marcado, não `"true"`. O Zod schema para `ceocMember`/`caocMember` aceitava `z.boolean()`, `z.literal('true')`, `z.literal('false')`, `z.literal('')`, `z.null()` — mas NÃO `z.literal('on')`. Resultado: submit do formulário falhava com erro de validação. Autoreview capturou como P0.
+- **Evidência**: Sessão 2026-06-15 — autoreview encontrou P0 "Checkbox 'on' value not handled". Corrigido adicionando `value="true"` nos checkbox inputs.
+- **Regra preventiva**: Sempre adicionar `value="true"` em `<input type="checkbox">` quando o backend espera boolean. Nunca confiar no valor padrão "on" do browser. Testar submissão de formulário com checkbox marcado como parte do fluxo de verificação.
+- **Confiança**: alta
+
+## 2026-06-15 — Nullable enum select com "Selecione..." precisa `.or(z.literal(''))` no Zod
+
+- **Tipo**: Padrão de validação
+- **Escopo**: Zod schemas para enums com opção vazia
+- **Memória**: Selects com `<option value="">Selecione...</option>` enviam string vazia `""`. O Zod schema `z.enum(values).nullable().optional()` rejeita `""`. O padrão correto é `z.enum(values).nullable().or(z.literal('')).optional()` com conversão `data.field === '' ? null : data.field` no server action. O campo `paymentMethod` foi implementado sem `.or(z.literal(''))` e sem a conversão de empty string, enquanto `sex`, `maritalStatus`, `missionType`, `careerOrigin` estavam corretos. Inconsistência detectada pelo autoreview.
+- **Evidência**: Sessão 2026-06-15 — autoreview P1 em `paymentMethod`. Corrigido adicionando `.or(z.literal(''))` e `const paymentMethod = data.paymentMethod === '' ? null : data.paymentMethod`.
+- **Regra preventiva**: Para todo enum select com default "Selecione..." (value=""), usar `.or(z.literal(''))` no Zod E `=== '' ? null : value` no action. Verificar consistência entre todos os campos enum no mesmo formulário.
+- **Confiança**: alta
+
 ## 2026-06-15 — Assumir Free Tier sem branching sem verificar
 
 - **Tipo**: Suposição incorreta

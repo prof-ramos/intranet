@@ -5,6 +5,42 @@
 
 ---
 
+## 2026-06-15 — Dashboard de associados: listagem, detalhes, edição + autoreview
+
+**Problema**: Após migração legada (1750 registros, 21+ campos novos), a UI mostrava apenas 5 colunas e não expunha os novos dados. Todos os usuários autenticados devem ver dados completos (sistema interno, requisito explícito).
+
+**Decisões tomadas**:
+- `canViewSensitiveFields()` alterado para sempre retornar `true` — requisito explícito do usuário
+- Página de listagem expandida de 5 para 9 colunas com filtro por situação associativa
+- Página de detalhes expandida com 4 seções novas (Dados Profissionais, Dependentes, Convênios) + campos expandidos em Identificação, Endereço, Administrativo
+- Formulário de edição expandido com 17 campos novos (RG, sexo, estado civil, naturalidade, bairro, CEP, missão, carreira, CEOC/CAOC, etc.)
+- RG adicionado ao registro PII (`pii-mapping.ts`) com padrão triple-column
+- Pipeline de dados atualizado em 7 camadas (repository → service → pii-mapping → validation → action → form → detail page)
+
+**Lições promovidas para memória permanente:**
+- → `docs/agent-memory/feedback.md`: Checkbox "on" vs "true"; nullable enum select com empty string
+- → `docs/agent-memory/project.md`: Pipeline de 7 camadas para campos novos; canViewSensitiveFields sempre true
+- → `docs/agent-memory/security.md`: LGPD masking desabilitado por requisito; funções preservadas para compliance futuro
+
+**Bugs corrigidos pelo autoreview**:
+- P0: Checkbox sem `value="true"` envia "on" que Zod rejeita
+- P1: `paymentMethod` Zod schema não aceita empty string do select default
+- P1: `paymentMethod` action não converte empty string para null
+- P2: Função `booleanOrEmpty` morta removida
+
+**Pendências identificadas e resolvidas na sequência**:
+- [x] P1: CRUD de dependentes e convênios (criar/editar/excluir)
+- [x] P2: Exportação CSV/relatório expandida com os 21+ campos novos
+- [x] P3: Busca por SIAPE e CPF na listagem de associados
+- [x] P3: Preservação de filtros na paginação (voltar do detalhe mantém filtros)
+- [ ] P3: Testes de integração para o pipeline de escrita dos novos campos
+
+**Riscos**:
+- O formulário de edição não foi testado visualmente em staging — campos novos podem ter problemas de layout em mobile.
+- O pipeline de escrita dos campos novos ainda merece teste de integração dedicado.
+
+---
+
 ## 2026-06-12 — Cancelamento de sessões Jules via API
 
 **Problema**: 2 sessões Jules (`Palette: UX & Accessibility Specialist Agent`, `Bolt: Performance Optimization Agent`) permaneceram `IN_PROGRESS` mesmo após múltiplos comandos de cancelamento via `sendMessage`.

@@ -70,7 +70,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 | `src/components/` | UI components compartilhados |
 | `src/lib/` | Serviços, repositórios, schema Drizzle |
 | `src/hooks/` | React hooks |
-| `src/lib/db/schema/` | Schemas Drizzle (admins, associates, activities, audit, finance, legal, monthly_payments, oficios, assignments, notifications, etc.) |
+| `src/lib/db/schema/` | Schemas Drizzle (admins, associates, activities, audit, finance, legal, monthly_payments, oficios, assignments, notifications, dependents, health_agreements, etc.) |
 | `drizzle/postgres/` | Migrations SQL (baseline `0000_green_glorian.sql` + incrementais) |
 | `docs/adr/` | ADRs (001-012) — decisões arquiteturais |
 | `docs/` | Runbook, compliance LGPD, design, jornadas |
@@ -84,6 +84,12 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 - `src/lib/logger.ts` — logger estruturado com redacao de PII
 - `src/lib/db/index.ts` — cliente Drizzle
 - `src/lib/db/schema/enums.ts` — enums compartilhados
+- `src/lib/associates/search-params.ts` — parâmetros de busca (searchBy: name/cpf/siape, returnTo)
+- `src/lib/associates/lgpd.ts` — campos exportáveis, classificação PII/PUBLIC, mapeamento de descriptografia
+- `src/lib/reports/csv.ts` — geração CSV com formatação pt-BR, prevenção de injeção de fórmula, labels de enum
+- `src/lib/reports/queries.ts` — queries de relatório com descriptografia PII (ciphertext fallback)
+- `src/app/app/associados/[id]/actions.ts` — server actions CRUD para dependentes e convênios
+- `src/app/app/associados/[id]/DependentManager.tsx` — componente cliente para gerenciamento inline de dependentes e convênios
 - `src/lib/notifications/` — notificações persistidas (polling, sem Realtime)
 - `next.config.ts` — Next.js config
 - `vercel.json` — deploy Vercel
@@ -91,7 +97,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 
 ## PII e LGPD
 
-- Campos protegidos: `cpf`, `siape`, `email`, `phone`, `whatsapp`, `address`, `birthDate`, `internalNotes`.
+- Campos protegidos: `cpf`, `siape`, `rg`, `email`, `phone`, `whatsapp`, `address`, `birthDate`, `internalNotes`.
 - Usar `encryptPii()` para armazenamento, `piiBlindIndex()` para busca, `sanitizePii()` para logs.
 - Nunca expor plaintext em logs, erros ou respostas de API.
 - Desfiamento/anonimização: ver ADR 006.

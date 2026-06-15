@@ -32,3 +32,12 @@
 - **Evidência**: Sessão 2026-06-15 — usuário rejeitou rotação de credenciais VPS e apontou que dados web eram suficientes.
 - **Regra preventiva**: Não propor operações nas VPS legadas (acesso, rotação, modificação) sem autorização explícita do usuário. Os dados necessários já estão disponíveis localmente.
 - **Confiança**: alta
+
+## 2026-06-15 — LGPD masking desabilitado por requisito — funções de máscara preservadas
+
+- **Tipo**: Decisão de segurança com impacto em compliance
+- **Escopo**: LGPD / visibilidade de dados sensíveis
+- **Memória**: `canViewSensitiveFields()` agora retorna `true` para todos os roles. Isso é intencional — o sistema é interno e todos os usuários autenticados (admin, diretoria, secretaria) devem ver dados completos. As funções de máscara (`maskCpf`, `maskSiape`, `maskEmail`, `maskPhone`) e `toAssociateProfileDTO()` permanecem no código para futuros exports a terceiros. O set `SENSITIVE_FIELDS` continua sendo usado para logging de acesso (Art. 30/37). Se no futuro for necessário reativar LGPD masking para um role específico (ex: estagiário, viewer), basta alterar `canViewSensitiveFields()` de volta para lógica baseada em role.
+- **Evidência**: Sessão 2026-06-15 — aviso LGPD removido da página de detalhes, PII sempre descriptografado na listagem e no formulário de edição.
+- **Regra preventiva**: Não remover as funções de máscara (`maskCpf`, etc.) nem o set `SENSITIVE_FIELDS`. Elas são infraestrutura para compliance futuro. Ao revisar código LGPD, verificar que `canViewSensitiveFields()` é o único gate — não adicionar checks condicionais inline nas páginas.
+- **Confiança**: alta

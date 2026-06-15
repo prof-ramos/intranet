@@ -13,6 +13,22 @@
 - **Regra preventiva**: Para cancelar sessões Jules, usar o web UI em `https://jules.google.com/session/{id}` como primeira opção, não a API.
 - **Confiança**: alta
 
+## 2026-06-15 — Padrão de adicionar campos ao associado (pipeline de 7 camadas)
+
+- **Tipo**: Decisão técnica confirmada
+- **Escopo**: Campos novos no módulo associates
+- **Memória**: Ao adicionar um campo novo ao modelo `associates`, são necessárias atualizações em 7 arquivos em camadas específicas, nesta ordem: (1) `repository.ts` — `UpdateAssociateValues` type + imports de enums, (2) `service.ts` — `EditAssociateDTO`, `getAssociateForEdit()`, `UpdateAssociateInput`, `updateAssociateData()` + validação de enums, (3) `pii-mapping.ts` — se o campo for PII (criptografia triple-column), adicionar ao `PII_FIELDS` e `PiiPatchKeys`, (4) `validation/schemas.ts` — `updateAssociateSchema` com Zod, (5) `actions.ts` — pass-through do form data para o service, (6) `EditarAssociadoForm.tsx` — formulário UI, (7) `[id]/page.tsx` — página de detalhes. Esquecer qualquer camada causa erro de tipo ou runtime.
+- **Evidência**: Sessão 2026-06-15 — 17 campos novos adicionados sistematicamente, typecheck passou na primeira tentativa após todas as camadas.
+- **Confiança**: alta
+
+## 2026-06-15 — canViewSensitiveFields() sempre retorna true — sistema interno
+
+- **Tipo**: Decisão arquitetural
+- **Escopo**: LGPD / visibilidade de dados
+- **Memória**: `canViewSensitiveFields()` em `lgpd.ts` foi alterado para sempre retornar `true`. Todos os usuários autenticados (admin, diretoria, secretaria) veem dados completos sem censura. Requisito explícito do usuário: "sistema interno da empresa; eles deverão ter acesso aos dados em sua completude". As funções de máscara (`maskCpf`, `maskSiape`, `maskEmail`, `maskPhone`) permanecem disponíveis para futuros exports a terceiros. A lista de conversão de enums (`sexLabels`, `maritalStatusLabels`, etc.) está nas páginas de detalhes e edição, não em um arquivo central — considerar centralizar se houver mais consumidores.
+- **Evidência**: Sessão 2026-06-15 — LGPD notice removida da página de detalhes, dados completos visíveis para todos.
+- **Confiança**: alta
+
 ## 2026-06-12 — `sendMessage` em sessões AWAITING_USER_FEEDBACK
 
 - **Tipo**: Comportamento observado
