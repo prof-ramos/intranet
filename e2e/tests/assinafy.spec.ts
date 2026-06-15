@@ -76,7 +76,8 @@ test.describe('Assinafy — Assinatura de Ofícios', () => {
   // ---------------------------------------------------------------------------
   test.describe('Fluxo de Sucesso', () => {
     test('envio bem-sucedido gera badge de assinatura', async ({ page }) => {
-      const row = page.locator('tr', { hasText: '001/2026-ASOF' });
+      // Use ofício 003 (rascunho) so that 001 remains untouched for visibility tests
+      const row = page.locator('tr', { hasText: '003/2026-ASOF' });
       await row.locator('button[aria-label="Enviar para assinatura"]').click();
 
       const modal = page.locator('[role="dialog"]');
@@ -87,7 +88,7 @@ test.describe('Assinafy — Assinatura de Ofícios', () => {
       await expect(modal).not.toBeVisible();
 
       // Badge should appear
-      const updatedRow = page.locator('tr', { hasText: '001/2026-ASOF' });
+      const updatedRow = page.locator('tr', { hasText: '003/2026-ASOF' });
       await expect(updatedRow.locator('a[title="Abrir página de assinatura"]')).toBeVisible();
     });
 
