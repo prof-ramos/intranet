@@ -36,37 +36,54 @@ interface DependentManagerProps {
 export function DependentManager({ associateId, items }: DependentManagerProps) {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [error, setError] = useState('');
   const [pending, startTransition] = useTransition();
 
   function handleAdd(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError('');
     const fd = new FormData(e.currentTarget);
     startTransition(async () => {
-      await addDependentAction(fd);
-      setAdding(false);
+      try {
+        await addDependentAction(fd);
+        setAdding(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao adicionar dependente.');
+      }
     });
   }
 
   function handleEdit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError('');
     const fd = new FormData(e.currentTarget);
     startTransition(async () => {
-      await editDependentAction(fd);
-      setEditingId(null);
+      try {
+        await editDependentAction(fd);
+        setEditingId(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao editar dependente.');
+      }
     });
   }
 
   function handleDelete(id: number) {
+    setError('');
     const fd = new FormData();
     fd.set('id', String(id));
     fd.set('associateId', String(associateId));
     startTransition(async () => {
-      await removeDependentAction(fd);
+      try {
+        await removeDependentAction(fd);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao remover dependente.');
+      }
     });
   }
 
   return (
     <div className="space-y-2">
+      {error && <p className="text-xs text-red-600">{error}</p>}
       {items.map((dep) =>
         editingId === dep.id ? (
           <form key={dep.id} onSubmit={handleEdit} className="flex items-center gap-2">
@@ -140,37 +157,54 @@ function formatDateShort(dateStr: string | null): string {
 export function HealthAgreementManager({ associateId, items }: HealthAgreementManagerProps) {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [error, setError] = useState('');
   const [pending, startTransition] = useTransition();
 
   function handleAdd(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError('');
     const fd = new FormData(e.currentTarget);
     startTransition(async () => {
-      await addHealthAgreementAction(fd);
-      setAdding(false);
+      try {
+        await addHealthAgreementAction(fd);
+        setAdding(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao adicionar convênio.');
+      }
     });
   }
 
   function handleEdit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError('');
     const fd = new FormData(e.currentTarget);
     startTransition(async () => {
-      await editHealthAgreementAction(fd);
-      setEditingId(null);
+      try {
+        await editHealthAgreementAction(fd);
+        setEditingId(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao editar convênio.');
+      }
     });
   }
 
   function handleDelete(id: number) {
+    setError('');
     const fd = new FormData();
     fd.set('id', String(id));
     fd.set('associateId', String(associateId));
     startTransition(async () => {
-      await removeHealthAgreementAction(fd);
+      try {
+        await removeHealthAgreementAction(fd);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao remover convênio.');
+      }
     });
   }
 
   return (
     <div className="space-y-2">
+      {error && <p className="text-xs text-red-600">{error}</p>}
       {items.map((ha) =>
         editingId === ha.id ? (
           <form key={ha.id} onSubmit={handleEdit} className="flex flex-wrap items-center gap-2">

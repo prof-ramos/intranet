@@ -161,7 +161,7 @@ export default async function AssociadoPerfilPage({
   const user = await requireAuth();
   const { id } = await params;
   const { returnTo } = await searchParams;
-  const safeReturnTo = returnTo && returnTo.startsWith('/app/') ? returnTo : '/app/associados';
+  const safeReturnTo = returnTo && returnTo.startsWith('/app/') && !returnTo.includes('..') ? returnTo : '/app/associados';
   const associateId = parsePositiveIntParam(id);
   const profile = await requireEntityById(associateId, (id) => getAssociateProfile(id, user.role));
   const {

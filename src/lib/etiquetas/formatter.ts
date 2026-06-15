@@ -104,6 +104,7 @@ export function formatPostalLabel(
   recipient: EtiquetaRecipient,
   flags?: EtiquetaPrintFlags,
 ): LabelContent {
+  const cep = formatCep(recipient.cep);
   return {
     id: recipient.id,
     lines: uniqueNonEmpty([
@@ -112,7 +113,7 @@ export function formatPostalLabel(
       recipient.complemento,
       recipient.bairro,
       cityUf(recipient),
-      formatCep(recipient.cep) ? `CEP ${formatCep(recipient.cep)}` : null,
+      cep ? `CEP ${cep}` : null,
       ...flagLines(flags),
     ]),
   };
