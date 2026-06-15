@@ -1,10 +1,8 @@
 import { Search } from 'lucide-react';
-import { hairline, textMuted, navy, skyBlue, focusRingClass } from '@/lib/ui/tokens';
+import { hairline, textMuted, navy, skyBlue } from '@/lib/ui/tokens';
 import { getRoleLabel } from '@/lib/ui/role-labels';
 import {
-  buildAssociatesSearchParams,
   type AssociatesSearchParams,
-  type AssociateSearchMode,
 } from '@/lib/associates/search-params';
 import { AssociadosFilters } from '../AssociadosFilters';
 import type { AuthRole } from '@/lib/auth/config';

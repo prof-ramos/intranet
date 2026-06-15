@@ -23,27 +23,14 @@ import { db } from '@/lib/db';
 import { associates, dependents, healthAgreements } from '@/lib/db/schema';
 import { encryptPii, piiBlindIndex } from '@/lib/crypto/pii';
 import { normalizeCountryLabel } from '@/lib/associates/location-country';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import {
   type LegacyRecord,
   type Dependent,
-  type CpfResult,
   nullIfEmpty,
-  parseDate,
-  mapSex,
-  mapMaritalStatus,
-  mapMissionType,
-  mapCareerOrigin,
-  mapAssociationStatus,
-  mapUfWithAcSentinel,
-  mapBoolean,
   normalizeCpf,
   normalizeSiape,
   normalizePhone,
-  normalizeCep,
-  parseDependents,
-  parseConvenios,
-  mapFunctionalStatus,
   transformLegacyRecord,
 } from './migrate-legacy-transforms';
 

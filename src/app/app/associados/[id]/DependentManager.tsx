@@ -2,7 +2,7 @@
 
 import { useState, useTransition, type FormEvent } from 'react';
 import { Plus, Pencil, Trash2, X, Check } from 'lucide-react';
-import { hairline, focusRingClass } from '@/lib/ui/tokens';
+import { hairline } from '@/lib/ui/tokens';
 import type { DependentViewItem, HealthAgreementViewItem } from '@/lib/associates/profile';
 import {
   addDependentAction,

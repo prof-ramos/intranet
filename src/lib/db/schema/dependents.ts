@@ -1,4 +1,4 @@
-import { bigint, date, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { bigint, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 import { associates } from './associates';
 
 /**
