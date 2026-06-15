@@ -281,12 +281,12 @@ export const updateAssociateSchema = z.object({
     .union([z.boolean(), z.literal('true'), z.literal('false'), z.literal(''), z.null()])
     .transform((v) => (v === '' ? null : v === 'true' ? true : v === 'false' ? false : v === null ? null : v))
     .nullable()
-    .optional(),
+    .default(null),
   caocMember: z
     .union([z.boolean(), z.literal('true'), z.literal('false'), z.literal(''), z.null()])
     .transform((v) => (v === '' ? null : v === 'true' ? true : v === 'false' ? false : v === null ? null : v))
     .nullable()
-    .optional(),
+    .default(null),
   internalNotes: z.string().trim().nullable().optional(),
 });
 

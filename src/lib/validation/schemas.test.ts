@@ -456,3 +456,53 @@ describe('webhookSubscriptionFormSchema', () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe('updateAssociateSchema — checkbox defaults', () => {
+  test('ceocMember missing key defaults to null (unchecked checkbox)', () => {
+    const result = updateAssociateSchema.safeParse({
+      id: '1',
+      fullName: 'João Silva',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.ceocMember).toBeNull();
+      expect(result.data.caocMember).toBeNull();
+    }
+  });
+
+  test('ceocMember="true" parses to true', () => {
+    const result = updateAssociateSchema.safeParse({
+      id: '1',
+      fullName: 'João Silva',
+      ceocMember: 'true',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.ceocMember).toBe(true);
+    }
+  });
+
+  test('ceocMember="false" parses to false', () => {
+    const result = updateAssociateSchema.safeParse({
+      id: '1',
+      fullName: 'João Silva',
+      ceocMember: 'false',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.ceocMember).toBe(false);
+    }
+  });
+
+  test('ceocMember="" parses to null', () => {
+    const result = updateAssociateSchema.safeParse({
+      id: '1',
+      fullName: 'João Silva',
+      ceocMember: '',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.ceocMember).toBeNull();
+    }
+  });
+});

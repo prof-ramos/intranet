@@ -161,6 +161,7 @@ export default async function AssociadoPerfilPage({
   const user = await requireAuth();
   const { id } = await params;
   const { returnTo } = await searchParams;
+  const safeReturnTo = returnTo && returnTo.startsWith('/app/') ? returnTo : '/app/associados';
   const associateId = parsePositiveIntParam(id);
   const profile = await requireEntityById(associateId, (id) => getAssociateProfile(id, user.role));
   const {
@@ -181,7 +182,7 @@ export default async function AssociadoPerfilPage({
   return (
     <main className="mx-auto w-full max-w-[1180px] min-w-0 px-5 py-7 sm:px-8 lg:px-10">
       <Link
-        href={returnTo || '/app/associados'}
+        href={safeReturnTo}
         className={`text-base-content/60 mb-4 inline-flex items-center gap-1.5 text-xs font-medium hover:underline ${focusRingClass}`}
       >
         <ArrowLeft size={14} aria-hidden="true" />

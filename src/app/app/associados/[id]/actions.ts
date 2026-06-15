@@ -49,6 +49,7 @@ export async function editDependentAction(formData: FormData) {
   const user = await requireAuth();
   checkRole(user.role);
 
+  const associateId = formData.get('associateId')?.toString();
   const data = updateDependentSchema.parse({
     id: formData.get('id'),
     name: formData.get('name') || undefined,
@@ -61,12 +62,17 @@ export async function editDependentAction(formData: FormData) {
   await updateDependentById(id, values);
 
   revalidatePath('/app/associados');
+  if (associateId) {
+    revalidatePath(`/app/associados/${associateId}`);
+    revalidatePath(`/app/associados/${associateId}/editar`);
+  }
 }
 
 export async function removeDependentAction(formData: FormData) {
   const user = await requireAuth();
   checkRole(user.role);
 
+  const associateId = formData.get('associateId')?.toString();
   const data = deleteDependentSchema.parse({
     id: formData.get('id'),
   });
@@ -74,6 +80,10 @@ export async function removeDependentAction(formData: FormData) {
   await deleteDependentById(data.id);
 
   revalidatePath('/app/associados');
+  if (associateId) {
+    revalidatePath(`/app/associados/${associateId}`);
+    revalidatePath(`/app/associados/${associateId}/editar`);
+  }
 }
 
 // ─── Health Agreement Actions ────────────────────────────────────────────
@@ -99,6 +109,7 @@ export async function editHealthAgreementAction(formData: FormData) {
   const user = await requireAuth();
   checkRole(user.role);
 
+  const associateId = formData.get('associateId')?.toString();
   const data = updateHealthAgreementSchema.parse({
     id: formData.get('id'),
     provider: formData.get('provider') || undefined,
@@ -112,12 +123,17 @@ export async function editHealthAgreementAction(formData: FormData) {
   await updateHealthAgreementById(id, values);
 
   revalidatePath('/app/associados');
+  if (associateId) {
+    revalidatePath(`/app/associados/${associateId}`);
+    revalidatePath(`/app/associados/${associateId}/editar`);
+  }
 }
 
 export async function removeHealthAgreementAction(formData: FormData) {
   const user = await requireAuth();
   checkRole(user.role);
 
+  const associateId = formData.get('associateId')?.toString();
   const data = deleteHealthAgreementSchema.parse({
     id: formData.get('id'),
   });
@@ -125,4 +141,8 @@ export async function removeHealthAgreementAction(formData: FormData) {
   await deleteHealthAgreementById(data.id);
 
   revalidatePath('/app/associados');
+  if (associateId) {
+    revalidatePath(`/app/associados/${associateId}`);
+    revalidatePath(`/app/associados/${associateId}/editar`);
+  }
 }

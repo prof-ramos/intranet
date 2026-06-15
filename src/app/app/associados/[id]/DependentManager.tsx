@@ -59,6 +59,7 @@ export function DependentManager({ associateId, items }: DependentManagerProps) 
   function handleDelete(id: number) {
     const fd = new FormData();
     fd.set('id', String(id));
+    fd.set('associateId', String(associateId));
     startTransition(async () => {
       await removeDependentAction(fd);
     });
@@ -70,6 +71,7 @@ export function DependentManager({ associateId, items }: DependentManagerProps) 
         editingId === dep.id ? (
           <form key={dep.id} onSubmit={handleEdit} className="flex items-center gap-2">
             <input type="hidden" name="id" value={dep.id} />
+            <input type="hidden" name="associateId" value={associateId} />
             <input name="name" defaultValue={dep.name} required style={inputStyle} className="max-w-[180px]" />
             <input name="relationship" defaultValue={dep.relationship} required style={inputStyle} className="max-w-[120px]" />
             <button type="submit" disabled={pending} className={btnSmall} aria-label="Salvar">
@@ -161,6 +163,7 @@ export function HealthAgreementManager({ associateId, items }: HealthAgreementMa
   function handleDelete(id: number) {
     const fd = new FormData();
     fd.set('id', String(id));
+    fd.set('associateId', String(associateId));
     startTransition(async () => {
       await removeHealthAgreementAction(fd);
     });
@@ -172,6 +175,7 @@ export function HealthAgreementManager({ associateId, items }: HealthAgreementMa
         editingId === ha.id ? (
           <form key={ha.id} onSubmit={handleEdit} className="flex flex-wrap items-center gap-2">
             <input type="hidden" name="id" value={ha.id} />
+            <input type="hidden" name="associateId" value={associateId} />
             <input name="provider" defaultValue={ha.provider} required style={inputStyle} className="max-w-[180px]" />
             <input name="startDate" type="date" defaultValue={ha.startDate ?? ''} style={inputStyle} className="max-w-[140px]" />
             <input name="endDate" type="date" defaultValue={ha.endDate ?? ''} style={inputStyle} className="max-w-[140px]" />
