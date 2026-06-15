@@ -46,8 +46,8 @@ describe('canViewSensitiveFields', () => {
     expect(canViewSensitiveFields('diretoria')).toBe(true);
   });
 
-  it('returns false for secretaria', () => {
-    expect(canViewSensitiveFields('secretaria')).toBe(false);
+  it('returns true for secretaria', () => {
+    expect(canViewSensitiveFields('secretaria')).toBe(true);
   });
 });
 
@@ -65,16 +65,16 @@ describe('toAssociateProfileDTO', () => {
     expect(result.cpf).toBe(assoc.cpf);
   });
 
-  it('masks sensitive fields for secretaria', () => {
+  it('returns full associate for secretaria', () => {
     const assoc = makeAssociate();
     const result = toAssociateProfileDTO(assoc, 'secretaria');
-    expect(result.cpf).toContain('***');
-    expect(result.siape).toContain('**');
-    expect(result.birthDate).toBeNull();
-    expect(result.address).toBeNull();
-    expect(result.internalNotes).toBeNull();
-    expect(result.primaryEmail).toContain('***');
-    expect(result.phone).toContain('****');
+    expect(result.cpf).toBe(assoc.cpf);
+    expect(result.siape).toBe(assoc.siape);
+    expect(result.birthDate).toBe(assoc.birthDate);
+    expect(result.address).toBe(assoc.address);
+    expect(result.internalNotes).toBe(assoc.internalNotes);
+    expect(result.primaryEmail).toBe(assoc.primaryEmail);
+    expect(result.phone).toBe(assoc.phone);
   });
 
   it('preserves public fields for secretaria', () => {
@@ -97,11 +97,9 @@ describe('filterExportFieldsByRole', () => {
     expect(result).toHaveLength(ASSOCIATE_EXPORT_FIELDS.length);
   });
 
-  it('returns only public fields for secretaria', () => {
+  it('returns all fields for secretaria', () => {
     const result = filterExportFieldsByRole(ASSOCIATE_EXPORT_FIELDS, 'secretaria');
-    for (const field of result) {
-      expect(field.sensitivity).toBe('public');
-    }
+    expect(result).toHaveLength(ASSOCIATE_EXPORT_FIELDS.length);
   });
 });
 

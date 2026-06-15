@@ -6,6 +6,7 @@ import { hairline, focusRingClass } from '@/lib/ui/tokens';
 interface AssociadosFiltersProps {
   currentContributionStatus: string | undefined;
   currentFunctionalStatus: string | undefined;
+  currentAssociationStatus: string | undefined;
   currentQ: string;
 }
 
@@ -23,11 +24,12 @@ const selectStyle = {
 export function AssociadosFilters({
   currentContributionStatus,
   currentFunctionalStatus,
+  currentAssociationStatus,
   currentQ,
 }: AssociadosFiltersProps) {
   const router = useRouter();
 
-  function navigate(updates: { contributionStatus?: string; functionalStatus?: string }) {
+  function navigate(updates: { contributionStatus?: string; functionalStatus?: string; associationStatus?: string }) {
     const params = new URLSearchParams();
     if (currentQ) params.set('q', currentQ);
 
@@ -35,9 +37,12 @@ export function AssociadosFilters({
       'contributionStatus' in updates ? updates.contributionStatus : currentContributionStatus;
     const newFunctional =
       'functionalStatus' in updates ? updates.functionalStatus : currentFunctionalStatus;
+    const newAssociation =
+      'associationStatus' in updates ? updates.associationStatus : currentAssociationStatus;
 
     if (newContribution) params.set('contributionStatus', newContribution);
     if (newFunctional) params.set('functionalStatus', newFunctional);
+    if (newAssociation) params.set('associationStatus', newAssociation);
     // page intentionally reset to 1 on filter change
 
     router.push(`/app/associados?${params.toString()}`);
@@ -45,6 +50,22 @@ export function AssociadosFilters({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      <label className="sr-only" htmlFor="filter-association">
+        Filtrar por situação associativa
+      </label>
+      <select
+        id="filter-association"
+        className={focusRingClass}
+        style={selectStyle}
+        value={currentAssociationStatus ?? ''}
+        onChange={(e) => navigate({ associationStatus: e.target.value || undefined })}
+        aria-label="Filtrar por situação associativa"
+      >
+        <option value="">Situação associativa: todas</option>
+        <option value="ativo">Ativo</option>
+        <option value="inativo">Inativo</option>
+      </select>
+
       <label className="sr-only" htmlFor="filter-contribution">
         Filtrar por contribuição
       </label>

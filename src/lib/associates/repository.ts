@@ -2,6 +2,8 @@ import { db, type DbExecutor } from '@/lib/db';
 import {
   associates,
   activities,
+  dependents,
+  healthAgreements,
   functionalStatus,
   associationStatus,
   contributionStatus,
@@ -20,7 +22,16 @@ const publicAssociateListColumns = {
   assignment: associates.assignment,
   classPattern: associates.classPattern,
   functionalStatus: associates.functionalStatus,
+  associationStatus: associates.associationStatus,
   contributionStatus: associates.contributionStatus,
+  siape: associates.siape,
+  siapeCiphertext: associates.siapeCiphertext,
+  primaryEmail: associates.primaryEmail,
+  primaryEmailCiphertext: associates.primaryEmailCiphertext,
+  phone: associates.phone,
+  phoneCiphertext: associates.phoneCiphertext,
+  whatsapp: associates.whatsapp,
+  whatsappCiphertext: associates.whatsappCiphertext,
 };
 
 export interface AssociateListItem {
@@ -29,13 +40,18 @@ export interface AssociateListItem {
   assignment: string | null;
   classPattern: string | null;
   primaryEmail: string | null;
+  siape: string | null;
+  phone: string | null;
+  whatsapp: string | null;
   functionalStatus: string | null;
+  associationStatus: string | null;
   contributionStatus: string | null;
 }
 
 export interface AssociatesFilters {
   contributionStatus?: 'em_dia' | 'inadimplente' | 'pendente_migracao';
   functionalStatus?: 'ativo' | 'aposentado' | 'cedido' | 'em_licenca';
+  associationStatus?: 'ativo' | 'inativo';
 }
 
 export async function findAssociatesPaginated(
@@ -43,12 +59,10 @@ export async function findAssociatesPaginated(
   pageSize: number,
   searchQuery?: string,
   filters?: AssociatesFilters,
-  includeEmail = false,
 ): Promise<{ rows: AssociateListItem[]; total: number }> {
   const normalizedSearchQuery = searchQuery?.trim();
 
   const baseWhere = and(
-    normalizedSearchQuery ? undefined : eq(associates.associationStatus, 'ativo'),
     normalizedSearchQuery
       ? sql`${associates.fullName} ilike ${buildAssociateNameSearchPattern(normalizedSearchQuery)} escape '\\'`
       : undefined,
@@ -58,19 +72,14 @@ export async function findAssociatesPaginated(
     filters?.functionalStatus
       ? eq(associates.functionalStatus, filters.functionalStatus)
       : undefined,
+    filters?.associationStatus
+      ? eq(associates.associationStatus, filters.associationStatus)
+      : undefined,
   );
 
   const [rows, [{ total }]] = await Promise.all([
     db
-      .select(
-        includeEmail
-          ? {
-              ...publicAssociateListColumns,
-              primaryEmail: associates.primaryEmail,
-              primaryEmailCiphertext: associates.primaryEmailCiphertext,
-            }
-          : publicAssociateListColumns,
-      )
+      .select(publicAssociateListColumns)
       .from(associates)
       .where(baseWhere)
       .orderBy(asc(associates.fullName), asc(associates.id))
@@ -81,14 +90,17 @@ export async function findAssociatesPaginated(
 
   return {
     rows: rows.map((row) => ({
-      ...row,
-      primaryEmail:
-        includeEmail && 'primaryEmail' in row
-          ? decryptPiiField(
-              'primaryEmailCiphertext' in row ? (row.primaryEmailCiphertext ?? null) : null,
-              row.primaryEmail ?? null,
-            )
-          : null,
+      id: row.id,
+      fullName: row.fullName,
+      assignment: row.assignment,
+      classPattern: row.classPattern,
+      functionalStatus: row.functionalStatus,
+      associationStatus: row.associationStatus,
+      contributionStatus: row.contributionStatus,
+      primaryEmail: decryptPiiField(row.primaryEmailCiphertext ?? null, row.primaryEmail ?? null),
+      siape: decryptPiiField(row.siapeCiphertext ?? null, row.siape ?? null),
+      phone: decryptPiiField(row.phoneCiphertext ?? null, row.phone ?? null),
+      whatsapp: decryptPiiField(row.whatsappCiphertext ?? null, row.whatsapp ?? null),
     })),
     total,
   };
@@ -142,6 +154,9 @@ export interface UpdateAssociateValues {
   address?: string | null;
   addressCiphertext?: string | null;
   addressHash?: string | null;
+  rg?: string | null;
+  rgCiphertext?: string | null;
+  rgHash?: string | null;
   locationCity?: string | null;
   locationCountry?: string | null;
   assignment?: string | null;
@@ -193,4 +208,44 @@ export async function findAssociateByPrimaryEmailHash(
     .where(eq(associates.primaryEmailHash, primaryEmailHash))
     .limit(1);
   return row ?? null;
+}
+
+export interface DependentItem {
+  id: number;
+  name: string;
+  relationship: string;
+}
+
+export async function findDependentsByAssociateId(associateId: number): Promise<DependentItem[]> {
+  return db
+    .select({
+      id: dependents.id,
+      name: dependents.name,
+      relationship: dependents.relationship,
+    })
+    .from(dependents)
+    .where(eq(dependents.associateId, associateId))
+    .orderBy(asc(dependents.id));
+}
+
+export interface HealthAgreementItem {
+  id: number;
+  provider: string;
+  startDate: string | null;
+  endDate: string | null;
+}
+
+export async function findHealthAgreementsByAssociateId(
+  associateId: number,
+): Promise<HealthAgreementItem[]> {
+  return db
+    .select({
+      id: healthAgreements.id,
+      provider: healthAgreements.provider,
+      startDate: healthAgreements.startDate,
+      endDate: healthAgreements.endDate,
+    })
+    .from(healthAgreements)
+    .where(eq(healthAgreements.associateId, associateId))
+    .orderBy(asc(healthAgreements.id));
 }

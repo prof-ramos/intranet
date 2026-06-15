@@ -5,7 +5,6 @@ import {
   parseAssociatesSearchParams,
   buildAssociatesSearchParams,
 } from '@/lib/associates/search-params';
-import { canViewSensitiveFields } from '@/lib/associates/lgpd';
 import { calculatePaginationBounds } from '@/lib/pagination';
 import { AssociadosFilters } from './AssociadosFilters';
 import { ChevronLeft, ChevronRight, Download, Pencil, Search } from 'lucide-react';
@@ -21,6 +20,8 @@ import {
   focusRingClass,
   errorBg,
   error as errorColor,
+  warningBg,
+  warning,
 } from '@/lib/ui/tokens';
 
 const PAGE_SIZE = 20;
@@ -33,10 +34,11 @@ export default async function AssociadosPage({
     page?: string;
     contributionStatus?: string;
     functionalStatus?: string;
+    associationStatus?: string;
   }>;
 }) {
   const user = await requireAuth();
-  const { q, page, contributionStatus, functionalStatus } = parseAssociatesSearchParams(
+  const { q, page, contributionStatus, functionalStatus, associationStatus } = parseAssociatesSearchParams(
     await searchParams,
   );
 
@@ -44,11 +46,8 @@ export default async function AssociadosPage({
     page,
     PAGE_SIZE,
     q,
-    { contributionStatus, functionalStatus },
-    user.role,
+    { contributionStatus, functionalStatus, associationStatus },
   );
-
-  const showEmail = canViewSensitiveFields(user.role);
 
   const { totalPages, from, to } = calculatePaginationBounds(page, PAGE_SIZE, total);
 
@@ -92,6 +91,7 @@ export default async function AssociadosPage({
             <AssociadosFilters
               currentContributionStatus={contributionStatus}
               currentFunctionalStatus={functionalStatus}
+              currentAssociationStatus={associationStatus}
               currentQ={q}
             />
             <div className="hidden min-h-11 min-w-0 items-center gap-3 sm:flex">
@@ -158,7 +158,7 @@ export default async function AssociadosPage({
               <nav aria-label="Paginação de associados" className="flex items-center gap-1">
                 {page > 1 ? (
                   <Link
-                    href={`/app/associados?${new URLSearchParams(buildAssociatesSearchParams({ q, page, contributionStatus, functionalStatus }, { page: page - 1 })).toString()}`}
+                    href={`/app/associados?${new URLSearchParams(buildAssociatesSearchParams({ q, page, contributionStatus, functionalStatus, associationStatus }, { page: page - 1 })).toString()}`}
                     className={`inline-flex h-11 w-11 items-center justify-center rounded-[8px] border bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
                     style={{ borderColor: hairline }}
                     aria-label="Página anterior"
@@ -187,7 +187,7 @@ export default async function AssociadosPage({
                 )}
                 {page < totalPages ? (
                   <Link
-                    href={`/app/associados?${new URLSearchParams(buildAssociatesSearchParams({ q, page, contributionStatus, functionalStatus }, { page: page + 1 })).toString()}`}
+                    href={`/app/associados?${new URLSearchParams(buildAssociatesSearchParams({ q, page, contributionStatus, functionalStatus, associationStatus }, { page: page + 1 })).toString()}`}
                     className={`inline-flex h-11 w-11 items-center justify-center rounded-[8px] border bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
                     style={{ borderColor: hairline }}
                     aria-label="Próxima página"
@@ -212,43 +212,29 @@ export default async function AssociadosPage({
             <table className="w-full text-sm" aria-label="Lista de associados">
               <thead className="bg-[#040920] text-white">
                 <tr className="text-left">
-                  <th
-                    scope="col"
-                    className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
-                  >
+                  <th scope="col" className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
                     Nome
                   </th>
-                  <th
-                    scope="col"
-                    className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
-                  >
+                  <th scope="col" className="hidden md:table-cell px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
                     Lotação
                   </th>
-                  <th
-                    scope="col"
-                    className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
-                  >
-                    Posto
+                  <th scope="col" className="hidden lg:table-cell px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
+                    SIAPE
                   </th>
-                  {showEmail && (
-                    <th
-                      scope="col"
-                      className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
-                    >
-                      Email
-                    </th>
-                  )}
-                  <th
-                    scope="col"
-                    className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
-                  >
+                  <th scope="col" className="hidden md:table-cell px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
+                    Email
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
                     Situação
                   </th>
-                  <th
-                    scope="col"
-                    className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase"
-                  >
+                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
+                    Associativo
+                  </th>
+                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
                     Contribuição
+                  </th>
+                  <th scope="col" className="hidden lg:table-cell px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
+                    Telefone
                   </th>
                   <th scope="col" className="w-10 px-4 py-3 text-center" aria-label="Ações" />
                 </tr>
@@ -256,11 +242,7 @@ export default async function AssociadosPage({
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={showEmail ? 7 : 6}
-                      className="py-16 text-center"
-                      style={{ color: textMuted }}
-                    >
+                    <td colSpan={9} className="py-16 text-center" style={{ color: textMuted }}>
                       Nenhum associado encontrado.
                     </td>
                   </tr>
@@ -279,9 +261,9 @@ export default async function AssociadosPage({
                           {row.fullName}
                         </Link>
                       </td>
-                      <td className="px-4 py-3">{row.assignment ?? '—'}</td>
-                      <td className="px-4 py-3">{row.classPattern ?? '—'}</td>
-                      {showEmail && <td className="px-4 py-3">{row.primaryEmail ?? '—'}</td>}
+                      <td className="hidden md:table-cell px-4 py-3">{row.assignment ?? '—'}</td>
+                      <td className="hidden lg:table-cell px-4 py-3 font-mono text-xs">{row.siape ?? '—'}</td>
+                      <td className="hidden md:table-cell px-4 py-3 text-xs">{row.primaryEmail ?? '—'}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold tracking-[0.06em] uppercase ${
@@ -290,37 +272,44 @@ export default async function AssociadosPage({
                           style={
                             row.functionalStatus === 'ativo'
                               ? { backgroundColor: successBg, color: success }
-                              : { backgroundColor: canvas, color: textMuted, borderColor: hairline }
+                              : row.functionalStatus === 'aposentado'
+                                ? { backgroundColor: warningBg, color: warning }
+                                : { backgroundColor: canvas, color: textMuted, borderColor: hairline }
                           }
                         >
                           {getAssociateStatusLabel(row.functionalStatus) ?? '—'}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="hidden sm:table-cell px-4 py-3">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold tracking-[0.06em] uppercase ${
+                            row.associationStatus === 'ativo' ? '' : 'border'
+                          }`}
+                          style={
+                            row.associationStatus === 'ativo'
+                              ? { backgroundColor: successBg, color: success }
+                              : { backgroundColor: canvas, color: textMuted, borderColor: hairline }
+                          }
+                        >
+                          {getAssociateStatusLabel(row.associationStatus) ?? '—'}
+                        </span>
+                      </td>
+                      <td className="hidden sm:table-cell px-4 py-3">
                         <span
                           className="inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-[0.06em] uppercase"
                           style={
                             row.contributionStatus === 'em_dia'
-                              ? {
-                                  backgroundColor: successBg,
-                                  color: success,
-                                  borderColor: 'transparent',
-                                }
+                              ? { backgroundColor: successBg, color: success, borderColor: 'transparent' }
                               : row.contributionStatus === 'inadimplente'
-                                ? {
-                                    backgroundColor: errorBg,
-                                    color: errorColor,
-                                    borderColor: 'transparent',
-                                  }
-                                : {
-                                    backgroundColor: canvas,
-                                    color: textMuted,
-                                    borderColor: hairline,
-                                  }
+                                ? { backgroundColor: errorBg, color: errorColor, borderColor: 'transparent' }
+                                : { backgroundColor: canvas, color: textMuted, borderColor: hairline }
                           }
                         >
                           {getAssociateStatusLabel(row.contributionStatus) ?? '—'}
                         </span>
+                      </td>
+                      <td className="hidden lg:table-cell px-4 py-3 font-mono text-xs">
+                        {row.whatsapp ?? row.phone ?? '—'}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <Link

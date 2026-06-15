@@ -1,5 +1,5 @@
 import type { Role } from './lgpd';
-import { canViewSensitiveFields, maskCpf, maskSiape } from './lgpd';
+import { canViewSensitiveFields } from './lgpd';
 import {
   findAssociatesPaginated,
   findAssociateById,
@@ -80,10 +80,8 @@ export async function getAssociatesListPage(
   pageSize: number,
   searchQuery?: string,
   filters?: AssociatesFilters,
-  role?: Role,
 ) {
-  const includeEmail = role === 'admin' || role === 'diretoria';
-  return findAssociatesPaginated(page, pageSize, searchQuery, filters, includeEmail);
+  return findAssociatesPaginated(page, pageSize, searchQuery, filters);
 }
 
 export async function getAssociateForEdit(
@@ -95,12 +93,6 @@ export async function getAssociateForEdit(
   if (!row) return null;
 
   const decrypted = decryptAssociatePii(row);
-  const cpf = canViewSensitiveFields(role)
-    ? decrypted.cpf
-    : maskCpf(decrypted.cpf);
-  const siape = canViewSensitiveFields(role)
-    ? decrypted.siape
-    : maskSiape(decrypted.siape);
 
   // LGPD Art. 30/37: log PII data access
   await logDataAccess({
@@ -114,8 +106,8 @@ export async function getAssociateForEdit(
   return {
     id: row.id,
     fullName: row.fullName,
-    cpf,
-    siape,
+    cpf: decrypted.cpf,
+    siape: decrypted.siape,
     primaryEmail: decrypted.primaryEmail,
     secondaryEmail: row.secondaryEmail,
     phone: decrypted.phone,

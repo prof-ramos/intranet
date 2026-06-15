@@ -1,6 +1,6 @@
 import type { Role } from './lgpd';
 import { toAssociateProfileDTO, toActivityDTO, canViewSensitiveFields } from './lgpd';
-import { findAssociateById, findLinkedActivities } from './repository';
+import { findAssociateById, findLinkedActivities, findDependentsByAssociateId, findHealthAgreementsByAssociateId } from './repository';
 import { getAssociateAuditHistory } from '@/lib/audit/queries';
 import { getPaymentHistoryForAssociate, type PaymentHistoryItem } from '@/lib/finance/repository';
 import { getConsultationsByAssociate } from '@/lib/juridico/repository';
@@ -23,9 +23,24 @@ export interface AssociateTimelineItem {
   tone: 'neutral' | 'pos' | 'neg';
 }
 
+export interface DependentViewItem {
+  id: number;
+  name: string;
+  relationship: string;
+}
+
+export interface HealthAgreementViewItem {
+  id: number;
+  provider: string;
+  startDate: string | null;
+  endDate: string | null;
+}
+
 export interface AssociateProfileViewModel {
   associate: ReturnType<typeof toAssociateProfileDTO>;
   linkedActivities: AssociateLinkedActivity[];
+  dependents: DependentViewItem[];
+  healthAgreements: HealthAgreementViewItem[];
   isAssociationActive: boolean;
   isFunctionalActive: boolean;
   joinedYears: number | null;
@@ -78,11 +93,13 @@ export async function getAssociateProfile(
 
   const associate = toAssociateProfileDTO(rawAssociate, role);
 
-  const [linkedActivities, auditHistory, paymentHistory, consultations] = await Promise.all([
+  const [linkedActivities, auditHistory, paymentHistory, consultations, dependents, healthAgreements] = await Promise.all([
     findLinkedActivities(associate.id),
     getAssociateAuditHistory(associateId),
     getPaymentHistoryForAssociate(associateId),
     getConsultationsByAssociate(associateId),
+    findDependentsByAssociateId(associateId),
+    findHealthAgreementsByAssociateId(associateId),
   ]);
 
   const location =
@@ -165,6 +182,8 @@ export async function getAssociateProfile(
   return {
     associate,
     linkedActivities: linkedActivities.map((activity) => toActivityDTO(activity, role)),
+    dependents,
+    healthAgreements,
     isAssociationActive: associate.associationStatus === 'ativo',
     isFunctionalActive: associate.functionalStatus === 'ativo',
     joinedYears: yearsSinceDate(associate.joinedAt),

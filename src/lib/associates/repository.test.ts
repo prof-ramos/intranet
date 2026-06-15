@@ -158,11 +158,15 @@ describe('associates repository', () => {
     expect(typeof updateAssociateById).toBe('function');
   });
 
-  it('keeps the default list restricted to active ASOF associates when no search query is present', async () => {
+  it('returns all associates when no association status filter is present', async () => {
     const result = await findAssociatesPaginated(1, 20);
 
-    expect(result.total).toBe(1);
-    expect(result.rows.map((row) => row.fullName)).toEqual(['Edson Diniz']);
+    expect(result.total).toBe(3);
+    expect(result.rows.map((row) => row.fullName)).toEqual([
+      'Edson Diniz',
+      'Paulo Edson Medeiros de Albuquerque',
+      'Maria Oliveira',
+    ]);
   });
 
   it('searches any registered officer by name without restricting association status', async () => {

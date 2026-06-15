@@ -9,6 +9,8 @@ import { getAssociateStatusLabel } from '@/lib/associates/service';
 
 const mockFindAssociateById = vi.fn();
 const mockFindLinkedActivities = vi.fn();
+const mockFindDependentsByAssociateId = vi.fn();
+const mockFindHealthAgreementsByAssociateId = vi.fn();
 const mockGetAssociateAuditHistory = vi.fn();
 const mockGetPaymentHistoryForAssociate = vi.fn();
 const mockGetConsultationsByAssociate = vi.fn();
@@ -16,6 +18,9 @@ const mockGetConsultationsByAssociate = vi.fn();
 vi.mock('./repository', () => ({
   findAssociateById: (...args: unknown[]) => mockFindAssociateById(...args),
   findLinkedActivities: (...args: unknown[]) => mockFindLinkedActivities(...args),
+  findDependentsByAssociateId: (...args: unknown[]) => mockFindDependentsByAssociateId(...args),
+  findHealthAgreementsByAssociateId: (...args: unknown[]) =>
+    mockFindHealthAgreementsByAssociateId(...args),
 }));
 
 vi.mock('@/lib/audit/queries', () => ({
@@ -33,7 +38,7 @@ vi.mock('@/lib/juridico/repository', () => ({
 vi.mock('./lgpd', () => ({
   toAssociateProfileDTO: (a: unknown) => a,
   toActivityDTO: (a: unknown) => a,
-  canViewSensitiveFields: (role: string) => role === 'admin' || role === 'diretoria',
+  canViewSensitiveFields: () => true,
 }));
 
 describe('associates/profile helpers', () => {
@@ -69,6 +74,8 @@ describe('getAssociateProfile', () => {
     mockGetAssociateAuditHistory.mockResolvedValue([]);
     mockGetPaymentHistoryForAssociate.mockResolvedValue([]);
     mockGetConsultationsByAssociate.mockResolvedValue([]);
+    mockFindDependentsByAssociateId.mockResolvedValue([]);
+    mockFindHealthAgreementsByAssociateId.mockResolvedValue([]);
   });
 
   it('returns null when associate not found', async () => {
@@ -166,7 +173,7 @@ describe('getAssociateProfile', () => {
       detail: 'Atrasado',
       tone: 'neg',
     });
-    expect(result!.showSensitive).toBe(false);
+    expect(result!.showSensitive).toBe(true);
     expect(result!.consultationCount).toBe(1);
   });
 });

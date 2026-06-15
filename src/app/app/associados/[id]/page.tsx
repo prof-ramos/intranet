@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, Pencil } from 'lucide-react';
 import { requireAuth } from '@/lib/auth/require-auth';
-import { focusRingClass, hairline, infoNotice } from '@/lib/ui/tokens';
+import { focusRingClass, hairline } from '@/lib/ui/tokens';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 import { requireEntityById } from '@/lib/routing/require-entity';
 import {
@@ -89,12 +89,63 @@ function EditLink({ href, children = 'Editar' }: { href: string; children?: Reac
   );
 }
 
+function BooleanIcon({ value }: { value: boolean | null }) {
+  if (value === null || value === undefined) {
+    return <span className="text-base-content/40">-</span>;
+  }
+  return value ? (
+    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#dcfce7] text-[#15803d]">
+      ✓
+    </span>
+  ) : (
+    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#f1f5f9] text-[rgba(13,31,60,0.40)]">
+      ✗
+    </span>
+  );
+}
+
+const sexLabels: Record<string, string> = {
+  M: 'Masculino',
+  F: 'Feminino',
+};
+
+const maritalStatusLabels: Record<string, string> = {
+  solteiro: 'Solteiro(a)',
+  casado: 'Casado(a)',
+  divorciado: 'Divorciado(a)',
+  viuvo: 'Viúvo(a)',
+  separado: 'Separado(a)',
+  outros: 'Outros',
+};
+
+const missionTypeLabels: Record<string, string> = {
+  permanente: 'Permanente',
+  transitoria: 'Transitória',
+};
+
+const careerOriginLabels: Record<string, string> = {
+  brasil: 'Brasil',
+  exterior: 'Exterior',
+  outros_orgaos: 'Outros Órgãos',
+};
+
+const paymentMethodLabels: Record<string, string> = {
+  folha: 'Folha de pagamento',
+  boleto: 'Boleto',
+  pix: 'Pix',
+  transferencia: 'Transferência',
+  outros: 'Outros',
+};
+
 const tocItems = [
   ['visao-geral', 'Visão geral'],
   ['identificacao', 'Identificação'],
   ['endereco', 'Endereço'],
+  ['dados-profissionais', 'Dados Profissionais'],
   ['administrativo', 'Administrativo'],
   ['associacao', 'Associação'],
+  ['dependentes', 'Dependentes'],
+  ['convenios', 'Convênios'],
   ['observacoes', 'Observações'],
   ['atividades', 'Atividades'],
 ] as const;
@@ -107,12 +158,13 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
   const {
     associate,
     linkedActivities,
+    dependents,
+    healthAgreements,
     isAssociationActive,
     isFunctionalActive,
     joinedYears,
     careerYears,
     location,
-    showSensitive,
     timeline,
     paymentHistory,
     consultationCount,
@@ -241,24 +293,6 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
             </div>
           </header>
 
-          {!showSensitive && (
-            <div
-              className="flex gap-3 rounded-[10px] border px-4 py-3"
-              style={{ borderColor: infoNotice.border, background: infoNotice.bg }}
-            >
-              <span
-                className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
-                style={{ background: infoNotice.iconBg }}
-              >
-                i
-              </span>
-              <p className="m-0 text-sm leading-relaxed" style={{ color: infoNotice.text }}>
-                <strong>Visualização limitada.</strong> Dados pessoais sensíveis estão mascarados
-                conforme política de privacidade (LGPD).
-              </p>
-            </div>
-          )}
-
           {!isAssociationActive && (
             <div className="flex gap-3 rounded-[10px] border border-[#fca5a5] bg-[#fee2e2] px-4 py-3">
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#b91c1c] text-sm font-bold text-white">
@@ -279,8 +313,28 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
             <dl className="m-0">
               <Row label="Nome completo" value={associate.fullName} />
               <Row label="CPF" value={associate.cpf} mono />
+              <Row label="RG" value={associate.rg} mono />
+              {associate.rg && (
+                <>
+                  <Row label="Órgão Expedidor" value={associate.rgIssuer} />
+                  <Row label="UF RG" value={associate.rgState} />
+                  <Row
+                    label="Data expedição RG"
+                    value={formatAssociateDate(associate.rgExpeditionDate)}
+                  />
+                </>
+              )}
               <Row label="SIAPE" value={associate.siape} mono />
+              <Row label="Sexo" value={associate.sex ? sexLabels[associate.sex] : null} />
+              <Row
+                label="Estado civil"
+                value={
+                  associate.maritalStatus ? maritalStatusLabels[associate.maritalStatus] : null
+                }
+              />
               <Row label="Data de nascimento" value={formatAssociateDate(associate.birthDate)} />
+              <Row label="Naturalidade" value={associate.birthCity} />
+              {associate.birthCity && <Row label="UF Naturalidade" value={associate.birthState} />}
               <Row label="E-mail principal" value={associate.primaryEmail} />
               <Row label="E-mail alternativo" value={associate.secondaryEmail} />
               <Row label="Telefone" value={associate.phone} mono />
@@ -295,7 +349,41 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
           >
             <dl className="m-0">
               <Row label="Endereço" value={associate.address} />
+              <Row label="Bairro" value={associate.neighborhood} />
               <Row label="Cidade / País" value={location} />
+              <Row label="Estado" value={associate.addressState} />
+              <Row label="CEP" value={associate.zipCode} mono />
+            </dl>
+          </SectionCard>
+
+          <SectionCard id="dados-profissionais" title="Dados Profissionais">
+            <dl className="m-0">
+              <Row
+                label="Situação funcional"
+                value={getAssociateStatusLabel(associate.functionalStatus)}
+              />
+              <Row
+                label="Tipo de missão"
+                value={associate.missionType ? missionTypeLabels[associate.missionType] : null}
+              />
+              <Row
+                label="Origem de carreira"
+                value={
+                  associate.careerOrigin ? careerOriginLabels[associate.careerOrigin] : null
+                }
+              />
+              <Row label="Classe / Padrão" value={associate.classPattern} />
+              <Row label="Lotação" value={associate.assignment} />
+              <Row
+                label="Início da lotação"
+                value={formatAssociateDate(associate.assignmentStartDate)}
+              />
+              <Row label="Data de admissão" value={formatAssociateDate(associate.admissionDate)} />
+              <Row label="Data de posse" value={formatAssociateDate(associate.inaugurationDate)} />
+              <Row
+                label="Data de cancelamento"
+                value={formatAssociateDate(associate.cancellationDate)}
+              />
             </dl>
           </SectionCard>
 
@@ -305,35 +393,26 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
             action={<EditLink href={`/app/associados/${id}/editar`} />}
           >
             <dl className="m-0">
-              <Row
-                label="Situação funcional"
-                value={getAssociateStatusLabel(associate.functionalStatus)}
-              />
-              <Row label="Classe / Padrão" value={associate.classPattern} />
               <Row label="Categoria" value={associate.associationCategory} />
+              <Row
+                label="Situação associativa"
+                value={getAssociateStatusLabel(associate.associationStatus)}
+              />
               <Row
                 label="Contribuição"
                 value={getAssociateStatusLabel(associate.contributionStatus)}
               />
               <Row
-                label="Início da lotação"
-                value={formatAssociateDate(associate.assignmentStartDate)}
+                label="Método de pagamento"
+                value={
+                  associate.paymentMethod
+                    ? paymentMethodLabels[associate.paymentMethod]
+                    : null
+                }
               />
+              <Row label="Membro CEOC" value={<BooleanIcon value={associate.ceocMember} />} />
+              <Row label="Membro CAOC" value={<BooleanIcon value={associate.caocMember} />} />
             </dl>
-            <div className="mt-4 rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-[#f8fafc] p-4">
-              <p className="text-base-content/55 m-0 text-[11px] font-bold tracking-[0.10em] uppercase">
-                Lotação atual
-              </p>
-              <p className="mt-2 font-serif text-[22px] font-bold">{associate.assignment ?? '-'}</p>
-              <div className="text-base-content/70 mt-2 flex flex-wrap gap-4 text-sm">
-                <span>
-                  <strong>Cidade:</strong> {associate.locationCity ?? '-'}
-                </span>
-                <span>
-                  <strong>País:</strong> {associate.locationCountry ?? '-'}
-                </span>
-              </div>
-            </div>
           </SectionCard>
 
           <SectionCard
@@ -408,6 +487,81 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
               </div>
             </SectionCard>
           )}
+
+          <SectionCard
+            id="dependentes"
+            title={`Dependentes (${dependents.length})`}
+            action={<EditLink href={`/app/associados/${id}/editar`}>Gerenciar</EditLink>}
+          >
+            {dependents.length === 0 ? (
+              <p className="text-base-content/55 m-0 text-sm">
+                Nenhum dependente cadastrado.
+              </p>
+            ) : (
+              <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                {dependents.map((dep) => (
+                  <li
+                    key={dep.id}
+                    className="flex items-center gap-3 rounded-[8px] border border-[rgba(4,9,32,0.05)] bg-white px-3.5 py-3"
+                  >
+                    <span
+                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f0f4f8] text-xs font-semibold text-[rgba(13,31,60,0.70)]"
+                      aria-hidden="true"
+                    >
+                      {dep.relationship === 'conjuge'
+                        ? 'C'
+                        : dep.relationship.startsWith('filho')
+                          ? 'F'
+                          : 'D'}
+                    </span>
+                    <p className="m-0 min-w-0 flex-1 text-sm font-medium">{dep.name}</p>
+                    <span className="text-base-content/55 text-xs capitalize">
+                      {dep.relationship}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+
+          <SectionCard
+            id="convenios"
+            title={`Convênios (${healthAgreements.length})`}
+          >
+            {healthAgreements.length === 0 ? (
+              <p className="text-base-content/55 m-0 text-sm">
+                Nenhum convênio cadastrado.
+              </p>
+            ) : (
+              <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                {healthAgreements.map((ha) => (
+                  <li
+                    key={ha.id}
+                    className="flex items-center gap-3 rounded-[8px] border border-[rgba(4,9,32,0.05)] bg-white px-3.5 py-3"
+                  >
+                    <span
+                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#dcfce7] text-xs font-semibold text-[#15803d]"
+                      aria-hidden="true"
+                    >
+                      +
+                    </span>
+                    <p className="m-0 min-w-0 flex-1 text-sm font-medium">{ha.provider}</p>
+                    {(ha.startDate || ha.endDate) && (
+                      <span className="text-base-content/55 text-xs">
+                        {ha.startDate && ha.endDate
+                          ? `${formatAssociateDate(ha.startDate)} – ${formatAssociateDate(ha.endDate)}`
+                          : ha.startDate
+                            ? `Desde ${formatAssociateDate(ha.startDate)}`
+                            : ha.endDate
+                              ? `Até ${formatAssociateDate(ha.endDate)}`
+                              : ''}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
 
           <SectionCard
             id="observacoes"

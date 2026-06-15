@@ -37,14 +37,17 @@ type PiiPatchKeys =
   | 'whatsappHash'
   | 'address'
   | 'addressCiphertext'
-  | 'addressHash';
+  | 'addressHash'
+  | 'rg'
+  | 'rgCiphertext'
+  | 'rgHash';
 
 /**
  * Subset of UpdateAssociateInput containing only PII fields.
  */
 type PiiInputShape = Pick<
   UpdateAssociateValues,
-  'cpf' | 'siape' | 'primaryEmail' | 'phone' | 'whatsapp' | 'address'
+  'cpf' | 'siape' | 'primaryEmail' | 'phone' | 'whatsapp' | 'address' | 'rg'
 >;
 
 type PiiDecryptedShape = Record<keyof PiiInputShape, string | null>;
@@ -75,6 +78,12 @@ const PII_FIELDS: PiiFieldDescriptor[] = [
     plaintextCol: 'address',
     ciphertextCol: 'addressCiphertext',
     hashCol: 'addressHash',
+  },
+  {
+    name: 'rg',
+    plaintextCol: 'rg',
+    ciphertextCol: 'rgCiphertext',
+    hashCol: 'rgHash',
   },
 ];
 

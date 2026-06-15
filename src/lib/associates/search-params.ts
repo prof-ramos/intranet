@@ -6,6 +6,7 @@ export interface AssociatesSearchParams {
   page: number;
   contributionStatus?: 'em_dia' | 'inadimplente' | 'pendente_migracao';
   functionalStatus?: 'ativo' | 'aposentado' | 'cedido' | 'em_licenca';
+  associationStatus?: 'ativo' | 'inativo';
 }
 
 export function parseAssociatesSearchParams(params: {
@@ -13,6 +14,7 @@ export function parseAssociatesSearchParams(params: {
   page?: string;
   contributionStatus?: string;
   functionalStatus?: string;
+  associationStatus?: string;
 }): AssociatesSearchParams {
   const parsed = associateSearchParamsSchema.safeParse(params);
   if (!parsed.success) {
@@ -23,6 +25,7 @@ export function parseAssociatesSearchParams(params: {
     page: parsed.data.page,
     contributionStatus: parsed.data.contributionStatus,
     functionalStatus: parsed.data.functionalStatus,
+    associationStatus: parsed.data.associationStatus,
   };
 }
 
@@ -36,6 +39,7 @@ export function buildAssociatesSearchParams(
   if (next.q) params.q = next.q;
   if (next.contributionStatus) params.contributionStatus = next.contributionStatus;
   if (next.functionalStatus) params.functionalStatus = next.functionalStatus;
+  if (next.associationStatus) params.associationStatus = next.associationStatus;
   if (next.page && next.page !== 1) params.page = String(next.page);
 
   return params;

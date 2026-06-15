@@ -101,8 +101,8 @@ describe('buildPiiPatch', () => {
 });
 
 describe('PII_FIELDS registry', () => {
-  it('contains exactly 6 fields', () => {
-    expect(PII_FIELDS).toHaveLength(6);
+  it('contains exactly 7 fields', () => {
+    expect(PII_FIELDS).toHaveLength(7);
   });
 
   it('has unique names across all entries', () => {
@@ -137,6 +137,9 @@ describe('decryptAssociatePii', () => {
       address: null,
       addressCiphertext: 'enc:6',
       addressHash: 'hash:6',
+      rg: null,
+      rgCiphertext: 'enc:7',
+      rgHash: 'hash:7',
     });
 
     expect(decrypted).toEqual({
@@ -146,6 +149,7 @@ describe('decryptAssociatePii', () => {
       phone: '4',
       whatsapp: '5',
       address: '6',
+      rg: '7',
     });
   });
 
@@ -169,6 +173,9 @@ describe('decryptAssociatePii', () => {
       address: '6',
       addressCiphertext: null,
       addressHash: null,
+      rg: '7',
+      rgCiphertext: null,
+      rgHash: null,
     });
 
     expect(decrypted).toEqual({
@@ -178,6 +185,7 @@ describe('decryptAssociatePii', () => {
       phone: '4',
       whatsapp: '5',
       address: '6',
+      rg: '7',
     });
   });
 });
