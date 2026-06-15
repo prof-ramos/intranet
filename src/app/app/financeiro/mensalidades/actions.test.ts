@@ -5,7 +5,6 @@ const requireRoleMock = vi.fn();
 const updateMonthlyPaymentMock = vi.fn();
 const cancelMonthlyPaymentMock = vi.fn();
 const initializeMonthMock = vi.fn();
-const validateYearMonthMock = vi.fn();
 const revalidatePathMock = vi.fn();
 const revalidateTagMock = vi.fn();
 
@@ -17,7 +16,6 @@ vi.mock('@/lib/finance/service', () => ({
   updateMonthlyPayment: (...args: unknown[]) => updateMonthlyPaymentMock(...args),
   cancelMonthlyPayment: (...args: unknown[]) => cancelMonthlyPaymentMock(...args),
   initializeMonth: (...args: unknown[]) => initializeMonthMock(...args),
-  validateYearMonth: (...args: unknown[]) => validateYearMonthMock(...args),
 }));
 
 vi.mock('next/cache', () => ({
@@ -32,7 +30,6 @@ describe('financeiro mensalidades actions', () => {
     updateMonthlyPaymentMock.mockResolvedValue(undefined);
     cancelMonthlyPaymentMock.mockResolvedValue(undefined);
     initializeMonthMock.mockResolvedValue(12);
-    validateYearMonthMock.mockImplementation(() => {});
   });
 
   it('updates payment and revalidates caches on success', async () => {
@@ -42,7 +39,6 @@ describe('financeiro mensalidades actions', () => {
       month: 5,
       status: 'pago',
       paymentMethod: 'boleto',
-      paidAt: new Date('2026-05-17T12:00:00.000Z'),
       expectedUpdatedAt: '2026-05-17T11:00:00.000Z',
     });
 
@@ -71,7 +67,6 @@ describe('financeiro mensalidades actions', () => {
       month: 5,
       status: 'pago',
       paymentMethod: 'boleto',
-      paidAt: null,
       expectedUpdatedAt: null,
     });
 
@@ -88,7 +83,6 @@ describe('financeiro mensalidades actions', () => {
       month: 5,
       status: 'pago',
       paymentMethod: 'boleto',
-      paidAt: null,
       expectedUpdatedAt: null,
     } as Parameters<typeof updatePaymentAction>[0] & { id: number });
 
@@ -103,7 +97,6 @@ describe('financeiro mensalidades actions', () => {
         month: 5,
         status: 'pago',
         paymentMethod: 'boleto',
-        paidAt: null,
         expectedUpdatedAt: null,
       }),
     ).rejects.toThrow('Associado inválido.');
@@ -119,7 +112,6 @@ describe('financeiro mensalidades actions', () => {
         month: 5,
         status: 'pago',
         paymentMethod: 'cartao' as never,
-        paidAt: null,
         expectedUpdatedAt: null,
       }),
     ).rejects.toThrow('Método de pagamento inválido.');
@@ -132,7 +124,6 @@ describe('financeiro mensalidades actions', () => {
       associateId: 10,
       status: 'pago' as const,
       paymentMethod: 'boleto' as const,
-      paidAt: null,
       expectedUpdatedAt: null,
     };
 

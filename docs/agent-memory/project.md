@@ -75,3 +75,39 @@
 - **Evidência**: Sessão 2026-06-12 — CI falhou quando expectedColumns/expectedEnums/expectedIndexes não bateram com o banco.
 - **Regra preventiva**: Ao mudar migrações ou schemas Drizzle, sempre atualizar `schema.integration.test.ts` correspondente. Nunca assumir que o teste está correto sem validar contra o banco real.
 - **Confiança**: alta
+
+## 2026-06-15 — Neon via Vercel Storage Integration
+
+- **Tipo**: Restrição técnica
+- **Escopo**: Banco de dados Neon PostgreSQL
+- **Memória**: O projeto usa Neon PostgreSQL conectado via Vercel Storage Integration (não via Neon Console standalone). Org ID: `org-red-mode-09715915`. Project ID: `long-leaf-97822199` (`intranet-db`). Endpoint produção: `ep-empty-cake-ac26vl6w`, região `sa-east-1`. A CLI `neonctl` requer `org_id` no header da API para projetos Vercel-managed (HTTP 400 sem ele). Solução: usar `neonctl link --org-id org-red-mode-09715915 --project-id long-leaf-97822199 --no-checks` para configurar contexto, ou usar API REST direta via Node.js com `?org_id=org-red-mode-09715915`.
+- **Evidência**: Sessão 2026-06-15 — `neonctl projects list` sem org_id → HTTP 400; `neonctl link` funcionou com flags explícitos.
+- **Regra preventiva**: Para operar neonctl com projetos Vercel-managed, sempre usar `neonctl link` com `--org-id` e `--project-id` explícitos. Se a CLI interativa travar em prompt, usar API REST via Node.js.
+- **Confiança**: alta
+
+## 2026-06-15 — Neon Free Tier suporta branching
+
+- **Tipo**: Fato corrigido
+- **Escopo**: Neon PostgreSQL Free Tier
+- **Memória**: O Free Tier do Neon suporta branching (incluindo schema-only branches). A limitação real é PITR de 6h (não 24h), compute 0.25 CU, e scale-to-zero. Branch `dev/migration-test` (`br-fancy-mud-ac20oabm`) criada com sucesso.
+- **Evidência**: Sessão 2026-06-15 — `neonctl branch create --name "dev/migration-test" --schema-only` → sucesso.
+- **Regra preventiva**: Neon Free Tier suporta branching. Não assumir que "Free = sem branching". Limitação real: PITR 6h, compute 0.25 CU.
+- **Confiança**: alta
+
+## 2026-06-15 — Schema-only branches não copiam dados do drizzle journal
+
+- **Tipo**: Restrição técnica
+- **Escopo**: Neon branching + Drizzle ORM migrations
+- **Memória**: Ao criar uma branch schema-only (`--schema-only`), o Neon copia o DDL (todas as tabelas existem) mas NÃO copia os dados da tabela `drizzle.__drizzle_migrations`. O journal fica vazio, fazendo `drizzle-kit migrate` tentar reaplicar todas as migrations (falha: tabelas já existem). É necessário popular o journal manualmente com os hashes das migrations existentes. Campo `created_at` é `bigint` (epoch ms), NÃO timestamp.
+- **Evidência**: Sessão 2026-06-15 — `drizzle.__drizzle_migrations` tinha 0 entries após branch; `INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES (...)` com `created_at` bigint resolveu.
+- **Regra preventiva**: Ao usar schema-only branches com Drizzle, sempre popular `drizzle.__drizzle_migrations` com os hashes existentes. Hashes obtidos via `shasum -a 256 drizzle/postgres/0*.sql`. Campo `created_at` é bigint.
+- **Confiança**: alta
+
+## 2026-06-15 — JSON web como fonte única para migração de dados legados
+
+- **Tipo**: Decisão técnica confirmada
+- **Escopo**: Migração de dados legados
+- **Memória**: O arquivo `data/asof-prod-dump/chancelaria_web_indexed.json` (1.750 registros, 39 colunas) contém dados mergeados de `asof` + `asof_priv` extraídos via Chrome DevTools. É a fonte única e suficiente para a migração de associados — não é necessário restaurar MySQL 5.7, Docker, ou acessar VPS. 28 de 39 colunas mapeiam diretamente para o schema Drizzle `associates`. 16 colunas Drizzle faltam e precisam de migração de schema.
+- **Evidência**: Sessão 2026-06-15 — análise de cobertura mostrou 99.7% para Nome, 93% para SIAPE, 82.1% para CPF; 10 campos web sem destino Drizzle (CEOC, CAOC, Naturalidade, Bairro, Dependentes, etc.).
+- **Regra preventiva**: Para migração de associados, usar `chancelaria_web_indexed.json` como fonte primária. Não tentar restaurar MySQL ou acessar VPS.
+- **Confiança**: alta

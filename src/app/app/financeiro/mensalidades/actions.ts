@@ -6,40 +6,28 @@ import {
   cancelMonthlyPayment,
   updateMonthlyPayment,
   initializeMonth,
-  validateYearMonth,
 } from '@/lib/finance/service';
 import { z } from 'zod';
+import { yearSchema, monthSchema, yearMonthObjectSchema } from '@/lib/validation/schemas';
 
 const validPaymentStatuses = ['pago', 'pendente', 'atrasado', 'isento'] as const;
 const validPaymentMethods = ['folha', 'boleto', 'pix', 'transferencia', 'outros'] as const;
 
-const yearMonthSchema = {
-  year: z
-    .number({ message: 'Ano inválido.' })
-    .int('Ano inválido.')
-    .min(2000, 'Ano inválido.')
-    .max(2100, 'Ano inválido.'),
-  month: z
-    .number({ message: 'Mês inválido.' })
-    .int('Mês inválido.')
-    .min(1, 'Mês inválido.')
-    .max(12, 'Mês inválido.'),
-};
-
 const updatePaymentSchema = z.object({
   associateId: z.number().int().positive('Associado inválido.'),
-  ...yearMonthSchema,
+  year: yearSchema,
+  month: monthSchema,
   status: z.enum(validPaymentStatuses, { message: 'Status de pagamento inválido.' }),
   paymentMethod: z.enum(validPaymentMethods, { message: 'Método de pagamento inválido.' }),
-  paidAt: z.date().nullable().default(null),
   expectedUpdatedAt: z.string().datetime().nullable().optional(),
 });
 
-const initializeMonthSchema = z.object(yearMonthSchema);
+const initializeMonthSchema = yearMonthObjectSchema;
 
 const cancelPaymentSchema = z.object({
   paymentId: z.number().int().positive('Mensalidade inválida.'),
-  ...yearMonthSchema,
+  year: yearSchema,
+  month: monthSchema,
   reason: z.string().trim().min(3, 'Informe um motivo com ao menos 3 caracteres.'),
 });
 
@@ -86,8 +74,6 @@ export const cancelPaymentAction = defineServerAction({
     input: { paymentId: number; year: number; month: number; reason: string },
     user,
   ) => {
-    validateYearMonth(input.year, input.month);
-
     try {
       await cancelMonthlyPayment(user.userId, input.paymentId, input.reason);
     } catch (error) {

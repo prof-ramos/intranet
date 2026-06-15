@@ -8,13 +8,42 @@ import {
   type MonthlyPayment,
   type NewMonthlyPayment,
 } from '@/lib/db/schema/finance';
-import { auditLogs, type NewAuditLog } from '@/lib/db/schema/audit';
+import { type NewAuditLog } from '@/lib/db/schema/audit';
 import { associates } from '@/lib/db/schema/associates';
 import { and, eq, sql } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
-import { sanitizePiiValue } from '@/lib/sanitize-pii';
+import { yearMonthObjectSchema } from '@/lib/validation/schemas';
 
 const logger = createLogger('finance:service');
+
+/**
+ * Valid status transitions for monthly payments.
+ * `cancelado` is terminal — no transitions out.
+ * New records (no `current`) skip transition validation.
+ */
+// Cancellation is a separate domain flow handled by cancelMonthlyPayment,
+// which sets cancelledAt, cancelledBy, and cancellationReason. The update
+// path explicitly clears those fields, so reaching 'cancelado' through it
+// would produce an inconsistent record. Remove 'cancelado' from targets.
+const VALID_TRANSITIONS: Record<string, Set<string>> = {
+  pendente: new Set(['pago', 'atrasado', 'isento']),
+  atrasado: new Set(['pago', 'pendente', 'isento']),
+  pago: new Set(['pendente']),
+  isento: new Set(['pendente']),
+  cancelado: new Set(),
+};
+
+export function validateStatusTransition(
+  currentStatus: string,
+  newStatus: string,
+): void {
+  const allowed = VALID_TRANSITIONS[currentStatus];
+  if (!allowed || !allowed.has(newStatus)) {
+    throw new Error(
+      `Transição inválida: não é possível alterar de '${currentStatus}' para '${newStatus}'.`,
+    );
+  }
+}
 
 export async function autoMarkOverduePaymentsService(): Promise<number> {
   const { transitioned, events } = await db.transaction(async (tx) => {
@@ -113,17 +142,15 @@ function validateCancellationReason(reason: string): string {
 }
 
 export function validateYearMonth(year: number, month: number): void {
-  if (!Number.isInteger(year) || year < 1900 || year > 2100) {
-    throw new Error('Ano inválido.');
-  }
-  if (!Number.isInteger(month) || month < 1 || month > 12) {
-    throw new Error('Mês inválido.');
+  const parsed = yearMonthObjectSchema.safeParse({ year, month });
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0].message);
   }
 }
 
 export type MonthlyPaymentUpdateInput = Pick<
   MonthlyPayment,
-  'associateId' | 'year' | 'month' | 'status' | 'paymentMethod' | 'paidAt'
+  'associateId' | 'year' | 'month' | 'status' | 'paymentMethod'
 >;
 
 export async function updateMonthlyPayment(
@@ -146,6 +173,10 @@ export async function updateMonthlyPayment(
 
     const current = existing[0] ?? null;
 
+    if (current && current.status !== payment.status) {
+      validateStatusTransition(current.status, payment.status);
+    }
+
     if (current && expectedUpdatedAt != null) {
       const currentUpdatedAt = current.updatedAt?.toISOString() ?? null;
       if (currentUpdatedAt !== expectedUpdatedAt) {
@@ -155,10 +186,22 @@ export async function updateMonthlyPayment(
 
     const oldState = current ? getPaymentAuditState(current) : null;
 
+    // Derive paidAt server-side for audit integrity:
+    // - Transitioning TO 'pago': set to now()
+    // - Already 'pago' staying 'pago': preserve existing paidAt
+    // - Transitioning away from 'pago': clear
+    const paidAt =
+      payment.status === 'pago'
+        ? current?.status === 'pago'
+          ? current.paidAt
+          : new Date()
+        : null;
+
     const upserted = await tx
       .insert(monthlyPayments)
       .values({
         ...payment,
+        paidAt,
         updatedBy: adminId,
       })
       .onConflictDoUpdate({
@@ -166,7 +209,7 @@ export async function updateMonthlyPayment(
         set: {
           status: payment.status,
           paymentMethod: payment.paymentMethod,
-          paidAt: payment.paidAt,
+          paidAt,
           cancelledAt: null,
           cancellationReason: null,
           cancelledBy: null,
@@ -198,7 +241,7 @@ export async function updateMonthlyPayment(
         new: {
           status: payment.status,
           paymentMethod: payment.paymentMethod,
-          paidAt: payment.paidAt,
+          paidAt,
           cancelledAt: null,
           cancellationReason: null,
           cancelledBy: null,
@@ -225,7 +268,7 @@ export async function updateMonthlyPayment(
             previousStatus: oldState.status,
             status: payment.status,
             paymentMethod: payment.paymentMethod,
-            paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
+            paidAt: paidAt ? paidAt.toISOString() : null,
             links: {
               app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
             },
@@ -286,21 +329,22 @@ export async function cancelMonthlyPayment(adminId: number, paymentId: number, r
     }
 
     const newState = getPaymentAuditState(updatedPayment);
-    await tx.insert(auditLogs).values({
-      performedBy: adminId,
+    await logAuditAction({
+      adminId,
       action: 'cancel',
       entityType: 'monthly_payment',
       entityId: updatedPayment.id,
-      changes: sanitizePiiValue({
+      changes: {
         old: oldState,
         new: newState,
-      }) as NewAuditLog['changes'],
-      metadata: sanitizePiiValue({
+      },
+      metadata: {
         associateId: updatedPayment.associateId,
         year: updatedPayment.year,
         month: updatedPayment.month,
         cancellationReason,
-      }) as NewAuditLog['metadata'],
+      },
+      executor: tx,
     });
 
     await emitDomainEvent(
@@ -364,20 +408,19 @@ export async function initializeMonth(adminId: number, year: number, month: numb
         updatedBy: adminId,
       }));
 
-    if (updates.length > 0) {
-      // Use DO NOTHING to avoid overwriting concurrent inserts from other transactions
-      await repository.insertMonthlyPaymentsIfMissing(updates, tx);
-    }
+    const inserted = updates.length > 0
+      ? await repository.insertMonthlyPaymentsIfMissing(updates, tx)
+      : [];
 
     await logAuditAction({
       adminId,
       action: 'initialize_month',
       entityType: 'finance',
       entityId: null,
-      metadata: { year, month, count: updates.length },
+      metadata: { year, month, count: inserted.length },
     });
 
-    return updates.length;
+    return inserted.length;
   });
 
   return count;

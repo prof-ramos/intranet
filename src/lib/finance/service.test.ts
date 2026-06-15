@@ -3,6 +3,7 @@ import {
   autoMarkOverduePaymentsService,
   cancelMonthlyPayment,
   updateMonthlyPayment,
+  validateStatusTransition,
 } from './service';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { logAuditAction } from '@/lib/audit/service';
@@ -157,7 +158,6 @@ describe('finance service', () => {
       month: 5,
       status: 'pago',
       paymentMethod: 'boleto',
-      paidAt: new Date('2026-05-13T12:00:00.000Z'),
     });
 
     expect(logAuditAction).toHaveBeenCalledWith(
@@ -175,7 +175,7 @@ describe('finance service', () => {
           new: expect.objectContaining({
             status: 'pago',
             paymentMethod: 'boleto',
-            paidAt: new Date('2026-05-13T12:00:00.000Z'),
+            paidAt: expect.any(Date),
           }),
         },
         metadata: {
@@ -194,23 +194,70 @@ describe('finance service', () => {
         entityType: 'monthly_payment',
         entityId: 5,
         actorAdminId: 1,
-        payload: {
+        payload: expect.objectContaining({
           associateId: 10,
           year: 2026,
           month: 5,
           previousStatus: 'pendente',
           status: 'pago',
           paymentMethod: 'boleto',
-          paidAt: '2026-05-13T12:00:00.000Z',
+          paidAt: expect.any(String),
           links: {
             app: '/app/financeiro/mensalidades?year=2026&month=5',
           },
-        },
+        }),
       }),
       transactionMock.tx,
     );
     expect(JSON.stringify(vi.mocked(emitDomainEvent).mock.calls[0][0])).not.toMatch(
       /cpf|siape|address/i,
+    );
+  });
+
+  it('preserves paidAt when re-updating an already-pago payment', async () => {
+    // Scenario: admin changes paymentMethod on an already-paid record.
+    // paidAt should NOT be reset to new Date() — the original payment date must be preserved.
+    const originalPaidAt = new Date('2026-04-15T10:30:00.000Z');
+
+    // Override the default mock to return a 'pago' record with an existing paidAt
+    transactionMock.tx.select = vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([
+            {
+              id: 5,
+              associateId: 10,
+              year: 2026,
+              month: 5,
+              status: 'pago',
+              paymentMethod: 'boleto',
+              paidAt: originalPaidAt,
+              cancelledAt: null,
+              cancellationReason: null,
+              cancelledBy: null,
+              updatedAt: new Date('2026-05-13T00:00:00.000Z'),
+            },
+          ]),
+        }),
+      }),
+    });
+
+    await updateMonthlyPayment(1, {
+      associateId: 10,
+      year: 2026,
+      month: 5,
+      status: 'pago',
+      paymentMethod: 'pix', // changing method, status stays 'pago'
+    });
+
+    // The audit should show the old paidAt is preserved, not replaced with now()
+    expect(logAuditAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        changes: expect.objectContaining({
+          old: expect.objectContaining({ paidAt: originalPaidAt }),
+          new: expect.objectContaining({ paidAt: originalPaidAt }),
+        }),
+      }),
     );
   });
 
@@ -221,7 +268,6 @@ describe('finance service', () => {
       month: 5,
       status: 'pendente',
       paymentMethod: 'boleto',
-      paidAt: null,
     });
 
     expect(logAuditAction).toHaveBeenCalledWith(
@@ -256,7 +302,6 @@ describe('finance service', () => {
       month: 5,
       status: 'pendente',
       paymentMethod: 'boleto',
-      paidAt: null,
     });
 
     expect(logAuditAction).toHaveBeenCalledWith(
@@ -313,24 +358,29 @@ describe('finance service', () => {
         updatedBy: 1,
       }),
     );
-    expect(transactionMock.tx.insertValues).toHaveBeenCalledWith(
+    expect(logAuditAction).toHaveBeenCalledWith(
       expect.objectContaining({
-        performedBy: 1,
+        adminId: 1,
         action: 'cancel',
         entityType: 'monthly_payment',
         entityId: 5,
         changes: {
-          old: expect.objectContaining({
+          old: {
             status: 'pendente',
             paymentMethod: 'boleto',
             paidAt: null,
-          }),
-          new: expect.objectContaining({
+            cancelledAt: null,
+            cancellationReason: null,
+            cancelledBy: null,
+          },
+          new: {
             status: 'cancelado',
-            cancelledAt: '2026-05-21T12:00:00.000Z',
+            paymentMethod: 'boleto',
+            paidAt: null,
+            cancelledAt: cancelledAt,
             cancellationReason: 'Lançamento em duplicidade',
             cancelledBy: 1,
-          }),
+          },
         },
         metadata: {
           associateId: 10,
@@ -338,6 +388,7 @@ describe('finance service', () => {
           month: 5,
           cancellationReason: 'Lançamento em duplicidade',
         },
+        executor: transactionMock.tx,
       }),
     );
     expect(emitDomainEvent).toHaveBeenCalledWith(
@@ -368,5 +419,61 @@ describe('finance service', () => {
       'Motivo de cancelamento obrigatório.',
     );
     expect(transactionMock.tx.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('validateStatusTransition', () => {
+  it('allows valid transitions from pendente', () => {
+    expect(() => validateStatusTransition('pendente', 'pago')).not.toThrow();
+    expect(() => validateStatusTransition('pendente', 'atrasado')).not.toThrow();
+    expect(() => validateStatusTransition('pendente', 'isento')).not.toThrow();
+  });
+
+  it('allows valid transitions from atrasado', () => {
+    expect(() => validateStatusTransition('atrasado', 'pago')).not.toThrow();
+    expect(() => validateStatusTransition('atrasado', 'pendente')).not.toThrow();
+    expect(() => validateStatusTransition('atrasado', 'isento')).not.toThrow();
+  });
+
+  it('allows valid transitions from pago', () => {
+    expect(() => validateStatusTransition('pago', 'pendente')).not.toThrow();
+  });
+
+  it('allows valid transitions from isento', () => {
+    expect(() => validateStatusTransition('isento', 'pendente')).not.toThrow();
+  });
+
+  it('rejects transitions from cancelado (terminal state)', () => {
+    expect(() => validateStatusTransition('cancelado', 'pago')).toThrow(
+      /Transição inválida/,
+    );
+    expect(() => validateStatusTransition('cancelado', 'pendente')).toThrow(
+      /Transição inválida/,
+    );
+  });
+
+  it('rejects invalid transitions', () => {
+    expect(() => validateStatusTransition('isento', 'pago')).toThrow(
+      /Transição inválida/,
+    );
+    expect(() => validateStatusTransition('pago', 'isento')).toThrow(
+      /Transição inválida/,
+    );
+    expect(() => validateStatusTransition('pago', 'atrasado')).toThrow(
+      /Transição inválida/,
+    );
+    // Cancellation is a separate flow via cancelMonthlyPayment
+    expect(() => validateStatusTransition('pendente', 'cancelado')).toThrow(
+      /Transição inválida/,
+    );
+    expect(() => validateStatusTransition('atrasado', 'cancelado')).toThrow(
+      /Transição inválida/,
+    );
+    expect(() => validateStatusTransition('pago', 'cancelado')).toThrow(
+      /Transição inválida/,
+    );
+    expect(() => validateStatusTransition('isento', 'cancelado')).toThrow(
+      /Transição inválida/,
+    );
   });
 });

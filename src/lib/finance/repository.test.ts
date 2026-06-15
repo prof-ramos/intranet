@@ -179,7 +179,9 @@ describe('finance repository', () => {
       expect(compiled).toContain(' is null');
       expect(compiled).toContain('lower(btrim(');
       expect(compiled).toContain('nullif(btrim(');
-      expect(compiled).toContain("in ('brasil', 'brazil')");
+      expect(compiled).toContain("'brasil'");
+      expect(compiled).toContain("'brazil'");
+      expect(compiled).toContain("'brasili'");
     });
 
     it('applies location filter for exterior as inverse of nacional aliases', async () => {
@@ -189,7 +191,8 @@ describe('finance repository', () => {
       const whereClause = dbMock._selectChain.where.mock.calls.at(-1)?.[0];
       const compiled = compileSql(whereClause);
       expect(compiled).toContain('not (');
-      expect(compiled).toContain("in ('brasil', 'brazil')");
+      expect(compiled).toContain("'brasil'");
+      expect(compiled).toContain("'brazil'");
     });
 
     it('applies method filter', async () => {

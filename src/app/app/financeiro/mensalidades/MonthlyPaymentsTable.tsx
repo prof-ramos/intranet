@@ -186,7 +186,6 @@ export default function MonthlyPaymentsTable({
         month,
         status: newStatus,
         paymentMethod: currentMethod,
-        paidAt: newStatus === 'pago' ? new Date() : null,
         expectedUpdatedAt: expectedUpdatedAt ? expectedUpdatedAt.toISOString() : null,
       });
 
