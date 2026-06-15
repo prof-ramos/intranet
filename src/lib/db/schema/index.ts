@@ -21,3 +21,5 @@ export * from './email-triage';
 export * from './test-metrics';
 export * from './password-reset-tokens';
 export * from './password-reset-attempts';
+export * from './dependents';
+export * from './health-agreements';

@@ -1,0 +1,1 @@
+ALTER TABLE "health_agreements" ADD CONSTRAINT "chk_health_agreements_date_range" CHECK ("health_agreements"."end_date" IS NULL OR "health_agreements"."start_date" IS NULL OR "health_agreements"."end_date" >= "health_agreements"."start_date");

@@ -1,7 +1,7 @@
 # Database — ASOF Intranet
 
 > Schema reference e guia operacional do banco de dados.
-> Última atualização: 2026-06-05 (inclui clone local asof_intranet_neon_clone)
+> Última atualização: 2026-06-15 (migração 0020: expansão de associates, dependents, health_agreements)
 
 ---
 
@@ -73,7 +73,7 @@ ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
 
 `CREATE INDEX CONCURRENTLY` e `DROP INDEX CONCURRENTLY` **não** podem ser executados dentro de transações PostgreSQL. Como o Drizzle Kit (`npm run db:migrate`) aplica migrações envolvendo cada statement em uma transação, esses comandos falham nesse fluxo. Para esses casos: backup → teste em staging → execução direta via `psql "$DATABASE_MIGRATION_URL"` → validação com `npm run test:db`.
 
-### Migrações aplicadas (12)
+### Migrações aplicadas (22)
 
 | # | Arquivo | Descrição |
 |---|---------|-----------|
@@ -89,6 +89,17 @@ ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
 | 0009 | `0009_email_triage_notifications.sql` | Notificações de triagem de email |
 | 0010 | `0010_relax_email_triage_operational_review.sql` | Relaxa validações operacionais de triagem |
 | 0011 | `0011_lawyers_name_trgm.sql` | Índice GIN trigram em lawyers.name |
+| 0012 | `0012_password_reset_tokens.sql` | Tabela password_reset_tokens |
+| 0013 | `0013_admin_session_version.sql` | Coluna session_version em admins |
+| 0014 | `0014_rename_oficios_unique_constraint.sql` | Renomeia constraint unique de oficios |
+| 0015 | `0015_greedy_robin_chapel.sql` | lawyer_id e thread_id em legal_consultations |
+| 0016 | `0016_add_assinafy_signing_url.sql` | Coluna assinafy_signing_url em oficios |
+| 0017 | `0017_expand_domain_events_and_assinafy.sql` | Expande domain_event_type; assinafy partially_signed |
+| 0018 | `0018_add_oficio_notification_types.sql` | Tipos de notificação oficio |
+| 0019 | `0019_add_recipient_address_fields.sql` | Campos de endereço do destinatário em oficios |
+| 0020 | `0020_careless_penance.sql` | Expansão de associates (21 colunas, 4 enums, 2 tabelas) |
+| 0021 | `0021_military_thundra.sql` | Índice unique em source_row_number para upsert idempotente |
+| 0022 | `0022_puzzling_mantis.sql` | CHECK constraint em health_agreements (end_date ≥ start_date) |
 
 ### Nomenclatura
 
@@ -98,14 +109,14 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 ## Schema (`src/lib/db/schema/`)
 
-### Tabelas (25)
+### Tabelas (27)
 
 #### Core
 
 | Tabela | Arquivo | Finalidade |
 |--------|---------|------------|
 | `admins` | `admins.ts` | Usuários administrativos (login, roles, password_hash) |
-| `associates` | `associates.ts` | Cadastro de associados (dados pessoais, PII, situação) |
+| `associates` | `associates.ts` | Cadastro de associados (dados pessoais, PII, situação, dados funcionais) |
 | `assignments` | `assignments.ts` | Lotações/postos (domestic/abroad) |
 
 #### Atividades
@@ -119,6 +130,13 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 | Tabela | Arquivo | Finalidade |
 |--------|---------|------------|
 | `monthly_payments` | `finance.ts` | Registros mensais de pagamento de mensalidades |
+
+#### Associados (relacionamentos)
+
+| Tabela | Arquivo | Finalidade |
+|--------|---------|------------|
+| `dependents` | `dependents.ts` | Dependentes de associados (nome, parentesco) |
+| `health_agreements` | `health-agreements.ts` | Convênios médicos por associado |
 
 #### Jurídico
 
@@ -193,7 +211,7 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 ---
 
-## Enums (35)
+## Enums (39)
 
 ### Associados
 
@@ -203,6 +221,10 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 | `functional_status` | `ativo`, `aposentado`, `cedido`, `em_licenca` | Situação funcional |
 | `contribution_status` | `em_dia`, `inadimplente`, `pendente_migracao` | Contribuição |
 | `assignment_type` | `nacional`, `exterior` | Tipo de lotação |
+| `sex` | `M`, `F` | Sexo biológico |
+| `marital_status` | `solteiro`, `casado`, `divorciado`, `viuvo`, `separado`, `outros` | Estado civil |
+| `mission_type` | `permanente`, `transitoria` | Tipo de missão |
+| `career_origin` | `brasil`, `exterior`, `outros_orgaos` | Origem de carreira |
 
 ### Financeiro
 
@@ -310,11 +332,14 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 | `associates` | `idx_associates_siape` | UNIQUE | SIAPE único |
 | `associates` | `idx_associates_primary_email` | UNIQUE | Email único |
 | `associates` | `idx_associates_status_name` | Composto | Listagem por status + nome |
+| `associates` | `idx_associates_rg_hash` | B-tree | Lookups por RG (blind index) |
 | `monthly_payments` | `idx_monthly_payments_unique` | UNIQUE | Um pagamento por (associate, year, month) |
 | `activities` | `idx_activities_status_due_date` | Composto | Kanban por status + data |
 | `documents` | `idx_documents_name_trgm` | GIN | Busca textual por nome |
 | `documents` | `idx_documents_description_trgm` | GIN | Busca textual por descrição |
 | `lawyers` | `idx_lawyers_name_trgm` | GIN | Busca textual por nome |
+| `dependents` | `idx_dependents_associate_id` | B-tree | FK lookup por associado |
+| `health_agreements` | `idx_health_agreements_associate_id` | B-tree | FK lookup por associado |
 
 ---
 
@@ -322,7 +347,7 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 ### Campos protegidos (LGPD)
 
-`cpf`, `siape`, `email`, `phone`, `whatsapp`, `address`, `birthDate`, `internalNotes`
+`cpf`, `siape`, `email`, `phone`, `whatsapp`, `address`, `birthDate`, `rg`, `internalNotes`
 
 ### Helpers (`src/lib/crypto/`)
 
@@ -337,6 +362,16 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 - Plaintext nunca em logs, erros ou respostas de API
 - Dados legados/importados em plaintext são risco operacional aceito, controlados via acesso ao Neon + auditoria
 - Usuários autenticados da intranet têm visibilidade operacional integral de PII
+- Campos RG seguem padrão triple-column: `rg` (plaintext, nullable) + `rgCiphertext` + `rgHash` com CHECK constraint (`rg IS NULL OR rgCiphertext IS NULL`)
+
+### Colunas PII com triple-column pattern
+
+| Campo plaintext | Ciphertext | Blind index (hash) | CHECK constraint |
+|-----------------|-----------|---------------------|-------------------|
+| `cpf` | `cpfCiphertext` | `cpfHash` | `cpf IS NULL OR cpfCiphertext IS NULL` |
+| `siape` | `siapeCiphertext` | `siapeHash` | `siape IS NULL OR siapeCiphertext IS NULL` |
+| `email` | `emailCiphertext` | `emailHash` | `emailHash` (unique, não-null se email existe) |
+| `rg` | `rgCiphertext` | `rgHash` | `rg IS NULL OR rgCiphertext IS NULL` |
 
 ---
 
@@ -373,6 +408,8 @@ associates 1──N activities
 associates 1──N monthly_payments
 associates 1──N legal_consultations
 associates 1──N documents
+associates 1──N dependents (onDelete CASCADE)
+associates 1──N health_agreements (onDelete CASCADE)
 
 assignments 1──N associates (lotação)
 
