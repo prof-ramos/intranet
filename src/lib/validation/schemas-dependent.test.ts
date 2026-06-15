@@ -67,6 +67,7 @@ describe('updateDependentSchema', () => {
   it('validates partial update with name only', () => {
     const result = updateDependentSchema.safeParse({
       id: '1',
+      associateId: '1',
       name: 'Maria Santos',
     });
     expect(result.success).toBe(true);
@@ -75,6 +76,7 @@ describe('updateDependentSchema', () => {
   it('validates partial update with relationship only', () => {
     const result = updateDependentSchema.safeParse({
       id: '1',
+      associateId: '1',
       relationship: 'conjuge',
     });
     expect(result.success).toBe(true);
@@ -83,6 +85,7 @@ describe('updateDependentSchema', () => {
   it('rejects empty name in update', () => {
     const result = updateDependentSchema.safeParse({
       id: '1',
+      associateId: '1',
       name: '',
     });
     expect(result.success).toBe(false);
@@ -166,6 +169,7 @@ describe('updateHealthAgreementSchema', () => {
   it('validates partial update with provider only', () => {
     const result = updateHealthAgreementSchema.safeParse({
       id: '1',
+      associateId: '1',
       provider: 'ASBAC',
     });
     expect(result.success).toBe(true);
@@ -174,6 +178,7 @@ describe('updateHealthAgreementSchema', () => {
   it('validates partial update with dates', () => {
     const result = updateHealthAgreementSchema.safeParse({
       id: '1',
+      associateId: '1',
       startDate: '2024-06-01',
       endDate: '2025-05-31',
     });

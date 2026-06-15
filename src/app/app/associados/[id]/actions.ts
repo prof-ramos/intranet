@@ -51,12 +51,12 @@ export async function editDependentAction(formData: FormData) {
 
   const data = updateDependentSchema.parse({
     id: formData.get('id'),
+    associateId: formData.get('associateId'),
     name: formData.get('name') || undefined,
     relationship: formData.get('relationship') || undefined,
   });
-  const associateId = Number(formData.get('associateId'));
 
-  const { id, ...values } = data;
+  const { id, associateId, ...values } = data;
   if (Object.keys(values).length === 0) return;
 
   await updateDependentById(id, values, associateId);
@@ -107,13 +107,13 @@ export async function editHealthAgreementAction(formData: FormData) {
 
   const data = updateHealthAgreementSchema.parse({
     id: formData.get('id'),
+    associateId: formData.get('associateId'),
     provider: formData.get('provider') || undefined,
     startDate: formData.get('startDate') || null,
     endDate: formData.get('endDate') || null,
   });
-  const associateId = Number(formData.get('associateId'));
 
-  const { id, ...values } = data;
+  const { id, associateId, ...values } = data;
   if (Object.keys(values).length === 0) return;
 
   await updateHealthAgreementById(id, values, associateId);

@@ -506,7 +506,13 @@ export async function updateDependentById(
 }
 
 export async function deleteDependentById(id: number, associateId: number): Promise<void> {
-  await db.delete(dependents).where(and(eq(dependents.id, id), eq(dependents.associateId, associateId)));
+  const result = await db
+    .delete(dependents)
+    .where(and(eq(dependents.id, id), eq(dependents.associateId, associateId)))
+    .returning({ id: dependents.id });
+  if (result.length === 0) {
+    throw new Error('Dependente não encontrado ou já removido.');
+  }
 }
 
 // ─── Health Agreement CRUD ───────────────────────────────────────────────
@@ -556,5 +562,11 @@ export async function updateHealthAgreementById(
 }
 
 export async function deleteHealthAgreementById(id: number, associateId: number): Promise<void> {
-  await db.delete(healthAgreements).where(and(eq(healthAgreements.id, id), eq(healthAgreements.associateId, associateId)));
+  const result = await db
+    .delete(healthAgreements)
+    .where(and(eq(healthAgreements.id, id), eq(healthAgreements.associateId, associateId)))
+    .returning({ id: healthAgreements.id });
+  if (result.length === 0) {
+    throw new Error('Convênio não encontrado ou já removido.');
+  }
 }

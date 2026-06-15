@@ -300,6 +300,7 @@ export const createDependentSchema = z.object({
 
 export const updateDependentSchema = z.object({
   id: z.coerce.number().int().positive('ID do dependente inválido.'),
+  associateId: z.coerce.number().int().positive('ID do associado inválido.'),
   name: z.string().trim().min(1, 'Nome do dependente é obrigatório.').max(200).optional(),
   relationship: z.string().trim().min(1, 'Parentesco é obrigatório.').max(100).optional(),
 });
@@ -328,6 +329,7 @@ export const createHealthAgreementSchema = z.object({
 
 export const updateHealthAgreementSchema = z.object({
   id: z.coerce.number().int().positive('ID do convênio inválido.'),
+  associateId: z.coerce.number().int().positive('ID do associado inválido.'),
   provider: z.string().trim().min(1, 'Convênio é obrigatório.').max(200).optional(),
   startDate: z
     .string()

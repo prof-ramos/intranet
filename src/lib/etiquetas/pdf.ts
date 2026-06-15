@@ -93,7 +93,7 @@ function drawDebugGrid(pdfDoc: PDFDocument, template: PimacoTemplate, pagesCount
     const page = pdfDoc.getPage(pageIndex);
     for (let indexOnPage = 0; indexOnPage < labelsPerPage; indexOnPage += 1) {
       const pos = calculateLabelPosition(template, pageIndex * labelsPerPage + indexOnPage, {
-        startPosition: 1,
+        startPosition: options.startPosition ?? 1,
         offsetXmm: options.offsetXmm,
         offsetYmm: options.offsetYmm,
       });
