@@ -33,3 +33,43 @@ export function calculatePaginationBounds(
   const to = total === 0 ? 0 : Math.min(page * pageSize, total);
   return { totalPages, from, to };
 }
+
+/**
+ * Generate a pagination window with ellipsis for large page counts.
+ * Always shows first/last page and a sliding window around current page.
+ */
+export function generatePaginationWindow(
+  current: number,
+  total: number,
+  windowSize = 5,
+): (number | string)[] {
+  if (total <= windowSize + 2) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  const half = Math.floor(windowSize / 2);
+  let start = Math.max(1, current - half);
+  let end = Math.min(total, start + windowSize - 1);
+
+  if (end - start + 1 < windowSize) {
+    start = Math.max(1, end - windowSize + 1);
+  }
+
+  const pages: (number | string)[] = [];
+
+  if (start > 1) {
+    pages.push(1);
+    if (start > 2) pages.push('…');
+  }
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+
+  if (end < total) {
+    if (end < total - 1) pages.push('…');
+    pages.push(total);
+  }
+
+  return pages;
+}

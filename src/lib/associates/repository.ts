@@ -13,7 +13,7 @@ import {
   careerOrigin,
   paymentMethod,
 } from '@/lib/db/schema';
-import { eq, and, count, asc, sql } from 'drizzle-orm';
+import { eq, and, count, asc, sql, gt } from 'drizzle-orm';
 import {
   buildAssociateNameSearchPattern,
   normalizeCpfForSearch,
@@ -173,6 +173,137 @@ export async function findAssociatesPaginated(
       whatsapp: decryptPiiField(row.whatsappCiphertext ?? null, row.whatsapp ?? null),
     })),
     total,
+  };
+}
+
+// ─── Cursor-based pagination (keyset) for large queries ─────────────────
+
+function encodeCursor(fullName: string, id: number): string {
+  return Buffer.from(JSON.stringify({ fullName, id })).toString('base64url');
+}
+
+function decodeCursor(cursor: string): { fullName: string; id: number } | null {
+  try {
+    const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf-8'));
+    if (typeof parsed.fullName === 'string' && typeof parsed.id === 'number') {
+      return { fullName: parsed.fullName, id: parsed.id };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export interface AssociateCursorPage {
+  rows: AssociateListItem[];
+  nextCursor: string | null;
+}
+
+export async function findAssociatesPaginatedCursor(
+  pageSize: number,
+  cursor: string | null,
+  searchQuery?: string,
+  filters?: AssociatesFilters,
+  searchBy: AssociateSearchMode = 'name',
+): Promise<AssociateCursorPage> {
+  const normalizedSearchQuery = searchQuery?.trim();
+
+  // CPF/SIAPE exact lookup: cursor is irrelevant; return single result
+  if ((searchBy === 'cpf' || searchBy === 'siape') && normalizedSearchQuery) {
+    const digits = searchBy === 'cpf'
+      ? normalizeCpfForSearch(normalizedSearchQuery)
+      : normalizeSiapeForSearch(normalizedSearchQuery);
+
+    if (!digits) {
+      return { rows: [], nextCursor: null };
+    }
+
+    const hash = piiBlindIndex(digits);
+    const hashColumn = searchBy === 'cpf' ? associates.cpfHash : associates.siapeHash;
+    const filterConditions = and(
+      eq(hashColumn, hash),
+      filters?.contributionStatus
+        ? eq(associates.contributionStatus, filters.contributionStatus)
+        : undefined,
+      filters?.functionalStatus
+        ? eq(associates.functionalStatus, filters.functionalStatus)
+        : undefined,
+      filters?.associationStatus
+        ? eq(associates.associationStatus, filters.associationStatus)
+        : undefined,
+    );
+
+    const rows = await db
+      .select(publicAssociateListColumns)
+      .from(associates)
+      .where(filterConditions)
+      .limit(pageSize);
+
+    return {
+      rows: rows.map((row) => ({
+        id: row.id,
+        fullName: row.fullName,
+        assignment: row.assignment,
+        classPattern: row.classPattern,
+        functionalStatus: row.functionalStatus,
+        associationStatus: row.associationStatus,
+        contributionStatus: row.contributionStatus,
+        primaryEmail: decryptPiiField(row.primaryEmailCiphertext ?? null, row.primaryEmail ?? null),
+        siape: decryptPiiField(row.siapeCiphertext ?? null, row.siape ?? null),
+        phone: decryptPiiField(row.phoneCiphertext ?? null, row.phone ?? null),
+        whatsapp: decryptPiiField(row.whatsappCiphertext ?? null, row.whatsapp ?? null),
+      })),
+      nextCursor: null,
+    };
+  }
+
+  // Default: name-based ILIKE search with keyset pagination
+  const decoded = cursor ? decodeCursor(cursor) : null;
+
+  const baseWhere = and(
+    normalizedSearchQuery
+      ? sql`${associates.fullName} ilike ${buildAssociateNameSearchPattern(normalizedSearchQuery)} escape '\\'`
+      : undefined,
+    filters?.contributionStatus
+      ? eq(associates.contributionStatus, filters.contributionStatus)
+      : undefined,
+    filters?.functionalStatus
+      ? eq(associates.functionalStatus, filters.functionalStatus)
+      : undefined,
+    filters?.associationStatus
+      ? eq(associates.associationStatus, filters.associationStatus)
+      : undefined,
+    decoded
+      ? sql`${associates.fullName} > ${decoded.fullName} OR (${associates.fullName} = ${decoded.fullName} AND ${associates.id} > ${decoded.id})`
+      : undefined,
+  );
+
+  const rows = await db
+    .select(publicAssociateListColumns)
+    .from(associates)
+    .where(baseWhere)
+    .orderBy(asc(associates.fullName), asc(associates.id))
+    .limit(pageSize + 1);
+
+  const hasMore = rows.length > pageSize;
+  const pageRows = hasMore ? rows.slice(0, pageSize) : rows;
+  const lastRow = pageRows[pageRows.length - 1];
+
+  return {
+    rows: pageRows.map((row) => ({
+      id: row.id,
+      fullName: row.fullName,
+      assignment: row.assignment,
+      classPattern: row.classPattern,
+      functionalStatus: row.functionalStatus,
+      associationStatus: row.associationStatus,
+      contributionStatus: row.contributionStatus,
+      primaryEmail: decryptPiiField(row.primaryEmailCiphertext ?? null, row.primaryEmail ?? null),
+      siape: decryptPiiField(row.siapeCiphertext ?? null, row.siape ?? null),
+      phone: decryptPiiField(row.phoneCiphertext ?? null, row.phone ?? null),
+      whatsapp: decryptPiiField(row.whatsappCiphertext ?? null, row.whatsapp ?? null),
+    })),
+    nextCursor: hasMore && lastRow ? encodeCursor(lastRow.fullName, lastRow.id) : null,
   };
 }
 

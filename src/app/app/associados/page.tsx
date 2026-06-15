@@ -1,29 +1,16 @@
 import { requireAuth } from '@/lib/auth/require-auth';
-import { getAssociatesListPage, getAssociateStatusLabel } from '@/lib/associates/service';
-import { getRoleLabel } from '@/lib/ui/role-labels';
+import { getAssociatesListPage } from '@/lib/associates/service';
 import {
   parseAssociatesSearchParams,
   buildAssociatesSearchParams,
-  type AssociateSearchMode,
 } from '@/lib/associates/search-params';
 import { calculatePaginationBounds } from '@/lib/pagination';
-import { AssociadosFilters } from './AssociadosFilters';
-import { ChevronLeft, ChevronRight, Download, Pencil, Search } from 'lucide-react';
+import { AssociatesHeader } from './components/AssociatesHeader';
+import { AssociatesTable } from './components/AssociatesTable';
+import { AssociatesPagination } from './components/AssociatesPagination';
+import { Download } from 'lucide-react';
 import Link from 'next/link';
-import {
-  hairline,
-  textMuted,
-  navy,
-  skyBlue,
-  success,
-  successBg,
-  canvas,
-  focusRingClass,
-  errorBg,
-  error as errorColor,
-  warningBg,
-  warning,
-} from '@/lib/ui/tokens';
+import { hairline, focusRingClass, textMuted } from '@/lib/ui/tokens';
 
 const PAGE_SIZE = 20;
 
@@ -40,9 +27,8 @@ export default async function AssociadosPage({
   }>;
 }) {
   const user = await requireAuth();
-  const { q, page, searchBy, contributionStatus, functionalStatus, associationStatus } = parseAssociatesSearchParams(
-    await searchParams,
-  );
+  const parsedSearchParams = parseAssociatesSearchParams(await searchParams);
+  const { q, page, searchBy, contributionStatus, functionalStatus, associationStatus } = parsedSearchParams;
 
   const { rows, total } = await getAssociatesListPage(
     page,
@@ -55,7 +41,7 @@ export default async function AssociadosPage({
   const { totalPages, from, to } = calculatePaginationBounds(page, PAGE_SIZE, total);
 
   const currentListUrl = `/app/associados?${new URLSearchParams(
-    buildAssociatesSearchParams({ q, page, searchBy, contributionStatus, functionalStatus, associationStatus }, {}),
+    buildAssociatesSearchParams(parsedSearchParams, {}),
   ).toString()}`;
 
   const today = new Date().toLocaleDateString('pt-BR', {
@@ -68,84 +54,7 @@ export default async function AssociadosPage({
 
   return (
     <div>
-      {/* Header */}
-      <div
-        className="sticky top-0 z-20 border-b bg-white px-5 py-3 sm:px-8 lg:px-10"
-        style={{ borderColor: hairline }}
-      >
-        <div className="mx-auto grid w-full max-w-[1180px] gap-3 sm:grid-cols-[minmax(240px,420px)_auto] sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <form method="GET" action="/app/associados" className="flex items-center gap-2">
-              <select
-                name="searchBy"
-                defaultValue={searchBy}
-                className="h-11 rounded-[8px] border bg-white px-2 text-sm outline-none"
-                style={{ borderColor: hairline, color: '#040920' }}
-                aria-label="Tipo de busca"
-              >
-                <option value="name">Nome</option>
-                <option value="cpf">CPF</option>
-                <option value="siape">SIAPE</option>
-              </select>
-              <label
-                className="flex h-11 min-h-11 flex-1 items-center gap-3 rounded-[8px] border bg-white px-3"
-                style={{ borderColor: hairline }}
-              >
-                <span className="sr-only">{searchBy === 'cpf' ? 'Buscar por CPF' : searchBy === 'siape' ? 'Buscar por SIAPE' : 'Buscar por nome'}</span>
-                <Search size={18} style={{ color: textMuted }} aria-hidden="true" />
-                <input
-                  name="q"
-                  type="search"
-                  defaultValue={q}
-                  autoComplete="off"
-                  className="grow bg-transparent text-sm outline-none placeholder:text-[rgba(13,31,60,0.65)]"
-                  placeholder={
-                    searchBy === 'cpf'
-                      ? 'Buscar por CPF (ex: 123.456.789-00)...'
-                      : searchBy === 'siape'
-                        ? 'Buscar por SIAPE...'
-                        : 'Buscar por nome...'
-                  }
-                />
-              </label>
-              {contributionStatus && <input type="hidden" name="contributionStatus" value={contributionStatus} />}
-              {functionalStatus && <input type="hidden" name="functionalStatus" value={functionalStatus} />}
-              {associationStatus && <input type="hidden" name="associationStatus" value={associationStatus} />}
-            </form>
-          </div>
-
-          <div className="flex min-w-0 items-center justify-end gap-4">
-            <AssociadosFilters
-              currentContributionStatus={contributionStatus}
-              currentFunctionalStatus={functionalStatus}
-              currentAssociationStatus={associationStatus}
-              currentQ={q}
-              currentSearchBy={searchBy}
-            />
-            <div className="hidden min-h-11 min-w-0 items-center gap-3 sm:flex">
-              <div
-                role="img"
-                aria-label={`Avatar de ${user.name}`}
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
-                style={{ backgroundColor: navy, boxShadow: `0 0 0 2px ${skyBlue}26` }}
-              >
-                {user.name
-                  .split(' ')
-                  .slice(0, 2)
-                  .map((n: string) => n[0])
-                  .join('')
-                  .toUpperCase()}
-              </div>
-              <div className="min-w-0 leading-tight">
-                <p className="max-w-[190px] truncate text-sm font-semibold">{user.name}</p>
-                <p className="text-xs" style={{ color: textMuted }}>
-                  {getRoleLabel(user.role)}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AssociatesHeader user={{ name: user.name, role: user.role }} searchParams={parsedSearchParams} />
 
       {/* Conteúdo */}
       <main className="mx-auto w-full max-w-[1180px] flex-1 px-5 py-7 sm:px-8 lg:px-10">
@@ -160,11 +69,8 @@ export default async function AssociadosPage({
           </div>
         </section>
 
-        {/* Tabela */}
-        <section
-          className="overflow-hidden rounded-[10px] border bg-white shadow-sm"
-          style={{ borderColor: hairline }}
-        >
+        {/* Tabela / Cards */}
+        <section>
           <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <p style={{ color: textMuted }}>
               {total === 0 ? 'Nenhum resultado' : `${from}–${to} de ${total}`}
@@ -183,177 +89,15 @@ export default async function AssociadosPage({
               >
                 <Download size={18} aria-hidden="true" />
               </Link>
-              <nav aria-label="Paginação de associados" className="flex items-center gap-1">
-                {page > 1 ? (
-                  <Link
-                    href={`/app/associados?${new URLSearchParams(buildAssociatesSearchParams({ q, page, searchBy, contributionStatus, functionalStatus, associationStatus }, { page: page - 1 })).toString()}`}
-                    className={`inline-flex h-11 w-11 items-center justify-center rounded-[8px] border bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
-                    style={{ borderColor: hairline }}
-                    aria-label="Página anterior"
-                  >
-                    <ChevronLeft size={16} aria-hidden="true" />
-                  </Link>
-                ) : (
-                  <span
-                    className="inline-flex h-11 w-11 cursor-not-allowed items-center justify-center rounded-[8px] border"
-                    style={{ borderColor: hairline, backgroundColor: canvas, color: textMuted }}
-                    aria-label="Página anterior (indisponível)"
-                    aria-disabled="true"
-                  >
-                    <ChevronLeft size={16} aria-hidden="true" />
-                  </span>
-                )}
-                {totalPages > 0 && (
-                  <span
-                    className="px-2 text-xs tabular-nums"
-                    style={{ color: textMuted }}
-                    aria-live="polite"
-                    role="status"
-                  >
-                    {page}/{totalPages}
-                  </span>
-                )}
-                {page < totalPages ? (
-                  <Link
-                    href={`/app/associados?${new URLSearchParams(buildAssociatesSearchParams({ q, page, searchBy, contributionStatus, functionalStatus, associationStatus }, { page: page + 1 })).toString()}`}
-                    className={`inline-flex h-11 w-11 items-center justify-center rounded-[8px] border bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
-                    style={{ borderColor: hairline }}
-                    aria-label="Próxima página"
-                  >
-                    <ChevronRight size={16} aria-hidden="true" />
-                  </Link>
-                ) : (
-                  <span
-                    className="inline-flex h-11 w-11 cursor-not-allowed items-center justify-center rounded-[8px] border"
-                    style={{ borderColor: hairline, backgroundColor: canvas, color: textMuted }}
-                    aria-label="Próxima página (indisponível)"
-                    aria-disabled="true"
-                  >
-                    <ChevronRight size={16} aria-hidden="true" />
-                  </span>
-                )}
-              </nav>
+              <AssociatesPagination
+                page={page}
+                totalPages={totalPages}
+                searchParams={parsedSearchParams}
+              />
             </div>
           </div>
 
-          <div className="overflow-x-auto border-t" style={{ borderColor: hairline }}>
-            <table className="w-full text-sm" aria-label="Lista de associados">
-              <thead className="bg-[#040920] text-white">
-                <tr className="text-left">
-                  <th scope="col" className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
-                    Nome
-                  </th>
-                  <th scope="col" className="hidden md:table-cell px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
-                    Lotação
-                  </th>
-                  <th scope="col" className="hidden lg:table-cell px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
-                    SIAPE
-                  </th>
-                  <th scope="col" className="hidden md:table-cell px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
-                    Email
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
-                    Situação
-                  </th>
-                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
-                    Associativo
-                  </th>
-                  <th scope="col" className="hidden sm:table-cell px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
-                    Contribuição
-                  </th>
-                  <th scope="col" className="hidden lg:table-cell px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
-                    Telefone
-                  </th>
-                  <th scope="col" className="w-10 px-4 py-3 text-center" aria-label="Ações" />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="py-16 text-center" style={{ color: textMuted }}>
-                      Nenhum associado encontrado.
-                    </td>
-                  </tr>
-                ) : (
-                  rows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="group border-b transition-colors hover:bg-[#f8fafc]"
-                      style={{ borderColor: hairline }}
-                    >
-                      <td className="px-4 py-3 font-medium">
-                        <Link
-                          href={`/app/associados/${row.id}?returnTo=${encodeURIComponent(currentListUrl)}`}
-                          className={`hover:underline ${focusRingClass}`}
-                        >
-                          {row.fullName}
-                        </Link>
-                      </td>
-                      <td className="hidden md:table-cell px-4 py-3">{row.assignment ?? '—'}</td>
-                      <td className="hidden lg:table-cell px-4 py-3 font-mono text-xs">{row.siape ?? '—'}</td>
-                      <td className="hidden md:table-cell px-4 py-3 text-xs">{row.primaryEmail ?? '—'}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold tracking-[0.06em] uppercase ${
-                            row.functionalStatus === 'ativo' ? '' : 'border'
-                          }`}
-                          style={
-                            row.functionalStatus === 'ativo'
-                              ? { backgroundColor: successBg, color: success }
-                              : row.functionalStatus === 'aposentado'
-                                ? { backgroundColor: warningBg, color: warning }
-                                : { backgroundColor: canvas, color: textMuted, borderColor: hairline }
-                          }
-                        >
-                          {getAssociateStatusLabel(row.functionalStatus) ?? '—'}
-                        </span>
-                      </td>
-                      <td className="hidden sm:table-cell px-4 py-3">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold tracking-[0.06em] uppercase ${
-                            row.associationStatus === 'ativo' ? '' : 'border'
-                          }`}
-                          style={
-                            row.associationStatus === 'ativo'
-                              ? { backgroundColor: successBg, color: success }
-                              : { backgroundColor: canvas, color: textMuted, borderColor: hairline }
-                          }
-                        >
-                          {getAssociateStatusLabel(row.associationStatus) ?? '—'}
-                        </span>
-                      </td>
-                      <td className="hidden sm:table-cell px-4 py-3">
-                        <span
-                          className="inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-[0.06em] uppercase"
-                          style={
-                            row.contributionStatus === 'em_dia'
-                              ? { backgroundColor: successBg, color: success, borderColor: 'transparent' }
-                              : row.contributionStatus === 'inadimplente'
-                                ? { backgroundColor: errorBg, color: errorColor, borderColor: 'transparent' }
-                                : { backgroundColor: canvas, color: textMuted, borderColor: hairline }
-                          }
-                        >
-                          {getAssociateStatusLabel(row.contributionStatus) ?? '—'}
-                        </span>
-                      </td>
-                      <td className="hidden lg:table-cell px-4 py-3 font-mono text-xs">
-                        {row.whatsapp ?? row.phone ?? '—'}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Link
-                          href={`/app/associados/${row.id}/editar?returnTo=${encodeURIComponent(currentListUrl)}`}
-                          className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-[rgba(13,31,60,0.55)] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[#f8fafc] hover:text-[#76aeea] focus-visible:opacity-100 ${focusRingClass}`}
-                          aria-label={`Editar ${row.fullName}`}
-                        >
-                          <Pencil size={14} aria-hidden="true" />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          <AssociatesTable rows={rows} currentListUrl={currentListUrl} />
         </section>
       </main>
     </div>
