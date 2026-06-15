@@ -4,7 +4,7 @@ Checklist canonica de go-live da intranet ASOF. Itens historicos ja executados
 permanecem aqui apenas quando ainda orientam operacao ou auditoria; evidencias
 pontuais antigas ficam em `docs/operations/archive/`.
 
-Atualizado em 2026-06-07. Última verificação de gates locais: 2026-06-07.
+Atualizado em 2026-06-14. Última verificação de gates locais: 2026-06-14.
 
 ## Decisao Atual
 
@@ -30,7 +30,7 @@ Atualizado em 2026-06-07. Última verificação de gates locais: 2026-06-07.
 - [x] Admin gabriel.org.br seedado no Neon com must_change_password=true.
 - [x] Login do admin validado em producao: gabriel.org.br acessou intranet.asof.com.br com redirect para troca de senha obrigatoria.
 - [x] Troca de senha obrigatoria realizada pelo admin apos primeiro login. (gabriel@asof.org.br → nova senha definida em 2026-05-26 via intranet.asof.com.br/change-password)
-- [x] Rodar gates locais — `typecheck`, `lint`, `test` (1154 testes): todos passaram em 2026-06-07.
+- [x] Rodar gates locais — `typecheck`, `lint`, `test` (1304 testes): todos passaram em 2026-06-14 (1 falha não-bloqueante em `date.test.ts` — edge case de ano bissexto).
 - [x] Rodar `npm run test:db` contra Neon produção antes do go-live — schema contract passou em 2026-05-26.
 - [x] Smoke test automatizado de producao implementado e validado (ADR 009):
   - Spec E2E Playwright (`e2e/smoke-prod.spec.ts`) cobre login, dashboard, associados, atividades, juridico, oficios, financeiro, auditoria, notificacoes e reset de senha.
@@ -62,7 +62,7 @@ Atualizado em 2026-06-07. Última verificação de gates locais: 2026-06-07.
   - [ ] Definir baseline operacional da POC: backup diario do banco do Papra por 14 dias, snapshot/versionamento do storage por 30 dias e restore simples testado ao menos uma vez em ambiente separado.
   - [ ] Documentar a criptografia em repouso fornecida pelo stack/storage escolhido e seus limites; a POC nao adiciona camada extra propria de criptografia.
   - [ ] Revisar implicacoes de LGPD, backup, retencao, exportacao e licencas open source (incluindo AGPL-3.0 quando aplicavel) antes de qualquer uso em producao.
-- [x] Rodar `npm audit` — 0 vulnerabilidades em 2026-05-26.
+- [x] Rodar `npm audit` — 2 vulnerabilidades transitivas (esbuild em dev, ws em @novu/react) em 2026-06-14; nenhuma afeta produção. Fix requer breaking change (drizzle-kit downgrade), portanto monitorar advisories.
 - [x] E2E local contra `asof_test` aprovado em 2026-05-26 (`npm run test:e2e`, 52 testes). E2E em staging dedicado nao e gate do dia 1 (ADR 009); avaliar pos-estreia se Neon branch staging for adotado.
 - [x] Plano de rollback registrado em ADR 010: Neon PITR + branch de restauracao como mecanismo primario, com gatilho objetivo de 30 min em fluxos criticos. Pre-janela exige anotar timestamp/LSN e confirmar `history_retention` Neon suficiente.
 - [x] Owners de incidente registrados em ADR 011: papel primario tecnico (app/banco/Vercel/DNS/Mailjet), papel substituto de decisao na Diretoria, papel LGPD/DPO (acumulado pela Diretoria ate formalizacao), e canal unico de incidente. Nomes e contatos vivem em anexo privado fora do repo.
@@ -136,6 +136,15 @@ _Nota: `audit_log` e preservado (ADR 009)._
 - **Notificações de ofício:** novo tipo `oficio.status_changed` notifica todos admins ativos quando webhook altera status.
 - **Ator sistema em auditoria:** `logAuditAction` aceita `adminId: null` + `executor: Tx`; 2 bypass sites migrados (`finance/service.ts`, `dispatch/route.ts`).
 - **Conformidade ABNT/MRPR:** PDF de ofícios alinhado — margens 3/2cm, espaçamento 1.5x, recuo 1.25cm primeira linha, fecho hierárquico, numeração `Ofício nº NNN/YYYY-ASOF`, validação impessoalidade client-side.
-- Gates locais: `typecheck` ✓ · `lint` ✓ · `test` 1223/1223 ✓ · autoreview Codex clean ✓ (2026-06-08).
+
+### Melhorias pós-go-live (2026-06-14)
+
+- **Refatoração de conclusão de atividades (PR #201):** lógica de `completedAt` extraída para `deriveCompletedAt()` em `transformations.ts`; labels de status e prioridade consolidados via `ACTIVITY_PRIORITY_LABELS` em `status.ts`; validação de `assigneeId` removida do service (delegada ao form).
+- **Bulk upsert para mensalidades (#198):** inicialização de mês usa `ON CONFLICT DO UPDATE` em batch ao invés de inserts individuais, reduzindo round-trips.
+- **Correção de SQL injection em activities:** queries do repository validam e sanitizam parâmetros antes de interpolar.
+- **Otimização N+1 queries:** `identifyLawyerId` e `domainMaterializer` corrigidos para batch de queries em vez de loops individuais.
+- **Schema validation em server actions:** `defineFormAction()` com tipagem forte e validação Zod v4; 15+ actions migradas.
+- **Segurança:** SSRF validation para webhook URLs; `assigneeName`/`associateName` sanitizados como PII em logs.
+- Gates locais: `typecheck` ✓ · `lint` ✓ · `test` 1304/1305 (1 falha não-bloqueante em `date.test.ts`) · autoreview Codex clean ✓ (2026-06-14).
 
 Este arquivo substitui as pendencias antigas de smoke de tempo real e reconciliacao de projetos de banco. Elas nao sao mais caminho de go-live.

@@ -1,34 +1,65 @@
 # Dependencias
 
-Atualizado em 2026-05-26 apos reset da camada de banco/autenticacao.
+Atualizado em 2026-06-14. Inclui mudancas pos-go-live: refatoracao de atividades, mensalidades bulk upsert, validacao de server actions, error boundaries, Assinafy.
 
 ## Stack Mantido
 
-- Next.js 16, React 19 e TypeScript.
-- Drizzle ORM + `postgres` para PostgreSQL.
-- `bcryptjs` para hashes de senha administrativa.
-- `@google/genai` para analise de triagem de e-mails com Gemini.
-- `mailparser` para parsing estruturado de remetentes de e-mail.
-- `@novu/react` para inbox de notificacoes quando configurado.
-- Tiptap para editor rico de oficios.
-- Mailjet via helper interno de email.
-- Playwright/Vitest/ESLint/Prettier para validacao.
+### Runtime
+
+- **Next.js 16.2.6** (App Router) com React 19 e TypeScript 6.
+- **Drizzle ORM** (`drizzle-orm` 0.45+) + `postgres` para PostgreSQL.
+- **DaisyUI 5** + **Tailwind CSS 4** para UI e design system.
+- **Tiptap** (`@tiptap/core`, `@tiptap/react`, `@tiptap/starter-kit`, extensões `text-align` e `text-style`) para editor rico de oficios.
+- **pdf-lib** + `@pdf-lib/fontkit` para geracao de PDF Carlito/ABNT.
+- **react-hook-form** + `@hookform/resolvers` + **Zod 4** para validacao de formularios e schemas.
+- **@hello-pangea/dnd** para drag-and-drop no Kanban de atividades.
+- **lucide-react** para icones.
+- **bcryptjs** para hashes de senha administrativa.
+- **@google/genai** para analise de triagem de e-mails com Gemini.
+- **mailparser** para parsing estruturado de remetentes de e-mail.
+- **@novu/react** para inbox de notificacoes quando configurado.
+- **server-only** para garantir execucao server-side.
+- **zod** v4 para validacao de schemas compartilhados (server actions, API, forms).
+
+### Desenvolvimento
+
+- **Vitest** (`vitest` 4.1+) + `@vitest/coverage-v8` para testes unitarios e cobertura.
+- **Playwright** (`@playwright/test` 1.60+) para testes E2E.
+- **Testing Library** (`@testing-library/react`, `@testing-library/jest-dom`) para testes de componentes.
+- **ESLint 9** + `eslint-config-next` + `eslint-config-prettier` para linting.
+- **Prettier** + `prettier-plugin-tailwindcss` para formatacao.
+- **Drizzle Kit** (`drizzle-kit` 0.31+) para geracao e aplicacao de migrations.
+- **@next/bundle-analyzer** para analise de bundle.
+- **tsx** para scripts operacionais (seed, guardrails).
+- **jsdom** para ambiente de testes DOM.
 
 ## Dependencias Removidas Nesta Frente
 
 - SDKs de plataforma externa para auth, entrega em tempo real e storage.
 - WebSocket dedicado ao smoke de entrega em tempo real.
 
-O go-live nao depende de auth externo, entrega em tempo real externa nem storage externo. Storage de objetos privado sera escolhido em frente separada se Documentos for obrigatorio. A implementação final de storage físico deverá ser acompanhada de uma decisão formal de adoção.
+O go-live nao depende de auth externo, entrega em tempo real externa nem storage externo. Storage de objetos privado sera escolhido em frente separada se Documentos for obrigatorio. A implementacao final de storage fisico devera ser acompanhada de uma decisao formal de adocao.
+
+## Vulnerabilidades Conhecidas (2026-06-14)
+
+Duas vulnerabilidades transitivas estao presentes e nao possuem fix sem breaking change:
+
+- **esbuild** (high): afeta `drizzle-kit` e `tsx` (dev dependencies). Nao afeta producao.
+- **ws** (moderate): afeta `engine.io-client` (transitiva via `@novu/react`). Nao e exploravel em uso server-side.
+
+Ambas sao dev-only ou transitivas em dependencias de dev. `npm audit fix --force` propoe downgrade de `drizzle-kit` para 0.19 (breaking), portanto nao deve ser aplicado. Monitorar advisories e aplicar quando patches estiverem disponiveis.
 
 ## Comandos De Saude
 
 ```bash
-npm audit
-npm run typecheck
-npm run lint
-npm run test
-npm run build
+npm audit              # verificar vulnerabilidades
+npm run typecheck      # TypeScript sem emitir
+npm run lint           # ESLint
+npm run test           # Vitest (unitarios)
+npm run build          # Next.js build (Webpack)
+npm run validate:quick # typecheck + lint + testes unitarios
+npm run validate:full  # quick + test:db + test:integration + build
+npm run pr:check       # gate completo de PR
 ```
 
 Use `npm run test:db` quando `DATABASE_URL` apontar para um PostgreSQL migrado pelo baseline atual.

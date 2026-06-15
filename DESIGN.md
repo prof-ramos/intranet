@@ -1,5 +1,5 @@
 ---
-version: alpha
+version: '1.0'
 name: ASOF Intranet
 description: Institutional operations interface for ASOF, combining diplomatic formality with dense administrative workflows.
 colors:

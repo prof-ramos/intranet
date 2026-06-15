@@ -1,6 +1,6 @@
 # Arquitetura
 
-Atualizado em 2026-06-08 para refletir a integração Assinafy, refatoração de error boundaries e melhorias de webhooks.
+Atualizado em 2026-06-14 para refletir refatoração de atividades, bulk upsert de mensalidades, validação de server actions e correções de segurança.
 
 ## Visao Geral
 
@@ -9,8 +9,8 @@ A intranet ASOF e uma aplicacao Next.js 16.2.6 App Router, server-side, com Driz
 ## Modulos De Dominio
 
 - `src/app/app/associados` e `src/lib/associates`: associados, lotacao/posto, situacao funcional, situacao associativa e contribuicao.
-- `src/app/app/atividades` e `src/lib/activities`: board administrativo, responsaveis, prioridades e prazos.
-- `src/app/app/financeiro` e `src/lib/finance`: mensalidades e status de pagamento.
+- `src/app/app/atividades` e `src/lib/activities`: board administrativo, responsaveis, prioridades e prazos. Lógica de conclusão extraída para `deriveCompletedAt()` em `transformations.ts`; labels consolidados via `ACTIVITY_PRIORITY_LABELS` em `status.ts`.
+- `src/app/app/financeiro` e `src/lib/finance`: mensalidades e status de pagamento. Inicialização de mês usa bulk upsert (`ON CONFLICT DO UPDATE`) ao invés de inserts individuais.
 - `src/app/app/juridico` e `src/lib/juridico`: consultas, processos, notas e SLA.
 - `src/app/app/secretaria/oficios` e `src/lib/oficios`: oficios, rich text, PDF e assinatura digital via Assinafy.
 - `src/app/app/notifications` e `src/lib/notifications`: alertas persistidos.
@@ -138,6 +138,13 @@ O baseline nao depende de roles, policies, publications ou recursos de plataform
 - `requireRole()` controla autorizacao por `admin`, `diretoria` e `secretaria`.
 - `SKIP_AUTH=true` existe apenas para desenvolvimento e e ignorado em producao.
 
+## Server Actions
+
+- `defineFormAction()` em `src/lib/server-actions/define-form-action.ts` — factory com tipagem forte e validação Zod v4 para server actions.
+- Validação de input centralizada: cada action declara schema Zod e recebe dados já validados e tipados.
+- 15+ actions migradas para o padrão (atividades, financeiro, ofícios, config, notificações, etc.).
+- Utilitários em `src/lib/server-actions/utils.ts` — helpers de parsing e transformação.
+
 ## Error Boundaries
 
 - Componente base `src/components/ErrorBoundary.tsx` — factory `createErrorBoundary` com logging via `toSafeErrorLog` (PII-safe)
@@ -163,6 +170,13 @@ Metadados de documentos permanecem no PostgreSQL. Arquivos fisicos devem usar st
 - Logs devem usar `src/lib/logger.ts` e `src/lib/sanitize-pii.ts`.
 - Senhas temporarias, cookies, tokens e segredos nunca devem ser persistidos em logs ou auditoria.
 - Email triage: PII (remetente, destinatário) sanitizado em logs via `sanitizePiiValue()`.
+
+## Segurança
+
+- SQL injection: queries do repository de atividades validam e sanitizam parâmetros; `defineFormAction()` aplica validação Zod antes de chegar ao banco.
+- SSRF: URLs de webhook outbound são validadas contra IPs privados/reservados e hostnames locais.
+- N+1 queries: `identifyLawyerId` e `domainMaterializer` corrigidos para batch de queries em vez de loops individuais.
+- `assigneeName`/`associateName` sanitizados como PII em logs e webhooks.
 
 ## Deploy
 
