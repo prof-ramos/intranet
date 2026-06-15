@@ -153,8 +153,13 @@ describe('daysSince', () => {
 
 describe('yearsSinceDate', () => {
   it('returns correct years for a date 5 years ago', () => {
-    const year = new Date().getUTCFullYear() - 5;
-    expect(yearsSinceDate(`${year}-06-15`)).toBe(4);
+    const now = new Date();
+    const notYetCompletedFiveYearsAgo = new Date(
+      Date.UTC(now.getUTCFullYear() - 5, now.getUTCMonth() + 1, 1),
+    );
+    const date = notYetCompletedFiveYearsAgo.toISOString().slice(0, 10);
+
+    expect(yearsSinceDate(date)).toBe(4);
   });
 
   it('returns 0 for this year', () => {
