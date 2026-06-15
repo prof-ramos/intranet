@@ -16,6 +16,8 @@ export const updateAssociate = defineFormAction({
     const careerOrigin = data.careerOrigin === '' ? null : data.careerOrigin;
     const paymentMethod = data.paymentMethod === '' ? null : data.paymentMethod;
 
+    const emptyToNull = (v: string | null | undefined) => (v === '' ? null : v ?? null);
+
     await updateAssociateData({
       id: data.id,
       fullName: data.fullName,
@@ -23,11 +25,11 @@ export const updateAssociate = defineFormAction({
       rg: data.rg ?? null,
       rgIssuer: data.rgIssuer ?? null,
       rgState: data.rgState ?? null,
-      rgExpeditionDate: data.rgExpeditionDate ?? null,
+      rgExpeditionDate: emptyToNull(data.rgExpeditionDate),
       siape: data.siape ?? null,
       sex,
       maritalStatus,
-      birthDate: data.birthDate ?? null,
+      birthDate: emptyToNull(data.birthDate),
       birthCity: data.birthCity ?? null,
       birthState: data.birthState ?? null,
       primaryEmail: data.primaryEmail ?? null,
@@ -41,7 +43,7 @@ export const updateAssociate = defineFormAction({
       locationCity: data.locationCity ?? null,
       locationCountry: data.locationCountry ?? null,
       assignment: data.assignment ?? null,
-      assignmentStartDate: data.assignmentStartDate ?? null,
+      assignmentStartDate: emptyToNull(data.assignmentStartDate),
       classPattern: data.classPattern ?? null,
       associationCategory: data.associationCategory ?? null,
       functionalStatus: functionalStatus ?? null,
@@ -50,9 +52,9 @@ export const updateAssociate = defineFormAction({
       paymentMethod,
       missionType,
       careerOrigin,
-      admissionDate: data.admissionDate ?? null,
-      inaugurationDate: data.inaugurationDate ?? null,
-      cancellationDate: data.cancellationDate ?? null,
+      admissionDate: emptyToNull(data.admissionDate),
+      inaugurationDate: emptyToNull(data.inaugurationDate),
+      cancellationDate: emptyToNull(data.cancellationDate),
       ceocMember: data.ceocMember,
       caocMember: data.caocMember,
       internalNotes: actor.role === 'admin' ? (data.internalNotes ?? null) : undefined,

@@ -147,7 +147,7 @@ const _getTopRegions = withCache({
       .from(associates)
       .leftJoin(assignments, eq(assignments.name, associates.assignment))
       .where(eq(associates.associationStatus, 'ativo'))
-      .groupBy(correctedCountry)
+      .groupBy(correctedCountry, assignments.type, associates.locationCountry)
       .orderBy(desc(countDistinct(associates.id)))
       .limit(limit),
   keyFn: (limit) => ['top-regions', String(limit)],
