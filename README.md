@@ -349,6 +349,107 @@ drizzle/postgres/ # migrações PostgreSQL geradas
 scripts/          # seed, diagnóstico e guardrails operacionais
 ```
 
+---
+
+## Retomada após formatação
+
+> Use esta seção se precisar reconstruir o ambiente de desenvolvimento em uma máquina nova.
+
+### 1. Clonar o repositório
+
+```bash
+git clone https://github.com/prof-ramos/intranet.git
+cd intranet
+```
+
+### 2. Requisitos
+
+- **Node.js 20+** (use fnm/nvm para gerenciar versões)
+- **npm** (não pnpm/yarn — o lockfile é `package-lock.json`)
+- **PostgreSQL local** (recomendado via Homebrew: `brew install postgresql@17`)
+
+### 3. Instalar dependências
+
+```bash
+npm install
+```
+
+### 4. Configurar variáveis de ambiente
+
+```bash
+cp .env.example .env.local
+# Edite .env.local com suas credenciais locais
+```
+
+Variáveis mínimas para desenvolvimento local:
+
+| Variável | Exemplo local | Onde obter |
+|----------|---------------|-------------|
+| `DATABASE_URL` | `postgres://<user>@localhost:5432/asof_intranet` | Seu PostgreSQL local |
+| `DATABASE_MIGRATION_URL` | `postgres://<user>@localhost:5432/asof_intranet` | Mesmo que acima |
+| `SESSION_SECRET` | `openssl rand -hex 32` | Gere localmente |
+| `ENCRYPTION_MASTER_KEY` | `openssl rand -hex 32` | Gere localmente |
+| `SKIP_AUTH` | `true` | Para dev sem login |
+| `DEV_USER_ID` | `1` | Fixo para dev |
+| `DEV_USER_ROLE` | `admin` | Fixo para dev |
+
+> ⚠️ **Nunca commit `.env.local`, `.env.production` ou `.env.test.local`.** Eles já estão no `.gitignore`. Preserve-os localmente (ou em um cofre de senhas) antes de formatar.
+
+### 5. Preparar o banco de dados
+
+```bash
+# Criar banco local
+
+```bash
+createdb asof_intranet
+
+# Aplicar migrações
+npm run db:migrate
+
+# Popular dados iniciais
+npm run db:seed
+```
+
+### 6. Executar em desenvolvimento
+
+```bash
+npm run dev
+# Acesse http://localhost:3000
+```
+
+### 7. Rodar testes
+
+```bash
+npm run validate:quick   # typecheck + lint + unit tests
+npm run test:db          # schema contract
+npm run test:e2e         # Playwright (sobe servidor E2E próprio)
+```
+
+### 8. Build de produção
+
+```bash
+npm run build
+```
+
+### 9. Deploy
+
+O deploy é automatizado via push para `main` no GitHub → Vercel.
+Veja [`docs/runbook.md`](./docs/runbook.md) para procedimentos operacionais.
+
+### 10. Arquivos que NÃO estão no GitHub (por segurança)
+
+- `.env.local` — suas credenciais locais
+- `.env.production` — credenciais de produção
+- `.env.test.local` — credenciais de banco de testes
+- `.claude/settings.local.json` — configurações pessoais do Claude Code
+- `test-results/` — artefatos de testes E2E (transitórios)
+- `.next/`, `.next-e2e/` — caches de build
+- `data/` — dumps ou arquivos de dados
+
+> **Preserve esses arquivos localmente antes de formatar!**
+
+---
+
 ## Documentação de referência
 
 | Documento                              | Quando usar                                                                        |
