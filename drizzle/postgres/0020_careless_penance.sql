@@ -1,5 +1,5 @@
 CREATE TYPE "public"."career_origin" AS ENUM('brasil', 'exterior', 'outros_orgaos');--> statement-breakpoint
-CREATE TYPE "public"."marital_status" AS ENUM('solteiro', 'casado', 'divorcido', 'viuvo', 'separado', 'outros');--> statement-breakpoint
+CREATE TYPE "public"."marital_status" AS ENUM('solteiro', 'casado', 'divorciado', 'viuvo', 'separado', 'outros');--> statement-breakpoint
 CREATE TYPE "public"."mission_type" AS ENUM('permanente', 'transitoria');--> statement-breakpoint
 CREATE TYPE "public"."sex" AS ENUM('M', 'F');--> statement-breakpoint
 CREATE TABLE "dependents" (
