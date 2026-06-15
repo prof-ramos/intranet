@@ -111,3 +111,12 @@
 - **Evidência**: Sessão 2026-06-15 — análise de cobertura mostrou 99.7% para Nome, 93% para SIAPE, 82.1% para CPF; 10 campos web sem destino Drizzle (CEOC, CAOC, Naturalidade, Bairro, Dependentes, etc.).
 - **Regra preventiva**: Para migração de associados, usar `chancelaria_web_indexed.json` como fonte primária. Não tentar restaurar MySQL ou acessar VPS.
 - **Confiança**: alta
+
+## 2026-06-15 — Server Actions são schema-first
+
+- **Tipo**: Padrão arquitetural
+- **Escopo**: `src/lib/server-actions/define-form-action.ts` e callers em `src/app/**/actions.ts`
+- **Memória**: Server Actions com entrada devem declarar schema Zod no helper (`defineServerAction` ou `defineFormStateAction`). Actions sem entrada devem usar `defineNoInputServerAction`. O fallback cru para `FormData`/payload sem schema foi removido no PR #201.
+- **Evidência**: PR #201, merge commit `a543e9c`; commits do PR `2864305` e `45d495c` tornaram schemas obrigatórios e migraram os callers.
+- **Regra preventiva**: Não adicionar overload opcional `schema?:`, não passar `Record<string, unknown>` cru para services e não reintroduzir parsing manual antes do schema. Para campos de formulário repetidos, lembrar que `formDataToRecord()` usa `FormData.getAll()` e preserva arrays.
+- **Confiança**: alta
