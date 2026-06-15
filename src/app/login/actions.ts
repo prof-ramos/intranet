@@ -11,6 +11,14 @@ import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('login');
 
+function toLoginLogContext(value: unknown): Record<string, unknown> {
+  const sanitized = sanitizePiiValue(value);
+  if (sanitized && typeof sanitized === 'object' && !Array.isArray(sanitized)) {
+    return Object.fromEntries(Object.entries(sanitized));
+  }
+  return { value: sanitized };
+}
+
 export async function login(formData: FormData) {
   const parsed = loginSchema.safeParse({
     email: formData.get('email'),
@@ -46,7 +54,7 @@ export async function login(formData: FormData) {
     if (error instanceof InvalidCredentialsError) {
       logger.warn(
         '[Login] Authentication failed',
-        sanitizePiiValue({ email, error: toSafeErrorLog(error) }) as Record<string, unknown>,
+        toLoginLogContext({ email, error: toSafeErrorLog(error) }),
         ensureError(error),
       );
     }
