@@ -90,16 +90,22 @@ describe('updateDependentSchema', () => {
 });
 
 describe('deleteDependentSchema', () => {
-  it('validates a valid id', () => {
-    const result = deleteDependentSchema.safeParse({ id: '42' });
+  it('validates a valid id and associateId', () => {
+    const result = deleteDependentSchema.safeParse({ id: '42', associateId: '1' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.id).toBe(42);
+      expect(result.data.associateId).toBe(1);
     }
   });
 
   it('rejects non-numeric id', () => {
-    const result = deleteDependentSchema.safeParse({ id: 'abc' });
+    const result = deleteDependentSchema.safeParse({ id: 'abc', associateId: '1' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing associateId', () => {
+    const result = deleteDependentSchema.safeParse({ id: '42' });
     expect(result.success).toBe(false);
   });
 });
@@ -176,11 +182,17 @@ describe('updateHealthAgreementSchema', () => {
 });
 
 describe('deleteHealthAgreementSchema', () => {
-  it('validates a valid id', () => {
-    const result = deleteHealthAgreementSchema.safeParse({ id: '5' });
+  it('validates a valid id and associateId', () => {
+    const result = deleteHealthAgreementSchema.safeParse({ id: '5', associateId: '1' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.id).toBe(5);
+      expect(result.data.associateId).toBe(1);
     }
+  });
+
+  it('rejects missing associateId', () => {
+    const result = deleteHealthAgreementSchema.safeParse({ id: '5' });
+    expect(result.success).toBe(false);
   });
 });

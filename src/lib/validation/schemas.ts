@@ -306,6 +306,7 @@ export const updateDependentSchema = z.object({
 
 export const deleteDependentSchema = z.object({
   id: z.coerce.number().int().positive('ID do dependente inválido.'),
+  associateId: z.coerce.number().int().positive('ID do associado inválido.'),
 });
 
 export const createHealthAgreementSchema = z.object({
@@ -344,6 +345,7 @@ export const updateHealthAgreementSchema = z.object({
 
 export const deleteHealthAgreementSchema = z.object({
   id: z.coerce.number().int().positive('ID do convênio inválido.'),
+  associateId: z.coerce.number().int().positive('ID do associado inválido.'),
 });
 
 export const validEntityTypes = ['consultation', 'process'] as const;

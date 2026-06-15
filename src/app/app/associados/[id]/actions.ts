@@ -49,41 +49,37 @@ export async function editDependentAction(formData: FormData) {
   const user = await requireAuth();
   checkRole(user.role);
 
-  const associateId = formData.get('associateId')?.toString();
   const data = updateDependentSchema.parse({
     id: formData.get('id'),
     name: formData.get('name') || undefined,
     relationship: formData.get('relationship') || undefined,
   });
+  const associateId = Number(formData.get('associateId'));
 
   const { id, ...values } = data;
   if (Object.keys(values).length === 0) return;
 
-  await updateDependentById(id, values, associateId ? Number(associateId) : undefined);
+  await updateDependentById(id, values, associateId);
 
   revalidatePath('/app/associados');
-  if (associateId) {
-    revalidatePath(`/app/associados/${associateId}`);
-    revalidatePath(`/app/associados/${associateId}/editar`);
-  }
+  revalidatePath(`/app/associados/${associateId}`);
+  revalidatePath(`/app/associados/${associateId}/editar`);
 }
 
 export async function removeDependentAction(formData: FormData) {
   const user = await requireAuth();
   checkRole(user.role);
 
-  const associateId = formData.get('associateId')?.toString();
   const data = deleteDependentSchema.parse({
     id: formData.get('id'),
+    associateId: formData.get('associateId'),
   });
 
-  await deleteDependentById(data.id, associateId ? Number(associateId) : undefined);
+  await deleteDependentById(data.id, data.associateId);
 
   revalidatePath('/app/associados');
-  if (associateId) {
-    revalidatePath(`/app/associados/${associateId}`);
-    revalidatePath(`/app/associados/${associateId}/editar`);
-  }
+  revalidatePath(`/app/associados/${data.associateId}`);
+  revalidatePath(`/app/associados/${data.associateId}/editar`);
 }
 
 // ─── Health Agreement Actions ────────────────────────────────────────────
@@ -109,40 +105,36 @@ export async function editHealthAgreementAction(formData: FormData) {
   const user = await requireAuth();
   checkRole(user.role);
 
-  const associateId = formData.get('associateId')?.toString();
   const data = updateHealthAgreementSchema.parse({
     id: formData.get('id'),
     provider: formData.get('provider') || undefined,
     startDate: formData.get('startDate') || null,
     endDate: formData.get('endDate') || null,
   });
+  const associateId = Number(formData.get('associateId'));
 
   const { id, ...values } = data;
   if (Object.keys(values).length === 0) return;
 
-  await updateHealthAgreementById(id, values, associateId ? Number(associateId) : undefined);
+  await updateHealthAgreementById(id, values, associateId);
 
   revalidatePath('/app/associados');
-  if (associateId) {
-    revalidatePath(`/app/associados/${associateId}`);
-    revalidatePath(`/app/associados/${associateId}/editar`);
-  }
+  revalidatePath(`/app/associados/${associateId}`);
+  revalidatePath(`/app/associados/${associateId}/editar`);
 }
 
 export async function removeHealthAgreementAction(formData: FormData) {
   const user = await requireAuth();
   checkRole(user.role);
 
-  const associateId = formData.get('associateId')?.toString();
   const data = deleteHealthAgreementSchema.parse({
     id: formData.get('id'),
+    associateId: formData.get('associateId'),
   });
 
-  await deleteHealthAgreementById(data.id, associateId ? Number(associateId) : undefined);
+  await deleteHealthAgreementById(data.id, data.associateId);
 
   revalidatePath('/app/associados');
-  if (associateId) {
-    revalidatePath(`/app/associados/${associateId}`);
-    revalidatePath(`/app/associados/${associateId}/editar`);
-  }
+  revalidatePath(`/app/associados/${data.associateId}`);
+  revalidatePath(`/app/associados/${data.associateId}/editar`);
 }

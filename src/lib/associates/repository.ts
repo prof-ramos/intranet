@@ -366,20 +366,16 @@ export async function createDependent(input: CreateDependentInput): Promise<Depe
 export async function updateDependentById(
   id: number,
   values: UpdateDependentInput,
-  associateId?: number,
+  associateId: number,
 ): Promise<void> {
-  const conditions = [eq(dependents.id, id)];
-  if (associateId !== undefined) conditions.push(eq(dependents.associateId, associateId));
   await db
     .update(dependents)
     .set({ ...values, updatedAt: new Date() })
-    .where(and(...conditions));
+    .where(and(eq(dependents.id, id), eq(dependents.associateId, associateId)));
 }
 
-export async function deleteDependentById(id: number, associateId?: number): Promise<void> {
-  const conditions = [eq(dependents.id, id)];
-  if (associateId !== undefined) conditions.push(eq(dependents.associateId, associateId));
-  await db.delete(dependents).where(and(...conditions));
+export async function deleteDependentById(id: number, associateId: number): Promise<void> {
+  await db.delete(dependents).where(and(eq(dependents.id, id), eq(dependents.associateId, associateId)));
 }
 
 // ─── Health Agreement CRUD ───────────────────────────────────────────────
@@ -420,18 +416,14 @@ export async function createHealthAgreement(
 export async function updateHealthAgreementById(
   id: number,
   values: UpdateHealthAgreementInput,
-  associateId?: number,
+  associateId: number,
 ): Promise<void> {
-  const conditions = [eq(healthAgreements.id, id)];
-  if (associateId !== undefined) conditions.push(eq(healthAgreements.associateId, associateId));
   await db
     .update(healthAgreements)
     .set({ ...values, updatedAt: new Date() })
-    .where(and(...conditions));
+    .where(and(eq(healthAgreements.id, id), eq(healthAgreements.associateId, associateId)));
 }
 
-export async function deleteHealthAgreementById(id: number, associateId?: number): Promise<void> {
-  const conditions = [eq(healthAgreements.id, id)];
-  if (associateId !== undefined) conditions.push(eq(healthAgreements.associateId, associateId));
-  await db.delete(healthAgreements).where(and(...conditions));
+export async function deleteHealthAgreementById(id: number, associateId: number): Promise<void> {
+  await db.delete(healthAgreements).where(and(eq(healthAgreements.id, id), eq(healthAgreements.associateId, associateId)));
 }
