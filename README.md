@@ -395,6 +395,26 @@ Variáveis mínimas para desenvolvimento local:
 
 > ⚠️ **Nunca commit `.env.local`, `.env.production` ou `.env.test.local`.** Eles já estão no `.gitignore`. Preserve-os localmente (ou em um cofre de senhas) antes de formatar.
 
+#### Restaurar do 1Password (vault `Dev`)
+
+Se você salvou os arquivos no 1Password antes de formatar:
+
+```bash
+# Restaurar .env.local
+op item get "ASOF Intranet - .env.local (2026-06-15)" \
+  --vault="Dev" \
+  --format=json | \
+  jq -r '.fields[] | select(.label=="notesPlain").value' > .env.local
+
+# Restaurar .env.test.local (opcional)
+op item get "ASOF Intranet - .env.test.local (2026-06-15)" \
+  --vault="Dev" \
+  --format=json | \
+  jq -r '.fields[] | select(.label=="notesPlain").value' > .env.test.local
+```
+
+> **Importante:** Use `--format=json | jq -r '...'` em vez de `--fields notesPlain`. O 1Password adiciona aspas extras na saída direta de `notesPlain`, que quebram o formato do arquivo.
+
 ### 5. Preparar o banco de dados
 
 ```bash
