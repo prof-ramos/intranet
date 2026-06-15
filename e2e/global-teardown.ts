@@ -43,4 +43,12 @@ export default async function globalTeardown() {
   } catch {
     // Best-effort cleanup only; test failures should not be hidden by teardown.
   }
+
+  // Stop Assinafy mock server
+  const assinafyMock = (globalThis as unknown as Record<string, unknown>).__ASSINAFY_MOCK__ as
+    | import('./mocks/assinafy-server').AssinafyMockServer
+    | undefined;
+  if (assinafyMock) {
+    await assinafyMock.stop();
+  }
 }

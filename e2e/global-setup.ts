@@ -2,6 +2,7 @@ import { execFileSync, execSync, spawn } from 'child_process';
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { chromium } from '@playwright/test';
+import { AssinafyMockServer } from './mocks/assinafy-server';
 
 const ENV_FILE = path.resolve(process.cwd(), '.env.development.local');
 const ENV_FILE_FLAG = existsSync(ENV_FILE) ? `--env-file="${ENV_FILE}" ` : '';
@@ -22,6 +23,9 @@ const E2E_ENCRYPTION_MASTER_KEY = 'e2e-encryption-master-key-at-least-32-chars';
 const E2E_BASE_URL = 'http://127.0.0.1:3001';
 const E2E_ADMIN_EMAIL = 'e2e-admin@asof.local';
 const E2E_ADMIN_PASSWORD = 'Senha-Forte-2026!';
+const ASSINAFY_MOCK_PORT = 3099;
+const ASSINAFY_MOCK_KEY = 'e2e-mock-key';
+const ASSINAFY_MOCK_ACCOUNT = 'e2e-mock-account';
 const LOCAL_DB_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 
 function getRecentServerLog() {
@@ -124,6 +128,15 @@ async function warmupJitRoutes() {
 export default async function globalSetup() {
   mkdirSync(path.dirname(DEV_SERVER_PID_FILE), { recursive: true });
 
+  // Start Assinafy mock server before dev server so Next.js can connect
+  const assinafyMock = new AssinafyMockServer({
+    port: ASSINAFY_MOCK_PORT,
+    apiKey: ASSINAFY_MOCK_KEY,
+    accountId: ASSINAFY_MOCK_ACCOUNT,
+  });
+  await assinafyMock.start();
+  (globalThis as unknown as Record<string, unknown>).__ASSINAFY_MOCK__ = assinafyMock;
+
   // Recreate the local E2E DB so migration replay starts from a clean history.
   const testDb = getTestDatabaseCommandConfig();
   execFileSync('dropdb', [...testDb.args, '--if-exists', testDb.databaseName], {
@@ -170,6 +183,9 @@ export default async function globalSetup() {
         ENCRYPTION_MASTER_KEY: process.env.ENCRYPTION_MASTER_KEY ?? E2E_ENCRYPTION_MASTER_KEY,
         CRON_SECRET: 'dummy_cron_secret_for_e2e_tests',
         ASOF_INTRANET_URL: 'http://127.0.0.1:3001',
+        ASSINAFY_BASE_URL: `http://127.0.0.1:${ASSINAFY_MOCK_PORT}/v1`,
+        ASSINAFY_API_KEY: ASSINAFY_MOCK_KEY,
+        ASSINAFY_ACCOUNT_ID: ASSINAFY_MOCK_ACCOUNT,
       },
       detached: true,
       stdio: ['ignore', logFd, logFd],
