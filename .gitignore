@@ -137,3 +137,4 @@ data/
 *.sqlite
 *.sqlite3
 .neon
+migration-report-*.json

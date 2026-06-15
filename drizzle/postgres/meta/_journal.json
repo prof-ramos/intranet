@@ -148,6 +148,13 @@
       "when": 1781509084231,
       "tag": "0020_careless_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1781511532201,
+      "tag": "0021_military_thundra",
+      "breakpoints": true
     }
   ]
 }

@@ -118,6 +118,7 @@ export const associates = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [
+    uniqueIndex('idx_associates_source_row_number').on(table.sourceRowNumber),
     uniqueIndex('idx_associates_cpf').on(table.cpf),
     uniqueIndex('idx_associates_siape').on(table.siape),
     uniqueIndex('idx_associates_primary_email').on(table.primaryEmail),

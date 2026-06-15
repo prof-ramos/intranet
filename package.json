@@ -35,6 +35,8 @@
     "db:migrate": "tsx scripts/guarded-migrate.ts",
     "db:migrate:unsafe": "drizzle-kit migrate",
     "db:seed": "tsx scripts/seed-admin.ts",
+    "migrate:legacy": "tsx scripts/migrate-legacy.ts",
+    "migrate:legacy:dry-run": "tsx scripts/migrate-legacy.ts --dry-run",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

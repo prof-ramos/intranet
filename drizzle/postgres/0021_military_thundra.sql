@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "idx_associates_source_row_number" ON "associates" USING btree ("source_row_number");
