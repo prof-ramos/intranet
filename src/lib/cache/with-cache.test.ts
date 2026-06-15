@@ -49,7 +49,7 @@ describe('withCache', () => {
     expect(result.key).toEqual(['key', '7', 'x']);
   });
 
-  it('without maxEntries creates a new unstable_cache on every call', async () => {
+  it('without maxEntries reuses the same unstable_cache for identical keys', async () => {
     const fn = vi.fn().mockResolvedValue('v');
     const cached = withCache({
       fn,
@@ -61,8 +61,8 @@ describe('withCache', () => {
     const r1 = await cached(1);
     const r2 = await cached(1);
 
-    expect(r1.id).not.toBe(r2.id);
-    expect(callCount).toBe(2);
+    expect(r1.id).toBe(r2.id);
+    expect(callCount).toBe(1);
   });
 
   it('with maxEntries reuses the same unstable_cache for identical keys', async () => {

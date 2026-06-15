@@ -9,34 +9,24 @@ export interface WithCacheOptions<TArgs extends unknown[], TReturn> {
   ttl: number;
   /** Tags for explicit invalidation. */
   tags: string[];
-  /** Optional max entries for the in-memory param cache. When set, a Map limits recreation of unstable_cache functions. */
+  /** Optional max entries for the in-memory wrapper cache. Defaults to 100. */
   maxEntries?: number;
 }
 
 /**
  * Generic cache wrapper around Next.js unstable_cache.
  *
- * When `maxEntries` is provided, an in-memory Map keeps the unstable_cache
- * function instances so that repeated calls with the same arguments reuse the
- * same cache entry (rather than creating a new unstable_cache every time).
+ * An in-memory Map keeps the unstable_cache function instances so that
+ * repeated calls with the same arguments reuse the same wrapper rather
+ * than creating a new one every time. The Map is bounded by maxEntries
+ * (default 100) to prevent unbounded memory growth.
  */
 export function withCache<TArgs extends unknown[], TReturn>(
   options: WithCacheOptions<TArgs, TReturn>,
 ): (...args: TArgs) => Promise<TReturn> {
-  const { fn, keyFn, ttl, tags, maxEntries } = options;
-
-  if (!maxEntries) {
-    return async (...args: TArgs): Promise<TReturn> => {
-      const key = keyFn(...args);
-      return unstable_cache(async () => fn(...args), key, {
-        revalidate: ttl,
-        tags,
-      })();
-    };
-  }
+  const { fn, keyFn, ttl, tags, maxEntries = 100 } = options;
 
   const cacheMap = new Map<string, ReturnType<typeof unstable_cache>>();
-
   const limit = maxEntries;
 
   function setWithLimit(map: typeof cacheMap, key: string, value: ReturnType<typeof unstable_cache>) {
