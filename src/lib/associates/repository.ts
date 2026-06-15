@@ -14,8 +14,13 @@ import {
   paymentMethod,
 } from '@/lib/db/schema';
 import { eq, and, count, asc, sql } from 'drizzle-orm';
-import { buildAssociateNameSearchPattern } from './search-params';
-import { decryptPiiField } from '@/lib/crypto/pii';
+import {
+  buildAssociateNameSearchPattern,
+  normalizeCpfForSearch,
+  normalizeSiapeForSearch,
+  type AssociateSearchMode,
+} from './search-params';
+import { decryptPiiField, piiBlindIndex } from '@/lib/crypto/pii';
 
 type FunctionalStatusEnum = (typeof functionalStatus.enumValues)[number];
 type AssociationStatusEnum = (typeof associationStatus.enumValues)[number];
@@ -69,9 +74,64 @@ export async function findAssociatesPaginated(
   pageSize: number,
   searchQuery?: string,
   filters?: AssociatesFilters,
+  searchBy: AssociateSearchMode = 'name',
 ): Promise<{ rows: AssociateListItem[]; total: number }> {
   const normalizedSearchQuery = searchQuery?.trim();
 
+  // Hash-based exact lookup for CPF/SIAPE — returns 0 or 1 results
+  if ((searchBy === 'cpf' || searchBy === 'siape') && normalizedSearchQuery) {
+    const digits = searchBy === 'cpf'
+      ? normalizeCpfForSearch(normalizedSearchQuery)
+      : normalizeSiapeForSearch(normalizedSearchQuery);
+
+    if (!digits) {
+      return { rows: [], total: 0 };
+    }
+
+    const hash = piiBlindIndex(digits);
+    const hashColumn = searchBy === 'cpf' ? associates.cpfHash : associates.siapeHash;
+    const filterConditions = and(
+      eq(hashColumn, hash),
+      filters?.contributionStatus
+        ? eq(associates.contributionStatus, filters.contributionStatus)
+        : undefined,
+      filters?.functionalStatus
+        ? eq(associates.functionalStatus, filters.functionalStatus)
+        : undefined,
+      filters?.associationStatus
+        ? eq(associates.associationStatus, filters.associationStatus)
+        : undefined,
+    );
+
+    const [rows, [{ total }]] = await Promise.all([
+      db
+        .select(publicAssociateListColumns)
+        .from(associates)
+        .where(filterConditions)
+        .limit(pageSize)
+        .offset((page - 1) * pageSize),
+      db.select({ total: count() }).from(associates).where(filterConditions),
+    ]);
+
+    return {
+      rows: rows.map((row) => ({
+        id: row.id,
+        fullName: row.fullName,
+        assignment: row.assignment,
+        classPattern: row.classPattern,
+        functionalStatus: row.functionalStatus,
+        associationStatus: row.associationStatus,
+        contributionStatus: row.contributionStatus,
+        primaryEmail: decryptPiiField(row.primaryEmailCiphertext ?? null, row.primaryEmail ?? null),
+        siape: decryptPiiField(row.siapeCiphertext ?? null, row.siape ?? null),
+        phone: decryptPiiField(row.phoneCiphertext ?? null, row.phone ?? null),
+        whatsapp: decryptPiiField(row.whatsappCiphertext ?? null, row.whatsapp ?? null),
+      })),
+      total,
+    };
+  }
+
+  // Default: name-based ILIKE search
   const baseWhere = and(
     normalizedSearchQuery
       ? sql`${associates.fullName} ilike ${buildAssociateNameSearchPattern(normalizedSearchQuery)} escape '\\'`

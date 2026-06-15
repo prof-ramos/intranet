@@ -74,6 +74,7 @@ export const resetPasswordSchema = z
 export const associateSearchParamsSchema = z.object({
   q: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
+  searchBy: z.enum(['name', 'cpf', 'siape']).optional(),
   contributionStatus: z.enum(contributionStatus.enumValues).optional(),
   functionalStatus: z.enum(functionalStatus.enumValues).optional(),
   associationStatus: z.enum(associationStatus.enumValues).optional(),

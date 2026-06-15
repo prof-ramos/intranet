@@ -4,6 +4,7 @@ import { getRoleLabel } from '@/lib/ui/role-labels';
 import {
   parseAssociatesSearchParams,
   buildAssociatesSearchParams,
+  type AssociateSearchMode,
 } from '@/lib/associates/search-params';
 import { calculatePaginationBounds } from '@/lib/pagination';
 import { AssociadosFilters } from './AssociadosFilters';
@@ -32,13 +33,14 @@ export default async function AssociadosPage({
   searchParams: Promise<{
     q?: string;
     page?: string;
+    searchBy?: string;
     contributionStatus?: string;
     functionalStatus?: string;
     associationStatus?: string;
   }>;
 }) {
   const user = await requireAuth();
-  const { q, page, contributionStatus, functionalStatus, associationStatus } = parseAssociatesSearchParams(
+  const { q, page, searchBy, contributionStatus, functionalStatus, associationStatus } = parseAssociatesSearchParams(
     await searchParams,
   );
 
@@ -47,9 +49,14 @@ export default async function AssociadosPage({
     PAGE_SIZE,
     q,
     { contributionStatus, functionalStatus, associationStatus },
+    searchBy,
   );
 
   const { totalPages, from, to } = calculatePaginationBounds(page, PAGE_SIZE, total);
+
+  const currentListUrl = `/app/associados?${new URLSearchParams(
+    buildAssociatesSearchParams({ q, page, searchBy, contributionStatus, functionalStatus, associationStatus }, {}),
+  ).toString()}`;
 
   const today = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
@@ -68,12 +75,23 @@ export default async function AssociadosPage({
       >
         <div className="mx-auto grid w-full max-w-[1180px] gap-3 sm:grid-cols-[minmax(240px,420px)_auto] sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <form method="GET" action="/app/associados">
+            <form method="GET" action="/app/associados" className="flex items-center gap-2">
+              <select
+                name="searchBy"
+                defaultValue={searchBy}
+                className="h-11 rounded-[8px] border bg-white px-2 text-sm outline-none"
+                style={{ borderColor: hairline, color: '#040920' }}
+                aria-label="Tipo de busca"
+              >
+                <option value="name">Nome</option>
+                <option value="cpf">CPF</option>
+                <option value="siape">SIAPE</option>
+              </select>
               <label
-                className="flex h-11 min-h-11 w-full items-center gap-3 rounded-[8px] border bg-white px-3"
+                className="flex h-11 min-h-11 flex-1 items-center gap-3 rounded-[8px] border bg-white px-3"
                 style={{ borderColor: hairline }}
               >
-                <span className="sr-only">Buscar associado por nome</span>
+                <span className="sr-only">{searchBy === 'cpf' ? 'Buscar por CPF' : searchBy === 'siape' ? 'Buscar por SIAPE' : 'Buscar por nome'}</span>
                 <Search size={18} style={{ color: textMuted }} aria-hidden="true" />
                 <input
                   name="q"
@@ -81,9 +99,18 @@ export default async function AssociadosPage({
                   defaultValue={q}
                   autoComplete="off"
                   className="grow bg-transparent text-sm outline-none placeholder:text-[rgba(13,31,60,0.65)]"
-                  placeholder="Buscar por nome..."
+                  placeholder={
+                    searchBy === 'cpf'
+                      ? 'Buscar por CPF (ex: 123.456.789-00)...'
+                      : searchBy === 'siape'
+                        ? 'Buscar por SIAPE...'
+                        : 'Buscar por nome...'
+                  }
                 />
               </label>
+              {contributionStatus && <input type="hidden" name="contributionStatus" value={contributionStatus} />}
+              {functionalStatus && <input type="hidden" name="functionalStatus" value={functionalStatus} />}
+              {associationStatus && <input type="hidden" name="associationStatus" value={associationStatus} />}
             </form>
           </div>
 
@@ -93,6 +120,7 @@ export default async function AssociadosPage({
               currentFunctionalStatus={functionalStatus}
               currentAssociationStatus={associationStatus}
               currentQ={q}
+              currentSearchBy={searchBy}
             />
             <div className="hidden min-h-11 min-w-0 items-center gap-3 sm:flex">
               <div
@@ -143,7 +171,7 @@ export default async function AssociadosPage({
             </p>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
               <Link
-                href="/app/associados?page=1"
+                href={currentListUrl}
                 className={`text-sm font-semibold hover:underline ${focusRingClass}`}
               >
                 Ver todos ({total})
@@ -158,7 +186,7 @@ export default async function AssociadosPage({
               <nav aria-label="Paginação de associados" className="flex items-center gap-1">
                 {page > 1 ? (
                   <Link
-                    href={`/app/associados?${new URLSearchParams(buildAssociatesSearchParams({ q, page, contributionStatus, functionalStatus, associationStatus }, { page: page - 1 })).toString()}`}
+                    href={`/app/associados?${new URLSearchParams(buildAssociatesSearchParams({ q, page, searchBy, contributionStatus, functionalStatus, associationStatus }, { page: page - 1 })).toString()}`}
                     className={`inline-flex h-11 w-11 items-center justify-center rounded-[8px] border bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
                     style={{ borderColor: hairline }}
                     aria-label="Página anterior"
@@ -187,7 +215,7 @@ export default async function AssociadosPage({
                 )}
                 {page < totalPages ? (
                   <Link
-                    href={`/app/associados?${new URLSearchParams(buildAssociatesSearchParams({ q, page, contributionStatus, functionalStatus, associationStatus }, { page: page + 1 })).toString()}`}
+                    href={`/app/associados?${new URLSearchParams(buildAssociatesSearchParams({ q, page, searchBy, contributionStatus, functionalStatus, associationStatus }, { page: page + 1 })).toString()}`}
                     className={`inline-flex h-11 w-11 items-center justify-center rounded-[8px] border bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
                     style={{ borderColor: hairline }}
                     aria-label="Próxima página"
@@ -255,7 +283,7 @@ export default async function AssociadosPage({
                     >
                       <td className="px-4 py-3 font-medium">
                         <Link
-                          href={`/app/associados/${row.id}`}
+                          href={`/app/associados/${row.id}?returnTo=${encodeURIComponent(currentListUrl)}`}
                           className={`hover:underline ${focusRingClass}`}
                         >
                           {row.fullName}
@@ -313,7 +341,7 @@ export default async function AssociadosPage({
                       </td>
                       <td className="px-4 py-3 text-center">
                         <Link
-                          href={`/app/associados/${row.id}/editar`}
+                          href={`/app/associados/${row.id}/editar?returnTo=${encodeURIComponent(currentListUrl)}`}
                           className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-[rgba(13,31,60,0.55)] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[#f8fafc] hover:text-[#76aeea] focus-visible:opacity-100 ${focusRingClass}`}
                           aria-label={`Editar ${row.fullName}`}
                         >

@@ -1,9 +1,12 @@
 import { associateSearchParamsSchema } from '@/lib/validation/schemas';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
 
+export type AssociateSearchMode = 'name' | 'cpf' | 'siape';
+
 export interface AssociatesSearchParams {
   q: string;
   page: number;
+  searchBy: AssociateSearchMode;
   contributionStatus?: 'em_dia' | 'inadimplente' | 'pendente_migracao';
   functionalStatus?: 'ativo' | 'aposentado' | 'cedido' | 'em_licenca';
   associationStatus?: 'ativo' | 'inativo';
@@ -12,17 +15,19 @@ export interface AssociatesSearchParams {
 export function parseAssociatesSearchParams(params: {
   q?: string;
   page?: string;
+  searchBy?: string;
   contributionStatus?: string;
   functionalStatus?: string;
   associationStatus?: string;
 }): AssociatesSearchParams {
   const parsed = associateSearchParamsSchema.safeParse(params);
   if (!parsed.success) {
-    return { q: '', page: 1 };
+    return { q: '', page: 1, searchBy: 'name' };
   }
   return {
     q: (parsed.data.q ?? '').trim().slice(0, 80),
     page: parsed.data.page,
+    searchBy: parsed.data.searchBy ?? 'name',
     contributionStatus: parsed.data.contributionStatus,
     functionalStatus: parsed.data.functionalStatus,
     associationStatus: parsed.data.associationStatus,
@@ -37,6 +42,7 @@ export function buildAssociatesSearchParams(
   const params: Record<string, string> = {};
 
   if (next.q) params.q = next.q;
+  if (next.searchBy && next.searchBy !== 'name') params.searchBy = next.searchBy;
   if (next.contributionStatus) params.contributionStatus = next.contributionStatus;
   if (next.functionalStatus) params.functionalStatus = next.functionalStatus;
   if (next.associationStatus) params.associationStatus = next.associationStatus;
@@ -47,4 +53,20 @@ export function buildAssociatesSearchParams(
 
 export function buildAssociateNameSearchPattern(query: string): string {
   return `%${escapeLikePattern(query)}%`;
+}
+
+/**
+ * Strip non-digit characters from CPF for hash lookup.
+ * Input "123.456.789-00" → "12345678900"
+ */
+export function normalizeCpfForSearch(raw: string): string {
+  return raw.replace(/\D/g, '');
+}
+
+/**
+ * Strip non-digit characters from SIAPE for hash lookup.
+ * Input may contain dots or spaces but SIAPE is numeric only.
+ */
+export function normalizeSiapeForSearch(raw: string): string {
+  return raw.replace(/\D/g, '');
 }

@@ -2,12 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import { hairline, focusRingClass } from '@/lib/ui/tokens';
+import type { AssociateSearchMode } from '@/lib/associates/search-params';
 
 interface AssociadosFiltersProps {
   currentContributionStatus: string | undefined;
   currentFunctionalStatus: string | undefined;
   currentAssociationStatus: string | undefined;
   currentQ: string;
+  currentSearchBy: AssociateSearchMode;
 }
 
 const selectStyle = {
@@ -26,12 +28,14 @@ export function AssociadosFilters({
   currentFunctionalStatus,
   currentAssociationStatus,
   currentQ,
+  currentSearchBy,
 }: AssociadosFiltersProps) {
   const router = useRouter();
 
   function navigate(updates: { contributionStatus?: string; functionalStatus?: string; associationStatus?: string }) {
     const params = new URLSearchParams();
     if (currentQ) params.set('q', currentQ);
+    if (currentSearchBy && currentSearchBy !== 'name') params.set('searchBy', currentSearchBy);
 
     const newContribution =
       'contributionStatus' in updates ? updates.contributionStatus : currentContributionStatus;

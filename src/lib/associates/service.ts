@@ -7,6 +7,7 @@ import {
   type UpdateAssociateValues,
   type AssociatesFilters,
 } from './repository';
+import { type AssociateSearchMode } from './search-params';
 import { db } from '@/lib/db';
 import {
   functionalStatus as fsEnum,
@@ -114,8 +115,9 @@ export async function getAssociatesListPage(
   pageSize: number,
   searchQuery?: string,
   filters?: AssociatesFilters,
+  searchBy?: AssociateSearchMode,
 ) {
-  return findAssociatesPaginated(page, pageSize, searchQuery, filters);
+  return findAssociatesPaginated(page, pageSize, searchQuery, filters, searchBy);
 }
 
 export async function getAssociateForEdit(

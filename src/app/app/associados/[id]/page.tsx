@@ -150,9 +150,16 @@ const tocItems = [
   ['atividades', 'Atividades'],
 ] as const;
 
-export default async function AssociadoPerfilPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AssociadoPerfilPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ returnTo?: string }>;
+}) {
   const user = await requireAuth();
   const { id } = await params;
+  const { returnTo } = await searchParams;
   const associateId = parsePositiveIntParam(id);
   const profile = await requireEntityById(associateId, (id) => getAssociateProfile(id, user.role));
   const {
@@ -173,7 +180,7 @@ export default async function AssociadoPerfilPage({ params }: { params: Promise<
   return (
     <main className="mx-auto w-full max-w-[1180px] min-w-0 px-5 py-7 sm:px-8 lg:px-10">
       <Link
-        href="/app/associados"
+        href={returnTo || '/app/associados'}
         className={`text-base-content/60 mb-4 inline-flex items-center gap-1.5 text-xs font-medium hover:underline ${focusRingClass}`}
       >
         <ArrowLeft size={14} aria-hidden="true" />

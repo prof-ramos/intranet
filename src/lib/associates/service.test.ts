@@ -99,7 +99,7 @@ describe('getAssociatesListPage', () => {
 
     const result = await getAssociatesListPage(1, 20, 'Alice');
     expect(result).toEqual(expected);
-    expect(mockFindAssociatesPaginated).toHaveBeenCalledWith(1, 20, 'Alice', undefined);
+    expect(mockFindAssociatesPaginated).toHaveBeenCalledWith(1, 20, 'Alice', undefined, undefined);
   });
 });
 
