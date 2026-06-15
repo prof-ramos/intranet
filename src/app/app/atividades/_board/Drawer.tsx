@@ -22,7 +22,7 @@ import {
 } from '@/lib/ui/tokens';
 import { columns } from './constants';
 import { Avatar } from './ActivityCard';
-import type { ActivityTimelineItem, BoardActivity, BoardPerson, Priority, Status } from './types';
+import type { ActivityTimelineItem, BoardActivity, BoardPerson } from './types';
 import { isActivityPriority, isActivityStatus } from '@/lib/activities/status';
 
 export function Drawer({
