@@ -408,7 +408,7 @@ graph LR
 **Funcionalidades:**
 - Seleção de modelo Pimaco (presets configurados)
 - Configuração de layout e conteúdo
-- Geração de PDF via API (`POST /api/labels/pimaco`)
+- Geração de PDF via rota server-side (`POST /app/etiquetas/gerar`)
 - Impressão via browser
 
 **Funcional quando:**
@@ -713,7 +713,7 @@ Endpoint alternativo para disparo manual de domain events.
 
 ---
 
-### `POST /api/labels/pimaco`
+### `POST /app/etiquetas/gerar`
 Gera PDF de etiquetas Pimaco. Requer autenticação + role `admin`/`diretoria`/`secretaria`.
 
 **Funcional quando:** PDF com dimensões corretas para o preset retornado em < 5 s.

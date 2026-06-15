@@ -19,7 +19,6 @@ Purpose: Operational scripts — database, migrations, seed, PII, and dev utilit
 | `check-pr-ready.sh` | PR readiness check |
 | `check-scope.sh` | Scope validation |
 | `memlab-scenario.js` | MemLab browser scenario |
-| `generate-presets.ts` | Gera os presets de etiquetas Pimaco em `src/lib/labels/presets.ts`. Uso: `npx tsx scripts/generate-presets.ts` |
 | `setup-production-env.sh` | Production env setup |
 | `run-dev-60s.sh` | Controlled 60s dev server test |
 

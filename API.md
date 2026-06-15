@@ -23,7 +23,7 @@ Hoje existem **12 endpoints HTTP expostos**, com superficie publica intencionalm
 | `POST`        | `/api/v1/gmail-webhook`              | Webhook de notificacao push do Gmail (Pub/Sub)                              |
 | `GET`         | `/api/v1/cron/gmail-watch`           | Renovacao semanal do watch Gmail (cron bearer)                              |
 | `GET`         | `/api/v1/cron/lgpd-retention`        | Job agendado de retencao e anonimizacao LGPD (cron bearer)                  |
-| `GET`         | `/api/labels/pimaco`                 | Geracao de etiquetas Pimaco em PDF                                          |
+| `POST`        | `/app/etiquetas/gerar`               | Geracao administrativa de etiquetas Pimaco em PDF                           |
 | `POST`        | `/api/webhooks/assinafy`             | Webhook de retorno de assinatura digital (Assinafy)                         |
 
 ### O que esta fora deste documento
@@ -671,28 +671,35 @@ Executa a politica de retencao e anonimizacao de dados conforme ADR 006. Anonimi
 
 ### 11. Geracao de Etiquetas Pimaco
 
-**Metodo:** `GET`
-**Rota:** `/api/labels/pimaco`
+**Metodo:** `POST`
+**Rota:** `/app/etiquetas/gerar`
 
 #### Descricao
 
-Gera um arquivo PDF com etiquetas no formato Pimaco para impressao. Utilizado para malas diretas e correspondencia fisica.
+Gera um arquivo PDF A4 com etiquetas Pimaco para impressao administrativa. A geracao e feita server-side e recebe os dados por corpo JSON para evitar PII em query string.
 
 #### Autorizacao
 
 - Requer sessao autenticada
 - Roles permitidas: `admin`, `diretoria`, `secretaria`
 
-#### Query Parameters
+#### Corpo JSON
 
 | Parametro | Tipo | Obrigatorio | Descricao |
 |-----------|------|-------------|-----------|
-| `associateIds` | `number[]` | Sim | IDs dos associados — formato: `?associateIds=1&associateIds=2&associateIds=3` (repetido) |
-| `model` | `string` | Nao | Modelo Pimaco (default: `P2008`) |
+| `recipientIds` | `number[]` | Sim, quando `recipients` ausente | IDs dos associados selecionados |
+| `recipients` | `object[]` | Sim, quando `recipientIds` ausente | Destinatarios normalizados para geracao testavel |
+| `templateCode` | `'6182' \| '3080' \| 'A4256'` | Sim | Modelo Pimaco |
+| `mode` | `'postal' \| 'mala_diplomatica' \| 'custom'` | Sim | Modo de impressao |
+| `selectedFields` | `string[]` | Nao | Campos incluidos quando aplicavel |
+| `flags` | `object` | Nao | Flags `peo` e `ectOpenable` |
+| `startPosition` | `number` | Nao | Posicao inicial base 1 |
+| `offsetXmm` / `offsetYmm` | `number` | Nao | Ajuste fino em milimetros |
+| `debug` | `boolean` | Nao | Desenha bordas para calibracao |
 
-#### Auditoria
+#### Observacoes
 
-Esta rota registra evento em `audit_logs` a cada requisição (quem gerou, quantas etiquetas, modelo). Consultar `/app/config/auditoria` para histórico.
+Nao cria historico de impressao nesta etapa. A UI orienta impressao em folha A4, escala 100%, sem ajuste automatico a pagina.
 
 #### Resposta de sucesso
 
