@@ -214,6 +214,53 @@ describe('finance service', () => {
     );
   });
 
+  it('preserves paidAt when re-updating an already-pago payment', async () => {
+    // Scenario: admin changes paymentMethod on an already-paid record.
+    // paidAt should NOT be reset to new Date() — the original payment date must be preserved.
+    const originalPaidAt = new Date('2026-04-15T10:30:00.000Z');
+
+    // Override the default mock to return a 'pago' record with an existing paidAt
+    transactionMock.tx.select = vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([
+            {
+              id: 5,
+              associateId: 10,
+              year: 2026,
+              month: 5,
+              status: 'pago',
+              paymentMethod: 'boleto',
+              paidAt: originalPaidAt,
+              cancelledAt: null,
+              cancellationReason: null,
+              cancelledBy: null,
+              updatedAt: new Date('2026-05-13T00:00:00.000Z'),
+            },
+          ]),
+        }),
+      }),
+    });
+
+    await updateMonthlyPayment(1, {
+      associateId: 10,
+      year: 2026,
+      month: 5,
+      status: 'pago',
+      paymentMethod: 'pix', // changing method, status stays 'pago'
+    });
+
+    // The audit should show the old paidAt is preserved, not replaced with now()
+    expect(logAuditAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        changes: expect.objectContaining({
+          old: expect.objectContaining({ paidAt: originalPaidAt }),
+          new: expect.objectContaining({ paidAt: originalPaidAt }),
+        }),
+      }),
+    );
+  });
+
   it('does not emit a domain event when the payment status is unchanged', async () => {
     await updateMonthlyPayment(1, {
       associateId: 10,

@@ -67,7 +67,9 @@ describe('dashboard queries', () => {
     expect(brasilSql).toContain("= 'nacional'");
     expect(brasilSql).toContain(' is null');
     expect(brasilSql).toContain('nullif(btrim(');
-    expect(brasilSql).toContain("in ('brasil', 'brazil')");
+    expect(brasilSql).toContain("'brasil'");
+    expect(brasilSql).toContain("'brazil'");
+    expect(brasilSql).toContain("'brasili'");
 
     expect(exteriorSql).toContain('count(distinct');
     expect(exteriorSql).toContain('coalesce(');
@@ -76,7 +78,7 @@ describe('dashboard queries', () => {
     expect(dbMock._selectChain.leftJoin).toHaveBeenCalled();
   });
 
-  it('normalizes Brazil aliases when grouping top regions', async () => {
+  it('normalizes country aliases and reclassifies exterior+domestic as unknown', async () => {
     dbMock.setSelectResult([]);
 
     await getTopRegions(6);
@@ -84,8 +86,20 @@ describe('dashboard queries', () => {
     const selectShape = dbMock.lastSelectShape as Record<string, SQL>;
     const countrySql = compileSql(selectShape.country);
 
+    // Outer CASE reclassifies exterior associates with domestic country
+    expect(countrySql).toContain('case');
+    expect(countrySql).toContain("'Exterior (país não informado)'");
+    // Inner CASE normalizes country labels via alias groups
     expect(countrySql).toContain('when lower(btrim(');
-    expect(countrySql).toContain("in ('brasil', 'brazil') then 'Brasil'");
+    // Domestic alias group includes Brasil variants
+    expect(countrySql).toContain("'brasil'");
+    expect(countrySql).toContain("'brazil'");
+    expect(countrySql).toContain("'Brasil'");
+    // EUA alias group
+    expect(countrySql).toContain("'Estados Unidos'");
+    // Fallback title-case via chained replace() for connector-word lowering
+    expect(countrySql).toContain('replace(');
+    expect(dbMock._selectChain.leftJoin).toHaveBeenCalled();
     expect(dbMock._selectChain.groupBy).toHaveBeenCalled();
   });
 });

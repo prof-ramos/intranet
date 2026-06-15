@@ -72,8 +72,9 @@ describe('getDashboardViewModel', () => {
       { status: 'concluido', total: 1 },
     ]);
     queriesMock.getTopRegions.mockResolvedValue([
-      { country: 'Brasil', total: 282 },
-      { country: 'França', total: 40 },
+      { country: 'Brasil', total: 381 },
+      { country: 'Estados Unidos', total: 25 },
+      { country: 'França', total: 15 },
     ]);
     queriesMock.getBirthdaysThisMonth.mockResolvedValue([]);
     queriesMock.getUrgentActivities.mockResolvedValue([
@@ -121,5 +122,77 @@ describe('getDashboardViewModel', () => {
       ]),
     );
     expect(viewModel.stripe.find((item) => item.id === 'pending-migration')).toBeUndefined();
+  });
+
+  it('calculates topRegions pct relative to total active associates', async () => {
+    const viewModel = await getDashboardViewModel();
+
+    // 381/763 ≈ 50%, 25/763 ≈ 3%, 15/763 ≈ 2%
+    expect(viewModel.topRegions).toEqual([
+      { country: 'Brasil', total: 381, pct: 50 },
+      { country: 'Estados Unidos', total: 25, pct: 3 },
+      { country: 'França', total: 15, pct: 2 },
+    ]);
+  });
+
+  it('handles zero active associates without division by zero', async () => {
+    queriesMock.countActiveAssociates.mockResolvedValue(0);
+    queriesMock.getTopRegions.mockResolvedValue([]);
+
+    const viewModel = await getDashboardViewModel();
+
+    expect(viewModel.topRegions).toEqual([]);
+    // contributionRate should be 0, not NaN
+    expect(viewModel.stripe.find((s) => s.id === 'contribution-rate')?.value).toBe('0%');
+  });
+
+  it('includes Exterior (país não informado) as a valid region label', async () => {
+    queriesMock.getTopRegions.mockResolvedValue([
+      { country: 'Brasil', total: 279 },
+      { country: 'Exterior (país não informado)', total: 102 },
+      { country: 'Estados Unidos', total: 25 },
+    ]);
+
+    const viewModel = await getDashboardViewModel();
+
+    expect(viewModel.topRegions).toEqual([
+      { country: 'Brasil', total: 279, pct: 37 },
+      { country: 'Exterior (país não informado)', total: 102, pct: 13 },
+      { country: 'Estados Unidos', total: 25, pct: 3 },
+    ]);
+  });
+
+  it('normalizes birthday names and assignments for display', async () => {
+    queriesMock.getBirthdaysThisMonth.mockResolvedValue([
+      {
+        id: 1,
+        fullName: 'PRISCILLA DE CARVALHO ANTONELLO',
+        assignment: 'NOVA YORK - CONSULADO-GERAL',
+        birthDayMonth: '01/06',
+      },
+      {
+        id: 2,
+        fullName: 'GABRIEL YURI SANT ANNA BARRETO',
+        assignment: 'DINF - DIVISÃO DE INFRAESTRUTURA E SEGURANÇA DA INFORMAÇÃO',
+        birthDayMonth: '03/06',
+      },
+    ]);
+
+    const viewModel = await getDashboardViewModel();
+
+    expect(viewModel.birthdaysThisMonth).toEqual([
+      {
+        id: 1,
+        fullName: 'Priscilla de Carvalho Antonello',
+        assignment: 'Nova York - Consulado-Geral',
+        birthDayMonth: '01/06',
+      },
+      {
+        id: 2,
+        fullName: 'Gabriel Yuri Sant Anna Barreto',
+        assignment: 'Dinf - Divisão de Infraestrutura e Segurança da Informação',
+        birthDayMonth: '03/06',
+      },
+    ]);
   });
 });

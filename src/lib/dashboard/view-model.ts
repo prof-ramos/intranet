@@ -16,6 +16,7 @@ import {
 
 export type { BirthdayItem };
 import { initialsFromName } from '@/lib/utils/initials';
+import { toPortugueseTitleCase } from '@/lib/utils/portuguese-title-case';
 import { statusStyles } from '@/lib/ui/tokens';
 
 export interface DashboardStripeItem {
@@ -99,7 +100,8 @@ export async function getDashboardViewModel(): Promise<DashboardViewModel> {
 
   const contributionRate =
     activeAssociates === 0 ? 0 : Math.round((contributionsOk / activeAssociates) * 100);
-  const maxRegionTotal = Math.max(...topRegions.map((item) => item.total), 1);
+  // Percentage relative to total active associates (not relative to top country)
+  const regionDenominator = activeAssociates || 1;
   const cardsByStatus = kanbanCards.reduce<Record<string, DashboardStatusColumnCard[]>>(
     (acc, card) => {
       acc[card.status] ??= [];
@@ -162,7 +164,7 @@ export async function getDashboardViewModel(): Promise<DashboardViewModel> {
     topRegions: topRegions.map((region) => ({
       country: region.country,
       total: region.total,
-      pct: Math.round((region.total / maxRegionTotal) * 100),
+      pct: Math.round((region.total / regionDenominator) * 100),
     })),
     urgentActivities: urgentActivities.map((activity) => ({
       id: activity.id,
@@ -170,8 +172,16 @@ export async function getDashboardViewModel(): Promise<DashboardViewModel> {
       priority: activity.priority,
       dueDate: activity.dueDate,
     })),
-    birthdaysThisMonth,
+    birthdaysThisMonth: birthdaysThisMonth.map(toDashboardBirthdayItem),
     inadimplentesCount,
+  };
+}
+
+function toDashboardBirthdayItem(item: BirthdayItem): BirthdayItem {
+  return {
+    ...item,
+    fullName: toPortugueseTitleCase(item.fullName),
+    assignment: item.assignment ? toPortugueseTitleCase(item.assignment) : null,
   };
 }
 

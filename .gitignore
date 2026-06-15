@@ -127,3 +127,12 @@ test-execpath.js
 # Transient PDF/font debug artifacts
 tmp/
 pnpm-lock.yaml
+
+data/
+*.sql
+!drizzle/**/*.sql
+*.sql.gz
+*.dump
+*.db
+*.sqlite
+*.sqlite3

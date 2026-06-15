@@ -20,7 +20,7 @@
     },
     {
       "path": "/api/v1/cron/overdue-payments",
-      "schedule": "0 1 * * *"
+      "schedule": "0 3 * * *"
     },
     {
       "path": "/api/v1/cron/gmail-watch",

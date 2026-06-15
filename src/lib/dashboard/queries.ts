@@ -4,7 +4,7 @@ import {
   normalizedCountryLabelSql,
 } from '@/lib/associates/location-country';
 import { activities, associates, assignments } from '@/lib/db/schema';
-import { and, asc, count, desc, eq, ne, sql } from 'drizzle-orm';
+import { and, asc, count, countDistinct, desc, eq, ne, sql } from 'drizzle-orm';
 import { withCache } from '@/lib/cache/with-cache';
 
 // Cache TTLs (em segundos)
@@ -129,14 +129,26 @@ export interface TopRegion {
 
 const normalizedCountry = normalizedCountryLabelSql(associates.locationCountry);
 
+/**
+ * When an associate serves abroad (assignment.type = 'exterior') but their
+ * locationCountry is domestic/null, the country field is unreliable.
+ * Classify them as "Exterior (país não informado)" instead of inflating Brasil.
+ */
+const correctedCountry = sql<string>`case
+  when ${assignments.type} = 'exterior' and ${isDomesticCountrySql(associates.locationCountry)}
+    then 'Exterior (país não informado)'
+  else ${normalizedCountry}
+end`;
+
 const _getTopRegions = withCache({
   fn: async (limit: number): Promise<TopRegion[]> =>
     db
-      .select({ country: normalizedCountry, total: count() })
+      .select({ country: correctedCountry, total: countDistinct(associates.id) })
       .from(associates)
+      .leftJoin(assignments, eq(assignments.name, associates.assignment))
       .where(eq(associates.associationStatus, 'ativo'))
-      .groupBy(normalizedCountry)
-      .orderBy(desc(count()))
+      .groupBy(correctedCountry)
+      .orderBy(desc(countDistinct(associates.id)))
       .limit(limit),
   keyFn: (limit) => ['top-regions', String(limit)],
   ttl: TTL_STABLE,

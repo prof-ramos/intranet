@@ -186,9 +186,16 @@ export async function updateMonthlyPayment(
 
     const oldState = current ? getPaymentAuditState(current) : null;
 
-    // Derive paidAt server-side for audit integrity: set when status is
-    // 'pago', clear when transitioning away from 'pago'.
-    const paidAt = payment.status === 'pago' ? new Date() : null;
+    // Derive paidAt server-side for audit integrity:
+    // - Transitioning TO 'pago': set to now()
+    // - Already 'pago' staying 'pago': preserve existing paidAt
+    // - Transitioning away from 'pago': clear
+    const paidAt =
+      payment.status === 'pago'
+        ? current?.status === 'pago'
+          ? current.paidAt
+          : new Date()
+        : null;
 
     const upserted = await tx
       .insert(monthlyPayments)
