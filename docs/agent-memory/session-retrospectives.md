@@ -64,3 +64,36 @@
 
 ---
 
+## 2026-06-15 — Autoreview findings + Neon dev branch + Migração de dados legados
+
+**Problema**: 3 rodadas de autoreview (2 da sessão anterior compactada + 1 nova) identificaram P0-P3 findings. Após correções, foco mudou para planejamento de migração de dados legados e infraestrutura Neon.
+
+**Decisões tomadas**:
+- P0 `.gitignore *.sql` bloqueando migrações Drizzle: corrigido com `!drizzle/**/*.sql` após `*.sql` (ordem importa)
+- P2 Côte d'Ivoire: adicionado ao COUNTRY_ALIASES em vez de aceitar divergência SQL/TS
+- P2 WHEN clauses: refatorado para `sql` tagged templates (coluna Drizzle-managed) mantendo `sql.raw()` para constantes
+- Dados web (`chancelaria_web_indexed.json`) confirmados como fonte única de migração — sem necessidade de MySQL/VPS
+- Branch `dev/migration-test` criada no Neon (schema-only) para testar migrations antes de produção
+- Journal de migrações populado manualmente (schema-only não copia dados)
+
+**Lições promovidas para memória permanente:**
+- → `docs/agent-memory/feedback.md`: Ignorar instrução sobre VPS; insistência com neonctl; assumir Free Tier sem branching
+- → `docs/agent-memory/project.md`: Neon via Vercel Storage; Free Tier suporta branching; schema-only branches não copiam journal; JSON web como fonte única
+- → `docs/agent-memory/security.md`: Connection string visível em neonctl output; não acessar VPS legada sem autorização
+
+**Pendências**:
+- [ ] Schema migration 0020: adicionar 16 colunas faltantes ao `associates.ts` + novos enums (sex, maritalStatus, missionType, careerOrigin) + tabelas novas (dependents, health_agreements)
+- [ ] Implementar `scripts/migrate-legacy.ts` lendo de `chancelaria_web_indexed.json`
+- [ ] Atualizar DATABASE.md (documenta só 12/20 migrações)
+- [ ] Atualizar `schema.integration.test.ts` para refletir novas colunas
+- [ ] Commitar alterações do `.gitignore` e `.neon` gitignore (não commitados ainda)
+- [ ] Deletar dumps `.sql` decomprimidos em `data/asof-prod-dump/` (PII em plaintext)
+
+**Riscos para próxima sessão**:
+- A branch `dev/migration-test` tem scale-to-zero; cold start ~500ms. Se a sessão demorar, o compute pode suspender.
+- O `drizzle.__drizzle_migrations` na branch dev foi populado manualmente — se `drizzle-kit generate` criar migration 0020, o hash da migration deve ser consistente entre dev e main.
+- A connection string da branch dev foi exposta no output do neonctl — considerar rotação se houver preocupação de segurança.
+- 16 colunas novas no `associates.ts` vão gerar migration SQL grande — validar na branch dev antes de aplicar em main.
+
+---
+
