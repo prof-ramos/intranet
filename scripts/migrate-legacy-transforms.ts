@@ -475,7 +475,7 @@ export function transformLegacyRecord(
 
   const associate: Record<string, unknown> = {
     sourceRowNumber: String(rowIndex),
-    fullName: n('Nome'),
+    fullName: n('Nome') ?? '(sem nome)', // NOT NULL constraint fallback for dash/empty
     sex: mapSex(getString('Sexo')),
     maritalStatus: mapMaritalStatus(getString('Estado Civil')),
     birthCity: n('Naturalidade'),

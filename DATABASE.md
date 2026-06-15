@@ -73,7 +73,7 @@ ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
 
 `CREATE INDEX CONCURRENTLY` e `DROP INDEX CONCURRENTLY` **não** podem ser executados dentro de transações PostgreSQL. Como o Drizzle Kit (`npm run db:migrate`) aplica migrações envolvendo cada statement em uma transação, esses comandos falham nesse fluxo. Para esses casos: backup → teste em staging → execução direta via `psql "$DATABASE_MIGRATION_URL"` → validação com `npm run test:db`.
 
-### Migrações aplicadas (21)
+### Migrações aplicadas (22)
 
 | # | Arquivo | Descrição |
 |---|---------|-----------|
@@ -98,6 +98,8 @@ ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
 | 0018 | `0018_add_oficio_notification_types.sql` | Tipos de notificação oficio |
 | 0019 | `0019_add_recipient_address_fields.sql` | Campos de endereço do destinatário em oficios |
 | 0020 | `0020_careless_penance.sql` | Expansão de associates (21 colunas, 4 enums, 2 tabelas) |
+| 0021 | `0021_military_thundra.sql` | Índice unique em source_row_number para upsert idempotente |
+| 0022 | `0022_puzzling_mantis.sql` | CHECK constraint em health_agreements (end_date ≥ start_date) |
 
 ### Nomenclatura
 

@@ -1,4 +1,5 @@
-import { bigint, date, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { bigint, check, date, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { associates } from './associates';
 
 /**
@@ -23,7 +24,13 @@ export const healthAgreements = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (table) => [index('idx_health_agreements_associate_id').on(table.associateId)],
+  (table) => [
+    index('idx_health_agreements_associate_id').on(table.associateId),
+    check(
+      'chk_health_agreements_date_range',
+      sql`${table.endDate} IS NULL OR ${table.startDate} IS NULL OR ${table.endDate} >= ${table.startDate}`,
+    ),
+  ],
 );
 
 export type HealthAgreement = typeof healthAgreements.$inferSelect;

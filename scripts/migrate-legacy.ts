@@ -23,7 +23,7 @@ import { db } from '@/lib/db';
 import { associates, dependents, healthAgreements } from '@/lib/db/schema';
 import { encryptPii, piiBlindIndex } from '@/lib/crypto/pii';
 import { normalizeCountryLabel } from '@/lib/associates/location-country';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import {
   type LegacyRecord,
   type Dependent,
@@ -183,6 +183,7 @@ async function main() {
 
   const stats = createEmptyStats();
   stats.totalRecords = records.length;
+  const existingIds = new Set<number>(); // Track inserted vs updated
 
   // Process each record
   for (let i = 0; i < records.length; i++) {
@@ -208,7 +209,11 @@ async function main() {
 
       if (cliArgs.dryRun) {
         if (cliArgs.verbose && rowIndex <= 5) {
-          console.log(`[DRY] Row ${rowIndex}: ${transformed.associate.fullName ?? '(null)'}`);
+          // PII: redact full names in logs per project policy
+          const redacted = transformed.associate.fullName
+            ? String(transformed.associate.fullName).charAt(0) + '***'
+            : '(null)';
+          console.log(`[DRY] Row ${rowIndex}: ${redacted}`);
         }
         stats.inserted++;
         stats.dependentsInserted += transformed.dependents.length;
@@ -272,65 +277,52 @@ async function main() {
       const countryRaw = nullIfEmpty(record['País']);
       associateData.locationCountry = countryRaw ? normalizeCountryLabel(countryRaw) : null;
 
-      // Upsert associate
-      const existing = await db
-        .select({ id: associates.id })
-        .from(associates)
-        .where(eq(associates.sourceRowNumber, String(rowIndex)))
-        .limit(1);
+      // Upsert associate + children in a single transaction (CLAUDE.md: "Multi-tabela: sempre db.transaction()")
+      await db.transaction(async (tx) => {
+        // Atomic upsert using ON CONFLICT — avoids TOCTOU race condition
+        const [upserted] = await tx
+          .insert(associates)
+          .values(associateData as typeof associates.$inferInsert)
+          .onConflictDoUpdate({
+            target: associates.sourceRowNumber,
+            set: associateData as Partial<typeof associates.$inferInsert>,
+          })
+          .returning({ id: associates.id });
 
-      if (existing.length > 0) {
-        // Update
-        await db
-          .update(associates)
-          .set(associateData as typeof associates.$inferInsert)
-          .where(eq(associates.sourceRowNumber, String(rowIndex)));
-        stats.updated++;
-      } else {
-        // Insert
-        await db.insert(associates).values(associateData as typeof associates.$inferInsert);
-        stats.inserted++;
-      }
+        const associateId = upserted.id;
+        const isNew = !existingIds.has(associateId);
+        if (isNew) {
+          stats.inserted++;
+          existingIds.add(associateId);
+        } else {
+          stats.updated++;
+        }
 
-      // Get the associate ID for child records
-      const associateRow = await db
-        .select({ id: associates.id })
-        .from(associates)
-        .where(eq(associates.sourceRowNumber, String(rowIndex)))
-        .limit(1);
+        // Delete + re-insert dependents (always fresh for this associate)
+        if (transformed.dependents.length > 0) {
+          await tx.delete(dependents).where(eq(dependents.associateId, associateId));
+          await tx.insert(dependents).values(
+            transformed.dependents.map((d: Dependent) => ({
+              associateId,
+              name: d.name,
+              relationship: d.relationship,
+            })),
+          );
+          stats.dependentsInserted += transformed.dependents.length;
+        }
 
-      if (associateRow.length === 0) {
-        stats.errors++;
-        stats.warnings.push(`Row ${rowIndex}: Failed to retrieve associate ID after upsert`);
-        continue;
-      }
-
-      const associateId = associateRow[0].id;
-
-      // Insert dependents (always fresh — delete existing for this associate first)
-      if (transformed.dependents.length > 0) {
-        await db.delete(dependents).where(eq(dependents.associateId, associateId));
-        await db.insert(dependents).values(
-          transformed.dependents.map((d: Dependent) => ({
-            associateId,
-            name: d.name,
-            relationship: d.relationship,
-          })),
-        );
-        stats.dependentsInserted += transformed.dependents.length;
-      }
-
-      // Insert health agreements (always fresh)
-      if (transformed.healthAgreements.length > 0) {
-        await db.delete(healthAgreements).where(eq(healthAgreements.associateId, associateId));
-        await db.insert(healthAgreements).values(
-          transformed.healthAgreements.map((provider: string) => ({
-            associateId,
-            provider,
-          })),
-        );
-        stats.healthAgreementsInserted += transformed.healthAgreements.length;
-      }
+        // Delete + re-insert health agreements (always fresh)
+        if (transformed.healthAgreements.length > 0) {
+          await tx.delete(healthAgreements).where(eq(healthAgreements.associateId, associateId));
+          await tx.insert(healthAgreements).values(
+            transformed.healthAgreements.map((provider: string) => ({
+              associateId,
+              provider,
+            })),
+          );
+          stats.healthAgreementsInserted += transformed.healthAgreements.length;
+        }
+      });
 
       if (cliArgs.verbose && rowIndex % 100 === 0) {
         console.log(`Processed ${rowIndex}/${records.length} records...`);

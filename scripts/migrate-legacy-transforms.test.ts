@@ -375,10 +375,10 @@ describe('transformLegacyRecord', () => {
     expect(result.associate.addressState).toBeNull();
   });
 
-  it('maps dash sentinel to null across fields', () => {
+  it('maps dash sentinel to null across fields (fullName gets NOT NULL fallback)', () => {
     const record = { Nome: '-', 'E-mail': '-', Telefone: '-' } as Record<string, string>;
     const result = transformLegacyRecord(record, 1);
-    expect(result.associate.fullName).toBeNull();
+    expect(result.associate.fullName).toBe('(sem nome)'); // NOT NULL constraint fallback
     expect(result.associate.primaryEmail).toBeNull();
     expect(result.associate.phone).toBeNull();
   });
