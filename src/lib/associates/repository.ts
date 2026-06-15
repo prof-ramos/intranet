@@ -13,7 +13,7 @@ import {
   careerOrigin,
   paymentMethod,
 } from '@/lib/db/schema';
-import { eq, and, count, asc, sql, gt } from 'drizzle-orm';
+import { eq, and, count, asc, sql } from 'drizzle-orm';
 import {
   buildAssociateNameSearchPattern,
   normalizeCpfForSearch,

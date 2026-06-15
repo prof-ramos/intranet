@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { findAssociatesPaginated, findAssociateById, updateAssociateById } from './repository';
+import { findAssociatesPaginated, findAssociatesPaginatedCursor, findAssociateById, updateAssociateById } from './repository';
 
 const { mockSelect, mockUpdate } = vi.hoisted(() => ({
   mockSelect: vi.fn(),
@@ -79,12 +79,23 @@ vi.mock('@/lib/db/schema', () => ({
   },
 }));
 
+vi.mock('@/lib/crypto/pii', () => ({
+  decryptPiiField: vi.fn((_ciphertext: unknown, fallback: unknown) => fallback),
+  piiBlindIndex: vi.fn((value: string) => `hash-${value}`),
+}));
+
 vi.mock('./search-params', () => ({
   buildAssociateNameSearchPattern: (q: string) => `%${q}%`,
+  normalizeCpfForSearch: (raw: string) => raw.replace(/\D/g, ''),
+  normalizeSiapeForSearch: (raw: string) => raw.replace(/\D/g, ''),
 }));
 
 function listRowsQuery(rows: MockAssociateRow[]) {
-  const query: Record<string, unknown> = {};
+  const query: Record<string, unknown> & PromiseLike<MockAssociateRow[]> = {
+    then(onfulfilled) {
+      return Promise.resolve((query.filteredRows as MockAssociateRow[]) ?? rows).then(onfulfilled);
+    },
+  };
   query.from = vi.fn().mockReturnValue(query);
   query.where = vi.fn((predicate?: RowPredicate) => {
     query.filteredRows = predicate ? rows.filter(predicate) : rows;
@@ -109,6 +120,12 @@ function preparePaginatedQueries(rows: MockAssociateRow[]) {
   associateRows = rows;
   mockSelect.mockReset();
   mockSelect.mockReturnValueOnce(listRowsQuery(associateRows)).mockReturnValueOnce(countQuery(associateRows));
+}
+
+function prepareCursorQuery(rows: MockAssociateRow[]) {
+  associateRows = rows;
+  mockSelect.mockReset();
+  mockSelect.mockReturnValueOnce(listRowsQuery(associateRows));
 }
 
 const officers = [
@@ -187,5 +204,72 @@ describe('associates repository', () => {
 
     expect(result.total).toBe(1);
     expect(result.rows.map((row) => row.fullName)).toEqual(['Paulo Edson Medeiros de Albuquerque']);
+  });
+});
+
+describe('findAssociatesPaginatedCursor', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns first page with nextCursor when more rows exist', async () => {
+    prepareCursorQuery(officers);
+    const result = await findAssociatesPaginatedCursor(2, null, undefined, undefined, 'name');
+
+    expect(result.rows).toHaveLength(2);
+    expect(result.nextCursor).not.toBeNull();
+    expect(typeof result.nextCursor).toBe('string');
+  });
+
+  it('returns empty page when no rows match', async () => {
+    prepareCursorQuery([]);
+    const result = await findAssociatesPaginatedCursor(20, null, 'NOMENAOEXISTE', undefined, 'name');
+
+    expect(result.rows).toHaveLength(0);
+    expect(result.nextCursor).toBeNull();
+  });
+
+  it('returns all rows when total fits in one page', async () => {
+    prepareCursorQuery(officers);
+    const result = await findAssociatesPaginatedCursor(20, null, undefined, undefined, 'name');
+
+    expect(result.rows).toHaveLength(3);
+    expect(result.nextCursor).toBeNull();
+  });
+
+  it('resumes from cursor for subsequent page', async () => {
+    prepareCursorQuery(officers);
+    const first = await findAssociatesPaginatedCursor(2, null, undefined, undefined, 'name');
+    expect(first.rows).toHaveLength(2);
+    expect(first.nextCursor).not.toBeNull();
+
+    prepareCursorQuery(officers);
+    const second = await findAssociatesPaginatedCursor(2, first.nextCursor!, undefined, undefined, 'name');
+    expect(second.rows).toHaveLength(1);
+    expect(second.nextCursor).toBeNull();
+  });
+
+  it('performs exact CPF lookup and ignores cursor', async () => {
+    prepareCursorQuery(officers);
+    const result = await findAssociatesPaginatedCursor(20, null, '123.456.789-00', undefined, 'cpf');
+
+    expect(result.rows).toHaveLength(0);
+    expect(result.nextCursor).toBeNull();
+  });
+
+  it('performs exact SIAPE lookup and ignores cursor', async () => {
+    prepareCursorQuery(officers);
+    const result = await findAssociatesPaginatedCursor(20, null, '99999', undefined, 'siape');
+
+    expect(result.rows).toHaveLength(0);
+    expect(result.nextCursor).toBeNull();
+  });
+
+  it('returns empty for CPF search with empty digits', async () => {
+    prepareCursorQuery(officers);
+    const result = await findAssociatesPaginatedCursor(20, null, 'abc', undefined, 'cpf');
+
+    expect(result.rows).toHaveLength(0);
+    expect(result.nextCursor).toBeNull();
   });
 });

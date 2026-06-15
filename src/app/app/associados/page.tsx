@@ -10,7 +10,7 @@ import { AssociatesTable } from './components/AssociatesTable';
 import { AssociatesPagination } from './components/AssociatesPagination';
 import { Download } from 'lucide-react';
 import Link from 'next/link';
-import { hairline, focusRingClass, textMuted } from '@/lib/ui/tokens';
+import { focusRingClass, textMuted } from '@/lib/ui/tokens';
 
 const PAGE_SIZE = 20;
 
