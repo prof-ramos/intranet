@@ -51,7 +51,13 @@ export function parseDate(value: string | null | undefined): string | null {
     year = year < 50 ? 2000 + year : 1900 + year;
   }
 
-  if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1800 || year > 2100) {
+  if (day < 1 || month < 1 || month > 12 || year < 1800 || year > 2100) {
+    return null;
+  }
+
+  // Validate calendar date (e.g., Feb 31, Apr 31 are invalid)
+  const dateObj = new Date(Date.UTC(year, month - 1, day));
+  if (dateObj.getUTCFullYear() !== year || dateObj.getUTCMonth() !== month - 1 || dateObj.getUTCDate() !== day) {
     return null;
   }
 

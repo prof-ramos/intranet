@@ -58,6 +58,18 @@ describe('parseDate', () => {
   it('returns null for invalid month/day', () => {
     expect(parseDate('32/13/2020')).toBeNull();
   });
+  it('returns null for impossible calendar dates', () => {
+    expect(parseDate('31/2/1992')).toBeNull(); // Feb 31
+    expect(parseDate('30/2/2020')).toBeNull(); // Feb 30
+    expect(parseDate('31/4/2020')).toBeNull(); // Apr 31
+    expect(parseDate('31/6/2020')).toBeNull(); // Jun 31
+  });
+  it('accepts valid leap year date', () => {
+    expect(parseDate('29/2/2020')).toBe('2020-02-29');
+  });
+  it('returns null for Feb 29 in non-leap year', () => {
+    expect(parseDate('29/2/2021')).toBeNull();
+  });
   it('returns null for null input', () => {
     expect(parseDate(null)).toBeNull();
   });
