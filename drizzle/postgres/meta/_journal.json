@@ -141,6 +141,13 @@
       "when": 1780992100000,
       "tag": "0019_add_recipient_address_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1781509084231,
+      "tag": "0020_careless_penance",
+      "breakpoints": true
     }
   ]
 }
