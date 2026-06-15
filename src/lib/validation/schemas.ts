@@ -155,6 +155,25 @@ export function isPublicWebhookUrl(value: string): boolean {
   return !PRIVATE_IPV4_RANGES.some((pattern) => pattern.test(hostname));
 }
 
+// ─── Year/Month Validation (Finance) ──────────────────────────────────
+
+export const yearSchema = z
+  .number({ message: 'Ano inválido.' })
+  .int('Ano inválido.')
+  .min(2000, 'Ano inválido.')
+  .max(2100, 'Ano inválido.');
+
+export const monthSchema = z
+  .number({ message: 'Mês inválido.' })
+  .int('Mês inválido.')
+  .min(1, 'Mês inválido.')
+  .max(12, 'Mês inválido.');
+
+export const yearMonthObjectSchema = z.object({
+  year: yearSchema,
+  month: monthSchema,
+});
+
 export const updateAssociateSchema = z.object({
   id: z.coerce.number().int().positive('ID do associado inválido.'),
   fullName: z.string().min(1, 'O nome completo é obrigatório.').trim(),

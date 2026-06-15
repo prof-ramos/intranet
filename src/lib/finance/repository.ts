@@ -134,11 +134,6 @@ export async function insertMonthlyPaymentsIfMissing(
     .returning();
 }
 
-export async function markOverduePayments(): Promise<number> {
-  const rows = await markOverduePaymentsForAudit();
-  return rows.length;
-}
-
 export interface OverduePaymentTransition {
   id: number;
   associateId: number;
@@ -155,9 +150,11 @@ export interface OverduePaymentTransition {
 export async function markOverduePaymentsForAudit(
   executor: DbExecutor = db,
 ): Promise<OverduePaymentTransition[]> {
-  const now = new Date();
-  const thisYear = now.getFullYear();
-  const thisMonth = now.getMonth() + 1; // getMonth() is 0-indexed
+  // Use America/Sao_Paulo timezone to avoid marking payments overdue
+  // 3 hours early when the server runs in UTC (e.g. Vercel).
+  const spNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  const thisYear = spNow.getFullYear();
+  const thisMonth = spNow.getMonth() + 1;
 
   return executor
     .update(monthlyPayments)
@@ -236,8 +233,6 @@ export async function getAssociatesWithPayments(
       associateId: associates.id,
       fullName: associates.fullName,
       defaultPaymentMethod: associates.paymentMethod,
-      siape: associates.siape,
-      associationStatus: associates.associationStatus,
       functionalStatus: associates.functionalStatus,
       locationCountry: associates.locationCountry,
       locationCity: associates.locationCity,
@@ -245,9 +240,6 @@ export async function getAssociatesWithPayments(
       paymentStatus: monthlyPayments.status,
       monthPaymentMethod: monthlyPayments.paymentMethod,
       updatedAt: monthlyPayments.updatedAt,
-      cancelledAt: monthlyPayments.cancelledAt,
-      cancellationReason: monthlyPayments.cancellationReason,
-      cancelledBy: monthlyPayments.cancelledBy,
     })
     .from(associates)
     .leftJoin(
