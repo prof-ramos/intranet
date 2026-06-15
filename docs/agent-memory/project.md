@@ -136,3 +136,30 @@
 - **Evidência**: PR #201, merge commit `a543e9c`; commits do PR `2864305` e `45d495c` tornaram schemas obrigatórios e migraram os callers.
 - **Regra preventiva**: Não adicionar overload opcional `schema?:`, não passar `Record<string, unknown>` cru para services e não reintroduzir parsing manual antes do schema. Para campos de formulário repetidos, lembrar que `formDataToRecord()` usa `FormData.getAll()` e preserva arrays.
 - **Confiança**: alta
+
+## 2026-06-15 — GROUP BY com expressão CASE no Drizzle: colunas internas devem ser explícitas no `.groupBy()`
+
+- **Tipo**: Restrição técnica / SQL semantics
+- **Escopo**: Drizzle ORM queries com `.groupBy()` e expressões `sql\`case\`` no `.select()`
+- **Memória**: A query `_getTopRegions` usava `correctedCountry` (uma expressão `sql\`case\``) no `.select()` e `.groupBy(correctedCountry)`. A expressão CASE internamente referencia `assignments.type` e `associates.locationCountry`. PostgreSQL exige que toda coluna não-agregada no SELECT também apareça no GROUP BY. O erro `42803` ocorreu porque Drizzle traduziu `.groupBy(correctedCountry)` para o SQL da expressão inteira, mas PostgreSQL ainda exige as colunas de base explícitas no GROUP BY clause.
+- **Evidência**: Sessão 2026-06-15 — E2E dashboard falhou com `PostgresError 42803: column "associates.location_country" must appear in GROUP BY`. Corrigido com `.groupBy(correctedCountry, assignments.type, associates.locationCountry)`.
+- **Regra preventiva**: Ao usar expressões SQL `sql\`case\`` ou similares no `.select()` com `.groupBy()`, verificar se a expressão referencia colunas de outras tabelas. Se sim, adicionar explicitamente cada coluna não-agregada ao `.groupBy()`. Não confiar que Drizzle infira automaticamente.
+- **Confiança**: alta
+
+## 2026-06-15 — E2E dev server log como fonte primária de diagnóstico
+
+- **Tipo**: Procedimento operacional validado
+- **Escopo**: Debugging de falhas E2E
+- **Memória**: Erros E2E "Erro ao salvar" e "Algo deu errado" não mostram a causa raiz nos screenshots nem nos testes. O arquivo `.next-e2e/e2e-dev-server.log` contém o stack trace e a query SQL exata que falhou (ex: `PostgresError 22007` com params). Leitura direta do log revelou a causa em segundos, enquanto o Playwright screenshot só mostrava "Erro ao salvar" genérico.
+- **Evidência**: Sessão 2026-06-15 — 2 erros E2E diagnosticados via `grep "PostgresError" .next-e2e/e2e-dev-server.log`, não via testes.
+- **Regra preventiva**: Ao debugar falhas E2E, **sempre** consultar `.next-e2e/e2e-dev-server.log` como primeira fonte. `grep -E "PostgresError|Error \["` no log é mais rápido que re-executar testes com prints.
+- **Confiança**: alta
+
+## 2026-06-15 — Playwright browser pode não estar instalado no ambiente local
+
+- **Tipo**: Limitação do ambiente
+- **Escopo**: Execução de E2E tests localmente
+- **Memória**: Primeira execução E2E (`npm run test:e2e`) falhou silenciosamente com `8 failed` e mensagem "Looks like Playwright was just installed or updated. Please run `npx playwright install`". O Chromium headless não estava presente no ambiente.
+- **Evidência**: Sessão 2026-06-15 — `npx playwright install chromium` baixou 92.4 MiB e os testes passaram em seguida.
+- **Regra preventiva**: Se E2E falhar com mensagem de browser não encontrado, instalar com `npx playwright install chromium`. Não assumir que o ambiente já tem os browsers baixados.
+- **Confiança**: alta

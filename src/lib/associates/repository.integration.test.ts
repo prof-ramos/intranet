@@ -94,8 +94,7 @@ describe('associates repository integration — dependents CRUD', () => {
     it('returns dependents ordered by id', async () => {
       const rows = await findDependentsByAssociateId(testAssociateId);
       expect(rows.length).toBeGreaterThanOrEqual(2);
-      expect(rows[0].name).toBeDefined();
-      expect(rows[0].relationship).toBeDefined();
+      expect(rows[0].id).toBeLessThanOrEqual(rows[1].id);
     });
 
     it('returns empty array for non-existent associate', async () => {
@@ -140,7 +139,7 @@ describe('associates repository integration — dependents CRUD', () => {
       // Attempt to update using wrong associateId
       await expect(
         updateDependentById(created.id, { name: 'Hacked' }, 999999),
-      ).rejects.toThrow();
+      ).rejects.toThrow('Dependente não encontrado ou já removido.');
 
       // Verify unchanged
       const row = await db
@@ -286,7 +285,7 @@ describe('associates repository integration — health agreements CRUD', () => {
     it('returns agreements ordered by id', async () => {
       const rows = await findHealthAgreementsByAssociateId(testAssociateId);
       expect(rows.length).toBeGreaterThanOrEqual(2);
-      expect(rows[0].provider).toBeDefined();
+      expect(rows[0].id).toBeLessThanOrEqual(rows[1].id);
     });
 
     it('returns empty array for non-existent associate', async () => {
@@ -332,7 +331,7 @@ describe('associates repository integration — health agreements CRUD', () => {
 
       await expect(
         updateHealthAgreementById(created.id, { provider: 'Hacked' }, 999999),
-      ).rejects.toThrow();
+      ).rejects.toThrow('Convênio não encontrado ou já removido.');
 
       const row = await db
         .select()

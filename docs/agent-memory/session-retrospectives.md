@@ -153,3 +153,34 @@
 - Ao revisar campos multivalorados de formulário, verificar `formDataToRecord()` antes de assumir perda de arrays.
 
 ---
+
+## 2026-06-15 — Fixes E2E dashboard + associados, autoreview round 4, merge de branch, cleanup de branches
+
+**Problema**: Após merge do PR #210 (dashboard associados), CI falhou com 2 erros E2E: (1) dashboard — `PostgresError 42803` em `_getTopRegions` por coluna não-agregada no GROUP BY; (2) associados update — `PostgresError 22007` por string vazia `""` em campo date. Além disso, autoreview round 4 trouxe 5 findings (1 P1, 3 P2, 1 P3).
+
+**Decisões tomadas**:
+- E2E dashboard: adicionar `assignments.type` e `associates.locationCountry` ao `.groupBy()` da query CASE
+- E2E associados update: normalizar campos date com `emptyToNull(v) = v === '' ? null : v ?? null`
+- Autoreview P1 (open redirect): regex `^/app/[\w/_-]*$` em vez de `startsWith('/app/')`
+- Autoreview P2 (silent delete): `.returning()` + verificação de row count nos deletes
+- Autoreview P2 (unvalidated associateId): incluir `associateId` no Zod schema de update
+- Autoreview P3 (debug grid): respeitar `options.startPosition ?? 1`
+- Autoreview P2 (paymentMethod null): **rejeitado** como comportamento intencional (coluna NOT NULL com default)
+- Branch cleanup: `git fetch --prune` revelou que todos os branches já estavam mergeados/deletados no GitHub
+
+**Lições promovidas para memória permanente**:
+- → `docs/agent-memory/feedback.md`: `??` não pega empty string em campos date; `Number(formData.get())` produz NaN; fetch --prune revela merge; cherry-pick abortado por arquivo inexistente
+- → `docs/agent-memory/project.md`: GROUP BY com CASE exige colunas internas explícitas; E2E dev server log como diagnóstico primário; Playwright browser pode não estar instalado
+- → `docs/agent-memory/security.md`: safeReturnTo regex padrão; delete com row count check via `.returning()`
+
+**Pendências identificadas e resolvidas na sequência**:
+- [x] E2E dashboard: GROUP BY corrigido e verificado (8/8 passaram)
+- [x] E2E associados update: emptyToNull aplicado e verificado
+- [x] Autoreview round 4: 4/5 findings corrigidos, 1 rejeitado intencionalmente
+- [x] Merge `feat/dashboard-associados-completo` → `main` + delete branch
+- [x] Cleanup de branches: todos os branches remoto já estavam mergeados; `cancel-session` deletado do remote
+- [ ] P3: Testes de integração para CRUD dependentes/convênios (pendência pré-existente)
+
+**Riscos**:
+- Branch `cancel-session` tinha fix para `find_unused.sh`, mas o arquivo foi removido do repo em merge anterior. Fix é obsoleto.
+- O `main` agora contém todos os merges. Push foi feito. Zero branches remoto exceto `main`.

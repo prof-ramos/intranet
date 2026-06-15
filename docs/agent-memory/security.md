@@ -41,3 +41,21 @@
 - **Evidência**: Sessão 2026-06-15 — aviso LGPD removido da página de detalhes, PII sempre descriptografado na listagem e no formulário de edição.
 - **Regra preventiva**: Não remover as funções de máscara (`maskCpf`, etc.) nem o set `SENSITIVE_FIELDS`. Elas são infraestrutura para compliance futuro. Ao revisar código LGPD, verificar que `canViewSensitiveFields()` é o único gate — não adicionar checks condicionais inline nas páginas.
 - **Confiança**: alta
+
+## 2026-06-15 — safeReturnTo: regex `^/app/[\w/_-]*$` como padrão para validação de returnTo
+
+- **Tipo**: Regra de segurança
+- **Escopo**: Parâmetros `returnTo` em páginas de detalhe/edição
+- **Memória**: A validação `returnTo && returnTo.startsWith('/app/') && !returnTo.includes('..')` passa URLs como `/app/associados?redirect=//evil.com` (open redirect intra-aplicação). Regex `^/app/[\w/_-]*$` restringe a pathname segura sem query strings, fragments ou caracteres não-ASCII.
+- **Evidência**: Sessão 2026-06-15 — autoreview P1 encontrou open redirect em `src/app/app/associados/[id]/page.tsx:164`.
+- **Regra preventiva**: Para TODO parâmetro `returnTo` ou `redirect` que redireciona o browser, usar `new URL(path).pathname` OU regex `^/app/[\w/_-]*$`. Nunca confiar em `startsWith('/')` sozinho.
+- **Confiança**: alta
+
+## 2026-06-15 — Delete com row count check via `.returning()`
+
+- **Tipo**: Regra de segurança / robustez
+- **Escopo**: Repository deletes com Drizzle ORM
+- **Memória**: `deleteDependentById` e `deleteHealthAgreementById` executavam `db.delete().where(...)` sem verificar quantas linhas foram afetadas. Quando o ID não existia ou o `associateId` não correspondia, a operação silenciava o erro e o action prosseguia com `revalidatePath`. Isso mascara race conditions, stale IDs e potenciais tentativas IDOR.
+- **Evidência**: Sessão 2026-06-15 — autoreview P2. Corrigido com `.returning({ id: table.id })` + `if (result.length === 0) throw new Error(...)`.
+- **Regra preventiva**: Todo `db.delete()` que representa uma ação de usuário deve incluir `.returning({ id: table.id })` e verificar `result.length === 0` antes de prosseguir. Se zero linhas, lançar erro claro para o usuário.
+- **Confiança**: alta

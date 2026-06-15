@@ -93,3 +93,39 @@
 - **Evidência**: Sessão 2026-06-15 — `neonctl branch create --name "dev/migration-test" --schema-only` criou branch com sucesso.
 - **Regra preventiva**: Não assumir limitações do plano Free sem testar. Neon Free Tier suporta branching (incluindo schema-only). A limitação real é PITR de 6h (não 24h), não branching.
 - **Confiança**: alta
+
+## 2026-06-15 — `??` não captura empty string em campos date
+
+- **Tipo**: Erro de validação
+- **Escopo**: Zod schemas com `.or(z.literal(''))` para campos date
+- **Memória**: Campos de data (`birthDate`, `rgExpeditionDate`, `assignmentStartDate`, etc.) usam Zod schema `.or(z.literal(''))` para aceitar selects vazios com value="". No action, `data.field ?? null` NÃO converte `''` para `null` porque `??` só trata `null`/`undefined`. O PostgreSQL rejeita `''` como `invalid input syntax for type date` (erro 22007).
+- **Evidência**: Sessão 2026-06-15 — E2E "updates associate and redirects to profile" falhou com `PostgresError 22007: invalid input syntax for type date: ""`. Corrigido com `emptyToNull(v) = v === '' ? null : v ?? null`.
+- **Regra preventiva**: Para todo campo que passa por `.or(z.literal(''))` no Zod, usar `=== '' ? null : value ?? null` no action, não `?? null` sozinho. Verificar especialmente campos date e enums.
+- **Confiança**: alta
+
+## 2026-06-15 — `Number(formData.get())` produz NaN e quebra WHERE clause
+
+- **Tipo**: Erro de validação
+- **Escopo**: Server actions com campos ocultos (associateId)
+- **Memória**: `editDependentAction` e `editHealthAgreementAction` extraíam `associateId` manualmente com `Number(formData.get('associateId'))`. Quando o campo estava ausente, vazio ou malformado, `NaN` era passado para `eq(dependents.associateId, NaN)`, que nunca corresponde, causando update silencioso no-op.
+- **Evidência**: Sessão 2026-06-15 — autoreview P2. Corrigido incluindo `associateId` no Zod schema (`z.coerce.number().int().positive()`) e desestruturando do objeto parseado.
+- **Regra preventiva**: Nunca usar `Number()` direto em `formData.get()`. Sempre incluir campos numéricos no Zod schema com `z.coerce.number()` e desestruturar do resultado parseado.
+- **Confiança**: alta
+
+## 2026-06-15 — `git fetch --prune` removendo branches = já mergeados no GitHub
+
+- **Tipo**: Suposição incorreta
+- **Escopo**: Git workflow / análise de branches
+- **Memória**: Ao analisar branches para merge/fix/delete, `git fetch --prune` removeu todos os branches remoto exceto `main` e `cancel-session`. Isso significa que eles já foram mergeados/deletados no GitHub. Não precisava de merge adicional.
+- **Evidência**: Sessão 2026-06-15 — `git branch -r` mostrou apenas `origin/main` e `origin/cancel-session-...` após prune. `gh pr list --state open` retornou `[]`.
+- **Regra preventiva**: Antes de propor merge/fix/delete de branches, fazer `git fetch --prune origin` e verificar se os branches ainda existem em `origin/`. Se sumiram, já estão mergeados.
+- **Confiança**: alta
+
+## 2026-06-15 — Cherry-pick abortado porque arquivo-alvo não existe mais
+
+- **Tipo**: Falha de validação
+- **Escopo**: Git cherry-pick de fix de branch obsoleto
+- **Memória**: O branch `cancel-session` continha fix para `find_unused.sh`. Ao tentar cherry-pick `5a15e87` para `main`, ocorreu `CONFLICT (modify/delete): find_unused.sh deleted in HEAD and modified in`. O arquivo foi removido do repo em merge anterior, tornando o fix obsoleto.
+- **Evidência**: Sessão 2026-06-15 — `git cherry-pick --abort` necessário. `find . -name find_unused.sh` retornou vazio.
+- **Regra preventiva**: Antes de cherry-pick de um fix de branch antigo, verificar se o arquivo-alvo ainda existe no HEAD atual (`find` ou `git show HEAD:path`). Se foi removido, o fix é obsoleto — abortar e registrar.
+- **Confiança**: alta
