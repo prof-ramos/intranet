@@ -499,10 +499,14 @@ export async function updateDependentById(
   values: UpdateDependentInput,
   associateId: number,
 ): Promise<void> {
-  await db
+  const result = await db
     .update(dependents)
     .set({ ...values, updatedAt: new Date() })
-    .where(and(eq(dependents.id, id), eq(dependents.associateId, associateId)));
+    .where(and(eq(dependents.id, id), eq(dependents.associateId, associateId)))
+    .returning({ id: dependents.id });
+  if (result.length === 0) {
+    throw new Error('Dependente não encontrado ou já removido.');
+  }
 }
 
 export async function deleteDependentById(id: number, associateId: number): Promise<void> {
@@ -555,10 +559,14 @@ export async function updateHealthAgreementById(
   values: UpdateHealthAgreementInput,
   associateId: number,
 ): Promise<void> {
-  await db
+  const result = await db
     .update(healthAgreements)
     .set({ ...values, updatedAt: new Date() })
-    .where(and(eq(healthAgreements.id, id), eq(healthAgreements.associateId, associateId)));
+    .where(and(eq(healthAgreements.id, id), eq(healthAgreements.associateId, associateId)))
+    .returning({ id: healthAgreements.id });
+  if (result.length === 0) {
+    throw new Error('Convênio não encontrado ou já removido.');
+  }
 }
 
 export async function deleteHealthAgreementById(id: number, associateId: number): Promise<void> {
