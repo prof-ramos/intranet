@@ -6,14 +6,22 @@ import { createConsultationService, generateInternalNumber } from './service';
 
 describe('juridico service integration', () => {
   const testIds: number[] = [];
-  let testAdminId: number;
+  const testRunId = Date.now();
+  let testAdminId: number | null = null;
+
+  function requireTestAdminId() {
+    if (testAdminId === null) {
+      throw new Error('test admin fixture was not created');
+    }
+    return testAdminId;
+  }
 
   beforeAll(async () => {
     const [admin] = await db
       .insert(admins)
       .values({
         name: 'Test Admin Juridico',
-        email: `test-admin-juridico-${Date.now()}@example.com`,
+        email: `test-admin-juridico-${testRunId}@example.com`,
         passwordHash: 'hash-placeholder',
         role: 'admin',
       })
@@ -22,11 +30,14 @@ describe('juridico service integration', () => {
   });
 
   afterAll(async () => {
-    if (testIds.length > 0) {
-      await db.delete(legalConsultations).where(inArray(legalConsultations.id, testIds));
-    }
-    if (testAdminId) {
-      await db.delete(admins).where(eq(admins.id, testAdminId));
+    try {
+      if (testIds.length > 0) {
+        await db.delete(legalConsultations).where(inArray(legalConsultations.id, testIds));
+      }
+    } finally {
+      if (testAdminId !== null) {
+        await db.delete(admins).where(eq(admins.id, testAdminId));
+      }
     }
   });
 
@@ -58,7 +69,7 @@ describe('juridico service integration', () => {
         questionFullText: 'Texto completo da pergunta',
         associateId: null,
         slaDays: 14,
-        createdBy: testAdminId,
+        createdBy: requireTestAdminId(),
       });
       const afterCreate = new Date();
 
@@ -78,7 +89,7 @@ describe('juridico service integration', () => {
       expect(consultation[0].questionSummary).toBe('Resumo da pergunta');
       expect(consultation[0].questionFullText).toBe('Texto completo da pergunta');
       expect(consultation[0].status).toBe('aberta');
-      expect(consultation[0].createdBy).toBe(testAdminId);
+      expect(consultation[0].createdBy).toBe(requireTestAdminId());
 
       // Verify SLA due date (within 1 minute tolerance)
       expect(consultation[0].slaDueDate).not.toBeNull();
@@ -98,7 +109,7 @@ describe('juridico service integration', () => {
         questionFullText: null,
         associateId: null,
         slaDays: 7,
-        createdBy: testAdminId,
+        createdBy: requireTestAdminId(),
       });
 
       expect(result.id).toBeDefined();
@@ -121,7 +132,7 @@ describe('juridico service integration', () => {
         questionFullText: '  Texto completo  ',
         associateId: null,
         slaDays: 3,
-        createdBy: testAdminId,
+        createdBy: requireTestAdminId(),
       });
 
       expect(result.id).toBeDefined();

@@ -124,6 +124,32 @@ const expectedIndexes = {
   webhook_subscriptions: ['idx_webhook_subscriptions_active', 'idx_webhook_subscriptions_active_partial', 'idx_webhook_subscriptions_created_by', 'idx_webhook_subscriptions_name_unique', 'idx_webhook_subscriptions_subscribed_events', 'idx_webhook_subscriptions_target_url', 'webhook_subscriptions_pkey'],
 };
 
+type ContractMap = Record<string, string[]>;
+
+function addContractValue(acc: ContractMap, key: string, value: string) {
+  acc[key] ??= [];
+  acc[key].push(value);
+  return acc;
+}
+
+function normalize(values: string[] | undefined) {
+  return [...(values ?? [])].sort();
+}
+
+function expectContractMap(kind: string, actual: ContractMap, expected: ContractMap) {
+  const unexpected = Object.keys(actual)
+    .filter((name) => !(name in expected))
+    .sort();
+  expect(unexpected, `Unexpected ${kind}: ${unexpected.join(', ') || 'none'}`).toEqual([]);
+
+  for (const [name, expectedValues] of Object.entries(expected)) {
+    expect(
+      normalize(actual[name]),
+      `${kind} mismatch for "${name}"`,
+    ).toEqual(normalize(expectedValues));
+  }
+}
+
 afterAll(async () => {
   if (db) {
     await db.end();
@@ -143,15 +169,13 @@ describe('database schema contract', () => {
     `;
     const actual = rows.reduce<Record<string, string[]>>((acc, row) => {
       if (row.table_name.startsWith('pg_stat_statements')) return acc;
-      acc[row.table_name] ??= [];
-      acc[row.table_name].push(`${row.column_name}:${row.udt_name}:${row.is_nullable}`);
-      return acc;
+      return addContractValue(
+        acc,
+        row.table_name,
+        `${row.column_name}:${row.udt_name}:${row.is_nullable}`,
+      );
     }, {});
-    const unexpectedTables = Object.keys(actual).filter((tableName) => !(tableName in expectedColumns));
-    expect(unexpectedTables).toEqual([]);
-    for (const [tableName, expectedTableColumns] of Object.entries(expectedColumns)) {
-      expect(actual[tableName]?.toSorted()).toEqual(expectedTableColumns.toSorted());
-    }
+    expectContractMap('table columns', actual, expectedColumns);
   });
 
   it('has all expected enum labels', async () => {
@@ -167,15 +191,9 @@ describe('database schema contract', () => {
       order by t.typname, e.enumsortorder
     `;
     const actual = rows.reduce<Record<string, string[]>>((acc, row) => {
-      acc[row.typname] ??= [];
-      acc[row.typname].push(row.enumlabel);
-      return acc;
+      return addContractValue(acc, row.typname, row.enumlabel);
     }, {});
-    const unexpectedEnums = Object.keys(actual).filter((enumName) => !(enumName in expectedEnums));
-    expect(unexpectedEnums).toEqual([]);
-    for (const [enumName, expectedLabels] of Object.entries(expectedEnums)) {
-      expect(actual[enumName]?.toSorted()).toEqual(expectedLabels.toSorted());
-    }
+    expectContractMap('enum labels', actual, expectedEnums);
   });
 
   it('has all expected indexes', async () => {
@@ -189,15 +207,9 @@ describe('database schema contract', () => {
       order by tablename, indexname
     `;
     const actual = rows.reduce<Record<string, string[]>>((acc, row) => {
-      acc[row.tablename] ??= [];
-      acc[row.tablename].push(row.indexname);
-      return acc;
+      return addContractValue(acc, row.tablename, row.indexname);
     }, {});
-    const unexpectedIndexTables = Object.keys(actual).filter((tableName) => !(tableName in expectedIndexes));
-    expect(unexpectedIndexTables).toEqual([]);
-    for (const [tableName, expectedTableIndexes] of Object.entries(expectedIndexes)) {
-      expect(actual[tableName]).toEqual(expectedTableIndexes);
-    }
+    expectContractMap('indexes', actual, expectedIndexes);
   });
 
   it('has pg_trgm available', async () => {

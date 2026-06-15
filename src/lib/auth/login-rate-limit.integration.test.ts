@@ -18,30 +18,32 @@ describe('login rate limiter integration', () => {
     testEmailHashes.push(hashEmail(email));
 
     const limiter = createLoginRateLimiter({ maxAttempts: 2, windowMs: 60_000 });
+    try {
+      // First attempt
+      const r1 = await limiter.consume(email);
+      expect(r1.allowed).toBe(true);
+      expect(r1.remaining).toBe(1);
 
-    // First attempt
-    const r1 = await limiter.consume(email);
-    expect(r1.allowed).toBe(true);
-    expect(r1.remaining).toBe(1);
+      // Second attempt
+      const r2 = await limiter.consume(email);
+      expect(r2.allowed).toBe(true);
+      expect(r2.remaining).toBe(0);
 
-    // Second attempt
-    const r2 = await limiter.consume(email);
-    expect(r2.allowed).toBe(true);
-    expect(r2.remaining).toBe(0);
+      // Third attempt — blocked
+      const r3 = await limiter.consume(email);
+      expect(r3.allowed).toBe(false);
+      expect(r3.remaining).toBe(0);
+      expect(r3.retryAfterMs).toBeGreaterThan(0);
 
-    // Third attempt — blocked
-    const r3 = await limiter.consume(email);
-    expect(r3.allowed).toBe(false);
-    expect(r3.remaining).toBe(0);
-    expect(r3.retryAfterMs).toBeGreaterThan(0);
+      // Reset and try again
+      await limiter.reset(email);
+      const r4 = await limiter.consume(email);
+      expect(r4.allowed).toBe(true);
+      expect(r4.remaining).toBe(1);
+    } finally {
+      limiter.dispose();
+    }
 
-    // Reset and try again
-    await limiter.reset(email);
-    const r4 = await limiter.consume(email);
-    expect(r4.allowed).toBe(true);
-    expect(r4.remaining).toBe(1);
-
-    limiter.dispose();
   });
 
   it('resets expired entries on getEntry', async () => {
@@ -49,19 +51,21 @@ describe('login rate limiter integration', () => {
     testEmailHashes.push(hashEmail(email));
 
     const limiter = createLoginRateLimiter({ maxAttempts: 1, windowMs: 100 });
+    try {
+      // Consume once
+      const r1 = await limiter.consume(email, Date.now());
+      expect(r1.allowed).toBe(true);
+      expect(r1.remaining).toBe(0);
 
-    // Consume once
-    const r1 = await limiter.consume(email, Date.now());
-    expect(r1.allowed).toBe(true);
-    expect(r1.remaining).toBe(0);
+      // Wait for window to expire
+      const later = Date.now() + 200;
+      const r2 = await limiter.consume(email, later);
+      expect(r2.allowed).toBe(true);
+      expect(r2.remaining).toBe(0);
+    } finally {
+      limiter.dispose();
+    }
 
-    // Wait for window to expire
-    const later = Date.now() + 200;
-    const r2 = await limiter.consume(email, later);
-    expect(r2.allowed).toBe(true);
-    expect(r2.remaining).toBe(0);
-
-    limiter.dispose();
   });
 
   it('cleanup removes expired entries', async () => {
@@ -69,15 +73,17 @@ describe('login rate limiter integration', () => {
     testEmailHashes.push(hashEmail(email));
 
     const limiter = createLoginRateLimiter({ maxAttempts: 1, windowMs: 100 });
+    try {
+      await limiter.consume(email, Date.now());
+      await limiter.cleanup(Date.now() + 200);
 
-    await limiter.consume(email, Date.now());
-    await limiter.cleanup(Date.now() + 200);
+      // After cleanup, the row should be gone and a new attempt allowed
+      const r = await limiter.consume(email, Date.now() + 300);
+      expect(r.allowed).toBe(true);
+      expect(r.remaining).toBe(0);
+    } finally {
+      limiter.dispose();
+    }
 
-    // After cleanup, the row should be gone and a new attempt allowed
-    const r = await limiter.consume(email, Date.now() + 300);
-    expect(r.allowed).toBe(true);
-    expect(r.remaining).toBe(0);
-
-    limiter.dispose();
   });
 });
