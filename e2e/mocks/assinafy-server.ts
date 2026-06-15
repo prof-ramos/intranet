@@ -104,7 +104,7 @@ export class AssinafyMockServer {
       const id = `mock-doc-${Date.now()}`;
       this.documents.set(id, { id, name: 'oficio.pdf', status: 'uploaded' });
       res.statusCode = 200;
-      res.end(JSON.stringify({ id, name: 'oficio.pdf', status: 'uploaded' }));
+      res.end(JSON.stringify({ status: 200, data: { id, name: 'oficio.pdf', status: 'uploaded' } }));
       return;
     }
 
@@ -143,7 +143,10 @@ export class AssinafyMockServer {
       this.assignments.set(id, assignment);
       this.documents.set(docId, { ...this.documents.get(docId)!, status: 'pending_signature' });
       res.statusCode = 200;
-      res.end(JSON.stringify({ id, method: 'virtual', signers: assignment.signers, signing_urls: signingUrls }));
+      res.end(JSON.stringify({
+        status: 200,
+        data: { id, method: 'virtual', signers: assignment.signers, signing_urls: signingUrls },
+      }));
       return;
     }
 
