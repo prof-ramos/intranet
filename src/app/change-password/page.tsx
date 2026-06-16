@@ -1,4 +1,5 @@
 import { changePassword } from '@/app/change-password/actions';
+import { SubmitButton } from '@/app/change-password/SubmitButton';
 import { requireAuth } from '@/lib/auth/require-auth';
 
 export default async function ChangePasswordPage({
@@ -74,12 +75,7 @@ export default async function ChangePasswordPage({
               />
             </fieldset>
 
-            <button
-              type="submit"
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:outline-none"
-            >
-              Salvar nova senha
-            </button>
+            <SubmitButton />
           </form>
         </div>
       </div>
