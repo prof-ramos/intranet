@@ -16,3 +16,6 @@
 ## 2026-06-13 - Missing Focus Rings on Reset Password Button
 **Learning:** While the login and forgot password submit buttons were updated to support async loading states and accessibility attributes, the reset password button lacked the `focusRingClass` to ensure consistent keyboard navigation visibility.
 **Action:** When creating or extracting interactive components like submit buttons, always verify that `focusRingClass` or equivalent focus-visible utilities are applied to maintain keyboard accessibility.
+## 2026-06-17 - Combobox Keyboard Navigation and Hover Precedence
+**Learning:** When implementing the `aria-activedescendant` combobox pattern, dropdown items must have `tabIndex={-1}` so they don't break the natural tab sequence out of the input. Additionally, Tailwind `hover:bg-...` classes fail if overridden by inline `style={{ background: 'transparent' }}`; using `undefined` allows the class to work correctly.
+**Action:** Always test hover states when inline styles are used conditionally, and ensure `role="option"` elements are removed from the tab order when focus is managed via the parent input.

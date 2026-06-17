@@ -28,67 +28,66 @@ interface ResultItemProps {
   onSelect: (href: string) => void;
 }
 
-const ResultItem = memo(function ResultItem({
-  item,
-  index,
-  isFocused,
-  onSelect,
-}: ResultItemProps) {
-  const isAssociate = item.type === 'associate';
-  const initials = item.title
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
+const ResultItem = memo(
+  function ResultItem({ item, index, isFocused, onSelect }: ResultItemProps) {
+    const isAssociate = item.type === 'associate';
+    const initials = item.title
+      .split(' ')
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase();
 
-  return (
-    <button
-      id={`gs-result-${index}`}
-      role="option"
-      aria-selected={isFocused}
-      type="button"
-      onClick={() => onSelect(item.href)}
-      className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors"
-      style={{ background: isFocused ? 'rgba(118,174,234,0.10)' : 'transparent' }}
-    >
-      {isAssociate ? (
-        <div
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
-          style={{ background: navy }}
-          aria-hidden="true"
-        >
-          {initials}
-        </div>
-      ) : (
-        <div
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px]"
-          style={{ background: 'rgba(118,174,234,0.15)' }}
-          aria-hidden="true"
-        >
-          <Kanban size={14} style={{ color: skyBlue }} aria-hidden="true" />
-        </div>
-      )}
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium" style={{ color: navy }}>
-          {item.title}
-        </p>
-        {item.subtitle && (
-          <p className="truncate text-xs" style={{ color: textMuted }}>
-            {item.subtitle}
-          </p>
+    return (
+      <button
+        id={`gs-result-${index}`}
+        role="option"
+        aria-selected={isFocused}
+        type="button"
+        tabIndex={-1}
+        onClick={() => onSelect(item.href)}
+        className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[rgba(4,9,32,0.04)]"
+        style={{ background: isFocused ? 'rgba(118,174,234,0.10)' : undefined }}
+      >
+        {isAssociate ? (
+          <div
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+            style={{ background: navy }}
+            aria-hidden="true"
+          >
+            {initials}
+          </div>
+        ) : (
+          <div
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px]"
+            style={{ background: 'rgba(118,174,234,0.15)' }}
+            aria-hidden="true"
+          >
+            <Kanban size={14} style={{ color: skyBlue }} aria-hidden="true" />
+          </div>
         )}
-      </div>
-    </button>
-  );
-}, (prevProps, nextProps) =>
-  prevProps.isFocused === nextProps.isFocused &&
-  prevProps.index === nextProps.index &&
-  prevProps.item.id === nextProps.item.id &&
-  prevProps.item.title === nextProps.item.title &&
-  prevProps.item.subtitle === nextProps.item.subtitle &&
-  prevProps.item.href === nextProps.item.href &&
-  prevProps.onSelect === nextProps.onSelect);
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium" style={{ color: navy }}>
+            {item.title}
+          </p>
+          {item.subtitle && (
+            <p className="truncate text-xs" style={{ color: textMuted }}>
+              {item.subtitle}
+            </p>
+          )}
+        </div>
+      </button>
+    );
+  },
+  (prevProps, nextProps) =>
+    prevProps.isFocused === nextProps.isFocused &&
+    prevProps.index === nextProps.index &&
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.title === nextProps.item.title &&
+    prevProps.item.subtitle === nextProps.item.subtitle &&
+    prevProps.item.href === nextProps.item.href &&
+    prevProps.onSelect === nextProps.onSelect,
+);
 
 export function GlobalSearch() {
   const router = useRouter();
@@ -102,10 +101,13 @@ export function GlobalSearch() {
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [isPending, startTransition] = useTransition();
 
-  const flatResults = useMemo(() => [
-    ...(results?.associates ?? []).map((r) => ({ ...r, type: 'associate' as const })),
-    ...(results?.activities ?? []).map((r) => ({ ...r, type: 'activity' as const })),
-  ], [results?.associates, results?.activities]);
+  const flatResults = useMemo(
+    () => [
+      ...(results?.associates ?? []).map((r) => ({ ...r, type: 'associate' as const })),
+      ...(results?.activities ?? []).map((r) => ({ ...r, type: 'activity' as const })),
+    ],
+    [results?.associates, results?.activities],
+  );
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
@@ -225,6 +227,7 @@ export function GlobalSearch() {
           aria-controls="gs-results"
           aria-autocomplete="list"
           aria-activedescendant={focusedIndex >= 0 ? `gs-result-${focusedIndex}` : undefined}
+          aria-label="Buscar associados ou tarefas"
           value={query}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
