@@ -133,6 +133,8 @@ const normalizedCountry = normalizedCountryLabelSql(associates.locationCountry);
  * When an associate serves abroad (assignment.type = 'exterior') but their
  * locationCountry is domestic/null, the country field is unreliable.
  * Classify them as "Exterior (país não informado)" instead of inflating Brasil.
+ *
+ * Requires: leftJoin(assignments, eq(assignments.name, associates.assignment))
  */
 const correctedCountry = sql<string>`case
   when ${assignments.type} = 'exterior' and ${isDomesticCountrySql(associates.locationCountry)}
@@ -147,10 +149,10 @@ const _getTopRegions = withCache({
       .from(associates)
       .leftJoin(assignments, eq(assignments.name, associates.assignment))
       .where(eq(associates.associationStatus, 'ativo'))
-      .groupBy(correctedCountry, assignments.type, associates.locationCountry)
+      .groupBy(correctedCountry)
       .orderBy(desc(countDistinct(associates.id)))
       .limit(limit),
-  keyFn: (limit) => ['top-regions', String(limit)],
+  keyFn: (limit) => ['top-regions-v2', String(limit)],
   ttl: TTL_STABLE,
   tags: ['associates', 'dashboard'],
   maxEntries: 10,
@@ -245,7 +247,7 @@ export const countInadimplentesAssociates = withCache({
   },
   keyFn: () => ['inadimplentes-count'],
   ttl: TTL_MODERATE,
-  tags: ['dashboard'],
+  tags: ['associates', 'dashboard'],
 });
 
 export interface KanbanCard {

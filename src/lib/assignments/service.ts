@@ -47,60 +47,80 @@ export async function checkAssignmentDuplicate(
   return { exists: true, existingId: existing.id };
 }
 
+function isUniqueViolation(e: unknown): boolean {
+  return (
+    typeof e === 'object' && e !== null && (e as Record<string, unknown>).code === '23505'
+  );
+}
+
 export async function createAssignment(
   input: CreateAssignmentInput,
   performedBy: number,
 ): Promise<AssignmentResult> {
-  return await db.transaction(async (tx) => {
-    const duplicate = await checkAssignmentDuplicate(input.name, undefined, tx);
-    if (duplicate.exists) {
+  try {
+    return await db.transaction(async (tx) => {
+      const duplicate = await checkAssignmentDuplicate(input.name, undefined, tx);
+      if (duplicate.exists) {
+        return { success: false, message: 'Já existe uma lotação com este nome.' };
+      }
+
+      const inserted = await insertAssignment(input, tx);
+
+      await tx.insert(auditLogs).values({
+        action: 'assignment_created',
+        entityType: 'assignment',
+        entityId: inserted.id,
+        performedBy,
+        changes: { old: {}, new: { name: input.name, type: input.type } },
+      });
+
+      return { success: true, message: `Lotação "${input.name}" criada com sucesso.` };
+    });
+  } catch (e) {
+    if (isUniqueViolation(e)) {
       return { success: false, message: 'Já existe uma lotação com este nome.' };
     }
-
-    const inserted = await insertAssignment(input, tx);
-
-    await tx.insert(auditLogs).values({
-      action: 'assignment_created',
-      entityType: 'assignment',
-      entityId: inserted.id,
-      performedBy,
-      changes: { old: {}, new: { name: input.name, type: input.type } },
-    });
-
-    return { success: true, message: `Lotação "${input.name}" criada com sucesso.` };
-  });
+    throw e;
+  }
 }
 
 export async function updateAssignment(
   input: UpdateAssignmentInput,
   performedBy: number,
 ): Promise<AssignmentResult> {
-  return await db.transaction(async (tx) => {
-    const target = await findAssignmentById(input.id, tx);
-    if (!target) {
-      return { success: false, message: 'Lotação não encontrada.' };
-    }
+  try {
+    return await db.transaction(async (tx) => {
+      const target = await findAssignmentById(input.id, tx);
+      if (!target) {
+        return { success: false, message: 'Lotação não encontrada.' };
+      }
 
-    const duplicate = await checkAssignmentDuplicate(input.name, input.id, tx);
-    if (duplicate.exists) {
+      const duplicate = await checkAssignmentDuplicate(input.name, input.id, tx);
+      if (duplicate.exists) {
+        return { success: false, message: 'Já existe uma lotação com este nome.' };
+      }
+
+      await updateAssignmentRepo(input.id, { name: input.name, type: input.type }, tx);
+
+      await tx.insert(auditLogs).values({
+        action: 'assignment_updated',
+        entityType: 'assignment',
+        entityId: input.id,
+        performedBy,
+        changes: {
+          old: { name: target.name, type: target.type },
+          new: { name: input.name, type: input.type },
+        },
+      });
+
+      return { success: true, message: `Lotação "${input.name}" atualizada com sucesso.` };
+    });
+  } catch (e) {
+    if (isUniqueViolation(e)) {
       return { success: false, message: 'Já existe uma lotação com este nome.' };
     }
-
-    await updateAssignmentRepo(input.id, { name: input.name, type: input.type }, tx);
-
-    await tx.insert(auditLogs).values({
-      action: 'assignment_updated',
-      entityType: 'assignment',
-      entityId: input.id,
-      performedBy,
-      changes: {
-        old: { name: target.name, type: target.type },
-        new: { name: input.name, type: input.type },
-      },
-    });
-
-    return { success: true, message: `Lotação "${input.name}" atualizada com sucesso.` };
-  });
+    throw e;
+  }
 }
 
 export async function toggleAssignmentActive(

@@ -4,7 +4,7 @@ export const assignmentType = pgEnum('assignment_type', ['nacional', 'exterior']
 
 export const assignments = pgTable('assignments', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
-  name: text('name').notNull(),
+  name: text('name').notNull().unique(),
   type: assignmentType('type').notNull(),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

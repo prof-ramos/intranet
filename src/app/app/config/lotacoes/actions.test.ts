@@ -4,6 +4,7 @@ import { createAssignment, toggleAssignmentActive, updateAssignment } from './ac
 const {
   requireRoleMock,
   revalidatePathMock,
+  revalidateTagMock,
   mockLimit,
   mockReturning,
   mockInsertValues,
@@ -13,6 +14,7 @@ const {
 } = vi.hoisted(() => ({
   requireRoleMock: vi.fn(),
   revalidatePathMock: vi.fn(),
+  revalidateTagMock: vi.fn(),
   mockLimit: vi.fn(async () => selectQueue.shift() ?? []),
   mockReturning: vi.fn(),
   mockInsertValues: vi.fn(() => insertQueue.shift()),
@@ -27,6 +29,7 @@ vi.mock('@/lib/auth/authorization', () => ({
 
 vi.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => revalidatePathMock(...args),
+  revalidateTag: (...args: unknown[]) => revalidateTagMock(...args),
 }));
 
 vi.mock('@/lib/db', () => {
@@ -93,7 +96,29 @@ describe('config lotacoes actions', () => {
         performedBy: 7,
       }),
     );
+    expect(revalidateTagMock).toHaveBeenCalledWith('associates');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/lotacoes');
+  });
+
+  it('returns a friendly message when a concurrent request wins the UNIQUE constraint race', async () => {
+    const pgError = Object.assign(new Error('unique violation'), { code: '23505' });
+    selectQueue.push([]); // passes the app-level duplicate check
+    insertQueue.push({ returning: mockReturning });
+    mockReturning.mockRejectedValueOnce(pgError);
+
+    const formData = new FormData();
+    formData.set('name', 'Embaixada em Paris');
+    formData.set('type', 'exterior');
+
+    const result = await createAssignment(null, formData);
+
+    expect(result).toEqual({
+      success: false,
+      message: 'Já existe uma lotação com este nome.',
+    });
+    expect(revalidateTagMock).not.toHaveBeenCalled();
+    expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
   it('rejects duplicate assignment names before inserting', async () => {
@@ -175,6 +200,8 @@ describe('config lotacoes actions', () => {
         performedBy: 7,
       }),
     );
+    expect(revalidateTagMock).toHaveBeenCalledWith('associates');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/lotacoes');
   });
 });

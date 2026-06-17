@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { defineFormStateAction } from '@/lib/server-actions/define-form-action';
 import {
   createAssignment as createAssignmentService,
@@ -28,6 +28,12 @@ function parseAssignmentId(raw: string): number {
   return Number.parseInt(raw, 10);
 }
 
+function revalidateAssignments() {
+  revalidateTag('associates');
+  revalidateTag('dashboard');
+  revalidatePath('/app/config/lotacoes');
+}
+
 export const createAssignment = defineFormStateAction({
   auth: ['admin', 'diretoria'],
   schema: createAssignmentSchema,
@@ -46,7 +52,7 @@ export const createAssignment = defineFormStateAction({
     const result = await createAssignmentService({ name, type }, actor.userId);
 
     if (result.success) {
-      revalidatePath('/app/config/lotacoes');
+      revalidateAssignments();
     }
     return result;
   },
@@ -76,7 +82,7 @@ export const updateAssignment = defineFormStateAction({
     const result = await updateAssignmentService({ id, name, type }, actor.userId);
 
     if (result.success) {
-      revalidatePath('/app/config/lotacoes');
+      revalidateAssignments();
     }
     return result;
   },
@@ -96,7 +102,7 @@ export const toggleAssignmentActive = defineFormStateAction({
     const result = await toggleAssignmentActiveService(id, actor.userId);
 
     if (result.success) {
-      revalidatePath('/app/config/lotacoes');
+      revalidateAssignments();
     }
     return result;
   },
