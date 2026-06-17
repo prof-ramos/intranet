@@ -16,8 +16,26 @@ teste, validacao de crons e revisao minima de integracoes/API keys sem secrets.
    - No setup atual do projeto, ambas sao URLs do Neon `intranet-db`:
      `DATABASE_URL` via pooler `ep-empty-cake-ac26vl6w-pooler.sa-east-1.aws.neon.tech`
      e `DATABASE_MIGRATION_URL` via host direto `ep-empty-cake-ac26vl6w.sa-east-1.aws.neon.tech`.
+   - Para desenvolvimento, use o branch `vercel-dev` (endpoint `ep-tiny-king-acczg9ev`):
+     `DATABASE_URL` via pooler `ep-tiny-king-acczg9ev-pooler.sa-east-1.aws.neon.tech`
+     e `DATABASE_MIGRATION_URL`/`DATABASE_URL_UNPOOLED` via host direto `ep-tiny-king-acczg9ev.sa-east-1.aws.neon.tech`.
 3. Confirmar que o banco esta vazio ou explicitamente descartavel.
 4. Fazer snapshot/backup inicial do provider antes de qualquer migration de producao.
+
+### Reset do branch de desenvolvimento
+
+Para resetar o branch `vercel-dev` para o estado de producao (use Console Neon ou API):
+
+```bash
+# Via Neon API (requer NEON_API_KEY e org ID)
+curl -X POST "https://console.neon.tech/api/v2/projects/long-leaf-97822199/branches" \
+  -H "Authorization: Bearer $NEON_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-Neon-Org-Id: org-red-mode-09715915" \
+  -d '{"branch": {"name": "vercel-dev", "parent_id": "br-bold-bar-acge6h1w"}}'
+```
+
+**Aviso:** Isso destroi o branch anterior e cria um novo com dados de producao. Nunca aplique migrations direto na branch `main`.
 
 ## 2. Envs Obrigatorias
 

@@ -1,15 +1,12 @@
 import { test as base, type Page } from '@playwright/test';
+import { E2E_USERS } from './constants';
 
 export interface TestUser {
   email: string;
   password: string;
 }
 
-export const e2eUsers: Record<string, TestUser> = {
-  admin: { email: 'e2e-admin@asof.local', password: 'Senha-Forte-2026!' },
-  diretoria: { email: 'e2e-diretoria@asof.local', password: 'Senha-Forte-2026!' },
-  secretaria: { email: 'e2e-secretaria@asof.local', password: 'Senha-Forte-2026!' },
-};
+export const e2eUsers: Record<string, TestUser> = E2E_USERS;
 
 async function loginAs(page: Page, user: TestUser, maxAttempts = 3) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {

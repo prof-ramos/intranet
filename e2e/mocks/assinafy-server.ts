@@ -19,6 +19,8 @@ interface MockAssignment {
   signing_urls: Array<{ signer_id: string; url: string }>;
 }
 
+const MAX_BODY_SIZE = 1_048_576; // 1 MB
+
 /**
  * Minimal mock Assinafy HTTP server for E2E tests.
  * Validates X-Api-Key and supports reset between tests.
@@ -31,11 +33,20 @@ export class AssinafyMockServer {
   private assignments = new Map<string, MockAssignment>();
   private apiKey: string;
   private accountId: string;
+  private nextId = 0;
+
+  // Pre-compiled route regexes (accountId-dependent, so built once in constructor)
+  private readonly reDocUpload: RegExp;
+  private readonly reSigner: RegExp;
+  private static readonly RE_ASSIGNMENT = /^\/v1\/documents\/([^/]+)\/assignments$/;
+  private static readonly RE_GET_DOC = /^\/v1\/documents\/([^/]+)$/;
 
   constructor(options: { port: number; apiKey: string; accountId: string }) {
     this.port = options.port;
     this.apiKey = options.apiKey;
     this.accountId = options.accountId;
+    this.reDocUpload = new RegExp(`^/v1/accounts/${this.accountId}/documents$`);
+    this.reSigner = new RegExp(`^/v1/accounts/${this.accountId}/signers$`);
   }
 
   start(): Promise<void> {
@@ -65,6 +76,7 @@ export class AssinafyMockServer {
     this.documents.clear();
     this.signers.clear();
     this.assignments.clear();
+    this.nextId = 0;
     console.log('[AssinafyMockServer] State reset');
   }
 
@@ -82,10 +94,18 @@ export class AssinafyMockServer {
     const method = req.method ?? '';
 
     let body = '';
+    let bodyTooLarge = false;
     req.on('data', (chunk) => {
       body += chunk;
+      if (body.length > MAX_BODY_SIZE) {
+        bodyTooLarge = true;
+        res.statusCode = 413;
+        res.end(JSON.stringify({ error: 'Payload too large' }));
+        req.destroy();
+      }
     });
     req.on('end', () => {
+      if (bodyTooLarge) return;
       try {
         this.route(method, url, body, res);
       } catch {
@@ -97,22 +117,19 @@ export class AssinafyMockServer {
 
   private route(method: string, url: string, body: string, res: ServerResponse): void {
     // POST /accounts/{id}/documents
-    const docUploadMatch = url.match(
-      new RegExp(`^/v1/accounts/${this.accountId}/documents$`),
-    );
-    if (docUploadMatch && method === 'POST') {
-      const id = `mock-doc-${Date.now()}`;
-      this.documents.set(id, { id, name: 'oficio.pdf', status: 'uploaded' });
+    if (this.reDocUpload.test(url) && method === 'POST') {
+      const id = `mock-doc-${++this.nextId}`;
+      const doc: MockDocument = { id, name: 'oficio.pdf', status: 'uploaded' };
+      this.documents.set(id, doc);
       res.statusCode = 200;
-      res.end(JSON.stringify({ status: 200, data: { id, name: 'oficio.pdf', status: 'uploaded' } }));
+      res.end(JSON.stringify({ status: 200, data: doc }));
       return;
     }
 
     // POST /accounts/{id}/signers
-    const signerMatch = url.match(new RegExp(`^/v1/accounts/${this.accountId}/signers$`));
-    if (signerMatch && method === 'POST') {
+    if (this.reSigner.test(url) && method === 'POST') {
       const payload = JSON.parse(body);
-      const id = `mock-signer-${Date.now()}`;
+      const id = `mock-signer-${++this.nextId}`;
       const signer: MockSigner = {
         id,
         full_name: payload.full_name ?? 'Signatário',
@@ -125,23 +142,32 @@ export class AssinafyMockServer {
     }
 
     // POST /documents/{id}/assignments
-    const assignmentMatch = url.match(/^\/v1\/documents\/([^/]+)\/assignments$/);
+    const assignmentMatch = AssinafyMockServer.RE_ASSIGNMENT.exec(url);
     if (assignmentMatch && method === 'POST') {
       const docId = assignmentMatch[1];
-      const id = `mock-assignment-${Date.now()}`;
+      const existing = this.documents.get(docId);
+      if (!existing) {
+        res.statusCode = 404;
+        res.end(JSON.stringify({ error: 'Document not found' }));
+        return;
+      }
+      const id = `mock-assignment-${++this.nextId}`;
       const signerIds = Array.from(this.signers.keys()).slice(-1); // use last signer
       const signingUrls = signerIds.map((sid) => ({
         signer_id: sid,
         url: `https://assinafy.com.br/sign/${sid}-${docId}`,
       }));
+      const signers = signerIds
+        .map((sid) => this.signers.get(sid))
+        .filter((s): s is MockSigner => s !== undefined);
       const assignment: MockAssignment = {
         id,
         method: 'virtual',
-        signers: signerIds.map((sid) => this.signers.get(sid)!).filter(Boolean),
+        signers,
         signing_urls: signingUrls,
       };
       this.assignments.set(id, assignment);
-      this.documents.set(docId, { ...this.documents.get(docId)!, status: 'pending_signature' });
+      this.documents.set(docId, { ...existing, status: 'pending_signature' });
       res.statusCode = 200;
       res.end(JSON.stringify({
         status: 200,
@@ -151,7 +177,7 @@ export class AssinafyMockServer {
     }
 
     // GET /documents/{id}
-    const getDocMatch = url.match(/^\/v1\/documents\/([^/]+)$/);
+    const getDocMatch = AssinafyMockServer.RE_GET_DOC.exec(url);
     if (getDocMatch && method === 'GET') {
       const docId = getDocMatch[1];
       const doc = this.documents.get(docId);
@@ -161,7 +187,7 @@ export class AssinafyMockServer {
         return;
       }
       res.statusCode = 200;
-      res.end(JSON.stringify(doc));
+      res.end(JSON.stringify({ status: 200, data: doc }));
       return;
     }
 
@@ -169,12 +195,4 @@ export class AssinafyMockServer {
     res.statusCode = 404;
     res.end(JSON.stringify({ error: 'Not found', url, method }));
   }
-
-  /**
-   * Utility for tests to force a 500 error on next upload.
-   */
-  forceNextUploadFailure = false;
-  forceNextSignerFailure = false;
-  forceNextAssignmentFailure = false;
-  forceEmptySigningUrls = false;
 }

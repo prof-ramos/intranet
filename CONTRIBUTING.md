@@ -71,8 +71,10 @@ Acesse `http://localhost:3000`.
 
 ### Banco de Produção (Neon)
 
-- Desenvolvimento local deve usar PostgreSQL local.
-- Produção oficial: Instância PostgreSQL gerenciada (`asof-intranet` no Vercel).
+- **Desenvolvimento local (recomendado):** Branch `vercel-dev` no projeto Neon `intranet-db`. O `.env.local` já aponta para este branch com dados reais de produção (~1.750 associados). Sem risco ao banco de produção.
+  - Para resetar o branch: Console Neon ou API (`POST /v2/projects/long-leaf-97822199/branches` com `parent_id: "br-bold-bar-acge6h1w"`).
+- **Alternativa local:** PostgreSQL local com dump/restore (`asof_intranet_neon_clone`) ou banco vazio (`asof_intranet` + `npm run db:seed`).
+- Produção oficial: Instância PostgreSQL gerenciada (`intranet-db` no Neon, endpoint `ep-empty-cake-ac26vl6w`).
 - Autenticação: O app possui auth própria via cookie de sessão assinado por `SESSION_SECRET` (httpOnly). O login de administradores usa `admins.email` e `admins.password_hash` (bcryptjs), conforme `ARCHITECTURE.md`.
 - Staging/preview deve usar banco separado.
 - `npm run db:migrate` passa por `scripts/guarded-migrate.ts` e bloqueia produção sem `ALLOW_PRODUCTION_MIGRATIONS=true`.

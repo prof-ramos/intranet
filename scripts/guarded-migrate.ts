@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 const MIGRATION_URL_ENV_NAMES = [
   'DATABASE_MIGRATION_URL',
+  'DATABASE_URL_UNPOOLED',
   'DATABASE_POSTGRES_URL_NON_POOLING',
   'POSTGRES_URL_NON_POOLING',
   'DATABASE_POSTGRES_URL',
@@ -56,7 +57,7 @@ export function assertMigrationAllowed(env: EnvMap): ResolvedMigrationUrl {
   const resolved = resolveMigrationUrl(env);
   if (!resolved) {
     throw new Error(
-      'DATABASE_MIGRATION_URL, DATABASE_POSTGRES_URL_NON_POOLING, POSTGRES_URL_NON_POOLING, DATABASE_POSTGRES_URL, or DATABASE_URL must be set.',
+      'DATABASE_MIGRATION_URL, DATABASE_URL_UNPOOLED, DATABASE_POSTGRES_URL_NON_POOLING, POSTGRES_URL_NON_POOLING, DATABASE_POSTGRES_URL, or DATABASE_URL must be set.',
     );
   }
 

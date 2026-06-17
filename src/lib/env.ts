@@ -14,6 +14,7 @@ export const envSchema = z
   .object({
     DATABASE_URL: optionalUrl,
     DATABASE_MIGRATION_URL: optionalUrl,
+    DATABASE_URL_UNPOOLED: optionalUrl,
     DATABASE_POSTGRES_URL: optionalUrl,
     POSTGRES_URL: optionalUrl,
     POSTGRES_PRISMA_URL: optionalUrl,

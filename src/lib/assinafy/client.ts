@@ -164,9 +164,10 @@ export class AssinafyClient {
   }
 
   async getDocumentStatus(documentId: string) {
-    return this.request<{ id: string; status: string }>(
+    const resp = await this.request<{ status: number; data: { id: string; status: string } }>(
       `/documents/${documentId}`,
       { method: 'GET' },
     );
+    return resp.data;
   }
 }

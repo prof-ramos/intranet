@@ -5,10 +5,17 @@ import type { NextConfig } from 'next';
 // Side-effect import './src/lib/env' causes failures in Next.js 16 config compilation
 // because Node.js cannot resolve .ts files in the compiled config.
 // Validation still runs when src/lib/env is imported by app code at runtime.
-if (!process.env.DATABASE_URL || !process.env.DATABASE_MIGRATION_URL) {
+const hasMigrationUrl =
+  !!process.env.DATABASE_MIGRATION_URL ||
+  !!process.env.DATABASE_URL_UNPOOLED ||
+  !!process.env.DATABASE_POSTGRES_URL_NON_POOLING ||
+  !!process.env.POSTGRES_URL_NON_POOLING ||
+  !!process.env.DATABASE_POSTGRES_URL;
+
+if (!process.env.DATABASE_URL || !hasMigrationUrl) {
   const missing = [];
   if (!process.env.DATABASE_URL) missing.push('DATABASE_URL');
-  if (!process.env.DATABASE_MIGRATION_URL) missing.push('DATABASE_MIGRATION_URL');
+  if (!hasMigrationUrl) missing.push('DATABASE_MIGRATION_URL (ou DATABASE_URL_UNPOOLED / DATABASE_POSTGRES_URL_NON_POOLING / POSTGRES_URL_NON_POOLING / DATABASE_POSTGRES_URL)');
   console.warn(`⚠ ${missing.join(' e ')} não definida(s) — app falhará em runtime se precisar de DB`);
 }
 

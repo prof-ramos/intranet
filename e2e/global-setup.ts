@@ -3,6 +3,17 @@ import { closeSync, existsSync, mkdirSync, openSync, readFileSync, writeFileSync
 import path from 'path';
 import { chromium } from '@playwright/test';
 import { AssinafyMockServer } from './mocks/assinafy-server';
+import {
+  E2E_BASE_URL,
+  E2E_ADMIN_EMAIL,
+  E2E_ADMIN_PASSWORD,
+  E2E_SESSION_SECRET,
+  E2E_ENCRYPTION_MASTER_KEY,
+  E2E_CRON_SECRET,
+  ASSINAFY_MOCK_PORT,
+  ASSINAFY_MOCK_KEY,
+  ASSINAFY_MOCK_ACCOUNT,
+} from './constants';
 
 const ENV_FILE = path.resolve(process.cwd(), '.env.development.local');
 const ENV_FILE_FLAG = existsSync(ENV_FILE) ? `--env-file="${ENV_FILE}" ` : '';
@@ -18,14 +29,6 @@ const E2E_DIST_DIR = '.next-e2e';
 const DEV_SERVER_PID_FILE = path.resolve(process.cwd(), `${E2E_DIST_DIR}/e2e-dev-server.pid`);
 const DEV_SERVER_LOG_FILE = path.resolve(process.cwd(), `${E2E_DIST_DIR}/e2e-dev-server.log`);
 const NEXT_BIN = path.resolve(process.cwd(), 'node_modules/next/dist/bin/next');
-const E2E_SESSION_SECRET = 'e2e-session-secret-at-least-32-characters-long';
-const E2E_ENCRYPTION_MASTER_KEY = 'e2e-encryption-master-key-at-least-32-chars';
-const E2E_BASE_URL = 'http://127.0.0.1:3001';
-const E2E_ADMIN_EMAIL = 'e2e-admin@asof.local';
-const E2E_ADMIN_PASSWORD = 'Senha-Forte-2026!';
-const ASSINAFY_MOCK_PORT = 3099;
-const ASSINAFY_MOCK_KEY = 'e2e-mock-key';
-const ASSINAFY_MOCK_ACCOUNT = 'e2e-mock-account';
 const LOCAL_DB_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 
 function getRecentServerLog() {
@@ -135,7 +138,7 @@ export default async function globalSetup() {
     accountId: ASSINAFY_MOCK_ACCOUNT,
   });
   await assinafyMock.start();
-  (globalThis as unknown as Record<string, unknown>).__ASSINAFY_MOCK__ = assinafyMock;
+  globalThis.__ASSINAFY_MOCK__ = assinafyMock;
 
   // Recreate the local E2E DB so migration replay starts from a clean history.
   const testDb = getTestDatabaseCommandConfig();
@@ -181,8 +184,8 @@ export default async function globalSetup() {
         // Fixed only for ephemeral E2E runs; tests do not persist signed sessions.
         SESSION_SECRET: E2E_SESSION_SECRET,
         ENCRYPTION_MASTER_KEY: process.env.ENCRYPTION_MASTER_KEY ?? E2E_ENCRYPTION_MASTER_KEY,
-        CRON_SECRET: 'dummy_cron_secret_for_e2e_tests',
-        ASOF_INTRANET_URL: 'http://127.0.0.1:3001',
+        CRON_SECRET: E2E_CRON_SECRET,
+        ASOF_INTRANET_URL: E2E_BASE_URL,
         ASSINAFY_BASE_URL: `http://127.0.0.1:${ASSINAFY_MOCK_PORT}/v1`,
         ASSINAFY_API_KEY: ASSINAFY_MOCK_KEY,
         ASSINAFY_ACCOUNT_ID: ASSINAFY_MOCK_ACCOUNT,
@@ -205,5 +208,5 @@ export default async function globalSetup() {
   });
 
   // Store server ref for teardown
-  (globalThis as unknown as Record<string, unknown>).__DEV_SERVER__ = devServer;
+  globalThis.__DEV_SERVER__ = devServer;
 }

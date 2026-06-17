@@ -115,7 +115,8 @@ describe('AssinafyClient', () => {
 
   describe('getDocumentStatus', () => {
     it('fetches document status by ID', async () => {
-      const mockResponse = { id: 'doc123', status: 'pending_signature' };
+      const mockPayload = { id: 'doc123', status: 'pending_signature' };
+      const mockResponse = { status: 200, data: mockPayload };
       fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify(mockResponse), { status: 200 }));
 
       const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
@@ -127,7 +128,7 @@ describe('AssinafyClient', () => {
           headers: expect.objectContaining({ 'X-Api-Key': API_KEY }),
         }),
       );
-      expect(result).toEqual(mockResponse);
+      expect(result).toEqual(mockPayload);
     });
   });
 

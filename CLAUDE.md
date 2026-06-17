@@ -49,12 +49,15 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 
 ## Banco de Dados
 
-- PostgreSQL gerenciado (Neon, `ep-empty-cake-ac26vl6w`, sa-east-1) em produção.
-- **Desenvolvimento local:** Recomendado usar clone completo do Neon (`asof_intranet_neon_clone`) para dados reais (associados, etc.). Veja instruções completas em README.md (seção Banco de dados) e CONTRIBUTING.md. 
-  - **Aviso LGPD:** Siga controles estritos (PII sensível — delete dumps, autorizado apenas, etc.). Prefira mínimo. Consulte lib/lgpd e ADRs.
-- Alternativa mínima: `asof_intranet` vazio + `npm run db:seed`.
-- Pooled (`DATABASE_URL`) para runtime, direct (`DATABASE_MIGRATION_URL`) para migrations.
+- PostgreSQL gerenciado (Neon, projeto `intranet-db` / `long-leaf-97822199`, `ep-empty-cake-ac26vl6w`, sa-east-1) em produção.
+- **Desenvolvimento local (recomendado):** Branch `vercel-dev` no projeto Neon `intranet-db` — clone dos dados de produção (1.750 associados, 29 tabelas) sem risco ao banco de produção.
+  - Endpoint: `ep-tiny-king-acczg9ev` (pooled: `ep-tiny-king-acczg9ev-pooler.sa-east-1.aws.neon.tech`)
+  - `.env.local` já aponta para este branch por padrão.
+  - **Aviso LGPD:** O branch contém PII sensível (CPF, SIAPE, endereços, etc.). Siga controles estritos (delete dumps, autorizado apenas, etc.). Consulte lib/lgpd e ADRs.
+- Alternativa local: `asof_intranet_neon_clone` (dump/restore local) ou `asof_intranet` vazio + `npm run db:seed`.
+- Pooled (`DATABASE_URL`) para runtime, direct (`DATABASE_MIGRATION_URL` ou `DATABASE_URL_UNPOOLED`) para migrations.
 - Conexão: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'`.
+- **Neon dev branch (`vercel-dev`):** Para resetar o branch de dev para o estado de produção, use o Console Neon ou API: `POST /v2/projects/long-leaf-97822199/branches` com `parent_id: "br-bold-bar-acge6h1w"`. Nunca aplique migrations direto na branch `main`.
 - Multi-tabela: sempre usar `db.transaction()`.
 - PII: `encryptPii()` + `piiBlindIndex()` para CPF, SIAPE, email, telefone, endereço. Plaintext nunca em logs.
 - RLS: fora do gate do dia 1. Barreira de segurança = app server + credentials PostgreSQL restritas + LGPD.

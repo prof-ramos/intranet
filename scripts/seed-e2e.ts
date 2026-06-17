@@ -1,8 +1,43 @@
 import { closeDb, db, truncateAll } from '../e2e/helpers/db';
 import { admins, associates, monthlyPayments, oficios } from '@/lib/db/schema';
 import bcrypt from 'bcryptjs';
+import {
+  E2E_ADMIN_PASSWORD,
+  E2E_ADMIN_EMAIL,
+  E2E_DIRETORIA_EMAIL,
+  E2E_SECRETARIA_EMAIL,
+  ASSINAFY_DOC_PENDING,
+  ASSINAFY_DOC_CERTIFICATED,
+  ASSINAFY_SIGNING_URL_PENDING,
+} from '../e2e/constants';
 
-const E2E_ADMIN_PASSWORD = 'Senha-Forte-2026!';
+type OficioInsert = typeof oficios.$inferInsert;
+
+let oficioCounter = 0;
+
+function makeOficio(createdBy: number, overrides: Partial<OficioInsert> = {}): OficioInsert {
+  const seq = ++oficioCounter;
+  const year = 2026;
+  return {
+    number: `Ofício nº ${String(seq).padStart(3, '0')}/${year}-ASOF`,
+    year,
+    sequence: seq,
+    recipient: 'Ministro das Relações Exteriores',
+    recipientRole: 'Ministro de Estado',
+    vocativo: 'Senhor Ministro',
+    letterDate: `${seq} de janeiro de ${year}`,
+    subject: `Solicitação de dados funcionais #${seq}`,
+    itamaratySector: 'SGPR / SGP',
+    signatoryName: 'Presidente da ASOF',
+    signatoryRole: 'Presidente',
+    closure: 'Atenciosamente,',
+    bodyRichText: `Texto do ofício ${seq}.`,
+    bodyPlainText: `Texto do ofício ${seq}.`,
+    status: 'gerado',
+    createdBy,
+    ...overrides,
+  };
+}
 
 async function main() {
   // Clear existing E2E data
@@ -15,7 +50,7 @@ async function main() {
     .values([
       {
         name: 'Admin E2E',
-        email: 'e2e-admin@asof.local',
+        email: E2E_ADMIN_EMAIL,
         passwordHash,
         role: 'admin',
         isActive: true,
@@ -23,7 +58,7 @@ async function main() {
       },
       {
         name: 'Diretoria E2E',
-        email: 'e2e-diretoria@asof.local',
+        email: E2E_DIRETORIA_EMAIL,
         passwordHash,
         role: 'diretoria',
         isActive: true,
@@ -31,7 +66,7 @@ async function main() {
       },
       {
         name: 'Secretaria E2E',
-        email: 'e2e-secretaria@asof.local',
+        email: E2E_SECRETARIA_EMAIL,
         passwordHash,
         role: 'secretaria',
         isActive: true,
@@ -139,122 +174,69 @@ async function main() {
   ]);
 
   await db.insert(oficios).values([
-    {
-      number: 'Ofício nº 001/2026-ASOF',
-      year: 2026,
-      sequence: 1,
-      recipient: 'Ministro das Relações Exteriores',
-      recipientRole: 'Ministro de Estado',
-      vocativo: 'Senhor Ministro',
-      letterDate: '13 de janeiro de 2026',
+    makeOficio(adminId, {
       subject: 'Solicitação de dados funcionais',
-      itamaratySector: 'SGPR / SGP',
-      signatoryName: 'Presidente da ASOF',
-      signatoryRole: 'Presidente',
-      closure: 'Atenciosamente,',
       bodyRichText: 'Solicitamos a lista atualizada de associados lotados na Embaixada em Paris.',
       bodyPlainText: 'Solicitamos a lista atualizada de associados lotados na Embaixada em Paris.',
-      status: 'gerado',
-      createdBy: adminId,
-    },
-    {
-      number: 'Ofício nº 002/2026-ASOF',
-      year: 2026,
-      sequence: 2,
+    }),
+    makeOficio(adminId, {
       recipient: 'Secretário-Geral',
       recipientRole: 'Secretário-Geral das Relações Exteriores',
       vocativo: 'Senhor Secretário-Geral',
-      letterDate: '14 de janeiro de 2026',
       subject: 'Convite para evento anual',
       itamaratySector: 'SETEC / SEB',
-      signatoryName: 'Presidente da ASOF',
-      signatoryRole: 'Presidente',
       closure: 'Respeitosamente,',
       bodyRichText: 'Convidamos Vossa Excelência para o evento anual da ASOF.',
       bodyPlainText: 'Convidamos Vossa Excelência para o evento anual da ASOF.',
-      status: 'gerado',
-      createdBy: adminId,
-    },
+    }),
     // Ofícios com estados Assinafy para testes E2E
-    {
-      number: 'Ofício nº 003/2026-ASOF',
-      year: 2026,
-      sequence: 3,
+    makeOficio(adminId, {
       recipient: 'Diretor do DSE',
       recipientRole: 'Diretor',
       vocativo: 'Senhor Diretor',
-      letterDate: '15 de janeiro de 2026',
       subject: 'Audiência institucional',
       itamaratySector: 'DSE',
-      signatoryName: 'Presidente da ASOF',
-      signatoryRole: 'Presidente',
       closure: 'Respeitosamente,',
       bodyRichText: 'Solicitamos audiência institucional para tratar de assuntos de interesse da ASOF.',
       bodyPlainText: 'Solicitamos audiência institucional para tratar de assuntos de interesse da ASOF.',
       status: 'rascunho',
-      createdBy: adminId,
-    },
-    {
-      number: 'Ofício nº 004/2026-ASOF',
-      year: 2026,
-      sequence: 4,
+    }),
+    makeOficio(adminId, {
       recipient: 'Chefe da SEF',
       recipientRole: 'Chefe de Setor',
       vocativo: 'Senhor Chefe',
-      letterDate: '16 de janeiro de 2026',
       subject: 'Reunião mensal',
       itamaratySector: 'SEF',
-      signatoryName: 'Presidente da ASOF',
-      signatoryRole: 'Presidente',
-      closure: 'Atenciosamente,',
       bodyRichText: 'Convidamos para a reunião mensal da ASOF.',
       bodyPlainText: 'Convidamos para a reunião mensal da ASOF.',
-      status: 'gerado',
-      createdBy: adminId,
-      assinafyDocumentId: 'e2e-doc-pending',
+      assinafyDocumentId: ASSINAFY_DOC_PENDING,
       assinafyStatus: 'pending_signature',
-      assinafySigningUrl: 'https://assinafy.com.br/sign/e2e-pending',
+      assinafySigningUrl: ASSINAFY_SIGNING_URL_PENDING,
       assinafySentAt: new Date(),
-    },
-    {
-      number: 'Ofício nº 005/2026-ASOF',
-      year: 2026,
-      sequence: 5,
+    }),
+    makeOficio(adminId, {
       recipient: 'Assessor Parlamentar',
       recipientRole: 'Assessor',
       vocativo: 'Senhor Assessor',
-      letterDate: '17 de janeiro de 2026',
       subject: 'Pauta legislativa',
       itamaratySector: 'AP',
-      signatoryName: 'Presidente da ASOF',
-      signatoryRole: 'Presidente',
       closure: 'Respeitosamente,',
       bodyRichText: 'Solicitamos inclusão de pauta legislativa.',
       bodyPlainText: 'Solicitamos inclusão de pauta legislativa.',
-      status: 'gerado',
-      createdBy: adminId,
-      assinafyDocumentId: 'e2e-doc-certificated',
+      assinafyDocumentId: ASSINAFY_DOC_CERTIFICATED,
       assinafyStatus: 'certificated',
       assinafySignedAt: new Date(),
-    },
-    {
-      number: 'Ofício nº 006/2026-ASOF',
-      year: 2026,
-      sequence: 6,
+    }),
+    makeOficio(adminId, {
       recipient: 'Secretário Adjunto',
       recipientRole: 'Secretário Adjunto',
       vocativo: 'Senhor Secretário',
-      letterDate: '18 de janeiro de 2026',
       subject: 'Cancelamento de reunião',
       itamaratySector: 'SA',
-      signatoryName: 'Presidente da ASOF',
-      signatoryRole: 'Presidente',
-      closure: 'Atenciosamente,',
       bodyRichText: 'Comunicamos o cancelamento da reunião marcada.',
       bodyPlainText: 'Comunicamos o cancelamento da reunião marcada.',
       status: 'cancelado',
-      createdBy: adminId,
-    },
+    }),
   ]);
 
   console.log('E2E seed complete.');

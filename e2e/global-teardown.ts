@@ -18,9 +18,7 @@ function killE2EServer(pid: number, signal: NodeJS.Signals): void {
 }
 
 export default async function globalTeardown() {
-  const devServer = (globalThis as unknown as Record<string, unknown>).__DEV_SERVER__ as
-    | import('child_process').ChildProcess
-    | undefined;
+  const devServer = globalThis.__DEV_SERVER__;
 
   if (devServer) {
     devServer.kill('SIGTERM');
@@ -45,10 +43,7 @@ export default async function globalTeardown() {
   }
 
   // Stop Assinafy mock server
-  const assinafyMock = (globalThis as unknown as Record<string, unknown>).__ASSINAFY_MOCK__ as
-    | import('./mocks/assinafy-server').AssinafyMockServer
-    | undefined;
-  if (assinafyMock) {
-    await assinafyMock.stop();
+  if (globalThis.__ASSINAFY_MOCK__) {
+    await globalThis.__ASSINAFY_MOCK__.stop();
   }
 }

@@ -2,6 +2,15 @@ import { test, expect } from '../fixtures';
 
 test.describe('Assinafy — Assinatura de Ofícios', () => {
   test.beforeEach(async ({ page, loginAsAdmin }) => {
+    // Reset mock state between tests for isolation.
+    // TODO: When moving to parallel workers (workers > 1), replace globalThis pattern
+    // with a Playwright worker-scoped fixture that provides typed access to the mock.
+    // The fixture would start/stop the mock per worker and expose reset() via the
+    // fixture parameter. This requires solving port allocation (each worker needs its
+    // own mock port) and env-var injection before the Next.js dev server starts.
+    expect(globalThis.__ASSINAFY_MOCK__).toBeDefined();
+    globalThis.__ASSINAFY_MOCK__!.reset();
+
     await loginAsAdmin();
     await page.goto('/app/secretaria/oficios');
     await page.waitForLoadState('networkidle');

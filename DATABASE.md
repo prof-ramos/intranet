@@ -18,15 +18,21 @@
 
 | Ambiente | Variável | Descrição |
 |----------|----------|-----------|
-| Runtime | `DATABASE_URL` | Pooled (Neon pooler) — `ep-empty-cake-ac26vl6w-pooler.sa-east-1.aws.neon.tech` |
-| Migrations | `DATABASE_MIGRATION_URL` | Direta (Neon direct) — `ep-empty-cake-ac26vl6w.sa-east-1.aws.neon.tech` |
+| Produção (Runtime) | `DATABASE_URL` | Pooled (Neon pooler) — `ep-empty-cake-ac26vl6w-pooler.sa-east-1.aws.neon.tech` |
+| Produção (Migrations) | `DATABASE_MIGRATION_URL` | Direta (Neon direct) — `ep-empty-cake-ac26vl6w.sa-east-1.aws.neon.tech` |
+| Dev (Runtime) | `DATABASE_URL` | Pooled — `ep-tiny-king-acczg9ev-pooler.sa-east-1.aws.neon.tech` |
+| Dev (Migrations) | `DATABASE_MIGRATION_URL` / `DATABASE_URL_UNPOOLED` | Direta — `ep-tiny-king-acczg9ev.sa-east-1.aws.neon.tech` |
 
 O cliente Drizzle (`src/lib/db/index.ts`) também aceita fallbacks legados: `DATABASE_POSTGRES_URL`, `POSTGRES_PRISMA_URL`, `POSTGRES_URL`.
 
 ### Desenvolvimento local
 
-- **Recomendado (dados reais):** Clone do Neon em `asof_intranet_neon_clone` (veja README.md > Banco de dados e CONTRIBUTING.md para o procedimento completo de dump/restore usando cliente PostgreSQL 17).
-  - **Aviso LGPD (crítico):** O clone contém PII sensível (CPF, SIAPE, endereços, etc.). Siga controles estritos do README (delete dumps de /tmp imediatamente, use apenas em máquinas autorizadas com FDE, nunca compartilhe ou persista sem proteção). Prefira setup mínimo. Consulte `src/lib/lgpd/`, `sanitizePii()`, `lib/crypto/pii.ts` e ADRs (ex. 006).
+- **Recomendado (dados reais):** Branch `vercel-dev` no projeto Neon `intranet-db` (projeto `long-leaf-97822199`). Contém clone dos dados de produção (~1.750 associados, 29 tabelas) sem risco ao banco de produção.
+  - Para resetar o branch para o estado de produção: Console Neon ou API (`POST /v2/projects/long-leaf-97822199/branches` com `parent_id: "br-bold-bar-acge6h1w"`).
+  - `.env.local` aponta para este branch por padrão.
+  - **Aviso LGPD (crítico):** O branch contém PII sensível (CPF, SIAPE, endereços, etc.). Siga controles estritos (use apenas em máquinas autorizadas com FDE, nunca compartilhe). Consulte `src/lib/lgpd/`, `sanitizePii()`, `lib/crypto/pii.ts` e ADRs (ex. 006).
+- **Alternativa (dump local):** Clone do Neon em `asof_intranet_neon_clone` (veja README.md > Banco de dados e CONTRIBUTING.md para o procedimento completo de dump/restore usando cliente PostgreSQL 17).
+  - **Aviso LGPD:** O clone contém PII sensível. Delete dumps de `/tmp` imediatamente após restore.
 - **Mínimo:** Banco vazio `asof_intranet` + `npm run db:seed`.
 - Sempre use URLs locais (sem sslmode=require) e usuário do sistema (ex: `postgres://gabrielramos@localhost:5432/asof_intranet_neon_clone`).
 - Testes de integração e E2E usam bancos dedicados separados (`asof_intranet_test`, `asof_test`).

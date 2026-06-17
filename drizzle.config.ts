@@ -2,6 +2,7 @@ import { defineConfig } from 'drizzle-kit';
 
 const databaseUrl =
   process.env.DATABASE_MIGRATION_URL ??
+  process.env.DATABASE_URL_UNPOOLED ??
   process.env.DATABASE_POSTGRES_URL_NON_POOLING ??
   process.env.POSTGRES_URL_NON_POOLING ??
   process.env.DATABASE_POSTGRES_URL ??
@@ -9,7 +10,7 @@ const databaseUrl =
 
 if (!databaseUrl) {
   throw new Error(
-    'DATABASE_MIGRATION_URL, DATABASE_POSTGRES_URL_NON_POOLING, DATABASE_POSTGRES_URL, or DATABASE_URL must be set.',
+    'DATABASE_MIGRATION_URL, DATABASE_URL_UNPOOLED, DATABASE_POSTGRES_URL_NON_POOLING, DATABASE_POSTGRES_URL, or DATABASE_URL must be set.',
   );
 }
 

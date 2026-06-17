@@ -84,11 +84,17 @@ Acesse [http://localhost:3000](http://localhost:3000).
 | `DATABASE_MIGRATION_URL` | URL PostgreSQL direta/non-pooling para migrations do Drizzle.                        |
 | `SESSION_SECRET`         | Segredo forte para assinar cookies `httpOnly` de sessão.                             |
 
-No setup atual de producao em Vercel:
+No setup atual de produção no Vercel:
 
 - `DATABASE_URL` aponta para o pooler do Neon `ep-empty-cake-ac26vl6w-pooler.sa-east-1.aws.neon.tech`
 - `DATABASE_MIGRATION_URL` aponta para o host direto do Neon `ep-empty-cake-ac26vl6w.sa-east-1.aws.neon.tech`
-- Fallbacks legados como `DATABASE_POSTGRES_URL` e `POSTGRES_URL` nao devem permanecer configurados em producao
+- `DATABASE_URL_UNPOOLED` é injetado pela integração Neon-Vercel e serve como fallback para migrations
+- Fallbacks legados como `DATABASE_POSTGRES_URL` e `POSTGRES_URL` não devem permanecer configurados em produção
+
+Para desenvolvimento local com o branch `vercel-dev`:
+
+- `DATABASE_URL` aponta para `ep-tiny-king-acczg9ev-pooler.sa-east-1.aws.neon.tech`
+- `DATABASE_MIGRATION_URL` / `DATABASE_URL_UNPOOLED` aponta para `ep-tiny-king-acczg9ev.sa-east-1.aws.neon.tech`
 
 ### Seed do admin inicial
 
@@ -142,7 +148,10 @@ Para o primeiro go-live, integrações/webhooks não são obrigatórios e produ�
 
 O projeto usa PostgreSQL via Drizzle.
 
-- **Desenvolvimento local (recomendado para trabalho realista):** Use o clone completo do Neon no Postgres local (`asof_intranet_neon_clone`). Isso traz dados reais de associados (~1662 registros), ofícios, etc., ideal para kanban/atividades, filtros, performance e testes manuais.
+- **Desenvolvimento local (recomendado):** Branch `vercel-dev` no projeto Neon `intranet-db`. Contém dados reais de produção (~1.750 associados, ofícios, atividades) sem risco ao banco de produção. O `.env.local` já aponta para este branch.
+  - Para resetar o branch para o estado de produção: Console Neon ou API (`POST /v2/projects/long-leaf-97822199/branches` com `parent_id: "br-bold-bar-acge6h1w"`).
+  - ⚠️ **AVISO LGPD:** O branch contém PII sensível. Use apenas em máquinas autorizadas com FDE.
+- **Alternativa local (dump):** Use o clone completo do Neon no Postgres local (`asof_intranet_neon_clone`). Isso traz dados reais de associados (~1.750 registros), ofícios, etc., ideal para kanban/atividades, filtros, performance e testes manuais.
 
   **⚠️ AVISO CRÍTICO DE SEGURANÇA / LGPD:** O banco Neon de produção contém dados pessoais sensíveis (CPF, SIAPE, emails primários/secundários, endereços, telefones, datas de nascimento, notas internas, registros funcionais, etc.) protegidos pela LGPD e tratados com criptografia em `src/lib/crypto/pii.ts`, `sanitizePii()`, retenção em `lib/lgpd/retention.ts` e ADRs (ex: 006 sobre desfiação/anonimização). Seguir as instruções abaixo **cria um dump plaintext completo em `/tmp`** no seu disco local.
 
@@ -355,47 +364,24 @@ scripts/          # seed, diagnóstico e guardrails operacionais
 
 > Use esta seção se precisar reconstruir o ambiente de desenvolvimento em uma máquina nova.
 
-### 1. Clonar o repositório
-
 ```bash
 git clone https://github.com/prof-ramos/intranet.git
 cd intranet
 ```
 
-### 2. Requisitos
+Os passos a seguir resumem conteúdo detalhado em outras seções — consulte-as para contexto completo:
 
-- **Node.js 20+** (use fnm/nvm para gerenciar versões)
-- **npm** (não pnpm/yarn — o lockfile é `package-lock.json`)
-- **PostgreSQL local** (recomendado via Homebrew: `brew install postgresql@17`)
+| Passo | Onde encontrar |
+|-------|---------------|
+| Requisitos (Node.js 20+, npm, PostgreSQL) | [Pré-requisitos](#pré-requisitos) |
+| Instalar dependências (`npm install`) | [Início rápido](#início-rápido) passo 1 |
+| Configurar variáveis de ambiente | [Variáveis de ambiente](#variáveis-de-ambiente) |
+| Preparar o banco (`createdb`, `db:migrate`, `db:seed`) | [Banco de dados](#banco-de-dados) |
+| Executar em desenvolvimento (`npm run dev`) | [Início rápido](#início-rápido) passo 6 |
+| Rodar testes (`validate:quick`, `test:db`, `test:e2e`) | [Comandos > Qualidade e PR](#qualidade-e-pr) |
+| Build de produção (`npm run build`) | [Comandos > Desenvolvimento](#desenvolvimento) |
 
-### 3. Instalar dependências
-
-```bash
-npm install
-```
-
-### 4. Configurar variáveis de ambiente
-
-```bash
-cp .env.example .env.local
-# Edite .env.local com suas credenciais locais
-```
-
-Variáveis mínimas para desenvolvimento local:
-
-| Variável | Exemplo local | Onde obter |
-|----------|---------------|-------------|
-| `DATABASE_URL` | `postgres://<user>@localhost:5432/asof_intranet` | Seu PostgreSQL local |
-| `DATABASE_MIGRATION_URL` | `postgres://<user>@localhost:5432/asof_intranet` | Mesmo que acima |
-| `SESSION_SECRET` | `openssl rand -hex 32` | Gere localmente |
-| `ENCRYPTION_MASTER_KEY` | `openssl rand -hex 32` | Gere localmente |
-| `SKIP_AUTH` | `true` | Para dev sem login |
-| `DEV_USER_ID` | `1` | Fixo para dev |
-| `DEV_USER_ROLE` | `admin` | Fixo para dev |
-
-> ⚠️ **Nunca commit `.env.local`, `.env.production` ou `.env.test.local`.** Eles já estão no `.gitignore`. Preserve-os localmente (ou em um cofre de senhas) antes de formatar.
-
-#### Restaurar do 1Password (vault `Dev`)
+### Restaurar variáveis de ambiente do 1Password (vault `Dev`)
 
 Se você salvou os arquivos no 1Password antes de formatar:
 
@@ -415,48 +401,16 @@ op item get "ASOF Intranet - .env.test.local (2026-06-15)" \
 
 > **Importante:** Use `--format=json | jq -r '...'` em vez de `--fields notesPlain`. O 1Password adiciona aspas extras na saída direta de `notesPlain`, que quebram o formato do arquivo.
 
-### 5. Preparar o banco de dados
+Caso contrário, gere `SESSION_SECRET` e `ENCRYPTION_MASTER_KEY` com `openssl rand -hex 32` e preencha as demais variáveis conforme a tabela em [Variáveis de ambiente](#variáveis-de-ambiente).
 
-```bash
-# Criar banco local
+> ⚠️ **Nunca commit `.env.local`, `.env.production` ou `.env.test.local`.** Eles já estão no `.gitignore`.
 
-```bash
-createdb asof_intranet
-
-# Aplicar migrações
-npm run db:migrate
-
-# Popular dados iniciais
-npm run db:seed
-```
-
-### 6. Executar em desenvolvimento
-
-```bash
-npm run dev
-# Acesse http://localhost:3000
-```
-
-### 7. Rodar testes
-
-```bash
-npm run validate:quick   # typecheck + lint + unit tests
-npm run test:db          # schema contract
-npm run test:e2e         # Playwright (sobe servidor E2E próprio)
-```
-
-### 8. Build de produção
-
-```bash
-npm run build
-```
-
-### 9. Deploy
+### Deploy
 
 O deploy é automatizado via push para `main` no GitHub → Vercel.
 Veja [`docs/runbook.md`](./docs/runbook.md) para procedimentos operacionais.
 
-### 10. Arquivos que NÃO estão no GitHub (por segurança)
+### Arquivos que NÃO estão no GitHub (por segurança)
 
 - `.env.local` — suas credenciais locais
 - `.env.production` — credenciais de produção

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD } from '../constants';
 
 test.describe('Login', () => {
   test('shows login page', async ({ page }) => {
@@ -10,8 +11,8 @@ test.describe('Login', () => {
 
   test('logs in with valid credentials', async ({ page }) => {
     await page.goto('/login');
-    await page.fill('input[name="email"]', 'e2e-admin@asof.local');
-    await page.fill('input[name="password"]', 'Senha-Forte-2026!');
+    await page.fill('input[name="email"]', E2E_ADMIN_EMAIL);
+    await page.fill('input[name="password"]', E2E_ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL('/app');
     await expect(page.locator('text=Dashboard')).toBeVisible();
@@ -19,7 +20,7 @@ test.describe('Login', () => {
 
   test('shows error on invalid credentials', async ({ page }) => {
     await page.goto('/login');
-    await page.fill('input[name="email"]', 'e2e-admin@asof.local');
+    await page.fill('input[name="email"]', E2E_ADMIN_EMAIL);
     await page.fill('input[name="password"]', 'wrong-password');
     await page.click('button[type="submit"]');
     await page.waitForURL('/login?error=1');
