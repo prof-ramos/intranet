@@ -8,7 +8,7 @@ import { calculatePaginationBounds } from '@/lib/pagination';
 import { AssociatesHeader } from './components/AssociatesHeader';
 import { AssociatesTable } from './components/AssociatesTable';
 import { AssociatesPagination } from './components/AssociatesPagination';
-import { Download } from 'lucide-react';
+import { Download, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { focusRingClass, textMuted } from '@/lib/ui/tokens';
 
@@ -76,6 +76,15 @@ export default async function AssociadosPage({
               {total === 0 ? 'Nenhum resultado' : `${from}–${to} de ${total}`}
             </p>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              {(user.role === 'admin' || user.role === 'secretaria') && (
+                <Link
+                  href="/app/associados/novo"
+                  className={`inline-flex h-11 items-center gap-2 rounded-[8px] bg-[#040920] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
+                >
+                  <Plus size={16} aria-hidden="true" />
+                  Novo oficial
+                </Link>
+              )}
               <Link
                 href={currentListUrl}
                 className={`text-sm font-semibold hover:underline ${focusRingClass}`}

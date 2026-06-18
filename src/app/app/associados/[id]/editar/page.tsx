@@ -5,7 +5,7 @@ import { requireEntityById } from '@/lib/routing/require-entity';
 import { EditarAssociadoForm } from './EditarAssociadoForm';
 
 export default async function EditarAssociadoPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireRole(['admin', 'diretoria']);
+  const user = await requireRole(['admin', 'diretoria', 'secretaria']);
   const { id } = await params;
   const associateId = parsePositiveIntParam(id);
   const associate = await requireEntityById(associateId, (id) =>

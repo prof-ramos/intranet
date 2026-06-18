@@ -290,6 +290,15 @@ export const updateAssociateSchema = z.object({
   internalNotes: z.string().trim().nullable().optional(),
 });
 
+/**
+ * Schema de criação de associado. Reaproveita toda a validação de campos do
+ * `updateAssociateSchema` (CPF, SIAPE, datas, enums) exceto o `id`, que só
+ * existe após o insert. Os status com default no banco
+ * (`associationStatus=nao_associado`, `contributionStatus=inadimplente`,
+ * `paymentMethod=folha`) são aplicados pelo service quando ausentes.
+ */
+export const createAssociateSchema = updateAssociateSchema.omit({ id: true });
+
 // ─── Dependent & Health Agreement Schemas ────────────────────────────────
 
 export const createDependentSchema = z.object({
