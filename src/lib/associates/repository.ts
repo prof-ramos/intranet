@@ -63,6 +63,38 @@ export interface AssociateListItem {
   contributionStatus: string | null;
 }
 
+function mapAssociateListRow(row: {
+  id: number;
+  fullName: string;
+  assignment: string | null;
+  classPattern: string | null;
+  functionalStatus: string | null;
+  associationStatus: string | null;
+  contributionStatus: string | null;
+  primaryEmailCiphertext: string | null;
+  primaryEmail: string | null;
+  siapeCiphertext: string | null;
+  siape: string | null;
+  phoneCiphertext: string | null;
+  phone: string | null;
+  whatsappCiphertext: string | null;
+  whatsapp: string | null;
+}): AssociateListItem {
+  return {
+    id: row.id,
+    fullName: row.fullName,
+    assignment: row.assignment,
+    classPattern: row.classPattern,
+    functionalStatus: row.functionalStatus,
+    associationStatus: row.associationStatus,
+    contributionStatus: row.contributionStatus,
+    primaryEmail: decryptPiiField(row.primaryEmailCiphertext ?? null, row.primaryEmail ?? null),
+    siape:        decryptPiiField(row.siapeCiphertext ?? null,        row.siape ?? null),
+    phone:        decryptPiiField(row.phoneCiphertext ?? null,        row.phone ?? null),
+    whatsapp:     decryptPiiField(row.whatsappCiphertext ?? null,     row.whatsapp ?? null),
+  };
+}
+
 export interface AssociatesFilters {
   contributionStatus?: 'em_dia' | 'inadimplente' | 'pendente_migracao';
   functionalStatus?: 'ativo' | 'aposentado' | 'cedido' | 'em_licenca';
@@ -114,19 +146,7 @@ export async function findAssociatesPaginated(
     ]);
 
     return {
-      rows: rows.map((row) => ({
-        id: row.id,
-        fullName: row.fullName,
-        assignment: row.assignment,
-        classPattern: row.classPattern,
-        functionalStatus: row.functionalStatus,
-        associationStatus: row.associationStatus,
-        contributionStatus: row.contributionStatus,
-        primaryEmail: decryptPiiField(row.primaryEmailCiphertext ?? null, row.primaryEmail ?? null),
-        siape: decryptPiiField(row.siapeCiphertext ?? null, row.siape ?? null),
-        phone: decryptPiiField(row.phoneCiphertext ?? null, row.phone ?? null),
-        whatsapp: decryptPiiField(row.whatsappCiphertext ?? null, row.whatsapp ?? null),
-      })),
+      rows: rows.map(mapAssociateListRow),
       total,
     };
   }
@@ -159,19 +179,7 @@ export async function findAssociatesPaginated(
   ]);
 
   return {
-    rows: rows.map((row) => ({
-      id: row.id,
-      fullName: row.fullName,
-      assignment: row.assignment,
-      classPattern: row.classPattern,
-      functionalStatus: row.functionalStatus,
-      associationStatus: row.associationStatus,
-      contributionStatus: row.contributionStatus,
-      primaryEmail: decryptPiiField(row.primaryEmailCiphertext ?? null, row.primaryEmail ?? null),
-      siape: decryptPiiField(row.siapeCiphertext ?? null, row.siape ?? null),
-      phone: decryptPiiField(row.phoneCiphertext ?? null, row.phone ?? null),
-      whatsapp: decryptPiiField(row.whatsappCiphertext ?? null, row.whatsapp ?? null),
-    })),
+    rows: rows.map(mapAssociateListRow),
     total,
   };
 }
@@ -240,19 +248,7 @@ export async function findAssociatesPaginatedCursor(
       .limit(pageSize);
 
     return {
-      rows: rows.map((row) => ({
-        id: row.id,
-        fullName: row.fullName,
-        assignment: row.assignment,
-        classPattern: row.classPattern,
-        functionalStatus: row.functionalStatus,
-        associationStatus: row.associationStatus,
-        contributionStatus: row.contributionStatus,
-        primaryEmail: decryptPiiField(row.primaryEmailCiphertext ?? null, row.primaryEmail ?? null),
-        siape: decryptPiiField(row.siapeCiphertext ?? null, row.siape ?? null),
-        phone: decryptPiiField(row.phoneCiphertext ?? null, row.phone ?? null),
-        whatsapp: decryptPiiField(row.whatsappCiphertext ?? null, row.whatsapp ?? null),
-      })),
+      rows: rows.map(mapAssociateListRow),
       nextCursor: null,
     };
   }
@@ -290,19 +286,7 @@ export async function findAssociatesPaginatedCursor(
   const lastRow = pageRows[pageRows.length - 1];
 
   return {
-    rows: pageRows.map((row) => ({
-      id: row.id,
-      fullName: row.fullName,
-      assignment: row.assignment,
-      classPattern: row.classPattern,
-      functionalStatus: row.functionalStatus,
-      associationStatus: row.associationStatus,
-      contributionStatus: row.contributionStatus,
-      primaryEmail: decryptPiiField(row.primaryEmailCiphertext ?? null, row.primaryEmail ?? null),
-      siape: decryptPiiField(row.siapeCiphertext ?? null, row.siape ?? null),
-      phone: decryptPiiField(row.phoneCiphertext ?? null, row.phone ?? null),
-      whatsapp: decryptPiiField(row.whatsappCiphertext ?? null, row.whatsapp ?? null),
-    })),
+    rows: pageRows.map(mapAssociateListRow),
     nextCursor: hasMore && lastRow ? encodeCursor(lastRow.fullName, lastRow.id) : null,
   };
 }
