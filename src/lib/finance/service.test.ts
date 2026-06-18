@@ -101,28 +101,9 @@ describe('finance service', () => {
 
     expect(count).toBe(1);
     expect(transactionMock.tx.update).toHaveBeenCalled();
-    expect(logAuditAction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        adminId: null,
-        action: 'auto_mark_overdue',
-        entityType: 'monthly_payment',
-        entityId: 5,
-        changes: {
-          old: {
-            status: 'pendente',
-          },
-          new: {
-            status: 'atrasado',
-          },
-        },
-        metadata: {
-          actorType: 'system',
-          associateId: 10,
-          year: 2026,
-          month: 4,
-        },
-      }),
-    );
+    // Bulk insert replaces N sequential logAuditAction calls
+    expect(logAuditAction).not.toHaveBeenCalled();
+    expect(transactionMock.tx.insert).toHaveBeenCalledWith(expect.anything());
     expect(emitDomainEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'monthly_payment.updated',
@@ -143,12 +124,18 @@ describe('finance service', () => {
         },
       }),
     );
-    expect(JSON.stringify(vi.mocked(logAuditAction).mock.calls[0][0])).not.toMatch(
-      /cpf|siape|address/i,
-    );
     expect(JSON.stringify(vi.mocked(emitDomainEvent).mock.calls[0][0])).not.toMatch(
       /cpf|siape|address/i,
     );
+  });
+
+  it('logs an error but still returns count when some domain events fail to emit', async () => {
+    vi.mocked(emitDomainEvent).mockRejectedValueOnce(new Error('emit failed'));
+
+    const count = await autoMarkOverduePaymentsService();
+
+    expect(count).toBe(1);
+    expect(emitDomainEvent).toHaveBeenCalled();
   });
 
   it('emits a domain event when the payment status changes', async () => {

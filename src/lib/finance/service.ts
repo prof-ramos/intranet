@@ -1,14 +1,14 @@
 import * as repository from './repository';
-import { markOverduePaymentsForAudit, type OverduePaymentTransition } from './repository';
+import { markOverduePaymentsForAudit } from './repository';
 import { logAuditAction } from '@/lib/audit/service';
-import { db, type DbExecutor } from '@/lib/db';
+import { db } from '@/lib/db';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import {
   monthlyPayments,
   type MonthlyPayment,
   type NewMonthlyPayment,
 } from '@/lib/db/schema/finance';
-import { type NewAuditLog } from '@/lib/db/schema/audit';
+import { auditLogs } from '@/lib/db/schema/audit';
 import { associates } from '@/lib/db/schema/associates';
 import { and, eq, sql } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
@@ -49,8 +49,25 @@ export async function autoMarkOverduePaymentsService(): Promise<number> {
   const { transitioned, events } = await db.transaction(async (tx) => {
     const rows = await markOverduePaymentsForAudit(tx);
 
-    for (const payment of rows) {
-      await logSystemOverdueTransition(payment, tx);
+    if (rows.length > 0) {
+      await tx.insert(auditLogs).values(
+        rows.map((payment) => ({
+          performedBy: null,
+          action: 'auto_mark_overdue',
+          entityType: 'monthly_payment' as const,
+          entityId: payment.id,
+          changes: {
+            old: { status: 'pendente' },
+            new: { status: 'atrasado' },
+          },
+          metadata: {
+            actorType: 'system',
+            associateId: payment.associateId,
+            year: payment.year,
+            month: payment.month,
+          },
+        })),
+      );
     }
 
     const domainEvents = rows.map((payment) => ({
@@ -77,9 +94,13 @@ export async function autoMarkOverduePaymentsService(): Promise<number> {
     return { transitioned: rows, events: domainEvents };
   });
 
-  // Emit domain events after transaction commit to reduce lock window
-  for (const { event } of events) {
-    await emitDomainEvent(event);
+  const emitResults = await Promise.allSettled(events.map(({ event }) => emitDomainEvent(event)));
+  const emitFailures = emitResults.filter((r) => r.status === 'rejected');
+  if (emitFailures.length > 0) {
+    logger.error('[autoMarkOverdue] Some domain events failed to emit', {
+      failedCount: emitFailures.length,
+      totalCount: events.length,
+    });
   }
 
   const count = transitioned.length;
@@ -89,34 +110,6 @@ export async function autoMarkOverduePaymentsService(): Promise<number> {
   }
 
   return count;
-}
-
-async function logSystemOverdueTransition(payment: OverduePaymentTransition, executor: DbExecutor) {
-  const changes = {
-    old: {
-      status: 'pendente',
-    },
-    new: {
-      status: 'atrasado',
-    },
-  } satisfies NonNullable<NewAuditLog['changes']>;
-
-  const metadata = {
-    actorType: 'system',
-    associateId: payment.associateId,
-    year: payment.year,
-    month: payment.month,
-  };
-
-  await logAuditAction({
-    adminId: null,
-    action: 'auto_mark_overdue',
-    entityType: 'monthly_payment',
-    entityId: payment.id,
-    changes,
-    metadata,
-    executor,
-  });
 }
 
 function getPaymentAuditState(payment: MonthlyPayment) {

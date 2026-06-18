@@ -25,10 +25,10 @@ honor its STOP conditions, and update your row when done.
 | 015  | Add pre-commit hooks (husky + lint-staged) | P2 | S | 010 | DONE | |
 | 016  | Add unit tests for associate dependent and health-agreement actions | P2 | M | 011, 014 | DONE | |
 | 017  | Migrate z.preprocess to Zod v4 idiomatic transforms | P2 | S | — | DONE | |
-| 018  | Move Assinafy webhook idempotency guard inside the DB transaction | P2 | M | — | TODO | |
-| 019  | Add replay protection to integration request verification | P2 | M | — | TODO | |
-| 020  | Add unit tests for email-triage server actions | P2 | M | — | TODO | |
-| 021  | Bulk audit-log inserts and parallel domain-event emission in autoMarkOverdue | P2 | M | — | TODO | |
+| 018  | Move Assinafy webhook idempotency guard inside the DB transaction | P2 | M | — | DONE | |
+| 019  | Add replay protection to integration request verification | P2 | M | — | DONE | |
+| 020  | Add unit tests for email-triage server actions | P2 | M | — | DONE | |
+| 021  | Bulk audit-log inserts and parallel domain-event emission in autoMarkOverdue | P2 | M | — | DONE | |
 
 ## Dependency notes
 
