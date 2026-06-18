@@ -176,6 +176,13 @@
       "when": 1781801526834,
       "tag": "0024_worthless_deathbird",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1781811800000,
+      "tag": "0025_officials_domain_statuses",
+      "breakpoints": true
     }
   ]
 }

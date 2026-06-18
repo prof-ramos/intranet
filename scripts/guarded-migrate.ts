@@ -33,7 +33,7 @@ export function resolveMigrationUrl(env: EnvMap): ResolvedMigrationUrl | null {
 }
 
 export function isLocalDatabaseHost(hostname: string): boolean {
-  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '[::1]';
 }
 
 const KNOWN_PRODUCTION_DOMAINS = ['supabase.co', 'supabase.com', 'aws.neon.tech'];
@@ -50,6 +50,16 @@ export function shouldBlockMigration(env: EnvMap, resolved: ResolvedMigrationUrl
   if (env.VERCEL_ENV === 'production') return true;
   if (env.NODE_ENV === 'production' && !isLocalDatabaseHost(resolved.url.hostname)) return true;
 
+  if (env.DATABASE_MIGRATION_ENV === 'staging' || env.ALLOW_STAGING_MIGRATIONS === 'true') {
+    const stagingHost = env.DATABASE_STAGING_HOST?.trim().toLowerCase();
+    return !(
+      env.DATABASE_MIGRATION_ENV === 'staging' &&
+      env.ALLOW_STAGING_MIGRATIONS === 'true' &&
+      stagingHost &&
+      resolved.url.hostname.toLowerCase() === stagingHost
+    );
+  }
+
   return isKnownProductionDatabaseUrl(resolved.url);
 }
 
@@ -65,7 +75,8 @@ export function assertMigrationAllowed(env: EnvMap): ResolvedMigrationUrl {
     throw new Error(
       [
         `Refusing to run db:migrate against ${resolved.envName} (${resolved.url.hostname}).`,
-        'Set ALLOW_PRODUCTION_MIGRATIONS=true only after backup/snapshot, deployment window approval, and a documented rollback plan.',
+        'For staging, set DATABASE_MIGRATION_ENV=staging, ALLOW_STAGING_MIGRATIONS=true, and DATABASE_STAGING_HOST matching the official staging database host.',
+        'For production, set ALLOW_PRODUCTION_MIGRATIONS=true only after backup/snapshot, deployment window approval, and a documented rollback plan.',
       ].join(' '),
     );
   }

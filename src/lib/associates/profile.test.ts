@@ -51,7 +51,7 @@ describe('associates/profile helpers', () => {
   });
 
   it('maps known statuses to labels', () => {
-    expect(getAssociateStatusLabel('pendente_migracao')).toBe('Pendente migração');
+    expect(getAssociateStatusLabel('nao_associado')).toBe('Não associado');
     expect(getAssociateStatusLabel(null)).toBeNull();
   });
 
@@ -94,7 +94,7 @@ describe('getAssociateProfile', () => {
       assignment: 'SERE',
       locationCity: 'Brasília',
       locationCountry: 'Brasil',
-      associationStatus: 'ativo',
+      associationStatus: 'associado',
       functionalStatus: 'ativo',
       associationCategory: 'A1',
       joinedAt: '2015-06-01',
@@ -123,7 +123,7 @@ describe('getAssociateProfile', () => {
       assignment: null,
       locationCity: null,
       locationCountry: null,
-      associationStatus: 'ativo',
+      associationStatus: 'associado',
       functionalStatus: 'ativo',
       associationCategory: null,
       joinedAt: null,

@@ -39,7 +39,7 @@ describe('associados actions', () => {
     formData.set('cpf', '529.982.247-25');
     formData.set('primaryEmail', 'maria@asof.local');
     formData.set('functionalStatus', 'ativo');
-    formData.set('associationStatus', 'ativo');
+    formData.set('associationStatus', 'associado');
     formData.set('contributionStatus', 'em_dia');
 
     await expect(updateAssociate(formData)).rejects.toThrow('NEXT_REDIRECT:/app/associados/15');
@@ -51,7 +51,7 @@ describe('associados actions', () => {
         cpf: '529.982.247-25',
         primaryEmail: 'maria@asof.local',
         functionalStatus: 'ativo',
-        associationStatus: 'ativo',
+        associationStatus: 'associado',
         contributionStatus: 'em_dia',
         updatedBy: 7,
       }),

@@ -100,13 +100,13 @@ export interface EditAssociateDTO {
 export function getAssociateStatusLabel(value: string | null) {
   const labels: Record<string, string> = {
     ativo: 'Ativo',
-    inativo: 'Inativo',
     aposentado: 'Aposentado',
     cedido: 'Cedido',
     em_licenca: 'Em licença',
+    associado: 'Associado',
+    nao_associado: 'Não associado',
     em_dia: 'Em dia',
     inadimplente: 'Inadimplente',
-    pendente_migracao: 'Pendente migração',
   };
   return value ? (labels[value] ?? value) : null;
 }

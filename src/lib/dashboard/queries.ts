@@ -25,7 +25,7 @@ export const countActiveAssociates = withCache({
     const rows = await db
       .select({ count: count() })
       .from(associates)
-      .where(eq(associates.associationStatus, 'ativo'));
+      .where(eq(associates.associationStatus, 'associado'));
     return rows[0].count;
   },
   keyFn: () => ['active-associates-count'],
@@ -55,7 +55,7 @@ export const countActiveAssociatesByLocation = withCache({
       })
       .from(associates)
       .leftJoin(assignments, eq(assignments.name, associates.assignment))
-      .where(eq(associates.associationStatus, 'ativo'));
+      .where(eq(associates.associationStatus, 'associado'));
 
     return rows[0] ?? { brasil: 0, exterior: 0 };
   },
@@ -70,7 +70,7 @@ export const countContributionsOkAssociates = withCache({
       .select({ count: count() })
       .from(associates)
       .where(
-        and(eq(associates.associationStatus, 'ativo'), eq(associates.contributionStatus, 'em_dia')),
+        and(eq(associates.associationStatus, 'associado'), eq(associates.contributionStatus, 'em_dia')),
       );
     return rows[0].count;
   },
@@ -129,30 +129,16 @@ export interface TopRegion {
 
 const normalizedCountry = normalizedCountryLabelSql(associates.locationCountry);
 
-/**
- * When an associate serves abroad (assignment.type = 'exterior') but their
- * locationCountry is domestic/null, the country field is unreliable.
- * Classify them as "Exterior (país não informado)" instead of inflating Brasil.
- *
- * Requires: leftJoin(assignments, eq(assignments.name, associates.assignment))
- */
-const correctedCountry = sql<string>`case
-  when ${assignments.type} = 'exterior' and ${isDomesticCountrySql(associates.locationCountry)}
-    then 'Exterior (país não informado)'
-  else ${normalizedCountry}
-end`;
-
 const _getTopRegions = withCache({
   fn: async (limit: number): Promise<TopRegion[]> =>
     db
-      .select({ country: correctedCountry, total: countDistinct(associates.id) })
+      .select({ country: normalizedCountry, total: countDistinct(associates.id) })
       .from(associates)
-      .leftJoin(assignments, eq(assignments.name, associates.assignment))
-      .where(eq(associates.associationStatus, 'ativo'))
-      .groupBy(correctedCountry)
+      .where(eq(associates.associationStatus, 'associado'))
+      .groupBy(normalizedCountry)
       .orderBy(desc(countDistinct(associates.id)))
       .limit(limit),
-  keyFn: (limit) => ['top-regions-v2', String(limit)],
+  keyFn: (limit) => ['top-regions-v3', String(limit)],
   ttl: TTL_STABLE,
   tags: ['associates', 'dashboard'],
   maxEntries: 10,
@@ -210,7 +196,7 @@ const _getBirthdaysThisMonth = withCache({
       .from(associates)
       .where(
         and(
-          eq(associates.associationStatus, 'ativo'),
+          eq(associates.associationStatus, 'associado'),
           sql`${associates.birthDate} IS NOT NULL`,
           sql`EXTRACT(MONTH FROM ${associates.birthDate}::date) = EXTRACT(MONTH FROM CURRENT_DATE)`,
         ),
@@ -239,7 +225,7 @@ export const countInadimplentesAssociates = withCache({
       .from(associates)
       .where(
         and(
-          eq(associates.associationStatus, 'ativo'),
+          eq(associates.associationStatus, 'associado'),
           eq(associates.contributionStatus, 'inadimplente'),
         ),
       );

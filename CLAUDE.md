@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-ASOF Intranet — Sistema interno da Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia ~763 associados, atividades administrativas, financeiro e comunicações internas da diretoria.
+ASOF Intranet — Sistema interno da Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia o Cadastro de Oficiais de Chancelaria, o vínculo ASOF, atividades administrativas, financeiro e comunicações internas da diretoria.
 
 **Stack:** Next.js 16.2.6 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL/Neon · Auth server-side própria
 
@@ -12,7 +12,7 @@ ASOF Intranet — Sistema interno da Associação dos Oficiais de Chancelaria do
 
 ```bash
 npm install
-cp .env.example .env.local   # preencha SESSION_SECRET, DATABASE_URL etc. (use clone asof_intranet_neon_clone para dev realista — veja README)
+cp .env.example .env.local   # preencha SESSION_SECRET, DATABASE_URL etc.; dev padrão usa asof_intranet local
 npm run dev
 ```
 
@@ -31,13 +31,14 @@ npm run test:e2e         # playwright — usa 127.0.0.1:3001, não 3000
 npm run test:db          # schema contract read-only — seguro contra staging e .env.local
 npm run test:integration # DML integration tests — requer .env.test.local com DB localhost
                          # pula graciosamente se .env.test.local não existir
-npm run validate:quick   # typecheck + lint + testes unitários
+npm run validate:quick   # lint + typecheck + testes unitários
 npm run validate:full    # validate:quick + test:db + test:integration + build
 npm run pr:check         # verificações de prontidão para PR
 npm run scope:check      # verifica escopo de arquivos alterados
 npm run db:generate      # drizzle-kit generate
 npm run db:migrate       # guarded — exige ALLOW_PRODUCTION_MIGRATIONS=true em produção
-npm run db:seed          # seed admin via INITIAL_ADMIN_EMAIL / INITIAL_ADMIN_PASSWORD
+npm run db:seed          # seed base mínimo: admin + advogados
+npm run db:seed:dev      # seed sintético local: oficiais, mensalidades, atividades, jurídico e ofícios
 npm run db:studio        # Drizzle Studio
 npm run audit            # npm audit (0 vulnerabilidades)
 ```
@@ -53,19 +54,29 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 
 ## Banco de Dados
 
+- Fonte oficial de ambientes/bancos: `docs/environments.md` (ADR 015). Se outro arquivo divergir, corrija o outro arquivo.
 - PostgreSQL gerenciado (Neon, projeto `intranet-db` / `long-leaf-97822199`, `ep-empty-cake-ac26vl6w`, sa-east-1) em produção.
-- **Desenvolvimento local (recomendado):** Branch `vercel-dev` no projeto Neon `intranet-db` — clone dos dados de produção (1.750 associados, 30 tabelas) sem risco ao banco de produção.
-  - Endpoint: `ep-tiny-king-acczg9ev` (pooled: `ep-tiny-king-acczg9ev-pooler.sa-east-1.aws.neon.tech`)
-  - `.env.local` já aponta para este branch por padrão.
-  - **Aviso LGPD:** O branch contém PII sensível (CPF, SIAPE, endereços, etc.). Siga controles estritos (delete dumps, autorizado apenas, etc.). Consulte lib/lgpd e ADRs.
-- Alternativa local: `asof_intranet_neon_clone` (dump/restore local) ou `asof_intranet` vazio + `npm run db:seed`.
-- Pooled (`DATABASE_URL`) para runtime, direct (`DATABASE_MIGRATION_URL` ou `DATABASE_URL_UNPOOLED`) para migrations.
+- Desenvolvimento diário padrão: Postgres local `asof_intranet` + seed sintético.
+- `npm run db:seed` é o seed base mínimo. `npm run db:seed:dev` é a massa sintética robusta para desenvolvimento local. Não usar dados reais como onboarding padrão.
+- `npm run db:seed:dev` bloqueia hosts remotos por padrão. Só usar `ALLOW_REMOTE_DEV_SEED=SEED_SYNTHETIC_DATA` em branch remoto descartável e documentado.
+- Dados reais em `vercel-dev` ou `asof_intranet_neon_clone` são exceção LGPD restrita para bugs de volume/importação/performance; não são onboarding padrão.
+- Pooled (`DATABASE_URL`) para runtime, direct (`DATABASE_MIGRATION_URL`) para migrations. `DATABASE_URL_UNPOOLED` pode existir por integração Vercel/Neon, mas não é o contrato operacional oficial.
 - Conexão: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'`.
-- **Neon dev branch (`vercel-dev`):** Para resetar o branch de dev para o estado de produção, use o Console Neon ou API: `POST /v2/projects/long-leaf-97822199/branches` com `parent_id: "br-bold-bar-acge6h1w"`. Nunca aplique migrations direto na branch `main`.
+- Nunca aplique migrations direto na branch Neon `main` fora do runbook.
+- Staging só migra com `DATABASE_MIGRATION_ENV=staging`, `ALLOW_STAGING_MIGRATIONS=true` e `DATABASE_STAGING_HOST` batendo exatamente com o host direto do banco oficial de staging.
 - Multi-tabela: sempre usar `db.transaction()`.
 - PII: `encryptPii()` + `piiBlindIndex()` para CPF, SIAPE, email, telefone, endereço. Plaintext nunca em logs.
 - RLS: fora do gate do dia 1. Barreira de segurança = app server + credentials PostgreSQL restritas + LGPD.
 - Para referência completa de tabelas, enums, índices e migrações, veja [`DATABASE.md`](./DATABASE.md).
+
+### Domínio cadastral
+
+- O módulo principal é **Cadastro de Oficiais**. A rota permanece `/app/associados` por compatibilidade histórica.
+- A tabela `associates` representa a totalidade conhecida dos Oficiais de Chancelaria, incluindo associados e não associados à ASOF, ativos e aposentados.
+- `associationStatus` significa **Vínculo ASOF** e usa somente `associado` ou `nao_associado`.
+- `functionalStatus` significa **Situação funcional** e usa `ativo`, `aposentado`, `cedido`, `em_licenca`.
+- Não usar `inativo` para não associado. No domínio da ASOF, “inativo” é sinônimo operacional de aposentadoria/inatividade funcional.
+- `contributionStatus` usa somente `em_dia` ou `inadimplente`; `pendente_migracao` não existe como status de contribuição.
 
 ## Estrutura
 
@@ -79,7 +90,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 | `src/hooks/` | React hooks |
 | `src/lib/db/schema/` | Schemas Drizzle (admins, associates, activities, audit, finance, legal, monthly_payments, oficios, assignments, notifications, dependents, health_agreements, etc.) |
 | `drizzle/postgres/` | Migrations SQL (baseline `0000_green_glorian.sql` + incrementais) |
-| `docs/adr/` | ADRs (001-012) — decisões arquiteturais |
+| `docs/adr/` | ADRs — decisões arquiteturais |
 | `docs/` | Runbook, compliance LGPD, design, jornadas |
 
 ## Arquivos Importantes
@@ -97,6 +108,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 - `src/lib/reports/queries.ts` — queries de relatório com descriptografia PII (ciphertext fallback)
 - `src/app/app/associados/[id]/actions.ts` — server actions CRUD para dependentes e convênios
 - `src/app/app/associados/[id]/DependentManager.tsx` — componente cliente para gerenciamento inline de dependentes e convênios
+- `scripts/seed-dev.ts` — massa sintética robusta para desenvolvimento local, sem PII real
 - `src/lib/notifications/` — notificações persistidas (polling, sem Realtime)
 - `src/lib/assinafy/service.ts` — orquestra webhook Assinafy; idempotência dentro de `db.transaction`; veja ADR 013
 - `src/lib/integrations/verify-request.ts` — autenticação M2M dual (env-var + table-backed), rate limiting, prevenção de replay via nonces
@@ -124,6 +136,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 - Integração: `vitest.integration.config.ts` contra PostgreSQL real.
 - E2E: Playwright, `http://127.0.0.1:3001`, database `asof_test` criado por `e2e/global-setup.ts`.
 - Schema contract: `npm run test:db` valida tables, columns, enums, indexes, extensions e alinhamento de migrations.
+- Validation gates na ordem oficial: `npm run lint` → `npm run typecheck` → `npm run test` → `npm run test:db` → `npm run build`.
 
 ## CI/CD
 
@@ -141,12 +154,15 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 
 ## Documentação Relacionada
 
-- `CONTEXT.md` — glossário e regras de negócio
+- `CONTEXT.md` — glossário e regras de negócio; autoridade de vocabulário do domínio
 - `README.md` — quick start
 - `DATABASE.md` — schema, migrações, índices e convenções de banco
 - `TODO-PROD.md` — checklist de go-live
 - `docs/runbook.md` — runbook operacional
-- `docs/adr/` — ADRs 001-012
+- `docs/environments.md` — matriz oficial de ambientes, bancos, dados e migrations
+- `docs/adr/015-official-environment-and-data-matrix.md` — decisão oficial de ambientes/dados
+- `docs/adr/016-neon-free-tier-pre-go-live-reset.md` — reset pré-go-live no Neon Free Tier
+- `docs/adr/` — ADRs
 - `API.md` — superfície HTTP pública
 - `PAGES.md` — páginas e funcionalidades
 

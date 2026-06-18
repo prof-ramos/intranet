@@ -30,7 +30,7 @@ export function SearchForm({ defaultValue }: { defaultValue: string }) {
           type="search"
           name="q"
           defaultValue={defaultValue}
-          placeholder="Buscar associados, atividades…"
+          placeholder="Buscar oficiais, atividades…"
           autoFocus
           minLength={2}
           maxLength={80}

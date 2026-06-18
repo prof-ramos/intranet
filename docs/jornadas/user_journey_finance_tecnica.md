@@ -10,13 +10,13 @@ Este documento descreve a jornada do administrador ao interagir com o módulo fi
 
 ## Fluxo 1: Inicialização do Mês
 
-_O objetivo é criar os registros base para todos os associados ativos no início de um novo mês._
+_O objetivo é criar os registros base para todos os associados ASOF no início de um novo mês._
 
 1. **Acesso**: O administrador navega até **Financeiro > Controle de Mensalidades**.
 2. **Seleção**: Escolhe o mês e ano desejados através dos controles de navegação.
 3. **Trigger**: Se o mês ainda não possui registros, um botão **"Inicializar Mês [Mês/Ano]"** é exibido.
 4. **Processamento**:
-   - O sistema identifica todos os associados com `associationStatus = 'ativo'`.
+   - O sistema identifica todos os associados com `associationStatus = 'associado'`.
    - Cria um registro em `monthly_payments` para cada um.
    - **Automação**: Associados cujo `paymentMethod` padrão é `'folha'` são marcados automaticamente como `status = 'pago'`.
    - Demais associados são criados com `status = 'pendente'`.
@@ -73,7 +73,7 @@ _O objetivo é garantir que todas as alterações financeiras sejam rastreáveis
 - **Imutabilidade de Identidade**: `uniqueIndex` em `(associateId, year, month)`.
 - **Segurança de Role**: Apenas `admin` e `diretoria` acessam o módulo (`requireRole`).
 - **Fallback de método**: Exibe `monthPaymentMethod` se existir, senão `defaultPaymentMethod` do associado.
-- **Bulk-init seguro**: `initializeMonth` cria registros apenas para associados ativos sem registro no mês. Não sobrescreve pagamentos já alterados.
+- **Bulk-init seguro**: `initializeMonth` cria registros apenas para associados ASOF sem registro no mês. Não sobrescreve pagamentos já alterados.
 - **Concorrência**: `updateMonthlyPayment` compara `expectedUpdatedAt` dentro de `db.transaction()`. Se divergir, rejeita com `CONCURRENCY_CONFLICT`.
 - **Audit log completo**: Captura old state (`status`, `paymentMethod`, `paidAt`) antes do update.
 - **Sem PII em logs**: `logAuditAction` sanitiza CPF, SIAPE, email, endereço automaticamente.

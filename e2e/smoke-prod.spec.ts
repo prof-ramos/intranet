@@ -90,11 +90,11 @@ test('2. Dashboard', async ({ page }) => {
 });
 
 // ── 3. Associados ───────────────────────────────────────────────────────────
-test('3. Associados — lista, busca e perfil', async ({ page }) => {
+test('3. Cadastro de Oficiais — lista, busca e perfil', async ({ page }) => {
   await loginAdmin(page);
   await page.goto('/app/associados');
 
-  await expect(page.locator('h1')).toContainText('Associados');
+  await expect(page.locator('h1')).toContainText('Cadastro de Oficiais');
   const rows = page.locator('table tbody tr');
   await expect(rows.first()).toBeVisible({ timeout: 10_000 });
 

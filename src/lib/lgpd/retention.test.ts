@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => {
     associates: {
       id: Symbol('associates.id'),
       associationStatus: Symbol('associates.associationStatus'),
-      updatedAt: Symbol('associates.updatedAt'),
+      cancellationDate: Symbol('associates.cancellationDate'),
     },
     auditLogs: Symbol('auditLogs'),
   };
@@ -34,6 +34,7 @@ const mocks = vi.hoisted(() => {
 vi.mock('drizzle-orm', () => ({
   and: vi.fn((...args: unknown[]) => ({ op: 'and', args })),
   eq: vi.fn((...args: unknown[]) => ({ op: 'eq', args })),
+  isNotNull: vi.fn((...args: unknown[]) => ({ op: 'isNotNull', args })),
   lte: vi.fn((...args: unknown[]) => ({ op: 'lte', args })),
   notExists: vi.fn((query: unknown) => ({ op: 'notExists', query })),
   like: vi.fn((...args: unknown[]) => ({ op: 'like', args })),
@@ -91,7 +92,7 @@ describe('checkAndEmitLgpdRetentionActivities', () => {
     configureQueryBuilders();
   });
 
-  it('creates PII-free review activities and a sanitized audit log for expired inactive associates', async () => {
+  it('creates PII-free review activities and a sanitized audit log for expired former associates', async () => {
     mocks.expiredLimit.mockResolvedValue([{ id: 10 }, { id: 11 }]);
     mocks.activityReturning.mockResolvedValue([{ id: 100 }, { id: 101 }]);
 
@@ -103,7 +104,7 @@ describe('checkAndEmitLgpdRetentionActivities', () => {
     expect(result).toEqual({ createdCount: 2 });
     expect(mocks.activityValues).toHaveBeenCalledWith([
       expect.objectContaining({
-        title: 'Revisar Retenção LGPD (Prazo Expirado) - Associado ID 10',
+        title: 'Revisar Retenção LGPD (Prazo Expirado) - Oficial ID 10',
         associateId: 10,
         createdBy: 7,
         priority: 'alta',
@@ -111,7 +112,7 @@ describe('checkAndEmitLgpdRetentionActivities', () => {
         dueDate: '2026-06-13T12:00:00.000Z',
       }),
       expect.objectContaining({
-        title: 'Revisar Retenção LGPD (Prazo Expirado) - Associado ID 11',
+        title: 'Revisar Retenção LGPD (Prazo Expirado) - Oficial ID 11',
         associateId: 11,
       }),
     ]);

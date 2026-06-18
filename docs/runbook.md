@@ -1,6 +1,8 @@
 # Runbook Operacional
 
-Este runbook cobre a estreia da intranet ASOF com PostgreSQL gerenciado limpo, baseline Drizzle novo e autenticacao server-side propria.
+Este runbook cobre operacao, migrations, smoke e rollback da intranet ASOF.
+A matriz oficial de ambientes e bancos fica em [`environments.md`](./environments.md)
+e prevalece se outro documento divergir.
 
 Para a janela operacional da Release 1.0, use tambem o roteiro detalhado em
 [`docs/release-1-operational-go-live.md`](./release-1-operational-go-live.md).
@@ -9,22 +11,22 @@ teste, validacao de crons e revisao minima de integracoes/API keys sem secrets.
 
 ## 1. Preparacao Do Banco
 
-1. Provisionar um PostgreSQL gerenciado novo.
+1. Confirmar o ambiente alvo em [`environments.md`](./environments.md).
 2. Criar ou obter duas URLs:
    - `DATABASE_URL`: runtime pooled, usuario restrito.
    - `DATABASE_MIGRATION_URL`: conexao direta/unpooled, usuario de migration.
    - No setup atual do projeto, ambas sao URLs do Neon `intranet-db`:
      `DATABASE_URL` via pooler `ep-empty-cake-ac26vl6w-pooler.sa-east-1.aws.neon.tech`
      e `DATABASE_MIGRATION_URL` via host direto `ep-empty-cake-ac26vl6w.sa-east-1.aws.neon.tech`.
-   - Para desenvolvimento, use o branch `vercel-dev` (endpoint `ep-tiny-king-acczg9ev`):
-     `DATABASE_URL` via pooler `ep-tiny-king-acczg9ev-pooler.sa-east-1.aws.neon.tech`
-     e `DATABASE_MIGRATION_URL`/`DATABASE_URL_UNPOOLED` via host direto `ep-tiny-king-acczg9ev.sa-east-1.aws.neon.tech`.
-3. Confirmar que o banco esta vazio ou explicitamente descartavel.
+3. Confirmar que o banco esta vazio, descartavel ou explicitamente o ambiente
+   oficial de producao.
 4. Fazer snapshot/backup inicial do provider antes de qualquer migration de producao.
 
-### Reset do branch de desenvolvimento
+### Branch de desenvolvimento realista restrito
 
-Para resetar o branch `vercel-dev` para o estado de producao (use Console Neon ou API):
+O branch `vercel-dev` contem PII real e nao e o caminho padrao de
+desenvolvimento. Use apenas quando a matriz permitir. Para recriar um branch de
+dev realista a partir de producao (use Console Neon ou API):
 
 ```bash
 # Via Neon API (requer NEON_API_KEY e org ID)
@@ -35,7 +37,8 @@ curl -X POST "https://console.neon.tech/api/v2/projects/long-leaf-97822199/branc
   -d '{"branch": {"name": "vercel-dev", "parent_id": "br-bold-bar-acge6h1w"}}'
 ```
 
-**Aviso:** Isso destroi o branch anterior e cria um novo com dados de producao. Nunca aplique migrations direto na branch `main`.
+**Aviso:** isso destroi o branch anterior e cria um novo com dados de producao.
+Nunca aplique migrations direto na branch Neon `main` por esse caminho.
 
 ## 2. Envs Obrigatorias
 
@@ -50,9 +53,11 @@ curl -X POST "https://console.neon.tech/api/v2/projects/long-leaf-97822199/branc
 - `SKIP_AUTH` ausente ou `false` em producao
 - `ASOF_INTEGRATIONS_ENABLED=false`, salvo decisao operacional separada
 
-Em producao, nao manter fallbacks legados de banco como `DATABASE_POSTGRES_URL`,
-`DATABASE_POSTGRES_URL_NON_POOLING`, `POSTGRES_URL` ou `POSTGRES_PRISMA_URL`.
-Em preview, nao compartilhar envs gerais de banco com producao.
+Em producao, variaveis de banco injetadas pela Vercel Storage Integration podem
+existir, mas nao sao o contrato operacional. Use sempre `DATABASE_URL` para
+runtime e `DATABASE_MIGRATION_URL` para migrations.
+Em preview, nao compartilhar envs gerais de banco com producao. Em staging, usar
+somente secrets proprios do ambiente `staging`.
 
 Nunca reutilize segredos expostos em chat, logs ou arquivos temporarios.
 
@@ -84,13 +89,15 @@ npm run test:db
 npm run build
 ```
 
-Para uma prova isolada de banco limpo, aponte `DATABASE_URL` e `DATABASE_MIGRATION_URL` para um banco descartavel (ex: `asof_intranet_test` ou clone temporário), rode `npm run db:migrate`, `npm run db:seed` e depois `npm run test:db`.
+Para uma prova isolada de banco limpo, aponte `DATABASE_URL` e
+`DATABASE_MIGRATION_URL` para um banco descartavel (ex: `asof_intranet_test` ou
+clone temporario), rode `npm run db:migrate`, `npm run db:seed` e depois
+`npm run test:db`.
 
 Ao final da validação, descarte o banco temporário explicitamente (ex: `dropdb asof_intranet_test_temp` ou o nome usado) para evitar acumular clones descartáveis.
 
-No desenvolvimento diário, recomenda-se o clone `asof_intranet_neon_clone` do Neon para dados realistas (associados, kanban etc.) — veja README.md.
-
-**Aviso:** O clone traz PII completa. Siga os controles de segurança/LGPD documentados no README (delete dumps, uso restrito, etc.).
+No desenvolvimento diario, use `asof_intranet` local com seed sintetico. Clones
+com PII real sao excecao restrita descrita em [`environments.md`](./environments.md).
 
 ## 5. Smoke Manual
 
@@ -145,4 +152,4 @@ SELECT count(*) FROM integration_signature_nonces WHERE expires_at < now();
 DELETE FROM integration_signature_nonces WHERE expires_at < now();
 ```
 
-Executar via `psql "$DATABASE_MIGRATION_URL"` ou pelo Drizzle Studio (`npm run db:studio`). Recomendado verificar periodicamente em produção; em dev o branch `vercel-dev` pode ser resetado sem preocupação.
+Executar via `psql "$DATABASE_MIGRATION_URL"` ou pelo Drizzle Studio (`npm run db:studio`). Recomendado verificar periodicamente em produção; em dev realista restrito, siga a política de reset/descarte definida em `docs/environments.md`.

@@ -10,7 +10,7 @@ export default async function NovaConsultaPage() {
   const associateRows = await db
     .select({ id: associates.id, name: associates.fullName })
     .from(associates)
-    .where(eq(associates.associationStatus, 'ativo'))
+    .where(eq(associates.associationStatus, 'associado'))
     .orderBy(asc(associates.fullName))
     .limit(200);
 

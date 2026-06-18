@@ -157,8 +157,8 @@ export default async function globalSetup() {
     stdio: 'inherit',
   });
 
-  // Seed E2E data. Load .env.development.local so the seed script can access
-  // Supabase service-role keys when creating auth users.
+  // Seed E2E data. Load .env.development.local for optional local-only service
+  // credentials used by tests; production and CI do not rely on legacy auth providers.
   const tsxCli = path.resolve(process.cwd(), 'node_modules/tsx/dist/cli.mjs');
   execSync(
     `TEST_DATABASE_URL="${TEST_DATABASE_URL}" node ${ENV_FILE_FLAG}"${tsxCli}" scripts/seed-e2e.ts`,

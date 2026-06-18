@@ -14,6 +14,7 @@ Next.js 16 App Router application for ASOF (associação) internal management �
 | `CLAUDE.md` | Project instructions for AI agents (read FIRST) |
 | `AGENTS.md` | This file — AI agent directory navigation |
 | `CONTEXT.md` | Glossary, domain rules, institutional context |
+| `docs/environments.md` | Official environment/database/data/migration matrix |
 | `TODO-PROD.md` | Go-live checklist and production readiness |
 | `package.json` | Dependencies and scripts (dev, build, test, e2e, typecheck, lint, migrate, validate) |
 | `next.config.ts` | Next.js 16.2.6 config — security headers, E2E `distDir` swap, fixed `turbopack.root` |
@@ -51,10 +52,10 @@ A ASOF (Associação Nacional dos Oficiais de Chancelaria do Serviço Exterior B
 | **Lotação**              | Posto ou órgão onde o servidor está em exercício (ex: "Embaixada em Paris", "SERE")   | `assignment`         |
 | **Posto**                | Representação diplomática no exterior (embaixada, consulado) ou a SERE em Brasília    | `assignment`         |
 | **Padrão / Classe**      | Nível na carreira: Classe A → B → C → Especial, cada uma com 5 padrões                | `classPattern`       |
-| **Situação associativa** | Status do associado na ASOF: `ativo`, `inativo`                                       | `associationStatus`  |
+| **Vínculo ASOF**         | Vínculo associativo do oficial: `associado`, `nao_associado`                          | `associationStatus`  |
 | **Situação funcional**   | Status no serviço público: `ativo`, `aposentado`, `cedido`, `em_licenca`              | `functionalStatus`   |
 | **SIAPE**                | Número de matrícula do servidor federal                                               | `siape`              |
-| **Contribuição**         | Status de pagamento da anuidade ASOF: `em_dia`, `inadimplente`, `pendente_migracao`   | `contributionStatus` |
+| **Contribuição**         | Status derivado de pagamento da anuidade ASOF: `em_dia`, `inadimplente`               | `contributionStatus` |
 | **Mensalidade**          | Registro mensal de pagamento de associado                                             | `monthly_payments`   |
 | **Ofício**               | Documento oficial gerado pelo sistema                                                 | `oficios`            |
 | **Método de pagamento**  | Forma de quitação da mensalidade: `folha`, `boleto`, `pix`, `transferencia`, `outros` | `paymentMethod`      |
@@ -99,7 +100,10 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 ### Banco de dados
 
 - Neon Postgres (`intranet-db`, `ep-empty-cake-ac26vl6w`, sa-east-1).
+- A matriz oficial de ambientes/bancos/dados é `docs/environments.md`; se outro documento divergir, corrija o outro documento.
 - Pooled (`DATABASE_URL`) para runtime, direct (`DATABASE_MIGRATION_URL`) para migrations.
+- Dev diário padrão: Postgres local `asof_intranet` com seed sintético.
+- Dados reais em `vercel-dev` ou clone local são exceção LGPD restrita, não onboarding padrão.
 - Conexão: `max: 10`, `max_lifetime: 1800`, `statement_timeout: 30000`, `application_name: 'asof-intranet'`.
 - Multi-tabela: sempre `db.transaction()`.
 - Enums para todos os campos de status/tipo; nunca `text`.
@@ -125,10 +129,10 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 ### Testing
 
 - Unitários: Vitest, `src/**/*.test.{ts,tsx}`. Suite atual: 824+ testes.
-- Integração: `vitest.integration.config.ts` contra PostgreSQL real (banco dedicado, ex: `asof_intranet_test`). O DB principal de dev local costuma ser o clone `asof_intranet_neon_clone` (veja README/CONTRIBUTING para setup; atenção aos avisos LGPD/PII no clone).
+- Integração: `vitest.integration.config.ts` contra PostgreSQL real (banco dedicado, ex: `asof_intranet_test`). Dev local padrão usa `asof_intranet`; clones com PII real são exceção restrita conforme `docs/environments.md`.
 - E2E: Playwright, `http://127.0.0.1:3001` (não 3000), database `asof_test` criado por `e2e/global-setup.ts`.
 - `npm run test:db` — schema contract contra PostgreSQL ao vivo (valida tables, columns, enums, indexes, extensions e alinhamento de migrations). **Importante:** ao mudar qualquer schema Drizzle ou migração SQL, atualizar também `src/lib/db/schema.integration.test.ts` (expectedColumns, expectedEnums, expectedIndexes). Enums do banco usam valores em português (ex: `activity_priority: ['baixa', 'normal', 'alta', 'urgente']`), nunca assumir valores em inglês.
-- `npm run test:e2e` nunca contra `http://localhost:3000`; apontar para `3001` com `NEXT_E2E=1` e `.next-e2e` como `distDir`. Gotchas não-triviais (JIT warmup, órfãos EADDRINUSE, hardcoded `associationStatus='ativo'`) estão em `e2e/AGENTS.md` — leia antes de tocar em specs.
+- `npm run test:e2e` nunca contra `http://localhost:3000`; apontar para `3001` com `NEXT_E2E=1` e `.next-e2e` como `distDir`. Gotchas não-triviais (JIT warmup, órfãos EADDRINUSE, filtros de vínculo ASOF) estão em `e2e/AGENTS.md` — leia antes de tocar em specs.
 
 ### Gotchas
 
@@ -147,7 +151,7 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 | `README.md` | Quick start |
 | `TODO-PROD.md` | Checklist de go-live |
 | `docs/runbook.md` | Runbook operacional |
-| `docs/adr/` | ADRs 001-012 |
+| `docs/adr/` | ADRs |
 | `API.md` | Superfície HTTP pública |
 | `PAGES.md` | Páginas e funcionalidades |
 | `ARCHITECTURE.md` | Diagrama, deployment, glossário |

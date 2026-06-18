@@ -103,7 +103,6 @@ export async function findActiveAssociates() {
       name: associates.fullName,
     })
     .from(associates)
-    .where(eq(associates.associationStatus, 'ativo'))
     .orderBy(asc(associates.fullName))
     .limit(100);
 }

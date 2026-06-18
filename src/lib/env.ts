@@ -107,6 +107,27 @@ export const envSchema = z
   )
   .refine(
     (data) => {
+      if (data.VERCEL_ENV !== 'production') return true;
+      return !!data.DATABASE_URL && !!data.DATABASE_MIGRATION_URL;
+    },
+    {
+      message:
+        'Production must set explicit DATABASE_URL and DATABASE_MIGRATION_URL; legacy provider fallbacks are not allowed as the production database contract.',
+      path: ['DATABASE_MIGRATION_URL'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.VERCEL_ENV !== 'production') return true;
+      return !!data.ENCRYPTION_MASTER_KEY;
+    },
+    {
+      message: 'ENCRYPTION_MASTER_KEY is required for production PII encryption.',
+      path: ['ENCRYPTION_MASTER_KEY'],
+    },
+  )
+  .refine(
+    (data) => {
       if (data.SKIP_AUTH === 'true' && data.NODE_ENV !== 'production') {
         return true;
       }
@@ -142,4 +163,3 @@ if (!parsed.success) {
 
 export const env = parsed.data;
 export type Env = typeof env;
-

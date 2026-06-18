@@ -48,7 +48,7 @@ export default async function RelatorioPage() {
       <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
         <section className="mb-7">
           <p className="m-0 text-[11px] tracking-[0.18em] uppercase" style={{ color: '#59677a' }}>
-            Associados · Exportação
+            Cadastro de oficiais · Exportação
           </p>
           <h1
             className="mt-2 font-serif text-4xl leading-none font-bold md:text-5xl"
@@ -57,7 +57,7 @@ export default async function RelatorioPage() {
             Relatórios
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed" style={{ color: '#59677a' }}>
-            Selecione os campos e filtros para exportar os dados dos associados em CSV.
+            Selecione os campos e filtros para exportar os dados dos oficiais em CSV.
           </p>
         </section>
 

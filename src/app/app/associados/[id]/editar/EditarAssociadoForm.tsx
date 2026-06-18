@@ -62,15 +62,14 @@ const functionalStatusOptions = [
 
 const associationStatusOptions = [
   { value: '', label: 'Selecione...' },
-  { value: 'ativo', label: 'Ativo' },
-  { value: 'inativo', label: 'Inativo' },
+  { value: 'associado', label: 'Associado' },
+  { value: 'nao_associado', label: 'Não associado' },
 ];
 
 const contributionStatusOptions = [
   { value: '', label: 'Selecione...' },
   { value: 'em_dia', label: 'Em dia' },
   { value: 'inadimplente', label: 'Inadimplente' },
-  { value: 'pendente_migracao', label: 'Pendente migração' },
 ];
 
 interface Props {
@@ -208,9 +207,9 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
         </Link>
         <div>
           <p className="text-base-content/55 text-[11px] tracking-[0.18em] uppercase">
-            Associados / Editar
+            Cadastro de Oficiais / Editar
           </p>
-          <h1 className="mt-1 font-serif text-3xl font-bold">Editar associado</h1>
+          <h1 className="mt-1 font-serif text-3xl font-bold">Editar oficial</h1>
         </div>
       </div>
 
@@ -648,7 +647,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
 
             <SelectField
               id="associationStatus"
-              label="Situação associativa"
+              label="Vínculo ASOF"
               options={associationStatusOptions}
               defaultValue={associate.associationStatus}
             />
@@ -697,7 +696,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 rows={5}
                 defaultValue={associate.internalNotes ?? ''}
                 className={textareaStyle}
-                placeholder="Notas internas sobre o associado..."
+                placeholder="Notas internas sobre o oficial..."
               />
             </div>
           </section>

@@ -65,9 +65,27 @@ Classificação do posto: `domestic` (Brasília/SERE) ou `abroad` (posto no exte
 
 ### Associados e Cadastro
 
+#### Oficial de Chancelaria
+
+Servidor da carreira de Oficial de Chancelaria do Ministério das Relações Exteriores. A base cadastral da intranet representa a totalidade conhecida desses oficiais, não apenas membros da ASOF.
+
+Um Oficial de Chancelaria pode ou não ser associado à ASOF. Também pode estar em atividade, aposentado, cedido ou em licença; essa situação funcional é independente do vínculo associativo.
+
+_Avoid_: usar "Associado" para se referir à totalidade da carreira. O termo canônico para o universo completo é Oficial de Chancelaria.
+
+#### Cadastro de Oficiais
+
+Módulo cadastral que reúne a totalidade conhecida dos Oficiais de Chancelaria, incluindo associados e não associados à ASOF, ativos e aposentados.
+
+A listagem principal deve mostrar todos os Oficiais de Chancelaria por padrão. Recortes como associados à ASOF, não associados, ativos funcionais ou aposentados devem ser filtros explícitos.
+
+_Avoid_: nomear o módulo principal como "Associados" quando a tela ou relatório inclui oficiais sem vínculo associativo vigente.
+
 #### Associado
 
-Membro da ASOF representado na tabela `associates`. Possui dados pessoais, funcionais e associativos.
+Oficial de Chancelaria que possui vínculo associativo com a ASOF. No cadastro legado, corresponde ao campo `Associado = sim`.
+
+_Avoid_: chamar oficiais não associados de "inativos". No domínio da ASOF, inativo é sinônimo operacional de aposentado/inatividade funcional, não ausência de vínculo associativo.
 
 #### Lotação
 
@@ -81,9 +99,15 @@ Representação diplomática no exterior (embaixada, consulado) ou a SERE em Bra
 
 Nível na carreira: Classe A → B → C → Especial, cada uma com 5 padrões. Campo: `classPattern`.
 
-#### Situação Associativa
+#### Vínculo ASOF
 
-Status do associado na ASOF: `ativo`, `inativo`. Campo: `associationStatus`.
+Vínculo atual do Oficial de Chancelaria com a ASOF, derivado do campo legado `Associado = sim/não`.
+
+Representa o vínculo com a ASOF, não a situação funcional do servidor. Os valores canônicos de produto são **Associado** e **Não associado**.
+
+Na interface e relatórios, o rótulo canônico é **Vínculo ASOF**, com valores **Associado** e **Não associado**.
+
+_Avoid_: exibir "Associativo: ativo/inativo" ou usar `inativo` para não associados, pois isso se confunde com aposentadoria/inatividade funcional.
 
 #### Associado Anonimizado
 
@@ -93,9 +117,15 @@ Estado irreversível onde um associado inativo que atendeu aos requisitos de des
 
 Status no serviço público: `ativo`, `aposentado`, `cedido`, `em_licenca`. Campo: `functionalStatus`.
 
+Aposentados permanecem na base cadastral como Oficiais de Chancelaria e devem aparecer nas listagens, filtros e relatórios conforme sua situação funcional.
+
+No uso operacional da ASOF, "inativo" deve ser interpretado como aposentado/inativo funcional, nunca como não associado.
+
 #### Contribuição
 
-Status de pagamento da anuidade ASOF: `em_dia`, `inadimplente`, `pendente_migracao`. Campo: `contributionStatus`.
+Status derivado de pagamento da anuidade ASOF: `em_dia`, `inadimplente`. Campo: `contributionStatus`.
+
+_Avoid_: `pendente_migracao` como status de contribuição. No domínio da ASOF, o associado está em dia ou inadimplente; pendência de importação/migração é estado operacional de dados, não situação contributiva.
 
 #### SIAPE
 
@@ -153,11 +183,11 @@ Forma de quitação da mensalidade: `folha`, `boleto`, `pix`, `transferencia`, `
 
 Situação da mensalidade: `pago`, `pendente`, `atrasado`, `isento`, `cancelado`. Campo: `paymentStatus`.
 
-Nota: não confundir com `contributionStatus` (campo `contribution_status` na tabela `associates`), que representa o status derivado de contribuição do associado: `em_dia`, `inadimplente`, `pendente_migracao`.
+Nota: não confundir com `contributionStatus` (campo `contribution_status` na tabela `associates`), que representa o status derivado de contribuição do associado: `em_dia`, `inadimplente`.
 
 #### Inicialização de Mês
 
-Processo de criar registros de mensalidade para todos os associados ativos de um determinado mês/ano. Disparado manualmente por admin/diretoria.
+Processo de criar registros de mensalidade para todos os associados ASOF de um determinado mês/ano. Disparado manualmente por admin/diretoria.
 
 ---
 
@@ -276,7 +306,7 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 
 ### Módulo Financeiro
 
-1. **Mensalidades por Mês/Ano**: Cada associado ativo deve ter um registro de mensalidade para cada mês/ano. O registro é criado via inicialização de mês.
+1. **Mensalidades por Mês/Ano**: Cada associado ASOF deve ter um registro de mensalidade para cada mês/ano. O registro é criado via inicialização de mês.
 2. **Status Derivado**: O status de contribuição do associado (`contributionStatus`) é derivado a partir do histórico de mensalidades pagas/inadimplentes.
 3. **Inicialização Idempotente**: Inicializar um mês já existente não deve criar duplicatas.
 4. **Roles de Acesso**: `admin` e `diretoria` têm acesso completo; `secretaria` é redirecionada para o dashboard.

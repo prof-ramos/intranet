@@ -78,7 +78,7 @@ describe('dashboard queries', () => {
     expect(dbMock._selectChain.leftJoin).toHaveBeenCalled();
   });
 
-  it('normalizes country aliases and reclassifies exterior+domestic as unknown', async () => {
+  it('normalizes country aliases without assignments join', async () => {
     dbMock.setSelectResult([]);
 
     await getTopRegions(6);
@@ -86,10 +86,8 @@ describe('dashboard queries', () => {
     const selectShape = dbMock.lastSelectShape as Record<string, SQL>;
     const countrySql = compileSql(selectShape.country);
 
-    // Outer CASE reclassifies exterior associates with domestic country
+    // Normalizes country labels via alias groups
     expect(countrySql).toContain('case');
-    expect(countrySql).toContain("'Exterior (país não informado)'");
-    // Inner CASE normalizes country labels via alias groups
     expect(countrySql).toContain('when lower(btrim(');
     // Domestic alias group includes Brasil variants
     expect(countrySql).toContain("'brasil'");
@@ -99,7 +97,9 @@ describe('dashboard queries', () => {
     expect(countrySql).toContain("'Estados Unidos'");
     // Fallback title-case via chained replace() for connector-word lowering
     expect(countrySql).toContain('replace(');
-    expect(dbMock._selectChain.leftJoin).toHaveBeenCalled();
+    expect(countrySql).not.toContain('$');
+    // Query must be groupable without assignments.type (bug #dashboard-sql-groupby)
+    expect(dbMock._selectChain.leftJoin).not.toHaveBeenCalled();
     expect(dbMock._selectChain.groupBy).toHaveBeenCalled();
   });
 });

@@ -2,7 +2,11 @@
 
 Este guia orienta a configuração local, a navegação pelo código, o fluxo de desenvolvimento, a abordagem de testes e os problemas mais comuns da ASOF Intranet.
 
-Última atualização: 2026-06-05 (clone Neon local asof_intranet_neon_clone)
+Última atualização: 2026-06-18 (matriz oficial de ambientes)
+
+Fonte oficial de ambientes, bancos, dados, migrations e CI/CD:
+[`docs/environments.md`](./docs/environments.md). Se este guia divergir da
+matriz, corrija este guia.
 
 ## 1. Instruções de configuração
 
@@ -23,17 +27,13 @@ npm install
 cp .env.example .env.local
 ```
 
-Para desenvolvimento local, configure `.env.local` apontando para PostgreSQL local.
-
-**Recomendado (dados reais do Neon, ideal para kanban/atividades, associados etc.):**
-
-Use o clone `asof_intranet_neon_clone` (veja procedimento completo em README.md > Banco de dados).
-
-**⚠️ LGPD / Segurança:** O clone traz PII completo (CPF, SIAPE, etc.). Siga os controles estritos do README (delete dumps de /tmp imediatamente, use apenas em máquinas autorizadas com FDE, nunca compartilhe). Prefira setup mínimo quando possível.
+Para desenvolvimento local diário, configure `.env.local` apontando para
+PostgreSQL local com seed sintético. Dados reais de produção são exceção LGPD
+restrita, não onboarding padrão.
 
 ```bash
-DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet_neon_clone
-DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet_neon_clone
+DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet
+DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet
 SKIP_AUTH=true
 DEV_USER_ID=1
 DEV_USER_NAME="ASOF Dev User"
@@ -42,24 +42,11 @@ DEV_USER_ROLE=admin
 DEV_USER_MUST_CHANGE_PASSWORD=false
 ```
 
-**Mínimo (banco vazio + seed):**
-
-```bash
-DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet
-DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet
-... (demais flags de dev iguais)
-```
-
 No macOS com Homebrew, o PostgreSQL costuma criar a role com o nome do usuário do sistema. Nesta máquina, por exemplo, `postgres://gabrielramos@localhost:5432/...` é o padrão; não assuma `postgres://postgres@localhost:5432/...`.
 
 Inicialize o banco e a aplicação:
 
 ```bash
-# Clone recomendado (dados reais — siga AVISO LGPD no README!):
-createdb asof_intranet_neon_clone
-# (dump/restore do Neon via pg_dump 17 + psql — veja README.md > Banco de dados para o procedimento completo; delete /tmp/* imediatamente após restore)
-
-# Ou mínimo:
 createdb asof_intranet
 
 npm run db:migrate
@@ -69,14 +56,13 @@ npm run dev
 
 Acesse `http://localhost:3000`.
 
-### Banco de Produção (Neon)
+### Banco de Produção e ambientes
 
-- **Desenvolvimento local (recomendado):** Branch `vercel-dev` no projeto Neon `intranet-db`. O `.env.local` já aponta para este branch com dados reais de produção (~1.750 associados). Sem risco ao banco de produção.
-  - Para resetar o branch: Console Neon ou API (`POST /v2/projects/long-leaf-97822199/branches` com `parent_id: "br-bold-bar-acge6h1w"`).
-- **Alternativa local:** PostgreSQL local com dump/restore (`asof_intranet_neon_clone`) ou banco vazio (`asof_intranet` + `npm run db:seed`).
 - Produção oficial: Instância PostgreSQL gerenciada (`intranet-db` no Neon, endpoint `ep-empty-cake-ac26vl6w`).
+- Desenvolvimento diário oficial: Postgres local `asof_intranet` + seed sintético.
+- Dados reais em `vercel-dev` ou `asof_intranet_neon_clone`: exceção restrita para bugs de volume, importação, relatórios e performance. Siga [`docs/environments.md`](./docs/environments.md).
 - Autenticação: O app possui auth própria via cookie de sessão assinado por `SESSION_SECRET` (httpOnly). O login de administradores usa `admins.email` e `admins.password_hash` (bcryptjs), conforme `ARCHITECTURE.md`.
-- Staging/preview deve usar banco separado.
+- Staging/preview deve usar banco separado e nunca herdar envs gerais de produção.
 - `npm run db:migrate` passa por `scripts/guarded-migrate.ts` e bloqueia produção sem `ALLOW_PRODUCTION_MIGRATIONS=true`.
 - Para o fluxo de reset de senha (senha temporária), `ASOF_INTRANET_URL` deve apontar para `https://intranet.asof.com.br`.
 
@@ -251,7 +237,7 @@ npm run test:e2e
 
 O Playwright usa `http://localhost:3001`. O `global-setup` cria/migra/semeia `asof_test` e sobe um servidor Next separado com `NEXT_E2E=1` e `distDir: .next-e2e`.
 
-Não aponte E2E para `http://localhost:3000` sem semear intencionalmente esse banco. O servidor em `3000` usa `.env.local`, normalmente `asof_intranet` ou o clone `asof_intranet_neon_clone`, e logins E2E podem falhar ou disparar rate limit.
+Não aponte E2E para `http://localhost:3000` sem semear intencionalmente esse banco. O servidor em `3000` usa `.env.local`, normalmente `asof_intranet`, e logins E2E podem falhar ou disparar rate limit.
 
 ## 5. Solução de problemas comum
 
@@ -293,9 +279,9 @@ Para desenvolvimento, corrija `.env.local` para apontar ao PostgreSQL local.
 O migrador não encontrou URL. Defina pelo menos uma destas variáveis:
 
 ```bash
-DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet_neon_clone
-DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet_neon_clone
-# (ou asof_intranet para setup mínimo)
+DATABASE_MIGRATION_URL=postgres://$USER@localhost:5432/asof_intranet
+DATABASE_URL=postgres://$USER@localhost:5432/asof_intranet
+# clones com PII real seguem docs/environments.md e não são onboarding padrão
 ```
 
 ### Login retorna `/login?error=1`

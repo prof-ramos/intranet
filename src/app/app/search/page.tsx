@@ -52,7 +52,7 @@ export default async function SearchPage({
               {associates.length > 0 && (
                 <ResultSection
                   icon={<Users size={16} aria-hidden="true" style={{ color: skyBlue }} />}
-                  title="Associados"
+                  title="Oficiais"
                   results={associates}
                 />
               )}

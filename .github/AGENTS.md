@@ -15,4 +15,4 @@ Purpose: GitHub workflows and project configuration.
 
 ## For AI Agents
 
-CI runs on every push to any branch. PRs require all checks passing. Migration workflow is manual trigger only.
+CI runs on pushes/PRs to `main`. PRs require all checks passing. Migration workflow is manual trigger only and must follow `docs/environments.md`; staging requires its own database/secrets and must never point at production.

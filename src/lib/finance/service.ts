@@ -388,7 +388,7 @@ export async function initializeMonth(adminId: number, year: number, month: numb
           eq(monthlyPayments.month, month),
         ),
       )
-      .where(eq(associates.associationStatus, 'ativo'));
+      .where(eq(associates.associationStatus, 'associado'));
 
     const updates: NewMonthlyPayment[] = rows
       .filter((r) => !r.paymentId)

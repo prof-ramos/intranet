@@ -192,7 +192,9 @@ function toPortugueseTitleCaseSql(column: SQLWrapper): SQL {
   let expr: SQL | SQLWrapper = sql`initcap(lower(btrim(${column})))`;
   for (const word of connectors) {
     const lower = word.toLowerCase();
-    expr = sql`replace(${expr}, ${' ' + word + ' '}, ${' ' + lower + ' '})`;
+    const from = `' ${word.replace(/'/g, "''")} '`;
+    const to = `' ${lower.replace(/'/g, "''")} '`;
+    expr = sql`replace(${expr}, ${sql.raw(from)}, ${sql.raw(to)})`;
   }
   // Also handle connector at start: initcap never uppercases 2nd char of first word,
   // but handle edge case where first word IS a connector (unlikely for countries).

@@ -96,9 +96,9 @@ const CAREER_ORIGIN_MAP: Record<string, string> = {
 };
 
 const ASSOCIATION_STATUS_MAP: Record<string, string> = {
-  sim: 'ativo',
-  não: 'inativo',
-  nao: 'inativo',
+  sim: 'associado',
+  não: 'nao_associado',
+  nao: 'nao_associado',
 };
 
 /** Generic enum mapper — returns mapped value or null. */
@@ -509,7 +509,7 @@ export function transformLegacyRecord(
     cancellationDate: parseDate(getString('Data de Cancelamento')),
     careerOrigin: mapCareerOrigin(getString('Origem')),
     missionType: mapMissionType(getString('Missão')),
-    associationStatus: mapAssociationStatus(getString('Associado')) ?? 'inativo',
+    associationStatus: mapAssociationStatus(getString('Associado')) ?? 'nao_associado',
     functionalStatus,
     assignment: n('Lotação'),
     assignmentStartDate: parseDate(getString('Data de Lotação')),
@@ -525,7 +525,7 @@ export function transformLegacyRecord(
       const parsed = parseInt(raw, 10);
       return isNaN(parsed) ? null : parsed;
     })(),
-    contributionStatus: 'pendente_migracao',
+    contributionStatus: 'inadimplente',
     paymentMethod: 'folha',
   };
 

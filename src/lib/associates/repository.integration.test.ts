@@ -35,7 +35,7 @@ describe('associates repository integration — dependents CRUD', () => {
       .insert(associates)
       .values({
         fullName: 'Test Associate for Dependents',
-        associationStatus: 'ativo',
+        associationStatus: 'associado',
         contributionStatus: 'em_dia',
         paymentMethod: 'folha',
       })
@@ -212,7 +212,7 @@ describe('associates repository integration — health agreements CRUD', () => {
       .insert(associates)
       .values({
         fullName: 'Test Associate for Health Agreements',
-        associationStatus: 'ativo',
+        associationStatus: 'associado',
         contributionStatus: 'em_dia',
         paymentMethod: 'folha',
       })

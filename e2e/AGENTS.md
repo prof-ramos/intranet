@@ -63,10 +63,10 @@ These were discovered during real flakiness incidents (associados.spec.ts tests 
 - **Always** `rm -rf .next-e2e` before diagnosing "works on my machine" E2E failures.
 - The global setup now warms the critical routes precisely to make cold-cache runs reliable.
 
-**4. Hardcoded `associationStatus = 'ativo'` filter in list queries**
+**4. `/app/associados` is Cadastro de Oficiais**
 
-- `src/lib/associates/repository.ts` (used by `getAssociatesListPage`) applies `eq(associates.associationStatus, 'ativo')` unconditionally for the main list.
-- Any E2E seed data created with `associationStatus: 'inativo'` (or other values) will **never appear** in `/app/associados` table UI.
+- `src/lib/associates/repository.ts` (used by `getAssociatesListPage`) lists all Oficiais de Chancelaria by default.
+- Use the explicit `associationStatus=associado` filter only when a spec needs current ASOF members.
 - Before writing list-based tests or seed data, **always read the repository query**, not just the page component or fixture.
 
 ## Dependencies

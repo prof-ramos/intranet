@@ -182,7 +182,7 @@ export const ASSOCIATE_EXPORT_FIELDS: AnnotatedField[] = [
   { key: 'assignmentStartDate', label: 'Data da Lotação', sensitivity: 'public' },
   { key: 'classPattern', label: 'Classe e Padrão', sensitivity: 'public' },
   { key: 'functionalStatus', label: 'Situação Funcional', sensitivity: 'public' },
-  { key: 'associationStatus', label: 'Situação Associativa', sensitivity: 'public' },
+  { key: 'associationStatus', label: 'Vínculo ASOF', sensitivity: 'public' },
   { key: 'contributionStatus', label: 'Contribuição', sensitivity: 'public' },
   { key: 'joinedAt', label: 'Data de Adesão', sensitivity: 'public' },
   { key: 'associationCategory', label: 'Categoria', sensitivity: 'public' },

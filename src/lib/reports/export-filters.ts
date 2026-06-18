@@ -10,12 +10,12 @@ function isFunctionalStatus(v: string): v is 'ativo' | 'aposentado' | 'cedido' |
   return ['ativo', 'aposentado', 'cedido', 'em_licenca'].includes(v);
 }
 
-function isAssociationStatus(v: string): v is 'ativo' | 'inativo' {
-  return ['ativo', 'inativo'].includes(v);
+function isAssociationStatus(v: string): v is 'associado' | 'nao_associado' {
+  return ['associado', 'nao_associado'].includes(v);
 }
 
-function isContributionStatus(v: string): v is 'em_dia' | 'inadimplente' | 'pendente_migracao' {
-  return ['em_dia', 'inadimplente', 'pendente_migracao'].includes(v);
+function isContributionStatus(v: string): v is 'em_dia' | 'inadimplente' {
+  return ['em_dia', 'inadimplente'].includes(v);
 }
 
 function isMissionType(v: string): v is 'permanente' | 'transitoria' {

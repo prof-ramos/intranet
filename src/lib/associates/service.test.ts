@@ -83,7 +83,7 @@ const baseAssociate = {
   classPattern: null,
   associationCategory: null,
   functionalStatus: 'ativo',
-  associationStatus: 'ativo',
+  associationStatus: 'associado',
   contributionStatus: 'em_dia',
   internalNotes: 'notes',
 };
@@ -177,7 +177,7 @@ describe('updateAssociateData', () => {
       cpf: '999',
       siape: '123',
       functionalStatus: 'ativo',
-      associationStatus: 'ativo',
+      associationStatus: 'associado',
       contributionStatus: 'em_dia',
     });
 
@@ -200,7 +200,7 @@ describe('updateAssociateData', () => {
       cpf: null,
       siape: null,
       functionalStatus: 'ativo',
-      associationStatus: 'ativo',
+      associationStatus: 'associado',
       contributionStatus: 'em_dia',
     });
 
@@ -225,7 +225,7 @@ describe('updateAssociateData', () => {
       cpf: '999',
       primaryEmail: 'new@example.com',
       assignment: 'Embaixada em Paris',
-      associationStatus: 'ativo',
+      associationStatus: 'associado',
       contributionStatus: 'em_dia',
       updatedBy: 7,
     });
@@ -254,7 +254,7 @@ describe('updateAssociateData', () => {
       fullName: 'Alice',
       cpf: '999',
       primaryEmail: 'new@example.com',
-      associationStatus: 'ativo',
+      associationStatus: 'associado',
       contributionStatus: 'em_dia',
     });
 

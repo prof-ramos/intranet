@@ -50,4 +50,37 @@ describe('guarded migrate', () => {
     expect(isKnownProductionDatabaseUrl(resolved.url)).toBe(true);
     expect(shouldBlockMigration(env, resolved)).toBe(false);
   });
+
+  it('allows staging migrations only with staging env and explicit staging opt-in', () => {
+    const env = {
+      DATABASE_MIGRATION_URL: 'postgres://user:secret@ep-staging.sa-east-1.aws.neon.tech:5432/asof',
+      DATABASE_MIGRATION_ENV: 'staging',
+      ALLOW_STAGING_MIGRATIONS: 'true',
+      DATABASE_STAGING_HOST: 'ep-staging.sa-east-1.aws.neon.tech',
+    };
+    const resolved = assertMigrationAllowed(env);
+
+    expect(isKnownProductionDatabaseUrl(resolved.url)).toBe(true);
+    expect(shouldBlockMigration(env, resolved)).toBe(false);
+  });
+
+  it('blocks staging migrations without explicit staging opt-in', () => {
+    expect(() =>
+      assertMigrationAllowed({
+        DATABASE_MIGRATION_URL: 'postgres://user:secret@ep-staging.sa-east-1.aws.neon.tech:5432/asof',
+        DATABASE_MIGRATION_ENV: 'staging',
+      }),
+    ).toThrow(/ALLOW_STAGING_MIGRATIONS=true/);
+  });
+
+  it('blocks staging migrations when the URL does not match the official staging host', () => {
+    expect(() =>
+      assertMigrationAllowed({
+        DATABASE_MIGRATION_URL: 'postgres://user:secret@ep-main.sa-east-1.aws.neon.tech:5432/asof',
+        DATABASE_MIGRATION_ENV: 'staging',
+        ALLOW_STAGING_MIGRATIONS: 'true',
+        DATABASE_STAGING_HOST: 'ep-staging.sa-east-1.aws.neon.tech',
+      }),
+    ).toThrow(/DATABASE_STAGING_HOST/);
+  });
 });

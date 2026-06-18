@@ -1,6 +1,6 @@
 # ASOF Intranet
 
-Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia associados, atividades administrativas e comunicações internas da diretoria.
+Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia o cadastro de Oficiais de Chancelaria, associados ASOF, atividades administrativas e comunicações internas da diretoria.
 
 **Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Drizzle ORM · PostgreSQL gerenciado · auth server-side própria
 
@@ -12,6 +12,7 @@ Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de 
 - **Variáveis e banco:** veja [Variáveis de ambiente](#variáveis-de-ambiente) e [Banco de dados](#banco-de-dados).
 - **Comandos de trabalho:** use [Comandos](#comandos), especialmente `npm run validate:quick`, `npm run validate:full` e `npm run pr:check`.
 - **Arquitetura:** comece pelo mapa de módulos em [`ARCHITECTURE.md`](./ARCHITECTURE.md#21-domain-module-and-caller-map).
+- **Ambientes e bancos:** a fonte oficial é [`docs/environments.md`](./docs/environments.md).
 - **Operação e deploy:** use [`docs/runbook.md`](./docs/runbook.md) e a seção 6 de [`ARCHITECTURE.md`](./ARCHITECTURE.md#6-deployment--infrastructure).
 - **Go-live Release 1.0:** use [`docs/release-1-operational-go-live.md`](./docs/release-1-operational-go-live.md) para smoke manual, backup Nivel 1 Neon/PostgreSQL, restore de teste e revisão de integrações.
 
@@ -19,14 +20,14 @@ Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de 
 
 | Módulo                    | Rota principal                 | Responsabilidade                                                                          |
 | ------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------- |
-| Dashboard                 | `/app`                         | Visão operacional de associados, atividades, jurídico e financeiro.                       |
-| Associados                | `/app/associados`              | Cadastro, perfil, lotação/posto, situação funcional, situação associativa e contribuição. |
-| Atividades                | `/app/atividades`              | Kanban administrativo com responsáveis, prioridades, prazos e vínculos com associados.    |
+| Dashboard                 | `/app`                         | Visão operacional de associados ASOF, atividades, jurídico e financeiro.                  |
+| Cadastro de Oficiais      | `/app/associados`              | Cadastro, perfil, lotação/posto, situação funcional, vínculo ASOF e contribuição.         |
+| Atividades                | `/app/atividades`              | Kanban administrativo com responsáveis, prioridades, prazos e vínculos com oficiais.      |
 | Jurídico                  | `/app/juridico`                | Consultas jurídicas, notas, SLA e histórico de atendimento.                               |
 | Triagem de E-mails        | `/app/email-triage`            | Controle operacional de prazos, demandas e evidências extraídas de e-mails.               |
 | Secretaria / Ofícios      | `/app/secretaria/oficios`      | Geração, edição, cancelamento e download de ofícios.                                      |
 | Financeiro / Mensalidades | `/app/financeiro/mensalidades` | Controle mensal de pagamentos e status de mensalidade.                                    |
-| Relatórios                | `/app/associados/relatorio`    | Exportação auditada de dados de associados para `admin` e `diretoria`.                    |
+| Relatórios                | `/app/associados/relatorio`    | Exportação auditada de dados de oficiais para `admin` e `diretoria`.                      |
 | Configurações             | `/app/config`                  | Usuários, lotações, auditoria, API keys e webhooks outbound.                              |
 
 > Dados como CPF, SIAPE, email, endereço e dados funcionais são sensíveis pela LGPD. Use os helpers de sanitização/logging do projeto e não exponha esses dados em logs, erros ou payloads públicos.
@@ -51,20 +52,15 @@ npm install
 cp .env.example .env.local
 # edite .env.local conforme a seção abaixo
 
-# 3. Criar o banco local
-# - Setup mínimo (banco vazio + seed):
+# 3. Criar o banco local padrão (seed sintético, sem PII real)
 createdb asof_intranet
-# - Recomendado para desenvolvimento realista (kanban, associados, etc.):
-#   Clone completo do Neon (produção) no Postgres local (veja seção "Banco de dados" abaixo):
-#   createdb asof_intranet_neon_clone
-#   (use pg_dump do Neon com cliente PostgreSQL 17 e psql para restaurar)
-#   Depois aponte .env.local para asof_intranet_neon_clone
 
-# 4. Aplicar migrações (use o clone ou o mínimo)
+# 4. Aplicar migrações
 npm run db:migrate
 
-# 5. Popular com dados iniciais (para setup mínimo; o clone já vem populado)
+# 5. Popular com dados iniciais
 npm run db:seed
+npm run db:seed:dev
 
 # 6. Subir o servidor de desenvolvimento
 npm run dev
@@ -88,13 +84,9 @@ No setup atual de produção no Vercel:
 
 - `DATABASE_URL` aponta para o pooler do Neon `ep-empty-cake-ac26vl6w-pooler.sa-east-1.aws.neon.tech`
 - `DATABASE_MIGRATION_URL` aponta para o host direto do Neon `ep-empty-cake-ac26vl6w.sa-east-1.aws.neon.tech`
-- `DATABASE_URL_UNPOOLED` é injetado pela integração Neon-Vercel e serve como fallback para migrations
-- Fallbacks legados como `DATABASE_POSTGRES_URL` e `POSTGRES_URL` não devem permanecer configurados em produção
+- Variáveis injetadas pela Vercel Storage Integration podem existir, mas não são o contrato operacional da aplicação. Código, scripts e runbooks devem usar `DATABASE_URL` e `DATABASE_MIGRATION_URL`.
 
-Para desenvolvimento local com o branch `vercel-dev`:
-
-- `DATABASE_URL` aponta para `ep-tiny-king-acczg9ev-pooler.sa-east-1.aws.neon.tech`
-- `DATABASE_MIGRATION_URL` / `DATABASE_URL_UNPOOLED` aponta para `ep-tiny-king-acczg9ev.sa-east-1.aws.neon.tech`
+Para todos os ambientes, siga a matriz oficial em [`docs/environments.md`](./docs/environments.md).
 
 ### Seed do admin inicial
 
@@ -146,51 +138,38 @@ Para o primeiro go-live, integrações/webhooks não são obrigatórios e produ�
 
 ## Banco de dados
 
-O projeto usa PostgreSQL via Drizzle.
+O projeto usa PostgreSQL via Drizzle. A política oficial de ambientes, dados e
+migrations fica em [`docs/environments.md`](./docs/environments.md); não
+duplique novos caminhos aqui.
 
-- **Desenvolvimento local (recomendado):** Branch `vercel-dev` no projeto Neon `intranet-db`. Contém dados reais de produção (~1.750 associados, ofícios, atividades) sem risco ao banco de produção. O `.env.local` já aponta para este branch.
-  - Para resetar o branch para o estado de produção: Console Neon ou API (`POST /v2/projects/long-leaf-97822199/branches` com `parent_id: "br-bold-bar-acge6h1w"`).
-  - ⚠️ **AVISO LGPD:** O branch contém PII sensível. Use apenas em máquinas autorizadas com FDE.
-- **Alternativa local (dump):** Use o clone completo do Neon no Postgres local (`asof_intranet_neon_clone`). Isso traz dados reais de associados (~1.750 registros), ofícios, etc., ideal para kanban/atividades, filtros, performance e testes manuais.
+Resumo operacional:
 
-  **⚠️ AVISO CRÍTICO DE SEGURANÇA / LGPD:** O banco Neon de produção contém dados pessoais sensíveis (CPF, SIAPE, emails primários/secundários, endereços, telefones, datas de nascimento, notas internas, registros funcionais, etc.) protegidos pela LGPD e tratados com criptografia em `src/lib/crypto/pii.ts`, `sanitizePii()`, retenção em `lib/lgpd/retention.ts` e ADRs (ex: 006 sobre desfiação/anonimização). Seguir as instruções abaixo **cria um dump plaintext completo em `/tmp`** no seu disco local.
+- **Dev diário:** Postgres local `asof_intranet` + seed sintético. É o caminho padrão de onboarding.
+- **Dev realista restrito:** Neon `vercel-dev` ou clone local autorizado com PII real, apenas quando houver necessidade concreta de volume/importação/performance.
+- **Testes:** bancos locais dedicados (`asof_intranet_test`, `asof_test`), sem produção.
+- **Produção:** Neon `main`/`ep-empty-cake-ac26vl6w`, com `DATABASE_URL` pooled e `DATABASE_MIGRATION_URL` direct.
+- **Staging/Preview:** só com banco separado e sem herdar envs gerais de produção.
 
-  - **Apenas para desenvolvedores autorizados internos da ASOF**, em máquinas com full-disk encryption.
-  - **Nunca** deixe o dump em `/tmp` após o restore: `rm -f /tmp/neon_clone.sql` imediatamente.
-  - **Nunca** commit, compartilhe, envie por email/chat, ou armazene sem criptografia forte.
-  - Após restore no clone local, os dados permanecem sensíveis — aplique os mesmos controles de acesso, logs e retenção do projeto.
-  - Prefira o setup **mínimo** (`asof_intranet` + `npm run db:seed`) sempre que possível. Use o clone **somente** quando precisar de volume real de associados/ofícios para testes específicos de kanban, relatórios ou performance.
-  - Se precisar de dump para diagnóstico, use snapshot/branch do Neon quando possível (mais seguro que dump local).
-
-  - Crie: `createdb asof_intranet_neon_clone`
-  - Dump do Neon (use cliente PostgreSQL 17 compatível com o servidor do Neon): `pg_dump "$DATABASE_MIGRATION_URL" --clean --if-exists --no-owner --no-acl -f /tmp/neon_clone.sql` (após `vercel env pull /tmp/.env.neon --environment=production` ou equivalente para obter a URL; **delete o .env.neon e o dump imediatamente após**).
-  - Restore: `psql -d asof_intranet_neon_clone -f /tmp/neon_clone.sql`
-  - Validação rápida (sanity check): `psql -d asof_intranet_neon_clone -c "SELECT COUNT(*) FROM associates;"`  (esperado ~1662 linhas; confirme antes de prosseguir)
-  - `.env.local`:
-    ```
-    DATABASE_URL=postgres://<user>@localhost:5432/asof_intranet_neon_clone
-    DATABASE_MIGRATION_URL=postgres://<user>@localhost:5432/asof_intranet_neon_clone
-    ```
-  - Limpeza: `rm -f /tmp/neon_clone.sql /tmp/.env.neon`
-- **Desenvolvimento local mínimo (banco vazio):** PostgreSQL via Homebrew com `asof_intranet` + `npm run db:seed`.
-  - `createdb asof_intranet`
-  - `.env.local`: `DATABASE_URL=postgres://<user>@localhost:5432/asof_intranet` (e mesma para MIGRATION_URL).
-- **Produção / remoto:** Neon Postgres. Use a URL pooled em `DATABASE_URL` e a URL direta/non-pooling em `DATABASE_MIGRATION_URL`.
-- **Staging / preview:** use banco separado. No setup atual, o ambiente `Preview` da Vercel nao deve carregar envs gerais de banco.
+Dados reais de produção em ambiente de desenvolvimento são exceção LGPD: use
+somente em máquina autorizada, prefira branch/snapshot Neon a dump local, não
+compartilhe dumps e remova temporários imediatamente.
 
 ```bash
 npm run db:generate   # gera migrações a partir do schema
 npm run db:migrate    # aplica migrações pendentes com guardrail contra produção
 npm run db:migrate:unsafe # chama drizzle-kit migrate diretamente; use só em diagnóstico controlado
 npm run db:seed       # insere admin inicial (use --force para sobrescrever role/isActive)
+npm run db:seed:dev   # insere massa sintética local: oficiais, mensalidades, atividades, jurídico e ofícios
 npm run db:studio     # abre Drizzle Studio no browser
 ```
 
-`npm run db:migrate` bloqueia `DATABASE_MIGRATION_ENV=production`, `VERCEL_ENV=production`, alvos com nome de host que parecem producao e alvos remotos quando `NODE_ENV=production`. Para uma migration manual de produção, execute somente depois de backup/snapshot, janela aprovada e plano de rollback documentado:
+`npm run db:migrate` bloqueia `DATABASE_MIGRATION_ENV=production`, `VERCEL_ENV=production`, alvos com nome de host que parecem producao e alvos remotos quando `NODE_ENV=production`. Staging exige `DATABASE_MIGRATION_ENV=staging`, `ALLOW_STAGING_MIGRATIONS=true` e `DATABASE_STAGING_HOST` igual ao host da URL direta do banco oficial de staging. Para uma migration manual de produção, execute somente depois de backup/snapshot, janela aprovada e plano de rollback documentado:
 
 ```bash
 ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
 ```
+
+`npm run db:seed:dev` é local-first e bloqueia hosts remotos por padrão. Para popular um branch remoto descartável com dados sintéticos, use a confirmação explícita `ALLOW_REMOTE_DEV_SEED=SEED_SYNTHETIC_DATA`.
 
 As migrações versionadas em `drizzle/postgres/` são tratadas como migrations transacionais. Operações PostgreSQL que exigem execução fora de transação, como `CREATE INDEX CONCURRENTLY` ou `DROP INDEX CONCURRENTLY`, não devem ser incluídas no fluxo `npm run db:migrate`. Para esses casos, use o procedimento operacional em `docs/runbook.md`: backup/snapshot, teste em staging, execução direta via `psql "$DATABASE_MIGRATION_URL"` em janela aprovada e validação posterior com `npm run test:db`.
 
@@ -242,6 +221,7 @@ npm run test:e2e:debug    # Playwright modo debug
 npm run db:generate   # gera migrações Drizzle
 npm run db:migrate    # aplica migrações com guardrails de produção
 npm run db:seed       # insere admin inicial (use --force para sobrescrever role/isActive)
+npm run db:seed:dev   # insere massa sintética local para desenvolvimento
 npm run db:studio     # abre Drizzle Studio
 ```
 
@@ -266,7 +246,7 @@ O servidor E2E define `NEXT_E2E=1`, fazendo o Next.js usar
 `.next/dev` quando já houver um servidor aberto em `3000`.
 
 O servidor de desenvolvimento em `3000` usa o banco normal da `.env.local`
-(`asof_intranet` ou o clone `asof_intranet_neon_clone` no setup local). Se os testes E2E forem rodados contra `3000`,
+(`asof_intranet` no setup oficial de desenvolvimento diário). Se os testes E2E forem rodados contra `3000`,
 os usuários `e2e-*@asof.local` podem não existir nesse banco; o login retorna
 `/login?error=1` e tentativas repetidas podem acumular em `login_attempts` até
 gerar `/login?error=rate-limit`. Nesse caso, rode novamente pelo comando
@@ -319,7 +299,7 @@ npx vitest run --config vitest.integration.config.ts
 src/
   app/
     app/          # área autenticada (/app/*)
-      associados/           # CRUD de associados + relatórios
+      associados/           # Cadastro de Oficiais + relatórios
       atividades/            # Kanban de atividades administrativas
       config/                # configurações, auditoria, usuários, integrações, lotações
       financeiro/mensalidades/ # mensalidades e dashboard financeiro

@@ -51,7 +51,7 @@ export async function searchAssociatesForEtiquetas(query?: string): Promise<Etiq
     .from(associates)
     .where(
       and(
-        eq(associates.associationStatus, 'ativo'),
+        eq(associates.associationStatus, 'associado'),
         hasPrintableAssociateName,
         normalizedQuery
           ? sql`${associates.fullName} ilike ${buildAssociateNameSearchPattern(normalizedQuery)} escape '\\'`
@@ -76,7 +76,7 @@ export async function getEtiquetaRecipientsByIds(ids: number[]): Promise<Etiquet
   const rows = await db
     .select(etiquetaAssociateColumns)
     .from(associates)
-    .where(and(eq(associates.associationStatus, 'ativo'), hasPrintableAssociateName, inArray(associates.id, ids)))
+    .where(and(eq(associates.associationStatus, 'associado'), hasPrintableAssociateName, inArray(associates.id, ids)))
     .orderBy(asc(associates.fullName), asc(associates.id));
 
   return rows.map((row) => {

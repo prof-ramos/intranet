@@ -8,7 +8,7 @@ A intranet ASOF e uma aplicacao Next.js 16.2.6 App Router, server-side, com Driz
 
 ## Modulos De Dominio
 
-- `src/app/app/associados` e `src/lib/associates`: associados, lotacao/posto, situacao funcional, situacao associativa e contribuicao.
+- `src/app/app/associados` e `src/lib/associates`: Cadastro de Oficiais, lotacao/posto, situacao funcional, vínculo ASOF e contribuicao. A rota permanece `/app/associados` por compatibilidade historica.
 - `src/app/app/atividades` e `src/lib/activities`: board administrativo, responsaveis, prioridades e prazos. Lógica de conclusão extraída para `deriveCompletedAt()` em `transformations.ts`; labels consolidados via `ACTIVITY_PRIORITY_LABELS` em `status.ts`.
 - `src/app/app/financeiro` e `src/lib/finance`: mensalidades e status de pagamento. Inicialização de mês usa bulk upsert (`ON CONFLICT DO UPDATE`) ao invés de inserts individuais.
 - `src/app/app/juridico` e `src/lib/juridico`: consultas, processos, notas e SLA.

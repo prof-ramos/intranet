@@ -139,7 +139,7 @@ describe('updateAssociateSchema', () => {
       classPattern: null,
       associationCategory: null,
       functionalStatus: 'ativo',
-      associationStatus: 'ativo',
+      associationStatus: 'associado',
       contributionStatus: 'em_dia',
     });
     expect(result.success).toBe(true);

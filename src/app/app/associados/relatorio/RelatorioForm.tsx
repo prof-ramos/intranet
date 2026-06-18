@@ -224,7 +224,7 @@ export function RelatorioForm() {
               className="text-[11px] font-bold tracking-[0.10em] uppercase"
               style={{ color: '#59677a' }}
             >
-              Situação Associativa
+              Vínculo ASOF
             </label>
             <select
               id="filter-association"
@@ -235,8 +235,8 @@ export function RelatorioForm() {
               style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
             >
               <option value="todos">Todos</option>
-              <option value="ativo">Associado Ativo</option>
-              <option value="inativo">Associado Inativo</option>
+              <option value="associado">Associado</option>
+              <option value="nao_associado">Não associado</option>
             </select>
           </div>
 
@@ -259,7 +259,6 @@ export function RelatorioForm() {
               <option value="todos">Todos</option>
               <option value="em_dia">Em Dia</option>
               <option value="inadimplente">Inadimplente</option>
-              <option value="pendente_migracao">Pendente de Migração</option>
             </select>
           </div>
 

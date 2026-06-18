@@ -6,10 +6,16 @@ pontuais antigas ficam em `docs/operations/archive/`.
 
 Atualizado em 2026-06-14. Última verificação de gates locais: 2026-06-14.
 
+Para ambientes, bancos, dados, migrations e CI/CD, a fonte oficial pós-go-live é
+[`docs/environments.md`](./docs/environments.md) (ADR 015). Este checklist
+mantém histórico e operação de produção, mas não deve introduzir novos caminhos
+de staging/dev/preview.
+
 ## Decisao Atual
 
 - Banco de producao: PostgreSQL gerenciado novo, inicialmente limpo.
 - Fonte canonica de schema: `src/lib/db/schema` + historico Drizzle em `drizzle/postgres/` iniciado pelo baseline `0000_green_glorian.sql`.
+- Fonte canonica de ambientes/dados/migrations: `docs/environments.md`.
 - Auth: server-side propria, `admins.password_hash`, cookie `httpOnly` assinado por `SESSION_SECRET`, `requireAuth()` e `requireRole()`.
 - Seed inicial: `INITIAL_ADMIN_EMAIL` + `INITIAL_ADMIN_PASSWORD`, sempre com `must_change_password=true`.
 - Notificacao: alerta persistido. Entrega em tempo real nao bloqueia o go-live.
@@ -21,7 +27,7 @@ Atualizado em 2026-06-14. Última verificação de gates locais: 2026-06-14.
 - [x] Provisionar PostgreSQL gerenciado novo — Neon (intranet-db, `ep-empty-cake-ac26vl6w`, sa-east-1).
 - [x] Configurar `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `SESSION_SECRET`, `ENCRYPTION_MASTER_KEY`, `CRON_SECRET`, `TRUSTED_PROXY_COUNT=1` e `ASOF_INTEGRATIONS_ENABLED=false` no Vercel (produção). Concluído em 2026-05-26.
   - [x] `SESSION_SECRET`, `ENCRYPTION_MASTER_KEY`, `CRON_SECRET`, `TRUSTED_PROXY_COUNT=1` e `ASOF_INTEGRATIONS_ENABLED=false` existem em produção.
-  - [x] `DATABASE_URL` e `DATABASE_MIGRATION_URL` foram reconfigurados via Vercel API com URLs Neon (`ep-empty-cake-ac26vl6w`) e fallbacks legados de banco foram removidos de produção.
+  - [x] `DATABASE_URL` e `DATABASE_MIGRATION_URL` foram reconfigurados com URLs Neon (`ep-empty-cake-ac26vl6w`). Variáveis injetadas pela Vercel Storage Integration podem coexistir, mas não são o contrato operacional.
 - [x] Confirmar rotação de segredos robustos: `SESSION_SECRET` e `ENCRYPTION_MASTER_KEY` gerados com `openssl rand -hex 32` (64 hex chars = 32 bytes de entropia). `CRON_SECRET` rotacionado no mesmo ciclo.
 - [x] Aplicar baseline em banco vazio:
   - `ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate` — concluído em 2026-05-26 contra Neon produção.

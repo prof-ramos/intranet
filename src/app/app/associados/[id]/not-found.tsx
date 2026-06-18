@@ -8,9 +8,9 @@ export default function AssociadoNotFound() {
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
           <AlertCircle className="h-8 w-8 text-amber-600" />
         </div>
-        <h1 className="text-2xl font-bold text-[#040920]">Associado não encontrado</h1>
+        <h1 className="text-2xl font-bold text-[#040920]">Oficial não encontrado</h1>
         <p className="max-w-md text-[#59677a]">
-          O associado solicitado não existe ou foi removido. Verifique o link ou volte para a lista.
+          O oficial solicitado não existe ou foi removido. Verifique o link ou volte para a lista.
         </p>
         <Link
           href="/app/associados"

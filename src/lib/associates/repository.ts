@@ -96,9 +96,9 @@ function mapAssociateListRow(row: {
 }
 
 export interface AssociatesFilters {
-  contributionStatus?: 'em_dia' | 'inadimplente' | 'pendente_migracao';
+  contributionStatus?: 'em_dia' | 'inadimplente';
   functionalStatus?: 'ativo' | 'aposentado' | 'cedido' | 'em_licenca';
-  associationStatus?: 'ativo' | 'inativo';
+  associationStatus?: 'associado' | 'nao_associado';
 }
 
 export async function findAssociatesPaginated(

@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike } from 'drizzle-orm';
+import { asc, ilike } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { activities, associates } from '@/lib/db/schema';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
@@ -33,7 +33,7 @@ export async function searchAssociates(query: string, limit = 5): Promise<Associ
   const rows = await db
     .select({ id: associates.id, fullName: associates.fullName, assignment: associates.assignment })
     .from(associates)
-    .where(and(eq(associates.associationStatus, 'ativo'), ilike(associates.fullName, pattern)))
+    .where(ilike(associates.fullName, pattern))
     .orderBy(asc(associates.fullName))
     .limit(limit);
 

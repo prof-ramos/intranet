@@ -6,7 +6,7 @@ const FIELD_LABELS: Record<EtiquetaFieldKey, string> = {
   nome: 'Nome',
   matricula: 'Matrícula',
   categoria: 'Categoria',
-  situacao_associativa: 'Situação associativa',
+  situacao_associativa: 'Vínculo ASOF',
   lotacao: 'Lotação',
   posto: 'Posto',
   endereco_completo: 'Endereço completo',

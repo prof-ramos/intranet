@@ -1,4 +1,4 @@
-import { and, eq, lte, notExists, like } from 'drizzle-orm';
+import { and, eq, isNotNull, lte, notExists, like } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { activities, admins, associates, auditLogs, type NewAuditLog } from '@/lib/db/schema';
 import { sanitizePiiValue } from '@/lib/sanitize-pii';
@@ -45,17 +45,19 @@ export async function checkAndEmitLgpdRetentionActivities({
     }
 
     const retentionCutoff = yearsAgo(now, RETENTION_YEARS);
+    const retentionCutoffDate = retentionCutoff.toISOString().slice(0, 10);
     const dueDate = daysFrom(now, REVIEW_SLA_DAYS).toISOString();
 
     // ADR 006 forbids automatic erasure here. This watchdog only creates
-    // PII-free review activities for inactive associates whose retention expired.
+    // PII-free review activities for former ASOF associates whose retention expired.
     const expiredAssociates = await tx
       .select({ id: associates.id })
       .from(associates)
       .where(
         and(
-          eq(associates.associationStatus, 'inativo'),
-          lte(associates.updatedAt, retentionCutoff),
+          eq(associates.associationStatus, 'nao_associado'),
+          isNotNull(associates.cancellationDate),
+          lte(associates.cancellationDate, retentionCutoffDate),
           notExists(
             tx
               .select({ id: activities.id })
@@ -93,9 +95,9 @@ export async function checkAndEmitLgpdRetentionActivities({
     }
 
     const newActivities = expiredAssociates.map((associate) => ({
-      title: `${TITLE_PREFIX}Associado ID ${associate.id}`,
+      title: `${TITLE_PREFIX}Oficial ID ${associate.id}`,
       description:
-        `Prazo de guarda (${RETENTION_YEARS} anos de inatividade) do associado ID ${associate.id} expirou. ` +
+        `Prazo de guarda (${RETENTION_YEARS} anos desde o cancelamento associativo) do oficial ID ${associate.id} expirou. ` +
         'Aprovar anonimização? Revise de acordo com o Estatuto da ASOF e registre eventual recusa com fundamento na LGPD Art. 16, I/IV ou Art. 18 §5º.',
       status: 'a_fazer' as const,
       priority: 'alta' as const,

@@ -163,8 +163,8 @@ Gera um arquivo CSV UTF-8 com BOM contendo associados filtrados. O endpoint cons
 | -------------------- | ---------- | ----------- | ------------------------------------------------------ | -------------------------------------------------- |
 | `fields`             | `string[]` | Nao         | ver lista abaixo                                       | Campos a incluir no CSV; se omitido, exporta todos |
 | `functionalStatus`   | `string`   | Nao         | `ativo`, `aposentado`, `cedido`, `em_licenca`, `todos` | Filtra pela situacao funcional                     |
-| `associationStatus`  | `string`   | Nao         | `ativo`, `inativo`, `todos`                            | Filtra pela situacao associativa                   |
-| `contributionStatus` | `string`   | Nao         | `em_dia`, `inadimplente`, `pendente_migracao`, `todos` | Filtra pela contribuicao                           |
+| `associationStatus`  | `string`   | Nao         | `associado`, `nao_associado`, `todos`                  | Filtra pelo vínculo ASOF                           |
+| `contributionStatus` | `string`   | Nao         | `em_dia`, `inadimplente`, `todos`                      | Filtra pela contribuicao                           |
 | `birthMonth`         | `number`   | Nao         | `1` a `12`, `todos`                                    | Filtra pelo mes de aniversario                     |
 
 #### Campos disponiveis em `fields`
@@ -176,7 +176,7 @@ Gera um arquivo CSV UTF-8 com BOM contendo associados filtrados. O endpoint cons
 Exemplo:
 
 ```http
-GET /app/associados/relatorio/download?fields=fullName&fields=cpf&fields=siape&functionalStatus=ativo&associationStatus=ativo HTTP/1.1
+GET /app/associados/relatorio/download?fields=fullName&fields=cpf&fields=siape&functionalStatus=ativo&associationStatus=associado HTTP/1.1
 Cookie: <sessao autenticada>
 ```
 
@@ -213,7 +213,7 @@ Exemplo ilustrativo:
 ```bash
 curl -L \
   -H "Cookie: session=VALOR_DO_COOKIE" \
-  "https://intranet.asof.com.br/app/associados/relatorio/download?fields=fullName&fields=cpf&fields=siape&functionalStatus=ativo&associationStatus=ativo" \
+  "https://intranet.asof.com.br/app/associados/relatorio/download?fields=fullName&fields=cpf&fields=siape&functionalStatus=ativo&associationStatus=associado" \
   -o relatorio-asof.csv
 ```
 
@@ -818,12 +818,12 @@ Too many requests.
 
 ## Exemplos de Uso
 
-### Exportar associados ativos e adimplentes
+### Exportar associados ASOF adimplentes
 
 ```bash
 curl -L \
   -H "Cookie: session=VALOR_DO_COOKIE" \
-  "https://intranet.asof.com.br/app/associados/relatorio/download?fields=fullName&fields=primaryEmail&fields=assignment&associationStatus=ativo&contributionStatus=em_dia" \
+  "https://intranet.asof.com.br/app/associados/relatorio/download?fields=fullName&fields=primaryEmail&fields=assignment&associationStatus=associado&contributionStatus=em_dia" \
   -o associados-ativos.csv
 ```
 

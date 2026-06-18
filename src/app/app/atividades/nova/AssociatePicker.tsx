@@ -39,7 +39,7 @@ export function AssociatePicker({
             {value.name}
           </p>
           <p className="mt-0.5 text-xs" style={{ color: '#59677a' }}>
-            Associado vinculado
+            Oficial vinculado
           </p>
         </div>
         <button
@@ -65,7 +65,7 @@ export function AssociatePicker({
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
-        placeholder="Buscar associado..."
+        placeholder="Buscar oficial..."
         className={`min-h-11 w-full rounded-[8px] border bg-white px-3 text-sm ${focusRingClass}`}
         style={{ borderColor: '#c9d2df', color: '#0d1f3c' }}
       />
@@ -76,7 +76,7 @@ export function AssociatePicker({
         >
           {filtered.length === 0 ? (
             <p className="px-3 py-2 text-sm" style={{ color: '#59677a' }}>
-              Nenhum associado encontrado.
+              Nenhum oficial encontrado.
             </p>
           ) : (
             filtered.map((associate) => (

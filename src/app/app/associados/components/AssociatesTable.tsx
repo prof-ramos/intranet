@@ -54,7 +54,7 @@ function AssociateCard({ row, currentListUrl }: { row: AssociateListItem; curren
           <dd><StatusBadge type="functional" value={row.functionalStatus} /></dd>
         </div>
         <div>
-          <dt className="text-[10px] uppercase tracking-wider" style={{ color: textMuted }}>Associativo</dt>
+          <dt className="text-[10px] uppercase tracking-wider" style={{ color: textMuted }}>Vínculo ASOF</dt>
           <dd><StatusBadge type="association" value={row.associationStatus} /></dd>
         </div>
         <div>
@@ -79,7 +79,7 @@ export function AssociatesTable({ rows, currentListUrl }: AssociatesTableProps) 
       <div className="md:hidden">
         {rows.length === 0 ? (
           <div className="py-16 text-center text-sm" style={{ color: textMuted }}>
-            Nenhum associado encontrado.
+            Nenhum oficial encontrado.
           </div>
         ) : (
           rows.map((row) => (
@@ -90,7 +90,7 @@ export function AssociatesTable({ rows, currentListUrl }: AssociatesTableProps) 
 
       {/* Desktop table */}
       <div className="hidden md:block overflow-x-auto border-t" style={{ borderColor: hairline }}>
-        <table className="w-full text-sm" aria-label="Lista de associados">
+        <table className="w-full text-sm" aria-label="Lista de oficiais">
           <thead className="bg-[#040920] text-white">
             <tr className="text-left">
               <th scope="col" className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
@@ -109,7 +109,7 @@ export function AssociatesTable({ rows, currentListUrl }: AssociatesTableProps) 
                 Situação
               </th>
               <th scope="col" className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
-                Associativo
+                Vínculo ASOF
               </th>
               <th scope="col" className="px-4 py-3 text-[11px] font-semibold tracking-[0.06em] uppercase">
                 Contribuição
@@ -124,7 +124,7 @@ export function AssociatesTable({ rows, currentListUrl }: AssociatesTableProps) 
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={9} className="py-16 text-center" style={{ color: textMuted }}>
-                  Nenhum associado encontrado.
+                  Nenhum oficial encontrado.
                 </td>
               </tr>
             ) : (

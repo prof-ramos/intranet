@@ -20,7 +20,7 @@ function resolveStyles(type: StatusBadgeType, value: string | null) {
   }
 
   if (type === 'association') {
-    if (value === 'ativo') return { bg: successBg, color: success, border: false };
+    if (value === 'associado') return { bg: successBg, color: success, border: false };
     return { bg: canvas, color: textMuted, borderColor: hairline, border: true };
   }
 

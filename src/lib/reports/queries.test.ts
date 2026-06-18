@@ -20,7 +20,7 @@ const { dbMock, MOCK_ASSOCIATE } = vi.hoisted(() => {
     assignmentStartDate: '2020-01-01',
     classPattern: 'A',
     functionalStatus: 'ativo',
-    associationStatus: 'ativo',
+    associationStatus: 'associado',
     contributionStatus: 'em_dia',
     joinedAt: '2020-01-01',
     associationCategory: 'efetivo',
@@ -67,7 +67,7 @@ describe('reports queries', () => {
     });
 
     it('applies associationStatus filter', async () => {
-      await getAssociatesForReport({ associationStatus: 'ativo' });
+      await getAssociatesForReport({ associationStatus: 'associado' });
       expect(dbMock._selectChain.where).toHaveBeenCalled();
     });
 
@@ -84,7 +84,7 @@ describe('reports queries', () => {
     it('applies multiple filters together', async () => {
       await getAssociatesForReport({
         functionalStatus: 'ativo',
-        associationStatus: 'ativo',
+        associationStatus: 'associado',
         contributionStatus: 'em_dia',
       });
       expect(dbMock._selectChain.where).toHaveBeenCalled();

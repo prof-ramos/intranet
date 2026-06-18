@@ -7,9 +7,9 @@ export interface AssociatesSearchParams {
   q: string;
   page: number;
   searchBy: AssociateSearchMode;
-  contributionStatus?: 'em_dia' | 'inadimplente' | 'pendente_migracao';
+  contributionStatus?: 'em_dia' | 'inadimplente';
   functionalStatus?: 'ativo' | 'aposentado' | 'cedido' | 'em_licenca';
-  associationStatus?: 'ativo' | 'inativo';
+  associationStatus?: 'associado' | 'nao_associado';
 }
 
 export function parseAssociatesSearchParams(params: {

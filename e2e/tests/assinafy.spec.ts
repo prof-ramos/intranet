@@ -8,7 +8,7 @@ test.describe('Assinafy — Assinatura de Ofícios', () => {
     // The fixture would start/stop the mock per worker and expose reset() via the
     // fixture parameter. This requires solving port allocation (each worker needs its
     // own mock port) and env-var injection before the Next.js dev server starts.
-    expect(globalThis.__ASSINAFY_MOCK__).toBeDefined();
+    expect(globalThis.__ASSINAFY_MOCK__, 'Assinafy mock should be defined by globalSetup').toBeDefined();
     globalThis.__ASSINAFY_MOCK__!.reset();
 
     await loginAsAdmin();

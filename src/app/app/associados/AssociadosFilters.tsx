@@ -55,7 +55,7 @@ export function AssociadosFilters({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <label className="sr-only" htmlFor="filter-association">
-        Filtrar por situação associativa
+        Filtrar por vínculo ASOF
       </label>
       <select
         id="filter-association"
@@ -63,11 +63,11 @@ export function AssociadosFilters({
         style={selectStyle}
         value={currentAssociationStatus ?? ''}
         onChange={(e) => navigate({ associationStatus: e.target.value || undefined })}
-        aria-label="Filtrar por situação associativa"
+        aria-label="Filtrar por vínculo ASOF"
       >
-        <option value="">Situação associativa: todas</option>
-        <option value="ativo">Ativo</option>
-        <option value="inativo">Inativo</option>
+        <option value="">Vínculo ASOF: todos</option>
+        <option value="associado">Associado</option>
+        <option value="nao_associado">Não associado</option>
       </select>
 
       <label className="sr-only" htmlFor="filter-contribution">
@@ -84,7 +84,6 @@ export function AssociadosFilters({
         <option value="">Contribuição: todas</option>
         <option value="em_dia">Em dia</option>
         <option value="inadimplente">Inadimplente</option>
-        <option value="pendente_migracao">Pendente de migração</option>
       </select>
 
       <label className="sr-only" htmlFor="filter-functional">

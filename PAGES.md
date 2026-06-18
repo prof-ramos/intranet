@@ -182,12 +182,12 @@ graph LR
 
 ---
 
-### `/app/associados` — Lista de Associados
+### `/app/associados` — Cadastro de Oficiais
 
 **Acesso:** `*`
 
 **Funcionalidades:**
-- Lista paginada (20/pág) de associados ativos
+- Lista paginada (20/pág) de Oficiais de Chancelaria, incluindo associados e não associados à ASOF
 - Busca por nome (LIKE escapado), CPF (hash-based exact match) ou SIAPE (hash-based exact match)
 - Toggle de modo de busca: Nome / CPF / SIAPE
 - Filtros persistidos via query string (`page`, `q`, `searchBy`, `functionalStatus`, `associationStatus`, `contributionStatus`)
@@ -307,14 +307,14 @@ graph LR
 **Acesso:** `admin`, `diretoria`
 
 **Funcionalidades:**
-- Inicialização mensal: cria registros de pagamento para todos os associados ativos (`initializeMonthAction`)
+- Inicialização mensal: cria registros de pagamento para todos os oficiais com vínculo ASOF (`initializeMonthAction`)
 - Tabela de pagamentos: status por associado (`em_dia`, `inadimplente`, `isento`)
 - KPIs: total recebido, inadimplentes, isentos, taxa de adimplência
 - Navegação mês a mês (anterior/próximo)
 - Atualização individual de status de pagamento
 
 **Funcional quando:**
-- [ ] Inicialização cria exatamente um registro por associado ativo
+- [ ] Inicialização cria exatamente um registro por associado ASOF
 - [ ] KPIs somam corretamente (sem dupla contagem)
 - [ ] Navegação mensal mantém os dados do mês selecionado
 

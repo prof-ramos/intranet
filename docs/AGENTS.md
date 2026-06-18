@@ -10,11 +10,12 @@ Documentation directory covering architecture decisions, design guidelines, comp
 | File | Description |
 |------|-------------|
 | `runbook.md` | Operations runbook — deployment, monitoring, troubleshooting, and rollback procedures |
+| `environments.md` | Official source for environments, databases, data classes, migrations, and CI/CD |
 
 ## Subdirectories
 | Directory | Purpose |
 |-----------|---------|
-| `adr/` | Architecture Decision Records — 12 ADRs covering auth, DB, RLS, PII, notifications, kanban, LGPD, go-live, rollback, incident ownership, and DMS/Papra (see `adr/AGENTS.md`) |
+| `adr/` | Architecture Decision Records covering auth, DB, RLS, PII, notifications, kanban, LGPD, go-live, rollback, incident ownership, DMS/Papra, and environments |
 | `agents/` | Agent-facing domain documentation — associates, issue-tracker, triage-labels (see `agents/AGENTS.md`) |
 | `compliance/` | LGPD compliance checklist and data handling policies (see `compliance/AGENTS.md`) |
 | `design/` | Design system — theme tokens, oficios padrao templates, UI screenshots (see `design/AGENTS.md`) |
@@ -26,6 +27,7 @@ Documentation directory covering architecture decisions, design guidelines, comp
 
 ### Working In This Directory
 - ADRs in `adr/` are the authoritative source for architectural decisions. Before making significant infrastructure changes, check existing ADRs.
+- `environments.md` is the canonical environment matrix. Do not add a database, staging, preview, migration, or real-data workflow anywhere else without updating it.
 - LGPD compliance docs in `compliance/` must be consulted before any work involving PII (CPF, SIAPE, email, address, functional data).
 - `runbook.md` is the primary reference for deployment, rollback, and incident response.
 

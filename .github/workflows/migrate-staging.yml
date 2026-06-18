@@ -30,9 +30,12 @@ jobs:
         run: npm ci
 
       - name: Apply migrations
-        run: npx drizzle-kit migrate
+        run: npm run db:migrate
         env:
           DATABASE_MIGRATION_URL: ${{ secrets.DATABASE_MIGRATION_URL }}
+          DATABASE_MIGRATION_ENV: staging
+          ALLOW_STAGING_MIGRATIONS: 'true'
+          DATABASE_STAGING_HOST: ${{ vars.DATABASE_STAGING_HOST }}
 
       - name: Verify schema alignment
         run: npm run test:db

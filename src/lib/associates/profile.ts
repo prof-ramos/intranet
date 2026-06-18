@@ -184,7 +184,7 @@ export async function getAssociateProfile(
     linkedActivities: linkedActivities.map((activity) => toActivityDTO(activity, role)),
     dependents,
     healthAgreements,
-    isAssociationActive: associate.associationStatus === 'ativo',
+    isAssociationActive: associate.associationStatus === 'associado',
     isFunctionalActive: associate.functionalStatus === 'ativo',
     joinedYears: yearsSinceDate(associate.joinedAt),
     careerYears: yearsSinceDate(associate.assignmentStartDate),

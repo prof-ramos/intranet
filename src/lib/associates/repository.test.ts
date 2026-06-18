@@ -68,8 +68,8 @@ vi.mock('@/lib/db/schema', () => ({
     contributionStatus: 'contributionStatus',
   },
   functionalStatus: { enumValues: ['ativo', 'aposentado', 'cedido', 'em_licenca'] },
-  associationStatus: { enumValues: ['ativo', 'inativo'] },
-  contributionStatus: { enumValues: ['em_dia', 'inadimplente', 'pendente_migracao'] },
+  associationStatus: { enumValues: ['associado', 'nao_associado'] },
+  contributionStatus: { enumValues: ['em_dia', 'inadimplente'] },
   activities: {
     id: 'id',
     title: 'title',
@@ -135,7 +135,7 @@ const officers = [
     assignment: null,
     classPattern: null,
     functionalStatus: 'ativo',
-    associationStatus: 'ativo',
+    associationStatus: 'associado',
     contributionStatus: 'em_dia',
   },
   {
@@ -144,7 +144,7 @@ const officers = [
     assignment: null,
     classPattern: null,
     functionalStatus: 'aposentado',
-    associationStatus: 'inativo',
+    associationStatus: 'nao_associado',
     contributionStatus: 'inadimplente',
   },
   {
@@ -153,7 +153,7 @@ const officers = [
     assignment: null,
     classPattern: null,
     functionalStatus: 'ativo',
-    associationStatus: 'inativo',
+    associationStatus: 'nao_associado',
     contributionStatus: 'em_dia',
   },
 ] satisfies MockAssociateRow[];

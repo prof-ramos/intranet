@@ -84,9 +84,46 @@ describe('envSchema', () => {
   test('aceita produção sem Mailjet configurado', () => {
     const result = envSchema.safeParse({
       DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+      DATABASE_MIGRATION_URL: 'postgres://user:pass@localhost:5432/db',
       SKIP_AUTH: 'false',
       SESSION_SECRET: 'test-session-secret-with-at-least-32-chars',
       NODE_ENV: 'production',
+      VERCEL_ENV: 'production',
+      CRON_SECRET: 'cron-secret-configurado',
+      ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
+      ENCRYPTION_MASTER_KEY: 'test-encryption-master-key-with-at-least-32-chars',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  test('rejeita producao Vercel sem DATABASE_MIGRATION_URL explicita', () => {
+    const result = envSchema.safeParse({
+      ...validEnv,
+      VERCEL_ENV: 'production',
+      CRON_SECRET: 'cron-secret-configurado',
+      ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
+      ENCRYPTION_MASTER_KEY: 'test-encryption-master-key-with-at-least-32-chars',
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path.includes('DATABASE_MIGRATION_URL'));
+      expect(issue?.message).toBe(
+        'Production must set explicit DATABASE_URL and DATABASE_MIGRATION_URL; legacy provider fallbacks are not allowed as the production database contract.',
+      );
+    }
+  });
+
+  test('aceita variaveis de banco injetadas pela Vercel quando o par oficial existe', () => {
+    const result = envSchema.safeParse({
+      ...validEnv,
+      DATABASE_MIGRATION_URL: 'postgres://user:pass@localhost:5432/db',
+      DATABASE_POSTGRES_URL: 'postgres://user:pass@localhost:5432/legacy',
+      VERCEL_ENV: 'production',
+      CRON_SECRET: 'cron-secret-configurado',
+      ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
+      ENCRYPTION_MASTER_KEY: 'test-encryption-master-key-with-at-least-32-chars',
     });
 
     expect(result.success).toBe(true);
@@ -130,12 +167,32 @@ describe('envSchema', () => {
       ...validEnv,
       VERCEL_ENV: 'production',
       CRON_SECRET: 'cron-secret-configurado',
+      ENCRYPTION_MASTER_KEY: 'test-encryption-master-key-with-at-least-32-chars',
     });
 
     expect(result.success).toBe(false);
     if (!result.success) {
       const issue = result.error.issues.find((i) => i.path.includes('ASOF_INTRANET_URL'));
       expect(issue?.message).toBe('ASOF_INTRANET_URL is required for production app links.');
+    }
+  });
+
+  test('rejeita producao Vercel sem chave de criptografia de PII', () => {
+    const result = envSchema.safeParse({
+      DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+      DATABASE_MIGRATION_URL: 'postgres://user:pass@localhost:5432/db',
+      SKIP_AUTH: 'false',
+      SESSION_SECRET: 'test-session-secret-with-at-least-32-chars',
+      NODE_ENV: 'production',
+      VERCEL_ENV: 'production',
+      CRON_SECRET: 'cron-secret-configurado',
+      ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path.includes('ENCRYPTION_MASTER_KEY'));
+      expect(issue?.message).toBe('ENCRYPTION_MASTER_KEY is required for production PII encryption.');
     }
   });
 });

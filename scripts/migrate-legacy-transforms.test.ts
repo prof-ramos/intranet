@@ -118,9 +118,9 @@ describe('mapCareerOrigin', () => {
 });
 
 describe('mapAssociationStatus', () => {
-  it('maps sim to ativo', () => expect(mapAssociationStatus('sim')).toBe('ativo'));
-  it('maps não to inativo', () => expect(mapAssociationStatus('não')).toBe('inativo'));
-  it('maps nao to inativo (no accent)', () => expect(mapAssociationStatus('nao')).toBe('inativo'));
+  it('maps sim to associado', () => expect(mapAssociationStatus('sim')).toBe('associado'));
+  it('maps não to nao_associado', () => expect(mapAssociationStatus('não')).toBe('nao_associado'));
+  it('maps nao to nao_associado (no accent)', () => expect(mapAssociationStatus('nao')).toBe('nao_associado'));
   it('returns null for dash', () => expect(mapAssociationStatus('-')).toBeNull());
 });
 
@@ -371,7 +371,7 @@ describe('transformLegacyRecord', () => {
     expect(result.associate.rgState).toBe('RJ');
     expect(result.associate.ceocMember).toBe(false);
     expect(result.associate.caocMember).toBe(true);
-    expect(result.associate.associationStatus).toBe('ativo');
+    expect(result.associate.associationStatus).toBe('associado');
     expect(result.associate.careerOrigin).toBe('brasil');
     expect(result.associate.missionType).toBe('permanente');
     expect(result.associate.functionalStatus).toBe('ativo');

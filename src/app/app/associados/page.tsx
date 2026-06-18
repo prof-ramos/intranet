@@ -61,10 +61,10 @@ export default async function AssociadosPage({
         <section className="mb-7 flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <p className="text-[11px] tracking-[0.18em] uppercase" style={{ color: textMuted }}>
-              Quadro associativo · {todayLabel}
+              Cadastro de oficiais · {todayLabel}
             </p>
             <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
-              Associados
+              Cadastro de Oficiais
             </h1>
           </div>
         </section>
@@ -84,7 +84,7 @@ export default async function AssociadosPage({
               </Link>
               <Link
                 href="/app/associados/relatorio"
-                aria-label="Exportar associados para CSV"
+                aria-label="Exportar oficiais para CSV"
                 className={`inline-flex h-11 w-11 items-center justify-center rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
               >
                 <Download size={18} aria-hidden="true" />

@@ -14,11 +14,10 @@ import {
 import { sql } from 'drizzle-orm';
 import { paymentMethod } from './enums';
 
-export const associationStatus = pgEnum('association_status', ['ativo', 'inativo']);
+export const associationStatus = pgEnum('association_status', ['associado', 'nao_associado']);
 export const contributionStatus = pgEnum('contribution_status', [
   'em_dia',
   'inadimplente',
-  'pendente_migracao',
 ]);
 export const functionalStatus = pgEnum('functional_status', [
   'ativo',
@@ -69,12 +68,12 @@ export const associates = pgTable(
     assignmentStartDate: date('assignment_start_date', { mode: 'string' }),
     locationCity: text('location_city'),
     locationCountry: text('location_country'),
-    associationStatus: associationStatus('association_status').notNull().default('ativo'),
+    associationStatus: associationStatus('association_status').notNull().default('nao_associado'),
     joinedAt: timestamp('joined_at', { mode: 'string', withTimezone: true }),
     associationCategory: text('association_category'),
     contributionStatus: contributionStatus('contribution_status')
       .notNull()
-      .default('pendente_migracao'),
+      .default('inadimplente'),
     paymentMethod: paymentMethod('payment_method').notNull().default('folha'),
     secondaryEmail: text('secondary_email'),
     internalNotes: text('internal_notes'),

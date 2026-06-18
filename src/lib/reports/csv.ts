@@ -51,14 +51,13 @@ const functionalStatusLabels: Record<string, string> = {
 };
 
 const associationStatusLabels: Record<string, string> = {
-  ativo: 'Ativo',
-  inativo: 'Inativo',
+  associado: 'Associado',
+  nao_associado: 'Não associado',
 };
 
 const contributionStatusLabels: Record<string, string> = {
   em_dia: 'Em Dia',
   inadimplente: 'Inadimplente',
-  pendente_migracao: 'Pendente de Migração',
 };
 
 function formatEnum(value: string | null | undefined, labels: Record<string, string>): string | null {

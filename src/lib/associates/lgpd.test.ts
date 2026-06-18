@@ -26,7 +26,7 @@ function makeAssociate(overrides: Partial<Associate> = {}): Associate {
     assignment: 'SERE',
     assignmentStartDate: '2015-03-01',
     classPattern: 'B',
-    associationStatus: 'ativo',
+    associationStatus: 'associado',
     functionalStatus: 'ativo',
     contributionStatus: 'em_dia',
     associationCategory: 'efetivo',

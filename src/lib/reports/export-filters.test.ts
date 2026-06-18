@@ -5,7 +5,7 @@ describe('parseReportExportParams', () => {
   it('accepts valid filters and selected fields', () => {
     const params = new URLSearchParams({
       functionalStatus: 'ativo',
-      associationStatus: 'inativo',
+      associationStatus: 'nao_associado',
       contributionStatus: 'em_dia',
       birthMonth: '5',
     });
@@ -15,7 +15,7 @@ describe('parseReportExportParams', () => {
     expect(parseReportExportParams(params)).toEqual({
       filters: {
         functionalStatus: 'ativo',
-        associationStatus: 'inativo',
+        associationStatus: 'nao_associado',
         contributionStatus: 'em_dia',
         birthMonth: 5,
       },

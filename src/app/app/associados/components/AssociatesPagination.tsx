@@ -63,7 +63,7 @@ export function AssociatesPagination({ page, totalPages, searchParams }: Associa
   const windowItems = generatePaginationWindow(page, totalPages);
 
   return (
-    <nav aria-label="Paginação de associados" className="flex flex-wrap items-center gap-1">
+    <nav aria-label="Paginação de oficiais" className="flex flex-wrap items-center gap-1">
       <PageButton
         targetPage={page > 1 ? 1 : undefined}
         icon={ChevronsLeft}

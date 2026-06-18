@@ -187,7 +187,7 @@ export default async function AssociadoPerfilPage({
         className={`text-base-content/60 mb-4 inline-flex items-center gap-1.5 text-xs font-medium hover:underline ${focusRingClass}`}
       >
         <ArrowLeft size={14} aria-hidden="true" />
-        Voltar para Associados
+        Voltar para Cadastro de Oficiais
       </Link>
 
       <div className="grid items-start gap-7 xl:grid-cols-[200px_minmax(0,1fr)]">
@@ -405,7 +405,7 @@ export default async function AssociadoPerfilPage({
             <dl className="m-0">
               <Row label="Categoria" value={associate.associationCategory} />
               <Row
-                label="Situação associativa"
+                label="Vínculo ASOF"
                 value={getAssociateStatusLabel(associate.associationStatus)}
               />
               <Row
@@ -529,7 +529,7 @@ export default async function AssociadoPerfilPage({
           >
             {linkedActivities.length === 0 ? (
               <p className="text-base-content/55 m-0 text-sm">
-                Nenhuma atividade vinculada a este associado.
+                Nenhuma atividade vinculada a este oficial.
               </p>
             ) : (
               <ul className="m-0 flex list-none flex-col gap-2 p-0">

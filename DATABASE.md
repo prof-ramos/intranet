@@ -1,7 +1,7 @@
 # Database — ASOF Intranet
 
 > Schema reference e guia operacional do banco de dados.
-> Última atualização: 2026-06-15 (migração 0020: expansão de associates, dependents, health_agreements)
+> Última atualização: 2026-06-18 (ADR 015: matriz oficial de ambientes)
 
 ---
 
@@ -16,25 +16,30 @@
 
 ## Conexão
 
+A matriz oficial de ambientes fica em [`docs/environments.md`](./docs/environments.md).
+Este arquivo descreve o schema e o workflow de banco, mas não deve introduzir
+novos ambientes.
+
 | Ambiente | Variável | Descrição |
 |----------|----------|-----------|
 | Produção (Runtime) | `DATABASE_URL` | Pooled (Neon pooler) — `ep-empty-cake-ac26vl6w-pooler.sa-east-1.aws.neon.tech` |
 | Produção (Migrations) | `DATABASE_MIGRATION_URL` | Direta (Neon direct) — `ep-empty-cake-ac26vl6w.sa-east-1.aws.neon.tech` |
-| Dev (Runtime) | `DATABASE_URL` | Pooled — `ep-tiny-king-acczg9ev-pooler.sa-east-1.aws.neon.tech` |
-| Dev (Migrations) | `DATABASE_MIGRATION_URL` / `DATABASE_URL_UNPOOLED` | Direta — `ep-tiny-king-acczg9ev.sa-east-1.aws.neon.tech` |
+| Dev diário | `DATABASE_URL` / `DATABASE_MIGRATION_URL` | Postgres local `asof_intranet` com seed sintético |
+| Dev realista restrito | `DATABASE_URL` / `DATABASE_MIGRATION_URL` | Neon `vercel-dev` ou clone local autorizado com PII real, apenas por necessidade concreta |
+| Testes | `TEST_DATABASE_URL` ou `.env.test.local` | Bancos locais dedicados (`asof_test`, `asof_intranet_test`) |
 
-O cliente Drizzle (`src/lib/db/index.ts`) também aceita fallbacks legados: `DATABASE_POSTGRES_URL`, `POSTGRES_PRISMA_URL`, `POSTGRES_URL`.
+O cliente Drizzle (`src/lib/db/index.ts`) ainda reconhece fallbacks legados para
+compatibilidade de provedores e desenvolvimento, mas produção oficial deve usar
+somente `DATABASE_URL` + `DATABASE_MIGRATION_URL`.
 
 ### Desenvolvimento local
 
-- **Recomendado (dados reais):** Branch `vercel-dev` no projeto Neon `intranet-db` (projeto `long-leaf-97822199`). Contém clone dos dados de produção (~1.750 associados, 30 tabelas) sem risco ao banco de produção.
-  - Para resetar o branch para o estado de produção: Console Neon ou API (`POST /v2/projects/long-leaf-97822199/branches` com `parent_id: "br-bold-bar-acge6h1w"`).
-  - `.env.local` aponta para este branch por padrão.
-  - **Aviso LGPD (crítico):** O branch contém PII sensível (CPF, SIAPE, endereços, etc.). Siga controles estritos (use apenas em máquinas autorizadas com FDE, nunca compartilhe). Consulte `src/lib/lgpd/`, `sanitizePii()`, `lib/crypto/pii.ts` e ADRs (ex. 006).
-- **Alternativa (dump local):** Clone do Neon em `asof_intranet_neon_clone` (veja README.md > Banco de dados e CONTRIBUTING.md para o procedimento completo de dump/restore usando cliente PostgreSQL 17).
-  - **Aviso LGPD:** O clone contém PII sensível. Delete dumps de `/tmp` imediatamente após restore.
-- **Mínimo:** Banco vazio `asof_intranet` + `npm run db:seed`.
-- Sempre use URLs locais (sem sslmode=require) e usuário do sistema (ex: `postgres://gabrielramos@localhost:5432/asof_intranet_neon_clone`).
+- **Padrão:** banco local `asof_intranet` + `npm run db:seed`, sem PII real.
+- **Restrito:** Neon `vercel-dev` ou clone local com dados reais apenas para
+  bugs de volume, importação, performance e validações que dependem de dados
+  realistas. Trate como PII sensível e siga `docs/environments.md`.
+- Sempre use URLs locais sem `sslmode=require` no Postgres local e usuário do
+  sistema (ex: `postgres://gabrielramos@localhost:5432/asof_intranet`).
 - Testes de integração e E2E usam bancos dedicados separados (`asof_intranet_test`, `asof_test`).
 
 ### Configuração do client
@@ -74,6 +79,10 @@ Para migração manual em produção:
 ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
 ```
 > Executar apenas após backup/snapshot, janela aprovada e plano de rollback documentado.
+
+Staging, quando existir oficialmente, deve usar `DATABASE_MIGRATION_ENV=staging`,
+`ALLOW_STAGING_MIGRATIONS=true` no workflow controlado e secrets próprios.
+Preview não deve herdar envs gerais de banco de produção.
 
 ### Índices CONCURRENTLY
 
@@ -124,7 +133,7 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 | Tabela | Arquivo | Finalidade |
 |--------|---------|------------|
 | `admins` | `admins.ts` | Usuários administrativos (login, roles, password_hash) |
-| `associates` | `associates.ts` | Cadastro de associados (dados pessoais, PII, situação, dados funcionais) |
+| `associates` | `associates.ts` | Cadastro de Oficiais de Chancelaria (dados pessoais, PII, situação funcional, vínculo ASOF, dados funcionais) |
 | `assignments` | `assignments.ts` | Lotações/postos (domestic/abroad) |
 
 #### Atividades
@@ -228,9 +237,9 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 | Enum | Valores | Uso |
 |------|---------|-----|
-| `association_status` | `ativo`, `inativo` | Situação associativa |
+| `association_status` | `associado`, `nao_associado` | Vínculo ASOF |
 | `functional_status` | `ativo`, `aposentado`, `cedido`, `em_licenca` | Situação funcional |
-| `contribution_status` | `em_dia`, `inadimplente`, `pendente_migracao` | Contribuição |
+| `contribution_status` | `em_dia`, `inadimplente` | Contribuição |
 | `assignment_type` | `nacional`, `exterior` | Tipo de lotação |
 | `sex` | `M`, `F` | Sexo biológico |
 | `marital_status` | `solteiro`, `casado`, `divorciado`, `viuvo`, `separado`, `outros` | Estado civil |

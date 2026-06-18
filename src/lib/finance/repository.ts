@@ -195,7 +195,7 @@ export async function getAssociatesWithPayments(
   month: number,
   filters?: MonthlyPaymentsFilters,
 ) {
-  const conditions = [eq(associates.associationStatus, 'ativo')];
+  const conditions = [eq(associates.associationStatus, 'associado')];
 
   if (filters?.q && filters.q.trim()) {
     conditions.push(ilike(associates.fullName, buildNamePattern(filters.q.trim())));

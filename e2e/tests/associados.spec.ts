@@ -1,10 +1,10 @@
 import { test, expect } from '../fixtures';
 
-test.describe('Associados', () => {
+test.describe('Cadastro de Oficiais', () => {
   test('lists seeded associates', async ({ page, loginAsAdmin }) => {
     await loginAsAdmin();
     await page.goto('/app/associados');
-    await expect(page.locator('h1')).toContainText('Associados');
+    await expect(page.locator('h1')).toContainText('Cadastro de Oficiais');
     await expect(page.locator('table')).toContainText('João da Silva');
     await expect(page.locator('table')).toContainText('Maria Oliveira');
   });

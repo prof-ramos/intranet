@@ -31,7 +31,7 @@ const mockRow = {
   assignmentStartDate: '2010-01-15',
   classPattern: 'A',
   functionalStatus: 'ativo',
-  associationStatus: 'ativo',
+  associationStatus: 'associado',
   contributionStatus: 'em_dia',
   joinedAt: '2010-02-01',
   associationCategory: 'efetivo',
@@ -141,7 +141,7 @@ describe('generateCsv', () => {
     const csv = generateCsv([mockRow], ['fullName', 'associationStatus']);
     const lines = csv.replace(/^﻿/, '').split('\r\n');
     expect(lines[0]).toContain('"Nome"');
-    expect(lines[0]).toContain('"Situação Associativa"');
+    expect(lines[0]).toContain('"Vínculo ASOF"');
   });
 
   it('filters columns by selectedKeys', () => {
