@@ -27,7 +27,7 @@ O cliente Drizzle (`src/lib/db/index.ts`) também aceita fallbacks legados: `DAT
 
 ### Desenvolvimento local
 
-- **Recomendado (dados reais):** Branch `vercel-dev` no projeto Neon `intranet-db` (projeto `long-leaf-97822199`). Contém clone dos dados de produção (~1.750 associados, 29 tabelas) sem risco ao banco de produção.
+- **Recomendado (dados reais):** Branch `vercel-dev` no projeto Neon `intranet-db` (projeto `long-leaf-97822199`). Contém clone dos dados de produção (~1.750 associados, 30 tabelas) sem risco ao banco de produção.
   - Para resetar o branch para o estado de produção: Console Neon ou API (`POST /v2/projects/long-leaf-97822199/branches` com `parent_id: "br-bold-bar-acge6h1w"`).
   - `.env.local` aponta para este branch por padrão.
   - **Aviso LGPD (crítico):** O branch contém PII sensível (CPF, SIAPE, endereços, etc.). Siga controles estritos (use apenas em máquinas autorizadas com FDE, nunca compartilhe). Consulte `src/lib/lgpd/`, `sanitizePii()`, `lib/crypto/pii.ts` e ADRs (ex. 006).
@@ -79,7 +79,7 @@ ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
 
 `CREATE INDEX CONCURRENTLY` e `DROP INDEX CONCURRENTLY` **não** podem ser executados dentro de transações PostgreSQL. Como o Drizzle Kit (`npm run db:migrate`) aplica migrações envolvendo cada statement em uma transação, esses comandos falham nesse fluxo. Para esses casos: backup → teste em staging → execução direta via `psql "$DATABASE_MIGRATION_URL"` → validação com `npm run test:db`.
 
-### Migrações aplicadas (22)
+### Migrações aplicadas (25)
 
 | # | Arquivo | Descrição |
 |---|---------|-----------|
@@ -106,6 +106,8 @@ ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
 | 0020 | `0020_careless_penance.sql` | Expansão de associates (21 colunas, 4 enums, 2 tabelas) |
 | 0021 | `0021_military_thundra.sql` | Índice unique em source_row_number para upsert idempotente |
 | 0022 | `0022_puzzling_mantis.sql` | CHECK constraint em health_agreements (end_date ≥ start_date) |
+| 0023 | `0023_dashing_madame_web.sql` | Adiciona constraint `UNIQUE` em `assignments.name` |
+| 0024 | `0024_worthless_deathbird.sql` | Cria tabela `integration_signature_nonces` (prevenção de replay attack em integrações M2M) |
 
 ### Nomenclatura
 
@@ -115,7 +117,7 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 ## Schema (`src/lib/db/schema/`)
 
-### Tabelas (27)
+### Tabelas (30)
 
 #### Core
 
@@ -188,6 +190,7 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 | `webhook_subscriptions` | `integrations.ts` | Subscriptions de webhooks outbound |
 | `webhook_deliveries` | `integrations.ts` | Histórico de entregas de webhook |
 | `integration_api_keys` | `integrations.ts` | Chaves de API M2M com escopos |
+| `integration_signature_nonces` | `integrations.ts` | Nonces de replay attack (unique por `key_id` + `signature`, com `expires_at`) |
 
 #### Segurança
 
@@ -195,6 +198,8 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 |--------|---------|------------|
 | `login_attempts` | `login-attempts.ts` | Tentativas de login (rate limit) |
 | `rate_limits` | `rate-limits.ts` | Rate limiting PostgreSQL-backed |
+| `password_reset_tokens` | `password-reset-tokens.ts` | Tokens de redefinição de senha com expiração |
+| `password_reset_attempts` | `password-reset-attempts.ts` | Rastreia tentativas de reset de senha por token |
 
 #### Configuração
 
@@ -269,7 +274,7 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 | Enum | Valores | Uso |
 |------|---------|-----|
 | `official_letter_status` | `gerado`, `cancelado`, `rascunho` | Status do ofício |
-| `assinafy_document_status` | `uploading`, `uploaded`, `metadata_processing`, `metadata_ready`, `pending_signature`, `certificating`, `certificated`, `expired`, `rejected_by_signer`, `rejected_by_user`, `failed` (11) | Status Assinafy |
+| `assinafy_document_status` | `uploading`, `uploaded`, `metadata_processing`, `metadata_ready`, `pending_signature`, `certificating`, `certificated`, `expired`, `partially_signed`, `rejected_by_signer`, `rejected_by_user`, `failed` (12) | Status Assinafy |
 
 ### Documentos
 
@@ -292,7 +297,7 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 | Enum | Valores | Uso |
 |------|---------|-----|
-| `notification_type` | `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`, `lgpd_request`, `email_triage_pending` | Categoria |
+| `notification_type` | `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`, `email_triage_pending`, `lgpd_request`, `oficio.status_changed` | Categoria |
 | `notification_entity_type` | `activity`, `legal_consultation`, `email_triagem` | Entidade relacionada |
 
 ### Auditoria
@@ -305,7 +310,7 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 | Enum | Valores | Uso |
 |------|---------|-----|
-| `domain_event_type` | `associate.updated`, `legal_consultation.created`, `legal_consultation.status_changed`, `official_letter.created`, `monthly_payment.updated`, `official_letter.published` | Categoria do evento |
+| `domain_event_type` | `associate.updated`, `legal_consultation.created`, `legal_consultation.status_changed`, `official_letter.created`, `official_letter.published`, `official_letter.status_changed`, `monthly_payment.updated` | Categoria do evento |
 | `domain_event_entity_type` | `associate`, `legal_consultation`, `official_letter`, `monthly_payment` | Entidade relacionada |
 | `domain_event_delivery_status` | `pending`, `processing`, `delivered`, `partially_delivered`, `failed` | Status de entrega |
 | `webhook_delivery_status` | `pending`, `delivered`, `failed`, `retry_scheduled` | Status do delivery |

@@ -130,3 +130,19 @@ Documentos fisicos nao bloqueiam o go-live enquanto nao houver provider de stora
 - Nao registrar CPF, SIAPE, endereco, senha temporaria, token, cookie ou segredo em logs.
 - Usar `src/lib/logger.ts` e `src/lib/sanitize-pii.ts`.
 - Em suspeita de vazamento, preservar evidencias, rotacionar segredos afetados e registrar incidente.
+
+## 9. Limpeza de integration_signature_nonces
+
+A tabela `integration_signature_nonces` armazena nonces de replay attack para integrações M2M (veja ADR 014). Cada nonce expira após a janela de tolerância de timestamp (`ASOF_INTEGRATION_TIMESTAMP_TOLERANCE_SECONDS`), mas não há cron de limpeza automática ainda.
+
+**Monitorar crescimento:**
+```sql
+SELECT count(*) FROM integration_signature_nonces WHERE expires_at < now();
+```
+
+**Limpeza manual (segura — remove apenas expirados):**
+```sql
+DELETE FROM integration_signature_nonces WHERE expires_at < now();
+```
+
+Executar via `psql "$DATABASE_MIGRATION_URL"` ou pelo Drizzle Studio (`npm run db:studio`). Recomendado verificar periodicamente em produção; em dev o branch `vercel-dev` pode ser resetado sem preocupação.

@@ -437,6 +437,8 @@ graph LR
 
 ### `/app/search` — Busca Global
 
+> **⚠️ Não implementado** — `src/app/app/search/page.tsx` não existe. Spec mantida como referência para implementação futura.
+
 **Acesso:** `*`
 
 **Funcionalidades:**

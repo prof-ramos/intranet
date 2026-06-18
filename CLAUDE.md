@@ -31,6 +31,10 @@ npm run test:e2e         # playwright — usa 127.0.0.1:3001, não 3000
 npm run test:db          # schema contract read-only — seguro contra staging e .env.local
 npm run test:integration # DML integration tests — requer .env.test.local com DB localhost
                          # pula graciosamente se .env.test.local não existir
+npm run validate:quick   # typecheck + lint + testes unitários
+npm run validate:full    # validate:quick + test:db + test:integration + build
+npm run pr:check         # verificações de prontidão para PR
+npm run scope:check      # verifica escopo de arquivos alterados
 npm run db:generate      # drizzle-kit generate
 npm run db:migrate       # guarded — exige ALLOW_PRODUCTION_MIGRATIONS=true em produção
 npm run db:seed          # seed admin via INITIAL_ADMIN_EMAIL / INITIAL_ADMIN_PASSWORD
@@ -50,7 +54,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 ## Banco de Dados
 
 - PostgreSQL gerenciado (Neon, projeto `intranet-db` / `long-leaf-97822199`, `ep-empty-cake-ac26vl6w`, sa-east-1) em produção.
-- **Desenvolvimento local (recomendado):** Branch `vercel-dev` no projeto Neon `intranet-db` — clone dos dados de produção (1.750 associados, 29 tabelas) sem risco ao banco de produção.
+- **Desenvolvimento local (recomendado):** Branch `vercel-dev` no projeto Neon `intranet-db` — clone dos dados de produção (1.750 associados, 30 tabelas) sem risco ao banco de produção.
   - Endpoint: `ep-tiny-king-acczg9ev` (pooled: `ep-tiny-king-acczg9ev-pooler.sa-east-1.aws.neon.tech`)
   - `.env.local` já aponta para este branch por padrão.
   - **Aviso LGPD:** O branch contém PII sensível (CPF, SIAPE, endereços, etc.). Siga controles estritos (delete dumps, autorizado apenas, etc.). Consulte lib/lgpd e ADRs.
@@ -94,6 +98,8 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 - `src/app/app/associados/[id]/actions.ts` — server actions CRUD para dependentes e convênios
 - `src/app/app/associados/[id]/DependentManager.tsx` — componente cliente para gerenciamento inline de dependentes e convênios
 - `src/lib/notifications/` — notificações persistidas (polling, sem Realtime)
+- `src/lib/assinafy/service.ts` — orquestra webhook Assinafy; idempotência dentro de `db.transaction`; veja ADR 013
+- `src/lib/integrations/verify-request.ts` — autenticação M2M dual (env-var + table-backed), rate limiting, prevenção de replay via nonces
 - `next.config.ts` — Next.js config
 - `vercel.json` — deploy Vercel
 - `TODO-PROD.md` — checklist de go-live

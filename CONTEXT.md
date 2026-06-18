@@ -19,7 +19,7 @@ Documento oficial de comunicação institucional seguindo o **Padrão Ofício** 
 Plataforma de assinatura eletrônica integrada à intranet para assinatura de ofícios.
 
 - **Fluxo**: Ofício (status `gerado`/`rascunho`) → Geração PDF → Upload Assinafy → Criação Signatário → Assignment (30 dias) → Persistência `assinafy_signing_url` → Email ao signatário → Webhook callbacks (`document_signed`, `signer_signed_document`, `document_rejected`, etc.) → Atualização status + notificação admins
-- **Status Assinafy** (`assinafy_document_status`): `pending`, `uploaded`, `pending_signature`, `partially_signed`, `signed`, `rejected`, `expired`, `cancelled`, `failed`, `certificated`, `ready`
+- **Status Assinafy** (`assinafy_document_status`): `uploading`, `uploaded`, `metadata_processing`, `metadata_ready`, `pending_signature`, `certificating`, `certificated`, `expired`, `partially_signed`, `rejected_by_signer`, `rejected_by_user`, `failed`
 - **Campos persistidos**: `assinafyDocumentId`, `assinafyStatus`, `assinafySigningUrl`, `assinafyAssignmentId`, `assinafySignerId`, `assinafySentAt`
 - **Idempotência**: Guarda `assinafyDocumentId === null` antes de envio; webhook faz early return se status inalterado
 - **Notificação**: Cria notificação `oficio.status_changed` para todos admins ativos dentro da mesma transação do webhook
@@ -227,7 +227,7 @@ Criação rápida de atividade diretamente no board, sem abrir formulário compl
 
 #### Notificação
 
-Alerta persistido para o usuário sobre reatribuição de atividades ou atualização de consulta jurídica. A entrega em tempo real é uma capacidade opcional, não parte essencial do conceito. Tipos (`notificationType`): `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`, `oficio.status_changed` (novo — webhook Assinafy notifica todos admins ativos).
+Alerta persistido para o usuário sobre reatribuição de atividades ou atualização de consulta jurídica. A entrega em tempo real é uma capacidade opcional, não parte essencial do conceito. Tipos (`notificationType`): `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`, `oficio.status_changed`, `email_triage_pending`, `lgpd_request`.
 
 _Avoid_: tratar "notificação" como sinônimo de "evento em tempo real".
 
