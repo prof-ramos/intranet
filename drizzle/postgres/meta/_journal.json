@@ -169,6 +169,13 @@
       "when": 1781736732529,
       "tag": "0023_dashing_madame_web",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1781801526834,
+      "tag": "0024_worthless_deathbird",
+      "breakpoints": true
     }
   ]
 }
