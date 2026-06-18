@@ -193,3 +193,18 @@ export type NewWebhookDelivery = typeof webhookDeliveries.$inferInsert;
 
 export type IntegrationApiKey = typeof integrationApiKeys.$inferSelect;
 export type NewIntegrationApiKey = typeof integrationApiKeys.$inferInsert;
+
+export const integrationSignatureNonces = pgTable(
+  'integration_signature_nonces',
+  {
+    id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+    keyId: text('key_id').notNull(),
+    signature: text('signature').notNull(),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    uniqueIndex('integration_signature_nonces_key_sig_idx').on(t.keyId, t.signature),
+    index('integration_signature_nonces_expires_idx').on(t.expiresAt),
+  ],
+);
