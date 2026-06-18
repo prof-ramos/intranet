@@ -437,7 +437,7 @@ graph LR
 
 ### `/app/search` — Busca Global
 
-> **⚠️ Não implementado** — `src/app/app/search/page.tsx` não existe. Spec mantida como referência para implementação futura.
+> Implementado em `src/app/app/search/page.tsx`. Busca server-side via `searchParams.q`; resultados agrupados por Associados e Atividades.
 
 **Acesso:** `*`
 

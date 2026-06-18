@@ -9,7 +9,7 @@
 
 A superficie HTTP publica atual da ASOF Intranet e pequena e intencionalmente restrita.
 
-Hoje existem **12 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
+Hoje existem **13 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
 
 | Metodo        | Rota                                 | Finalidade                                                                  |
 | ------------- | ------------------------------------ | --------------------------------------------------------------------------- |
@@ -24,6 +24,7 @@ Hoje existem **12 endpoints HTTP expostos**, com superficie publica intencionalm
 | `GET`         | `/api/v1/cron/gmail-watch`           | Renovacao semanal do watch Gmail (cron bearer)                              |
 | `GET`         | `/api/v1/cron/lgpd-retention`        | Job agendado de retencao e anonimizacao LGPD (cron bearer)                  |
 | `GET`         | `/api/v1/cron/overdue-payments`      | Marca mensalidades vencidas pendente → atrasado via `autoMarkOverduePaymentsService` (cron bearer) |
+| `GET`         | `/api/v1/cron/cleanup-nonces`        | Limpa nonces expirados de replay protection (cron bearer, diário 01:00 UTC) |
 | `POST`        | `/app/etiquetas/gerar`               | Geracao administrativa de etiquetas Pimaco em PDF                           |
 | `POST`        | `/api/webhooks/assinafy`             | Webhook de retorno de assinatura digital (Assinafy)                         |
 
