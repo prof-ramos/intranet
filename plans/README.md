@@ -17,13 +17,29 @@ honor its STOP conditions, and update your row when done.
 | 007  | Prevent PII patch from setting columns to undefined | P2 | S | — | DONE | [#160](https://github.com/prof-ramos/intranet/issues/160) |
 | 008  | Wire orphaned integration tests into CI and npm scripts | P2 | S | — | DONE | [#163](https://github.com/prof-ramos/intranet/issues/163) |
 | 009  | Batch notification inserts in Assinafy webhook handler | P2 | S | — | DONE | [#164](https://github.com/prof-ramos/intranet/issues/164) |
+| 010  | Fix revalidateTag arity — restore CI typecheck and cache invalidation | P1 | S | — | DONE | |
+| 011  | Invalidate 'associates' and 'dashboard' cache tags on associate mutations | P1 | S | 010 | TODO | |
+| 012  | Replace Promise.race timeout with AbortSignal in email-triage analyzer | P1 | S | — | TODO | |
+| 013  | Extract mapAssociateListRow to eliminate 4× PII-decrypt duplication | P2 | S | — | TODO | |
+| 014  | Extract revalidateAssociatePaths helper in [id]/actions.ts | P2 | S | 011 | TODO | |
+| 015  | Add pre-commit hooks (husky + lint-staged) | P2 | S | 010 | TODO | |
+| 016  | Add unit tests for associate dependent and health-agreement actions | P2 | M | 011, 014 | TODO | |
+| 017  | Migrate z.preprocess to Zod v4 idiomatic transforms | P2 | S | — | TODO | |
+| 018  | Move Assinafy webhook idempotency guard inside the DB transaction | P2 | M | — | TODO | |
+| 019  | Add replay protection to integration request verification | P2 | M | — | TODO | |
+| 020  | Add unit tests for email-triage server actions | P2 | M | — | TODO | |
+| 021  | Bulk audit-log inserts and parallel domain-event emission in autoMarkOverdue | P2 | M | — | TODO | |
 
 ## Dependency notes
 
-- None
+- 011 requires 010 because the `revalidateTag` arity must be correct before adding more calls of the same pattern.
+- 014 requires 011 because it folds the `revalidateTag` calls added by 011 into the helper.
+- 015 requires 010 because the pre-commit typecheck hook will fail until 010 fixes the TS errors.
+- 016 requires 011 and 014 because tests assert on `revalidateTag` calls (011) and the helper (014).
 
 ## Findings considered and rejected
 
+### Batch 1 (2026-06-10)
 - [COVERAGE-01] Test database queries instead of mocking Drizzle: deferred to test characterization phase.
 - [COVERAGE-02] Add test coverage for email triage API: deferred to test characterization phase.
 - [ARCHITECTURE-01] Remove redundant error catching: too low leverage for this batch.
@@ -37,3 +53,18 @@ honor its STOP conditions, and update your row when done.
 - [SEC-04] `ENCRYPTION_MASTER_KEY` fallback to webhook key: deferred — requires coordinated env var migration, M effort.
 - [C-02] Audit error swallowing inside transactions: addressed partially by Plan 005 pattern; full fix needs `abortOnFailure` option in logAuditAction.
 - Direction findings: logged for product roadmap consideration, out of scope for immediate bug/perf fixes.
+
+### Batch 2 (2026-06-17)
+- [TESTS-03] with-cache.test.ts missing: refuted — file already exists at src/lib/cache/with-cache.test.ts.
+- [SEC-audit-SEC-02] Gmail Pub/Sub webhook unauthenticated: already deferred in Batch 1, confirmed again — deferred.
+- [DEP-02] vite HIGH advisory: Windows-only CVEs, dev-only surface (vitest), Linux CI unaffected — accepted risk; document in TODO-PROD.md.
+- [DEP-01 / SEC-04-ws] ws HIGH advisory via @novu/react: CLAUDE.md confirms "polling, sem Realtime" — WebSocket never opened; ws attack surface is inert. Accepted, no action.
+- [SEC-05] email_triages plaintext sender/subject: LOW confidence; triage metadata is operational, not associate PII; likely by-design pending ADR clarification.
+- [BUG-05] checkRateLimit rows[0] without null guard: LOW confidence, fail-open already in place; cosmetic hardening only.
+- [BUG-06] webhook-handler.ts return without await: LOW confidence, theoretical; no observed failure.
+- [BUG-07] Non-null assertion on signing_urls[0]!.url: LOW confidence, cosmetic; runtime guard still works.
+- [BUG-02] createSigner treats any 400/409 as duplicate: MED confidence but likely intended behaviour until Assinafy documents error codes.
+- [PERF-03] listWebhookSubscriptions unbounded: LOW impact today (<100 rows expected); defer to cleanup pass.
+- [PERF-04] findOfficialLetterById over-fetch: LOW impact (PK lookup, single row); defer.
+- [TD-03-finance] finance SELECT * wide rows: LOW impact; defer to cleanup pass.
+- Direction findings (DIR-01 Papra, DIR-02 AI rate-limiting, DIR-03 ofício circular): product roadmap candidates — out of scope for this batch.

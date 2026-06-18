@@ -96,8 +96,8 @@ describe('config lotacoes actions', () => {
         performedBy: 7,
       }),
     );
-    expect(revalidateTagMock).toHaveBeenCalledWith('associates');
-    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard');
+    expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/lotacoes');
   });
 
@@ -200,8 +200,8 @@ describe('config lotacoes actions', () => {
         performedBy: 7,
       }),
     );
-    expect(revalidateTagMock).toHaveBeenCalledWith('associates');
-    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard');
+    expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/lotacoes');
   });
 });

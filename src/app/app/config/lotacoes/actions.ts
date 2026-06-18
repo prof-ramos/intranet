@@ -29,8 +29,8 @@ function parseAssignmentId(raw: string): number {
 }
 
 function revalidateAssignments() {
-  revalidateTag('associates');
-  revalidateTag('dashboard');
+  revalidateTag('associates', 'max');
+  revalidateTag('dashboard', 'max');
   revalidatePath('/app/config/lotacoes');
 }
 
