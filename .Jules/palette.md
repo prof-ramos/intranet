@@ -19,3 +19,7 @@
 ## 2026-06-16 - Adding async loading state and focus ring to Change Password submit button
 **Learning:** Similar to the login, logout, and forgot-password buttons, the "Change Password" form's submit button lacked both an async loading state and consistent keyboard focus styles (`focusRingClass`). It was a static button wrapped in a `<form>`. By extracting it into a separate `"use client"` component, we could use `useFormStatus` to show a proper pending state with a spinner (`aria-busy`), preventing multiple submissions and improving user feedback.
 **Action:** Whenever reviewing or creating forms with Next.js Server Actions, always check if the submit button uses `useFormStatus` for async feedback. If not, extract it into a client component. Additionally, ensure all standalone interactive elements have the `focusRingClass` applied to maintain keyboard navigation accessibility.
+
+## 2026-06-17 - Combobox Keyboard Navigation and Hover Precedence
+**Learning:** When implementing the `aria-activedescendant` combobox pattern, dropdown items must have `tabIndex={-1}` so they don't break the natural tab sequence out of the input. Additionally, Tailwind `hover:bg-...` classes fail if overridden by inline `style={{ background: 'transparent' }}`; using `undefined` allows the class to work correctly.
+**Action:** Always test hover states when inline styles are used conditionally, and ensure `role="option"` elements are removed from the tab order when focus is managed via the parent input.
