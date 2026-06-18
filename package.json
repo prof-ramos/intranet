@@ -37,7 +37,8 @@
     "db:seed": "tsx scripts/seed-admin.ts",
     "migrate:legacy": "tsx scripts/migrate-legacy.ts",
     "migrate:legacy:dry-run": "tsx scripts/migrate-legacy.ts --dry-run",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "prepare": "husky"
   },
   "dependencies": {
     "@google/genai": "^2.8.0",
@@ -79,7 +80,9 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
+    "lint-staged": "^17.0.7",
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "tailwindcss": "^4.3.0",
@@ -90,5 +93,10 @@
   "overrides": {
     "esbuild": "0.28.0",
     "postcss": "8.5.14"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix"
+    ]
   }
 }
