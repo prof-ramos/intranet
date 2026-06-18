@@ -1,10 +1,13 @@
 'use server';
 
 import { createHash } from 'node:crypto';
+import { and, eq, gt, sql } from 'drizzle-orm';
 import type { AuthRole } from '@/lib/auth/config';
 import { canAccessRole } from '@/lib/auth/authorization';
 import { safeCompare } from '@/lib/crypto/safe-compare';
 import { getSession } from '@/lib/auth/session';
+import { db } from '@/lib/db';
+import { integrationSignatureNonces } from '@/lib/db/schema';
 import { getIntegrationConfig, isIntegrationAuthConfigured } from '@/lib/integrations/config';
 import { findActiveApiKeyByHash, updateApiKeyLastUsed } from '@/lib/integrations/keys/repository';
 import { decryptIntegrationSigningSecret } from '@/lib/integrations/keys/signing-secrets';
@@ -93,6 +96,36 @@ function isTimestampWithinTolerance(
   return { ok: true };
 }
 
+async function checkAndRecordNonce(
+  keyId: string,
+  signature: string,
+  toleranceSec: number,
+): Promise<boolean> {
+  const existing = await db
+    .select({ id: integrationSignatureNonces.id })
+    .from(integrationSignatureNonces)
+    .where(
+      and(
+        eq(integrationSignatureNonces.keyId, keyId),
+        eq(integrationSignatureNonces.signature, signature),
+        gt(integrationSignatureNonces.expiresAt, sql`now()`),
+      ),
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    return false;
+  }
+
+  const expiresAt = new Date(Date.now() + toleranceSec * 1000);
+  await db
+    .insert(integrationSignatureNonces)
+    .values({ keyId, signature, expiresAt })
+    .onConflictDoNothing();
+
+  return true;
+}
+
 /**
  * Verify an incoming integration request against either the configured
  * environment-variable API key or a database-backed API key.
@@ -169,6 +202,15 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
       },
     );
 
+    const nonceAccepted = await checkAndRecordNonce(
+      sha256Hex(key),
+      signature,
+      config.timestampToleranceSeconds,
+    );
+    if (!nonceAccepted) {
+      return { ok: false, reason: 'replay_detected' };
+    }
+
     // Env-var keys have full access (no scopes restriction).
     updateApiKeyLastUsed(sha256Hex(key)).catch(() => {});
 
@@ -220,6 +262,15 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
       ok: false,
       reason: 'invalid_signature',
     };
+  }
+
+  const nonceAccepted = await checkAndRecordNonce(
+    keyHash,
+    signature,
+    config.timestampToleranceSeconds,
+  );
+  if (!nonceAccepted) {
+    return { ok: false, reason: 'replay_detected' };
   }
 
   // Update lastUsedAt for the table-backed key.
@@ -336,6 +387,8 @@ function mapIntegrationFailureToResponse(
           details: reason.details,
         },
       );
+    case 'replay_detected':
+      return jsonError(401, 'integration_replay', 'Replayed request detected.', { requestId });
   }
 }
 

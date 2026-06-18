@@ -9,6 +9,7 @@ const {
   mockUpdateApiKeyLastUsed,
   mockDecryptIntegrationSigningSecret,
   mockLoggerWarn,
+  mockNonceSelectResult,
 } = vi.hoisted(() => ({
   mockGetIntegrationConfig: vi.fn(),
   mockIsIntegrationAuthConfigured: vi.fn(),
@@ -16,6 +17,7 @@ const {
   mockUpdateApiKeyLastUsed: vi.fn(),
   mockDecryptIntegrationSigningSecret: vi.fn(),
   mockLoggerWarn: vi.fn(),
+  mockNonceSelectResult: { current: [] as Array<{ id: number }> },
 }));
 
 vi.mock('@/lib/logger', () => ({
@@ -49,6 +51,32 @@ vi.mock('@/lib/auth/session', () => ({
 
 vi.mock('@/lib/auth/authorization', () => ({
   canAccessRole: vi.fn(),
+}));
+
+vi.mock('@/lib/db', () => ({
+  db: {
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: () => Promise.resolve(mockNonceSelectResult.current),
+        }),
+      }),
+    }),
+    insert: () => ({
+      values: () => ({
+        onConflictDoNothing: () => Promise.resolve(),
+      }),
+    }),
+  },
+}));
+
+vi.mock('@/lib/db/schema', () => ({
+  integrationSignatureNonces: {
+    id: 'id',
+    keyId: 'key_id',
+    signature: 'signature',
+    expiresAt: 'expires_at',
+  },
 }));
 
 vi.mock('@/lib/integrations/http', () => ({
@@ -439,5 +467,43 @@ describe('verifyIntegrationRequest — disabled', () => {
     if (!result.ok) {
       expect(result.reason).toBe('disabled');
     }
+  });
+});
+
+describe('verifyIntegrationRequest — replay protection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUpdateApiKeyLastUsed.mockResolvedValue([]);
+    mockNonceSelectResult.current = [];
+  });
+
+  it('rejects a replayed request when the same signature was already accepted', async () => {
+    mockGetIntegrationConfig.mockReturnValue(defaultConfig());
+    mockIsIntegrationAuthConfigured.mockReturnValue(true);
+    mockNonceSelectResult.current = [{ id: 1 }];
+
+    const timestamp = String(NOW_SECONDS);
+    const sig = computeSignature('GET', '/api/v1/events', timestamp, '', HMAC_SECRET);
+    const request = makeRequest(API_KEY, timestamp, sig);
+
+    const result = await verifyIntegrationRequest(request);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe('replay_detected');
+    }
+  });
+
+  it('accepts the first request and records the nonce when no replay exists', async () => {
+    mockGetIntegrationConfig.mockReturnValue(defaultConfig());
+    mockIsIntegrationAuthConfigured.mockReturnValue(true);
+
+    const timestamp = String(NOW_SECONDS);
+    const sig = computeSignature('GET', '/api/v1/events', timestamp, '', HMAC_SECRET);
+    const request = makeRequest(API_KEY, timestamp, sig);
+
+    const result = await verifyIntegrationRequest(request);
+
+    expect(result.ok).toBe(true);
   });
 });

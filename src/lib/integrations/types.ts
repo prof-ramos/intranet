@@ -19,6 +19,7 @@ export type IntegrationErrorCode =
   | 'integration_auth_invalid'
   | 'integration_auth_missing'
   | 'integration_auth_misconfigured'
+  | 'integration_replay'
   | 'invalid_request'
   | 'method_not_allowed'
   | 'not_implemented'
@@ -98,7 +99,8 @@ export type IntegrationAuthFailureReason =
   | 'invalid_signature'
   | 'invalid_timestamp'
   | 'timestamp_skew'
-  | 'insufficient_scope';
+  | 'insufficient_scope'
+  | 'replay_detected';
 
 export type IntegrationAuthResult =
   | {
