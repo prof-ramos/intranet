@@ -1,14 +1,11 @@
 import { z } from 'zod';
 
-const emptyStringToUndefined = (value: unknown) => (value === '' ? undefined : value);
-const optionalString = z.preprocess(emptyStringToUndefined, z.string().optional());
-const optionalNonEmptyString = z.preprocess(emptyStringToUndefined, z.string().min(1).optional());
-const optionalSecretString = z.preprocess(emptyStringToUndefined, z.string().min(32).optional());
-const optionalUrl = z.preprocess(emptyStringToUndefined, z.string().url().optional());
-const optionalBooleanString = z.preprocess(
-  emptyStringToUndefined,
-  z.enum(['true', 'false']).optional(),
-);
+const emptyToUndefined = (v: string | undefined) => (v === '' ? undefined : v);
+const optionalString         = z.string().optional().transform(emptyToUndefined);
+const optionalNonEmptyString = z.string().optional().transform(emptyToUndefined);
+const optionalSecretString   = z.string().optional().transform(emptyToUndefined);
+const optionalUrl            = z.string().optional().transform(emptyToUndefined).pipe(z.string().url().optional());
+const optionalBooleanString  = z.string().optional().transform(emptyToUndefined).pipe(z.enum(['true', 'false']).optional());
 
 export const envSchema = z
   .object({
@@ -43,7 +40,10 @@ export const envSchema = z
     GMAIL_WATCH_TOPIC: optionalString,
 
     NEXT_PUBLIC_AI_ENABLED: z
-      .preprocess(emptyStringToUndefined, z.enum(['true', 'false']).default('false'))
+      .string()
+      .optional()
+      .transform(emptyToUndefined)
+      .pipe(z.enum(['true', 'false']).default('false'))
       .transform((v) => v === 'true'),
 
     SKIP_AUTH: optionalString.default('false'),
@@ -67,10 +67,7 @@ export const envSchema = z
     ASSINAFY_WEBHOOK_SECRET: optionalNonEmptyString,
     ASSINAFY_BASE_URL: optionalUrl,
     ENCRYPTION_MASTER_KEY: optionalSecretString,
-    TRUSTED_PROXY_COUNT: z.preprocess(
-      emptyStringToUndefined,
-      z.coerce.number().int().min(0).optional(),
-    ),
+    TRUSTED_PROXY_COUNT: z.coerce.number().int().min(0).optional(),
   })
   .refine(
     (data) =>

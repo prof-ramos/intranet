@@ -24,7 +24,7 @@ honor its STOP conditions, and update your row when done.
 | 014  | Extract revalidateAssociatePaths helper in [id]/actions.ts | P2 | S | 011 | DONE | |
 | 015  | Add pre-commit hooks (husky + lint-staged) | P2 | S | 010 | DONE | |
 | 016  | Add unit tests for associate dependent and health-agreement actions | P2 | M | 011, 014 | TODO | |
-| 017  | Migrate z.preprocess to Zod v4 idiomatic transforms | P2 | S | — | TODO | |
+| 017  | Migrate z.preprocess to Zod v4 idiomatic transforms | P2 | S | — | DONE | |
 | 018  | Move Assinafy webhook idempotency guard inside the DB transaction | P2 | M | — | TODO | |
 | 019  | Add replay protection to integration request verification | P2 | M | — | TODO | |
 | 020  | Add unit tests for email-triage server actions | P2 | M | — | TODO | |

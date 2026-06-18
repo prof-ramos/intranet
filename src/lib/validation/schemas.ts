@@ -356,10 +356,11 @@ export const createConsultationSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório.').trim(),
   questionSummary: z.string().min(1, 'Resumo da pergunta é obrigatório.').trim(),
   questionFullText: z.string().trim().optional(),
-  associateId: z.preprocess(
-    (val) => (val === '' || val === undefined || val === null ? undefined : val),
-    z.coerce.number().int().positive().optional(),
-  ),
+  associateId: z.string().nullable().optional().transform((v): number | undefined => {
+    if (!v) return undefined;
+    const n = parseInt(v, 10);
+    return Number.isNaN(n) ? undefined : n;
+  }).pipe(z.number().int().positive().optional()),
   slaDays: z.coerce.number().int().min(1).default(7),
 });
 
