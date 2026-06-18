@@ -9,14 +9,26 @@ const {
   mockUpdateApiKeyLastUsed,
   mockDecryptIntegrationSigningSecret,
   mockLoggerWarn,
-} = vi.hoisted(() => ({
-  mockGetIntegrationConfig: vi.fn(),
-  mockIsIntegrationAuthConfigured: vi.fn(),
-  mockFindActiveApiKeyByHash: vi.fn(),
-  mockUpdateApiKeyLastUsed: vi.fn(),
-  mockDecryptIntegrationSigningSecret: vi.fn(),
-  mockLoggerWarn: vi.fn(),
-}));
+  mockDbSelect,
+  mockDbInsert,
+} = vi.hoisted(() => {
+  const mockDbInsertValues = vi.fn(() => ({ onConflictDoNothing: vi.fn(() => Promise.resolve()) }));
+  const mockDbSelectLimit = vi.fn(() => Promise.resolve([]));
+  const mockDbSelectWhere = vi.fn(() => ({ limit: mockDbSelectLimit }));
+  const mockDbSelectFrom = vi.fn(() => ({ where: mockDbSelectWhere }));
+  const mockDbSelect = vi.fn(() => ({ from: mockDbSelectFrom }));
+  const mockDbInsert = vi.fn(() => ({ values: mockDbInsertValues }));
+  return {
+    mockGetIntegrationConfig: vi.fn(),
+    mockIsIntegrationAuthConfigured: vi.fn(),
+    mockFindActiveApiKeyByHash: vi.fn(),
+    mockUpdateApiKeyLastUsed: vi.fn(),
+    mockDecryptIntegrationSigningSecret: vi.fn(),
+    mockLoggerWarn: vi.fn(),
+    mockDbSelect,
+    mockDbInsert,
+  };
+});
 
 // --- Mocks ---
 
@@ -30,6 +42,14 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 vi.mock('server-only', () => ({}));
+
+vi.mock('@/lib/db', () => ({
+  db: { select: mockDbSelect, insert: mockDbInsert },
+}));
+
+vi.mock('@/lib/db/schema', () => ({
+  integrationSignatureNonces: { id: 'id', keyId: 'key_id', signature: 'signature', expiresAt: 'expires_at' },
+}));
 
 vi.mock('@/lib/integrations/config', () => ({
   getIntegrationConfig: mockGetIntegrationConfig,
