@@ -93,7 +93,7 @@ describe('assinafy/service', () => {
   describe('handleWebhookEvent', () => {
     it('handles signer_signed_document', async () => {
       await handleWebhookEvent(BASE_EVENT);
-      expect(mockFindOficioByAssinafyDocumentId).toHaveBeenCalledWith('doc123');
+      expect(mockFindOficioByAssinafyDocumentId).toHaveBeenCalledWith('doc123', expect.anything());
       expect(mockUpdateAssinafyStatus).toHaveBeenCalledWith(
         1,
         'partially_signed',

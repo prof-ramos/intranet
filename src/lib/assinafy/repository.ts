@@ -2,8 +2,8 @@ import { db, type Tx } from '@/lib/db';
 import { oficios } from '@/lib/db/schema/oficios';
 import { eq } from 'drizzle-orm';
 
-export async function findOficioByAssinafyDocumentId(documentId: string) {
-  const [result] = await db
+export async function findOficioByAssinafyDocumentId(documentId: string, tx: Tx = db) {
+  const [result] = await tx
     .select()
     .from(oficios)
     .where(eq(oficios.assinafyDocumentId, documentId))

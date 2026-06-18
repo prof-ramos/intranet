@@ -32,40 +32,41 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
     return null;
   }
 
-  const oficio = await findOficioByAssinafyDocumentId(documentId);
-  if (!oficio) {
-    logger.warn('Ofício not found for assinafy document', { documentId, eventName });
-    return null;
-  }
-
-  const previousStatus = oficio.assinafyStatus;
-
-  // Idempotency guard: same status written twice (Assinafy retry) → no-op
-  if (previousStatus === mappedStatus) {
-    logger.info('Duplicate webhook event, status unchanged', { documentId, eventName, status: mappedStatus });
-    return oficio;
-  }
-
-  const additionalFields: Record<string, unknown> = {};
-
-  if (eventName === 'signer_signed_document' || eventName === 'document_ready') {
-    additionalFields.assinafySignedAt = new Date();
-  }
-
-  if (eventName === 'signer_rejected_document') {
-    additionalFields.assinafyError = String(event.payload?.decline_reason ?? 'Rejeitado pelo signatário');
-  }
-
-  if (eventName === 'document_processing_failed') {
-    additionalFields.assinafyError = String(event.payload?.error_message ?? 'Erro no processamento');
-  }
-
-  if (eventName === 'user_rejected_document') {
-    additionalFields.assinafyError = 'Cancelado pelo usuário';
-  }
-
   try {
     const result = await db.transaction(async (tx) => {
+      // Re-read inside the transaction to prevent TOCTOU race on concurrent retries.
+      const oficio = await findOficioByAssinafyDocumentId(documentId, tx);
+      if (!oficio) {
+        logger.warn('Ofício not found for assinafy document', { documentId, eventName });
+        return null;
+      }
+
+      const previousStatus = oficio.assinafyStatus;
+
+      // Idempotency guard — inside tx, so no concurrent retry can pass simultaneously.
+      if (previousStatus === mappedStatus) {
+        logger.info('Duplicate webhook event, status unchanged', { documentId, eventName, status: mappedStatus });
+        return oficio;
+      }
+
+      const additionalFields: Record<string, unknown> = {};
+
+      if (eventName === 'signer_signed_document' || eventName === 'document_ready') {
+        additionalFields.assinafySignedAt = new Date();
+      }
+
+      if (eventName === 'signer_rejected_document') {
+        additionalFields.assinafyError = String(event.payload?.decline_reason ?? 'Rejeitado pelo signatário');
+      }
+
+      if (eventName === 'document_processing_failed') {
+        additionalFields.assinafyError = String(event.payload?.error_message ?? 'Erro no processamento');
+      }
+
+      if (eventName === 'user_rejected_document') {
+        additionalFields.assinafyError = 'Cancelado pelo usuário';
+      }
+
       const updated = await updateAssinafyStatus(oficio.id, mappedStatus, additionalFields, tx);
 
       await emitDomainEvent(
@@ -130,17 +131,12 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
       return updated;
     });
 
-    logger.info('Assinafy status updated', {
-      oficioId: oficio.id,
-      documentId,
-      eventName,
-      previousStatus,
-      status: mappedStatus,
-    });
+    if (result) {
+      logger.info('Assinafy status updated', { documentId, eventName });
+    }
     return result;
   } catch (error) {
     logger.error('Failed to update assinafy status', {
-      oficioId: oficio.id,
       documentId,
       eventName,
       error: error instanceof Error ? error.message : String(error),
