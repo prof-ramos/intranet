@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { defineFormAction } from '@/lib/server-actions/define-form-action';
 import { updateAssociateSchema } from '@/lib/validation/schemas';
 import { updateAssociateData } from '@/lib/associates/service';
@@ -63,6 +63,8 @@ export const updateAssociate = defineFormAction({
 
     revalidatePath('/app/associados');
     revalidatePath(`/app/associados/${data.id}`);
+    revalidateTag('associates', 'max');
+    revalidateTag('dashboard', 'max');
 
     return data.id;
   },

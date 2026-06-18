@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireAuth } from '@/lib/auth/require-auth';
 import {
   createDependent,
@@ -43,6 +43,8 @@ export async function addDependentAction(formData: FormData) {
 
   revalidatePath(`/app/associados/${data.associateId}`);
   revalidatePath(`/app/associados/${data.associateId}/editar`);
+  revalidateTag('associates', 'max');
+  revalidateTag('dashboard', 'max');
 }
 
 export async function editDependentAction(formData: FormData) {
@@ -64,6 +66,8 @@ export async function editDependentAction(formData: FormData) {
   revalidatePath('/app/associados');
   revalidatePath(`/app/associados/${associateId}`);
   revalidatePath(`/app/associados/${associateId}/editar`);
+  revalidateTag('associates', 'max');
+  revalidateTag('dashboard', 'max');
 }
 
 export async function removeDependentAction(formData: FormData) {
@@ -80,6 +84,8 @@ export async function removeDependentAction(formData: FormData) {
   revalidatePath('/app/associados');
   revalidatePath(`/app/associados/${data.associateId}`);
   revalidatePath(`/app/associados/${data.associateId}/editar`);
+  revalidateTag('associates', 'max');
+  revalidateTag('dashboard', 'max');
 }
 
 // ─── Health Agreement Actions ────────────────────────────────────────────
@@ -99,6 +105,8 @@ export async function addHealthAgreementAction(formData: FormData) {
 
   revalidatePath(`/app/associados/${data.associateId}`);
   revalidatePath(`/app/associados/${data.associateId}/editar`);
+  revalidateTag('associates', 'max');
+  revalidateTag('dashboard', 'max');
 }
 
 export async function editHealthAgreementAction(formData: FormData) {
@@ -121,6 +129,8 @@ export async function editHealthAgreementAction(formData: FormData) {
   revalidatePath('/app/associados');
   revalidatePath(`/app/associados/${associateId}`);
   revalidatePath(`/app/associados/${associateId}/editar`);
+  revalidateTag('associates', 'max');
+  revalidateTag('dashboard', 'max');
 }
 
 export async function removeHealthAgreementAction(formData: FormData) {
@@ -137,4 +147,6 @@ export async function removeHealthAgreementAction(formData: FormData) {
   revalidatePath('/app/associados');
   revalidatePath(`/app/associados/${data.associateId}`);
   revalidatePath(`/app/associados/${data.associateId}/editar`);
+  revalidateTag('associates', 'max');
+  revalidateTag('dashboard', 'max');
 }

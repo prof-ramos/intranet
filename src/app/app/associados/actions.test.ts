@@ -4,6 +4,7 @@ import { updateAssociate } from './actions';
 const requireRoleMock = vi.fn();
 const updateAssociateDataMock = vi.fn();
 const revalidatePathMock = vi.fn();
+const revalidateTagMock = vi.fn();
 
 vi.mock('@/lib/auth/authorization', () => ({
   requireRole: (...args: unknown[]) => requireRoleMock(...args),
@@ -15,6 +16,7 @@ vi.mock('@/lib/associates/service', () => ({
 
 vi.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => revalidatePathMock(...args),
+  revalidateTag: (...args: unknown[]) => revalidateTagMock(...args),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -56,6 +58,8 @@ describe('associados actions', () => {
     );
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados/15');
+    expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
   });
 
   it('rejects invalid associate payloads before calling the service', async () => {

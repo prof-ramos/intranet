@@ -18,7 +18,7 @@ honor its STOP conditions, and update your row when done.
 | 008  | Wire orphaned integration tests into CI and npm scripts | P2 | S | — | DONE | [#163](https://github.com/prof-ramos/intranet/issues/163) |
 | 009  | Batch notification inserts in Assinafy webhook handler | P2 | S | — | DONE | [#164](https://github.com/prof-ramos/intranet/issues/164) |
 | 010  | Fix revalidateTag arity — restore CI typecheck and cache invalidation | P1 | S | — | DONE | |
-| 011  | Invalidate 'associates' and 'dashboard' cache tags on associate mutations | P1 | S | 010 | TODO | |
+| 011  | Invalidate 'associates' and 'dashboard' cache tags on associate mutations | P1 | S | 010 | DONE | |
 | 012  | Replace Promise.race timeout with AbortSignal in email-triage analyzer | P1 | S | — | TODO | |
 | 013  | Extract mapAssociateListRow to eliminate 4× PII-decrypt duplication | P2 | S | — | TODO | |
 | 014  | Extract revalidateAssociatePaths helper in [id]/actions.ts | P2 | S | 011 | TODO | |
