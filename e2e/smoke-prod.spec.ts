@@ -34,6 +34,7 @@ const TS = new Date().toISOString().slice(0, 16).replace('T', ' ');
 const ATIVIDADE_TITLE = `SMOKE_ Atividade Teste ${TS}`;
 const CONSULTA_TITLE = `SMOKE_ Consulta Teste ${TS}`;
 const OFICIO_SUBJECT = `SMOKE_ Oficio Teste ${TS}`;
+const ASSOCIADO_NAME = `SMOKE_ Oficial Teste ${TS}`;
 const SMOKE_RESET_EMAIL = 'smoke-reset@asof.org.br';
 
 // ── Helper de login ─────────────────────────────────────────────────────────
@@ -90,27 +91,34 @@ test('2. Dashboard', async ({ page }) => {
 });
 
 // ── 3. Associados ───────────────────────────────────────────────────────────
-test('3. Cadastro de Oficiais — lista, busca e perfil', async ({ page }) => {
+test('3. Cadastro de Oficiais — criar oficial e validar perfil', async ({ page }) => {
   await loginAdmin(page);
   await page.goto('/app/associados');
 
+  // Lista carrega e campo de busca existe (não depende de dados pré-existentes)
   await expect(page.locator('h1')).toContainText('Cadastro de Oficiais');
-  const rows = page.locator('table tbody tr');
-  await expect(rows.first()).toBeVisible({ timeout: 10_000 });
-
-  // Verificar campo de busca existe
   await expect(page.locator('input[name="q"]')).toBeVisible();
 
-  // Navegar ao perfil do primeiro associado da lista sem aplicar filtro
-  const firstProfileLink = page
-    .locator('a[href^="/app/associados/"]:not([href*="editar"]):not([href*="relatorio"])')
-    .first();
-  await expect(firstProfileLink).toBeVisible({ timeout: 10_000 });
-  await firstProfileLink.click();
+  // Criar um novo oficial via fluxo de cadastro (pré-requisito de go-live #213)
+  await page.goto('/app/associados/novo');
+  await expect(page.locator('h1')).toContainText('Cadastrar oficial');
 
-  await expect(page).toHaveURL(/\/app\/associados\/\d+/);
+  await page.fill('input[name="fullName"]', ASSOCIADO_NAME);
+  // Submeter via server action (form action) — aguardar redirect ao perfil criado
+  await page.click('button[type="submit"]');
+  await page.waitForURL(/\/app\/associados\/\d+$/, { timeout: 20_000 });
+
+  // Perfil do oficial recém-criado carrega e exibe o nome
   await expect(page.locator('h1, h2').first()).toBeVisible();
   await expect(page.locator('body')).not.toContainText('não encontrado');
+  await expect(page.locator('body')).toContainText(ASSOCIADO_NAME.slice(0, 20));
+
+  // Voltar à lista e confirmar que o novo oficial aparece na busca
+  await page.goto('/app/associados');
+  await page.fill('input[name="q"]', ASSOCIADO_NAME.slice(0, 15));
+  await page.keyboard.press('Enter');
+  await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
+  await expect(page.locator('body')).toContainText(ASSOCIADO_NAME.slice(0, 20), { timeout: 10_000 });
 });
 
 // ── 4. Atividades ───────────────────────────────────────────────────────────
@@ -271,6 +279,10 @@ test.afterAll(() => {
 
 -- Atividades
 DELETE FROM activities WHERE title ILIKE 'SMOKE_%';
+
+-- Oficiais criados pelo smoke (dependents/health_agreements em cascade;
+-- activities/legal_consultations/legal_processes associate_id em set null)
+DELETE FROM associates WHERE full_name ILIKE 'SMOKE_%';
 
 -- Consultas jurídicas e suas notas
 DELETE FROM legal_notes
