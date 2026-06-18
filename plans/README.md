@@ -21,8 +21,8 @@ honor its STOP conditions, and update your row when done.
 | 011  | Invalidate 'associates' and 'dashboard' cache tags on associate mutations | P1 | S | 010 | DONE | |
 | 012  | Replace Promise.race timeout with AbortSignal in email-triage analyzer | P1 | S | — | DONE | |
 | 013  | Extract mapAssociateListRow to eliminate 4× PII-decrypt duplication | P2 | S | — | DONE | |
-| 014  | Extract revalidateAssociatePaths helper in [id]/actions.ts | P2 | S | 011 | TODO | |
-| 015  | Add pre-commit hooks (husky + lint-staged) | P2 | S | 010 | TODO | |
+| 014  | Extract revalidateAssociatePaths helper in [id]/actions.ts | P2 | S | 011 | DONE | |
+| 015  | Add pre-commit hooks (husky + lint-staged) | P2 | S | 010 | DONE | |
 | 016  | Add unit tests for associate dependent and health-agreement actions | P2 | M | 011, 014 | TODO | |
 | 017  | Migrate z.preprocess to Zod v4 idiomatic transforms | P2 | S | — | TODO | |
 | 018  | Move Assinafy webhook idempotency guard inside the DB transaction | P2 | M | — | TODO | |

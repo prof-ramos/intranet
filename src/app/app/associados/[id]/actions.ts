@@ -27,6 +27,14 @@ function checkRole(role: string): void {
   }
 }
 
+function revalidateAssociatePaths(associateId: number) {
+  revalidatePath('/app/associados');
+  revalidatePath(`/app/associados/${associateId}`);
+  revalidatePath(`/app/associados/${associateId}/editar`);
+  revalidateTag('associates', 'max');
+  revalidateTag('dashboard', 'max');
+}
+
 // ─── Dependent Actions ──────────────────────────────────────────────────
 
 export async function addDependentAction(formData: FormData) {
@@ -41,10 +49,7 @@ export async function addDependentAction(formData: FormData) {
 
   await createDependent(data);
 
-  revalidatePath(`/app/associados/${data.associateId}`);
-  revalidatePath(`/app/associados/${data.associateId}/editar`);
-  revalidateTag('associates', 'max');
-  revalidateTag('dashboard', 'max');
+  revalidateAssociatePaths(data.associateId);
 }
 
 export async function editDependentAction(formData: FormData) {
@@ -63,11 +68,7 @@ export async function editDependentAction(formData: FormData) {
 
   await updateDependentById(id, values, associateId);
 
-  revalidatePath('/app/associados');
-  revalidatePath(`/app/associados/${associateId}`);
-  revalidatePath(`/app/associados/${associateId}/editar`);
-  revalidateTag('associates', 'max');
-  revalidateTag('dashboard', 'max');
+  revalidateAssociatePaths(associateId);
 }
 
 export async function removeDependentAction(formData: FormData) {
@@ -81,11 +82,7 @@ export async function removeDependentAction(formData: FormData) {
 
   await deleteDependentById(data.id, data.associateId);
 
-  revalidatePath('/app/associados');
-  revalidatePath(`/app/associados/${data.associateId}`);
-  revalidatePath(`/app/associados/${data.associateId}/editar`);
-  revalidateTag('associates', 'max');
-  revalidateTag('dashboard', 'max');
+  revalidateAssociatePaths(data.associateId);
 }
 
 // ─── Health Agreement Actions ────────────────────────────────────────────
@@ -103,10 +100,7 @@ export async function addHealthAgreementAction(formData: FormData) {
 
   await createHealthAgreement(data);
 
-  revalidatePath(`/app/associados/${data.associateId}`);
-  revalidatePath(`/app/associados/${data.associateId}/editar`);
-  revalidateTag('associates', 'max');
-  revalidateTag('dashboard', 'max');
+  revalidateAssociatePaths(data.associateId);
 }
 
 export async function editHealthAgreementAction(formData: FormData) {
@@ -126,11 +120,7 @@ export async function editHealthAgreementAction(formData: FormData) {
 
   await updateHealthAgreementById(id, values, associateId);
 
-  revalidatePath('/app/associados');
-  revalidatePath(`/app/associados/${associateId}`);
-  revalidatePath(`/app/associados/${associateId}/editar`);
-  revalidateTag('associates', 'max');
-  revalidateTag('dashboard', 'max');
+  revalidateAssociatePaths(associateId);
 }
 
 export async function removeHealthAgreementAction(formData: FormData) {
@@ -144,9 +134,5 @@ export async function removeHealthAgreementAction(formData: FormData) {
 
   await deleteHealthAgreementById(data.id, data.associateId);
 
-  revalidatePath('/app/associados');
-  revalidatePath(`/app/associados/${data.associateId}`);
-  revalidatePath(`/app/associados/${data.associateId}/editar`);
-  revalidateTag('associates', 'max');
-  revalidateTag('dashboard', 'max');
+  revalidateAssociatePaths(data.associateId);
 }
