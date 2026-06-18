@@ -7,6 +7,7 @@
 
 import { createLogger } from '@/lib/logger';
 import { EMAIL_TRIAGE_MODEL } from '@/lib/ai/constants';
+import { runWithAbort } from '@/lib/ai/gemini';
 import { SYSTEM_PROMPT } from './system-prompt';
 import {
   emailTriageResultSchema,
@@ -333,25 +334,23 @@ export async function analyzeEmail(
 
   const startTime = performance.now();
 
-  const response = await Promise.race([
-    ai.models.generateContent({
-      model: modelName,
-      contents: [
-        { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
-        { role: 'user', parts: [{ text: JSON.stringify(modelInput) }] },
-      ],
-      config: {
-        responseMimeType: 'application/json',
-        responseJsonSchema: RESPONSE_JSON_SCHEMA,
-      },
-    }),
-    new Promise<never>((_, reject) =>
-      setTimeout(
-        () => reject(new Error('Gemini timed out after 30s')),
-        GEMINI_TIMEOUT_MS,
-      ),
-    ),
-  ]);
+  const response = await runWithAbort(
+    (signal) =>
+      ai.models.generateContent({
+        model: modelName,
+        contents: [
+          { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
+          { role: 'user', parts: [{ text: JSON.stringify(modelInput) }] },
+        ],
+        config: {
+          responseMimeType: 'application/json',
+          responseJsonSchema: RESPONSE_JSON_SCHEMA,
+          abortSignal: signal,
+        },
+      }),
+    GEMINI_TIMEOUT_MS,
+    'Gemini timed out after 30s',
+  );
 
   const elapsed = Math.round(performance.now() - startTime);
   log.info('Gemini response received', {
