@@ -131,10 +131,10 @@ it calls (`isGeminiConfigured`, `generateEmailContent`).
 
 | Purpose   | Command                                                                       | Expected on success        |
 |-----------|-------------------------------------------------------------------------------|----------------------------|
+| Lint      | `npm run lint`                                                                 | exit 0                     |
 | Typecheck | `npm run typecheck`                                                            | exit 0, zero errors        |
 | Tests     | `npx vitest run src/app/app/secretaria/emails/gerar/actions.test.ts`          | all pass                   |
 | Full test | `npm run test`                                                                 | all pass                   |
-| Lint      | `npm run lint`                                                                 | exit 0                     |
 
 ## Scope
 

@@ -133,6 +133,10 @@ export const associates = pgTable(
     index('idx_associates_contribution_status').on(table.contributionStatus),
     index('idx_associates_status_name').on(table.associationStatus, table.fullName),
     index('idx_associates_name_trgm').using('gin', table.fullName.op('gin_trgm_ops')),
+    index('idx_associates_name_lower_trgm').using(
+      'gin',
+      sql`translate(lower(${table.fullName}), 'ÁÀÂÃÄÅáàâãäåÉÈÊËéèêëÍÌÎÏíìîïÓÒÔÕÖóòôõöÚÙÛÜúùûüÇçÑñ', 'AAAAAAaaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn') gin_trgm_ops`
+    ),
     check('chk_associates_cpf_pii', sql`${table.cpf} IS NULL OR ${table.cpfCiphertext} IS NULL`),
     check(
       'chk_associates_email_pii',

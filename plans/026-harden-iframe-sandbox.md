@@ -43,6 +43,7 @@ system instruction explicitly forbids external CSS and scripts), so removing
   component; the iframe is at line 285.
 
 `EmailGeneratorClient.tsx:285-291`:
+
 ```tsx
 <iframe
   ref={iframeRef}
@@ -58,9 +59,11 @@ system instruction explicitly forbids external CSS and scripts), so removing
 
 | Purpose   | Command               | Expected on success        |
 |-----------|-----------------------|----------------------------|
+| Lint      | `npm run lint`        | exit 0                     |
 | Typecheck | `npm run typecheck`   | exit 0, zero errors        |
 | Tests     | `npm run test`        | all pass                   |
-| Lint      | `npm run lint`        | exit 0                     |
+| DB test   | `npm run test:db`     | exit 0                     |
+| Build     | `npm run build`       | exit 0                     |
 
 ## Scope
 
@@ -104,7 +107,7 @@ active) without granting any capability. This is equivalent to the bare
 ### Step 2: Run full checks
 
 ```bash
-npm run typecheck && npm run lint && npm run test
+npm run lint && npm run typecheck && npm run test && npm run test:db && npm run build
 ```
 
 All three must exit 0. This is a one-attribute change; no test failures are

@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS "idx_associates_name_lower_trgm" ON "associates" USING gin (translate(lower("full_name"), 'ÁÀÂÃÄÅáàâãäåÉÈÊËéèêëÍÌÎÏíìîïÓÒÔÕÖóòôõöÚÙÛÜúùûüÇçÑñ', 'AAAAAAaaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn') gin_trgm_ops);
