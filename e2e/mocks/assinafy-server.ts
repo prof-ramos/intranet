@@ -116,6 +116,17 @@ export class AssinafyMockServer {
   }
 
   private route(method: string, url: string, body: string, res: ServerResponse): void {
+    // POST /v1/__reset__ — test-only endpoint to reset mock state between tests.
+    // Workers and globalSetup run in separate Node processes so globalThis is
+    // not shared; HTTP is the only safe inter-process communication channel.
+    // Checked first to avoid unnecessary regex processing for production routes.
+    if (url === '/v1/__reset__' && method === 'POST') {
+      this.reset();
+      res.statusCode = 200;
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
     // POST /accounts/{id}/documents
     if (this.reDocUpload.test(url) && method === 'POST') {
       const id = `mock-doc-${++this.nextId}`;
