@@ -287,7 +287,7 @@ export function EmailGeneratorClient() {
                     ref={iframeRef}
                     srcDoc={generatedHtml}
                     title="Pré-visualização do e-mail gerado"
-                    sandbox="allow-same-origin"
+                    sandbox=""
                     className="w-full bg-white"
                     style={{ minHeight: '600px' }}
                   />
