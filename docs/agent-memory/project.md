@@ -4,6 +4,24 @@
 
 ---
 
+## 2026-06-18 — `retirementDate` e `cancellationDate` são conceitos distintos
+
+- **Tipo**: Regra de domínio confirmada
+- **Escopo**: Cadastro de Oficiais / associados
+- **Memória**: `retirementDate` registra quando o Oficial deixa a ativa e passa para aposentadoria. `cancellationDate` registra cancelamento do vínculo associativo ASOF. Não reutilizar `cancellationDate` para aposentadoria e não tratar aposentadoria como perda automática do vínculo ASOF.
+- **Evidência**: Sessão 2026-06-18 — usuário esclareceu que "Data de Cancelamento e Data de Aposentadoria são coisas diferentes"; migration `0026_add_associate_retirement_date.sql` adicionou `associates.retirement_date`.
+- **Regra preventiva**: Ao mexer em situação funcional, relatórios, CSV, LGPD export e formulários de associados, manter os dois campos separados no texto e no schema. Labels devem explicitar "cancelamento do vínculo ASOF" quando se referirem a `cancellationDate`.
+- **Confiança**: alta
+
+## 2026-06-18 — Dev diário usa `.env.local` local; `vercel env pull` é exceção controlada
+
+- **Tipo**: Procedimento operacional confirmado
+- **Escopo**: Ambientes, Vercel, Neon, desenvolvimento local
+- **Memória**: O caminho padrão de desenvolvimento diário é `.env.local` apontando para Postgres local `asof_intranet` com seed sintético. `vercel env pull` é válido para espelhar variáveis de um ambiente Vercel em diagnóstico, `vercel dev` ou validação controlada, mas pode trazer URLs Neon remotas, secrets criptográficos e variáveis de plataforma que exigem revisão manual.
+- **Evidência**: Sessão 2026-06-18 — docs oficiais do Vercel confirmadas via Context7; `.env.local` foi ajustado para `localhost`; `README.md`, `docs/environments.md` e `CONTRIBUTING.md` documentaram o fluxo.
+- **Regra preventiva**: Antes de rodar migrations, seeds ou testes, verificar host de `DATABASE_URL`/`DATABASE_MIGRATION_URL`. Não usar `vercel env pull` como onboarding padrão nem rodar `db:seed:dev` contra Neon sem override explícito e motivo documentado.
+- **Confiança**: alta
+
 ## 2026-06-12 — Jules API não tem cancelamento nativo de sessões
 
 - **Tipo**: Restrição técnica

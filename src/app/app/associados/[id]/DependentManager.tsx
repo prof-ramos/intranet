@@ -19,7 +19,7 @@ const btnSmall =
   'inline-flex h-7 w-7 items-center justify-center rounded-md text-[rgba(13,31,60,0.55)] transition-opacity hover:bg-[#f8fafc] hover:text-[#76aeea] focus-visible:opacity-100';
 const inputStyle = {
   border: `1px solid ${hairline}`,
-  borderRadius: '6px',
+  borderRadius: '8px',
   height: '2.25rem',
   padding: '0 0.5rem',
   fontSize: '0.8125rem',

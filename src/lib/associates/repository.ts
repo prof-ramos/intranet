@@ -16,11 +16,12 @@ import {
 import { eq, and, count, asc, sql } from 'drizzle-orm';
 import {
   buildAssociateNameSearchPattern,
+  normalizeAssociateNameForSearch,
   normalizeCpfForSearch,
   normalizeSiapeForSearch,
   type AssociateSearchMode,
 } from './search-params';
-import { decryptPiiField, piiBlindIndex } from '@/lib/crypto/pii';
+import { piiBlindIndex } from '@/lib/crypto/pii';
 
 type FunctionalStatusEnum = (typeof functionalStatus.enumValues)[number];
 type AssociationStatusEnum = (typeof associationStatus.enumValues)[number];
@@ -39,25 +40,16 @@ const publicAssociateListColumns = {
   functionalStatus: associates.functionalStatus,
   associationStatus: associates.associationStatus,
   contributionStatus: associates.contributionStatus,
-  siape: associates.siape,
-  siapeCiphertext: associates.siapeCiphertext,
-  primaryEmail: associates.primaryEmail,
-  primaryEmailCiphertext: associates.primaryEmailCiphertext,
-  phone: associates.phone,
-  phoneCiphertext: associates.phoneCiphertext,
-  whatsapp: associates.whatsapp,
-  whatsappCiphertext: associates.whatsappCiphertext,
 };
+
+const ACCENTED_NAME_CHARS = 'ÁÀÂÃÄÅáàâãäåÉÈÊËéèêëÍÌÎÏíìîïÓÒÔÕÖóòôõöÚÙÛÜúùûüÇçÑñ';
+const UNACCENTED_NAME_CHARS = 'AAAAAAaaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn';
 
 export interface AssociateListItem {
   id: number;
   fullName: string;
   assignment: string | null;
   classPattern: string | null;
-  primaryEmail: string | null;
-  siape: string | null;
-  phone: string | null;
-  whatsapp: string | null;
   functionalStatus: string | null;
   associationStatus: string | null;
   contributionStatus: string | null;
@@ -71,14 +63,6 @@ function mapAssociateListRow(row: {
   functionalStatus: string | null;
   associationStatus: string | null;
   contributionStatus: string | null;
-  primaryEmailCiphertext: string | null;
-  primaryEmail: string | null;
-  siapeCiphertext: string | null;
-  siape: string | null;
-  phoneCiphertext: string | null;
-  phone: string | null;
-  whatsappCiphertext: string | null;
-  whatsapp: string | null;
 }): AssociateListItem {
   return {
     id: row.id,
@@ -88,10 +72,6 @@ function mapAssociateListRow(row: {
     functionalStatus: row.functionalStatus,
     associationStatus: row.associationStatus,
     contributionStatus: row.contributionStatus,
-    primaryEmail: decryptPiiField(row.primaryEmailCiphertext ?? null, row.primaryEmail ?? null),
-    siape:        decryptPiiField(row.siapeCiphertext ?? null,        row.siape ?? null),
-    phone:        decryptPiiField(row.phoneCiphertext ?? null,        row.phone ?? null),
-    whatsapp:     decryptPiiField(row.whatsappCiphertext ?? null,     row.whatsapp ?? null),
   };
 }
 
@@ -151,10 +131,15 @@ export async function findAssociatesPaginated(
     };
   }
 
-  // Default: name-based ILIKE search
+  // Default: name-based search, case-insensitive and tolerant of common accents.
+  // translate() operates on precomposed (NFC) codepoints; NFD-stored data may not match.
+  // If accent-insensitive search becomes unreliable, migrate to the unaccent extension.
+  const normalizedNameSearchQuery = normalizedSearchQuery
+    ? normalizeAssociateNameForSearch(normalizedSearchQuery)
+    : undefined;
   const baseWhere = and(
-    normalizedSearchQuery
-      ? sql`${associates.fullName} ilike ${buildAssociateNameSearchPattern(normalizedSearchQuery)} escape '\\'`
+    normalizedNameSearchQuery
+      ? sql`translate(lower(${associates.fullName}), ${ACCENTED_NAME_CHARS}, ${UNACCENTED_NAME_CHARS}) like ${buildAssociateNameSearchPattern(normalizedNameSearchQuery)} escape '\\'`
       : undefined,
     filters?.contributionStatus
       ? eq(associates.contributionStatus, filters.contributionStatus)
@@ -253,12 +238,15 @@ export async function findAssociatesPaginatedCursor(
     };
   }
 
-  // Default: name-based ILIKE search with keyset pagination
+  // Default: name-based search with keyset pagination
   const decoded = cursor ? decodeCursor(cursor) : null;
+  const normalizedNameSearchQuery = normalizedSearchQuery
+    ? normalizeAssociateNameForSearch(normalizedSearchQuery)
+    : undefined;
 
   const baseWhere = and(
-    normalizedSearchQuery
-      ? sql`${associates.fullName} ilike ${buildAssociateNameSearchPattern(normalizedSearchQuery)} escape '\\'`
+    normalizedNameSearchQuery
+      ? sql`translate(lower(${associates.fullName}), ${ACCENTED_NAME_CHARS}, ${UNACCENTED_NAME_CHARS}) like ${buildAssociateNameSearchPattern(normalizedNameSearchQuery)} escape '\\'`
       : undefined,
     filters?.contributionStatus
       ? eq(associates.contributionStatus, filters.contributionStatus)
@@ -270,7 +258,7 @@ export async function findAssociatesPaginatedCursor(
       ? eq(associates.associationStatus, filters.associationStatus)
       : undefined,
     decoded
-      ? sql`${associates.fullName} > ${decoded.fullName} OR (${associates.fullName} = ${decoded.fullName} AND ${associates.id} > ${decoded.id})`
+      ? sql`(${associates.fullName} > ${decoded.fullName} OR (${associates.fullName} = ${decoded.fullName} AND ${associates.id} > ${decoded.id}))`
       : undefined,
   );
 

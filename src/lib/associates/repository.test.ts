@@ -42,8 +42,17 @@ vi.mock('drizzle-orm', () => ({
     return (row: MockAssociateRow) => row[column] === value;
   }),
   sql: vi.fn((_strings: TemplateStringsArray, ...values: unknown[]) => {
-    // sql`${associates.fullName} ilike ${pattern} escape '\\'`
-    const pattern = String(values[1] ?? '');
+    const sqlText = Array.from(_strings).join('');
+    const patternValue = values.findLast((value) => typeof value === 'string' && value.includes('%'));
+
+    if (!patternValue && sqlText.includes(' OR ')) {
+      const cursorFullName = String(values[1] ?? '');
+      const cursorId = Number(values[5] ?? 0);
+      return (row: MockAssociateRow) => row.fullName > cursorFullName
+        || (row.fullName === cursorFullName && row.id > cursorId);
+    }
+
+    const pattern = String(patternValue ?? '');
     const textPattern = pattern
       .replace(/([.+^${}()|[\]\\])/g, '\\$1')
       .replace(/\\%/g, '%')
@@ -51,7 +60,13 @@ vi.mock('drizzle-orm', () => ({
       .replace(/%/g, '.*')
       .replace(/_/g, '.');
     const regex = new RegExp(`^${textPattern}$`, 'i');
-    return (row: MockAssociateRow) => regex.test(String(row.fullName ?? ''));
+    return (row: MockAssociateRow) => {
+      const normalizedName = String(row.fullName ?? '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+      return regex.test(normalizedName);
+    };
   }),
 }));
 
@@ -86,6 +101,7 @@ vi.mock('@/lib/crypto/pii', () => ({
 
 vi.mock('./search-params', () => ({
   buildAssociateNameSearchPattern: (q: string) => `%${q}%`,
+  normalizeAssociateNameForSearch: (raw: string) => raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(),
   normalizeCpfForSearch: (raw: string) => raw.replace(/\D/g, ''),
   normalizeSiapeForSearch: (raw: string) => raw.replace(/\D/g, ''),
 }));
@@ -101,7 +117,13 @@ function listRowsQuery(rows: MockAssociateRow[]) {
     query.filteredRows = predicate ? rows.filter(predicate) : rows;
     return query;
   });
-  query.orderBy = vi.fn().mockReturnValue(query);
+  query.orderBy = vi.fn().mockImplementation(() => {
+    query.filteredRows = [...((query.filteredRows as MockAssociateRow[]) ?? rows)].sort((left, right) => {
+      const byName = left.fullName.localeCompare(right.fullName, 'pt-BR');
+      return byName === 0 ? left.id - right.id : byName;
+    });
+    return query;
+  });
   query.limit = vi.fn().mockReturnValue(query);
   query.offset = vi.fn().mockImplementation(() => query.filteredRows ?? rows);
   return query;
@@ -149,7 +171,7 @@ const officers = [
   },
   {
     id: 3,
-    fullName: 'Maria Oliveira',
+    fullName: 'João Oliveira',
     assignment: null,
     classPattern: null,
     functionalStatus: 'ativo',
@@ -181,8 +203,8 @@ describe('associates repository', () => {
     expect(result.total).toBe(3);
     expect(result.rows.map((row) => row.fullName)).toEqual([
       'Edson Diniz',
+      'João Oliveira',
       'Paulo Edson Medeiros de Albuquerque',
-      'Maria Oliveira',
     ]);
   });
 
@@ -204,6 +226,13 @@ describe('associates repository', () => {
 
     expect(result.total).toBe(1);
     expect(result.rows.map((row) => row.fullName)).toEqual(['Paulo Edson Medeiros de Albuquerque']);
+  });
+
+  it('searches names without requiring accents', async () => {
+    const result = await findAssociatesPaginated(1, 20, 'joao');
+
+    expect(result.total).toBe(1);
+    expect(result.rows.map((row) => row.fullName)).toEqual(['João Oliveira']);
   });
 });
 

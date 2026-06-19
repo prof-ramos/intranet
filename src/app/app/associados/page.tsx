@@ -1,112 +1,109 @@
 import { requireAuth } from '@/lib/auth/require-auth';
 import { getAssociatesListPage } from '@/lib/associates/service';
-import {
-  parseAssociatesSearchParams,
-  buildAssociatesSearchParams,
-} from '@/lib/associates/search-params';
-import { calculatePaginationBounds } from '@/lib/pagination';
-import { AssociatesHeader } from './components/AssociatesHeader';
+import { parseAssociatesSearchParams, MIN_SEARCH_CHARS } from '@/lib/associates/search-params';
 import { AssociatesTable } from './components/AssociatesTable';
-import { AssociatesPagination } from './components/AssociatesPagination';
-import { Download, Plus } from 'lucide-react';
+import { OfficialsSearchBox } from './components/OfficialsSearchBox';
+import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { focusRingClass, textMuted } from '@/lib/ui/tokens';
 
 const PAGE_SIZE = 20;
+const MAX_SHOW_ALL = 200;
 
 export default async function AssociadosPage({
   searchParams,
 }: {
   searchParams: Promise<{
     q?: string;
-    page?: string;
-    searchBy?: string;
-    contributionStatus?: string;
-    functionalStatus?: string;
-    associationStatus?: string;
+    show?: string;
   }>;
 }) {
   const user = await requireAuth();
-  const parsedSearchParams = parseAssociatesSearchParams(await searchParams);
-  const { q, page, searchBy, contributionStatus, functionalStatus, associationStatus } = parsedSearchParams;
+  const rawSearchParams = await searchParams;
+  const { q } = parseAssociatesSearchParams(rawSearchParams);
+  const canCreateOfficial = user.role === 'admin' || user.role === 'secretaria';
+  const hasSearch = q.length >= MIN_SEARCH_CHARS;
+  const showAll = rawSearchParams.show === 'all';
 
-  const { rows, total } = await getAssociatesListPage(
-    page,
-    PAGE_SIZE,
-    q,
-    { contributionStatus, functionalStatus, associationStatus },
-    searchBy,
-  );
-
-  const { totalPages, from, to } = calculatePaginationBounds(page, PAGE_SIZE, total);
-
-  const currentListUrl = `/app/associados?${new URLSearchParams(
-    buildAssociatesSearchParams(parsedSearchParams, {}),
-  ).toString()}`;
-
-  const today = new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-  const todayLabel = today.charAt(0).toUpperCase() + today.slice(1);
+  const { rows, total } = hasSearch
+    ? await getAssociatesListPage(1, showAll ? MAX_SHOW_ALL : PAGE_SIZE, q, undefined, 'name')
+    : { rows: [], total: 0 };
+  const currentListUrl = q ? `/app/associados?${new URLSearchParams({ q }).toString()}` : '/app/associados';
+  const showAllHref = `/app/associados?${new URLSearchParams({ q, show: 'all' }).toString()}`;
 
   return (
     <div>
-      <AssociatesHeader user={{ name: user.name, role: user.role }} searchParams={parsedSearchParams} />
-
-      {/* Conteúdo */}
-      <main className="mx-auto w-full max-w-[1180px] flex-1 px-5 py-7 sm:px-8 lg:px-10">
-        <section className="mb-7 flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <p className="text-[11px] tracking-[0.18em] uppercase" style={{ color: textMuted }}>
-              Cadastro de oficiais · {todayLabel}
+      <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-8 sm:px-8 lg:px-10">
+        <section className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="font-serif text-4xl leading-none font-bold md:text-[3rem]">Oficiais</h1>
+            <p className="mt-3 text-base" style={{ color: textMuted }}>
+              Localize um Oficial de Chancelaria pelo nome.
             </p>
-            <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
-              Cadastro de Oficiais
-            </h1>
           </div>
+
+          {canCreateOfficial && (
+            <Link
+              href="/app/associados/novo"
+              className={`inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
+            >
+              <Plus size={16} aria-hidden="true" />
+              Novo oficial
+            </Link>
+          )}
         </section>
 
-        {/* Tabela / Cards */}
-        <section>
-          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-            <p style={{ color: textMuted }}>
-              {total === 0 ? 'Nenhum resultado' : `${from}–${to} de ${total}`}
-            </p>
-            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              {(user.role === 'admin' || user.role === 'secretaria') && (
+        <section className="mb-6">
+          <OfficialsSearchBox key={q} initialQuery={q} />
+        </section>
+
+        <section aria-live="polite">
+          {!q ? (
+            <div className="rounded-[8px] border border-[rgba(4,9,32,0.08)] bg-white p-8 text-center">
+              <p className="text-sm" style={{ color: textMuted }}>
+                Busque pelo nome ou parte do nome de um oficial.
+              </p>
+            </div>
+          ) : !hasSearch ? (
+            <div className="rounded-[8px] border border-[rgba(4,9,32,0.08)] bg-white p-8 text-center">
+              <p className="text-sm" style={{ color: textMuted }}>
+                Digite pelo menos 2 caracteres para buscar.
+              </p>
+            </div>
+          ) : total === 0 ? (
+            <div className="rounded-[8px] border border-[rgba(4,9,32,0.08)] bg-white p-8 text-center">
+              <h2 className="text-lg font-semibold">
+                Nenhum oficial encontrado para <span className="break-words">&quot;{q}&quot;</span>
+              </h2>
+              {canCreateOfficial && (
                 <Link
                   href="/app/associados/novo"
-                  className={`inline-flex h-11 items-center gap-2 rounded-[8px] bg-[#040920] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
+                  className={`mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
                 >
                   <Plus size={16} aria-hidden="true" />
-                  Novo oficial
+                  Cadastrar novo oficial
                 </Link>
               )}
-              <Link
-                href={currentListUrl}
-                className={`text-sm font-semibold hover:underline ${focusRingClass}`}
-              >
-                Ver todos ({total})
-              </Link>
-              <Link
-                href="/app/associados/relatorio"
-                aria-label="Exportar oficiais para CSV"
-                className={`inline-flex h-11 w-11 items-center justify-center rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
-              >
-                <Download size={18} aria-hidden="true" />
-              </Link>
-              <AssociatesPagination
-                page={page}
-                totalPages={totalPages}
-                searchParams={parsedSearchParams}
-              />
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm" style={{ color: textMuted }}>
+                  {rows.length >= total ? `${total} resultado${total === 1 ? '' : 's'}` : `${rows.length} de ${total} resultado${total === 1 ? '' : 's'}`}
+                </p>
+                {!showAll && total > PAGE_SIZE && (
+                  <Link
+                    href={showAllHref}
+                    className={`text-sm font-semibold text-[#0d3260] hover:underline ${focusRingClass}`}
+                  >
+                    Ver todos os {total} resultados
+                  </Link>
+                )}
+              </div>
 
-          <AssociatesTable rows={rows} currentListUrl={currentListUrl} />
+              <AssociatesTable rows={rows} currentListUrl={currentListUrl} />
+            </div>
+          )}
         </section>
       </main>
     </div>

@@ -4,6 +4,24 @@
 
 ---
 
+## 2026-06-18 — Não basta mudar schema/UI; seeds e dados sintéticos precisam acompanhar
+
+- **Tipo**: Lacuna de verificação
+- **Escopo**: Mudanças de schema em `associates`
+- **Memória**: Ao adicionar `retirementDate`, implementei schema, migration, UI, actions, relatórios e testes, mas inicialmente não atualizei os seeds. O banco local ficou com 8 oficiais sintéticos `aposentado` e 0 com `retirement_date`, reduzindo a utilidade do ambiente de desenvolvimento para testar o novo campo.
+- **Evidência**: Sessão 2026-06-18 — após `db:seed:dev`, consulta SQL mostrou todos os aposentados sintéticos sem data; corrigido atualizando `scripts/seed-dev.ts` e `scripts/seed-e2e.ts`, depois validado com 8/8 aposentados contendo `retirement_date`.
+- **Regra preventiva**: Sempre que um campo novo tiver semântica de domínio observável, atualizar também seed dev, seed E2E e dados de exemplo. Depois de rodar seed, fazer uma consulta SQL simples que valide a distribuição esperada, não apenas confiar que o script executou.
+- **Confiança**: alta
+
+## 2026-06-18 — Review com migration untracked deve virar ação operacional completa
+
+- **Tipo**: Ajuste de conduta
+- **Escopo**: Code review, deploy e migrations
+- **Memória**: Na revisão, o risco importante era o arquivo untracked `drizzle/postgres/0026_add_associate_retirement_date.sql` ficar fora do commit e o deploy usar o campo antes da migration real em produção. O comentário correto não era só "inclua no commit": era garantir commit com migration, aplicar migration em produção antes do deploy, validar coluna e só então publicar o código que lê/escreve o campo.
+- **Evidência**: Sessão 2026-06-18 — usuário pediu "Faça tudo isso"; migration 0026 foi aplicada e validada em produção antes do push/deploy do commit `288b51c`.
+- **Regra preventiva**: Ao revisar mudanças com nova coluna usada por runtime, tratar deploy ordering como parte do escopo: migration incluída, journal atualizado, backup/rollback point, migration aplicada no banco correto, `test:db` validado e deploy apenas depois. Procurar explicitamente arquivos untracked em `drizzle/postgres/`.
+- **Confiança**: alta
+
 ## 2026-06-12 — Excesso de repetição antes de pivotar
 
 - **Tipo**: Erro de estratégia

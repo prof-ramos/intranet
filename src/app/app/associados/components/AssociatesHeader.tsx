@@ -45,7 +45,7 @@ export function AssociatesHeader({ user, searchParams }: AssociatesHeaderProps) 
       className="sticky top-0 z-20 border-b bg-white px-5 py-3 sm:px-8 lg:px-10"
       style={{ borderColor: hairline }}
     >
-      <div className="mx-auto grid w-full max-w-[1180px] gap-3 sm:grid-cols-[minmax(240px,420px)_auto] sm:items-center sm:justify-between">
+      <div className="mx-auto grid w-full max-w-[1180px] gap-3 xl:grid-cols-[minmax(240px,420px)_auto] xl:items-center xl:justify-between">
         <div className="min-w-0">
           <form method="GET" action="/app/associados" className="flex items-center gap-2">
             <select
@@ -83,7 +83,7 @@ export function AssociatesHeader({ user, searchParams }: AssociatesHeaderProps) 
           </form>
         </div>
 
-        <div className="flex min-w-0 items-center justify-end gap-4">
+        <div className="flex min-w-0 items-center justify-start gap-4 xl:justify-end">
           <AssociadosFilters
             currentContributionStatus={contributionStatus}
             currentFunctionalStatus={functionalStatus}
@@ -91,7 +91,7 @@ export function AssociatesHeader({ user, searchParams }: AssociatesHeaderProps) 
             currentQ={q}
             currentSearchBy={searchBy}
           />
-          <div className="hidden min-h-11 min-w-0 items-center gap-3 sm:flex">
+          <div className="hidden min-h-11 min-w-0 items-center gap-3 xl:flex">
             <div
               role="img"
               aria-label={`Avatar de ${user.name}`}

@@ -42,6 +42,12 @@ DEV_USER_ROLE=admin
 DEV_USER_MUST_CHANGE_PASSWORD=false
 ```
 
+`vercel env pull` deve ser reservado para espelhar variáveis de um ambiente
+Vercel em diagnóstico, `vercel dev` ou validação controlada. Ele não é o fluxo
+padrão de onboarding porque pode trazer URLs Neon remotas, secrets de produção
+ou variáveis injetadas pela plataforma. Antes de rodar migrations, seeds ou
+testes, confirme que `.env.local` aponta para o banco pretendido.
+
 No macOS com Homebrew, o PostgreSQL costuma criar a role com o nome do usuário do sistema. Nesta máquina, por exemplo, `postgres://gabrielramos@localhost:5432/...` é o padrão; não assuma `postgres://postgres@localhost:5432/...`.
 
 Inicialize o banco e a aplicação:

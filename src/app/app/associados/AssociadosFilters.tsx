@@ -14,7 +14,7 @@ interface AssociadosFiltersProps {
 
 const selectStyle = {
   border: `1px solid ${hairline}`,
-  borderRadius: '6px',
+  borderRadius: '8px',
   height: '2.75rem',
   padding: '0 0.625rem',
   fontSize: '0.875rem',

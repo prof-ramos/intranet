@@ -70,7 +70,7 @@ export function Sidebar({ user }: SidebarProps) {
           Dashboard
         </NavLink>
         <NavLink href="/app/associados" icon={<Users size={20} />}>
-          Associados
+          Oficiais
         </NavLink>
         <NavLink href="/app/atividades" icon={<Kanban size={20} />}>
           Atividades

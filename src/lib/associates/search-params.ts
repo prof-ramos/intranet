@@ -3,6 +3,8 @@ import { escapeLikePattern } from '@/lib/db/like-pattern';
 
 export type AssociateSearchMode = 'name' | 'cpf' | 'siape';
 
+export const MIN_SEARCH_CHARS = 2;
+
 export interface AssociatesSearchParams {
   q: string;
   page: number;
@@ -53,6 +55,13 @@ export function buildAssociatesSearchParams(
 
 export function buildAssociateNameSearchPattern(query: string): string {
   return `%${escapeLikePattern(query)}%`;
+}
+
+export function normalizeAssociateNameForSearch(raw: string): string {
+  return raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
 }
 
 /**
