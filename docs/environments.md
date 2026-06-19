@@ -8,6 +8,7 @@ Decisões arquiteturais:
 
 - `docs/adr/015-official-environment-and-data-matrix.md`
 - `docs/adr/016-neon-free-tier-pre-go-live-reset.md`
+- `docs/adr/017-neon-governance-cleanup-post-reset.md`
 
 ## Regra De Ouro
 
@@ -70,6 +71,22 @@ não confie só em PITR para mudanças destrutivas. Antes de resetar ou reimport
 o `main`, crie um branch backup copy-on-write e um dump local comprimido. Após a
 validação do novo estado, mantenha apenas backups necessários e nunca commite
 dumps.
+
+### Governança pós-reset (ADR 017)
+
+Após o reset ADR 016, a área Neon foi limpa: `vercel-dev` foi resetado para
+`main` (mantido como slot "Dev realista restrito"); `dev/migration-test` e
+`backup/pre-reset-20260618T191453Z` foram excluídos; `backup/post-clean-main`
+permanece como rollback net até o go-live estabilizar. Restam 3 branches no
+projeto `intranet-db` (limite Free Tier: 10).
+
+Rotação de credenciais pendente no console Neon (a org é "managed by Vercel",
+o que restringe `neonctl`/API para operações de projeto):
+
+- **Urgente:** revogar a API key `napi_0cmv74hlnn1x...` (controle sobre toda a
+  org, incluindo `main`) em Organization → API keys.
+- Rotacionar a senha do role `neondb_owner` do `vercel-dev` e atualizar o
+  `DATABASE_URL` dos ambientes que o usam.
 
 ## Staging
 

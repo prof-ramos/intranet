@@ -5,6 +5,10 @@ import {
   findAssociatesPaginatedCursor,
   findAssociateById,
   updateAssociateById,
+  insertAssociate,
+  findAssociateByCpfHash,
+  findAssociateBySiapeHash,
+  findAssociateByPrimaryEmailHash,
   type UpdateAssociateValues,
   type AssociatesFilters,
 } from './repository';
@@ -21,8 +25,9 @@ import {
   paymentMethod as pmEnum,
 } from '@/lib/db/schema';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
-import { logDataAccess } from '@/lib/audit/service';
+import { logAuditAction, logDataAccess } from '@/lib/audit/service';
 import { buildPiiPatch, decryptAssociatePii } from './pii-mapping';
+import { ValidationError } from '@/lib/errors';
 
 type FsEnum = (typeof fsEnum.enumValues)[number];
 type AsEnum = (typeof asEnum.enumValues)[number];
@@ -388,5 +393,167 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
       },
       tx,
     );
+  });
+}
+
+export interface CreateAssociateInput {
+  fullName: string;
+  cpf?: string | null;
+  rg?: string | null;
+  rgIssuer?: string | null;
+  rgState?: string | null;
+  rgExpeditionDate?: string | null;
+  siape?: string | null;
+  sex?: string | null;
+  maritalStatus?: string | null;
+  birthDate?: string | null;
+  birthCity?: string | null;
+  birthState?: string | null;
+  primaryEmail?: string | null;
+  secondaryEmail?: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
+  address?: string | null;
+  neighborhood?: string | null;
+  addressState?: string | null;
+  zipCode?: string | null;
+  locationCity?: string | null;
+  locationCountry?: string | null;
+  assignment?: string | null;
+  assignmentStartDate?: string | null;
+  classPattern?: string | null;
+  associationCategory?: string | null;
+  functionalStatus?: string | null;
+  associationStatus?: string | null;
+  contributionStatus?: string | null;
+  paymentMethod?: string | null;
+  missionType?: string | null;
+  careerOrigin?: string | null;
+  admissionDate?: string | null;
+  inaugurationDate?: string | null;
+  cancellationDate?: string | null;
+  ceocMember?: boolean | null;
+  caocMember?: boolean | null;
+  internalNotes?: string | null;
+  createdBy?: number | null;
+}
+
+const emptyStringToNull = (v: string | null | undefined) => (v === '' ? null : v ?? null);
+
+/**
+ * Cria um novo associado criptografando PII, validando unicidade por blind
+ * index (CPF/SIAPE/e-mail principal), aplicando defaults de status e
+ * registrando auditoria. Não emite domain event — `associate.created` aguarda
+ * adição ao enum `domain_event_type` (migration) para não onerar o pré-go-live.
+ */
+export async function createAssociateData(input: CreateAssociateInput): Promise<{ id: number }> {
+  const functionalStatus = emptyStringToNull(input.functionalStatus);
+  const sex = emptyStringToNull(input.sex);
+  const maritalStatus = emptyStringToNull(input.maritalStatus);
+  const missionType = emptyStringToNull(input.missionType);
+  const careerOrigin = emptyStringToNull(input.careerOrigin);
+  const paymentMethodRaw = emptyStringToNull(input.paymentMethod);
+  const associationStatus = input.associationStatus ?? 'nao_associado';
+  const contributionStatus = input.contributionStatus ?? 'inadimplente';
+
+  if (functionalStatus !== null && !isFsEnum(functionalStatus)) {
+    throw new ValidationError('Situação funcional inválida.');
+  }
+  if (!isAsEnum(associationStatus)) {
+    throw new ValidationError('Vínculo ASOF inválido.');
+  }
+  if (!isCsEnum(contributionStatus)) {
+    throw new ValidationError('Status de contribuição inválido.');
+  }
+  if (sex !== null && !isSexEnum(sex)) {
+    throw new ValidationError('Sexo inválido.');
+  }
+  if (maritalStatus !== null && !isMsEnum(maritalStatus)) {
+    throw new ValidationError('Estado civil inválido.');
+  }
+  if (missionType !== null && !isMtEnum(missionType)) {
+    throw new ValidationError('Tipo de missão inválido.');
+  }
+  if (careerOrigin !== null && !isCoEnum(careerOrigin)) {
+    throw new ValidationError('Origem de carreira inválida.');
+  }
+  if (paymentMethodRaw !== null && !isPmEnum(paymentMethodRaw)) {
+    throw new ValidationError('Método de pagamento inválido.');
+  }
+
+  const piiPatch = buildPiiPatch({
+    cpf: input.cpf ?? null,
+    rg: input.rg ?? null,
+    siape: input.siape ?? null,
+    primaryEmail: input.primaryEmail ?? null,
+    phone: input.phone ?? null,
+    whatsapp: input.whatsapp ?? null,
+    address: input.address ?? null,
+  });
+
+  return db.transaction(async (tx) => {
+    // Unicidade por blind index (PII criptografada não permite busca por texto)
+    if (piiPatch.cpfHash) {
+      const dup = await findAssociateByCpfHash(piiPatch.cpfHash, tx);
+      if (dup) throw new ValidationError('Já existe um oficial cadastrado com este CPF.');
+    }
+    if (piiPatch.siapeHash) {
+      const dup = await findAssociateBySiapeHash(piiPatch.siapeHash, tx);
+      if (dup) throw new ValidationError('Já existe um oficial cadastrado com este SIAPE.');
+    }
+    if (piiPatch.primaryEmailHash) {
+      const dup = await findAssociateByPrimaryEmailHash(piiPatch.primaryEmailHash, tx);
+      if (dup) {
+        throw new ValidationError('Já existe um oficial cadastrado com este e-mail principal.');
+      }
+    }
+
+    const values: UpdateAssociateValues = {
+      fullName: input.fullName,
+      secondaryEmail: emptyStringToNull(input.secondaryEmail),
+      birthDate: emptyStringToNull(input.birthDate),
+      birthCity: emptyStringToNull(input.birthCity),
+      birthState: emptyStringToNull(input.birthState),
+      neighborhood: emptyStringToNull(input.neighborhood),
+      addressState: emptyStringToNull(input.addressState),
+      zipCode: emptyStringToNull(input.zipCode),
+      locationCity: emptyStringToNull(input.locationCity),
+      locationCountry: emptyStringToNull(input.locationCountry),
+      assignment: emptyStringToNull(input.assignment),
+      assignmentStartDate: emptyStringToNull(input.assignmentStartDate),
+      classPattern: emptyStringToNull(input.classPattern),
+      associationCategory: emptyStringToNull(input.associationCategory),
+      rgIssuer: emptyStringToNull(input.rgIssuer),
+      rgState: emptyStringToNull(input.rgState),
+      rgExpeditionDate: emptyStringToNull(input.rgExpeditionDate),
+      admissionDate: emptyStringToNull(input.admissionDate),
+      inaugurationDate: emptyStringToNull(input.inaugurationDate),
+      cancellationDate: emptyStringToNull(input.cancellationDate),
+      ceocMember: input.ceocMember ?? null,
+      caocMember: input.caocMember ?? null,
+      ...piiPatch,
+      functionalStatus: functionalStatus as FsEnum | null,
+      associationStatus: associationStatus as AsEnum,
+      contributionStatus: contributionStatus as CsEnum,
+      paymentMethod: (paymentMethodRaw ?? 'folha') as PmEnum,
+      sex: sex as SexEnum | null,
+      maritalStatus: maritalStatus as MsEnum | null,
+      missionType: missionType as MtEnum | null,
+      careerOrigin: careerOrigin as CoEnum | null,
+      internalNotes: input.internalNotes ?? null,
+    };
+
+    const id = await insertAssociate(values, tx);
+
+    await logAuditAction({
+      adminId: input.createdBy ?? null,
+      action: 'create',
+      entityType: 'associate',
+      entityId: id,
+      metadata: { source: 'manual_create' },
+      executor: tx,
+    });
+
+    return { id };
   });
 }

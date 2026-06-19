@@ -383,6 +383,23 @@ export async function updateAssociateById(
     .where(eq(associates.id, id));
 }
 
+/**
+ * Insere um novo associado e retorna o id gerado.
+ *
+ * Colunas NOT NULL com default no schema (`associationStatus`, `contributionStatus`,
+ * `paymentMethod`) usam o default do banco quando omitidas de `values`.
+ */
+export async function insertAssociate(
+  values: UpdateAssociateValues,
+  executor: DbExecutor = db,
+): Promise<number> {
+  const [row] = await executor
+    .insert(associates)
+    .values(values as typeof associates.$inferInsert)
+    .returning({ id: associates.id });
+  return row.id;
+}
+
 export async function findAssociateByCpfHash(cpfHash: string, executor: DbExecutor = db) {
   const [row] = await executor
     .select()
