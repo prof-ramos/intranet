@@ -26,3 +26,7 @@
 ## 2026-06-20 - Missing Focus Rings on Forgot Password Button
 **Learning:** Similar to the login and reset password buttons, the forgot password submit button was missing the `focusRingClass`. This breaks keyboard navigation visibility and creates an inconsistent experience across the authentication flow.
 **Action:** When extracting interactive standalone components like form submission buttons, always double-check that keyboard accessibility classes like `focusRingClass` are applied alongside standard visual styling.
+
+## 2026-06-20 - Title Fallback for Buttons
+**Learning:** `title` attributes on buttons serve as an accessibility fallback in some cases, but relying on them can cause issues with screen readers.
+**Action:** Always prefer an explicit `aria-label` for icon-only buttons, even if a `title` tooltip is already present, to guarantee uniform screen-reader support without hiding or duplicating text unnecessarily.

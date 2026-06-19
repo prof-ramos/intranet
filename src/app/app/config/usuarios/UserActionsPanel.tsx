@@ -218,11 +218,12 @@ export function UserActionsPanel({ userId, userName, isActive }: UserActionsPane
                     onClick={handleCopyPass}
                     className="flex shrink-0 items-center justify-center border-l border-gray-200 px-3 text-gray-600 transition-colors hover:bg-gray-100 active:bg-gray-200"
                     title="Copiar senha"
+                    aria-label="Copiar senha"
                   >
                     {copiedPass ? (
-                      <Check size={16} className="text-green-600" />
+                      <Check size={16} className="text-green-600" aria-hidden="true" />
                     ) : (
-                      <Copy size={16} />
+                      <Copy size={16} aria-hidden="true" />
                     )}
                   </button>
                 </div>
