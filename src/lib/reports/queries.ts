@@ -58,6 +58,7 @@ export type ReportAssociate = {
   careerOrigin: string | null;
   admissionDate: string | null;
   inaugurationDate: string | null;
+  retirementDate: string | null;
   cancellationDate: string | null;
   paymentMethod: string | null;
   ceocMember: boolean | null;
@@ -108,6 +109,7 @@ const reportColumns = {
   careerOrigin: associates.careerOrigin,
   admissionDate: associates.admissionDate,
   inaugurationDate: associates.inaugurationDate,
+  retirementDate: associates.retirementDate,
   cancellationDate: associates.cancellationDate,
   paymentMethod: associates.paymentMethod,
   ceocMember: associates.ceocMember,
@@ -192,6 +194,7 @@ export async function getAssociatesForReport(
     careerOrigin: row.careerOrigin,
     admissionDate: row.admissionDate,
     inaugurationDate: row.inaugurationDate,
+    retirementDate: row.retirementDate,
     cancellationDate: row.cancellationDate,
     paymentMethod: row.paymentMethod,
     ceocMember: row.ceocMember,

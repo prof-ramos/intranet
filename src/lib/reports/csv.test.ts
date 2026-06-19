@@ -39,6 +39,7 @@ const mockRow = {
   careerOrigin: 'concurso',
   admissionDate: '2010-01-15',
   inaugurationDate: '2010-02-01',
+  retirementDate: null,
   cancellationDate: null,
   paymentMethod: 'folha',
   ceocMember: true,
@@ -171,7 +172,7 @@ describe('ALL_FIELDS completeness', () => {
     const newFields = [
       'sex', 'maritalStatus', 'birthCity', 'birthState', 'rg', 'rgIssuer',
       'rgState', 'neighborhood', 'addressState', 'zipCode', 'missionType',
-      'careerOrigin', 'admissionDate', 'inaugurationDate', 'cancellationDate',
+      'careerOrigin', 'admissionDate', 'inaugurationDate', 'retirementDate', 'cancellationDate',
       'paymentMethod', 'ceocMember', 'caocMember', 'secondaryEmail',
     ];
     for (const field of newFields) {

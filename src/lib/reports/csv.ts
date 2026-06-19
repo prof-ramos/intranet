@@ -89,6 +89,7 @@ export const ALL_FIELDS: FieldDef[] = ASSOCIATE_EXPORT_FIELDS.map((f) => {
     joinedAt: (r) => formatDate(r.joinedAt),
     admissionDate: (r) => formatDate(r.admissionDate),
     inaugurationDate: (r) => formatDate(r.inaugurationDate),
+    retirementDate: (r) => formatDate(r.retirementDate),
     cancellationDate: (r) => formatDate(r.cancellationDate),
     functionalStatus: (r) => formatEnum(r.functionalStatus, functionalStatusLabels),
     associationStatus: (r) => formatEnum(r.associationStatus, associationStatusLabels),

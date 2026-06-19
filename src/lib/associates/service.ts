@@ -95,6 +95,7 @@ export interface EditAssociateDTO {
   careerOrigin: string | null;
   admissionDate: string | null;
   inaugurationDate: string | null;
+  retirementDate: string | null;
   cancellationDate: string | null;
   ceocMember: boolean | null;
   caocMember: boolean | null;
@@ -191,6 +192,7 @@ export async function getAssociateForEdit(
     careerOrigin: row.careerOrigin,
     admissionDate: row.admissionDate,
     inaugurationDate: row.inaugurationDate,
+    retirementDate: row.retirementDate,
     cancellationDate: row.cancellationDate,
     ceocMember: row.ceocMember,
     caocMember: row.caocMember,
@@ -235,6 +237,7 @@ export interface UpdateAssociateInput {
   careerOrigin?: string | null;
   admissionDate?: string | null;
   inaugurationDate?: string | null;
+  retirementDate?: string | null;
   cancellationDate?: string | null;
   ceocMember?: boolean | null;
   caocMember?: boolean | null;
@@ -296,6 +299,7 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
     rgExpeditionDate: input.rgExpeditionDate,
     admissionDate: input.admissionDate,
     inaugurationDate: input.inaugurationDate,
+    retirementDate: input.retirementDate,
     cancellationDate: input.cancellationDate,
     ceocMember: input.ceocMember,
     caocMember: input.caocMember,
@@ -431,6 +435,7 @@ export interface CreateAssociateInput {
   careerOrigin?: string | null;
   admissionDate?: string | null;
   inaugurationDate?: string | null;
+  retirementDate?: string | null;
   cancellationDate?: string | null;
   ceocMember?: boolean | null;
   caocMember?: boolean | null;
@@ -528,6 +533,7 @@ export async function createAssociateData(input: CreateAssociateInput): Promise<
       rgExpeditionDate: emptyStringToNull(input.rgExpeditionDate),
       admissionDate: emptyStringToNull(input.admissionDate),
       inaugurationDate: emptyStringToNull(input.inaugurationDate),
+      retirementDate: emptyStringToNull(input.retirementDate),
       cancellationDate: emptyStringToNull(input.cancellationDate),
       ceocMember: input.ceocMember ?? null,
       caocMember: input.caocMember ?? null,

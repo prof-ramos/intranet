@@ -365,6 +365,7 @@ export interface UpdateAssociateValues {
   careerOrigin?: CareerOriginEnum | null;
   admissionDate?: string | null;
   inaugurationDate?: string | null;
+  retirementDate?: string | null;
   cancellationDate?: string | null;
   ceocMember?: boolean | null;
   caocMember?: boolean | null;

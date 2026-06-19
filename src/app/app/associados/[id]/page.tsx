@@ -391,7 +391,11 @@ export default async function AssociadoPerfilPage({
               <Row label="Data de admissão" value={formatAssociateDate(associate.admissionDate)} />
               <Row label="Data de posse" value={formatAssociateDate(associate.inaugurationDate)} />
               <Row
-                label="Data de cancelamento"
+                label="Data de aposentadoria"
+                value={formatAssociateDate(associate.retirementDate)}
+              />
+              <Row
+                label="Data de cancelamento do vínculo ASOF"
                 value={formatAssociateDate(associate.cancellationDate)}
               />
             </dl>

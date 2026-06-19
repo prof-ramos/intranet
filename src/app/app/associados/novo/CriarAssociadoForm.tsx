@@ -444,8 +444,15 @@ export function CriarAssociadoForm({ canEditInternalNotes }: Props) {
             </div>
 
             <div>
+              <label htmlFor="retirementDate" className="label">
+                <span className="label-text font-semibold">Data de aposentadoria</span>
+              </label>
+              <input id="retirementDate" name="retirementDate" type="date" defaultValue="" className={inputStyle} />
+            </div>
+
+            <div>
               <label htmlFor="cancellationDate" className="label">
-                <span className="label-text font-semibold">Data de cancelamento</span>
+                <span className="label-text font-semibold">Data de cancelamento do vínculo ASOF</span>
               </label>
               <input id="cancellationDate" name="cancellationDate" type="date" defaultValue="" className={inputStyle} />
             </div>

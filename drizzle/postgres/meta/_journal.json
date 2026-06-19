@@ -183,6 +183,13 @@
       "when": 1781811800000,
       "tag": "0025_officials_domain_statuses",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1781811900000,
+      "tag": "0026_add_associate_retirement_date",
+      "breakpoints": true
     }
   ]
 }

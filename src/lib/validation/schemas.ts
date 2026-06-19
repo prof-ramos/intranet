@@ -270,6 +270,13 @@ export const updateAssociateSchema = z.object({
     .nullable()
     .or(z.literal(''))
     .optional(),
+  retirementDate: z
+    .string()
+    .trim()
+    .refine(isValidDateString, 'Data de aposentadoria inválida.')
+    .nullable()
+    .or(z.literal(''))
+    .optional(),
   cancellationDate: z
     .string()
     .trim()

@@ -102,6 +102,7 @@ export const associates = pgTable(
     careerOrigin: careerOrigin('career_origin'),
     admissionDate: date('admission_date', { mode: 'string' }),
     inaugurationDate: date('inauguration_date', { mode: 'string' }),
+    retirementDate: date('retirement_date', { mode: 'string' }),
     cancellationDate: date('cancellation_date', { mode: 'string' }),
     ceocMember: boolean('ceoc_member'),
     caocMember: boolean('caoc_member'),
