@@ -127,6 +127,13 @@ npm run db:seed
 npm run dev
 ```
 
+`vercel env pull` é um comando válido para espelhar variáveis de um ambiente
+Vercel em uma máquina local, especialmente para diagnósticos, `vercel dev` ou
+investigação de diferenças entre ambientes. Ele não é o caminho padrão de
+onboarding: pode trazer URLs Neon remotas, secrets criptográficos e variáveis de
+plataforma que exigem revisão manual antes de rodar migrations, seeds ou testes.
+Para trabalho diário, mantenha `.env.local` apontando para `localhost`.
+
 Dados reais de produção só entram em desenvolvimento quando houver necessidade
 concreta e autorização. Preferir branch/snapshot Neon a dump local. Se dump local
 for inevitável, remover arquivos temporários imediatamente e tratar o banco local

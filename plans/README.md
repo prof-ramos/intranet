@@ -29,6 +29,12 @@ honor its STOP conditions, and update your row when done.
 | 019  | Add replay protection to integration request verification | P2 | M | — | DONE | |
 | 020  | Add unit tests for email-triage server actions | P2 | M | — | DONE | |
 | 021  | Bulk audit-log inserts and parallel domain-event emission in autoMarkOverdue | P2 | M | — | DONE | |
+| 022  | Delete `generateEmailContentStream` — dead exported function that produces broken output | P1 | S | — | DONE | |
+| 023  | Add prompt-injection delimiters to the email generation path | P2 | S | — | DONE | |
+| 024  | Add unit tests for `prompts.ts` — injection-critical functions | P1 | S | 023 | DONE | |
+| 025  | Fix stale model name in UI badge and page metadata | P3 | S | — | DONE | |
+| 026  | Remove `allow-same-origin` from email preview iframe sandbox | P2 | S | — | DONE | |
+| 027  | Add unit tests for the email generator server action | P2 | M | — | DONE | |
 
 ## Dependency notes
 
@@ -36,6 +42,7 @@ honor its STOP conditions, and update your row when done.
 - 014 requires 011 because it folds the `revalidateTag` calls added by 011 into the helper.
 - 015 requires 010 because the pre-commit typecheck hook will fail until 010 fixes the TS errors.
 - 016 requires 011 and 014 because tests assert on `revalidateTag` calls (011) and the helper (014).
+- 024 requires 023 because the tests for `buildEmailUserMessage` assert on the delimiter wrapping added by 023; run 023 first or adjust the tests to match pre-023 state.
 
 ## Findings considered and rejected
 

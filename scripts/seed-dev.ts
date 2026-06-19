@@ -139,6 +139,10 @@ function buildAssociates(): NewAssociate[] {
           : index % 31 === 0
             ? FUNCTIONAL_STATUSES[2]
             : FUNCTIONAL_STATUSES[3];
+    const retirementDate =
+      functionalStatus === 'aposentado'
+        ? `${2021 + (index % 6)}-${String((index % 12) + 1).padStart(2, '0')}-01`
+        : null;
     const contributionStatus = isAssociated && index % 5 !== 0 ? 'em_dia' : 'inadimplente';
 
     return {
@@ -154,6 +158,7 @@ function buildAssociates(): NewAssociate[] {
       locationCountry: country,
       classPattern: pick(CLASS_PATTERNS, index),
       functionalStatus,
+      retirementDate,
       associationStatus: isAssociated ? 'associado' : 'nao_associado',
       contributionStatus,
       associationCategory: isAssociated ? pick(['mensalista', 'anual'], index) : null,

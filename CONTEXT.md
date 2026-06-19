@@ -77,7 +77,7 @@ _Avoid_: usar "Associado" para se referir à totalidade da carreira. O termo can
 
 Módulo cadastral que reúne a totalidade conhecida dos Oficiais de Chancelaria, incluindo associados e não associados à ASOF, ativos e aposentados.
 
-A listagem principal deve mostrar todos os Oficiais de Chancelaria por padrão. Recortes como associados à ASOF, não associados, ativos funcionais ou aposentados devem ser filtros explícitos.
+A superfície principal do módulo deve priorizar localizar Oficiais de Chancelaria por nome ou parte do nome. Recortes como associados à ASOF, não associados, ativos funcionais, aposentados ou inadimplentes pertencem a filtros, relatórios ou buscas avançadas explícitas, não ao primeiro nível da experiência.
 
 _Avoid_: nomear o módulo principal como "Associados" quando a tela ou relatório inclui oficiais sem vínculo associativo vigente.
 

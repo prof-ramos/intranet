@@ -68,6 +68,11 @@ npm run dev
 
 Acesse [http://localhost:3000](http://localhost:3000).
 
+Para desenvolvimento diário, mantenha `.env.local` apontando para o PostgreSQL
+local (`localhost`) e use seed sintético. `vercel env pull` é útil para espelhar
+variáveis de um ambiente Vercel em diagnósticos ou uso controlado com
+`vercel dev`, mas não substitui o setup local padrão deste projeto.
+
 ---
 
 ## Variáveis de ambiente

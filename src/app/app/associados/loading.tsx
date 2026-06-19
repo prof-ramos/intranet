@@ -1,43 +1,32 @@
 export default function AssociadosLoading() {
   return (
-    <div>
-      {/* Header skeleton */}
-      <div className="sticky top-0 z-20 border-b border-[rgba(4,9,32,0.05)] bg-white px-5 py-3 sm:px-8 lg:px-10">
-        <div className="mx-auto grid w-full max-w-[1180px] gap-3 sm:grid-cols-[minmax(240px,420px)_auto] sm:items-center">
-          <div className="h-11 w-full rounded-md bg-[#f8fafc] motion-safe:animate-pulse" />
-          <div className="hidden h-11 w-11 rounded-full bg-[#f8fafc] motion-safe:animate-pulse sm:block" />
+    <div role="status" aria-label="Carregando…" className="mx-auto w-full max-w-3xl px-5 py-8 sm:px-8 lg:px-10">
+      <div className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-3">
+          <div className="h-10 w-36 rounded bg-[#f8fafc] motion-safe:animate-pulse" />
+          <div className="h-5 w-72 max-w-full rounded bg-[#f8fafc] motion-safe:animate-pulse" />
         </div>
+        <div className="h-11 w-32 rounded-[8px] bg-[#f8fafc] motion-safe:animate-pulse" />
       </div>
 
-      <div className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
-        {/* Título skeleton */}
-        <div className="mb-7 flex flex-col gap-3">
-          <div className="h-4 w-48 rounded bg-[#f8fafc] motion-safe:animate-pulse" />
-          <div className="h-8 w-64 rounded bg-[#f8fafc] motion-safe:animate-pulse" />
-        </div>
+      <div className="mb-6 space-y-2">
+        <div className="h-5 w-32 rounded bg-[#f8fafc] motion-safe:animate-pulse" />
+        <div className="h-12 rounded-[8px] bg-[#f8fafc] motion-safe:animate-pulse" />
+        <div className="h-4 w-44 rounded bg-[#f8fafc] motion-safe:animate-pulse" />
+      </div>
 
-        {/* Tabela skeleton */}
-        <div className="rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white">
-          <div className="border-b border-[rgba(4,9,32,0.05)] px-4 py-3">
-            <div className="grid grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-4 rounded bg-[#f8fafc] motion-safe:animate-pulse" />
-              ))}
+      <div className="space-y-2">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} aria-hidden="true" className="rounded-[8px] border border-[rgba(4,9,32,0.08)] bg-white p-4">
+            <div className="h-5 w-2/3 rounded bg-[#f8fafc] motion-safe:animate-pulse" />
+            <div className="mt-2 h-4 w-1/2 rounded bg-[#f8fafc] motion-safe:animate-pulse" />
+            <div className="mt-4 flex gap-2">
+              <div className="h-6 w-20 rounded-full bg-[#f8fafc] motion-safe:animate-pulse" />
+              <div className="h-6 w-24 rounded-full bg-[#f8fafc] motion-safe:animate-pulse" />
             </div>
           </div>
-
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="border-b border-[rgba(4,9,32,0.05)] px-4 py-4 last:border-0">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <div className="h-4 w-full rounded bg-[#f8fafc] motion-safe:animate-pulse" />
-                <div className="h-4 w-3/4 rounded bg-[#f8fafc] motion-safe:animate-pulse" />
-                <div className="h-4 w-1/2 rounded bg-[#f8fafc] motion-safe:animate-pulse" />
-                <div className="h-4 w-2/3 rounded bg-[#f8fafc] motion-safe:animate-pulse" />
-              </div>
-            </div>
-          ))}
+        ))}
         </div>
-      </div>
     </div>
   );
 }

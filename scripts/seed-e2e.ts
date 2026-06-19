@@ -116,6 +116,7 @@ async function main() {
         locationCountry: 'EUA',
         classPattern: 'Classe B - Padrão III',
         functionalStatus: 'aposentado',
+        retirementDate: '2023-04-01',
         associationStatus: 'associado',
         contributionStatus: 'inadimplente',
         birthDate: '1960-03-03',

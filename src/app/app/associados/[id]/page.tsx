@@ -161,8 +161,20 @@ export default async function AssociadoPerfilPage({
   const user = await requireAuth();
   const { id } = await params;
   const { returnTo } = await searchParams;
-  const safeReturnTo =
-    returnTo && /^\/app\/[\w\/_-]*$/.test(returnTo) ? returnTo : '/app/associados';
+  const safeReturnTo = (() => {
+    if (!returnTo || returnTo.startsWith('//')) {
+      return '/app/associados';
+    }
+
+    try {
+      const parsed = new URL(returnTo, 'http://asof.local');
+      return parsed.origin === 'http://asof.local' && parsed.pathname.startsWith('/app/')
+        ? `${parsed.pathname}${parsed.search}`
+        : '/app/associados';
+    } catch {
+      return '/app/associados';
+    }
+  })();
   const associateId = parsePositiveIntParam(id);
   const profile = await requireEntityById(associateId, (id) => getAssociateProfile(id, user.role));
   const {
@@ -200,7 +212,7 @@ export default async function AssociadoPerfilPage({
               <a
                 key={anchor}
                 href={`#${anchor}`}
-                className={`rounded-md border-l-2 border-transparent px-2.5 py-1.5 text-[13px] font-medium text-[rgba(13,31,60,0.65)] transition-colors hover:border-[#040920] hover:bg-[rgba(4,9,32,0.05)] hover:text-[#040920] ${focusRingClass}`}
+                className={`rounded-md px-2.5 py-1.5 text-[13px] font-medium text-[rgba(13,31,60,0.65)] transition-colors hover:bg-[rgba(4,9,32,0.05)] hover:text-[#040920] ${focusRingClass}`}
               >
                 {label}
               </a>

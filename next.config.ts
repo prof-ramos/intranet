@@ -26,6 +26,9 @@ const analyzeBundle = withBundleAnalyzer({
 });
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const isE2E = process.env.NEXT_E2E === '1';
+// Dev-only allowance so impeccable live mode can load.
+const __impeccableLiveDev =
+  process.env.NODE_ENV === 'development' ? ' http://localhost:8400' : '';
 
 const securityHeaders = [
   { key: 'X-Frame-Options', value: 'DENY' },
@@ -36,11 +39,11 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      `script-src 'self' 'unsafe-inline' 'unsafe-eval'${__impeccableLiveDev}`,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self'",
-      "connect-src 'self'",
+      `connect-src 'self'${__impeccableLiveDev}`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

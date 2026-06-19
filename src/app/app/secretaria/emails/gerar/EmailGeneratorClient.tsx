@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useTransition } from 'react';
 import { Mail, Clipboard, Sparkles, Loader2 } from 'lucide-react';
 import { generateEmailAction } from './actions';
+import { EMAIL_MODEL, getModelDisplayName } from '@/lib/ai/constants';
 import {
   navy,
   primaryContainerHover,
@@ -152,7 +153,7 @@ export function EmailGeneratorClient() {
             </h2>
             <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-500">
               <Sparkles className="h-3 w-3 text-[#76AEEA]" />
-              Gemini 2.0 Flash
+              {getModelDisplayName(EMAIL_MODEL)}
             </div>
           </div>
           
