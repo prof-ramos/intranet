@@ -67,13 +67,13 @@ export default async function AssociadosPage({
           ) : !hasSearch ? (
             <div className="rounded-[8px] border border-[rgba(4,9,32,0.08)] bg-white p-8 text-center">
               <p className="text-sm" style={{ color: textMuted }}>
-                Digite pelo menos 2 caracteres para buscar.
+                Digite pelo menos {MIN_SEARCH_CHARS} caracteres para buscar.
               </p>
             </div>
           ) : total === 0 ? (
             <div className="rounded-[8px] border border-[rgba(4,9,32,0.08)] bg-white p-8 text-center">
               <h2 className="text-lg font-semibold">
-                Nenhum oficial encontrado para <span className="break-words">&quot;{q}&quot;</span>
+                Nenhum oficial encontrado para <span className="break-words">&#8220;{q}&#8221;</span>
               </h2>
               {canCreateOfficial && (
                 <Link

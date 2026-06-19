@@ -1,6 +1,6 @@
 export default function AssociadosLoading() {
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 py-8 sm:px-8 lg:px-10">
+    <div role="status" aria-label="Carregando…" className="mx-auto w-full max-w-3xl px-5 py-8 sm:px-8 lg:px-10">
       <div className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-3">
           <div className="h-10 w-36 rounded bg-[#f8fafc] motion-safe:animate-pulse" />

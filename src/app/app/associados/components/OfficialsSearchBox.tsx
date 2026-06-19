@@ -70,7 +70,8 @@ export function OfficialsSearchBox({ initialQuery }: OfficialsSearchBoxProps) {
           type="search"
           value={value}
           onChange={(event) => setValue(event.target.value)}
-          placeholder="Digite o nome ou parte do nome"
+          placeholder="Digite o nome ou parte do nome…"
+          name="q"
           autoComplete="off"
           className={`h-12 w-full rounded-[8px] border border-[rgba(4,9,32,0.12)] bg-white pr-12 pl-11 text-base outline-none transition-colors placeholder:text-[rgba(13,31,60,0.42)] hover:border-[rgba(4,9,32,0.24)] ${focusRingClass}`}
           aria-describedby="official-search-help"
