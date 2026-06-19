@@ -88,7 +88,7 @@ Preview não deve herdar envs gerais de banco de produção.
 
 `CREATE INDEX CONCURRENTLY` e `DROP INDEX CONCURRENTLY` **não** podem ser executados dentro de transações PostgreSQL. Como o Drizzle Kit (`npm run db:migrate`) aplica migrações envolvendo cada statement em uma transação, esses comandos falham nesse fluxo. Para esses casos: backup → teste em staging → execução direta via `psql "$DATABASE_MIGRATION_URL"` → validação com `npm run test:db`.
 
-### Migrações aplicadas (25)
+### Migrações aplicadas (28)
 
 | # | Arquivo | Descrição |
 |---|---------|-----------|
@@ -117,6 +117,9 @@ Preview não deve herdar envs gerais de banco de produção.
 | 0022 | `0022_puzzling_mantis.sql` | CHECK constraint em health_agreements (end_date ≥ start_date) |
 | 0023 | `0023_dashing_madame_web.sql` | Adiciona constraint `UNIQUE` em `assignments.name` |
 | 0024 | `0024_worthless_deathbird.sql` | Cria tabela `integration_signature_nonces` (prevenção de replay attack em integrações M2M) |
+| 0025 | `0025_officials_domain_statuses.sql` | Normaliza enums `association_status` e `contribution_status` (remove valores legados `ativo`, `pendente_migracao`) |
+| 0026 | `0026_add_associate_retirement_date.sql` | Adiciona coluna `retirement_date` em associates |
+| 0027 | `0027_add_associates_name_translated_trgm_index.sql` | Índice GIN trigram transliterado para busca de nome sem acentos |
 
 ### Nomenclatura
 
@@ -348,6 +351,7 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 | Tabela | Índice | Tipo | Finalidade |
 |--------|--------|------|------------|
 | `associates` | `idx_associates_name_trgm` | GIN | Busca textual por nome |
+| `associates` | `idx_associates_name_lower_trgm` | GIN | Busca textual por nome transliterado (sem acentos) |
 | `associates` | `idx_associates_cpf` | UNIQUE | CPF único |
 | `associates` | `idx_associates_siape` | UNIQUE | SIAPE único |
 | `associates` | `idx_associates_primary_email` | UNIQUE | Email único |

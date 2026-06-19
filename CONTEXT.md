@@ -137,11 +137,11 @@ Documento de identificação do associado. Campos: `rg` (número), `rg_issuer` (
 
 #### Sexo
 
-Classificação de gênero do associado. Enum: `masculino`, `feminino`, `outro`. Campo: `sex`.
+Classificação de gênero do associado. Enum: `M`, `F`. Campo: `sex`.
 
 #### Estado Civil
 
-Situação civil do associado. Enum: `solteiro`, `casado`, `divorciado`, `viuvo`, `outro`. Campo: `maritalStatus`.
+Situação civil do associado. Enum: `solteiro`, `casado`, `divorciado`, `viuvo`, `separado`, `outros`. Campo: `maritalStatus`. (`outros` é valor legado de migração para registros históricos sem correspondência exata.)
 
 #### Naturalidade
 
@@ -153,7 +153,7 @@ Classificação do tipo de missão do associado. Enum: `permanente`, `transitori
 
 #### Origem de Carreira
 
-Origem da carreira do associado. Enum: `concurso`, `nomeacao`, `outros_orgaos`. Campo: `careerOrigin`.
+Origem da carreira do associado. Enum: `brasil`, `exterior`, `outros_orgaos`. Campo: `careerOrigin`.
 
 #### Forma de Pagamento
 
