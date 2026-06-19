@@ -7,34 +7,34 @@ test.describe('Cadastro de Oficiais', () => {
     await expect(page.locator('h1')).toContainText('Oficiais');
 
     // The new design requires a search query (≥ 3 chars) to show results.
-    await page.fill('input[placeholder*="nome"]', 'João');
-    await page.press('input[placeholder*="nome"]', 'Enter');
+    await page.fill('input[name="q"]', 'João');
+    await page.press('input[name="q"]', 'Enter');
 
-    await expect(page.locator('ul')).toContainText('João da Silva');
+    await expect(page.locator('main ul')).toContainText('João da Silva');
   });
 
   test('search filters by name', async ({ page, loginAsAdmin }) => {
     await loginAsAdmin();
     await page.goto('/app/associados');
 
-    await page.fill('input[placeholder*="nome"]', 'João');
-    await page.press('input[placeholder*="nome"]', 'Enter');
+    await page.fill('input[name="q"]', 'João');
+    await page.press('input[name="q"]', 'Enter');
 
-    await expect(page.locator('ul')).toContainText('João da Silva');
-    await expect(page.locator('ul')).not.toContainText('Maria Oliveira');
+    await expect(page.locator('main ul')).toContainText('João da Silva');
+    await expect(page.locator('main ul')).not.toContainText('Maria Oliveira');
   });
 
   test('navigates to associate profile', async ({ page, loginAsAdmin }) => {
     await loginAsAdmin();
     await page.goto('/app/associados');
 
-    await page.fill('input[placeholder*="nome"]', 'João');
-    await page.press('input[placeholder*="nome"]', 'Enter');
+    await page.fill('input[name="q"]', 'João');
+    await page.press('input[name="q"]', 'Enter');
 
     // Cards link directly to the profile page.
     await page.locator('li:has-text("João da Silva") a[href^="/app/associados/"]').first().click();
     await expect(page).toHaveURL(/\/app\/associados\/\d+/);
-    await expect(page.locator('body')).toContainText('João da Silva');
+    await expect(page.locator('main h1')).toContainText('João da Silva');
   });
 
   test('edit associate page loads with pre-filled data', async ({ page, loginAsAdmin }) => {
@@ -42,14 +42,15 @@ test.describe('Cadastro de Oficiais', () => {
     await page.goto('/app/associados');
 
     // Search to reveal results (new design requires an active query).
-    await page.fill('input[placeholder*="nome"]', 'João');
-    await page.press('input[placeholder*="nome"]', 'Enter');
+    await page.fill('input[name="q"]', 'João');
+    await page.press('input[name="q"]', 'Enter');
 
     // Navigate to profile first — the listing no longer has a direct edit link.
     await page.locator('li:has-text("João da Silva") a[href^="/app/associados/"]').first().click();
     await expect(page).toHaveURL(/\/app\/associados\/\d+/);
 
-    // The edit link lives on the profile page.
+    // The "Editar dados" button lives in the profile header — always visible,
+    // no hover required (EditLink has no opacity-0 class).
     await page.locator('a[href*="/editar"]').first().click();
     await expect(page).toHaveURL(/\/app\/associados\/\d+\/editar/);
 
@@ -63,8 +64,8 @@ test.describe('Cadastro de Oficiais', () => {
     await loginAsAdmin();
     await page.goto('/app/associados');
 
-    await page.fill('input[placeholder*="nome"]', 'João');
-    await page.press('input[placeholder*="nome"]', 'Enter');
+    await page.fill('input[name="q"]', 'João');
+    await page.press('input[name="q"]', 'Enter');
 
     await page.locator('li:has-text("João da Silva") a[href^="/app/associados/"]').first().click();
     await expect(page).toHaveURL(/\/app\/associados\/\d+/);
@@ -77,6 +78,6 @@ test.describe('Cadastro de Oficiais', () => {
 
     // Should redirect to profile page
     await expect(page).toHaveURL(/\/app\/associados\/\d+/);
-    await expect(page.locator('body')).toContainText('João da Silva Atualizado');
+    await expect(page.locator('main h1')).toContainText('João da Silva Atualizado');
   });
 });

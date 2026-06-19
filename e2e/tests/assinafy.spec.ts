@@ -7,9 +7,10 @@ test.describe('Assinafy — Assinatura de Ofícios', () => {
     // globalSetup and Playwright workers run in separate Node processes;
     // globalThis is not shared between them, so we use an HTTP call instead.
     const resetUrl = `http://127.0.0.1:${ASSINAFY_MOCK_PORT}/v1/__reset__`;
-    await fetch(resetUrl, { method: 'POST' }).catch((err) => {
-      throw new Error(`Failed to reset Assinafy mock: ${err}`);
-    });
+    const resetRes = await fetch(resetUrl, { method: 'POST' });
+    if (!resetRes.ok) {
+      throw new Error(`Failed to reset Assinafy mock: ${resetRes.status} ${resetRes.statusText}`);
+    }
 
     await loginAsAdmin();
     await page.goto('/app/secretaria/oficios');
