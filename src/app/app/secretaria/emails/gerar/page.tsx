@@ -4,7 +4,7 @@ import { EmailGeneratorClient } from './EmailGeneratorClient';
 
 export const metadata: Metadata = {
   title: 'Gerador de E-mails com IA — ASOF',
-  description: 'Gere e-mails institucionais no padrão ASOF usando Inteligência Artificial (Gemini 2.0).',
+  description: 'Gere e-mails institucionais no padrão ASOF usando Inteligência Artificial (Gemini 3.5 Flash).',
 };
 
 export default async function EmailGeneratorPage() {
