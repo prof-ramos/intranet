@@ -19,7 +19,7 @@ function AssociateCard({ row, currentListUrl }: { row: AssociateListItem; curren
         <div className="min-w-0">
           <h2 className="line-clamp-2 text-base font-semibold" title={row.fullName}>{row.fullName}</h2>
           <p className="mt-1 text-sm" style={{ color: textMuted }}>
-            {row.assignment ?? 'Lotação não informada'}
+            {row.assignment || 'Lotação não informada'}
           </p>
         </div>
         <ChevronRight

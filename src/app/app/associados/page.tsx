@@ -75,6 +75,9 @@ export default async function AssociadosPage({
               <h2 className="text-lg font-semibold">
                 Nenhum oficial encontrado para <span className="break-words">&#8220;{q}&#8221;</span>
               </h2>
+              <p className="mt-2 text-sm" style={{ color: textMuted }}>
+                Tente termos diferentes ou verifique a ortografia.
+              </p>
               {canCreateOfficial && (
                 <Link
                   href="/app/associados/novo"
@@ -94,7 +97,7 @@ export default async function AssociadosPage({
                 {!showAll && total > PAGE_SIZE && (
                   <Link
                     href={showAllHref}
-                    className={`text-sm font-semibold text-[#0d3260] hover:underline ${focusRingClass}`}
+                    className={`inline-flex items-center py-1 text-sm font-semibold text-[#0d3260] hover:underline ${focusRingClass}`}
                   >
                     Ver todos os {total} resultados
                   </Link>

@@ -2,7 +2,7 @@
 
 import { Search, X } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { focusRingClass, textMuted } from '@/lib/ui/tokens';
 import { MIN_SEARCH_CHARS } from '@/lib/associates/search-params';
 
@@ -17,6 +17,7 @@ export function OfficialsSearchBox({ initialQuery }: OfficialsSearchBoxProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [value, setValue] = useState(initialQuery);
+  const [isPending, startTransition] = useTransition();
 
   const currentQuery = searchParams.get('q') ?? '';
 
@@ -48,7 +49,9 @@ export function OfficialsSearchBox({ initialQuery }: OfficialsSearchBoxProps) {
       }
 
       const queryString = params.toString();
-      router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+      startTransition(() => {
+        router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+      });
     }, SEARCH_DEBOUNCE_MS);
 
     return () => window.clearTimeout(timeout);
@@ -73,7 +76,8 @@ export function OfficialsSearchBox({ initialQuery }: OfficialsSearchBoxProps) {
           placeholder="Digite o nome ou parte do nome…"
           name="q"
           autoComplete="off"
-          className={`h-12 w-full rounded-[8px] border border-[rgba(4,9,32,0.12)] bg-white pr-12 pl-11 text-base outline-none transition-colors placeholder:text-[rgba(13,31,60,0.65)] hover:border-[rgba(4,9,32,0.24)] ${focusRingClass}`}
+          aria-busy={isPending}
+          className={`h-12 w-full rounded-[8px] border ${isPending ? 'border-[#76aeea]' : 'border-[rgba(4,9,32,0.12)]'} bg-white pr-12 pl-11 text-base outline-none transition-colors placeholder:text-[rgba(13,31,60,0.65)] hover:border-[rgba(4,9,32,0.24)] ${focusRingClass}`}
           aria-describedby="official-search-help"
         />
         {value && (
