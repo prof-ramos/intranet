@@ -36,7 +36,7 @@ export default async function AssociadosPage({
       <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-8 sm:px-8 lg:px-10">
         <section className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <h1 className="font-serif text-4xl leading-none font-bold md:text-[3rem]">Oficiais</h1>
+            <h1 className="font-serif text-4xl leading-none font-bold md:text-5xl">Oficiais</h1>
             <p className="mt-3 text-base" style={{ color: textMuted }}>
               Localize um Oficial de Chancelaria pelo nome.
             </p>
@@ -81,7 +81,7 @@ export default async function AssociadosPage({
                   className={`mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
                 >
                   <Plus size={16} aria-hidden="true" />
-                  Cadastrar novo oficial
+                  Novo oficial
                 </Link>
               )}
             </div>

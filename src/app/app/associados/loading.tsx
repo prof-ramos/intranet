@@ -17,7 +17,7 @@ export default function AssociadosLoading() {
 
       <div className="space-y-2">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="rounded-[8px] border border-[rgba(4,9,32,0.08)] bg-white p-4">
+          <div key={index} aria-hidden="true" className="rounded-[8px] border border-[rgba(4,9,32,0.08)] bg-white p-4">
             <div className="h-5 w-2/3 rounded bg-[#f8fafc] motion-safe:animate-pulse" />
             <div className="mt-2 h-4 w-1/2 rounded bg-[#f8fafc] motion-safe:animate-pulse" />
             <div className="mt-4 flex gap-2">

@@ -73,14 +73,14 @@ export function OfficialsSearchBox({ initialQuery }: OfficialsSearchBoxProps) {
           placeholder="Digite o nome ou parte do nome…"
           name="q"
           autoComplete="off"
-          className={`h-12 w-full rounded-[8px] border border-[rgba(4,9,32,0.12)] bg-white pr-12 pl-11 text-base outline-none transition-colors placeholder:text-[rgba(13,31,60,0.42)] hover:border-[rgba(4,9,32,0.24)] ${focusRingClass}`}
+          className={`h-12 w-full rounded-[8px] border border-[rgba(4,9,32,0.12)] bg-white pr-12 pl-11 text-base outline-none transition-colors placeholder:text-[rgba(13,31,60,0.65)] hover:border-[rgba(4,9,32,0.24)] ${focusRingClass}`}
           aria-describedby="official-search-help"
         />
         {value && (
           <button
             type="button"
             onClick={() => setValue('')}
-            className={`absolute top-1/2 right-3 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[8px] text-[rgba(13,31,60,0.58)] transition-colors hover:bg-[#f8fafc] hover:text-[#040920] ${focusRingClass}`}
+            className={`absolute top-1/2 right-3 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-[8px] text-[rgba(13,31,60,0.58)] transition-colors hover:bg-[#f8fafc] hover:text-[#040920] ${focusRingClass}`}
             aria-label="Limpar busca"
           >
             <X size={16} aria-hidden="true" />
