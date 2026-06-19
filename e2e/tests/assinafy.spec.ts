@@ -1,13 +1,18 @@
 import { test, expect } from '../fixtures';
-import { ASSINAFY_MOCK_PORT } from '../constants';
+import { ASSINAFY_MOCK_PORT, ASSINAFY_MOCK_KEY } from '../constants';
 
 test.describe('Assinafy — Assinatura de Ofícios', () => {
   test.beforeEach(async ({ page, loginAsAdmin }) => {
     // Reset mock state between tests for isolation via HTTP endpoint.
     // globalSetup and Playwright workers run in separate Node processes;
     // globalThis is not shared between them, so we use an HTTP call instead.
+    // The mock gates every route (including __reset__) behind X-Api-Key, so
+    // the reset request must present the same key the app uses.
     const resetUrl = `http://127.0.0.1:${ASSINAFY_MOCK_PORT}/v1/__reset__`;
-    const resetRes = await fetch(resetUrl, { method: 'POST' });
+    const resetRes = await fetch(resetUrl, {
+      method: 'POST',
+      headers: { 'X-Api-Key': ASSINAFY_MOCK_KEY },
+    });
     if (!resetRes.ok) {
       throw new Error(`Failed to reset Assinafy mock: ${resetRes.status} ${resetRes.statusText}`);
     }
