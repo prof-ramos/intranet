@@ -176,6 +176,16 @@ export class AssinafyMockServer {
       return;
     }
 
+    // POST /__reset__ — test-only endpoint to reset mock state between tests.
+    // Workers and globalSetup run in separate Node processes so globalThis is
+    // not shared; HTTP is the only safe inter-process communication channel.
+    if (url === '/v1/__reset__' && method === 'POST') {
+      this.reset();
+      res.statusCode = 200;
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
     // GET /documents/{id}
     const getDocMatch = AssinafyMockServer.RE_GET_DOC.exec(url);
     if (getDocMatch && method === 'GET') {
