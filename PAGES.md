@@ -275,7 +275,7 @@ graph LR
 **Acesso:** `*`
 
 **Funcionalidades:**
-- Cards por status: `backlog`, `em_andamento`, `em_revisao`, `concluida`
+- Cards por status: `a_fazer`, `em_andamento`, `aguardando_terceiros`, `concluido`
 - Drag-and-drop entre colunas (atualiza posição e status)
 - Filtros por responsável e por associado vinculado
 - Contagem de cards por prioridade na coluna

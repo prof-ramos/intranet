@@ -141,7 +141,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 ## CI/CD
 
 - 4 jobs: Lint/Typecheck/Test, Database Contract, Build Verification, E2E Tests.
-- Node 24.x nos runners GitHub Actions.
+- Node 20.x nos runners GitHub Actions.
 - Deploy via push para `main` (produção) ou PR (preview).
 - Domínio: `intranet.asof.com.br`.
 

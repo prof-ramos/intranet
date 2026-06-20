@@ -2,7 +2,7 @@
 
 Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia o cadastro de Oficiais de Chancelaria, associados ASOF, atividades administrativas e comunicações internas da diretoria.
 
-**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Drizzle ORM · PostgreSQL gerenciado · auth server-side própria
+**Stack:** Next.js 16.2.6 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL gerenciado · auth server-side própria
 
 ---
 

@@ -1,7 +1,7 @@
 # API Documentation — ASOF Intranet
 
 > Documentação dos endpoints HTTP públicos atualmente expostos pela ASOF Intranet.
-> Última atualização: 2026-06-03
+> Última atualização: 2026-06-19
 
 ---
 
@@ -9,7 +9,7 @@
 
 A superficie HTTP publica atual da ASOF Intranet e pequena e intencionalmente restrita.
 
-Hoje existem **13 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
+Hoje existem **14 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
 
 | Metodo        | Rota                                 | Finalidade                                                                  |
 | ------------- | ------------------------------------ | --------------------------------------------------------------------------- |
