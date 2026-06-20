@@ -23,3 +23,6 @@
 ## 2026-06-17 - Combobox Keyboard Navigation and Hover Precedence
 **Learning:** When implementing the `aria-activedescendant` combobox pattern, dropdown items must have `tabIndex={-1}` so they don't break the natural tab sequence out of the input. Additionally, Tailwind `hover:bg-...` classes fail if overridden by inline `style={{ background: 'transparent' }}`; using `undefined` allows the class to work correctly.
 **Action:** Always test hover states when inline styles are used conditionally, and ensure `role="option"` elements are removed from the tab order when focus is managed via the parent input.
+## 2026-06-20 - Missing Focus Rings on Forgot Password Button
+**Learning:** Similar to the login and reset password buttons, the forgot password submit button was missing the `focusRingClass`. This breaks keyboard navigation visibility and creates an inconsistent experience across the authentication flow.
+**Action:** When extracting interactive standalone components like form submission buttons, always double-check that keyboard accessibility classes like `focusRingClass` are applied alongside standard visual styling.

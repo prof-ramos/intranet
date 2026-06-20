@@ -2,7 +2,12 @@
 
 import { useFormStatus } from 'react-dom';
 import { Loader2 } from 'lucide-react';
-import { buttonPrimaryBg, buttonPrimaryHover, mobileTouchTargetClass } from '@/lib/ui/tokens';
+import {
+  buttonPrimaryBg,
+  buttonPrimaryHover,
+  mobileTouchTargetClass,
+  focusRingClass,
+} from '@/lib/ui/tokens';
 import { useState } from 'react';
 
 export function SubmitButton() {
@@ -16,7 +21,7 @@ export function SubmitButton() {
       aria-busy={pending}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`inline-flex ${mobileTouchTargetClass} w-full items-center justify-center gap-2 rounded-[8px] px-5 text-sm font-semibold text-white transition-colors disabled:cursor-wait disabled:opacity-80`}
+      className={`inline-flex ${mobileTouchTargetClass} w-full items-center justify-center gap-2 rounded-[8px] px-5 text-sm font-semibold text-white transition-colors disabled:cursor-wait disabled:opacity-80 ${focusRingClass}`}
       style={{ backgroundColor: isHovered || pending ? buttonPrimaryHover : buttonPrimaryBg }}
     >
       {pending ? (
