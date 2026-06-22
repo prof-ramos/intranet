@@ -89,7 +89,10 @@ export function upsertNotification(
 ): NotificationItem[] {
   const withoutCurrent = current.filter((item) => item.id !== nextItem.id);
   return [nextItem, ...withoutCurrent].sort((left, right) => {
-    return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+    // Bolt: ISO 8601 strings sort lexicographically. Avoiding Date parsing makes this significantly faster.
+    if (left.createdAt < right.createdAt) return 1;
+    if (left.createdAt > right.createdAt) return -1;
+    return 0;
   });
 }
 
@@ -122,6 +125,9 @@ export function extractNotifications(
     .map(normalizeNotification)
     .filter((item): item is NotificationItem => item !== null)
     .sort((left, right) => {
-      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+      // Bolt: ISO 8601 strings sort lexicographically. Avoiding Date parsing makes this significantly faster.
+      if (left.createdAt < right.createdAt) return 1;
+      if (left.createdAt > right.createdAt) return -1;
+      return 0;
     });
 }
