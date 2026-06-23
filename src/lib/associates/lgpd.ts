@@ -140,16 +140,6 @@ export function toActivityDTO(activity: ActivityLinkDTO, role: Role): ActivityLi
   };
 }
 
-/** List view fields — kept in sync with AssociateListItem from queries.ts. */
-export const ASSOCIATE_LIST_FIELDS = [
-  'id',
-  'fullName',
-  'assignment',
-  'classPattern',
-  'primaryEmail',
-  'functionalStatus',
-] as const;
-
 /** Export fields annotated with LGPD sensitivity for explicit allowlisting. */
 export interface AnnotatedField {
   key: string;

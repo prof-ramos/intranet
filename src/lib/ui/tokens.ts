@@ -85,13 +85,6 @@ export const successText = '#15803d';
 export const progressBg = surfaceMuted;
 export const progressFg = navy;
 
-export const infoNotice = {
-  border: '#93c5fd',
-  bg: infoBg,
-  iconBg: info,
-  text: '#1e40af',
-};
-
 // Category badge colors (used in DocumentList)
 export const categoryColors: Record<string, { bg: string; text: string }> = {
   modelo_contrato: { bg: '#e0f2fe', text: '#0369a1' },
