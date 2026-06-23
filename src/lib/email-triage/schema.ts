@@ -200,3 +200,20 @@ export const emailTriageResultSchema = z
   });
 
 export type EmailTriageResult = z.infer<typeof emailTriageResultSchema>;
+
+// ─── TriageResponse (raw AI output with parsing metadata) ────────────
+
+export const triageResponseSchema = z.object({
+  raw: z.string().describe('Raw text response from Gemini.'),
+  parsed: emailTriageResultSchema
+    .nullable()
+    .describe('Parsed structured result, or null on failure.'),
+  model_name: z.string().describe('Gemini model name used.'),
+  model_response_id: z
+    .string()
+    .nullable()
+    .default(null)
+    .describe('Response identifier from the model, if available.'),
+});
+
+export type TriageResponse = z.infer<typeof triageResponseSchema>;

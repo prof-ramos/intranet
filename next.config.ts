@@ -65,6 +65,7 @@ const nextConfig: NextConfig = {
       '@tiptap/react',
       '@tiptap/starter-kit',
       '@hello-pangea/dnd',
+      '@novu/react',
       'pdf-lib',
     ],
   },

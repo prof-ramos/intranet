@@ -2,6 +2,7 @@ import type { Role } from './lgpd';
 import { canViewSensitiveFields } from './lgpd';
 import {
   findAssociatesPaginated,
+  findAssociatesPaginatedCursor,
   findAssociateById,
   updateAssociateById,
   insertAssociate,
@@ -124,6 +125,16 @@ export async function getAssociatesListPage(
   searchBy?: AssociateSearchMode,
 ) {
   return findAssociatesPaginated(page, pageSize, searchQuery, filters, searchBy);
+}
+
+export async function getAssociatesListPageCursor(
+  pageSize: number,
+  cursor: string | null,
+  searchQuery?: string,
+  filters?: AssociatesFilters,
+  searchBy?: AssociateSearchMode,
+) {
+  return findAssociatesPaginatedCursor(pageSize, cursor, searchQuery, filters, searchBy);
 }
 
 export async function getAssociateForEdit(

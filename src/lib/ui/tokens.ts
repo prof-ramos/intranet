@@ -41,7 +41,7 @@ export const priorityStyles: Record<string, { label: string; fg: string; bg: str
 // Feedback colors
 export const error = '#ef4444';
 export const errorBg = '#fee2e2';
-const errorBorder = '#fca5a5';
+export const errorBorder = '#fca5a5';
 export const dangerBorder = errorBorder;
 export const warning = '#eab308';
 export const warningBg = '#fef3c7';
@@ -84,6 +84,13 @@ export const warningText = '#a16207';
 export const successText = '#15803d';
 export const progressBg = surfaceMuted;
 export const progressFg = navy;
+
+export const infoNotice = {
+  border: '#93c5fd',
+  bg: infoBg,
+  iconBg: info,
+  text: '#1e40af',
+};
 
 // Category badge colors (used in DocumentList)
 export const categoryColors: Record<string, { bg: string; text: string }> = {

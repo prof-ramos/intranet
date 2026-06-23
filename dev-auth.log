@@ -1,0 +1,13 @@
+
+> asof-intranet@0.1.0 dev
+> next dev --webpack -p 3001
+
+▲ Next.js 16.2.6 (webpack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.0.44:3001
+- Environments: .env.local
+✓ Ready in 262ms
+- Experiments (use with caution):
+  · optimizePackageImports
+
+ GET /login 200 in 806ms (next.js: 585ms, proxy.ts: 86ms, application-code: 135ms)

@@ -1,0 +1,3 @@
+## 2026-06-12 - Drizzle Postgres Bulk Upsert vs Promise.all
+**Learning:** In Drizzle ORM with Postgres, executing queries via `Promise.all` using the *same transaction object* (`tx`) causes the Postgres driver to queue the queries sequentially on a single connection. For multiple inserts or upserts inside a transaction (like in `initializeMonth`), `Promise.all` leads to an N+1 query bottleneck.
+**Action:** Always use Drizzle's bulk operations (passing an array to `.values()`) combined with `onConflictDoUpdate` (using `sql\`EXCLUDED.column\``) instead of a `Promise.all` mapping loop for database writes inside a transaction to dramatically reduce connection pool exhaustion and database roundtrips.
