@@ -1,21 +1,15 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { NotificationInboxSkeleton } from './NotificationInboxSkeleton';
-
-const NotificationInbox = dynamic(() => import('./NotificationInbox').then((mod) => mod.NotificationInbox), {
-  ssr: false,
-  loading: () => <NotificationInboxSkeleton />,
-});
+import { NotificationBell } from './NotificationBell';
 
 interface NotificationInboxWrapperProps {
-  subscriberId?: string | number | null;
+  userId: number;
 }
 
-export function NotificationInboxWrapper({ subscriberId }: NotificationInboxWrapperProps) {
+export function NotificationInboxWrapper({ userId }: NotificationInboxWrapperProps) {
   return (
     <div data-testid="notification-inbox">
-      <NotificationInbox subscriberId={subscriberId} />
+      <NotificationBell userId={userId} />
     </div>
   );
 }

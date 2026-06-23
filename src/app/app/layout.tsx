@@ -30,7 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <GlobalSearch />
           </div>
           <div className="ml-auto flex shrink-0 items-center">
-            <NotificationInboxWrapper subscriberId={user.userId} />
+            <NotificationInboxWrapper userId={user.userId} />
           </div>
         </header>
 
