@@ -239,8 +239,8 @@ test('9. Notificações — central abre', async ({ page }) => {
   await page.goto('/app');
   await expect(page.locator('h1')).toBeVisible();
 
-  // Notificações: tentar sino (Novu/NotificationInbox) ou confirmar header
-  const bell = page.locator('[data-testid="notification-inbox"] button, [data-testid="notification-bell"]').first();
+  // Notificações: sino (NotificationBell) ou confirmar header
+  const bell = page.locator('[data-testid="notification-bell-wrapper"] button, [data-testid="notification-bell"]').first();
   if (await bell.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await bell.click();
     await expect(
