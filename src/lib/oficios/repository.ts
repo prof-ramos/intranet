@@ -1,8 +1,8 @@
-import { db, type Tx } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import { oficios, type NewOfficialLetter } from '@/lib/db/schema/oficios';
 import { and, desc, eq } from 'drizzle-orm';
 
-export async function findOfficialLetters(year?: number, options?: { limit?: number; tx?: Tx }) {
+export async function findOfficialLetters(year?: number, options?: { limit?: number; tx?: DbExecutor }) {
   const limit = options?.limit ?? 100;
   const tx = options?.tx ?? db;
   const filters = [];
@@ -18,12 +18,12 @@ export async function findOfficialLetters(year?: number, options?: { limit?: num
     .limit(limit);
 }
 
-export async function findOfficialLetterById(id: number, tx: Tx = db) {
+export async function findOfficialLetterById(id: number, tx: DbExecutor = db) {
   const [result] = await tx.select().from(oficios).where(eq(oficios.id, id));
   return result || null;
 }
 
-export async function getLastSequenceForYear(year: number, tx: Tx = db) {
+export async function getLastSequenceForYear(year: number, tx: DbExecutor = db) {
   const [result] = await tx
     .select({ sequence: oficios.sequence })
     .from(oficios)
@@ -34,7 +34,7 @@ export async function getLastSequenceForYear(year: number, tx: Tx = db) {
   return result?.sequence ?? 0;
 }
 
-export async function createOfficialLetter(data: NewOfficialLetter, tx: Tx = db) {
+export async function createOfficialLetter(data: NewOfficialLetter, tx: DbExecutor = db) {
   const [result] = await tx.insert(oficios).values(data).returning();
   return result;
 }
@@ -42,13 +42,13 @@ export async function createOfficialLetter(data: NewOfficialLetter, tx: Tx = db)
 export async function updateOfficialLetter(
   id: number,
   data: Partial<NewOfficialLetter>,
-  tx: Tx = db,
+  tx: DbExecutor = db,
 ) {
   const [result] = await tx.update(oficios).set(data).where(eq(oficios.id, id)).returning();
   return result;
 }
 
-export async function cancelOfficialLetter(id: number, updatedBy: number, tx: Tx = db) {
+export async function cancelOfficialLetter(id: number, updatedBy: number, tx: DbExecutor = db) {
   const [result] = await tx
     .update(oficios)
     .set({ status: 'cancelado', updatedBy, updatedAt: new Date() })

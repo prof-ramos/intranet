@@ -4,7 +4,7 @@
 
 import { renderHook, act } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { useNotifications } from './useNotifications';
+import { useNotifications } from './use-notifications';
 import {
   listNotificationsAction,
 } from '@/app/app/notifications/actions';
