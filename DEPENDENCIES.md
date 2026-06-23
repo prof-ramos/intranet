@@ -17,7 +17,6 @@ Atualizado em 2026-06-14. Inclui mudancas pos-go-live: refatoracao de atividades
 - **bcryptjs** para hashes de senha administrativa.
 - **@google/genai** para analise de triagem de e-mails com Gemini.
 - **mailparser** para parsing estruturado de remetentes de e-mail.
-- **@novu/react** para inbox de notificacoes quando configurado.
 - **server-only** para garantir execucao server-side.
 - **zod** v4 para validacao de schemas compartilhados (server actions, API, forms).
 
@@ -40,14 +39,15 @@ Atualizado em 2026-06-14. Inclui mudancas pos-go-live: refatoracao de atividades
 
 O go-live nao depende de auth externo, entrega em tempo real externa nem storage externo. Storage de objetos privado sera escolhido em frente separada se Documentos for obrigatorio. A implementacao final de storage fisico devera ser acompanhada de uma decisao formal de adocao.
 
-## Vulnerabilidades Conhecidas (2026-06-14)
+## Vulnerabilidades Conhecidas (2026-06-23)
 
-Duas vulnerabilidades transitivas estao presentes e nao possuem fix sem breaking change:
+Uma vulnerabilidade transitiva esta presente e nao possui fix sem breaking change:
 
-- **esbuild** (high): afeta `drizzle-kit` e `tsx` (dev dependencies). Nao afeta producao.
-- **ws** (moderate): afeta `engine.io-client` (transitiva via `@novu/react`). Nao e exploravel em uso server-side.
+- **esbuild** (low): afeta `drizzle-kit` e `tsx` (dev dependencies). Nao afeta producao.
 
-Ambas sao dev-only ou transitivas em dependencias de dev. `npm audit fix --force` propoe downgrade de `drizzle-kit` para 0.19 (breaking), portanto nao deve ser aplicado. Monitorar advisories e aplicar quando patches estiverem disponiveis.
+`npm audit fix --force` propoe downgrade de `drizzle-kit` para 0.19 (breaking), portanto nao deve ser aplicado. Monitorar advisories e aplicar quando patches estiverem disponiveis.
+
+A cadeia `ws`/`socket.io-client`/`engine.io-client` (antes transitiva via `@novu/react`) foi **eliminada** com a remocao da dependencia em 2026-06-23 (5 CVEs resolvidas).
 
 ## Comandos De Saude
 
@@ -57,7 +57,7 @@ npm run typecheck      # TypeScript sem emitir
 npm run lint           # ESLint
 npm run test           # Vitest (unitarios)
 npm run build          # Next.js build (Webpack)
-npm run validate:quick # typecheck + lint + testes unitarios
+npm run validate:quick # lint + typecheck + testes unitarios
 npm run validate:full  # quick + test:db + test:integration + build
 npm run pr:check       # gate completo de PR
 ```

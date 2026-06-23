@@ -77,7 +77,3 @@ export async function getDocuments(filters: DocumentFilters = {}): Promise<Docum
   }));
 }
 
-export async function getDocumentById(id: number): Promise<Document | null> {
-  const rows = await db.select().from(documents).where(eq(documents.id, id)).limit(1);
-  return rows[0] ?? null;
-}
