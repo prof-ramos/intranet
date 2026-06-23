@@ -65,5 +65,3 @@ refactor/issue-102-split-integrations-auth
 ## Related
 
 - [GitHub Issue Tracker guidance](../../agents/issue-tracker.md)
-- [Development guardrails](./codex-development-guardrails.md)
-- [Worktree usage](./codex-worktrees-and-automations.md)

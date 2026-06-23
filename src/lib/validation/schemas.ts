@@ -14,7 +14,7 @@ import {
 import { paymentMethod } from '@/lib/db/schema/enums';
 import { domainEventType } from '@/lib/db/schema/integrations';
 
-export const PRIVATE_IPV4_RANGES = [
+const PRIVATE_IPV4_RANGES = [
   /^10\./,
   /^127\./,
   /^169\.254\./,
@@ -33,7 +33,7 @@ export const PRIVATE_IPV4_RANGES = [
   /^25[0-5]\./,
 ];
 
-export const emailSchema = z
+const emailSchema = z
   .string()
   .trim()
   .toLowerCase()
@@ -366,7 +366,7 @@ export const deleteHealthAgreementSchema = z.object({
   associateId: z.coerce.number().int().positive('ID do associado inválido.'),
 });
 
-export const validEntityTypes = ['consultation', 'process'] as const;
+const validEntityTypes = ['consultation', 'process'] as const;
 
 export const createConsultationSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório.').trim(),
