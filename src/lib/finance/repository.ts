@@ -98,30 +98,6 @@ export async function upsertMonthlyPayment(payment: NewMonthlyPayment, executor:
     .returning();
 }
 
-export async function upsertMonthlyPaymentsBulk(
-  payments: NewMonthlyPayment[],
-  executor: DbExecutor = db,
-) {
-  if (payments.length === 0) return [];
-  return executor
-    .insert(monthlyPayments)
-    .values(payments)
-    .onConflictDoUpdate({
-      target: [monthlyPayments.associateId, monthlyPayments.year, monthlyPayments.month],
-      set: {
-        status: sql`EXCLUDED.status`,
-        paymentMethod: sql`EXCLUDED.payment_method`,
-        paidAt: sql`EXCLUDED.paid_at`,
-        cancelledAt: sql`EXCLUDED.cancelled_at`,
-        cancellationReason: sql`EXCLUDED.cancellation_reason`,
-        cancelledBy: sql`EXCLUDED.cancelled_by`,
-        updatedBy: sql`EXCLUDED.updated_by`,
-        updatedAt: sql`now()`,
-      },
-    })
-    .returning();
-}
-
 export async function insertMonthlyPaymentsIfMissing(
   payments: NewMonthlyPayment[],
   executor: DbExecutor = db,

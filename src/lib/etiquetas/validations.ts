@@ -9,7 +9,6 @@ import {
 import { getLabelsPerPage, getPimacoTemplate } from './templates';
 
 export const MAX_LABELS_PER_GENERATION = 1000;
-export const MAX_LABEL_LINES = 12;
 
 export const pimacoTemplateCodeSchema = z.enum(PIMACO_TEMPLATE_CODES);
 export const etiquetaPrintModeSchema = z.enum(ETIQUETA_PRINT_MODES);

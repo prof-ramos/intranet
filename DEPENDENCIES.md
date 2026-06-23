@@ -57,7 +57,7 @@ npm run typecheck      # TypeScript sem emitir
 npm run lint           # ESLint
 npm run test           # Vitest (unitarios)
 npm run build          # Next.js build (Webpack)
-npm run validate:quick # typecheck + lint + testes unitarios
+npm run validate:quick # lint + typecheck + testes unitarios
 npm run validate:full  # quick + test:db + test:integration + build
 npm run pr:check       # gate completo de PR
 ```

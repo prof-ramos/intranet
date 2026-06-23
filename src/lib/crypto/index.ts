@@ -167,4 +167,4 @@ export function decryptV2(ciphertext: string, masterKey: string, context: KeyCon
   return decrypted.toString('utf8');
 }
 
-export { V1_PREFIX, V2_PREFIX, IV_LENGTH_BYTES };
+export { V1_PREFIX, V2_PREFIX };
