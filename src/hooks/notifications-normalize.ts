@@ -89,7 +89,8 @@ export function upsertNotification(
 ): NotificationItem[] {
   const withoutCurrent = current.filter((item) => item.id !== nextItem.id);
   return [nextItem, ...withoutCurrent].sort((left, right) => {
-    return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+    // ⚡ Bolt: Use direct string comparison for ISO dates to avoid expensive object creation
+    return left.createdAt > right.createdAt ? -1 : left.createdAt < right.createdAt ? 1 : 0;
   });
 }
 
@@ -122,6 +123,7 @@ export function extractNotifications(
     .map(normalizeNotification)
     .filter((item): item is NotificationItem => item !== null)
     .sort((left, right) => {
-      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+      // ⚡ Bolt: Use direct string comparison for ISO dates to avoid expensive object creation
+      return left.createdAt > right.createdAt ? -1 : left.createdAt < right.createdAt ? 1 : 0;
     });
 }
