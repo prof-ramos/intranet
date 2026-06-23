@@ -1,6 +1,11 @@
 import type { Role } from './lgpd';
 import { toAssociateProfileDTO, toActivityDTO, canViewSensitiveFields } from './lgpd';
-import { findAssociateById, findLinkedActivities, findDependentsByAssociateId, findHealthAgreementsByAssociateId } from './repository';
+import {
+  findAssociateById,
+  findLinkedActivities,
+  findDependentsByAssociateId,
+  findHealthAgreementsByAssociateId,
+} from './repository';
 import { getAssociateAuditHistory } from '@/lib/audit/queries';
 import { getPaymentHistoryForAssociate, type PaymentHistoryItem } from '@/lib/finance/repository';
 import { getConsultationsByAssociate } from '@/lib/juridico/repository';
@@ -93,7 +98,14 @@ export async function getAssociateProfile(
 
   const associate = toAssociateProfileDTO(rawAssociate, role);
 
-  const [linkedActivities, auditHistory, paymentHistory, consultations, dependents, healthAgreements] = await Promise.all([
+  const [
+    linkedActivities,
+    auditHistory,
+    paymentHistory,
+    consultations,
+    dependents,
+    healthAgreements,
+  ] = await Promise.all([
     findLinkedActivities(associate.id),
     getAssociateAuditHistory(associateId),
     getPaymentHistoryForAssociate(associateId),
@@ -172,9 +184,10 @@ export async function getAssociateProfile(
   ].filter((item) => item.date != null);
 
   allEvents.sort((a, b) => {
-    const da = new Date(a.date as string | Date).getTime();
-    const db_ = new Date(b.date as string | Date).getTime();
-    return db_ - da;
+    // ⚡ Bolt: Direct string comparison avoids expensive Date object creation in sorting
+    const strA = typeof a.date === 'string' ? a.date : (a.date as Date).toISOString();
+    const strB = typeof b.date === 'string' ? b.date : (b.date as Date).toISOString();
+    return strA > strB ? -1 : strA < strB ? 1 : 0;
   });
 
   const timeline = allEvents.slice(0, 30);
