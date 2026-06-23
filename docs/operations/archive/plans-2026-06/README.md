@@ -65,7 +65,7 @@ honor its STOP conditions, and update your row when done.
 - [TESTS-03] with-cache.test.ts missing: refuted — file already exists at src/lib/cache/with-cache.test.ts.
 - [SEC-audit-SEC-02] Gmail Pub/Sub webhook unauthenticated: already deferred in Batch 1, confirmed again — deferred.
 - [DEP-02] vite HIGH advisory: Windows-only CVEs, dev-only surface (vitest), Linux CI unaffected — accepted risk; document in TODO-PROD.md.
-- [DEP-01 / SEC-04-ws] ws HIGH advisory via @novu/react: CLAUDE.md confirms "polling, sem Realtime" — WebSocket never opened; ws attack surface is inert. Accepted, no action.
+- [DEP-01 / SEC-04-ws] ws HIGH advisory via @novu/react: RESOLVIDO em 2026-06-23 — @novu/react removido do projeto; cadeia ws/socket.io-client/engine.io-client eliminada. 5 CVEs encerradas.
 - [SEC-05] email_triages plaintext sender/subject: LOW confidence; triage metadata is operational, not associate PII; likely by-design pending ADR clarification.
 - [BUG-05] checkRateLimit rows[0] without null guard: LOW confidence, fail-open already in place; cosmetic hardening only.
 - [BUG-06] webhook-handler.ts return without await: LOW confidence, theoretical; no observed failure.
