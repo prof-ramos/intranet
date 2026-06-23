@@ -52,7 +52,14 @@ const client = postgres(databaseUrl, {
 
 export const db = drizzle(client, { schema });
 
-/** Uniform executor type for all repository functions. Satisfied by both `db` and any `tx`. */
+/**
+ * Uniform executor type for all repository functions.
+ * Accepts both `db` (for standalone calls) and a `PgTransaction` (for atomic operations).
+ *
+ * ⚠️ Footgun: passing the bare `db` object to functions that should be atomic is
+ * structurally valid but breaks isolation. Callers requiring atomicity must obtain
+ * a `tx` from `db.transaction(async (tx) => { ... })` and pass it explicitly.
+ */
 export type DbExecutor =
   | typeof db
   | PgTransaction<

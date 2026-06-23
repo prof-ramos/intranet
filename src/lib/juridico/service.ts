@@ -47,7 +47,7 @@ export async function generateInternalNumber(executor?: DbExecutor): Promise<str
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      return await db.transaction(async (tx) => nextNumber(tx as unknown as typeof db));
+      return await db.transaction(async (tx) => nextNumber(tx as unknown as DbExecutor));
     } catch (error) {
       const isUniqueViolation =
         error instanceof Error && /unique constraint|duplicate key/i.test(error.message);

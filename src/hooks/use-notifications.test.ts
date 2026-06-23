@@ -16,7 +16,7 @@ vi.mock('@/app/app/notifications/actions', () => ({
   markNotificationReadAction: vi.fn(),
 }));
 
-describe('useNotifications', () => {
+describe('use-notifications', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

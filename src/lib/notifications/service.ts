@@ -3,13 +3,13 @@ import type {
   NotificationEventPayload,
   NotificationEventType,
 } from '@/lib/events';
+import type { DbExecutor } from '@/lib/db';
 import {
   countUnreadNotificationsForUser,
   createNotification,
   listNotificationsForUser,
   markAllNotificationsRead,
   markNotificationRead,
-  type NotificationsTx,
 } from './repository';
 
 export interface NotificationDto {
@@ -33,7 +33,7 @@ function assertPositiveInteger(value: number, label: string) {
 export async function createNotificationFromEvent(
   type: NotificationEventType,
   payload: NotificationEventPayload,
-  tx?: NotificationsTx,
+  tx?: DbExecutor,
 ) {
   assertPositiveInteger(payload.recipientId, 'recipientId');
   if (payload.actorId !== null) assertPositiveInteger(payload.actorId, 'actorId');
@@ -67,7 +67,7 @@ export async function createNotificationFromEvent(
   );
 }
 
-export async function getNotificationsForUser(userId: number, limit = 20, tx?: NotificationsTx) {
+export async function getNotificationsForUser(userId: number, limit = 20, tx?: DbExecutor) {
   assertPositiveInteger(userId, 'userId');
 
   const safeLimit = Math.min(Math.max(limit, 1), 50);
@@ -75,14 +75,14 @@ export async function getNotificationsForUser(userId: number, limit = 20, tx?: N
   return rows.map(toNotificationDto);
 }
 
-export async function getUnreadNotificationsCountForUser(userId: number, tx?: NotificationsTx) {
+export async function getUnreadNotificationsCountForUser(userId: number, tx?: DbExecutor) {
   assertPositiveInteger(userId, 'userId');
   return countUnreadNotificationsForUser(userId, tx);
 }
 
 export async function markNotificationAsReadForUser(
   input: { id: number; userId: number },
-  tx?: NotificationsTx,
+  tx?: DbExecutor,
 ) {
   if (!Number.isInteger(input.id) || input.id <= 0) {
     throw new Error('Notificação inválida.');
@@ -92,7 +92,7 @@ export async function markNotificationAsReadForUser(
   return updated ? toNotificationDto(updated) : null;
 }
 
-export async function markAllNotificationsAsReadForUser(userId: number, tx?: NotificationsTx) {
+export async function markAllNotificationsAsReadForUser(userId: number, tx?: DbExecutor) {
   assertPositiveInteger(userId, 'userId');
   const updated = await markAllNotificationsRead(userId, tx);
   return updated.length;
