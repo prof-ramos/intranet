@@ -852,7 +852,7 @@ curl -L \
 - A API HTTP atual nao e uma API REST completa
 - Nao existe documentacao OpenAPI/Swagger
 - Nao existem endpoints JSON publicos amplos de consulta ou mutacao de dominio
-- A fundacao M2M atual cobre `/api/v1/health`, `/api/v1/events`, `/api/v1/email-triage/process`, `/api/v1/gmail-webhook` e os crons `/api/v1/events/dispatch`, `/api/v1/juridico/sla-warnings`, `/api/v1/cron/*` (estes ultimos com bearer `CRON_SECRET`)
+- A fundacao M2M atual e minima e restrita a `/api/v1/health` e `/api/v1/events`; os crons `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings` usam bearer `CRON_SECRET`
 - Nao existe OAuth de integracao
 - Excecao: `/api/webhooks/assinafy` e um endpoint inbound publico para webhooks da plataforma Assinafy (validacao por header de segredo compartilhado (X-Webhook-Secret))
 - A superficie atual foi desenhada para uso por usuarios autenticados na propria intranet

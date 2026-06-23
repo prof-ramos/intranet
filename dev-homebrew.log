@@ -1,0 +1,17 @@
+
+> asof-intranet@0.1.0 dev
+> next dev --webpack -p 3001
+
+▲ Next.js 16.2.6 (webpack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.0.44:3001
+- Environments: .env.local
+✓ Ready in 244ms
+- Experiments (use with caution):
+  · optimizePackageImports
+
+(node:4478) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+/*! 🌼 daisyUI 5.5.20 */
+ GET /login 200 in 2.4s (next.js: 2.2s, proxy.ts: 89ms, application-code: 124ms)
+ GET /login 200 in 42ms (next.js: 4ms, proxy.ts: 11ms, application-code: 28ms)

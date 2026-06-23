@@ -100,14 +100,7 @@ associados-list.md
 .claude/
 .codex/
 .antigravitycli/
-.impeccable/
-.Jules/
-.jules/
-.writer-memory/
-.verboo/
-.opencode/
-cursor-team-kit/
-skills-lock.json
+/.impeccable/critique/
 knowledge.md
 
 # Python
@@ -127,8 +120,6 @@ smoke-report/
 # transient dev artifacts (logs, pids, one-off scripts)
 dev[0-9]*.log
 dev[0-9]*.pid
-dev-*.log
-dev-*.pid
 migrate_output.log
 capture-snapshots.js
 panorama-scenario.js

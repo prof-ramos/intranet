@@ -11,6 +11,7 @@ Shared React UI components used across the app.
 - `NavGroup.tsx` — navigation group with label and links
 - `NavLink.tsx` — navigation link with active state
 - `NotificationBell.tsx` — notification bell (with test)
+- `PremiumLoader.tsx` — loading spinner component
 - `Sidebar.tsx` — main sidebar navigation component
 
 ## Structure
