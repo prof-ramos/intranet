@@ -27,6 +27,7 @@ import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { logAuditAction, logDataAccess } from '@/lib/audit/service';
 import { buildPiiPatch, decryptAssociatePii } from './pii-mapping';
 import { NotFoundError, ValidationError } from '@/lib/errors';
+import { emptyToNull } from '@/lib/utils/strings';
 
 type FsEnum = (typeof fsEnum.enumValues)[number];
 type AsEnum = (typeof asEnum.enumValues)[number];
@@ -58,8 +59,7 @@ export type {
   AssociateProfileViewModel,
 } from './profile';
 
-export interface EditAssociateDTO {
-  id: number;
+interface AssociateFields {
   fullName: string;
   cpf: string | null;
   rg: string | null;
@@ -99,6 +99,10 @@ export interface EditAssociateDTO {
   ceocMember: boolean | null;
   caocMember: boolean | null;
   internalNotes: string | null;
+}
+
+export interface EditAssociateDTO extends AssociateFields {
+  id: number;
   canEditInternalNotes: boolean;
 }
 
@@ -126,25 +130,11 @@ export async function getAssociatesListPage(
   return findAssociatesPaginated(page, pageSize, searchQuery, filters, searchBy);
 }
 
-export async function getAssociateForEdit(
-  id: number,
+function mapRowToEditDTO(
+  row: NonNullable<Awaited<ReturnType<typeof findAssociateById>>>,
+  decrypted: ReturnType<typeof decryptAssociatePii>,
   role: Role,
-  adminId: number,
-): Promise<EditAssociateDTO | null> {
-  const row = await findAssociateById(id);
-  if (!row) return null;
-
-  const decrypted = decryptAssociatePii(row);
-
-  // LGPD Art. 30/37: log PII data access
-  await logDataAccess({
-    adminId,
-    action: 'view',
-    entityType: 'associate',
-    entityId: id,
-    metadata: { accessType: 'edit_form', sensitiveFields: canViewSensitiveFields(role) },
-  });
-
+): EditAssociateDTO {
   return {
     id: row.id,
     fullName: row.fullName,
@@ -190,49 +180,33 @@ export async function getAssociateForEdit(
   };
 }
 
-export interface UpdateAssociateInput {
+export async function getAssociateForEdit(
+  id: number,
+  role: Role,
+  adminId: number,
+): Promise<EditAssociateDTO | null> {
+  const row = await findAssociateById(id);
+  if (!row) return null;
+
+  const decrypted = decryptAssociatePii(row);
+
+  // LGPD Art. 30/37: log PII data access
+  await logDataAccess({
+    adminId,
+    action: 'view',
+    entityType: 'associate',
+    entityId: id,
+    metadata: { accessType: 'edit_form', sensitiveFields: canViewSensitiveFields(role) },
+  });
+
+  return mapRowToEditDTO(row, decrypted, role);
+}
+
+export type UpdateAssociateInput = Partial<AssociateFields> & {
   id: number;
   fullName: string;
-  cpf?: string | null;
-  rg?: string | null;
-  rgIssuer?: string | null;
-  rgState?: string | null;
-  rgExpeditionDate?: string | null;
-  siape?: string | null;
-  sex?: string | null;
-  maritalStatus?: string | null;
-  birthDate?: string | null;
-  birthCity?: string | null;
-  birthState?: string | null;
-  primaryEmail?: string | null;
-  secondaryEmail?: string | null;
-  phone?: string | null;
-  whatsapp?: string | null;
-  address?: string | null;
-  neighborhood?: string | null;
-  addressState?: string | null;
-  zipCode?: string | null;
-  locationCity?: string | null;
-  locationCountry?: string | null;
-  assignment?: string | null;
-  assignmentStartDate?: string | null;
-  classPattern?: string | null;
-  associationCategory?: string | null;
-  functionalStatus?: string | null;
-  associationStatus?: string | null;
-  contributionStatus?: string | null;
-  paymentMethod?: string | null;
-  missionType?: string | null;
-  careerOrigin?: string | null;
-  admissionDate?: string | null;
-  inaugurationDate?: string | null;
-  retirementDate?: string | null;
-  cancellationDate?: string | null;
-  ceocMember?: boolean | null;
-  caocMember?: boolean | null;
-  internalNotes?: string | null;
   updatedBy?: number | null;
-}
+};
 
 const WEBHOOK_SAFE_ASSOCIATE_FIELDS: Array<keyof UpdateAssociateValues> = [
   'fullName',
@@ -389,50 +363,11 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
   });
 }
 
-export interface CreateAssociateInput {
+export type CreateAssociateInput = Partial<AssociateFields> & {
   fullName: string;
-  cpf?: string | null;
-  rg?: string | null;
-  rgIssuer?: string | null;
-  rgState?: string | null;
-  rgExpeditionDate?: string | null;
-  siape?: string | null;
-  sex?: string | null;
-  maritalStatus?: string | null;
-  birthDate?: string | null;
-  birthCity?: string | null;
-  birthState?: string | null;
-  primaryEmail?: string | null;
-  secondaryEmail?: string | null;
-  phone?: string | null;
-  whatsapp?: string | null;
-  address?: string | null;
-  neighborhood?: string | null;
-  addressState?: string | null;
-  zipCode?: string | null;
-  locationCity?: string | null;
-  locationCountry?: string | null;
-  assignment?: string | null;
-  assignmentStartDate?: string | null;
-  classPattern?: string | null;
-  associationCategory?: string | null;
-  functionalStatus?: string | null;
-  associationStatus?: string | null;
-  contributionStatus?: string | null;
-  paymentMethod?: string | null;
-  missionType?: string | null;
-  careerOrigin?: string | null;
-  admissionDate?: string | null;
-  inaugurationDate?: string | null;
-  retirementDate?: string | null;
-  cancellationDate?: string | null;
-  ceocMember?: boolean | null;
-  caocMember?: boolean | null;
-  internalNotes?: string | null;
   createdBy?: number | null;
-}
+};
 
-const emptyStringToNull = (v: string | null | undefined) => (v === '' ? null : v ?? null);
 
 /**
  * Cria um novo associado criptografando PII, validando unicidade por blind
@@ -441,12 +376,12 @@ const emptyStringToNull = (v: string | null | undefined) => (v === '' ? null : v
  * adição ao enum `domain_event_type` (migration) para não onerar o pré-go-live.
  */
 export async function createAssociateData(input: CreateAssociateInput): Promise<{ id: number }> {
-  const functionalStatus = emptyStringToNull(input.functionalStatus);
-  const sex = emptyStringToNull(input.sex);
-  const maritalStatus = emptyStringToNull(input.maritalStatus);
-  const missionType = emptyStringToNull(input.missionType);
-  const careerOrigin = emptyStringToNull(input.careerOrigin);
-  const paymentMethodRaw = emptyStringToNull(input.paymentMethod);
+  const functionalStatus = emptyToNull(input.functionalStatus);
+  const sex = emptyToNull(input.sex);
+  const maritalStatus = emptyToNull(input.maritalStatus);
+  const missionType = emptyToNull(input.missionType);
+  const careerOrigin = emptyToNull(input.careerOrigin);
+  const paymentMethodRaw = emptyToNull(input.paymentMethod);
   const associationStatus = input.associationStatus ?? 'nao_associado';
   const contributionStatus = input.contributionStatus ?? 'inadimplente';
 
@@ -504,26 +439,26 @@ export async function createAssociateData(input: CreateAssociateInput): Promise<
 
     const values: UpdateAssociateValues = {
       fullName: input.fullName,
-      secondaryEmail: emptyStringToNull(input.secondaryEmail),
-      birthDate: emptyStringToNull(input.birthDate),
-      birthCity: emptyStringToNull(input.birthCity),
-      birthState: emptyStringToNull(input.birthState),
-      neighborhood: emptyStringToNull(input.neighborhood),
-      addressState: emptyStringToNull(input.addressState),
-      zipCode: emptyStringToNull(input.zipCode),
-      locationCity: emptyStringToNull(input.locationCity),
-      locationCountry: emptyStringToNull(input.locationCountry),
-      assignment: emptyStringToNull(input.assignment),
-      assignmentStartDate: emptyStringToNull(input.assignmentStartDate),
-      classPattern: emptyStringToNull(input.classPattern),
-      associationCategory: emptyStringToNull(input.associationCategory),
-      rgIssuer: emptyStringToNull(input.rgIssuer),
-      rgState: emptyStringToNull(input.rgState),
-      rgExpeditionDate: emptyStringToNull(input.rgExpeditionDate),
-      admissionDate: emptyStringToNull(input.admissionDate),
-      inaugurationDate: emptyStringToNull(input.inaugurationDate),
-      retirementDate: emptyStringToNull(input.retirementDate),
-      cancellationDate: emptyStringToNull(input.cancellationDate),
+      secondaryEmail: emptyToNull(input.secondaryEmail),
+      birthDate: emptyToNull(input.birthDate),
+      birthCity: emptyToNull(input.birthCity),
+      birthState: emptyToNull(input.birthState),
+      neighborhood: emptyToNull(input.neighborhood),
+      addressState: emptyToNull(input.addressState),
+      zipCode: emptyToNull(input.zipCode),
+      locationCity: emptyToNull(input.locationCity),
+      locationCountry: emptyToNull(input.locationCountry),
+      assignment: emptyToNull(input.assignment),
+      assignmentStartDate: emptyToNull(input.assignmentStartDate),
+      classPattern: emptyToNull(input.classPattern),
+      associationCategory: emptyToNull(input.associationCategory),
+      rgIssuer: emptyToNull(input.rgIssuer),
+      rgState: emptyToNull(input.rgState),
+      rgExpeditionDate: emptyToNull(input.rgExpeditionDate),
+      admissionDate: emptyToNull(input.admissionDate),
+      inaugurationDate: emptyToNull(input.inaugurationDate),
+      retirementDate: emptyToNull(input.retirementDate),
+      cancellationDate: emptyToNull(input.cancellationDate),
       ceocMember: input.ceocMember ?? null,
       caocMember: input.caocMember ?? null,
       ...piiPatch,
