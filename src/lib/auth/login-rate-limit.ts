@@ -32,11 +32,9 @@ export interface RateLimitStore {
  * Falls back to the webhook encryption key if the master key is not set (backward compat).
  */
 function getEmailSearchKey(): string {
-  const masterKey = env.ENCRYPTION_MASTER_KEY ?? env.ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY;
+  const masterKey = env.ENCRYPTION_MASTER_KEY;
   if (!masterKey) {
-    throw new Error(
-      'ENCRYPTION_MASTER_KEY or ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY must be set for email hashing.',
-    );
+    throw new Error('ENCRYPTION_MASTER_KEY must be set for email hashing.');
   }
   return hkdfDeriveKey(masterKey, KEY_CONTEXTS.piiSearch).toString('hex');
 }

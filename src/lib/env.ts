@@ -118,11 +118,11 @@ export const envSchema = z
   )
   .refine(
     (data) => {
-      if (data.VERCEL_ENV !== 'production') return true;
+      if (data.VERCEL_ENV !== 'production' && data.VERCEL_ENV !== 'preview') return true;
       return !!data.ENCRYPTION_MASTER_KEY;
     },
     {
-      message: 'ENCRYPTION_MASTER_KEY is required for production PII encryption.',
+      message: 'ENCRYPTION_MASTER_KEY is required for production and preview PII encryption.',
       path: ['ENCRYPTION_MASTER_KEY'],
     },
   )

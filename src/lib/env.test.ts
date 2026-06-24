@@ -192,7 +192,7 @@ describe('envSchema', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       const issue = result.error.issues.find((i) => i.path.includes('ENCRYPTION_MASTER_KEY'));
-      expect(issue?.message).toBe('ENCRYPTION_MASTER_KEY is required for production PII encryption.');
+      expect(issue?.message).toBe('ENCRYPTION_MASTER_KEY is required for production and preview PII encryption.');
     }
   });
 });

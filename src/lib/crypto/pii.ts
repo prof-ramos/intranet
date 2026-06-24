@@ -2,11 +2,9 @@ import { encryptV2, decryptV2, blindIndex, hkdfDeriveKey, KEY_CONTEXTS } from '@
 import { env } from '@/lib/env';
 
 function getMasterKey(): string {
-  const key = env.ENCRYPTION_MASTER_KEY ?? env.ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY;
+  const key = env.ENCRYPTION_MASTER_KEY;
   if (!key) {
-    throw new Error(
-      'ENCRYPTION_MASTER_KEY or ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY must be set for PII encryption.',
-    );
+    throw new Error('ENCRYPTION_MASTER_KEY must be set for PII encryption.');
   }
   return key;
 }
