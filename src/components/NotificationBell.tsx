@@ -21,6 +21,16 @@ interface NotificationBellProps {
   userId: number;
 }
 
+// ⚡ Bolt: Cache Intl instances to avoid expensive object creation on every render
+const rtf = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' });
+const dtf = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
 function formatTimestamp(value: string) {
   const date = new Date(value);
   const diffMs = date.getTime() - Date.now();
@@ -31,28 +41,22 @@ function formatTimestamp(value: string) {
   }
 
   if (Math.abs(diffMinutes) < 60) {
-    return new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' }).format(diffMinutes, 'minute');
+    return rtf.format(diffMinutes, 'minute');
   }
 
   const diffHours = Math.round(diffMinutes / 60);
 
   if (Math.abs(diffHours) < 24) {
-    return new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' }).format(diffHours, 'hour');
+    return rtf.format(diffHours, 'hour');
   }
 
   const diffDays = Math.round(diffHours / 24);
 
   if (Math.abs(diffDays) < 7) {
-    return new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' }).format(diffDays, 'day');
+    return rtf.format(diffDays, 'day');
   }
 
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
+  return dtf.format(date);
 }
 
 function getSafeInternalHref(href: string | null) {
