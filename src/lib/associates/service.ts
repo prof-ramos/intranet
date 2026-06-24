@@ -58,8 +58,7 @@ export type {
   AssociateProfileViewModel,
 } from './profile';
 
-export interface EditAssociateDTO {
-  id: number;
+interface AssociateFields {
   fullName: string;
   cpf: string | null;
   rg: string | null;
@@ -99,6 +98,10 @@ export interface EditAssociateDTO {
   ceocMember: boolean | null;
   caocMember: boolean | null;
   internalNotes: string | null;
+}
+
+export interface EditAssociateDTO extends AssociateFields {
+  id: number;
   canEditInternalNotes: boolean;
 }
 
@@ -126,25 +129,11 @@ export async function getAssociatesListPage(
   return findAssociatesPaginated(page, pageSize, searchQuery, filters, searchBy);
 }
 
-export async function getAssociateForEdit(
-  id: number,
+function mapRowToEditDTO(
+  row: NonNullable<Awaited<ReturnType<typeof findAssociateById>>>,
+  decrypted: ReturnType<typeof decryptAssociatePii>,
   role: Role,
-  adminId: number,
-): Promise<EditAssociateDTO | null> {
-  const row = await findAssociateById(id);
-  if (!row) return null;
-
-  const decrypted = decryptAssociatePii(row);
-
-  // LGPD Art. 30/37: log PII data access
-  await logDataAccess({
-    adminId,
-    action: 'view',
-    entityType: 'associate',
-    entityId: id,
-    metadata: { accessType: 'edit_form', sensitiveFields: canViewSensitiveFields(role) },
-  });
-
+): EditAssociateDTO {
   return {
     id: row.id,
     fullName: row.fullName,
@@ -190,49 +179,33 @@ export async function getAssociateForEdit(
   };
 }
 
-export interface UpdateAssociateInput {
+export async function getAssociateForEdit(
+  id: number,
+  role: Role,
+  adminId: number,
+): Promise<EditAssociateDTO | null> {
+  const row = await findAssociateById(id);
+  if (!row) return null;
+
+  const decrypted = decryptAssociatePii(row);
+
+  // LGPD Art. 30/37: log PII data access
+  await logDataAccess({
+    adminId,
+    action: 'view',
+    entityType: 'associate',
+    entityId: id,
+    metadata: { accessType: 'edit_form', sensitiveFields: canViewSensitiveFields(role) },
+  });
+
+  return mapRowToEditDTO(row, decrypted, role);
+}
+
+export type UpdateAssociateInput = Partial<AssociateFields> & {
   id: number;
   fullName: string;
-  cpf?: string | null;
-  rg?: string | null;
-  rgIssuer?: string | null;
-  rgState?: string | null;
-  rgExpeditionDate?: string | null;
-  siape?: string | null;
-  sex?: string | null;
-  maritalStatus?: string | null;
-  birthDate?: string | null;
-  birthCity?: string | null;
-  birthState?: string | null;
-  primaryEmail?: string | null;
-  secondaryEmail?: string | null;
-  phone?: string | null;
-  whatsapp?: string | null;
-  address?: string | null;
-  neighborhood?: string | null;
-  addressState?: string | null;
-  zipCode?: string | null;
-  locationCity?: string | null;
-  locationCountry?: string | null;
-  assignment?: string | null;
-  assignmentStartDate?: string | null;
-  classPattern?: string | null;
-  associationCategory?: string | null;
-  functionalStatus?: string | null;
-  associationStatus?: string | null;
-  contributionStatus?: string | null;
-  paymentMethod?: string | null;
-  missionType?: string | null;
-  careerOrigin?: string | null;
-  admissionDate?: string | null;
-  inaugurationDate?: string | null;
-  retirementDate?: string | null;
-  cancellationDate?: string | null;
-  ceocMember?: boolean | null;
-  caocMember?: boolean | null;
-  internalNotes?: string | null;
   updatedBy?: number | null;
-}
+};
 
 const WEBHOOK_SAFE_ASSOCIATE_FIELDS: Array<keyof UpdateAssociateValues> = [
   'fullName',
@@ -389,48 +362,10 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
   });
 }
 
-export interface CreateAssociateInput {
+export type CreateAssociateInput = Partial<AssociateFields> & {
   fullName: string;
-  cpf?: string | null;
-  rg?: string | null;
-  rgIssuer?: string | null;
-  rgState?: string | null;
-  rgExpeditionDate?: string | null;
-  siape?: string | null;
-  sex?: string | null;
-  maritalStatus?: string | null;
-  birthDate?: string | null;
-  birthCity?: string | null;
-  birthState?: string | null;
-  primaryEmail?: string | null;
-  secondaryEmail?: string | null;
-  phone?: string | null;
-  whatsapp?: string | null;
-  address?: string | null;
-  neighborhood?: string | null;
-  addressState?: string | null;
-  zipCode?: string | null;
-  locationCity?: string | null;
-  locationCountry?: string | null;
-  assignment?: string | null;
-  assignmentStartDate?: string | null;
-  classPattern?: string | null;
-  associationCategory?: string | null;
-  functionalStatus?: string | null;
-  associationStatus?: string | null;
-  contributionStatus?: string | null;
-  paymentMethod?: string | null;
-  missionType?: string | null;
-  careerOrigin?: string | null;
-  admissionDate?: string | null;
-  inaugurationDate?: string | null;
-  retirementDate?: string | null;
-  cancellationDate?: string | null;
-  ceocMember?: boolean | null;
-  caocMember?: boolean | null;
-  internalNotes?: string | null;
   createdBy?: number | null;
-}
+};
 
 const emptyStringToNull = (v: string | null | undefined) => (v === '' ? null : v ?? null);
 
