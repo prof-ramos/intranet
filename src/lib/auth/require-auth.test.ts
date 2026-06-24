@@ -230,7 +230,7 @@ describe('requireAuth', () => {
       isActive: true,
       mustChangePassword: true,
     };
-    mockHeaders.set('x-pathname', '/change-password');
+    mockHeaders.set('next-url', 'http://localhost/change-password');
 
     await expect(requireAuth()).resolves.toEqual({
       userId: 7,

@@ -12,11 +12,6 @@ import { createLogger } from '@/lib/logger';
 const logger = createLogger('auth:require-auth');
 
 function pathnameFromHeaders(reqHeaders: Headers): string {
-  const explicitPathname = reqHeaders.get('x-pathname');
-  if (explicitPathname) {
-    return explicitPathname;
-  }
-
   const nextUrl = reqHeaders.get('next-url');
   if (!nextUrl) {
     return '';
