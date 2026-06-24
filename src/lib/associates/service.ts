@@ -26,7 +26,7 @@ import {
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { logAuditAction, logDataAccess } from '@/lib/audit/service';
 import { buildPiiPatch, decryptAssociatePii } from './pii-mapping';
-import { ValidationError } from '@/lib/errors';
+import { NotFoundError, ValidationError } from '@/lib/errors';
 
 type FsEnum = (typeof fsEnum.enumValues)[number];
 type AsEnum = (typeof asEnum.enumValues)[number];
@@ -305,43 +305,43 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
 
   if (input.functionalStatus !== undefined) {
     if (input.functionalStatus !== null && !isFsEnum(input.functionalStatus)) {
-      throw new Error('functionalStatus inválido.');
+      throw new ValidationError('Situação funcional inválida.');
     }
     values.functionalStatus = input.functionalStatus as FsEnum | null;
   }
   if (input.associationStatus !== undefined) {
     if (input.associationStatus === null || !isAsEnum(input.associationStatus)) {
-      throw new Error('associationStatus inválido.');
+      throw new ValidationError('Vínculo ASOF inválido.');
     }
     values.associationStatus = input.associationStatus;
   }
   if (input.contributionStatus !== undefined) {
     if (input.contributionStatus === null || !isCsEnum(input.contributionStatus)) {
-      throw new Error('contributionStatus inválido.');
+      throw new ValidationError('Status de contribuição inválido.');
     }
     values.contributionStatus = input.contributionStatus;
   }
   if (input.sex !== undefined) {
     if (input.sex !== null && !isSexEnum(input.sex)) {
-      throw new Error('sex inválido.');
+      throw new ValidationError('Sexo inválido.');
     }
     values.sex = input.sex as SexEnum | null;
   }
   if (input.maritalStatus !== undefined) {
     if (input.maritalStatus !== null && !isMsEnum(input.maritalStatus)) {
-      throw new Error('maritalStatus inválido.');
+      throw new ValidationError('Estado civil inválido.');
     }
     values.maritalStatus = input.maritalStatus as MsEnum | null;
   }
   if (input.missionType !== undefined) {
     if (input.missionType !== null && !isMtEnum(input.missionType)) {
-      throw new Error('missionType inválido.');
+      throw new ValidationError('Tipo de missão inválido.');
     }
     values.missionType = input.missionType as MtEnum | null;
   }
   if (input.careerOrigin !== undefined) {
     if (input.careerOrigin !== null && !isCoEnum(input.careerOrigin)) {
-      throw new Error('careerOrigin inválido.');
+      throw new ValidationError('Origem de carreira inválida.');
     }
     values.careerOrigin = input.careerOrigin as CoEnum | null;
   }
@@ -349,7 +349,7 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
     if (input.paymentMethod === null) {
       // Column is NOT NULL with default 'folha' — skip update to preserve existing value
     } else if (!isPmEnum(input.paymentMethod)) {
-      throw new Error('paymentMethod inválido.');
+      throw new ValidationError('Método de pagamento inválido.');
     } else {
       values.paymentMethod = input.paymentMethod;
     }
@@ -359,7 +359,7 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
   await db.transaction(async (tx) => {
     const current = await findAssociateById(input.id, tx);
     if (!current) {
-      throw new Error('Associado não encontrado.');
+      throw new NotFoundError('Associado');
     }
 
     const changedFields = getChangedWebhookSafeFields(current, values);
