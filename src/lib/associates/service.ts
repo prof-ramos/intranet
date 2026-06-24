@@ -27,6 +27,7 @@ import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { logAuditAction, logDataAccess } from '@/lib/audit/service';
 import { buildPiiPatch, decryptAssociatePii } from './pii-mapping';
 import { NotFoundError, ValidationError } from '@/lib/errors';
+import { emptyToNull } from '@/lib/utils/strings';
 
 type FsEnum = (typeof fsEnum.enumValues)[number];
 type AsEnum = (typeof asEnum.enumValues)[number];
@@ -367,7 +368,6 @@ export type CreateAssociateInput = Partial<AssociateFields> & {
   createdBy?: number | null;
 };
 
-const emptyStringToNull = (v: string | null | undefined) => (v === '' ? null : v ?? null);
 
 /**
  * Cria um novo associado criptografando PII, validando unicidade por blind
@@ -376,12 +376,12 @@ const emptyStringToNull = (v: string | null | undefined) => (v === '' ? null : v
  * adição ao enum `domain_event_type` (migration) para não onerar o pré-go-live.
  */
 export async function createAssociateData(input: CreateAssociateInput): Promise<{ id: number }> {
-  const functionalStatus = emptyStringToNull(input.functionalStatus);
-  const sex = emptyStringToNull(input.sex);
-  const maritalStatus = emptyStringToNull(input.maritalStatus);
-  const missionType = emptyStringToNull(input.missionType);
-  const careerOrigin = emptyStringToNull(input.careerOrigin);
-  const paymentMethodRaw = emptyStringToNull(input.paymentMethod);
+  const functionalStatus = emptyToNull(input.functionalStatus);
+  const sex = emptyToNull(input.sex);
+  const maritalStatus = emptyToNull(input.maritalStatus);
+  const missionType = emptyToNull(input.missionType);
+  const careerOrigin = emptyToNull(input.careerOrigin);
+  const paymentMethodRaw = emptyToNull(input.paymentMethod);
   const associationStatus = input.associationStatus ?? 'nao_associado';
   const contributionStatus = input.contributionStatus ?? 'inadimplente';
 
@@ -439,26 +439,26 @@ export async function createAssociateData(input: CreateAssociateInput): Promise<
 
     const values: UpdateAssociateValues = {
       fullName: input.fullName,
-      secondaryEmail: emptyStringToNull(input.secondaryEmail),
-      birthDate: emptyStringToNull(input.birthDate),
-      birthCity: emptyStringToNull(input.birthCity),
-      birthState: emptyStringToNull(input.birthState),
-      neighborhood: emptyStringToNull(input.neighborhood),
-      addressState: emptyStringToNull(input.addressState),
-      zipCode: emptyStringToNull(input.zipCode),
-      locationCity: emptyStringToNull(input.locationCity),
-      locationCountry: emptyStringToNull(input.locationCountry),
-      assignment: emptyStringToNull(input.assignment),
-      assignmentStartDate: emptyStringToNull(input.assignmentStartDate),
-      classPattern: emptyStringToNull(input.classPattern),
-      associationCategory: emptyStringToNull(input.associationCategory),
-      rgIssuer: emptyStringToNull(input.rgIssuer),
-      rgState: emptyStringToNull(input.rgState),
-      rgExpeditionDate: emptyStringToNull(input.rgExpeditionDate),
-      admissionDate: emptyStringToNull(input.admissionDate),
-      inaugurationDate: emptyStringToNull(input.inaugurationDate),
-      retirementDate: emptyStringToNull(input.retirementDate),
-      cancellationDate: emptyStringToNull(input.cancellationDate),
+      secondaryEmail: emptyToNull(input.secondaryEmail),
+      birthDate: emptyToNull(input.birthDate),
+      birthCity: emptyToNull(input.birthCity),
+      birthState: emptyToNull(input.birthState),
+      neighborhood: emptyToNull(input.neighborhood),
+      addressState: emptyToNull(input.addressState),
+      zipCode: emptyToNull(input.zipCode),
+      locationCity: emptyToNull(input.locationCity),
+      locationCountry: emptyToNull(input.locationCountry),
+      assignment: emptyToNull(input.assignment),
+      assignmentStartDate: emptyToNull(input.assignmentStartDate),
+      classPattern: emptyToNull(input.classPattern),
+      associationCategory: emptyToNull(input.associationCategory),
+      rgIssuer: emptyToNull(input.rgIssuer),
+      rgState: emptyToNull(input.rgState),
+      rgExpeditionDate: emptyToNull(input.rgExpeditionDate),
+      admissionDate: emptyToNull(input.admissionDate),
+      inaugurationDate: emptyToNull(input.inaugurationDate),
+      retirementDate: emptyToNull(input.retirementDate),
+      cancellationDate: emptyToNull(input.cancellationDate),
       ceocMember: input.ceocMember ?? null,
       caocMember: input.caocMember ?? null,
       ...piiPatch,

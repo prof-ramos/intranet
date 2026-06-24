@@ -5,8 +5,7 @@ import type { z } from 'zod';
 import { defineFormAction } from '@/lib/server-actions/define-form-action';
 import { updateAssociateSchema, createAssociateSchema } from '@/lib/validation/schemas';
 import { updateAssociateData, createAssociateData } from '@/lib/associates/service';
-
-const emptyToNull = (v: string | null | undefined) => (v === '' ? null : v ?? null);
+import { emptyToNull } from '@/lib/utils/strings';
 
 function mapFormToServiceFields(
   data: z.infer<typeof createAssociateSchema>,
@@ -25,8 +24,8 @@ function mapFormToServiceFields(
     birthDate: emptyToNull(data.birthDate),
     birthCity: data.birthCity ?? null,
     birthState: data.birthState ?? null,
-    primaryEmail: data.primaryEmail ?? null,
-    secondaryEmail: data.secondaryEmail ?? null,
+    primaryEmail: emptyToNull(data.primaryEmail),
+    secondaryEmail: emptyToNull(data.secondaryEmail),
     phone: data.phone ?? null,
     whatsapp: data.whatsapp ?? null,
     address: data.address ?? null,
