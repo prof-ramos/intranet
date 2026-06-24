@@ -3,7 +3,13 @@
 import { useState, useTransition, type FormEvent } from 'react';
 import { Plus, Pencil, Trash2, X, Check } from 'lucide-react';
 import { hairline } from '@/lib/ui/tokens';
+import { isDomainError } from '@/lib/errors';
 import type { DependentViewItem, HealthAgreementViewItem } from '@/lib/associates/profile';
+
+function getDisplayMessage(err: unknown, fallback: string): string {
+  if (isDomainError(err)) return err.message;
+  return fallback;
+}
 import {
   addDependentAction,
   editDependentAction,
@@ -48,7 +54,7 @@ export function DependentManager({ associateId, items }: DependentManagerProps) 
         await addDependentAction(fd);
         setAdding(false);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao adicionar dependente.');
+        setError(getDisplayMessage(err, 'Erro ao adicionar dependente.'));
       }
     });
   }
@@ -62,7 +68,7 @@ export function DependentManager({ associateId, items }: DependentManagerProps) 
         await editDependentAction(fd);
         setEditingId(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao editar dependente.');
+        setError(getDisplayMessage(err, 'Erro ao editar dependente.'));
       }
     });
   }
@@ -76,7 +82,7 @@ export function DependentManager({ associateId, items }: DependentManagerProps) 
       try {
         await removeDependentAction(fd);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao remover dependente.');
+        setError(getDisplayMessage(err, 'Erro ao remover dependente.'));
       }
     });
   }
@@ -169,7 +175,7 @@ export function HealthAgreementManager({ associateId, items }: HealthAgreementMa
         await addHealthAgreementAction(fd);
         setAdding(false);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao adicionar convênio.');
+        setError(getDisplayMessage(err, 'Erro ao adicionar convênio.'));
       }
     });
   }
@@ -183,7 +189,7 @@ export function HealthAgreementManager({ associateId, items }: HealthAgreementMa
         await editHealthAgreementAction(fd);
         setEditingId(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao editar convênio.');
+        setError(getDisplayMessage(err, 'Erro ao editar convênio.'));
       }
     });
   }
@@ -197,7 +203,7 @@ export function HealthAgreementManager({ associateId, items }: HealthAgreementMa
       try {
         await removeHealthAgreementAction(fd);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao remover convênio.');
+        setError(getDisplayMessage(err, 'Erro ao remover convênio.'));
       }
     });
   }

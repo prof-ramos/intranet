@@ -2,6 +2,7 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { requireAuth } from '@/lib/auth/require-auth';
+import { UnauthorizedError } from '@/lib/errors';
 import {
   createDependent,
   updateDependentById,
@@ -23,7 +24,7 @@ const ALLOWED_ROLES = ['admin', 'diretoria', 'secretaria'] as const;
 
 function checkRole(role: string): void {
   if (!ALLOWED_ROLES.includes(role as typeof ALLOWED_ROLES[number])) {
-    throw new Error('Permissão insuficiente.');
+    throw new UnauthorizedError('Permissão insuficiente.');
   }
 }
 
