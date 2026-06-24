@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { z } from 'zod';
-import { db, type Tx } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import { auditLogs } from '@/lib/db/schema/audit';
 import { domainEventType, type WebhookSubscription } from '@/lib/db/schema/integrations';
 import { encryptWebhookSecret } from '@/lib/integrations/webhooks/secrets';
@@ -40,7 +40,7 @@ export function validateWebhookSubscriptionEvents(events: string[]) {
 }
 
 async function auditSubscription(
-  tx: Tx,
+  tx: DbExecutor,
   input: {
     action: string;
     subscriptionId: number;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   listNotificationsAction,
   markAllNotificationsReadAction,
@@ -41,6 +41,11 @@ export function useNotifications({ userId: _userId }: UseNotificationsOptions): 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const notificationsRef = useRef<NotificationItem[]>([]);
+  useEffect(() => {
+    notificationsRef.current = notifications;
+  }, [notifications]);
+
   const unreadCount = useMemo(() => countUnread(notifications), [notifications]);
 
   const loadNotifications = useCallback(async () => {
@@ -63,7 +68,7 @@ export function useNotifications({ userId: _userId }: UseNotificationsOptions): 
 
   const markAsRead = useCallback(
     async (id: number) => {
-      const previous = notifications;
+      const previous = notificationsRef.current;
 
       setNotifications((current) =>
         current.map((item) =>
@@ -80,11 +85,11 @@ export function useNotifications({ userId: _userId }: UseNotificationsOptions): 
         throw error;
       }
     },
-    [notifications],
+    [],
   );
 
   const markAllAsRead = useCallback(async () => {
-    const previous = notifications;
+    const previous = notificationsRef.current;
     const now = new Date().toISOString();
 
     setNotifications((current) =>
@@ -98,7 +103,7 @@ export function useNotifications({ userId: _userId }: UseNotificationsOptions): 
       setNotifications(previous);
       setError('Não foi possível marcar todas as notificações como lidas.');
     }
-  }, [notifications]);
+  }, []);
 
   useEffect(() => {
     let active = true;

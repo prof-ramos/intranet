@@ -1,18 +1,6 @@
 import { and, asc, count, desc, eq, isNull, sql } from 'drizzle-orm';
-import type { ExtractTablesWithRelations } from 'drizzle-orm';
-import type { PgTransaction } from 'drizzle-orm/pg-core';
-import type { PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
-import { db } from '@/lib/db';
-import * as schema from '@/lib/db/schema';
+import { db, type DbExecutor } from '@/lib/db';
 import { notifications, type NewNotification } from '@/lib/db/schema';
-
-export type NotificationsTx =
-  | typeof db
-  | PgTransaction<
-      PostgresJsQueryResultHKT,
-      typeof schema,
-      ExtractTablesWithRelations<typeof schema>
-    >;
 
 export interface NotificationListItem {
   id: number;
@@ -28,7 +16,7 @@ export interface NotificationListItem {
   createdAt: Date;
 }
 
-export async function createNotification(input: NewNotification, tx: NotificationsTx = db) {
+export async function createNotification(input: NewNotification, tx: DbExecutor = db) {
   const [created] = await tx
     .insert(notifications)
     .values(input)
@@ -58,7 +46,7 @@ export async function createNotification(input: NewNotification, tx: Notificatio
   return existing ?? null;
 }
 
-export async function createNotificationsBatch(inputs: NewNotification[], tx: NotificationsTx = db) {
+export async function createNotificationsBatch(inputs: NewNotification[], tx: DbExecutor = db) {
   if (inputs.length === 0) return [];
 
   const created = await tx
@@ -76,7 +64,7 @@ export async function createNotificationsBatch(inputs: NewNotification[], tx: No
 export async function listNotificationsForUser(
   userId: number,
   limit = 20,
-  tx: NotificationsTx = db,
+  tx: DbExecutor = db,
 ) {
   return tx
     .select({
@@ -98,7 +86,7 @@ export async function listNotificationsForUser(
     .limit(limit);
 }
 
-export async function countUnreadNotificationsForUser(userId: number, tx: NotificationsTx = db) {
+export async function countUnreadNotificationsForUser(userId: number, tx: DbExecutor = db) {
   const [result] = await tx
     .select({ count: count() })
     .from(notifications)
@@ -108,7 +96,7 @@ export async function countUnreadNotificationsForUser(userId: number, tx: Notifi
 
 export async function markNotificationRead(
   input: { id: number; userId: number },
-  tx: NotificationsTx = db,
+  tx: DbExecutor = db,
 ) {
   const [updated] = await tx
     .update(notifications)
@@ -124,7 +112,7 @@ export async function markNotificationRead(
   return updated ?? null;
 }
 
-export async function markAllNotificationsRead(userId: number, tx: NotificationsTx = db) {
+export async function markAllNotificationsRead(userId: number, tx: DbExecutor = db) {
   return tx
     .update(notifications)
     .set({ readAt: new Date(), updatedAt: new Date() })
@@ -136,7 +124,7 @@ export async function markAllNotificationsRead(userId: number, tx: Notifications
 
 export async function findNotificationByIdForUser(
   input: { id: number; userId: number },
-  tx: NotificationsTx = db,
+  tx: DbExecutor = db,
 ) {
   const [notification] = await tx
     .select()

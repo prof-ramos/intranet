@@ -2,7 +2,7 @@ import { db } from '@/lib/db';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { legalConsultations } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
-import type { Tx } from '@/lib/db';
+import type { DbExecutor } from '@/lib/db';
 import {
   insertConsultation,
   insertNote,
@@ -24,10 +24,10 @@ const WEBHOOKABLE_STATUS_TRANSITIONS = new Set<LegalConsultationStatus>([
  * Se executado dentro de uma transação, recebe o executor via parâmetro.
  * Caso contrário, cria sua própria transação com retry em caso de conflito.
  */
-export async function generateInternalNumber(executor?: Tx): Promise<string> {
+export async function generateInternalNumber(executor?: DbExecutor): Promise<string> {
   const year = new Date().getFullYear();
 
-  async function nextNumber(tx: Tx): Promise<string> {
+  async function nextNumber(tx: DbExecutor): Promise<string> {
     const likePattern = `JUR-${year}-%`;
     const regexPattern = `JUR-${year}-([0-9]+)`;
     const [result] = await tx
@@ -47,7 +47,7 @@ export async function generateInternalNumber(executor?: Tx): Promise<string> {
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      return await db.transaction(async (tx) => nextNumber(tx as unknown as typeof db));
+      return await db.transaction(async (tx) => nextNumber(tx as unknown as DbExecutor));
     } catch (error) {
       const isUniqueViolation =
         error instanceof Error && /unique constraint|duplicate key/i.test(error.message);
@@ -113,7 +113,7 @@ export async function createConsultationService(input: CreateConsultationInput) 
             lawyerId: input.lawyerId ?? null,
             threadId: input.threadId ?? null,
           },
-          tx as unknown as Tx,
+          tx as unknown as DbExecutor,
         );
 
         await emitDomainEvent(
@@ -133,7 +133,7 @@ export async function createConsultationService(input: CreateConsultationInput) 
               },
             },
           },
-          tx as unknown as Tx,
+          tx as unknown as DbExecutor,
         );
 
         return inserted;

@@ -1,4 +1,4 @@
-import { db, type Tx } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { oficios } from '@/lib/db/schema/oficios';
 import * as repository from './repository';
@@ -21,7 +21,7 @@ function isOperationalOfficialLetterStatus(status: NewOfficialLetter['status']) 
   return status === OFFICIAL_LETTER_OPERATIONAL_STATUS;
 }
 
-export async function generateOfficialLetterNumber(year: number, tx: Tx = db) {
+export async function generateOfficialLetterNumber(year: number, tx: DbExecutor = db) {
   const lastSequence = await repository.getLastSequenceForYear(year, tx);
   const nextSequence = lastSequence + 1;
   const paddedSequence = String(nextSequence).padStart(3, '0');

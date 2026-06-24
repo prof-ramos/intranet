@@ -1,4 +1,4 @@
-import type { NotificationsTx } from '@/lib/notifications/repository';
+import type { DbExecutor } from '@/lib/db';
 import { createNotification } from '@/lib/notifications/repository';
 import { createNotificationFromEvent } from '@/lib/notifications/service';
 import { createLogger } from '@/lib/logger';
@@ -31,7 +31,7 @@ export interface NotificationEventPayload {
 }
 
 interface EmitEventOptions {
-  tx?: NotificationsTx;
+  tx?: DbExecutor;
 }
 
 type EventHandler = (
