@@ -11,15 +11,18 @@ const scopeLabels: Record<string, string> = {
   admin: 'admin',
 };
 
+// ⚡ Bolt: Cache Intl instances to avoid expensive object creation on every render
+const dtf = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
 function formatDate(date: Date | null): string {
   if (!date) return '—';
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
+  return dtf.format(date);
 }
 
 export default async function ApiKeysPage() {
