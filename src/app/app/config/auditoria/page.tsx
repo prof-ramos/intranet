@@ -39,6 +39,16 @@ const entityTypeBadge: Record<string, string> = {
   webhook_subscription: 'bg-indigo-50 text-indigo-700',
 };
 
+// ⚡ Bolt: Cache Intl instances to avoid expensive object creation on every render
+const dtf = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'America/Sao_Paulo',
+});
+
 export default async function AuditoriaPage({
   searchParams,
 }: {
@@ -197,14 +207,7 @@ export default async function AuditoriaPage({
                   className="border-b border-[rgba(4,9,32,0.05)] transition-colors last:border-0 hover:bg-[rgba(13,31,60,0.015)]"
                 >
                   <td className="px-5 py-3 font-mono text-xs whitespace-nowrap text-[rgba(13,31,60,0.55)]">
-                    {row.createdAt.toLocaleString('pt-BR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      timeZone: 'America/Sao_Paulo',
-                    })}
+                    {dtf.format(row.createdAt)}
                   </td>
                   <td className="px-5 py-3 text-[#040920]">
                     {row.actorName ?? (
