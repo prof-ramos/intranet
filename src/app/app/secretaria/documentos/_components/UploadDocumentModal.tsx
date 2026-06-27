@@ -179,9 +179,11 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess }: UploadDocume
               className={inputClass}
               placeholder="Ex: Ata da Assembleia Geral Extraordinária"
               disabled={isPending}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? 'doc-name-error' : undefined}
             />
             {errors.name && (
-              <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
+              <p id="doc-name-error" className="mt-1 text-xs text-red-600" role="alert">{errors.name.message}</p>
             )}
           </div>
 
@@ -195,6 +197,8 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess }: UploadDocume
                 {...register('category')}
                 className={inputClass}
                 disabled={isPending}
+                aria-invalid={!!errors.category}
+                aria-describedby={errors.category ? 'doc-category-error' : undefined}
               >
                 {CATEGORIES.map((cat) => (
                   <option key={cat.value} value={cat.value}>
@@ -203,7 +207,7 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess }: UploadDocume
                 ))}
               </select>
               {errors.category && (
-                <p className="mt-1 text-xs text-red-600">{errors.category.message}</p>
+                <p id="doc-category-error" className="mt-1 text-xs text-red-600" role="alert">{errors.category.message}</p>
               )}
             </div>
 
@@ -238,9 +242,11 @@ export function UploadDocumentModal({ isOpen, onClose, onSuccess }: UploadDocume
               className={`${inputClass} min-h-[90px]`}
               placeholder="Descreva brevemente o conteúdo ou objetivo deste documento..."
               disabled={isPending}
+              aria-invalid={!!errors.description}
+              aria-describedby={errors.description ? 'doc-description-error' : undefined}
             />
             {errors.description && (
-              <p className="mt-1 text-xs text-red-600">{errors.description.message}</p>
+              <p id="doc-description-error" className="mt-1 text-xs text-red-600" role="alert">{errors.description.message}</p>
             )}
           </div>
 
