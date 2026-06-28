@@ -60,7 +60,10 @@ const contributionStatusLabels: Record<string, string> = {
   inadimplente: 'Inadimplente',
 };
 
-function formatEnum(value: string | null | undefined, labels: Record<string, string>): string | null {
+function formatEnum(
+  value: string | null | undefined,
+  labels: Record<string, string>,
+): string | null {
   if (!value) return null;
   return labels[value] ?? value;
 }
@@ -70,12 +73,19 @@ function formatBoolean(value: boolean | null | undefined): string | null {
   return value ? 'Sim' : 'Não';
 }
 
+// ⚡ Bolt: Cache Intl.DateTimeFormat instance to avoid expensive object creation per row
+const csvDtf = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+
 function formatDate(value: string | null | undefined): string | null {
   if (!value) return null;
   // Handle both ISO dates and date-only strings
   const date = new Date(value + (value.length === 10 ? 'T00:00:00' : ''));
   if (isNaN(date.getTime())) return value;
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return csvDtf.format(date);
 }
 
 export const ALL_FIELDS: FieldDef[] = ASSOCIATE_EXPORT_FIELDS.map((f) => {
@@ -105,7 +115,9 @@ export const ALL_FIELDS: FieldDef[] = ASSOCIATE_EXPORT_FIELDS.map((f) => {
     key: f.key,
     label: f.label,
     sensitivity: f.sensitivity,
-    get: formatters[f.key] ?? ((r: ReportAssociate) => r[f.key as keyof ReportAssociate] as string | null | undefined),
+    get:
+      formatters[f.key] ??
+      ((r: ReportAssociate) => r[f.key as keyof ReportAssociate] as string | null | undefined),
   };
 });
 
