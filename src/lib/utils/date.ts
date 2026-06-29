@@ -8,6 +8,20 @@
 
 const MS_PER_DAY = 86_400_000;
 
+// ⚡ Bolt: Cache Intl instances to avoid expensive object creation on every render
+const defaultDtf = new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' });
+const longDtf = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+const shortMonthDtf = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: 'short',
+  timeZone: 'UTC',
+});
+
 function parseDateParts(value: string | Date | null | undefined): { year: number; month: number; day: number } | null {
   const d = dateOnly(value);
   if (!d) return null;
@@ -46,7 +60,7 @@ export function formatDate(value: string | Date | null | undefined): string {
   if (!value) return '—';
   const date = dateFromValue(value instanceof Date ? value.toISOString() : value);
   if (!date) return '—';
-  return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  return defaultDtf.format(date);
 }
 
 /**
@@ -56,12 +70,7 @@ export function formatDate(value: string | Date | null | undefined): string {
 export function formatLongDate(value: string | Date | null | undefined): string | null {
   const parts = parseDateParts(value);
   if (!parts) return null;
-  return new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
+  return longDtf.format(new Date(Date.UTC(parts.year, parts.month - 1, parts.day)));
 }
 
 /**
@@ -89,9 +98,7 @@ export function formatShortDate(value: string | Date | null | undefined): string
 export function formatDueDate(value: string | null | undefined): string | null {
   const date = dateFromValue(value);
   if (!date) return null;
-  return date
-    .toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' })
-    .replace('.', '');
+  return shortMonthDtf.format(date).replace('.', '');
 }
 
 /**
