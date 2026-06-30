@@ -33,12 +33,12 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
   }
 
   try {
-    const result = await db.transaction(async (tx) => {
+    const { result, auditArgs } = await db.transaction(async (tx) => {
       // Re-read inside the transaction to prevent TOCTOU race on concurrent retries.
       const oficio = await findOficioByAssinafyDocumentId(documentId, tx);
       if (!oficio) {
         logger.warn('Ofício not found for assinafy document', { documentId, eventName });
-        return null;
+        return { result: null, auditArgs: null };
       }
 
       const previousStatus = oficio.assinafyStatus;
@@ -46,7 +46,7 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
       // Idempotency guard — inside tx, so no concurrent retry can pass simultaneously.
       if (previousStatus === mappedStatus) {
         logger.info('Duplicate webhook event, status unchanged', { documentId, eventName, status: mappedStatus });
-        return oficio;
+        return { result: oficio, auditArgs: null };
       }
 
       const additionalFields: Record<string, unknown> = {};
@@ -87,25 +87,6 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
         tx,
       );
 
-      // Audit inside transaction for atomicity.
-      // Extra try-catch because logAuditAction mock throws in tests.
-      try {
-        await logAuditAction({
-          adminId: null,
-          action: 'official_letter_status_changed',
-          entityType: 'official_letter',
-          entityId: oficio.id,
-          changes: {
-            old: { assinafyStatus: previousStatus },
-            new: { assinafyStatus: mappedStatus, ...additionalFields },
-          },
-          metadata: { source: 'assinafy_webhook', event: eventName },
-          executor: tx,
-        });
-      } catch {
-        logger.error('Audit log failed (non-critical, inside transaction)', { oficioId: oficio.id });
-      }
-
       const activeAdmins = await tx
         .select({ id: admins.id })
         .from(admins)
@@ -128,12 +109,37 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
         await createNotificationsBatch(notifications, tx);
       }
 
-      return updated;
+      return {
+        result: updated,
+        auditArgs: {
+          adminId: null,
+          action: 'official_letter_status_changed',
+          entityType: 'official_letter' as const,
+          entityId: oficio.id,
+          changes: {
+            old: { assinafyStatus: previousStatus },
+            new: { assinafyStatus: mappedStatus, ...additionalFields },
+          },
+          metadata: { source: 'assinafy_webhook', event: eventName },
+        },
+      };
     });
 
     if (result) {
       logger.info('Assinafy status updated', { documentId, eventName });
     }
+
+    // Audit is best-effort and runs AFTER the transaction commits. A failed audit
+    // INSERT must not abort the mutation's tx (passing tx as the audit executor poisons
+    // the PG tx on failure). Default `db` isolates the audit to its own connection.
+    if (auditArgs) {
+      try {
+        await logAuditAction(auditArgs);
+      } catch {
+        logger.error('Audit log failed (non-critical)', { oficioId: auditArgs.entityId });
+      }
+    }
+
     return result;
   } catch (error) {
     logger.error('Failed to update assinafy status', {

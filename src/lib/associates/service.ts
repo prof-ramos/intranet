@@ -420,7 +420,7 @@ export async function createAssociateData(input: CreateAssociateInput): Promise<
     address: input.address ?? null,
   });
 
-  return db.transaction(async (tx) => {
+  const id = await db.transaction(async (tx) => {
     // Unicidade por blind index (PII criptografada não permite busca por texto)
     if (piiPatch.cpfHash) {
       const dup = await findAssociateByCpfHash(piiPatch.cpfHash, tx);
@@ -475,15 +475,22 @@ export async function createAssociateData(input: CreateAssociateInput): Promise<
 
     const id = await insertAssociate(values, tx);
 
+    return id;
+  });
+
+  // Best-effort audit AFTER the tx commits. A failed audit INSERT must not abort the
+  // mutation's tx (the audit executor poisons PG tx on failure). Default `db` isolates the audit.
+  try {
     await logAuditAction({
       adminId: input.createdBy ?? null,
       action: 'create',
       entityType: 'associate',
       entityId: id,
       metadata: { source: 'manual_create' },
-      executor: tx,
     });
+  } catch {
+    // logAuditAction logs internally; swallow to protect the committed mutation.
+  }
 
-    return { id };
-  });
+  return { id };
 }

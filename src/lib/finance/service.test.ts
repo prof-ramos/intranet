@@ -375,9 +375,10 @@ describe('finance service', () => {
           month: 5,
           cancellationReason: 'Lançamento em duplicidade',
         },
-        executor: transactionMock.tx,
       }),
     );
+    const cancelAuditCall = vi.mocked(logAuditAction).mock.calls.at(-1)![0];
+    expect(cancelAuditCall.executor).toBeUndefined();
     expect(emitDomainEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'monthly_payment.updated',
