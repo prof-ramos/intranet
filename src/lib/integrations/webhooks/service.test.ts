@@ -3,6 +3,7 @@ import {
   dispatchDomainEventById,
   dispatchPendingDomainEvents,
 } from '@/lib/integrations/webhooks/service';
+import { db } from '@/lib/db';
 
 const mockGetDomainEventById = vi.fn();
 const mockClaimDispatchableDomainEventById = vi.fn();
@@ -49,7 +50,7 @@ const mockTx = {
 
 vi.mock('@/lib/db', () => ({
   db: {
-    transaction: (callback: (tx: typeof mockTx) => Promise<unknown>) => callback(mockTx),
+    transaction: vi.fn((callback: (tx: typeof mockTx) => Promise<unknown>) => callback(mockTx)),
   },
 }));
 
@@ -112,7 +113,7 @@ describe('dispatchDomainEventById', () => {
     });
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockInsertWebhookDelivery).not.toHaveBeenCalled();
-    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'delivered', mockTx);
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'delivered', db);
   });
 
   it('returns not_dispatchable when the event exists but cannot be claimed', async () => {
@@ -150,7 +151,7 @@ describe('dispatchDomainEventById', () => {
     });
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockInsertWebhookDelivery).not.toHaveBeenCalled();
-    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'pending', mockTx);
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'pending', db);
   });
 
   it('does not retry failed deliveries after the maximum attempts', async () => {
@@ -172,7 +173,7 @@ describe('dispatchDomainEventById', () => {
     });
     expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(mockInsertWebhookDelivery).not.toHaveBeenCalled();
-    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'failed', mockTx);
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'failed', db);
   });
 
   it('records failureReason when delivery permanently fails with non-retryable status', async () => {
@@ -192,7 +193,7 @@ describe('dispatchDomainEventById', () => {
         failureReason: 'Non-retryable HTTP status 403.',
         failedAt: expect.any(Date),
       }),
-      mockTx,
+      db,
     );
   });
 
@@ -221,7 +222,7 @@ describe('dispatchDomainEventById', () => {
         failureReason: 'Max retry attempts (5) exhausted.',
         failedAt: expect.any(Date),
       }),
-      mockTx,
+      db,
     );
   });
 
@@ -245,8 +246,29 @@ describe('dispatchDomainEventById', () => {
         failureReason: 'Webhook target URL failed security validation: http://127.0.0.1:8080/webhook',
         failedAt: expect.any(Date),
       }),
-      mockTx,
+      db,
     );
+  });
+
+  it('does not wrap dispatch in a db.transaction', async () => {
+    mockListWebhookDeliveriesForEvent.mockResolvedValue([]);
+
+    await dispatchDomainEventById(99);
+
+    expect(db.transaction).not.toHaveBeenCalled();
+  });
+
+  it('still calls fetch for a dispatchable event with active subscriptions', async () => {
+    mockListWebhookDeliveriesForEvent.mockResolvedValue([]);
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve('OK'),
+    });
+
+    await dispatchDomainEventById(99);
+
+    expect(globalThis.fetch).toHaveBeenCalled();
   });
 });
 
@@ -305,8 +327,8 @@ describe('dispatchPendingDomainEvents', () => {
       { dispatched: true, eventId: 2, subscriptions: 0, results: [] },
     ]);
     expect(mockClaimDispatchableDomainEventById).not.toHaveBeenCalled();
-    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenCalledWith(1, 'delivered', mockTx);
-    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenCalledWith(2, 'delivered', mockTx);
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenCalledWith(1, 'delivered', db);
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenCalledWith(2, 'delivered', db);
   });
 
   it('returns empty results when no events are dispatchable', async () => {
