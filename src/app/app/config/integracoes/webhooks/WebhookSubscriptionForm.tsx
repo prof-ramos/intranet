@@ -25,6 +25,12 @@ const eventLabels: Record<DomainEventType, string> = {
   'monthly_payment.updated': 'Mensalidade atualizada',
   'official_letter.published': 'Ofício publicado',
   'official_letter.status_changed': 'Status de ofício alterado',
+  'activity.created': 'Atividade criada',
+  'activity.status_changed': 'Status de atividade alterado',
+  'activity.assigned': 'Atividade atribuída',
+  'activity.completed': 'Atividade concluída',
+  'activity.priority_changed': 'Prioridade de atividade alterada',
+  'activity.due_date_changed': 'Vencimento de atividade alterado',
 };
 
 export function WebhookSubscriptionForm({

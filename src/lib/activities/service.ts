@@ -4,6 +4,13 @@ import { deriveCompletedAt } from './transformations';
 import { findActivityById, insertActivity, updateActivityById } from './repository';
 import { logAuditAction } from '@/lib/audit/service';
 import { emitActivityAssigned, emitActivityCompleted } from '@/lib/events';
+import { emitActivityDomainEvents, toIsoDate } from './domain-events';
+import { emitDomainEvent } from '@/lib/integrations/outbox';
+import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
+import { db } from '@/lib/db';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('activities:service');
 
 interface CreateActivityInput {
   title: string;
@@ -74,18 +81,57 @@ export async function createActivityService(input: CreateActivityInput) {
   }
 
   const normalizedTags = normalizeTags(input.tags);
-  const created = await insertActivity({
-    title: input.title.trim(),
-    description: input.description?.trim() || null,
-    status: input.status,
-    priority: input.priority,
-    assigneeId: input.assigneeId,
-    associateId: input.associateId,
-    dueDate: input.dueDate,
-    tags: normalizedTags,
-    createdBy: input.createdBy,
+
+  // Mutação + evento outbox commitam juntos na mesma transação (atomicidade
+  // all-or-nothing — ADR 013/018). A auditoria é perna best-effort FORA da tx
+  // (default `db`, sem `executor: tx`): assim uma falha de INSERT de auditoria
+  // não deixa a tx Postgres em estado `aborted` e não rollbacka a mutação
+  // (padrão majoritário do repo — cf. `oficios/service.ts` create/update).
+  // Tradeoff aceito: se a tx rollbackar, o registro de auditoria já commitado
+  // vira órfão (audit de uma ação que não persistiu) — mesmo tradeoff do
+  // precedent. `logAuditAction` engole erros internamente, então não propaga.
+  const { row: created, eventId } = await db.transaction(async (tx) => {
+    const row = await insertActivity(
+      {
+        title: input.title.trim(),
+        description: input.description?.trim() || null,
+        status: input.status,
+        priority: input.priority,
+        assigneeId: input.assigneeId,
+        associateId: input.associateId,
+        dueDate: input.dueDate,
+        tags: normalizedTags,
+        createdBy: input.createdBy,
+      },
+      tx,
+    );
+
+    const event = await emitDomainEvent(
+      {
+        type: 'activity.created',
+        entityType: 'activity',
+        entityId: row.id,
+        actorAdminId: input.createdBy,
+        payload: {
+          activityId: row.id,
+          status: row.status,
+          priority: row.priority,
+          assigneeId: row.assigneeId,
+          associateId: row.associateId,
+          dueDate: toIsoDate(row.dueDate),
+          createdById: input.createdBy,
+          links: { app: `/app/atividades/${row.id}` },
+        },
+      },
+      tx,
+    );
+
+    return { row, eventId: event.id };
   });
 
+  // Auditoria best-effort APÓS commit (fora da tx, default `db`). Falha de
+  // INSERT não aborta a mutação já commitada — `logAuditAction` engole o erro
+  // internamente (logger.error apenas).
   await logAuditAction({
     adminId: input.createdBy,
     action: 'activity_created',
@@ -103,6 +149,16 @@ export async function createActivityService(input: CreateActivityInput) {
         tags: created.tags ?? [],
       },
     },
+  });
+
+  // Dispatch inline fire-and-forget APÓS commit (fora da tx). Detached da
+  // request: NÃO aguarda a entrega HTTP (10s/subscription) — a mutação já
+  // commitou e a UI retorna imediatamente. Falha swallowed + log estruturado;
+  // se o delivery for morto pelo freeze do serverless ou falhar, o evento
+  // permanece `pending` no outbox e o cron diário (e o retry exponencial)
+  // recupera. A mutação do Kanban nunca falha nem atrasa por causa do webhook.
+  void dispatchDomainEventById(eventId).catch((err) => {
+    logger.error('inline dispatch failed (activity.created)', { eventId, err });
   });
 
   return created;
@@ -125,6 +181,8 @@ export async function updateActivityService(input: UpdateActivityInput) {
     throw new Error('Data de vencimento inválida.');
   }
 
+  // Leitura fora da transação: precisamos do snapshot anterior para diff de
+  // eventos e para o optimistic lock. Não precisa ser atômica com o update.
   const current = await findActivityById(input.id);
   if (!current) {
     throw new Error('Atividade não encontrada.');
@@ -138,18 +196,49 @@ export async function updateActivityService(input: UpdateActivityInput) {
   const nextCompletedAtStr = deriveCompletedAt(nextStatus, current.status, currentCompletedAtIso);
   const nextCompletedAt = nextCompletedAtStr ? new Date(nextCompletedAtStr) : null;
 
-  const updated = await updateActivityById(input.id, {
-    status: nextStatus,
-    priority: nextPriority,
-    dueDate: nextDueDate,
-    assigneeId: nextAssigneeId,
-    completedAt: nextCompletedAt,
-  }, current.updatedAt);
+  // Update + eventos outbox commitam juntos (atomicidade all-or-nothing). O
+  // optimistic lock (CONCURRENCY_CONFLICT) é verificado DENTRO da tx ANTES de
+  // qualquer emit, garantindo que nenhum evento fantasma seja inserido se o
+  // update falhar. A auditoria é perna best-effort FORA da tx (default `db`),
+  // rodada após commit — mesmo padrão do create e do precedent majoritário
+  // (`oficios/service.ts`): falha de INSERT de auditoria não deixa a tx
+  // Postgres em estado `aborted` nem rollbacka a mutação.
+  const { updated, eventIds } = await db.transaction(async (tx) => {
+    const row = await updateActivityById(
+      input.id,
+      {
+        status: nextStatus,
+        priority: nextPriority,
+        dueDate: nextDueDate,
+        assigneeId: nextAssigneeId,
+        completedAt: nextCompletedAt,
+      },
+      current.updatedAt,
+      tx,
+    );
 
-  if (!updated) {
-    throw new Error('CONCURRENCY_CONFLICT');
-  }
+    if (!row) {
+      // Lança ANTES de emitir qualquer evento outbox — nenhum registro
+      // fantasma em `domain_events`. A tx rollbacka o update (que já falhou
+      // no WHERE de optimistic lock, então não houve mutação).
+      throw new Error('CONCURRENCY_CONFLICT');
+    }
 
+    // Helper canônico para os eventos granulares do outbox (um por campo
+    // alterado). A guarda de auto-atribuição vive no helper, não aqui.
+    const ids = await emitActivityDomainEvents({
+      tx,
+      actorId: input.actorId,
+      current,
+      updated: row,
+    });
+
+    return { updated: row, eventIds: ids };
+  });
+
+  // Auditoria best-effort APÓS commit (fora da tx, default `db`). Falha de
+  // INSERT não aborta a mutação já commitada — `logAuditAction` engole o erro
+  // internamente (logger.error apenas).
   await logAuditAction({
     adminId: input.actorId,
     action: 'activity_updated',
@@ -176,15 +265,25 @@ export async function updateActivityService(input: UpdateActivityInput) {
       : undefined,
   });
 
+  // Notificações in-app (sino) — best-effort, FORA da tx. Falha não rollbacka
+  // a mutação nem derruba a requisição. A guarda de auto-atribuição interna de
+  // `emitActivityAssigned` é canônica para o sino (espelha o helper do outbox).
   if (current.status !== 'concluido' && updated.status === 'concluido') {
-    await emitActivityCompleted({
-      activityId: updated.id,
-      title: updated.title,
-      createdBy: input.actorId,
-      assigneeId: updated.assigneeId,
-      associateId: updated.associateId,
-      completedAt: updated.completedAt?.toISOString() ?? new Date().toISOString(),
-    });
+    try {
+      await emitActivityCompleted({
+        activityId: updated.id,
+        title: updated.title,
+        createdBy: input.actorId,
+        assigneeId: updated.assigneeId,
+        associateId: updated.associateId,
+        completedAt: updated.completedAt?.toISOString() ?? new Date().toISOString(),
+      });
+    } catch (err) {
+      logger.error('in-app emit failed (activity.completed)', {
+        activityId: updated.id,
+        err,
+      });
+    }
   }
 
   const assigneeChanged =
@@ -192,16 +291,32 @@ export async function updateActivityService(input: UpdateActivityInput) {
     input.assigneeId !== null &&
     input.assigneeId !== current.assigneeId;
 
-  // Skip notification for self-assignment — the user already knows
-  const isSelfAssign = input.assigneeId === input.actorId;
+  if (assigneeChanged) {
+    try {
+      await emitActivityAssigned({
+        activityId: updated.id,
+        title: updated.title,
+        actorId: input.actorId,
+        newAssigneeId: input.assigneeId!,
+        previousAssigneeId: current.assigneeId,
+      });
+    } catch (err) {
+      logger.error('in-app emit failed (activity.assigned)', {
+        activityId: updated.id,
+        err,
+      });
+    }
+  }
 
-  if (assigneeChanged && !isSelfAssign) {
-    await emitActivityAssigned({
-      activityId: updated.id,
-      title: updated.title,
-      actorId: input.actorId,
-      newAssigneeId: input.assigneeId!,
-      previousAssigneeId: current.assigneeId,
+  // Dispatch inline fire-and-forget APÓS commit, um por evento outbox. Detached
+  // da request: NÃO aguarda entregas HTTP sequenciais (até N×10s) — a mutação
+  // já commitou e a UI retorna imediatamente. Falha swallowed + log; se o
+  // delivery for morto pelo freeze do serverless ou falhar, o evento permanece
+  // `pending` e o cron diário (`/api/v1/events/dispatch`) e o retry exponencial
+  // recuperam.
+  for (const eventId of eventIds) {
+    void dispatchDomainEventById(eventId).catch((err) => {
+      logger.error('inline dispatch failed (activity.update)', { eventId, err });
     });
   }
 
