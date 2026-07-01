@@ -22,6 +22,12 @@ export const domainEventType = pgEnum('domain_event_type', [
   'official_letter.published',
   'official_letter.status_changed',
   'monthly_payment.updated',
+  'activity.created',
+  'activity.status_changed',
+  'activity.assigned',
+  'activity.completed',
+  'activity.priority_changed',
+  'activity.due_date_changed',
 ]);
 
 export const domainEventEntityType = pgEnum('domain_event_entity_type', [
@@ -29,6 +35,7 @@ export const domainEventEntityType = pgEnum('domain_event_entity_type', [
   'legal_consultation',
   'official_letter',
   'monthly_payment',
+  'activity',
 ]);
 
 export const domainEventDeliveryStatus = pgEnum('domain_event_delivery_status', [

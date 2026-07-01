@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { db, type DbExecutor } from '@/lib/db';
 import { activities, admins, associates, auditLogs, type Activity } from '@/lib/db/schema';
 import type { BoardActivity, Priority, Status } from './types';
 
@@ -107,18 +107,21 @@ export async function findActiveAssociates() {
     .limit(100);
 }
 
-export async function insertActivity(input: {
-  title: string;
-  description: string | null;
-  status: Status;
-  priority: Priority;
-  assigneeId: number | null;
-  associateId: number | null;
-  dueDate: string | null;
-  tags: string[];
-  createdBy: number;
-}) {
-  const [row] = await db
+export async function insertActivity(
+  input: {
+    title: string;
+    description: string | null;
+    status: Status;
+    priority: Priority;
+    assigneeId: number | null;
+    associateId: number | null;
+    dueDate: string | null;
+    tags: string[];
+    createdBy: number;
+  },
+  executor: DbExecutor = db,
+) {
+  const [row] = await executor
     .insert(activities)
     .values({
       title: input.title,
@@ -135,8 +138,8 @@ export async function insertActivity(input: {
   return row;
 }
 
-export async function findActivityById(id: number): Promise<Activity | null> {
-  const [row] = await db.select().from(activities).where(eq(activities.id, id)).limit(1);
+export async function findActivityById(id: number, executor: DbExecutor = db): Promise<Activity | null> {
+  const [row] = await executor.select().from(activities).where(eq(activities.id, id)).limit(1);
   return row ?? null;
 }
 
@@ -144,6 +147,7 @@ export async function updateActivityById(
   id: number,
   patch: Partial<Pick<Activity, 'status' | 'priority' | 'dueDate' | 'completedAt' | 'assigneeId'>>,
   expectedUpdatedAt?: Date | null,
+  executor: DbExecutor = db,
 ): Promise<Activity | null> {
   let whereClause = eq(activities.id, id);
   if (expectedUpdatedAt) {
@@ -157,7 +161,7 @@ export async function updateActivityById(
     }
   }
 
-  const [row] = await db
+  const [row] = await executor
     .update(activities)
     .set({
       ...patch,

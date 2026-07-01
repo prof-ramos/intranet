@@ -79,6 +79,62 @@ const payloadSchemaByEventType = {
       links: linksSchema,
     })
     .strict(),
+  'activity.created': z
+    .object({
+      activityId: z.number().int().positive(),
+      status: z.string().min(1),
+      priority: z.string().min(1),
+      assigneeId: z.number().int().positive().nullable(),
+      associateId: z.number().int().positive().nullable(),
+      dueDate: z.string().datetime().nullable(),
+      createdById: z.number().int().positive(),
+      links: linksSchema,
+    })
+    .strict(),
+  'activity.status_changed': z
+    .object({
+      activityId: z.number().int().positive(),
+      previousStatus: z.string().min(1),
+      status: z.string().min(1),
+      createdById: z.number().int().positive(),
+      links: linksSchema,
+    })
+    .strict(),
+  'activity.assigned': z
+    .object({
+      activityId: z.number().int().positive(),
+      previousAssigneeId: z.number().int().positive().nullable(),
+      assigneeId: z.number().int().positive().nullable(),
+      createdById: z.number().int().positive(),
+      links: linksSchema,
+    })
+    .strict(),
+  'activity.completed': z
+    .object({
+      activityId: z.number().int().positive(),
+      completedAt: z.string().datetime(),
+      createdById: z.number().int().positive(),
+      links: linksSchema,
+    })
+    .strict(),
+  'activity.priority_changed': z
+    .object({
+      activityId: z.number().int().positive(),
+      previousPriority: z.string().min(1),
+      priority: z.string().min(1),
+      createdById: z.number().int().positive(),
+      links: linksSchema,
+    })
+    .strict(),
+  'activity.due_date_changed': z
+    .object({
+      activityId: z.number().int().positive(),
+      previousDueDate: z.string().datetime().nullable(),
+      dueDate: z.string().datetime().nullable(),
+      createdById: z.number().int().positive(),
+      links: linksSchema,
+    })
+    .strict(),
 } satisfies Record<DomainEventType, z.ZodType<Record<string, unknown>>>;
 
 export type DomainEventPayloadMap = {

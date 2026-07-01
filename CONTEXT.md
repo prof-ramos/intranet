@@ -251,6 +251,15 @@ Tarefa administrativa no board Kanban. Possui status (`a_fazer`, `em_andamento`,
 
 Criação rápida de atividade diretamente no board, sem abrir formulário completo.
 
+#### Eventos de Atividade (dois sistemas)
+
+O Kanban emite eventos em **dois sistemas distintos**, não confundir:
+
+- **Sino in-app (`src/lib/events.ts` → `notifications`)** — notifica o destinatário direto (responsável atribuído, criador). Tipos: `activity.assigned`, `activity.completed`. Recipient-targeted, com `dedupeKey` e guarda contra auto-notificação. **Não é webhook.**
+- **Outbox de webhook (`domain_events` → dispatcher → POST HMAC)** — para automação/push externo. Superconjunto do sino: `activity.created`, `activity.status_changed`, `activity.assigned`, `activity.completed`, `activity.priority_changed`, `activity.due_date_changed`. Emitidos transacionalmente em `db.transaction` junto com a mutação; dispatch inline fire-and-forget após commit + cron diário como rede. Payload leva IDs + `links.app` (sem `title`/`description`, para minimizar PII no outbox). Roteamento do destinatário é **decisão do consumer**, não da intranet (que apenas expõe os sinais — `createdById` no `data`, `actor.adminId` no envelope). A intranet **não canoniza** uma política. Dois padrões válidos: (a) **Criador** — notificar `createdById` (disponível em todo evento) quando `actor.adminId !== createdById`; consumer simples, mas "criou" ≠ "atribuiu"; (b) **Atribuidor** — notificar `actor.adminId` do último `activity.assigned` para a atividade, correlacionando `activity.assigned` + `activity.status_changed` por `entity.id` (activityId) — fiel a "coordenador que atribuiu ao responsável atual", exige correlação entre eventos. Ver ADR 018 §4.
+
+_Avoid_: tratar "notificação" (sino) como sinônimo de "webhook" (outbox). O primeiro é interno e recipient-targeted; o segundo é externo e tipado por mudança.
+
 ---
 
 ### Notificações e Eventos
@@ -391,6 +400,12 @@ O sistema suporta dois caminhos de autenticação para APIs:
 - `official_letter.created`
 - `official_letter.published`
 - `official_letter.status_changed` — status alterado via webhook Assinafy
+- `activity.created` — atividade criada no Kanban
+- `activity.status_changed` — transição de status (`a_fazer`/`em_andamento`/`aguardando_terceiros`/`concluido`)
+- `activity.assigned` — atribuição/reatribuição de responsável (não emitido em auto-atribuição)
+- `activity.completed` — transição para `concluido` (emitido em paralelo a `activity.status_changed`)
+- `activity.priority_changed` — mudança de prioridade
+- `activity.due_date_changed` — mudança de vencimento
 
 ---
 
