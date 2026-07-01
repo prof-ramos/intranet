@@ -87,7 +87,7 @@ associados-list.md
 
 # Claude Code local settings (personal overrides, never share)
 .claude/settings.local.json
-.mcp.json
+# .mcp.json is committed — it references env vars only (no secrets); locals without the envs fall back gracefully.
 
 # OMC local state (may contain PII/session data)
 .omc/
