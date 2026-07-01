@@ -2,7 +2,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { getAssociatesForReport } from './queries';
 
-const { dbMock, MOCK_ASSOCIATE } = vi.hoisted(() => {
+const { dbMock, MOCK_ASSOCIATE, loggerMock } = vi.hoisted(() => {
   const MOCK_ASSOCIATE = {
     id: 1,
     fullName: 'Test Associate',
@@ -32,6 +32,7 @@ const { dbMock, MOCK_ASSOCIATE } = vi.hoisted(() => {
   selectChain.from = vi.fn().mockReturnValue(selectChain);
   selectChain.where = vi.fn().mockReturnValue(selectChain);
   selectChain.orderBy = vi.fn().mockReturnValue(selectChain);
+  selectChain.limit = vi.fn().mockReturnValue(selectChain);
   selectChain.then = (resolve: any, reject: any) =>
     Promise.resolve(_selectResult).then(resolve, reject);
 
@@ -43,10 +44,18 @@ const { dbMock, MOCK_ASSOCIATE } = vi.hoisted(() => {
     },
   };
 
-  return { dbMock, MOCK_ASSOCIATE };
+  const loggerMock = {
+    warn: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  };
+
+  return { dbMock, MOCK_ASSOCIATE, loggerMock };
 });
 
 vi.mock('@/lib/db', () => ({ db: dbMock }));
+vi.mock('@/lib/logger', () => ({ createLogger: () => loggerMock }));
 
 describe('reports queries', () => {
   beforeEach(() => {
@@ -94,6 +103,32 @@ describe('reports queries', () => {
       dbMock.setSelectResult([]);
       const results = await getAssociatesForReport({ functionalStatus: 'aposentado' });
       expect(results).toHaveLength(0);
+    });
+
+    it('applies a bounded limit on the query', async () => {
+      await getAssociatesForReport();
+      // limit is called with limit+1 to detect truncation precisely
+      expect(dbMock._selectChain.limit).toHaveBeenCalledWith(5001);
+    });
+
+    it('throws and logs a PII-free warning when result exceeds the cap', async () => {
+      const overLimit = Array.from({ length: 6 }, (_, i) => ({
+        ...MOCK_ASSOCIATE,
+        id: i + 1,
+      }));
+      dbMock.setSelectResult(overLimit);
+
+      await expect(getAssociatesForReport({}, 5)).rejects.toThrow(/excede o limite/);
+
+      expect(loggerMock.warn).toHaveBeenCalledWith(
+        expect.stringContaining('truncated'),
+        expect.objectContaining({ count: 6, limit: 5, truncated: true }),
+      );
+
+      // Ensure the warning payload contains no PII fields
+      const warnCall = loggerMock.warn.mock.calls[0];
+      const payload = JSON.stringify(warnCall);
+      expect(payload).not.toMatch(/cpf|siape|email|phone|whatsapp|address|birthDate/i);
     });
   });
 });
