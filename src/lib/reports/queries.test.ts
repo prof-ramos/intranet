@@ -2,7 +2,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { getAssociatesForReport } from './queries';
 
-const { dbMock, MOCK_ASSOCIATE, loggerMock } = vi.hoisted(() => {
+const { dbMock, MOCK_ASSOCIATE, loggerMock, decryptPiiFieldMock } = vi.hoisted(() => {
   const MOCK_ASSOCIATE = {
     id: 1,
     fullName: 'Test Associate',
@@ -51,11 +51,19 @@ const { dbMock, MOCK_ASSOCIATE, loggerMock } = vi.hoisted(() => {
     debug: vi.fn(),
   };
 
-  return { dbMock, MOCK_ASSOCIATE, loggerMock };
+  // Mock at the decryptPiiField boundary: mirrors real precedence (ciphertext wins)
+  // and returns a PII-free sentinel so tests can assert args + DTO mapping without env keys.
+  const decryptPiiFieldMock = vi.fn(
+    (ciphertext: string | null, plaintext: string | null): string | null =>
+      ciphertext ? `DEC:${ciphertext}` : (plaintext ?? null),
+  );
+
+  return { dbMock, MOCK_ASSOCIATE, loggerMock, decryptPiiFieldMock };
 });
 
 vi.mock('@/lib/db', () => ({ db: dbMock }));
 vi.mock('@/lib/logger', () => ({ createLogger: () => loggerMock }));
+vi.mock('@/lib/crypto/pii', () => ({ decryptPiiField: decryptPiiFieldMock }));
 
 describe('reports queries', () => {
   beforeEach(() => {
@@ -129,6 +137,88 @@ describe('reports queries', () => {
       const warnCall = loggerMock.warn.mock.calls[0];
       const payload = JSON.stringify(warnCall);
       expect(payload).not.toMatch(/cpf|siape|email|phone|whatsapp|address|birthDate/i);
+    });
+  });
+
+  describe('getAssociatesForReport PII decrypt fallback', () => {
+    // Each test sets dbMock.setSelectResult([row]) and asserts both the call args
+    // passed to decryptPiiField (ciphertext FIRST, plaintext SECOND) and the DTO mapping.
+    // A swapped-args or dropped-`?? null` regression fails these assertions.
+    it('decrypts ciphertext when only ciphertext is present (ciphertext wins)', async () => {
+      const row = { ...MOCK_ASSOCIATE, cpfCiphertext: 'enc:cpf', cpf: null };
+      dbMock.setSelectResult([row]);
+
+      const results = await getAssociatesForReport();
+
+      expect(decryptPiiFieldMock).toHaveBeenCalledWith('enc:cpf', null);
+      expect(results[0].cpf).toBe('DEC:enc:cpf');
+    });
+
+    it('falls back to plaintext when only plaintext is present', async () => {
+      const row = { ...MOCK_ASSOCIATE, cpfCiphertext: null, cpf: '12345678901' };
+      dbMock.setSelectResult([row]);
+
+      const results = await getAssociatesForReport();
+
+      expect(decryptPiiFieldMock).toHaveBeenCalledWith(null, '12345678901');
+      expect(results[0].cpf).toBe('12345678901');
+    });
+
+    it('prefers ciphertext over plaintext when both are present', async () => {
+      const row = { ...MOCK_ASSOCIATE, cpfCiphertext: 'enc:cpf', cpf: 'PLAIN' };
+      dbMock.setSelectResult([row]);
+
+      const results = await getAssociatesForReport();
+
+      expect(decryptPiiFieldMock).toHaveBeenCalledWith('enc:cpf', 'PLAIN');
+      expect(results[0].cpf).toBe('DEC:enc:cpf');
+    });
+
+    it('returns null when neither ciphertext nor plaintext is present', async () => {
+      const row = { ...MOCK_ASSOCIATE, cpfCiphertext: null, cpf: null };
+      dbMock.setSelectResult([row]);
+
+      const results = await getAssociatesForReport();
+
+      expect(decryptPiiFieldMock).toHaveBeenCalledWith(null, null);
+      expect(results[0].cpf).toBeNull();
+    });
+
+    it('applies the same decrypt wiring to primaryEmail (not cpf-specific)', async () => {
+      const row = {
+        ...MOCK_ASSOCIATE,
+        primaryEmailCiphertext: 'enc:email',
+        primaryEmail: 'plain@example.com',
+      };
+      dbMock.setSelectResult([row]);
+
+      const results = await getAssociatesForReport();
+
+      expect(decryptPiiFieldMock).toHaveBeenCalledWith('enc:email', 'plain@example.com');
+      expect(results[0].primaryEmail).toBe('DEC:enc:email');
+    });
+
+    it('propagates decrypt errors without leaking ciphertext into logger calls', async () => {
+      const row = {
+        ...MOCK_ASSOCIATE,
+        cpfCiphertext: 'enc:SECRET',
+        cpf: 'plain-fixture',
+      };
+      dbMock.setSelectResult([row]);
+      decryptPiiFieldMock.mockImplementationOnce(() => {
+        throw new Error('decrypt-failed');
+      });
+
+      await expect(getAssociatesForReport()).rejects.toThrow('decrypt-failed');
+
+      // Guard against a future catch-and-log that leaks ciphertext/plaintext into logs.
+      const allLoggerCalls = JSON.stringify([
+        ...loggerMock.warn.mock.calls,
+        ...loggerMock.error.mock.calls,
+        ...loggerMock.info.mock.calls,
+      ]);
+      expect(allLoggerCalls).not.toContain('enc:SECRET');
+      expect(allLoggerCalls).not.toContain('plain-fixture');
     });
   });
 });
