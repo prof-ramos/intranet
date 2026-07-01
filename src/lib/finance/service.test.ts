@@ -6,6 +6,7 @@ import {
   validateStatusTransition,
 } from './service';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
+import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
 import { logAuditAction } from '@/lib/audit/service';
 
 const transactionMock = vi.hoisted(() => ({
@@ -36,6 +37,10 @@ vi.mock('@/lib/audit/service', () => ({
 
 vi.mock('@/lib/integrations/outbox', () => ({
   emitDomainEvent: vi.fn(),
+}));
+
+vi.mock('@/lib/integrations/webhooks/service', () => ({
+  dispatchDomainEventById: vi.fn(),
 }));
 
 describe('finance service', () => {
@@ -94,9 +99,13 @@ describe('finance service', () => {
         paidAt: null,
       },
     ]);
+
+    // emitDomainEvent now runs INSIDE the tx and returns the inserted event row.
+    vi.mocked(emitDomainEvent).mockResolvedValue({ id: 4242 } as never);
+    vi.mocked(dispatchDomainEventById).mockResolvedValue({ dispatched: true } as never);
   });
 
-  it('audits and emits system domain events for automatic overdue transitions', async () => {
+  it('audits and emits system domain events for automatic overdue transitions inside the tx', async () => {
     const count = await autoMarkOverduePaymentsService();
 
     expect(count).toBe(1);
@@ -104,6 +113,9 @@ describe('finance service', () => {
     // Bulk insert replaces N sequential logAuditAction calls
     expect(logAuditAction).not.toHaveBeenCalled();
     expect(transactionMock.tx.insert).toHaveBeenCalledWith(expect.anything());
+    // Outbox invariant: emitDomainEvent MUST be called with the tx sentinel,
+    // not the default db — so the event row commits (or rolls back) with the
+    // mutation.
     expect(emitDomainEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'monthly_payment.updated',
@@ -123,19 +135,24 @@ describe('finance service', () => {
           },
         },
       }),
+      transactionMock.tx,
     );
     expect(JSON.stringify(vi.mocked(emitDomainEvent).mock.calls[0][0])).not.toMatch(
       /cpf|siape|address/i,
     );
+    // Post-commit fire-and-forget dispatch is invoked per event with the
+    // inserted event id. The cron /api/v1/events/dispatch is the safety net.
+    expect(dispatchDomainEventById).toHaveBeenCalledWith(4242);
   });
 
-  it('logs an error but still returns count when some domain events fail to emit', async () => {
-    vi.mocked(emitDomainEvent).mockRejectedValueOnce(new Error('emit failed'));
+  it('returns the count even when post-commit dispatch fails (fire-and-forget)', async () => {
+    vi.mocked(dispatchDomainEventById).mockRejectedValueOnce(new Error('dispatch failed'));
 
     const count = await autoMarkOverduePaymentsService();
 
     expect(count).toBe(1);
     expect(emitDomainEvent).toHaveBeenCalled();
+    expect(dispatchDomainEventById).toHaveBeenCalled();
   });
 
   it('emits a domain event when the payment status changes', async () => {
@@ -432,36 +449,18 @@ describe('validateStatusTransition', () => {
   });
 
   it('rejects transitions from cancelado (terminal state)', () => {
-    expect(() => validateStatusTransition('cancelado', 'pago')).toThrow(
-      /Transição inválida/,
-    );
-    expect(() => validateStatusTransition('cancelado', 'pendente')).toThrow(
-      /Transição inválida/,
-    );
+    expect(() => validateStatusTransition('cancelado', 'pago')).toThrow(/Transição inválida/);
+    expect(() => validateStatusTransition('cancelado', 'pendente')).toThrow(/Transição inválida/);
   });
 
   it('rejects invalid transitions', () => {
-    expect(() => validateStatusTransition('isento', 'pago')).toThrow(
-      /Transição inválida/,
-    );
-    expect(() => validateStatusTransition('pago', 'isento')).toThrow(
-      /Transição inválida/,
-    );
-    expect(() => validateStatusTransition('pago', 'atrasado')).toThrow(
-      /Transição inválida/,
-    );
+    expect(() => validateStatusTransition('isento', 'pago')).toThrow(/Transição inválida/);
+    expect(() => validateStatusTransition('pago', 'isento')).toThrow(/Transição inválida/);
+    expect(() => validateStatusTransition('pago', 'atrasado')).toThrow(/Transição inválida/);
     // Cancellation is a separate flow via cancelMonthlyPayment
-    expect(() => validateStatusTransition('pendente', 'cancelado')).toThrow(
-      /Transição inválida/,
-    );
-    expect(() => validateStatusTransition('atrasado', 'cancelado')).toThrow(
-      /Transição inválida/,
-    );
-    expect(() => validateStatusTransition('pago', 'cancelado')).toThrow(
-      /Transição inválida/,
-    );
-    expect(() => validateStatusTransition('isento', 'cancelado')).toThrow(
-      /Transição inválida/,
-    );
+    expect(() => validateStatusTransition('pendente', 'cancelado')).toThrow(/Transição inválida/);
+    expect(() => validateStatusTransition('atrasado', 'cancelado')).toThrow(/Transição inválida/);
+    expect(() => validateStatusTransition('pago', 'cancelado')).toThrow(/Transição inválida/);
+    expect(() => validateStatusTransition('isento', 'cancelado')).toThrow(/Transição inválida/);
   });
 });
