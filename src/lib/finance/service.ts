@@ -284,7 +284,7 @@ export async function cancelMonthlyPayment(adminId: number, paymentId: number, r
 
   const cancellationReason = validateCancellationReason(reason);
 
-  return db.transaction(async (tx) => {
+  const { result, auditArgs } = await db.transaction(async (tx) => {
     const rows = await tx
       .select()
       .from(monthlyPayments)
@@ -322,24 +322,8 @@ export async function cancelMonthlyPayment(adminId: number, paymentId: number, r
     }
 
     const newState = getPaymentAuditState(updatedPayment);
-    await logAuditAction({
-      adminId,
-      action: 'cancel',
-      entityType: 'monthly_payment',
-      entityId: updatedPayment.id,
-      changes: {
-        old: oldState,
-        new: newState,
-      },
-      metadata: {
-        associateId: updatedPayment.associateId,
-        year: updatedPayment.year,
-        month: updatedPayment.month,
-        cancellationReason,
-      },
-      executor: tx,
-    });
 
+    // Outbox invariant: emitDomainEvent MUST stay inside the tx.
     await emitDomainEvent(
       {
         type: 'monthly_payment.updated',
@@ -364,8 +348,36 @@ export async function cancelMonthlyPayment(adminId: number, paymentId: number, r
       tx,
     );
 
-    return updatedPayment;
+    return {
+      result: updatedPayment,
+      auditArgs: {
+        adminId,
+        action: 'cancel',
+        entityType: 'monthly_payment' as const,
+        entityId: updatedPayment.id,
+        changes: {
+          old: oldState,
+          new: newState,
+        },
+        metadata: {
+          associateId: updatedPayment.associateId,
+          year: updatedPayment.year,
+          month: updatedPayment.month,
+          cancellationReason,
+        },
+      },
+    };
   });
+
+  // Best-effort audit AFTER the tx commits. A failed audit INSERT must not abort the
+  // mutation's tx (the audit executor poisons PG tx on failure). Default `db` isolates the audit.
+  try {
+    await logAuditAction(auditArgs);
+  } catch {
+    logger.error('Audit log failed (non-critical)', { paymentId });
+  }
+
+  return result;
 }
 
 export async function initializeMonth(adminId: number, year: number, month: number) {

@@ -175,6 +175,20 @@ describe('assinafy/service', () => {
       );
     });
 
+    it('does not pass executor to logAuditAction (audit is best-effort, outside tx)', async () => {
+      const { logAuditAction } = await import('@/lib/audit/service');
+      await handleWebhookEvent(BASE_EVENT);
+      expect(logAuditAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'official_letter_status_changed',
+          entityType: 'official_letter',
+          entityId: 1,
+        }),
+      );
+      const auditCall = vi.mocked(logAuditAction).mock.calls.at(-1)![0];
+      expect(auditCall.executor).toBeUndefined();
+    });
+
     it('skips update when status is already the mapped value (idempotency)', async () => {
       mockFindOficioByAssinafyDocumentId.mockResolvedValue({
         ...mockOficio,

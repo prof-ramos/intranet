@@ -311,6 +311,29 @@ describe('oficios service', () => {
       expect(result).toEqual({ success: true, data: updatedOficio });
     });
 
+    it('logs audit without executor (best-effort, outside tx)', async () => {
+      const repository = await import('./repository');
+      const audit = await import('@/lib/audit/service');
+      vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
+
+      const assinafyRepo = await import('@/lib/assinafy/repository');
+      const updatedOficio = { ...BASE_OFFICIAL_LETTER, assinafyDocumentId: 'doc-123', assinafyStatus: 'pending_signature' as const };
+      vi.mocked(assinafyRepo.updateAssinafyFields).mockResolvedValue(updatedOficio);
+
+      await sendForSignature(OFICIO_ID, SIGNER_EMAIL, USER_ID);
+
+      expect(audit.logAuditAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          adminId: USER_ID,
+          action: 'official_letter_sent_for_signature',
+          entityType: 'official_letter',
+          entityId: OFICIO_ID,
+        }),
+      );
+      const auditCall = vi.mocked(audit.logAuditAction).mock.calls.at(-1)![0];
+      expect(auditCall.executor).toBeUndefined();
+    });
+
     it('returns error when assinafy env vars are missing', async () => {
       const { env } = await import('@/lib/env');
       const originalApiKey = env.ASSINAFY_API_KEY;

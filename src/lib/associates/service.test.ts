@@ -3,6 +3,7 @@ import {
   getAssociatesListPage,
   getAssociateForEdit,
   updateAssociateData,
+  createAssociateData,
   getAssociateStatusLabel,
 } from './service';
 
@@ -23,6 +24,10 @@ vi.mock('./repository', () => ({
   findAssociatesPaginated: (...args: unknown[]) => mockFindAssociatesPaginated(...args),
   findAssociateById: (...args: unknown[]) => mockFindAssociateById(...args),
   updateAssociateById: (...args: unknown[]) => mockUpdateAssociateById(...args),
+  insertAssociate: vi.fn(),
+  findAssociateByCpfHash: vi.fn(),
+  findAssociateBySiapeHash: vi.fn(),
+  findAssociateByPrimaryEmailHash: vi.fn(),
 }));
 
 vi.mock('@/lib/integrations/outbox', () => ({
@@ -31,6 +36,7 @@ vi.mock('@/lib/integrations/outbox', () => ({
 
 vi.mock('@/lib/audit/service', () => ({
   logDataAccess: (...args: unknown[]) => mockLogDataAccess(...args),
+  logAuditAction: vi.fn(),
 }));
 
 vi.mock('./lgpd', () => ({
@@ -275,5 +281,35 @@ describe('getAssociateStatusLabel', () => {
 
   it('returns raw value for unknown status', () => {
     expect(getAssociateStatusLabel('unknown')).toBe('unknown');
+  });
+});
+
+describe('createAssociateData', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockTransaction.mockImplementation((callback) => callback({ tx: true }));
+  });
+
+  it('logs audit without executor (best-effort, outside tx)', async () => {
+    const repository = await import('./repository');
+    const audit = await import('@/lib/audit/service');
+    vi.mocked(repository.insertAssociate).mockResolvedValue(42);
+    vi.mocked(repository.findAssociateByCpfHash).mockResolvedValue(null as never);
+    vi.mocked(repository.findAssociateBySiapeHash).mockResolvedValue(null as never);
+    vi.mocked(repository.findAssociateByPrimaryEmailHash).mockResolvedValue(null as never);
+
+    const result = await createAssociateData({ fullName: 'Novo Oficial', createdBy: 7 });
+
+    expect(result).toEqual({ id: 42 });
+    expect(audit.logAuditAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        adminId: 7,
+        action: 'create',
+        entityType: 'associate',
+        entityId: 42,
+      }),
+    );
+    const auditCall = vi.mocked(audit.logAuditAction).mock.calls.at(-1)![0];
+    expect(auditCall.executor).toBeUndefined();
   });
 });

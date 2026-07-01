@@ -245,7 +245,7 @@ export async function sendForSignature(
     }
 
     // 12. DB transaction: update oficio + audit log
-    const updated = await db.transaction(async (tx) => {
+    const { result: updated, auditArgs } = await db.transaction(async (tx) => {
       // Auto-transition rascunho → gerado before sending (ARCHITECTURE.md §101)
       if (oficio.status === 'rascunho') {
         await tx
@@ -254,7 +254,7 @@ export async function sendForSignature(
           .where(eq(oficios.id, oficioId));
       }
 
-      const result = await assinafyRepository.updateAssinafyFields(
+      const txResult = await assinafyRepository.updateAssinafyFields(
         oficioId,
         {
           assinafyDocumentId: doc.id,
@@ -268,20 +268,28 @@ export async function sendForSignature(
         tx,
       );
 
-      await logAuditAction({
-        adminId: userId,
-        action: 'official_letter_sent_for_signature',
-        entityType: 'official_letter',
-        entityId: oficioId,
-        changes: {
-          old: { assinafyDocumentId: null },
-          new: { assinafyDocumentId: doc.id, assinafyStatus: 'pending_signature' },
+      return {
+        result: txResult,
+        auditArgs: {
+          adminId: userId,
+          action: 'official_letter_sent_for_signature',
+          entityType: 'official_letter' as const,
+          entityId: oficioId,
+          changes: {
+            old: { assinafyDocumentId: null },
+            new: { assinafyDocumentId: doc.id, assinafyStatus: 'pending_signature' },
+          },
         },
-        executor: tx,
-      });
-
-      return result;
+      };
     });
+
+    // Best-effort audit AFTER the tx commits. A failed audit INSERT must not abort the
+    // mutation's tx (the audit executor poisons PG tx on failure). Default `db` isolates the audit.
+    try {
+      await logAuditAction(auditArgs);
+    } catch {
+      logger.error('Audit log failed (non-critical)', { oficioId });
+    }
 
     if (!updated) {
       return { success: false, error: 'Ofício não encontrado ao atualizar.' };
