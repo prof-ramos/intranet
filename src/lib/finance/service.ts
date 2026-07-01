@@ -3,6 +3,7 @@ import { markOverduePaymentsForAudit } from './repository';
 import { logAuditAction } from '@/lib/audit/service';
 import { db } from '@/lib/db';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
+import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
 import {
   monthlyPayments,
   type MonthlyPayment,
@@ -33,10 +34,7 @@ const VALID_TRANSITIONS: Record<string, Set<string>> = {
   cancelado: new Set(),
 };
 
-export function validateStatusTransition(
-  currentStatus: string,
-  newStatus: string,
-): void {
+export function validateStatusTransition(currentStatus: string, newStatus: string): void {
   const allowed = VALID_TRANSITIONS[currentStatus];
   if (!allowed || !allowed.has(newStatus)) {
     throw new Error(
@@ -46,7 +44,7 @@ export function validateStatusTransition(
 }
 
 export async function autoMarkOverduePaymentsService(): Promise<number> {
-  const { transitioned, events } = await db.transaction(async (tx) => {
+  const { transitioned, eventIds } = await db.transaction(async (tx) => {
     const rows = await markOverduePaymentsForAudit(tx);
 
     if (rows.length > 0) {
@@ -70,36 +68,47 @@ export async function autoMarkOverduePaymentsService(): Promise<number> {
       );
     }
 
-    const domainEvents = rows.map((payment) => ({
-      event: {
-        type: 'monthly_payment.updated' as const,
-        entityType: 'monthly_payment' as const,
-        entityId: payment.id,
-        actorAdminId: null,
-        payload: {
-          associateId: payment.associateId,
-          year: payment.year,
-          month: payment.month,
-          previousStatus: 'pendente' as const,
-          status: 'atrasado' as const,
-          paymentMethod: payment.paymentMethod,
-          paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
-          links: {
-            app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
+    // Outbox invariant: emit domain events INSIDE the tx so the event row
+    // commits (or rolls back) with the mutation. Post-commit dispatch below
+    // is fire-and-forget; the cron /api/v1/events/dispatch is the safety net.
+    const emittedEventIds: number[] = [];
+    for (const payment of rows) {
+      const inserted = await emitDomainEvent(
+        {
+          type: 'monthly_payment.updated' as const,
+          entityType: 'monthly_payment' as const,
+          entityId: payment.id,
+          actorAdminId: null,
+          payload: {
+            associateId: payment.associateId,
+            year: payment.year,
+            month: payment.month,
+            previousStatus: 'pendente' as const,
+            status: 'atrasado' as const,
+            paymentMethod: payment.paymentMethod,
+            paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
+            links: {
+              app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
+            },
           },
         },
-      },
-    }));
+        tx,
+      );
+      emittedEventIds.push(inserted.id);
+    }
 
-    return { transitioned: rows, events: domainEvents };
+    return { transitioned: rows, eventIds: emittedEventIds };
   });
 
-  const emitResults = await Promise.allSettled(events.map(({ event }) => emitDomainEvent(event)));
-  const emitFailures = emitResults.filter((r) => r.status === 'rejected');
-  if (emitFailures.length > 0) {
-    logger.error('[autoMarkOverdue] Some domain events failed to emit', {
-      failedCount: emitFailures.length,
-      totalCount: events.length,
+  // Fire-and-forget post-commit dispatch so webhooks send promptly without
+  // waiting for the cron. The cron /api/v1/events/dispatch remains the safety
+  // net for any dispatch that fails or is skipped here.
+  for (const id of eventIds) {
+    void dispatchDomainEventById(id).catch((e) => {
+      logger.error('[autoMarkOverdue] post-commit dispatch failed', {
+        eventId: id,
+        error: String(e),
+      });
     });
   }
 
@@ -184,11 +193,7 @@ export async function updateMonthlyPayment(
     // - Already 'pago' staying 'pago': preserve existing paidAt
     // - Transitioning away from 'pago': clear
     const paidAt =
-      payment.status === 'pago'
-        ? current?.status === 'pago'
-          ? current.paidAt
-          : new Date()
-        : null;
+      payment.status === 'pago' ? (current?.status === 'pago' ? current.paidAt : new Date()) : null;
 
     const upserted = await tx
       .insert(monthlyPayments)
@@ -413,9 +418,8 @@ export async function initializeMonth(adminId: number, year: number, month: numb
         updatedBy: adminId,
       }));
 
-    const inserted = updates.length > 0
-      ? await repository.insertMonthlyPaymentsIfMissing(updates, tx)
-      : [];
+    const inserted =
+      updates.length > 0 ? await repository.insertMonthlyPaymentsIfMissing(updates, tx) : [];
 
     await logAuditAction({
       adminId,
