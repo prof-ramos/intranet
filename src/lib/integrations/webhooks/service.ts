@@ -319,11 +319,11 @@ export async function dispatchDomainEventById(eventId: number) {
         };
   }
 
-  return db.transaction((tx) => dispatchEventToSubscriptions(event, tx));
+  return dispatchEventToSubscriptions(event, db);
 }
 
 async function dispatchClaimedEvent(event: Awaited<ReturnType<typeof lockAndFetchDispatchableEvents>>[number]) {
-  return db.transaction((tx) => dispatchEventToSubscriptions(event, tx));
+  return dispatchEventToSubscriptions(event, db);
 }
 
 export async function dispatchPendingDomainEvents(limit = 20) {
