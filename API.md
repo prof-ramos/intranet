@@ -138,6 +138,26 @@ Secrets sem prefixo de criptografia (`enc:v1:` ou `enc:v2:`) sao rejeitados com 
 
 Os payloads do outbox passam por allowlist por tipo de evento antes de persistir em `domain_events.payload`. Antes do envio HTTP, o dispatcher aplica sanitizacao defensiva adicional em chaves sensiveis como CPF, SIAPE, email, endereco, telefone, tokens e secrets.
 
+### Tipos de evento suportados (outbox de webhooks)
+
+Subscriptions filtram por tipo de evento. A lista canônica de valores vive no enum `domain_event_type` (`src/lib/db/schema/integrations.ts`) e em `payloadSchemaByEventType` (`src/lib/integrations/outbox.ts`); o vocabulário de domínio está em `CONTEXT.md`.
+
+- `associate.updated` — associado atualizado
+- `legal_consultation.created` — consulta jurídica criada
+- `legal_consultation.status_changed` — status de consulta jurídica alterado
+- `official_letter.created` — ofício criado
+- `official_letter.published` — ofício publicado
+- `official_letter.status_changed` — status de ofício alterado
+- `monthly_payment.updated` — mensalidade atualizada
+- `activity.created` — atividade criada no Kanban
+- `activity.status_changed` — transição de status de atividade (`a_fazer`/`em_andamento`/`aguardando_terceiros`/`concluido`)
+- `activity.assigned` — atribuição/reatribuição de responsável (não emitido em auto-atribuição)
+- `activity.completed` — transição para `concluido` (emitido em paralelo a `activity.status_changed`)
+- `activity.priority_changed` — mudança de prioridade
+- `activity.due_date_changed` — mudança de vencimento
+
+Os eventos `activity.*` são emitidos transacionalmente em `db.transaction` junto com a mutação do Kanban (`src/lib/activities/service.ts`), com dispatch inline fire-and-forget após commit. Payloads levam apenas IDs + `links.app` (sem `title`/`description`, minimização de PII no outbox que retém 90 dias). O roteamento do destinatário (ex.: notificar o `createdById` — coordenador — em vez do `actorAdminId`) é decisão do consumer. Ver ADR 018.
+
 ---
 
 ## Endpoints Publicos

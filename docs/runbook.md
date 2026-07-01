@@ -153,3 +153,33 @@ DELETE FROM integration_signature_nonces WHERE expires_at < now();
 ```
 
 Executar via `psql "$DATABASE_MIGRATION_URL"` ou pelo Drizzle Studio (`npm run db:studio`). Recomendado verificar periodicamente em produção; em dev realista restrito, siga a política de reset/descarte definida em `docs/environments.md`.
+
+## 10. Eventos presos no outbox (`domain_events`)
+
+O outbox de webhooks (`domain_events`) acumula eventos emitidos por serviços internos (associados, jurídico, ofícios, mensalidades e, a partir do ADR 018, atividades do Kanban). Cada evento é inserido com `delivery_status = 'pending'` e dispatch inline fire-and-forget após commit; o cron `/api/v1/events/dispatch` (Vercel Cron, `0 3 * * *`) é a rede que recupera eventos não entregues na via inline, com retry exponencial (máx. 5). Eventos expiram após 90 dias (`expires_at`).
+
+**Sintoma:** um consumer de webhook não recebe notificações de uma mudança que ocorreu no Kanban (ex.: tarefa atribuída não chegou ao sistema de automação/push).
+
+**Investigação — eventos presos em `pending`:**
+```sql
+SELECT event_type, delivery_status, count(*), max(created_at) AS latest
+FROM domain_events
+WHERE delivery_status = 'pending' AND expires_at > now()
+GROUP BY event_type, delivery_status
+ORDER BY latest DESC;
+```
+
+Filtre por `event_type` em `activity.*` para isolar eventos de Kanban. Eventos `failed` (retry excedido) aparecem com `attempts >= 5`.
+
+**Ações:**
+
+- Verificar se a subscription correspondente existe e está ativa (`webhook_subscriptions` com o `event_type` em `subscribed_events` e `is_active = true`).
+- Verificar `webhook_deliveries` para o `event_id` — lá ficam status HTTP, corpo da resposta e próximo `next_attempt_at`.
+- Disparar manualmente um evento específico via `POST /api/v1/events` (sessão `admin` ou assinatura M2M), passando o `eventId`. Cada dispatch grava auditoria em `audit_logs` com `entityType = domain_event`.
+- Para reprocessar o backlog inteiro de `pending`, aguardar o cron diário ou acionar `POST /api/v1/events/dispatch` com bearer `CRON_SECRET`.
+
+**Notas:**
+
+- A via inline (fire-and-forget dentro do request) swallowed falhas de dispatch e só loga (`logger.error('inline dispatch failed ...')`) — a mutação do Kanban nunca falha por causa do webhook. O evento permanece `pending` e é recuperado pelo cron.
+- Não existe ingestão inbound por essa rota; eventos só são persistidos por serviços internos em `db.transaction` (atomicidade all-or-nothing com a mutação).
+- Ver ADR 018 para o conjunto de eventos `activity.*` e o racional de atomicidade.
