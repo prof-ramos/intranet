@@ -2,6 +2,11 @@ import { db } from '@/lib/db';
 import { associates } from '@/lib/db/schema';
 import { eq, and, asc, sql } from 'drizzle-orm';
 import { decryptPiiField } from '@/lib/crypto/pii';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('reports:queries');
+
+export const REPORT_DEFAULT_LIMIT = 5000;
 
 import type {
   functionalStatus as FunctionalStatusEnum,
@@ -118,6 +123,7 @@ const reportColumns = {
 
 export async function getAssociatesForReport(
   filters: ReportFilters = {},
+  limit: number = REPORT_DEFAULT_LIMIT,
 ): Promise<ReportAssociate[]> {
   const conditions = [];
 
@@ -155,7 +161,21 @@ export async function getAssociatesForReport(
     .select(reportColumns)
     .from(associates)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(asc(associates.fullName));
+    .orderBy(asc(associates.fullName))
+    .limit(limit + 1);
+
+  if (rows.length > limit) {
+    // Truncation: log counts/ids only — NEVER PII — and throw so the operator
+    // is forced to narrow filters rather than silently receiving a partial export.
+    logger.warn('[reports:queries] result truncated at limit', {
+      count: rows.length,
+      limit,
+      truncated: true,
+    });
+    throw new Error(
+      `Relatório excede o limite de ${limit} registros. Estreite os filtros para exportar.`,
+    );
+  }
 
   return rows.map((row) => ({
     id: row.id,
