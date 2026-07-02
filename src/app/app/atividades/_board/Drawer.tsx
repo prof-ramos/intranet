@@ -25,7 +25,6 @@ import { Avatar } from './ActivityCard';
 import type { ActivityTimelineItem, BoardActivity, BoardPerson } from './types';
 import { isActivityPriority, isActivityStatus } from '@/lib/activities/status';
 
-// ⚡ Bolt: Cache Intl instances to avoid expensive object creation on every render
 const dtf = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
   month: '2-digit',
@@ -318,8 +317,7 @@ export function Drawer({
                       {item.summary}
                     </p>
                     <p className="mt-1 text-[11px]" style={{ color: textMuted }}>
-                      {item.actorName ?? 'Sistema'} ·{' '}
-                      {dtf.format(new Date(item.createdAt))}
+                      {item.actorName ?? 'Sistema'} · {dtf.format(new Date(item.createdAt))}
                     </p>
                   </li>
                 ))}
