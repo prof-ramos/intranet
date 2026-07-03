@@ -88,7 +88,9 @@ Preview não deve herdar envs gerais de banco de produção.
 
 `CREATE INDEX CONCURRENTLY` e `DROP INDEX CONCURRENTLY` **não** podem ser executados dentro de transações PostgreSQL. Como o Drizzle Kit (`npm run db:migrate`) aplica migrações envolvendo cada statement em uma transação, esses comandos falham nesse fluxo. Para esses casos: backup → teste em staging → execução direta via `psql "$DATABASE_MIGRATION_URL"` → validação com `npm run test:db`.
 
-### Migrações aplicadas (28)
+### Migrações aplicadas (29)
+
+Contagem = número de entradas em `drizzle/postgres/meta/_journal.json` (fonte de verdade), não a listagem do diretório.
 
 | # | Arquivo | Descrição |
 |---|---------|-----------|
@@ -120,6 +122,7 @@ Preview não deve herdar envs gerais de banco de produção.
 | 0025 | `0025_officials_domain_statuses.sql` | Normaliza enums `association_status` e `contribution_status` (remove valores legados `ativo`, `pendente_migracao`) |
 | 0026 | `0026_add_associate_retirement_date.sql` | Adiciona coluna `retirement_date` em associates |
 | 0027 | `0027_add_associates_name_translated_trgm_index.sql` | Índice GIN trigram transliterado para busca de nome sem acentos |
+| 0028 | `0028_activity_domain_events.sql` | ADR 018: eventos de domínio `activity.*` no outbox (6 valores em `domain_event_type` + `activity` em `domain_event_entity_type`) |
 
 ### Nomenclatura
 
