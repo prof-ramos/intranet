@@ -95,8 +95,8 @@ export function DependentManager({ associateId, items }: DependentManagerProps) 
           <form key={dep.id} onSubmit={handleEdit} className="flex items-center gap-2">
             <input type="hidden" name="id" value={dep.id} />
             <input type="hidden" name="associateId" value={associateId} />
-            <input name="name" defaultValue={dep.name} required style={inputStyle} className="max-w-[180px]" />
-            <input name="relationship" defaultValue={dep.relationship} required style={inputStyle} className="max-w-[120px]" />
+            <input name="name" defaultValue={dep.name} required style={inputStyle} className="max-w-[180px]" aria-label="Nome" />
+            <input name="relationship" defaultValue={dep.relationship} required style={inputStyle} className="max-w-[120px]" aria-label="Parentesco" />
             <button type="submit" disabled={pending} className={btnSmall} aria-label="Salvar">
               <Check size={14} />
             </button>
@@ -121,8 +121,8 @@ export function DependentManager({ associateId, items }: DependentManagerProps) 
       {adding && (
         <form onSubmit={handleAdd} className="flex items-center gap-2">
           <input type="hidden" name="associateId" value={associateId} />
-          <input name="name" placeholder="Nome" required style={inputStyle} className="max-w-[180px]" />
-          <input name="relationship" placeholder="Parentesco" required style={inputStyle} className="max-w-[120px]" />
+          <input name="name" placeholder="Nome" required style={inputStyle} className="max-w-[180px]" aria-label="Nome" />
+          <input name="relationship" placeholder="Parentesco" required style={inputStyle} className="max-w-[120px]" aria-label="Parentesco" />
           <button type="submit" disabled={pending} className={btnSmall} aria-label="Adicionar">
             <Check size={14} />
           </button>
@@ -216,9 +216,9 @@ export function HealthAgreementManager({ associateId, items }: HealthAgreementMa
           <form key={ha.id} onSubmit={handleEdit} className="flex flex-wrap items-center gap-2">
             <input type="hidden" name="id" value={ha.id} />
             <input type="hidden" name="associateId" value={associateId} />
-            <input name="provider" defaultValue={ha.provider} required style={inputStyle} className="max-w-[180px]" />
-            <input name="startDate" type="date" defaultValue={ha.startDate ?? ''} style={inputStyle} className="max-w-[140px]" />
-            <input name="endDate" type="date" defaultValue={ha.endDate ?? ''} style={inputStyle} className="max-w-[140px]" />
+            <input name="provider" defaultValue={ha.provider} required style={inputStyle} className="max-w-[180px]" aria-label="Convênio" />
+            <input name="startDate" type="date" defaultValue={ha.startDate ?? ''} style={inputStyle} className="max-w-[140px]" aria-label="Data de início" />
+            <input name="endDate" type="date" defaultValue={ha.endDate ?? ''} style={inputStyle} className="max-w-[140px]" aria-label="Data de término" />
             <button type="submit" disabled={pending} className={btnSmall} aria-label="Salvar">
               <Check size={14} />
             </button>
@@ -251,9 +251,9 @@ export function HealthAgreementManager({ associateId, items }: HealthAgreementMa
       {adding && (
         <form onSubmit={handleAdd} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="associateId" value={associateId} />
-          <input name="provider" placeholder="Convênio" required style={inputStyle} className="max-w-[180px]" />
-          <input name="startDate" type="date" style={inputStyle} className="max-w-[140px]" />
-          <input name="endDate" type="date" style={inputStyle} className="max-w-[140px]" />
+          <input name="provider" placeholder="Convênio" required style={inputStyle} className="max-w-[180px]" aria-label="Convênio" />
+          <input name="startDate" type="date" style={inputStyle} className="max-w-[140px]" aria-label="Data de início" />
+          <input name="endDate" type="date" style={inputStyle} className="max-w-[140px]" aria-label="Data de término" />
           <button type="submit" disabled={pending} className={btnSmall} aria-label="Adicionar">
             <Check size={14} />
           </button>
