@@ -1,4 +1,4 @@
-import { PII_TEXT_PATTERNS, sanitizePiiValue, redactPiiString } from '@/lib/sanitize-pii';
+import { PII_TEXT_PATTERNS, sanitizePiiValue } from '@/lib/sanitize-pii';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -101,7 +101,7 @@ export class Logger {
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
-      message: redactPiiString(message),
+      message,
       context: context ? { ...context, module: this.module } : { module: this.module },
     };
 

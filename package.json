@@ -96,9 +96,7 @@
   },
   "overrides": {
     "esbuild": "0.28.0",
-    "nodemailer": "^9.0.0",
-    "postcss": "8.5.14",
-    "ws": "^8.21.0"
+    "postcss": "8.5.14"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

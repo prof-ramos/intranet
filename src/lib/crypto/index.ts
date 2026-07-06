@@ -35,9 +35,6 @@ export function encrypt(plaintext: string, key: string): string {
   return `${V1_PREFIX}${iv.toString('base64url')}.${authTag.toString('base64url')}.${ciphertext.toString('base64url')}`;
 }
 
-/** Module-level flag to warn once per process about legacy plaintext. */
-let warnedLegacyPlaintext = false;
-
 /**
  * Decrypts a v1 ciphertext. If the input does not start with the `enc:v1:`
  * prefix it is returned as-is (legacy plaintext passthrough).
@@ -46,10 +43,6 @@ let warnedLegacyPlaintext = false;
  */
 export function decrypt(ciphertext: string, key: string): string {
   if (!ciphertext.startsWith(V1_PREFIX)) {
-    if (!warnedLegacyPlaintext && process.env.NODE_ENV !== 'test') {
-      warnedLegacyPlaintext = true;
-      console.warn('[crypto] decrypt called on non-encrypted value — legacy plaintext passthrough');
-    }
     return ciphertext;
   }
 

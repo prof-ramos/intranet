@@ -11,7 +11,6 @@ import {
   getConsultationById,
 } from './repository';
 import { isLegalConsultationStatus, type LegalConsultationStatus } from '@/lib/juridico/status';
-import { NotFoundError, ValidationError } from '@/lib/errors';
 
 const MAX_RETRIES = 3;
 const WEBHOOKABLE_STATUS_TRANSITIONS = new Set<LegalConsultationStatus>([
@@ -62,7 +61,6 @@ export async function generateInternalNumber(executor?: DbExecutor): Promise<str
   }
 
   throw new Error('Falha ao gerar número interno após múltiplas tentativas.');
-  // ponytail: generic internal failure (unique-constraint retries exhausted) — not classifiable as a domain error
 }
 
 interface CreateConsultationInput {
@@ -83,13 +81,13 @@ interface CreateConsultationInput {
  */
 export async function createConsultationService(input: CreateConsultationInput) {
   if (!input.title.trim()) {
-    throw new ValidationError('O título da consulta é obrigatório.');
+    throw new Error('O título da consulta é obrigatório.');
   }
   if (!input.questionSummary.trim()) {
-    throw new ValidationError('O resumo da pergunta é obrigatório.');
+    throw new Error('O resumo da pergunta é obrigatório.');
   }
   if (!input.createdBy || Number.isNaN(input.createdBy)) {
-    throw new ValidationError('Usuário criador inválido.');
+    throw new Error('Usuário criador inválido.');
   }
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -153,15 +151,14 @@ export async function createConsultationService(input: CreateConsultationInput) 
   }
 
   throw new Error('Falha ao criar consulta após múltiplas tentativas.');
-  // ponytail: generic internal failure (unique-constraint retries exhausted) — not classifiable as a domain error
 }
 
 export async function updateConsultationStatusService(id: number, status: string) {
   if (!Number.isInteger(id) || id <= 0) {
-    throw new ValidationError('Consulta inválida.');
+    throw new Error('Consulta inválida.');
   }
   if (!isLegalConsultationStatus(status)) {
-    throw new ValidationError('Status de consulta inválido.');
+    throw new Error('Status de consulta inválido.');
   }
 
   const validStatus: LegalConsultationStatus = status;
@@ -170,7 +167,7 @@ export async function updateConsultationStatusService(id: number, status: string
   await db.transaction(async (tx) => {
     const current = await getConsultationById(id, tx);
     if (!current) {
-      throw new NotFoundError('Consulta');
+      throw new Error('Consulta inválida.');
     }
 
     if (current.status === validStatus) {
@@ -216,16 +213,16 @@ interface AddNoteInput {
 
 export async function addNoteService(input: AddNoteInput) {
   if (!['consultation', 'process'].includes(input.entityType)) {
-    throw new ValidationError('Tipo de entidade inválido.');
+    throw new Error('Tipo de entidade inválido.');
   }
   if (!Number.isInteger(input.entityId) || input.entityId <= 0) {
-    throw new ValidationError('Entidade inválida.');
+    throw new Error('Entidade inválida.');
   }
   if (!input.content.trim()) {
-    throw new ValidationError('O conteúdo da nota é obrigatório.');
+    throw new Error('O conteúdo da nota é obrigatório.');
   }
   if (!Number.isInteger(input.createdBy) || input.createdBy <= 0) {
-    throw new ValidationError('Usuário criador inválido.');
+    throw new Error('Usuário criador inválido.');
   }
 
   await db.transaction(async (tx) => {

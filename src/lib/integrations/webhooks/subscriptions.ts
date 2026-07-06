@@ -76,7 +76,7 @@ export async function createManagedWebhookSubscription(
   actorAdminId: number,
   input: CreateWebhookSubscriptionInput,
 ) {
-  const parsed = await createSubscriptionSchema.parseAsync(input);
+  const parsed = createSubscriptionSchema.parse(input);
 
   return db.transaction(async (tx) => {
     const inserted = await insertWebhookSubscription(
@@ -109,7 +109,7 @@ export async function updateManagedWebhookSubscription(
   actorAdminId: number,
   input: UpdateWebhookSubscriptionInput,
 ) {
-  const parsed = await updateSubscriptionSchema.parseAsync(input);
+  const parsed = updateSubscriptionSchema.parse(input);
 
   return db.transaction(async (tx) => {
     const current = await getWebhookSubscriptionById(parsed.id, tx);

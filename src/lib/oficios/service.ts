@@ -12,7 +12,6 @@ import * as assinafyRepository from '@/lib/assinafy/repository';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 import { env } from '@/lib/env';
-import { NotFoundError } from '@/lib/errors';
 
 const logger = createLogger('oficios:service');
 
@@ -93,12 +92,11 @@ export async function updateOfficialLetter(
 ) {
   return db.transaction(async (tx) => {
     const old = await repository.findOfficialLetterById(id, tx);
-    if (!old) throw new NotFoundError('Ofício');
+    if (!old) throw new Error('Ofício não encontrado.');
 
     const result = await repository.updateOfficialLetter(id, { ...data, updatedBy: userId }, tx);
     if (!result) {
       throw new Error('Falha ao atualizar ofício.');
-      // ponytail: generic internal failure — not classifiable as a domain error
     }
 
     await logAuditAction({
@@ -140,7 +138,7 @@ export async function updateOfficialLetter(
 export async function cancelOfficialLetter(id: number, userId: number) {
   return db.transaction(async (tx) => {
     const old = await repository.findOfficialLetterById(id, tx);
-    if (!old) throw new NotFoundError('Ofício');
+    if (!old) throw new Error('Ofício não encontrado.');
 
     const result = await repository.cancelOfficialLetter(id, userId, tx);
 

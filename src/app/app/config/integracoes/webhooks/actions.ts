@@ -59,12 +59,12 @@ function parseId(raw: string) {
   return id;
 }
 
-async function parseSubscriptionForm(formData: {
+function parseSubscriptionForm(formData: {
   name: string;
   targetUrl: string;
   subscribedEvents: string[];
 }) {
-  const parsed = await webhookSubscriptionFormSchema.parseAsync({
+  const parsed = webhookSubscriptionFormSchema.parse({
     name: formData.name,
     targetUrl: formData.targetUrl,
     subscribedEvents: formData.subscribedEvents,
@@ -82,7 +82,7 @@ export const createWebhookSubscription = defineFormStateAction({
   service: async (data, actor) => {
     try {
       await createManagedWebhookSubscription(actor.userId, {
-        ...(await parseSubscriptionForm(data)),
+        ...parseSubscriptionForm(data),
         secret: webhookSecretSchema.parse(data.secret),
       });
       revalidatePath('/app/config/integracoes/webhooks');
@@ -101,7 +101,7 @@ export const updateWebhookSubscription = defineFormStateAction({
     try {
       await updateManagedWebhookSubscription(actor.userId, {
         id: parseId(data.id),
-        ...(await parseSubscriptionForm(data)),
+        ...parseSubscriptionForm(data),
         isActive: data.isActive === 'true',
       });
       revalidatePath('/app/config/integracoes/webhooks');

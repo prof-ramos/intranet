@@ -99,51 +99,13 @@ Ao final da validação, descarte o banco temporário explicitamente (ex: `dropd
 No desenvolvimento diario, use `asof_intranet` local com seed sintetico. Clones
 com PII real sao excecao restrita descrita em [`environments.md`](./environments.md).
 
-## 5. Smoke De Producao
+## 5. Smoke Manual
 
 Para a Release 1.0, use o roteiro detalhado em
 [`docs/release-1-operational-go-live.md`](./release-1-operational-go-live.md).
 Ele cobre backup pre-janela, smoke manual em producao, validacao dos crons com
 `CRON_SECRET`, limpeza `SMOKE_*`, restore de teste e revisao minima de
 integracoes/API keys.
-
-O smoke automatizado oficial roda pelo spec `e2e/smoke-prod.spec.ts` contra
-`https://intranet.asof.com.br`. A conta dedicada e
-`smoke-admin@asof.local`, mantida em `admins` com `role=admin`,
-`is_active=true` e `must_change_password=false`; a senha deve existir somente no
-secret `SMOKE_ADMIN_PASSWORD` do GitHub Actions ou no shell da janela
-controlada.
-
-Execucao local em janela controlada:
-
-```bash
-SMOKE_BASE_URL=https://intranet.asof.com.br \
-SMOKE_ADMIN_EMAIL=smoke-admin@asof.local \
-SMOKE_ADMIN_PASSWORD='...' \
-npm run smoke:prod
-```
-
-Execucao via GitHub Actions: o workflow `CI` aceita `workflow_dispatch` apos a
-versao do workflow estar em `main`. O job `Smoke Test — Production` roda em
-`push` para `main` ou disparo manual, e continua pulado em PRs.
-
-Depois de qualquer smoke que crie dados, execute a limpeza `SMOKE_*` impressa
-pelo spec e confirme que as contagens operacionais ficaram zeradas:
-
-```sql
-SELECT
-  (SELECT count(*) FROM activities WHERE title ILIKE 'SMOKE_%') AS activities,
-  (SELECT count(*) FROM associates WHERE full_name ILIKE 'SMOKE_%') AS associates,
-  (SELECT count(*) FROM legal_consultations WHERE title ILIKE 'SMOKE_%') AS consultations,
-  (SELECT count(*) FROM oficios WHERE subject ILIKE 'SMOKE_%') AS oficios,
-  (SELECT count(*) FROM notifications WHERE message ILIKE '%SMOKE_%') AS notifications;
-```
-
-Se o smoke falhar na criacao de atividade com erro de enum
-`domain_event_type: "activity.created"`, a producao esta sem a migration manual
-`0028_activity_domain_events.sql`. Aplicar essa migration via
-`DATABASE_MIGRATION_URL` direto do Neon `main`, registrar o hash em
-`drizzle.__drizzle_migrations`, e repetir o smoke.
 
 Validar no ambiente alvo:
 

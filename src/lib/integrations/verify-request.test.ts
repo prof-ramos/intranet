@@ -10,7 +10,6 @@ const {
   mockDecryptIntegrationSigningSecret,
   mockLoggerWarn,
   mockNonceSelectResult,
-  mockNonceInsertResult,
 } = vi.hoisted(() => ({
   mockGetIntegrationConfig: vi.fn(),
   mockIsIntegrationAuthConfigured: vi.fn(),
@@ -19,7 +18,6 @@ const {
   mockDecryptIntegrationSigningSecret: vi.fn(),
   mockLoggerWarn: vi.fn(),
   mockNonceSelectResult: { current: [] as Array<{ id: number }> },
-  mockNonceInsertResult: { current: [{ id: 1 }] as Array<{ id: number }> },
 }));
 
 vi.mock('@/lib/logger', () => ({
@@ -66,9 +64,7 @@ vi.mock('@/lib/db', () => ({
     }),
     insert: () => ({
       values: () => ({
-        onConflictDoNothing: () => ({
-          returning: () => Promise.resolve(mockNonceInsertResult.current),
-        }),
+        onConflictDoNothing: () => Promise.resolve(),
       }),
     }),
   },
@@ -452,39 +448,6 @@ describe('verifyIntegrationRequest — empty body', () => {
   });
 });
 
-describe('verifyIntegrationRequest — body size limits', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockUpdateApiKeyLastUsed.mockResolvedValue([]);
-  });
-
-  it('rejects requests whose declared body size exceeds the integration limit', async () => {
-    mockGetIntegrationConfig.mockReturnValue(defaultConfig());
-    mockIsIntegrationAuthConfigured.mockReturnValue(true);
-
-    const timestamp = String(NOW_SECONDS);
-    const sig = computeSignature('POST', '/api/v1/webhooks', timestamp, '', HMAC_SECRET);
-    const headers = new Headers();
-    headers.set('x-asof-key', API_KEY);
-    headers.set('x-asof-timestamp', timestamp);
-    headers.set('x-asof-signature', `sha256=${sig}`);
-    headers.set('content-length', String(10 * 1024 * 1024 + 1));
-    const request = new Request('https://api.example.com/api/v1/webhooks', {
-      method: 'POST',
-      headers,
-      body: '',
-    });
-
-    const result = await verifyIntegrationRequest(request);
-
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.reason).toBe('body_too_large');
-      expect(result.details).toEqual({ limitBytes: 10 * 1024 * 1024 });
-    }
-  });
-});
-
 describe('verifyIntegrationRequest — disabled', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -511,13 +474,13 @@ describe('verifyIntegrationRequest — replay protection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUpdateApiKeyLastUsed.mockResolvedValue([]);
-    mockNonceInsertResult.current = [{ id: 1 }];
+    mockNonceSelectResult.current = [];
   });
 
   it('rejects a replayed request when the same signature was already accepted', async () => {
     mockGetIntegrationConfig.mockReturnValue(defaultConfig());
     mockIsIntegrationAuthConfigured.mockReturnValue(true);
-    mockNonceInsertResult.current = [];
+    mockNonceSelectResult.current = [{ id: 1 }];
 
     const timestamp = String(NOW_SECONDS);
     const sig = computeSignature('GET', '/api/v1/events', timestamp, '', HMAC_SECRET);
