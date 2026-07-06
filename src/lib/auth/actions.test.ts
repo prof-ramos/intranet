@@ -3,9 +3,16 @@ import { Logger } from '@/lib/logger';
 import { logout } from './actions';
 
 const destroySessionMock = vi.fn();
+const requireAuthMock = vi.fn().mockResolvedValue({
+  userId: 1, name: 'Admin', email: 'admin@asof.local', role: 'admin', mustChangePassword: false,
+});
 
 vi.mock('@/lib/auth/session', () => ({
   destroySession: (...args: unknown[]) => destroySessionMock(...args),
+}));
+
+vi.mock('@/lib/auth/require-auth', () => ({
+  requireAuth: (...args: unknown[]) => requireAuthMock(...args),
 }));
 
 vi.mock('next/navigation', () => ({

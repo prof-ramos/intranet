@@ -14,6 +14,7 @@ import { associates } from '@/lib/db/schema/associates';
 import { and, eq, sql } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
 import { yearMonthObjectSchema } from '@/lib/validation/schemas';
+import { ConcurrencyConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 
 const logger = createLogger('finance:service');
 
@@ -37,7 +38,7 @@ const VALID_TRANSITIONS: Record<string, Set<string>> = {
 export function validateStatusTransition(currentStatus: string, newStatus: string): void {
   const allowed = VALID_TRANSITIONS[currentStatus];
   if (!allowed || !allowed.has(newStatus)) {
-    throw new Error(
+    throw new ValidationError(
       `Transição inválida: não é possível alterar de '${currentStatus}' para '${newStatus}'.`,
     );
   }
@@ -135,10 +136,10 @@ function getPaymentAuditState(payment: MonthlyPayment) {
 function validateCancellationReason(reason: string): string {
   const trimmed = reason.trim();
   if (trimmed.length < 3) {
-    throw new Error('Motivo de cancelamento obrigatório.');
+    throw new ValidationError('Motivo de cancelamento obrigatório.');
   }
   if (trimmed.length > 500) {
-    throw new Error('Motivo de cancelamento deve ter no máximo 500 caracteres.');
+    throw new ValidationError('Motivo de cancelamento deve ter no máximo 500 caracteres.');
   }
   return trimmed;
 }
@@ -146,7 +147,7 @@ function validateCancellationReason(reason: string): string {
 export function validateYearMonth(year: number, month: number): void {
   const parsed = yearMonthObjectSchema.safeParse({ year, month });
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0].message);
+    throw new ValidationError(parsed.error.issues[0].message);
   }
 }
 
@@ -182,7 +183,7 @@ export async function updateMonthlyPayment(
     if (current && expectedUpdatedAt != null) {
       const currentUpdatedAt = current.updatedAt?.toISOString() ?? null;
       if (currentUpdatedAt !== expectedUpdatedAt) {
-        throw new Error('CONCURRENCY_CONFLICT');
+      throw new ConcurrencyConflictError();
       }
     }
 
@@ -226,7 +227,7 @@ export async function updateMonthlyPayment(
 
     if (!updatedPayment) {
       // setWhere predicate failed — another writer changed the row concurrently.
-      throw new Error('CONCURRENCY_CONFLICT');
+      throw new ConcurrencyConflictError();
     }
 
     await logAuditAction({
@@ -284,7 +285,7 @@ export async function updateMonthlyPayment(
 
 export async function cancelMonthlyPayment(adminId: number, paymentId: number, reason: string) {
   if (!Number.isInteger(paymentId) || paymentId <= 0) {
-    throw new Error('Mensalidade inválida.');
+    throw new ValidationError('Mensalidade inválida.');
   }
 
   const cancellationReason = validateCancellationReason(reason);
@@ -298,10 +299,10 @@ export async function cancelMonthlyPayment(adminId: number, paymentId: number, r
 
     const current = rows[0] ?? null;
     if (!current) {
-      throw new Error('PAYMENT_NOT_FOUND');
+      throw new NotFoundError('Pagamento');
     }
     if (current.status === 'cancelado') {
-      throw new Error('PAYMENT_ALREADY_CANCELLED');
+      throw new ValidationError('Pagamento já cancelado.');
     }
 
     const cancelledAt = new Date();
@@ -323,7 +324,7 @@ export async function cancelMonthlyPayment(adminId: number, paymentId: number, r
       .returning();
 
     if (!updatedPayment) {
-      throw new Error('PAYMENT_ALREADY_CANCELLED');
+      throw new ValidationError('Pagamento já cancelado.');
     }
 
     const newState = getPaymentAuditState(updatedPayment);

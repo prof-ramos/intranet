@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   decrypt,
   encrypt,
@@ -15,6 +15,11 @@ const TEST_KEY = '0123456789abcdef0123456789abcdef';
 const OTHER_KEY = 'abcdef0123456789abcdef0123456789';
 
 describe('crypto module', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
   describe('V1 encrypt', () => {
     it('produces versioned ciphertext with the enc:v1: prefix', () => {
       const ciphertext = encrypt('hello', TEST_KEY);
@@ -58,6 +63,21 @@ describe('crypto module', () => {
 
     it('returns legacy plaintext as-is even without a key', () => {
       expect(decrypt('plain-value', 'any-key')).toBe('plain-value');
+    });
+
+    it('warns once outside tests when legacy plaintext is passed through', async () => {
+      vi.stubEnv('NODE_ENV', 'development');
+      vi.resetModules();
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { decrypt: decryptFresh } = await import('@/lib/crypto');
+
+      expect(decryptFresh('legacy-a', TEST_KEY)).toBe('legacy-a');
+      expect(decryptFresh('legacy-b', TEST_KEY)).toBe('legacy-b');
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(
+        '[crypto] decrypt called on non-encrypted value — legacy plaintext passthrough',
+      );
     });
 
     it('throws on ciphertext produced with a different key', () => {

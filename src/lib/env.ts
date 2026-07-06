@@ -149,6 +149,31 @@ export const envSchema = z
       message: 'ASOF_INTRANET_URL is required for production app links.',
       path: ['ASOF_INTRANET_URL'],
     },
+  )
+  .refine(
+    (data) => {
+      if (data.VERCEL_ENV !== 'production') return true;
+      if (!data.INITIAL_ADMIN_EMAIL) return true;
+      const email = data.INITIAL_ADMIN_EMAIL.toLowerCase();
+      return !email.includes('example.invalid') && !email.includes('example.com');
+    },
+    {
+      message:
+        'INITIAL_ADMIN_EMAIL contém placeholder de exemplo — defina um valor real para produção',
+      path: ['INITIAL_ADMIN_EMAIL'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.VERCEL_ENV !== 'production') return true;
+      if (!data.INITIAL_ADMIN_PASSWORD) return true;
+      return !data.INITIAL_ADMIN_PASSWORD.toLowerCase().includes('changeme');
+    },
+    {
+      message:
+        'INITIAL_ADMIN_PASSWORD contém placeholder de exemplo — defina um valor real para produção',
+      path: ['INITIAL_ADMIN_PASSWORD'],
+    },
   );
 
 const parsed = envSchema.safeParse(process.env);

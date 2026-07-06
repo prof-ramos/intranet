@@ -41,8 +41,10 @@ de staging/dev/preview.
 - [x] Smoke test automatizado de producao implementado e validado (ADR 009):
   - Spec E2E Playwright (`e2e/smoke-prod.spec.ts`) cobre login, dashboard, associados, atividades, juridico, oficios, financeiro, auditoria, notificacoes e reset de senha.
   - Executa contra `intranet.asof.com.br` com dados marcados `SMOKE_*`.
-  - Pos-smoke: SQL de limpeza automatico remove dados de teste; `audit_log` preservado.
-  - CI/CD: job `smoke-prod` roda apenas em push para `main` com credenciais de ambiente.
+  - Conta dedicada de smoke: `smoke-admin@asof.local`, `role=admin`, `is_active=true`, `must_change_password=false`; senha gerenciada apenas por `SMOKE_ADMIN_PASSWORD` no GitHub Actions.
+  - Pos-smoke: executar o SQL de limpeza impresso pelo spec; dados operacionais `SMOKE_*` devem ficar zerados e `audit_log` e preservado.
+  - CI/CD: job `smoke-prod` roda em push para `main` e pode ser disparado manualmente por `workflow_dispatch` apos a publicacao do workflow.
+  - Ultima janela controlada validada: 2026-07-06, `npm run smoke:prod` contra producao passou 10/10 apos aplicar a migration manual `0028_activity_domain_events.sql` no Neon `main`.
 - [x] Validar crons com `CRON_SECRET` antes de ativar operacao.
 - [x] Confirmar que previews/staging nao apontam para banco de producao — envs gerais de banco foram removidos do ambiente Preview no Vercel em 2026-05-26; restam apenas `SESSION_SECRET` em Preview e `GEMINI_API_KEY` restrita ao branch `feature/outbound-integrations-webhooks`.
 
@@ -96,12 +98,16 @@ Marcar a janela de go-live (ADR 009) somente quando todos os itens abaixo estive
 
 O roteiro de smoke e executado automaticamente pelo spec E2E Playwright `e2e/smoke-prod.spec.ts`.
 
-**Pre-requisitos:** `SMOKE_ADMIN_EMAIL` e `SMOKE_ADMIN_PASSWORD` configurados como secrets do GitHub Actions.
+**Pre-requisitos:** `SMOKE_ADMIN_EMAIL` e `SMOKE_ADMIN_PASSWORD` configurados como secrets do GitHub Actions, apontando para a conta dedicada `smoke-admin@asof.local` em producao.
 
 **Execucao manual (local):**
 ```bash
-SMOKE_ADMIN_EMAIL=gabriel@asof.org.br SMOKE_ADMIN_PASSWORD='...' npm run smoke:prod
+SMOKE_BASE_URL=https://intranet.asof.com.br SMOKE_ADMIN_EMAIL=smoke-admin@asof.local SMOKE_ADMIN_PASSWORD='...' npm run smoke:prod
 ```
+
+**Execucao manual (GitHub Actions):** apos o workflow com `workflow_dispatch`
+estar publicado em `main`, usar a action `CI` no GitHub e disparar manualmente.
+O job `Smoke Test — Production` continua pulado em PRs.
 
 **Passos automatizados (10 testes serializados):**
 1. Login e Sessao — valida cookie `httpOnly` assinado.
@@ -119,6 +125,7 @@ SMOKE_ADMIN_EMAIL=gabriel@asof.org.br SMOKE_ADMIN_PASSWORD='...' npm run smoke:p
 O spec imprime o SQL de limpeza ao final. Executar via console Neon ou `psql` com `DATABASE_MIGRATION_URL`:
 ```sql
 DELETE FROM activities WHERE title ILIKE 'SMOKE_%';
+DELETE FROM associates WHERE full_name ILIKE 'SMOKE_%';
 DELETE FROM legal_notes WHERE entity_id IN (SELECT id FROM legal_consultations WHERE title ILIKE 'SMOKE_%');
 DELETE FROM legal_consultations WHERE title ILIKE 'SMOKE_%';
 DELETE FROM oficios WHERE subject ILIKE 'SMOKE_%';

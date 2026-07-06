@@ -12,7 +12,7 @@ const hasMigrationUrl =
   !!process.env.POSTGRES_URL_NON_POOLING ||
   !!process.env.DATABASE_POSTGRES_URL;
 
-if (!process.env.DATABASE_URL || !hasMigrationUrl) {
+if ((!process.env.DATABASE_URL || !hasMigrationUrl) && process.env.VERCEL_ENV !== 'production') {
   const missing = [];
   if (!process.env.DATABASE_URL) missing.push('DATABASE_URL');
   if (!hasMigrationUrl) missing.push('DATABASE_MIGRATION_URL (ou DATABASE_URL_UNPOOLED / DATABASE_POSTGRES_URL_NON_POOLING / POSTGRES_URL_NON_POOLING / DATABASE_POSTGRES_URL)');

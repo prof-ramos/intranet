@@ -1,7 +1,6 @@
 'use server';
 
 import { createHash } from 'node:crypto';
-import { and, eq, gt, sql } from 'drizzle-orm';
 import type { AuthRole } from '@/lib/auth/config';
 import { canAccessRole } from '@/lib/auth/authorization';
 import { safeCompare } from '@/lib/crypto/safe-compare';
@@ -41,11 +40,19 @@ function normalizeSignatureHeader(signature: string | null): string | null {
   return normalized.startsWith('sha256=') ? normalized.slice('sha256='.length) : normalized;
 }
 
-async function readRequestBody(request: Request): Promise<string> {
+const MAX_BODY_BYTES = 10 * 1024 * 1024;
+
+async function readRequestBody(
+  request: Request,
+): Promise<{ ok: true; body: string } | { ok: false; reason: 'body_too_large' }> {
+  const contentLength = Number(request.headers.get('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+    return { ok: false, reason: 'body_too_large' };
+  }
   try {
-    return await request.clone().text();
+    return { ok: true, body: await request.clone().text() };
   } catch {
-    return '';
+    return { ok: true, body: '' };
   }
 }
 
@@ -101,29 +108,18 @@ async function checkAndRecordNonce(
   signature: string,
   toleranceSec: number,
 ): Promise<boolean> {
-  const existing = await db
-    .select({ id: integrationSignatureNonces.id })
-    .from(integrationSignatureNonces)
-    .where(
-      and(
-        eq(integrationSignatureNonces.keyId, keyId),
-        eq(integrationSignatureNonces.signature, signature),
-        gt(integrationSignatureNonces.expiresAt, sql`now()`),
-      ),
-    )
-    .limit(1);
-
-  if (existing.length > 0) {
-    return false;
-  }
-
+  // ponytail: single INSERT with unique constraint as the gate.
+  // The unique index on (keyId, signature) serializes concurrent requests.
+  // First INSERT wins; onConflictDoNothing rejects the duplicate.
+  // No SELECT race window.
   const expiresAt = new Date(Date.now() + toleranceSec * 1000);
-  await db
+  const [inserted] = await db
     .insert(integrationSignatureNonces)
     .values({ keyId, signature, expiresAt })
-    .onConflictDoNothing();
+    .onConflictDoNothing()
+    .returning({ id: integrationSignatureNonces.id });
 
-  return true;
+  return !!inserted;
 }
 
 /**
@@ -169,12 +165,22 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
     return timestampResult;
   }
 
-  const body = await readRequestBody(request);
+  const bodyResult = await readRequestBody(request);
+  if (!bodyResult.ok) {
+    return {
+      ok: false,
+      reason: bodyResult.reason,
+      details: {
+        limitBytes: MAX_BODY_BYTES,
+      },
+    };
+  }
+
   const signaturePayload: IntegrationSignatureInput = {
     method: request.method,
     pathWithQuery: getPathWithQuery(request),
     timestamp,
-    body,
+    body: bodyResult.body,
   };
 
   // --- Path 1: env-var key ---
@@ -359,12 +365,16 @@ function mapIntegrationFailureToResponse(
         requestId,
       });
     case 'invalid_timestamp':
+    case 'body_too_large':
       return jsonError(
         400,
         'invalid_request',
-        'Integration timestamp must be a Unix time in seconds.',
+        reason.reason === 'body_too_large'
+          ? 'Integration request body exceeds the maximum allowed size.'
+          : 'Integration timestamp must be a Unix time in seconds.',
         {
           requestId,
+          details: reason.details,
         },
       );
     case 'timestamp_skew':

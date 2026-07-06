@@ -12,7 +12,7 @@ const {
   mockDbSelect,
   mockDbInsert,
 } = vi.hoisted(() => {
-  const mockDbInsertValues = vi.fn(() => ({ onConflictDoNothing: vi.fn(() => Promise.resolve()) }));
+  const mockDbInsertValues = vi.fn(() => ({ onConflictDoNothing: vi.fn(() => ({ returning: vi.fn(() => Promise.resolve([{ id: 1 }])) })) }));
   const mockDbSelectLimit = vi.fn(() => Promise.resolve([]));
   const mockDbSelectWhere = vi.fn(() => ({ limit: mockDbSelectLimit }));
   const mockDbSelectFrom = vi.fn(() => ({ where: mockDbSelectWhere }));

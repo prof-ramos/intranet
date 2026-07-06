@@ -120,6 +120,7 @@ Preview não deve herdar envs gerais de banco de produção.
 | 0025 | `0025_officials_domain_statuses.sql` | Normaliza enums `association_status` e `contribution_status` (remove valores legados `ativo`, `pendente_migracao`) |
 | 0026 | `0026_add_associate_retirement_date.sql` | Adiciona coluna `retirement_date` em associates |
 | 0027 | `0027_add_associates_name_translated_trgm_index.sql` | Índice GIN trigram transliterado para busca de nome sem acentos |
+| 0028 | `0028_activity_domain_events.sql` | Eventos de domínio `activity.*` no outbox transacional |
 
 ### Nomenclatura
 
@@ -322,8 +323,8 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 | Enum | Valores | Uso |
 |------|---------|-----|
-| `domain_event_type` | `associate.updated`, `legal_consultation.created`, `legal_consultation.status_changed`, `official_letter.created`, `official_letter.published`, `official_letter.status_changed`, `monthly_payment.updated` | Categoria do evento |
-| `domain_event_entity_type` | `associate`, `legal_consultation`, `official_letter`, `monthly_payment` | Entidade relacionada |
+| `domain_event_type` | `associate.updated`, `legal_consultation.created`, `legal_consultation.status_changed`, `official_letter.created`, `official_letter.published`, `official_letter.status_changed`, `monthly_payment.updated`, `activity.created`, `activity.status_changed`, `activity.assigned`, `activity.completed`, `activity.priority_changed`, `activity.due_date_changed` | Categoria do evento |
+| `domain_event_entity_type` | `associate`, `legal_consultation`, `official_letter`, `monthly_payment`, `activity` | Entidade relacionada |
 | `domain_event_delivery_status` | `pending`, `processing`, `delivered`, `partially_delivered`, `failed` | Status de entrega |
 | `webhook_delivery_status` | `pending`, `delivered`, `failed`, `retry_scheduled` | Status do delivery |
 

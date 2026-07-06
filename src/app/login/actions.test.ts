@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockAuthenticate = vi.fn();
+type MockLoginSchemaResult =
+  | { success: true; data: { email: string; password: string } }
+  | { success: false; error: { issues: Array<{ code: string; path: string[] }> } };
+
+const mockSafeParse = vi.fn((_: unknown): MockLoginSchemaResult => ({
+  success: true,
+  data: { email: 'admin@asof.local', password: 'Senha-Forte-2026!' },
+}));
 
 vi.mock('@/lib/auth/service', () => ({
   authenticate: (...args: unknown[]) => mockAuthenticate(...args),
@@ -26,6 +34,19 @@ vi.mock('@/lib/auth/login-rate-limit', () => ({
   },
 }));
 
+const mockIpConsume = vi.fn((..._args: unknown[]) => ({ allowed: true }));
+vi.mock('@/lib/rate-limit', () => ({
+  consumeIpRateLimit: (...args: unknown[]) => mockIpConsume(...args),
+}));
+
+vi.mock('@/lib/ip', () => ({
+  getTrustedClientIp: vi.fn(() => '127.0.0.1'),
+}));
+
+vi.mock('next/headers', () => ({
+  headers: vi.fn(async () => new Map()),
+}));
+
 vi.mock('next/navigation', () => ({
   redirect: vi.fn((url: string) => {
     throw new Error(`REDIRECT:${url}`);
@@ -34,10 +55,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/lib/validation/schemas', () => ({
   loginSchema: {
-    safeParse: vi.fn(() => ({
-      success: true,
-      data: { email: 'admin@asof.local', password: 'Senha-Forte-2026!' },
-    })),
+    safeParse: (input: unknown) => mockSafeParse(input),
   },
 }));
 
@@ -59,6 +77,10 @@ vi.mock('@/lib/error-log', () => ({
 describe('login action', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSafeParse.mockReturnValue({
+      success: true,
+      data: { email: 'admin@asof.local', password: 'Senha-Forte-2026!' },
+    });
   });
 
   function buildForm() {
@@ -124,6 +146,42 @@ describe('login action', () => {
     } catch {}
 
     expect(redirect).toHaveBeenCalledWith('/login?error=rate-limit');
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      '[Login] Login rate limit exceeded',
+      { reason: 'rate_limited' },
+    );
+  });
+
+  it('redirects to generic error and logs safe details on invalid form input', async () => {
+    mockSafeParse.mockReturnValueOnce({
+      success: false,
+      error: {
+        issues: [
+          { code: 'invalid_string', path: ['email'] },
+          { code: 'too_small', path: ['password'] },
+        ],
+      },
+    });
+
+    const { login } = await import('@/app/login/actions');
+    const { redirect } = await import('next/navigation');
+
+    try {
+      await login(buildForm());
+    } catch {}
+
+    expect(redirect).toHaveBeenCalledWith('/login?error=1');
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      '[Login] Invalid login form submission',
+      {
+        reason: 'validation_failed',
+        issues: [
+          { code: 'invalid_string', path: 'email' },
+          { code: 'too_small', path: 'password' },
+        ],
+      },
+    );
+    expect(mockAuthenticate).not.toHaveBeenCalled();
   });
 
   it('redirects to error on authentication failure', async () => {
@@ -144,7 +202,25 @@ describe('login action', () => {
     expect(redirect).toHaveBeenCalledWith('/login?error=1');
     expect(mockLogger.warn).toHaveBeenCalledWith(
       '[Login] Authentication failed',
-      expect.objectContaining({ email: '[REDACTED]' }),
+      expect.objectContaining({ reason: 'invalid_credentials' }),
+      expect.any(Error),
+    );
+  });
+
+  it('redirects to generic error and logs safe details on unexpected authentication error', async () => {
+    mockAuthenticate.mockRejectedValue(new Error('database unavailable'));
+    const { redirect } = await import('next/navigation');
+
+    const { login } = await import('@/app/login/actions');
+
+    try {
+      await login(buildForm());
+    } catch {}
+
+    expect(redirect).toHaveBeenCalledWith('/login?error=1');
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      '[Login] Authentication error',
+      expect.objectContaining({ reason: 'auth_error' }),
       expect.any(Error),
     );
   });

@@ -26,7 +26,7 @@ ou instrução de migration sem atualizar esta matriz e o ADR correspondente.
 | Dev realista restrito | Neon `vercel-dev` ou clone local autorizado | PII real copiada de produção | bugs de volume, importação, relatórios, performance e filtros dependentes de dados reais | controlada; não aplicar migration direto na branch Neon `main` |
 | Integração local | Postgres local `asof_intranet_test` | sintético | testes DML/integration | `npm run db:migrate`, bloqueado contra host remoto por padrão |
 | E2E local/CI | Postgres local `asof_test` | sintético recriado | Playwright em `127.0.0.1:3001` | recriado pelo `e2e/global-setup.ts` |
-| Smoke produção | produção live | reais + registros `SMOKE_*` temporários | validação pós-deploy em janela controlada | sem migration; cria dados marcados e limpa dados operacionais, preservando auditoria |
+| Smoke produção | produção live | reais + registros `SMOKE_*` temporários | validação pós-deploy em janela controlada com conta dedicada `smoke-admin@asof.local` | sem migration durante o smoke; cria dados marcados, limpa dados operacionais e preserva auditoria |
 
 ## Produção E Pré-Go-Live
 

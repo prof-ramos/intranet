@@ -1,12 +1,15 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { loginRateLimiter } from '@/lib/auth/login-rate-limit';
 import { loginSchema } from '@/lib/validation/schemas';
 import { createSession } from '@/lib/auth/session';
 import { authenticate, InvalidCredentialsError } from '@/lib/auth/service';
 import { sanitizePiiValue } from '@/lib/sanitize-pii';
 import { toSafeErrorLog, ensureError } from '@/lib/error-log';
+import { consumeIpRateLimit } from '@/lib/rate-limit';
+import { getTrustedClientIp } from '@/lib/ip';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('login');
@@ -26,24 +29,56 @@ export async function login(formData: FormData) {
   });
 
   if (!parsed.success) {
+    logger.warn('[Login] Invalid login form submission', {
+      reason: 'validation_failed',
+      issues: parsed.error.issues.map((issue) => ({
+        code: issue.code,
+        path: issue.path.join('.'),
+      })),
+    });
     redirect('/login?error=1');
   }
 
   const { email, password } = parsed.data;
 
-  let rateLimitAllowed = true;
+  // ponytail: IP rate limit before email rate limit (fail-closed — deny by default)
+  let rateLimitAllowed = false;
+  try {
+    const h = await headers();
+    const ip = getTrustedClientIp(h);
+    const ipLimit = await consumeIpRateLimit(ip, 'login', {
+      windowMs: 15 * 60 * 1000,
+      maxRequests: 20,
+    });
+    if (!ipLimit.allowed) {
+      logger.warn('[Login] IP rate limit exceeded', { reason: 'ip_rate_limited' });
+      redirect('/login?error=rate-limit');
+    }
+  } catch (error) {
+    logger.warn(
+      '[Login] IP rate-limit check failed; blocking login attempt.',
+      { error: toSafeErrorLog(error) },
+      ensureError(error),
+    );
+    redirect('/login?error=1');
+  }
+
   try {
     const rateLimit = await loginRateLimiter.consume(email);
     rateLimitAllowed = rateLimit.allowed;
   } catch (error) {
     logger.warn(
-      '[Login] Rate-limit check failed; allowing login attempt to proceed.',
+      '[Login] Email rate-limit check failed; blocking login attempt.',
       { error: toSafeErrorLog(error) },
       ensureError(error),
     );
+    redirect('/login?error=1');
   }
 
   if (!rateLimitAllowed) {
+    logger.warn('[Login] Login rate limit exceeded', {
+      reason: 'rate_limited',
+    });
     redirect('/login?error=rate-limit');
   }
 
@@ -54,7 +89,19 @@ export async function login(formData: FormData) {
     if (error instanceof InvalidCredentialsError) {
       logger.warn(
         '[Login] Authentication failed',
-        toLoginLogContext({ email, error: toSafeErrorLog(error) }),
+        toLoginLogContext({
+          reason: 'invalid_credentials',
+          error: toSafeErrorLog(error),
+        }),
+        ensureError(error),
+      );
+    } else {
+      logger.error(
+        '[Login] Authentication error',
+        {
+          reason: 'auth_error',
+          error: toSafeErrorLog(error),
+        },
         ensureError(error),
       );
     }

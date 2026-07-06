@@ -107,7 +107,7 @@ async function deliverEventToSubscription(
   attempt: number,
   executor: DbExecutor,
 ) {
-  if (!isPublicWebhookUrl(subscription.targetUrl)) {
+  if (!(await isPublicWebhookUrl(subscription.targetUrl))) {
     const failureReason = `Webhook target URL failed security validation: ${subscription.targetUrl}`;
     logger.error('Webhook target URL failed security validation', { subscriptionId: subscription.id });
     await insertWebhookDelivery(

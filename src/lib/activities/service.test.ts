@@ -577,7 +577,7 @@ describe('activities service', () => {
         actorId: 7,
         status: 'a_fazer',
       }),
-    ).rejects.toThrow('Atividade não encontrada.');
+    ).rejects.toThrow('não encontrado');
   });
 
   it('rejects updates when optimistic concurrency detects a stale activity and emits no outbox events', async () => {

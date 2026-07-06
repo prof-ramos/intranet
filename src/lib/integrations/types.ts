@@ -13,6 +13,7 @@ export const INTEGRATION_HEADER_NAMES = {
 } as const;
 
 export type IntegrationErrorCode =
+  | 'deactivated'
   | 'forbidden'
   | 'insufficient_scope'
   | 'integration_auth_disabled'
@@ -98,6 +99,7 @@ export type IntegrationAuthFailureReason =
   | 'invalid_key'
   | 'invalid_signature'
   | 'invalid_timestamp'
+  | 'body_too_large'
   | 'timestamp_skew'
   | 'insufficient_scope'
   | 'replay_detected';
