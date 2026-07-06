@@ -151,12 +151,12 @@ describe('buildModelInput', () => {
     const input = buildModelInput(payload);
     expect(input.attachments).toHaveLength(2);
 
-    const first = (input.attachments as Array<Record<string, unknown>>)[0];
+    const first = input.attachments[0];
     expect(first.filename).toBe('aviso.txt');
     expect(first.content_analyzed).toBe(true);
     expect(first.text_excerpt).toBe('Conteudo do aviso.');
 
-    const second = (input.attachments as Array<Record<string, unknown>>)[1];
+    const second = input.attachments[1];
     expect(second.content_analyzed).toBe(false);
     expect(second.text_excerpt).toBeNull();
   });

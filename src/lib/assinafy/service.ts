@@ -49,6 +49,8 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
         return { result: oficio, auditArgs: null };
       }
 
+      // ponytail: known fields are assinafySignedAt/assinafyError, but spread into
+      // updateAssinafyStatus which accepts Record<string, unknown>
       const additionalFields: Record<string, unknown> = {};
 
       if (eventName === 'signer_signed_document' || eventName === 'document_ready') {

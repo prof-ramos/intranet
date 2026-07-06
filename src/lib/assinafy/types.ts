@@ -16,6 +16,7 @@ export interface AssinafyWebhookEvent {
   id: number;
   event: string;
   message: string | null;
+  // ponytail: intentionally open — Assinafy webhook payload varies by event type
   payload: Record<string, unknown>;
   origin: {
     ip: string;

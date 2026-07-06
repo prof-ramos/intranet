@@ -18,6 +18,44 @@ export const NOTIFICATION_EVENT_TYPES = [
 export type NotificationEventType = (typeof NOTIFICATION_EVENT_TYPES)[number];
 export type NotificationEntity = 'activity' | 'legal_consultation' | 'email_triagem' | 'oficio';
 
+// ─── Per-event-type metadata shapes ───────────────────────────────────
+
+interface ActivityCompletedMetadata {
+  activityId: number;
+  assigneeId: number | null;
+  associateId: number | null;
+  completedAt: string;
+}
+
+interface ActivityAssignedMetadata {
+  activityId: number;
+  previousAssigneeId: number | null;
+}
+
+interface SlaWarningMetadata {
+  consultationId: number;
+  slaDueDate: string;
+}
+
+interface OficioStatusChangedMetadata {
+  previousStatus: string | null;
+  newStatus: string;
+  documentId: string;
+}
+
+type NotificationMetadataByType = {
+  'activity.completed': ActivityCompletedMetadata;
+  'legal_consultation.answered': Record<string, unknown>;
+  // ponytail: 'legal_consultation.answered' has no typed metadata yet
+  'activity.assigned': ActivityAssignedMetadata;
+  'legal_consultation.sla_warning': SlaWarningMetadata;
+  'lgpd_request': Record<string, unknown>;
+  // ponytail: 'lgpd_request' has no typed metadata yet
+  'email_triage_pending': Record<string, unknown>;
+  // ponytail: 'email_triage_pending' has no typed metadata yet
+  'oficio.status_changed': OficioStatusChangedMetadata;
+};
+
 export interface NotificationEventPayload {
   actorId: number | null;
   recipientId: number;
@@ -65,12 +103,12 @@ const eventHandlers: Record<NotificationEventType, EventHandler> = {
     createNotificationFromEvent('oficio.status_changed', payload, options.tx),
 };
 
-export async function emitEvent(
-  type: NotificationEventType,
-  payload: NotificationEventPayload,
+export async function emitEvent<T extends NotificationEventType>(
+  type: T,
+  payload: Omit<NotificationEventPayload, 'metadata'> & { metadata?: NotificationMetadataByType[T] | null },
   options: EmitEventOptions = {},
 ) {
-  assertValidPayload(type, payload);
+  assertValidPayload(type, payload as NotificationEventPayload);
 
   logger.info('[emitEvent]', {
     type,
@@ -80,7 +118,7 @@ export async function emitEvent(
     entityId: payload.entityId,
   });
 
-  return eventHandlers[type](payload, options);
+  return eventHandlers[type](payload as NotificationEventPayload, options);
 }
 
 export async function emitActivityCompleted(
