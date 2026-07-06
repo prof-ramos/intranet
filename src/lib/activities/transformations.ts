@@ -30,9 +30,10 @@ export function filterActivities(
   filters: Filters,
   currentUserId: number,
 ): BoardActivity[] {
+  const query = filters.query?.toLowerCase();
   return items.filter((activity) => {
     if (filters.scope === 'minhas' && activity.assigneeId !== currentUserId) return false;
-    if (filters.query && !activity.title.toLowerCase().includes(filters.query.toLowerCase())) {
+    if (query && !activity.title.toLowerCase().includes(query)) {
       return false;
     }
     if (filters.assignee) {
