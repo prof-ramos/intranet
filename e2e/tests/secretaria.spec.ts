@@ -27,7 +27,7 @@ test.describe('Secretaria — Ofícios', () => {
     await loginAsAdmin();
     await page.goto('/app/secretaria/oficios');
     await page.getByRole('link', { name: 'Editar' }).first().click();
-    await expect(page).toHaveURL(/\/app\/secretaria\/oficios\/\d+\/editar/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/app\/secretaria\/oficios\/\d+\/editar/);
     await expect(page.locator('h1')).toContainText('Editar Ofício');
   });
 
@@ -54,7 +54,7 @@ test.describe('Secretaria — Ofícios', () => {
     await loginAsAdmin();
     await page.goto('/app/secretaria/oficios');
     await page.click('text=Novo Ofício');
-    await expect(page).toHaveURL('/app/secretaria/oficios/novo', { timeout: 15000 });
+    await expect(page).toHaveURL('/app/secretaria/oficios/novo');
     await expect(page.locator('h1')).toContainText('Gerar Novo Ofício');
     await expect(page.locator('input[name="recipient"]')).toBeVisible();
     await expect(page.locator('input[name="subject"]')).toBeVisible();

@@ -66,7 +66,7 @@ test.describe('Kanban de Atividades', () => {
 
     // Aguarda o card específico renderizar no board
     const card = page.locator('[aria-label="Card de teste DnD"]');
-    await expect(card).toBeVisible({ timeout: 10000 });
+    await expect(card).toBeVisible();
 
     // Coluna de destino: "Em andamento"
     const colunaEmAndamento = page.locator('[data-rfd-droppable-id="em_andamento"]');
