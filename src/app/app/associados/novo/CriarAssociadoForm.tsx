@@ -127,10 +127,9 @@ function CheckboxField({
   );
 }
 
+/** Só controla quantas linhas existem; valores vivem no FormData (inputs uncontrolled). */
 function DependentsCreateSection() {
-  const [rows, setRows] = useState<Array<{ key: string; name: string; relationship: string }>>([
-    { key: 'dep-0', name: '', relationship: '' },
-  ]);
+  const [rowKeys, setRowKeys] = useState<string[]>(['dep-0']);
 
   return (
     <section className="mb-6 rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-5 sm:p-7">
@@ -139,45 +138,39 @@ function DependentsCreateSection() {
         <button
           type="button"
           className={`inline-flex h-9 items-center rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-3 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
-          onClick={() =>
-            setRows((prev) => [
-              ...prev,
-              { key: `dep-${prev.length}-${Date.now()}`, name: '', relationship: '' },
-            ])
-          }
+          onClick={() => setRowKeys((prev) => [...prev, `dep-${prev.length}-${Date.now()}`])}
         >
           Adicionar dependente
         </button>
       </div>
       <p className="text-base-content/60 mb-4 text-sm">
-        Opcional no cadastro. Linhas vazias são ignoradas. É possível editar depois no perfil.
+        Opcional no cadastro. Linhas vazias são ignoradas; nome sem parentesco (ou o inverso) gera
+        erro. É possível editar depois no perfil.
       </p>
       <div className="space-y-3">
-        {rows.map((row, index) => (
-          <div key={row.key} className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto]">
+        {rowKeys.map((key) => (
+          <div key={key} className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto]">
             <div>
-              <label htmlFor={`dependentName-${index}`} className="label">
+              <label htmlFor={`dependentName-${key}`} className="label">
                 <span className="label-text font-semibold">Nome</span>
               </label>
               <input
-                id={`dependentName-${index}`}
+                id={`dependentName-${key}`}
                 name="dependentName"
                 type="text"
-                defaultValue={row.name}
                 className={inputStyle}
                 placeholder="Nome completo"
                 autoComplete="off"
               />
             </div>
             <div>
-              <label htmlFor={`dependentRelationship-${index}`} className="label">
+              <label htmlFor={`dependentRelationship-${key}`} className="label">
                 <span className="label-text font-semibold">Parentesco</span>
               </label>
               <input
-                id={`dependentRelationship-${index}`}
+                id={`dependentRelationship-${key}`}
                 name="dependentRelationship"
                 type="text"
-                defaultValue={row.relationship}
                 className={inputStyle}
                 placeholder="Ex.: cônjuge, filho(a)"
                 autoComplete="off"
@@ -187,8 +180,8 @@ function DependentsCreateSection() {
               <button
                 type="button"
                 className={`mb-1 inline-flex h-10 items-center rounded-[8px] px-3 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 disabled:opacity-40 ${focusRingClass}`}
-                disabled={rows.length <= 1}
-                onClick={() => setRows((prev) => prev.filter((r) => r.key !== row.key))}
+                disabled={rowKeys.length <= 1}
+                onClick={() => setRowKeys((prev) => prev.filter((k) => k !== key))}
               >
                 Remover
               </button>

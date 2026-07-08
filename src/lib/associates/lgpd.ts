@@ -58,6 +58,7 @@ export const PUBLIC_FIELDS: Set<keyof Associate> = new Set([
   'admissionDate',
   'inaugurationDate',
   'retirementDate',
+  'leaveDate',
   'cancellationDate',
   'paymentMethod',
   'ceocMember',

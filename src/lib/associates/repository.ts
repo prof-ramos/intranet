@@ -526,6 +526,27 @@ export async function createDependent(
   return row;
 }
 
+/**
+ * Insert atômico de vários dependentes (create de oficial).
+ *
+ * `items` must already be trimmed/validated — the caller is `createAssociateData`.
+ * This function does not re-validate or normalize input.
+ */
+export async function createDependentsBatch(
+  associateId: number,
+  items: Array<{ name: string; relationship: string }>,
+  executor: DbExecutor = db,
+): Promise<void> {
+  if (items.length === 0) return;
+  await executor.insert(dependents).values(
+    items.map((item) => ({
+      associateId,
+      name: item.name,
+      relationship: item.relationship,
+    })),
+  );
+}
+
 export async function updateDependentById(
   id: number,
   values: UpdateDependentInput,

@@ -4,35 +4,19 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import type { z } from 'zod';
 import { defineFormAction } from '@/lib/server-actions/define-form-action';
 import { updateAssociateSchema, createAssociateSchema } from '@/lib/validation/schemas';
-import { updateAssociateData, createAssociateData, toJoinedAtTimestamp } from '@/lib/associates/service';
+import { updateAssociateData, createAssociateData } from '@/lib/associates/service';
+import { pairDependentsFromForm } from '@/lib/associates/form-helpers';
 import { emptyToNull } from '@/lib/utils/strings';
 
-function asStringList(value: unknown): string[] {
-  if (value == null || value === '') return [];
-  if (Array.isArray(value)) return value.map(String);
-  return [String(value)];
-}
+/** Campos escalares compartilhados create/update (sem `dependents`, sem `id`). */
+type AssociateScalarForm = Omit<z.infer<typeof updateAssociateSchema>, 'id'>;
 
-/** Emparelha campos multi-valor do form em lista de dependentes. */
-export function pairDependentsFromForm(raw: Record<string, unknown>): Array<{ name: string; relationship: string }> {
-  const names = asStringList(raw.dependentName);
-  const relationships = asStringList(raw.dependentRelationship);
-  const len = Math.max(names.length, relationships.length);
-  const out: Array<{ name: string; relationship: string }> = [];
-  for (let i = 0; i < len; i++) {
-    const name = (names[i] ?? '').trim();
-    const relationship = (relationships[i] ?? '').trim();
-    if (!name && !relationship) continue;
-    out.push({ name, relationship });
-  }
-  return out;
-}
-
-type AssociateFormPayload = Omit<z.infer<typeof createAssociateSchema>, 'dependents'> & {
-  id?: number;
-};
-
-function mapFormToServiceFields(data: AssociateFormPayload, role: string) {
+/**
+ * Mapeia form → service.
+ * Scalar date fields for leaveDate/joinedAt are passed raw from the form;
+ * the service is the canonical normalizer (emptyToNull + toJoinedAtTimestamp).
+ */
+function mapFormToServiceFields(data: AssociateScalarForm, role: string) {
   return {
     fullName: data.fullName,
     cpf: data.cpf ?? null,
@@ -63,15 +47,15 @@ function mapFormToServiceFields(data: AssociateFormPayload, role: string) {
     functionalStatus: emptyToNull(data.functionalStatus),
     associationStatus: data.associationStatus ?? undefined,
     contributionStatus: data.contributionStatus ?? undefined,
-    paymentMethod: data.paymentMethod === '' ? undefined : data.paymentMethod ?? undefined,
+    paymentMethod: data.paymentMethod === '' ? undefined : (data.paymentMethod ?? undefined),
     missionType: emptyToNull(data.missionType),
     careerOrigin: emptyToNull(data.careerOrigin),
     admissionDate: emptyToNull(data.admissionDate),
     inaugurationDate: emptyToNull(data.inaugurationDate),
     retirementDate: emptyToNull(data.retirementDate),
     cancellationDate: emptyToNull(data.cancellationDate),
-    leaveDate: emptyToNull(data.leaveDate),
-    joinedAt: toJoinedAtTimestamp(emptyToNull(data.joinedAt)),
+    leaveDate: data.leaveDate,
+    joinedAt: data.joinedAt,
     ceocMember: data.ceocMember,
     caocMember: data.caocMember,
     internalNotes: role === 'admin' ? (data.internalNotes ?? null) : undefined,
@@ -82,18 +66,19 @@ export const updateAssociate = defineFormAction({
   auth: ['admin', 'diretoria', 'secretaria'],
   schema: updateAssociateSchema,
   service: async (data, actor) => {
+    const { id, ...fields } = data;
     await updateAssociateData({
-      id: data.id,
-      ...mapFormToServiceFields(data, actor.role),
+      id,
+      ...mapFormToServiceFields(fields, actor.role),
       updatedBy: actor.userId,
     });
 
     revalidatePath('/app/associados');
-    revalidatePath(`/app/associados/${data.id}`);
+    revalidatePath(`/app/associados/${id}`);
     revalidateTag('associates', 'max');
     revalidateTag('dashboard', 'max');
 
-    return data.id;
+    return id;
   },
   revalidate: ['/app/associados'],
   redirect: (id) => `/app/associados/${id}`,

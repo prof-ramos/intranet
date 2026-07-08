@@ -25,6 +25,7 @@ vi.mock('./repository', () => ({
   findAssociateById: (...args: unknown[]) => mockFindAssociateById(...args),
   updateAssociateById: (...args: unknown[]) => mockUpdateAssociateById(...args),
   insertAssociate: vi.fn(),
+  createDependentsBatch: vi.fn().mockResolvedValue(undefined),
   findAssociateByCpfHash: vi.fn(),
   findAssociateBySiapeHash: vi.fn(),
   findAssociateByPrimaryEmailHash: vi.fn(),

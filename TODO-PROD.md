@@ -168,12 +168,17 @@ _Nota: `audit_log` e preservado (ADR 009)._
 - **Infra:** `engines.node >=20` declarado em `package.json` (#276); MCP servers (context7 + postgres) formalizados no repo (#279); lint-staged + pre-push `validate:quick` via husky (#270); migrations 0017/0018 corrigidas com `IF NOT EXISTS` em `ALTER TYPE ... ADD VALUE` (#272). Histórico Drizzle em `drizzle/postgres/`: 30 arquivos SQL (baseline `0000` … `0029_pagination_count_index.sql`).
 - **Testes:** 1598 testes (+63 desde 2026-06-23), 170 arquivos; cobertura para outbox atomicidade (#265), ErrorBoundary + error.tsx (#273), relatórios (#275), integration tests (oficios, financeiro, webhooks).
 - **Cadastro × legado (`asof_final_limpo.csv`, 39 campos de negócio):** auditoria de paridade schema/forms/perfil. Quase todos os campos existem no modelo; dependentes e convênios vivem em tabelas filhas + UI no perfil. **Fax fica fora de propósito** — `transformLegacyRecord` já ignora a coluna; não quebra migração CSV→intranet (perda intencional, ~3,5% das linhas, muitas ruidosas).
-- **Seed sintético local (`npm run db:seed:dev`):** factories em `scripts/seed-dev-data.ts` — perfis de endereço coerentes, CPF/RG sintéticos válidos, `whatsapp`, `cancellationDate` só para ex-associados, `numberOfDependents` alinhado a linhas em `dependents`.
-- **Lacunas restantes de paridade (não bloqueantes de go-live, backlog de cadastro):**
-  - [ ] `joinedAt` (Data de Adesão) no formulário criar/editar — existe no schema, import e timeline do perfil; ausente na UI de edição.
-  - [ ] `Data de Licença` como campo próprio — hoje só `functionalStatus = em_licenca` (flag legada `Licença=1`); ~45 linhas no CSV com data.
-  - [ ] `classPattern` no `transformLegacyRecord` — form/schema têm o campo; o transform de import legado ainda não grava “Classe e Padrão”.
-  - [ ] Dependentes/convênios no fluxo de criar oficial (hoje só após o cadastro, no perfil).
-- Gates locais revalidados: `lint` ✓ · `typecheck` ✓ · `test` 1606/1606 ✓ (171 files) · `test:db` 5/5 ✓ · `build` ✓ (2026-07-08).
+- **Seed sintético local (`npm run db:seed:dev` em `scripts/seed-dev.ts`):** CPF/RG sintéticos, `whatsapp`, endereço residencial DF coerente, `cancellationDate` só em ex-associados (com `joinedAt`), `numberOfDependents` alinhado a linhas em `dependents` via `dependentCountForIndex`.
+- **Cadastro completo (Coordenador/Secretaria) — 2026-07-08:**
+  - [x] `joinedAt` (Data de Adesão) nos forms criar/editar + perfil administrativo (normalização canônica no service).
+  - [x] `leaveDate` / Data de Licença — coluna `leave_date` (migration `0030`), form, perfil, relatórios e import legado.
+  - [x] `classPattern` mapeado em `transformLegacyRecord` a partir de “Classe e Padrão”.
+  - [x] Dependentes no fluxo de **criar** oficial (linhas dinâmicas; batch insert atômico). Linhas parciais falham com erro explícito. Convênios permanecem no perfil.
+  - Fax continua fora de propósito (não bloqueia migração).
+- Gates desta frente (2026-07-08): unitários focados de `form-helpers`, `service` e
+  `migrate-legacy-transforms` passam localmente no momento desta frente
+  (`npx vitest run src/lib/associates/form-helpers.test.ts src/lib/associates/service.test.ts scripts/migrate-legacy-transforms.test.ts`).
+  Contagem exata e suite completa (`lint`/`typecheck`/`test`/`test:db`/`build`)
+  devem ser revalidadas na janela de PR — não reexecutadas integralmente aqui.
 
 Este arquivo substitui as pendencias antigas de smoke de tempo real e reconciliacao de projetos de banco. Elas nao sao mais caminho de go-live.
