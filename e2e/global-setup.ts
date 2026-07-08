@@ -126,6 +126,9 @@ async function warmupJitRoutes() {
 
     // Compile the oficios route to prevent JIT timeout in assinafy tests.
     await page.goto(`${E2E_BASE_URL}/app/secretaria/oficios`, { timeout: 60_000 });
+    
+    // Compile the oficios edit route to prevent JIT timeout in secretaria tests.
+    await page.goto(`${E2E_BASE_URL}/app/secretaria/oficios/1/editar`, { timeout: 60_000 });
   } finally {
     await browser.close();
   }
