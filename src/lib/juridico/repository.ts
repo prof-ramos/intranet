@@ -329,7 +329,8 @@ export async function getPendingActions(): Promise<PendingAction[]> {
       title: r.title,
       type: 'sem_atualizacao' as const,
       days: Math.floor(
-        (Date.now() - new Date(r.lastInteractionAt!).getTime()) / (1000 * 60 * 60 * 24),
+        // ⚡ Bolt: Avoid redundant Date object allocation since lastInteractionAt is already a Date
+        (Date.now() - r.lastInteractionAt!.getTime()) / (1000 * 60 * 60 * 24),
       ),
     })),
     ...escritorioRows.map((r) => ({
