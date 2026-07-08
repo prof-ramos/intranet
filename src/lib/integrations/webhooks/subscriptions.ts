@@ -12,10 +12,20 @@ import {
   listWebhookSubscriptions,
   updateWebhookSubscriptionById,
 } from '@/lib/integrations/webhooks/repository';
+import { isPublicWebhookUrl } from '@/lib/integrations/webhooks/validation';
 
 const allowedEventTypes = domainEventType.enumValues;
 
-const subscriptionBaseSchema = webhookSubscriptionFormSchema;
+const subscriptionBaseSchema = webhookSubscriptionFormSchema.superRefine(async (val, ctx) => {
+  if (!(await isPublicWebhookUrl(val.targetUrl))) {
+    ctx.addIssue({
+      path: ['targetUrl'],
+      code: z.ZodIssueCode.custom,
+      message:
+        'A URL deve usar HTTPS público; hosts locais, privados ou reservados não são permitidos.',
+    });
+  }
+});
 
 const createSubscriptionSchema = subscriptionBaseSchema.extend({
   secret: webhookSecretSchema,
@@ -76,7 +86,7 @@ export async function createManagedWebhookSubscription(
   actorAdminId: number,
   input: CreateWebhookSubscriptionInput,
 ) {
-  const parsed = createSubscriptionSchema.parse(input);
+  const parsed = await createSubscriptionSchema.parseAsync(input);
 
   return db.transaction(async (tx) => {
     const inserted = await insertWebhookSubscription(
@@ -109,7 +119,7 @@ export async function updateManagedWebhookSubscription(
   actorAdminId: number,
   input: UpdateWebhookSubscriptionInput,
 ) {
-  const parsed = updateSubscriptionSchema.parse(input);
+  const parsed = await updateSubscriptionSchema.parseAsync(input);
 
   return db.transaction(async (tx) => {
     const current = await getWebhookSubscriptionById(parsed.id, tx);

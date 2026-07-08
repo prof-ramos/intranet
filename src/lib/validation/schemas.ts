@@ -14,25 +14,6 @@ import {
 import { paymentMethod } from '@/lib/db/schema/enums';
 import { domainEventType } from '@/lib/db/schema/integrations';
 
-const PRIVATE_IPV4_RANGES = [
-  /^10\./,
-  /^127\./,
-  /^169\.254\./,
-  /^172\.(1[6-9]|2\d|3[0-1])\./,
-  /^192\.168\./,
-  /^0\./,
-  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./,
-  /^192\.0\.0\./,
-  /^192\.0\.2\./,
-  /^198\.18\./,
-  /^198\.19\./,
-  /^198\.51\.100\./,
-  /^203\.0\.113\./,
-  /^(22[4-9]|23\d)\./,
-  /^24[0-9]\./,
-  /^25[0-5]\./,
-];
-
 const emailSchema = z
   .string()
   .trim()
@@ -126,40 +107,6 @@ function cpfValidator(cpf: string | null) {
 
 function passwordMatchRefine(data: { newPassword: string; confirmPassword: string }) {
   return data.newPassword === data.confirmPassword;
-}
-
-export function isPublicWebhookUrl(value: string): boolean {
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
-    return false;
-  }
-
-  if (url.protocol !== 'https:') {
-    return false;
-  }
-
-  const hostname = url.hostname.toLowerCase();
-  if (
-    hostname === 'localhost' ||
-    hostname.endsWith('.localhost') ||
-    hostname.endsWith('.local') ||
-    hostname.endsWith('.internal')
-  ) {
-    return false;
-  }
-
-  if (
-    hostname === '[::1]' ||
-    hostname === '::1' ||
-    hostname.startsWith('fc') ||
-    hostname.startsWith('fd')
-  ) {
-    return false;
-  }
-
-  return !PRIVATE_IPV4_RANGES.some((pattern) => pattern.test(hostname));
 }
 
 // ─── Year/Month Validation (Finance) ──────────────────────────────────
@@ -403,10 +350,10 @@ export const webhookSecretSchema = z
 
 export const webhookSubscriptionFormSchema = z.object({
   name: z.string().trim().min(2, 'Nome deve ter pelo menos 2 caracteres.').max(120),
-  targetUrl: z.string().trim().url('URL de destino inválida.').refine(isPublicWebhookUrl, {
-    message:
-      'A URL deve usar HTTPS público; hosts locais, privados ou reservados não são permitidos.',
-  }),
+  targetUrl: z
+    .string()
+    .trim()
+    .url('URL de destino inválida.'),
   subscribedEvents: z
     .array(z.enum(domainEventType.enumValues))
     .min(1, 'Selecione ao menos um evento.'),

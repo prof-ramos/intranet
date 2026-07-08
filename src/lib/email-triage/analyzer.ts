@@ -18,6 +18,53 @@ import { createHash } from 'node:crypto';
 
 const log = createLogger('email-triage/analyzer');
 
+// ─── Gmail API message types ──────────────────────────────────────────
+
+export interface GmailMessagePartBody {
+  data?: string;
+  size?: number;
+}
+
+export interface GmailMessagePart {
+  mimeType?: string;
+  filename?: string;
+  body?: GmailMessagePartBody;
+  parts?: GmailMessagePart[];
+}
+
+export interface GmailMessage {
+  id?: string;
+  threadId?: string;
+  payload?: GmailMessagePart;
+}
+
+// ─── Model input for Gemini (typed version of what buildModelInput returns) ─
+
+interface ModelInputAttachment {
+  filename: string;
+  mime_type: string | null;
+  sha256: string | null;
+  content_analyzed: boolean;
+  text_excerpt: string | null;
+}
+
+interface ModelInput {
+  message_id: string;
+  thread_id: string;
+  received_at: string;
+  sender: string;
+  original_recipient: string;
+  subject: string;
+  body_excerpt: string;
+  attachments: ModelInputAttachment[];
+  lgpd_constraints: {
+    full_body_is_not_persisted_by_default: true;
+    legal_basis_is_ai_suggestion_only: true;
+    ai_does_not_make_legal_merit_decisions: true;
+    human_review_is_exceptional_operational_review: true;
+  };
+}
+
 const ANALYSIS_EXCERPT_LIMIT = 4000;
 const PERSISTED_EXCERPT_LIMIT = 500;
 const GEMINI_TIMEOUT_MS = 30_000;
@@ -90,36 +137,6 @@ function decodeBase64Url(data: string | null | undefined): Buffer {
   return Buffer.from(data, 'base64url');
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-function getRecord(obj: Record<string, unknown>, key: string): Record<string, unknown> | undefined {
-  const value = obj[key];
-  return isRecord(value) ? value : undefined;
-}
-
-function getString(obj: Record<string, unknown>, key: string): string | undefined {
-  const value = obj[key];
-  return typeof value === 'string' ? value : undefined;
-}
-
-function getNumber(obj: Record<string, unknown>, key: string): number | undefined {
-  const value = obj[key];
-  return typeof value === 'number' ? value : undefined;
-}
-
-function getRecordArray(obj: Record<string, unknown>, key: string): Record<string, unknown>[] | undefined {
-  const value = obj[key];
-  if (!Array.isArray(value)) return undefined;
-  const result: Record<string, unknown>[] = [];
-  for (const item of value) {
-    if (!isRecord(item)) return undefined;
-    result.push(item);
-  }
-  return result;
-}
-
 export interface AttachmentInfo {
   filename: string;
   mimeType: string | null;
@@ -149,7 +166,7 @@ export function htmlToText(html: string): string {
   return text;
 }
 
-export function buildModelInput(payload: EmailPayload): Record<string, unknown> {
+export function buildModelInput(payload: EmailPayload): ModelInput {
   return {
     message_id: payload.message_id,
     thread_id: payload.thread_id,
@@ -183,16 +200,16 @@ export function buildPersistedExcerpt(bodyText: string): string {
 }
 
 export function extractTextAndAttachments(
-  message: Record<string, unknown>,
+  message: GmailMessage,
 ): { text: string; attachments: AttachmentInfo[] } {
   const textParts: string[] = [];
   const attachments: AttachmentInfo[] = [];
 
-  function walk(part: Record<string, unknown>): void {
-    const body = getRecord(part, 'body') ?? {};
-    const mimeType = getString(part, 'mimeType') ?? null;
-    const filename = getString(part, 'filename') ?? '';
-    const data = decodeBase64Url(getString(body, 'data') ?? null);
+  function walk(part: GmailMessagePart): void {
+    const body = part.body ?? {};
+    const mimeType = part.mimeType ?? null;
+    const filename = part.filename ?? '';
+    const data = decodeBase64Url(body.data ?? null);
 
     if (filename) {
       const sha256 =
@@ -210,7 +227,7 @@ export function extractTextAndAttachments(
         filename,
         mimeType,
         sha256,
-        size: getNumber(body, 'size') ?? null,
+        size: body.size ?? null,
         textExcerpt,
       });
       return;
@@ -222,13 +239,15 @@ export function extractTextAndAttachments(
       textParts.push(htmlToText(data.toString('utf-8')));
     }
 
-    const parts = getRecordArray(part, 'parts') ?? [];
-    for (const child of parts) {
+    const children = part.parts ?? [];
+    for (const child of children) {
       walk(child);
     }
   }
 
-  walk(getRecord(message, 'payload') ?? {});
+  if (message.payload) {
+    walk(message.payload);
+  }
 
   const text = textParts.join('\n\n').trim();
   return { text, attachments };
@@ -260,7 +279,7 @@ function postScanForPii(parsed: EmailTriageResult): void {
  * shape.  The full Zod schema (including superRefine rules) is applied
  * server-side for validation.
  */
-const RESPONSE_JSON_SCHEMA: Record<string, unknown> = {
+const RESPONSE_JSON_SCHEMA = {
   type: 'object',
   properties: {
     categoria: {
@@ -359,10 +378,14 @@ export async function analyzeEmail(
   });
 
   const rawText = response.text ?? '{}';
-  let parsedJson: Record<string, unknown>;
+  let parsedJson: unknown;
   try {
     const parsed: unknown = JSON.parse(rawText);
-    parsedJson = isRecord(parsed) ? parsed : {};
+    // ponytail: JSON.parse output is untyped until Zod validates it via emailTriageResultSchema
+    parsedJson =
+      parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? parsed
+        : {};
   } catch (parseErr) {
     const errorMessage = parseErr instanceof Error ? parseErr.message : String(parseErr);
     log.error('Failed to parse Gemini response as JSON', {

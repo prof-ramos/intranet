@@ -28,9 +28,9 @@ import { isActivityPriority, isActivityStatus } from '@/lib/activities/status';
 // ⚡ Bolt: Cache Intl.DateTimeFormat instance to avoid expensive object creation on every render cycle.
 // Benchmarks show this is ~50x faster than inline `toLocaleString`.
 const dateTimeFormatter = new Intl.DateTimeFormat('pt-BR', {
-  year: 'numeric',
-  month: '2-digit',
   day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
   hour: '2-digit',
   minute: '2-digit',
   second: '2-digit',

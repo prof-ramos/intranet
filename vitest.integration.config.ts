@@ -1,7 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
-import { VitestMetricsReporter } from './scripts/test-metrics/vitest-reporter';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,7 +16,7 @@ export default defineConfig({
     },
     testTimeout: 15000,
     include: ['src/**/*.integration.test.{ts,tsx}'],
-    reporters: ['default', new VitestMetricsReporter({ suite: 'integration' })],
+    reporters: ['default'],
   },
   resolve: {
     alias: {

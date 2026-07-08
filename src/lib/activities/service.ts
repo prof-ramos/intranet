@@ -9,6 +9,7 @@ import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
 import { db } from '@/lib/db';
 import { createLogger } from '@/lib/logger';
+import { ConcurrencyConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 
 const logger = createLogger('activities:service');
 
@@ -56,28 +57,28 @@ function normalizeTags(tags: string[]): string[] {
 
 export async function createActivityService(input: CreateActivityInput) {
   if (!input.title.trim()) {
-    throw new Error('O título da atividade é obrigatório.');
+    throw new ValidationError('O título da atividade é obrigatório.');
   }
   if (input.title.length > 255) {
-    throw new Error('O título não pode exceder 255 caracteres.');
+    throw new ValidationError('O título não pode exceder 255 caracteres.');
   }
   if (!isActivityStatus(input.status)) {
-    throw new Error('Status de atividade inválido.');
+    throw new ValidationError('Status de atividade inválido.');
   }
   if (!isActivityPriority(input.priority)) {
-    throw new Error('Prioridade de atividade inválida.');
+    throw new ValidationError('Prioridade de atividade inválida.');
   }
   if (!isValidOptionalId(input.assigneeId)) {
-    throw new Error('Responsável inválido.');
+    throw new ValidationError('Responsável inválido.');
   }
   if (!isValidOptionalId(input.associateId)) {
-    throw new Error('Associado inválido.');
+    throw new ValidationError('Associado inválido.');
   }
   if (input.dueDate && Number.isNaN(Date.parse(input.dueDate))) {
-    throw new Error('Data de vencimento inválida.');
+    throw new ValidationError('Data de vencimento inválida.');
   }
   if (input.createdBy == null || Number.isNaN(input.createdBy)) {
-    throw new Error('Usuário criador inválido.');
+    throw new ValidationError('Usuário criador inválido.');
   }
 
   const normalizedTags = normalizeTags(input.tags);
@@ -166,26 +167,26 @@ export async function createActivityService(input: CreateActivityInput) {
 
 export async function updateActivityService(input: UpdateActivityInput) {
   if (!Number.isInteger(input.id) || input.id <= 0) {
-    throw new Error('Atividade inválida.');
+    throw new ValidationError('Atividade inválida.');
   }
   if (!Number.isInteger(input.actorId) || input.actorId <= 0) {
-    throw new Error('Usuário responsável pela alteração inválido.');
+    throw new ValidationError('Usuário responsável pela alteração inválido.');
   }
   if (input.status !== undefined && !isActivityStatus(input.status)) {
-    throw new Error('Status de atividade inválido.');
+    throw new ValidationError('Status de atividade inválido.');
   }
   if (input.priority !== undefined && !isActivityPriority(input.priority)) {
-    throw new Error('Prioridade de atividade inválida.');
+    throw new ValidationError('Prioridade de atividade inválida.');
   }
   if (input.dueDate && Number.isNaN(Date.parse(input.dueDate))) {
-    throw new Error('Data de vencimento inválida.');
+    throw new ValidationError('Data de vencimento inválida.');
   }
 
   // Leitura fora da transação: precisamos do snapshot anterior para diff de
   // eventos e para o optimistic lock. Não precisa ser atômica com o update.
   const current = await findActivityById(input.id);
   if (!current) {
-    throw new Error('Atividade não encontrada.');
+    throw new NotFoundError('Atividade');
   }
 
   const nextStatus = input.status ?? current.status;
@@ -221,7 +222,7 @@ export async function updateActivityService(input: UpdateActivityInput) {
       // Lança ANTES de emitir qualquer evento outbox — nenhum registro
       // fantasma em `domain_events`. A tx rollbacka o update (que já falhou
       // no WHERE de optimistic lock, então não houve mutação).
-      throw new Error('CONCURRENCY_CONFLICT');
+      throw new ConcurrencyConflictError();
     }
 
     // Helper canônico para os eventos granulares do outbox (um por campo

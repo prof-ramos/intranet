@@ -42,14 +42,14 @@ Playwright end-to-end test suite for the ASOF Intranet application. Spins up a s
 
 These were discovered during real flakiness incidents (associados.spec.ts tests 4-5) and must be respected by future agents.
 
-**1. `expect(page).toHaveURL()` default 5s timeout vs Next.js JIT compilation**
+**1. `expect(page).toHaveURL()` default timeout vs Next.js JIT compilation**
 
-- The default `expect` timeout in Playwright is 5000ms.
-- Dynamic routes under `/app/associados/[id]/editar` (and similar) can take **>5s to JIT-compile on a cold `.next-e2e` cache**.
-- Symptom: "expect(page).toHaveURL(...) — Timeout 5000ms" even though the click was dispatched correctly and navigation eventually starts.
+- Dynamic routes under `/app/associados/[id]/editar` (and similar) can take **>15-20s to JIT-compile on a cold `.next-e2e` cache**.
+- Symptom: "expect(page).toHaveURL(...) — Timeout" even though the click was dispatched correctly and navigation eventually starts.
 - Root cause is **not** broken selectors, opacity, or missing hover — it is route compilation latency.
 - The fix lives in `global-setup.ts:warmupJitRoutes()` (real authenticated login + direct navigation to edit URLs + financeiro routes) + explicit `.hover()` before clicks on `opacity-0 group-hover:opacity-100` buttons in the spec.
-- Additional defense-in-depth: `playwright.config.ts` now sets `expect.timeout: 15_000` (was implicit 5s).
+- Additional defense-in-depth: `playwright.config.ts` now sets `expect.timeout: 30_000`.
+- **CRITICAL**: Never use hardcoded `{ timeout: X }` overrides (e.g. `await expect(page).toHaveURL(..., { timeout: 15000 })`) on page navigations or layout assertions. This overrides the global 30s timeout and will cause tests to arbitrarily fail due to JIT compilation delays. Always rely on the global timeout.
 
 **2. JIT warmup MUST use authenticated browser sessions**
 

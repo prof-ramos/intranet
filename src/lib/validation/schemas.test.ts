@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { isPublicWebhookUrl } from '@/lib/integrations/webhooks/validation';
 import {
   loginSchema,
   changePasswordSchema,
@@ -429,31 +430,94 @@ describe('addNoteSchema', () => {
 });
 
 describe('webhookSubscriptionFormSchema', () => {
-  test('aceita URL HTTPS pública', () => {
-    const result = webhookSubscriptionFormSchema.safeParse({
+  // Validação de URL pública (SSRF) foi movida para a camada de serviço
+  // (actions.ts e subscriptions.ts). O schema apenas valida formato da URL.
+  test('aceita URL HTTPS pública', async () => {
+    const result = await webhookSubscriptionFormSchema.safeParseAsync({
       name: 'Automação externa',
-      targetUrl: 'https://hooks.example.com/asof',
+      targetUrl: 'https://example.com/asof-webhook',
       subscribedEvents: ['associate.updated'],
     });
 
     expect(result.success).toBe(true);
   });
+});
 
-  test.each([
-    'http://hooks.example.com/asof',
-    'https://localhost/webhook',
-    'https://127.0.0.1/webhook',
-    'https://10.0.0.1/webhook',
-    'https://192.168.0.10/webhook',
-    'https://169.254.169.254/latest/meta-data',
-  ])('rejeita URL insegura ou privada: %s', (targetUrl) => {
-    const result = webhookSubscriptionFormSchema.safeParse({
-      name: 'Automação externa',
-      targetUrl,
-      subscribedEvents: ['associate.updated'],
+describe('isPublicWebhookUrl', () => {
+  test('aceita URLs HTTPS públicas', async () => {
+    await expect(isPublicWebhookUrl('https://example.com/asof-webhook')).resolves.toBe(true);
+    await expect(isPublicWebhookUrl('https://example.org/webhook')).resolves.toBe(true);
+  });
+
+  test('rejeita protocolo não-HTTPS', async () => {
+    await expect(isPublicWebhookUrl('http://hooks.example.com/asof')).resolves.toBe(false);
+  });
+
+  test('rejeita URL inválida', async () => {
+    await expect(isPublicWebhookUrl('not-a-url')).resolves.toBe(false);
+  });
+
+  describe('IPv4 privado', () => {
+    test.each([
+      'https://10.0.0.1/webhook',
+      'https://127.0.0.1/webhook',
+      'https://169.254.169.254/webhook',
+      'https://172.16.0.1/webhook',
+      'https://192.168.0.10/webhook',
+    ])('rejeita: %s', async (url) => {
+      await expect(isPublicWebhookUrl(url)).resolves.toBe(false);
+    });
+  });
+
+  describe('IPv6', () => {
+    test('rejeita IPv6 ULA (fc00::/7)', async () => {
+      await expect(isPublicWebhookUrl('https://[fc00::1]/webhook')).resolves.toBe(false);
     });
 
-    expect(result.success).toBe(false);
+    test('rejeita IPv6 ULA (fd00::/7)', async () => {
+      await expect(isPublicWebhookUrl('https://[fd00::1]/webhook')).resolves.toBe(false);
+    });
+
+    test('rejeita IPv6 link-local (fe80::/10)', async () => {
+      await expect(isPublicWebhookUrl('https://[fe80::1]/webhook')).resolves.toBe(false);
+    });
+
+    test('rejeita IPv6 loopback (::1)', async () => {
+      await expect(isPublicWebhookUrl('https://[::1]/webhook')).resolves.toBe(false);
+      await expect(isPublicWebhookUrl('https://::1/webhook')).resolves.toBe(false);
+    });
+
+    test('rejeita IPv4-mapped IPv6 privado (::ffff:127.0.0.1)', async () => {
+      await expect(isPublicWebhookUrl('https://[::ffff:127.0.0.1]/webhook')).resolves.toBe(false);
+    });
+
+    test('rejeita IPv4-mapped IPv6 privado (::ffff:192.168.1.1)', async () => {
+      await expect(isPublicWebhookUrl('https://[::ffff:192.168.1.1]/webhook')).resolves.toBe(false);
+    });
+
+    test('rejeita IPv6 NAT64 (64:ff9b::)', async () => {
+      await expect(isPublicWebhookUrl('https://[64:ff9b::1]/webhook')).resolves.toBe(false);
+    });
+
+    test('aceita IPv6 público', async () => {
+      await expect(isPublicWebhookUrl('https://[2001:db8::1]/webhook')).resolves.toBe(true);
+    });
+  });
+
+  describe('DNS rebinding', () => {
+    test('rejeita hostname que resolve para IP privado', async () => {
+      await expect(isPublicWebhookUrl('https://localhost/webhook')).resolves.toBe(false);
+    });
+
+    test('rejeita hostname que resolve para IP loopback', async () => {
+      await expect(isPublicWebhookUrl('https://127.0.0.1.nip.io/webhook')).resolves.toBe(false);
+    });
+  });
+
+  test('rejeita hostnames .local .localhost .internal', async () => {
+    await expect(isPublicWebhookUrl('https://test.local/webhook')).resolves.toBe(false);
+    await expect(isPublicWebhookUrl('https://test.internal/webhook')).resolves.toBe(false);
+    await expect(isPublicWebhookUrl('https://test.localhost/webhook')).resolves.toBe(false);
   });
 });
 

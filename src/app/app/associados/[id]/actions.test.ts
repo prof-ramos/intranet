@@ -66,7 +66,7 @@ describe('associate [id] actions', () => {
     requireAuthMock.mockResolvedValue({ userId: 9, role: 'unknown_role' });
     await expect(
       addDependentAction(fd({ associateId: '1', name: 'Filho', relationship: 'filho' })),
-    ).rejects.toThrow('Permissão insuficiente.');
+    ).rejects.toThrow('NEXT_REDIRECT');
   });
 
   // ─── addDependentAction ─────────────────────────────────────────────────

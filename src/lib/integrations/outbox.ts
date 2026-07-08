@@ -178,3 +178,50 @@ export async function emitDomainEvent(input: EmitDomainEventInput, executor: DbE
 
   return event;
 }
+
+/**
+ * Batch insert de domain events num único `INSERT ... VALUES (...), (...)`.
+ *
+ * Preserva o invariant do outbox: todos os eventos são inseridos dentro da
+ * mesma transação (`executor`) e commitam/rollback atômico com a mutation.
+ * Valida e sanitiza cada payload antes do insert (mesmo contrato do
+ * `emitDomainEvent` unitário). Retorna os eventos na ordem de entrada.
+ *
+ * Use este helper quando uma mutation emitir N eventos homogêneos (ex.:
+ * `autoMarkOverduePaymentsService` marca N mensalidades atrasadas) para
+ * evitar N+1 INSERTs sequenciais dentro da tx.
+ */
+export async function emitDomainEventsBatch(
+  inputs: EmitDomainEventInput[],
+  executor: DbExecutor = db,
+) {
+  if (inputs.length === 0) return [];
+
+  const EVENT_RETENTION_DAYS = 90;
+  const expiresAt = new Date(Date.now() + EVENT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+
+  const rows = inputs.map((input) => {
+    const payload = payloadSchemaByEventType[input.type].parse(
+      sanitizePiiValue(input.payload),
+    ) as DomainEventPayloadMap[typeof input.type];
+    return {
+      eventType: input.type,
+      entityType: input.entityType,
+      entityId: input.entityId,
+      actorAdminId: input.actorAdminId,
+      payload,
+      deliveryStatus: 'pending' as const,
+      expiresAt,
+    };
+  });
+
+  const inserted = await executor.insert(domainEvents).values(rows).returning();
+
+  if (inserted.length !== inputs.length) {
+    throw new Error(
+      `emitDomainEventsBatch: expected ${inputs.length} inserts, got ${inserted.length}.`,
+    );
+  }
+
+  return inserted;
+}

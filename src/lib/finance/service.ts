@@ -2,7 +2,7 @@ import * as repository from './repository';
 import { markOverduePaymentsForAudit } from './repository';
 import { logAuditAction } from '@/lib/audit/service';
 import { db } from '@/lib/db';
-import { emitDomainEvent } from '@/lib/integrations/outbox';
+import { emitDomainEvent, emitDomainEventsBatch } from '@/lib/integrations/outbox';
 import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
 import {
   monthlyPayments,
@@ -14,6 +14,7 @@ import { associates } from '@/lib/db/schema/associates';
 import { and, eq, sql } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
 import { yearMonthObjectSchema } from '@/lib/validation/schemas';
+import { ConcurrencyConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 
 const logger = createLogger('finance:service');
 
@@ -37,7 +38,7 @@ const VALID_TRANSITIONS: Record<string, Set<string>> = {
 export function validateStatusTransition(currentStatus: string, newStatus: string): void {
   const allowed = VALID_TRANSITIONS[currentStatus];
   if (!allowed || !allowed.has(newStatus)) {
-    throw new Error(
+    throw new ValidationError(
       `Transição inválida: não é possível alterar de '${currentStatus}' para '${newStatus}'.`,
     );
   }
@@ -71,31 +72,33 @@ export async function autoMarkOverduePaymentsService(): Promise<number> {
     // Outbox invariant: emit domain events INSIDE the tx so the event row
     // commits (or rolls back) with the mutation. Post-commit dispatch below
     // is fire-and-forget; the cron /api/v1/events/dispatch is the safety net.
-    const emittedEventIds: number[] = [];
-    for (const payment of rows) {
-      const inserted = await emitDomainEvent(
-        {
-          type: 'monthly_payment.updated' as const,
-          entityType: 'monthly_payment' as const,
-          entityId: payment.id,
-          actorAdminId: null,
-          payload: {
-            associateId: payment.associateId,
-            year: payment.year,
-            month: payment.month,
-            previousStatus: 'pendente' as const,
-            status: 'atrasado' as const,
-            paymentMethod: payment.paymentMethod,
-            paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
-            links: {
-              app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
-            },
+    //
+    // Batch insert: um único `INSERT ... VALUES (...), (...)` em vez de N+1
+    // INSERTs sequenciais dentro da tx. Preserva o invariant do outbox
+    // (commit/rollback atômico) e valida/sanitiza cada payload igual ao
+    // `emitDomainEvent` unitário.
+    const emittedEvents = await emitDomainEventsBatch(
+      rows.map((payment) => ({
+        type: 'monthly_payment.updated' as const,
+        entityType: 'monthly_payment' as const,
+        entityId: payment.id,
+        actorAdminId: null,
+        payload: {
+          associateId: payment.associateId,
+          year: payment.year,
+          month: payment.month,
+          previousStatus: 'pendente' as const,
+          status: 'atrasado' as const,
+          paymentMethod: payment.paymentMethod,
+          paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
+          links: {
+            app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
           },
         },
-        tx,
-      );
-      emittedEventIds.push(inserted.id);
-    }
+      })),
+      tx,
+    );
+    const emittedEventIds = emittedEvents.map((event) => event.id);
 
     return { transitioned: rows, eventIds: emittedEventIds };
   });
@@ -135,10 +138,10 @@ function getPaymentAuditState(payment: MonthlyPayment) {
 function validateCancellationReason(reason: string): string {
   const trimmed = reason.trim();
   if (trimmed.length < 3) {
-    throw new Error('Motivo de cancelamento obrigatório.');
+    throw new ValidationError('Motivo de cancelamento obrigatório.');
   }
   if (trimmed.length > 500) {
-    throw new Error('Motivo de cancelamento deve ter no máximo 500 caracteres.');
+    throw new ValidationError('Motivo de cancelamento deve ter no máximo 500 caracteres.');
   }
   return trimmed;
 }
@@ -146,7 +149,7 @@ function validateCancellationReason(reason: string): string {
 export function validateYearMonth(year: number, month: number): void {
   const parsed = yearMonthObjectSchema.safeParse({ year, month });
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0].message);
+    throw new ValidationError(parsed.error.issues[0].message);
   }
 }
 
@@ -182,7 +185,7 @@ export async function updateMonthlyPayment(
     if (current && expectedUpdatedAt != null) {
       const currentUpdatedAt = current.updatedAt?.toISOString() ?? null;
       if (currentUpdatedAt !== expectedUpdatedAt) {
-        throw new Error('CONCURRENCY_CONFLICT');
+        throw new ConcurrencyConflictError();
       }
     }
 
@@ -226,7 +229,7 @@ export async function updateMonthlyPayment(
 
     if (!updatedPayment) {
       // setWhere predicate failed — another writer changed the row concurrently.
-      throw new Error('CONCURRENCY_CONFLICT');
+      throw new ConcurrencyConflictError();
     }
 
     await logAuditAction({
@@ -284,7 +287,7 @@ export async function updateMonthlyPayment(
 
 export async function cancelMonthlyPayment(adminId: number, paymentId: number, reason: string) {
   if (!Number.isInteger(paymentId) || paymentId <= 0) {
-    throw new Error('Mensalidade inválida.');
+    throw new ValidationError('Mensalidade inválida.');
   }
 
   const cancellationReason = validateCancellationReason(reason);
@@ -298,10 +301,10 @@ export async function cancelMonthlyPayment(adminId: number, paymentId: number, r
 
     const current = rows[0] ?? null;
     if (!current) {
-      throw new Error('PAYMENT_NOT_FOUND');
+      throw new NotFoundError('Pagamento');
     }
     if (current.status === 'cancelado') {
-      throw new Error('PAYMENT_ALREADY_CANCELLED');
+      throw new ValidationError('Pagamento já cancelado.');
     }
 
     const cancelledAt = new Date();
@@ -323,7 +326,7 @@ export async function cancelMonthlyPayment(adminId: number, paymentId: number, r
       .returning();
 
     if (!updatedPayment) {
-      throw new Error('PAYMENT_ALREADY_CANCELLED');
+      throw new ValidationError('Pagamento já cancelado.');
     }
 
     const newState = getPaymentAuditState(updatedPayment);

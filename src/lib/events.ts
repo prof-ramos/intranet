@@ -18,6 +18,38 @@ export const NOTIFICATION_EVENT_TYPES = [
 export type NotificationEventType = (typeof NOTIFICATION_EVENT_TYPES)[number];
 export type NotificationEntity = 'activity' | 'legal_consultation' | 'email_triagem' | 'oficio';
 
+// ─── Per-event-type metadata shapes ───────────────────────────────────
+
+interface ActivityCompletedMetadata {
+  activityId: number;
+  assigneeId: number | null;
+  associateId: number | null;
+  completedAt: string;
+}
+
+interface ActivityAssignedMetadata {
+  activityId: number;
+  previousAssigneeId: number | null;
+}
+
+interface SlaWarningMetadata {
+  consultationId: number;
+  slaDueDate: string;
+}
+
+interface OficioStatusChangedMetadata {
+  previousStatus: string | null;
+  newStatus: string;
+  documentId: string;
+}
+
+type NotificationMetadataByType = {
+  'activity.completed': ActivityCompletedMetadata;
+  'activity.assigned': ActivityAssignedMetadata;
+  'legal_consultation.sla_warning': SlaWarningMetadata;
+  'oficio.status_changed': OficioStatusChangedMetadata;
+};
+
 export interface NotificationEventPayload {
   actorId: number | null;
   recipientId: number;
@@ -34,10 +66,7 @@ interface EmitEventOptions {
   tx?: DbExecutor;
 }
 
-type EventHandler = (
-  payload: NotificationEventPayload,
-  options: EmitEventOptions,
-) => Promise<unknown>;
+
 
 interface ActivityCompletedPayload {
   activityId: number;
@@ -48,29 +77,12 @@ interface ActivityCompletedPayload {
   completedAt: string;
 }
 
-const eventHandlers: Record<NotificationEventType, EventHandler> = {
-  'activity.completed': (payload, options) =>
-    createNotificationFromEvent('activity.completed', payload, options.tx),
-  'legal_consultation.answered': (payload, options) =>
-    createNotificationFromEvent('legal_consultation.answered', payload, options.tx),
-  'activity.assigned': (payload, options) =>
-    createNotificationFromEvent('activity.assigned', payload, options.tx),
-  'legal_consultation.sla_warning': (payload, options) =>
-    createNotificationFromEvent('legal_consultation.sla_warning', payload, options.tx),
-  'lgpd_request': (payload, options) =>
-    createNotificationFromEvent('lgpd_request', payload, options.tx),
-  'email_triage_pending': (payload, options) =>
-    createNotificationFromEvent('email_triage_pending', payload, options.tx),
-  'oficio.status_changed': (payload, options) =>
-    createNotificationFromEvent('oficio.status_changed', payload, options.tx),
-};
-
-export async function emitEvent(
-  type: NotificationEventType,
-  payload: NotificationEventPayload,
+export async function emitEvent<T extends NotificationEventType>(
+  type: T,
+  payload: Omit<NotificationEventPayload, 'metadata'> & { metadata?: (T extends keyof NotificationMetadataByType ? NotificationMetadataByType[T] : Record<string, unknown>) | null },
   options: EmitEventOptions = {},
 ) {
-  assertValidPayload(type, payload);
+  assertValidPayload(type, payload as NotificationEventPayload);
 
   logger.info('[emitEvent]', {
     type,
@@ -80,7 +92,7 @@ export async function emitEvent(
     entityId: payload.entityId,
   });
 
-  return eventHandlers[type](payload, options);
+  return createNotificationFromEvent(type, payload as NotificationEventPayload, options.tx);
 }
 
 export async function emitActivityCompleted(

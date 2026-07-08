@@ -30,10 +30,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
     "smoke:prod": "playwright test --config=playwright.smoke.config.ts",
-    "test:metrics": "tsx scripts/test-metrics/summary.ts",
-    "test:metrics:clean": "rm -rf .test-metrics",
-    "eval:oficios": "tsx scripts/oficios-eval/run.ts",
-    "eval:oficios:diff": "tsx scripts/oficios-eval/compare.ts",
+
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file=.env.local --import tsx scripts/guarded-migrate.ts",
     "db:migrate:unsafe": "drizzle-kit migrate",
@@ -96,7 +93,9 @@
   },
   "overrides": {
     "esbuild": "0.28.0",
-    "postcss": "8.5.14"
+    "nodemailer": "^9.0.0",
+    "postcss": "8.5.14",
+    "ws": "^8.21.0"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

@@ -89,7 +89,6 @@ Preview não deve herdar envs gerais de banco de produção.
 `CREATE INDEX CONCURRENTLY` e `DROP INDEX CONCURRENTLY` **não** podem ser executados dentro de transações PostgreSQL. Como o Drizzle Kit (`npm run db:migrate`) aplica migrações envolvendo cada statement em uma transação, esses comandos falham nesse fluxo. Para esses casos: backup → teste em staging → execução direta via `psql "$DATABASE_MIGRATION_URL"` → validação com `npm run test:db`.
 
 ### Migrações aplicadas (29)
-
 Contagem = número de entradas em `drizzle/postgres/meta/_journal.json` (fonte de verdade), não a listagem do diretório.
 
 | # | Arquivo | Descrição |
@@ -123,6 +122,7 @@ Contagem = número de entradas em `drizzle/postgres/meta/_journal.json` (fonte d
 | 0026 | `0026_add_associate_retirement_date.sql` | Adiciona coluna `retirement_date` em associates |
 | 0027 | `0027_add_associates_name_translated_trgm_index.sql` | Índice GIN trigram transliterado para busca de nome sem acentos |
 | 0028 | `0028_activity_domain_events.sql` | ADR 018: eventos de domínio `activity.*` no outbox (6 valores em `domain_event_type` + `activity` em `domain_event_entity_type`) |
+| 0029 | `0029_pagination_count_index.sql` | Índice composto em associates para paginação otimizada |
 
 ### Nomenclatura
 
@@ -325,8 +325,8 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 | Enum | Valores | Uso |
 |------|---------|-----|
-| `domain_event_type` | `associate.updated`, `legal_consultation.created`, `legal_consultation.status_changed`, `official_letter.created`, `official_letter.published`, `official_letter.status_changed`, `monthly_payment.updated` | Categoria do evento |
-| `domain_event_entity_type` | `associate`, `legal_consultation`, `official_letter`, `monthly_payment` | Entidade relacionada |
+| `domain_event_type` | `associate.updated`, `legal_consultation.created`, `legal_consultation.status_changed`, `official_letter.created`, `official_letter.published`, `official_letter.status_changed`, `monthly_payment.updated`, `activity.created`, `activity.status_changed`, `activity.assigned`, `activity.completed`, `activity.priority_changed`, `activity.due_date_changed` | Categoria do evento |
+| `domain_event_entity_type` | `associate`, `legal_consultation`, `official_letter`, `monthly_payment`, `activity` | Entidade relacionada |
 | `domain_event_delivery_status` | `pending`, `processing`, `delivered`, `partially_delivered`, `failed` | Status de entrega |
 | `webhook_delivery_status` | `pending`, `delivered`, `failed`, `retry_scheduled` | Status do delivery |
 
@@ -353,6 +353,7 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 | Tabela | Índice | Tipo | Finalidade |
 |--------|--------|------|------------|
+| `associates` | `idx_associates_paginated_list` | Composto | Listagem com paginação e ordenação |
 | `associates` | `idx_associates_name_trgm` | GIN | Busca textual por nome |
 | `associates` | `idx_associates_name_lower_trgm` | GIN | Busca textual por nome transliterado (sem acentos) |
 | `associates` | `idx_associates_cpf` | UNIQUE | CPF único |

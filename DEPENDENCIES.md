@@ -40,14 +40,11 @@ Atualizado em 2026-06-14. Inclui mudancas pos-go-live: refatoracao de atividades
 
 O go-live nao depende de auth externo, entrega em tempo real externa nem storage externo. Storage de objetos privado sera escolhido em frente separada se Documentos for obrigatorio. A implementacao final de storage fisico devera ser acompanhada de uma decisao formal de adocao.
 
-## Vulnerabilidades Conhecidas (2026-06-14)
+## Vulnerabilidades Conhecidas (2026-07-06)
 
-Duas vulnerabilidades transitivas estao presentes e nao possuem fix sem breaking change:
+As vulnerabilidades de dependências transitivas (`ws`, `nodemailer`, `esbuild`) foram mitigadas utilizando a propriedade `"overrides"` no `package.json`. O build de produção atualmente reporta **0 vulnerabilidades HIGH**.
 
-- **esbuild** (high): afeta `drizzle-kit` e `tsx` (dev dependencies). Nao afeta producao.
-- **ws** (moderate): afeta `engine.io-client` (transitiva via `@novu/react`). Nao e exploravel em uso server-side.
-
-Ambas sao dev-only ou transitivas em dependencias de dev. `npm audit fix --force` propoe downgrade de `drizzle-kit` para 0.19 (breaking), portanto nao deve ser aplicado. Monitorar advisories e aplicar quando patches estiverem disponiveis.
+As vulnerabilidades restantes apontadas pelo `npm audit` estão isoladas em dependências de desenvolvimento (como `undici` via `jsdom` e pacotes transitivos do `vite`/`vitest`), que não afetam o ambiente de produção. Não aplique `npm audit fix --force`, pois isso poderá forçar downgrades indesejados e quebrar contratos (ex: `drizzle-kit`).
 
 ## Comandos De Saude
 

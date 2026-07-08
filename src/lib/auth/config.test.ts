@@ -47,7 +47,11 @@ describe('auth config', () => {
     );
   });
 
-  it('ignores auth bypass in production', () => {
+  it('ignores auth bypass in production (NODE_ENV)', () => {
     expect(isSkipAuthEnabled({ SKIP_AUTH: 'true', NODE_ENV: 'production' })).toBe(false);
+  });
+
+  it('ignores auth bypass in production (VERCEL_ENV)', () => {
+    expect(isSkipAuthEnabled({ SKIP_AUTH: 'true', VERCEL_ENV: 'production' })).toBe(false);
   });
 });

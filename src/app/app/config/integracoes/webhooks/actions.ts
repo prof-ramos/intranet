@@ -59,16 +59,22 @@ function parseId(raw: string) {
   return id;
 }
 
-function parseSubscriptionForm(formData: {
+import { isPublicWebhookUrl } from '@/lib/integrations/webhooks/validation';
+
+async function parseSubscriptionForm(formData: {
   name: string;
   targetUrl: string;
   subscribedEvents: string[];
 }) {
-  const parsed = webhookSubscriptionFormSchema.parse({
+  const parsed = await webhookSubscriptionFormSchema.parseAsync({
     name: formData.name,
     targetUrl: formData.targetUrl,
     subscribedEvents: formData.subscribedEvents,
   });
+
+  if (!(await isPublicWebhookUrl(parsed.targetUrl))) {
+    throw new Error('A URL deve usar HTTPS público; hosts locais, privados ou reservados não são permitidos.');
+  }
 
   return {
     ...parsed,
@@ -82,7 +88,7 @@ export const createWebhookSubscription = defineFormStateAction({
   service: async (data, actor) => {
     try {
       await createManagedWebhookSubscription(actor.userId, {
-        ...parseSubscriptionForm(data),
+        ...(await parseSubscriptionForm(data)),
         secret: webhookSecretSchema.parse(data.secret),
       });
       revalidatePath('/app/config/integracoes/webhooks');
@@ -101,7 +107,7 @@ export const updateWebhookSubscription = defineFormStateAction({
     try {
       await updateManagedWebhookSubscription(actor.userId, {
         id: parseId(data.id),
-        ...parseSubscriptionForm(data),
+        ...(await parseSubscriptionForm(data)),
         isActive: data.isActive === 'true',
       });
       revalidatePath('/app/config/integracoes/webhooks');

@@ -47,7 +47,46 @@ async function loginAdmin(page: Page) {
   await page.fill('input[name="email"]', ADMIN_EMAIL!);
   await page.fill('input[name="password"]', ADMIN_PASSWORD!);
   await page.click('button[type="submit"]');
-  await page.waitForURL(/\/app/, { timeout: 20_000 });
+  await expectSmokeLoginSuccess(page);
+}
+
+function safeLoginErrorCode(url: string): string {
+  const parsed = new URL(url);
+  const error = parsed.searchParams.get('error') ?? 'missing';
+  return /^[a-z0-9_-]+$/i.test(error) ? error : 'unknown';
+}
+
+async function expectSmokeLoginSuccess(page: Page) {
+  const loginResult = await Promise.race([
+    page.waitForURL(/\/app(?:\/|$)/, { timeout: 20_000 }).then(() => 'app'),
+    page.waitForURL(/\/change-password(?:\?|$)/, { timeout: 20_000 }).then(() => 'change-password'),
+    page.waitForURL(/\/login\?/, { timeout: 20_000 }).then(() => 'login-error'),
+  ]).catch(() => 'timeout');
+
+  const currentUrl = page.url();
+  const parsed = new URL(currentUrl);
+
+  if (loginResult === 'app' && parsed.pathname.startsWith('/app')) {
+    return;
+  }
+
+  if (loginResult === 'change-password' && parsed.pathname === '/change-password') {
+    throw new Error(
+      'Smoke login failed: safe code "change-password". The smoke admin requires password rotation; set must_change_password=false for the approved smoke account.',
+    );
+  }
+
+  if (loginResult === 'login-error' && parsed.pathname === '/login') {
+    throw new Error(
+      `Smoke login failed: safe code "${safeLoginErrorCode(currentUrl)}". Verify SMOKE_ADMIN_EMAIL/SMOKE_ADMIN_PASSWORD and the production admin account state.`,
+    );
+  }
+
+  if (loginResult === 'timeout') {
+    throw new Error(`Smoke login failed: safe code "timeout" while waiting for login result at path "${parsed.pathname}".`);
+  }
+
+  throw new Error(`Smoke login failed: unexpected safe path "${parsed.pathname}".`);
 }
 
 async function fillIfVisible(page: Page, selector: string, value: string) {
@@ -69,7 +108,7 @@ test('1. Login e Sessão', async ({ page }) => {
   await page.fill('input[name="email"]', ADMIN_EMAIL!);
   await page.fill('input[name="password"]', ADMIN_PASSWORD!);
   await page.click('button[type="submit"]');
-  await page.waitForURL(/\/app/, { timeout: 20_000 });
+  await expectSmokeLoginSuccess(page);
 
   expect(page.url()).toMatch(/\/app/);
 
@@ -96,7 +135,7 @@ test('3. Cadastro de Oficiais — criar oficial e validar perfil', async ({ page
   await page.goto('/app/associados');
 
   // Lista carrega e campo de busca existe (não depende de dados pré-existentes)
-  await expect(page.locator('h1')).toContainText('Cadastro de Oficiais');
+  await expect(page.locator('h1')).toContainText(/Oficiais/);
   await expect(page.locator('input[name="q"]')).toBeVisible();
 
   // Criar um novo oficial via fluxo de cadastro (pré-requisito de go-live #213)

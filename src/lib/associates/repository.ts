@@ -22,6 +22,7 @@ import {
   type AssociateSearchMode,
 } from './search-params';
 import { piiBlindIndex } from '@/lib/crypto/pii';
+import { withCache } from '@/lib/cache/with-cache';
 
 type FunctionalStatusEnum = (typeof functionalStatus.enumValues)[number];
 type AssociationStatusEnum = (typeof associationStatus.enumValues)[number];
@@ -81,7 +82,12 @@ export interface AssociatesFilters {
   associationStatus?: 'associado' | 'nao_associado';
 }
 
-export async function findAssociatesPaginated(
+// TTL curto (30s) para a listagem paginada de associados. As mutations
+// (create/update/delete de associado, dependente, convênio, lotação) já chamam
+// `revalidateTag('associates', 'max')`, invalidando este cache cirurgicamente.
+const ASSOCIATES_LIST_TTL = 30;
+
+async function findAssociatesPaginatedUncached(
   page: number,
   pageSize: number,
   searchQuery?: string,
@@ -168,6 +174,36 @@ export async function findAssociatesPaginated(
     total,
   };
 }
+
+/**
+ * Listagem paginada de associados com cache curto (30s) e tag `associates`.
+ *
+ * Invalidada cirurgicamente por `revalidateTag('associates', 'max')` em todas
+ * as mutations de associado/dependente/convênio/lotação (ver
+ * `src/app/app/associados/actions.ts`, `src/app/app/associados/[id]/actions.ts`,
+ * `src/app/app/config/lotacoes/actions.ts`).
+ */
+export const findAssociatesPaginated = withCache({
+  fn: findAssociatesPaginatedUncached,
+  keyFn: (
+    page: number,
+    pageSize: number,
+    searchQuery?: string,
+    filters?: AssociatesFilters,
+    searchBy?: AssociateSearchMode,
+  ) => [
+      'associates-paginated',
+      String(page),
+      String(pageSize),
+      searchQuery?.trim() ?? '',
+      filters?.contributionStatus ?? '',
+      filters?.functionalStatus ?? '',
+      filters?.associationStatus ?? '',
+      searchBy ?? 'name',
+    ],
+  ttl: ASSOCIATES_LIST_TTL,
+  tags: ['associates'],
+});
 
 // ─── Cursor-based pagination (keyset) for large queries ─────────────────
 
