@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
+import { isPublicWebhookUrl } from '@/lib/integrations/webhooks/validation';
 import {
-  isPublicWebhookUrl,
   loginSchema,
   changePasswordSchema,
   associateSearchParamsSchema,
@@ -430,6 +430,8 @@ describe('addNoteSchema', () => {
 });
 
 describe('webhookSubscriptionFormSchema', () => {
+  // Validação de URL pública (SSRF) foi movida para a camada de serviço
+  // (actions.ts e subscriptions.ts). O schema apenas valida formato da URL.
   test('aceita URL HTTPS pública', async () => {
     const result = await webhookSubscriptionFormSchema.safeParseAsync({
       name: 'Automação externa',
@@ -438,23 +440,6 @@ describe('webhookSubscriptionFormSchema', () => {
     });
 
     expect(result.success).toBe(true);
-  });
-
-  test.each([
-    'http://hooks.example.com/asof',
-    'https://localhost/webhook',
-    'https://127.0.0.1/webhook',
-    'https://10.0.0.1/webhook',
-    'https://192.168.0.10/webhook',
-    'https://169.254.169.254/latest/meta-data',
-  ])('rejeita URL insegura ou privada: %s', async (targetUrl) => {
-    const result = await webhookSubscriptionFormSchema.safeParseAsync({
-      name: 'Automação externa',
-      targetUrl,
-      subscribedEvents: ['associate.updated'],
-    });
-
-    expect(result.success).toBe(false);
   });
 });
 

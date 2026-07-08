@@ -123,6 +123,9 @@ async function warmupJitRoutes() {
 
     // Compile the financeiro route used in other specs.
     await page.goto(`${E2E_BASE_URL}/app/financeiro/mensalidades`, { timeout: 60_000 });
+
+    // Compile the oficios route to prevent JIT timeout in assinafy tests.
+    await page.goto(`${E2E_BASE_URL}/app/secretaria/oficios`, { timeout: 60_000 });
   } finally {
     await browser.close();
   }

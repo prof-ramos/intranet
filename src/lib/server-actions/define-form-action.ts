@@ -74,6 +74,26 @@ function applyRevalidate(spec: RevalidateSpec) {
   }
 }
 
+async function executeActionCore<TOutput>(
+  options: {
+    auth: readonly string[] | 'any';
+    rateLimit?: RateLimitConfig;
+    revalidate?: RevalidateSpec;
+    redirect?: string | ((output: TOutput) => string);
+  },
+  serviceCall: (user: UserContext) => Promise<TOutput>,
+): Promise<TOutput> {
+  if (options.rateLimit) await checkRateLimit(options.rateLimit);
+  const user = await checkAuth(options.auth);
+  const output = await serviceCall(user);
+  if (options.revalidate) applyRevalidate(options.revalidate);
+  if (options.redirect) {
+    const target = typeof options.redirect === 'string' ? options.redirect : options.redirect(output);
+    redirect(target);
+  }
+  return output;
+}
+
 export function defineFormAction<TSchema extends ZodType, TOutput = unknown>(options: {
   auth: readonly string[] | 'any';
   schema: TSchema;
@@ -84,17 +104,10 @@ export function defineFormAction<TSchema extends ZodType, TOutput = unknown>(opt
   rateLimit?: RateLimitConfig;
 }): (formData: FormData) => Promise<TOutput> {
   return async (formData: FormData) => {
-    if (options.rateLimit) await checkRateLimit(options.rateLimit);
-    const user = await checkAuth(options.auth);
-    const data = parseFormAction(formData, options.schema, options.preprocess);
-    const output = await options.service(data, user);
-    if (options.revalidate) applyRevalidate(options.revalidate);
-    if (options.redirect) {
-      const target =
-        typeof options.redirect === 'string' ? options.redirect : options.redirect(output);
-      redirect(target);
-    }
-    return output;
+    return executeActionCore(options, async (user) => {
+      const data = parseFormAction(formData, options.schema, options.preprocess);
+      return options.service(data, user);
+    });
   };
 }
 
@@ -109,12 +122,10 @@ export function defineFormStateAction<TSchema extends ZodType, TReturn>(options:
 }): (_prevState: TReturn | null, formData: FormData) => Promise<TReturn> {
   return async (_prevState: TReturn | null, formData: FormData) => {
     try {
-      if (options.rateLimit) await checkRateLimit(options.rateLimit);
-      const user = await checkAuth(options.auth);
-      const data = parseFormAction(formData, options.schema, options.preprocess);
-      const output = await options.service(data, user);
-      if (options.revalidate) applyRevalidate(options.revalidate);
-      return output;
+      return await executeActionCore(options, async (user) => {
+        const data = parseFormAction(formData, options.schema, options.preprocess);
+        return options.service(data, user);
+      });
     } catch (error) {
       if (isRedirectError(error)) throw error;
       if (options.onError) return options.onError(error);
@@ -132,20 +143,13 @@ export function defineServerAction<TSchema extends ZodType, TOutput = unknown>(o
   rateLimit?: RateLimitConfig;
 }): (input: z.input<TSchema>) => Promise<TOutput> {
   return async (input: z.input<TSchema>) => {
-    if (options.rateLimit) await checkRateLimit(options.rateLimit);
-    const user = await checkAuth(options.auth);
-    const parsed = options.schema.safeParse(input);
-    if (!parsed.success) {
-      throw new Error(firstZodError(parsed.error.issues));
-    }
-    const output = await options.service(parsed.data, user);
-    if (options.revalidate) applyRevalidate(options.revalidate);
-    if (options.redirect) {
-      const target =
-        typeof options.redirect === 'string' ? options.redirect : options.redirect(output);
-      redirect(target);
-    }
-    return output;
+    return executeActionCore(options, async (user) => {
+      const parsed = options.schema.safeParse(input);
+      if (!parsed.success) {
+        throw new Error(firstZodError(parsed.error.issues));
+      }
+      return options.service(parsed.data, user);
+    });
   };
 }
 
@@ -157,15 +161,6 @@ export function defineNoInputServerAction<TOutput = unknown>(options: {
   rateLimit?: RateLimitConfig;
 }): () => Promise<TOutput> {
   return async () => {
-    if (options.rateLimit) await checkRateLimit(options.rateLimit);
-    const user = await checkAuth(options.auth);
-    const output = await options.service(user);
-    if (options.revalidate) applyRevalidate(options.revalidate);
-    if (options.redirect) {
-      const target =
-        typeof options.redirect === 'string' ? options.redirect : options.redirect(output);
-      redirect(target);
-    }
-    return output;
+    return executeActionCore(options, async (user) => options.service(user));
   };
 }

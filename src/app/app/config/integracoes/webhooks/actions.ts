@@ -59,6 +59,8 @@ function parseId(raw: string) {
   return id;
 }
 
+import { isPublicWebhookUrl } from '@/lib/integrations/webhooks/validation';
+
 async function parseSubscriptionForm(formData: {
   name: string;
   targetUrl: string;
@@ -69,6 +71,10 @@ async function parseSubscriptionForm(formData: {
     targetUrl: formData.targetUrl,
     subscribedEvents: formData.subscribedEvents,
   });
+
+  if (!(await isPublicWebhookUrl(parsed.targetUrl))) {
+    throw new Error('A URL deve usar HTTPS público; hosts locais, privados ou reservados não são permitidos.');
+  }
 
   return {
     ...parsed,

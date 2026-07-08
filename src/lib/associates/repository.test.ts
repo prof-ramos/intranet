@@ -99,6 +99,15 @@ vi.mock('@/lib/crypto/pii', () => ({
   piiBlindIndex: vi.fn((value: string) => `hash-${value}`),
 }));
 
+// withCache envolve findAssociatesPaginated em unstable_cache; nos testes
+// unitários o mock passa a função adiante sem cachear, preservando o
+// comportamento esperado pelos mocks de `db` abaixo.
+vi.mock('next/cache', () => ({
+  unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+}));
+
 vi.mock('./search-params', () => ({
   buildAssociateNameSearchPattern: (q: string) => `%${q}%`,
   normalizeAssociateNameForSearch: (raw: string) => raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(),

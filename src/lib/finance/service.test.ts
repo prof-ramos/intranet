@@ -5,7 +5,7 @@ import {
   updateMonthlyPayment,
   validateStatusTransition,
 } from './service';
-import { emitDomainEvent } from '@/lib/integrations/outbox';
+import { emitDomainEvent, emitDomainEventsBatch } from '@/lib/integrations/outbox';
 import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
 import { logAuditAction } from '@/lib/audit/service';
 
@@ -37,6 +37,7 @@ vi.mock('@/lib/audit/service', () => ({
 
 vi.mock('@/lib/integrations/outbox', () => ({
   emitDomainEvent: vi.fn(),
+  emitDomainEventsBatch: vi.fn(),
 }));
 
 vi.mock('@/lib/integrations/webhooks/service', () => ({
@@ -102,6 +103,7 @@ describe('finance service', () => {
 
     // emitDomainEvent now runs INSIDE the tx and returns the inserted event row.
     vi.mocked(emitDomainEvent).mockResolvedValue({ id: 4242 } as never);
+    vi.mocked(emitDomainEventsBatch).mockResolvedValue([{ id: 4242 }] as never);
     vi.mocked(dispatchDomainEventById).mockResolvedValue({ dispatched: true } as never);
   });
 
@@ -113,33 +115,35 @@ describe('finance service', () => {
     // Bulk insert replaces N sequential logAuditAction calls
     expect(logAuditAction).not.toHaveBeenCalled();
     expect(transactionMock.tx.insert).toHaveBeenCalledWith(expect.anything());
-    // Outbox invariant: emitDomainEvent MUST be called with the tx sentinel,
-    // not the default db — so the event row commits (or rolls back) with the
-    // mutation.
-    expect(emitDomainEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'monthly_payment.updated',
-        entityType: 'monthly_payment',
-        entityId: 5,
-        actorAdminId: null,
-        payload: {
-          associateId: 10,
-          year: 2026,
-          month: 4,
-          previousStatus: 'pendente',
-          status: 'atrasado',
-          paymentMethod: 'boleto',
-          paidAt: null,
-          links: {
-            app: '/app/financeiro/mensalidades?year=2026&month=4',
+    // Outbox invariant: emitDomainEventsBatch MUST be called with the tx
+    // sentinel and the correct array of events — so the event rows commit (or
+    // roll back) with the mutation.
+    expect(emitDomainEventsBatch).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'monthly_payment.updated',
+          entityType: 'monthly_payment',
+          entityId: 5,
+          actorAdminId: null,
+          payload: {
+            associateId: 10,
+            year: 2026,
+            month: 4,
+            previousStatus: 'pendente',
+            status: 'atrasado',
+            paymentMethod: 'boleto',
+            paidAt: null,
+            links: {
+              app: '/app/financeiro/mensalidades?year=2026&month=4',
+            },
           },
-        },
-      }),
+        }),
+      ]),
       transactionMock.tx,
     );
-    expect(JSON.stringify(vi.mocked(emitDomainEvent).mock.calls[0][0])).not.toMatch(
-      /cpf|siape|address/i,
-    );
+    expect(
+      JSON.stringify(vi.mocked(emitDomainEventsBatch).mock.calls[0][0][0]),
+    ).not.toMatch(/cpf|siape|address/i);
     // Post-commit fire-and-forget dispatch is invoked per event with the
     // inserted event id. The cron /api/v1/events/dispatch is the safety net.
     expect(dispatchDomainEventById).toHaveBeenCalledWith(4242);
@@ -151,7 +155,7 @@ describe('finance service', () => {
     const count = await autoMarkOverduePaymentsService();
 
     expect(count).toBe(1);
-    expect(emitDomainEvent).toHaveBeenCalled();
+    expect(emitDomainEventsBatch).toHaveBeenCalled();
     expect(dispatchDomainEventById).toHaveBeenCalled();
   });
 

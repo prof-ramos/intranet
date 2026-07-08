@@ -108,10 +108,10 @@ export async function login(formData: FormData) {
     redirect('/login?error=1');
   }
 
-  await createSession({ userId: user.id, email: user.email });
-
   try {
     await loginRateLimiter.reset(email);
+    await createSession({ userId: user.id, email: user.email });
+    return redirect(user.mustChangePassword ? '/change-password' : '/app');
   } catch (error) {
     logger.warn(
       '[Login] Rate-limit reset failed after successful login.',

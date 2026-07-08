@@ -2,7 +2,7 @@ import * as repository from './repository';
 import { markOverduePaymentsForAudit } from './repository';
 import { logAuditAction } from '@/lib/audit/service';
 import { db } from '@/lib/db';
-import { emitDomainEvent } from '@/lib/integrations/outbox';
+import { emitDomainEvent, emitDomainEventsBatch } from '@/lib/integrations/outbox';
 import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
 import {
   monthlyPayments,
@@ -72,31 +72,33 @@ export async function autoMarkOverduePaymentsService(): Promise<number> {
     // Outbox invariant: emit domain events INSIDE the tx so the event row
     // commits (or rolls back) with the mutation. Post-commit dispatch below
     // is fire-and-forget; the cron /api/v1/events/dispatch is the safety net.
-    const emittedEventIds: number[] = [];
-    for (const payment of rows) {
-      const inserted = await emitDomainEvent(
-        {
-          type: 'monthly_payment.updated' as const,
-          entityType: 'monthly_payment' as const,
-          entityId: payment.id,
-          actorAdminId: null,
-          payload: {
-            associateId: payment.associateId,
-            year: payment.year,
-            month: payment.month,
-            previousStatus: 'pendente' as const,
-            status: 'atrasado' as const,
-            paymentMethod: payment.paymentMethod,
-            paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
-            links: {
-              app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
-            },
+    //
+    // Batch insert: um único `INSERT ... VALUES (...), (...)` em vez de N+1
+    // INSERTs sequenciais dentro da tx. Preserva o invariant do outbox
+    // (commit/rollback atômico) e valida/sanitiza cada payload igual ao
+    // `emitDomainEvent` unitário.
+    const emittedEvents = await emitDomainEventsBatch(
+      rows.map((payment) => ({
+        type: 'monthly_payment.updated' as const,
+        entityType: 'monthly_payment' as const,
+        entityId: payment.id,
+        actorAdminId: null,
+        payload: {
+          associateId: payment.associateId,
+          year: payment.year,
+          month: payment.month,
+          previousStatus: 'pendente' as const,
+          status: 'atrasado' as const,
+          paymentMethod: payment.paymentMethod,
+          paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
+          links: {
+            app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
           },
         },
-        tx,
-      );
-      emittedEventIds.push(inserted.id);
-    }
+      })),
+      tx,
+    );
+    const emittedEventIds = emittedEvents.map((event) => event.id);
 
     return { transitioned: rows, eventIds: emittedEventIds };
   });
@@ -183,7 +185,7 @@ export async function updateMonthlyPayment(
     if (current && expectedUpdatedAt != null) {
       const currentUpdatedAt = current.updatedAt?.toISOString() ?? null;
       if (currentUpdatedAt !== expectedUpdatedAt) {
-      throw new ConcurrencyConflictError();
+        throw new ConcurrencyConflictError();
       }
     }
 

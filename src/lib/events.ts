@@ -45,14 +45,8 @@ interface OficioStatusChangedMetadata {
 
 type NotificationMetadataByType = {
   'activity.completed': ActivityCompletedMetadata;
-  'legal_consultation.answered': Record<string, unknown>;
-  // ponytail: 'legal_consultation.answered' has no typed metadata yet
   'activity.assigned': ActivityAssignedMetadata;
   'legal_consultation.sla_warning': SlaWarningMetadata;
-  'lgpd_request': Record<string, unknown>;
-  // ponytail: 'lgpd_request' has no typed metadata yet
-  'email_triage_pending': Record<string, unknown>;
-  // ponytail: 'email_triage_pending' has no typed metadata yet
   'oficio.status_changed': OficioStatusChangedMetadata;
 };
 
@@ -72,10 +66,7 @@ interface EmitEventOptions {
   tx?: DbExecutor;
 }
 
-type EventHandler = (
-  payload: NotificationEventPayload,
-  options: EmitEventOptions,
-) => Promise<unknown>;
+
 
 interface ActivityCompletedPayload {
   activityId: number;
@@ -86,26 +77,9 @@ interface ActivityCompletedPayload {
   completedAt: string;
 }
 
-const eventHandlers: Record<NotificationEventType, EventHandler> = {
-  'activity.completed': (payload, options) =>
-    createNotificationFromEvent('activity.completed', payload, options.tx),
-  'legal_consultation.answered': (payload, options) =>
-    createNotificationFromEvent('legal_consultation.answered', payload, options.tx),
-  'activity.assigned': (payload, options) =>
-    createNotificationFromEvent('activity.assigned', payload, options.tx),
-  'legal_consultation.sla_warning': (payload, options) =>
-    createNotificationFromEvent('legal_consultation.sla_warning', payload, options.tx),
-  'lgpd_request': (payload, options) =>
-    createNotificationFromEvent('lgpd_request', payload, options.tx),
-  'email_triage_pending': (payload, options) =>
-    createNotificationFromEvent('email_triage_pending', payload, options.tx),
-  'oficio.status_changed': (payload, options) =>
-    createNotificationFromEvent('oficio.status_changed', payload, options.tx),
-};
-
 export async function emitEvent<T extends NotificationEventType>(
   type: T,
-  payload: Omit<NotificationEventPayload, 'metadata'> & { metadata?: NotificationMetadataByType[T] | null },
+  payload: Omit<NotificationEventPayload, 'metadata'> & { metadata?: (T extends keyof NotificationMetadataByType ? NotificationMetadataByType[T] : Record<string, unknown>) | null },
   options: EmitEventOptions = {},
 ) {
   assertValidPayload(type, payload as NotificationEventPayload);
@@ -118,7 +92,7 @@ export async function emitEvent<T extends NotificationEventType>(
     entityId: payload.entityId,
   });
 
-  return eventHandlers[type](payload as NotificationEventPayload, options);
+  return createNotificationFromEvent(type, payload as NotificationEventPayload, options.tx);
 }
 
 export async function emitActivityCompleted(

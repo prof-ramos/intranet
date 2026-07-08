@@ -88,7 +88,7 @@ Preview não deve herdar envs gerais de banco de produção.
 
 `CREATE INDEX CONCURRENTLY` e `DROP INDEX CONCURRENTLY` **não** podem ser executados dentro de transações PostgreSQL. Como o Drizzle Kit (`npm run db:migrate`) aplica migrações envolvendo cada statement em uma transação, esses comandos falham nesse fluxo. Para esses casos: backup → teste em staging → execução direta via `psql "$DATABASE_MIGRATION_URL"` → validação com `npm run test:db`.
 
-### Migrações aplicadas (28)
+### Migrações aplicadas (29)
 
 | # | Arquivo | Descrição |
 |---|---------|-----------|
@@ -121,6 +121,7 @@ Preview não deve herdar envs gerais de banco de produção.
 | 0026 | `0026_add_associate_retirement_date.sql` | Adiciona coluna `retirement_date` em associates |
 | 0027 | `0027_add_associates_name_translated_trgm_index.sql` | Índice GIN trigram transliterado para busca de nome sem acentos |
 | 0028 | `0028_activity_domain_events.sql` | Eventos de domínio `activity.*` no outbox transacional |
+| 0029 | `0029_pagination_count_index.sql` | Índice composto em associates para paginação otimizada |
 
 ### Nomenclatura
 
@@ -351,6 +352,7 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 | Tabela | Índice | Tipo | Finalidade |
 |--------|--------|------|------------|
+| `associates` | `idx_associates_paginated_list` | Composto | Listagem com paginação e ordenação |
 | `associates` | `idx_associates_name_trgm` | GIN | Busca textual por nome |
 | `associates` | `idx_associates_name_lower_trgm` | GIN | Busca textual por nome transliterado (sem acentos) |
 | `associates` | `idx_associates_cpf` | UNIQUE | CPF único |

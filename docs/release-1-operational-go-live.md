@@ -128,9 +128,9 @@ Registrar evidencia do restore:
 - resultado final: aprovado, aprovado com ressalvas ou reprovado;
 - data de descarte do banco restaurado.
 
-## Smoke Manual Em Producao
+## Smoke Automatizado Em Produção
 
-Preencher a evidencia da janela em documento privado ou issue operacional sem secrets. Dados criados no smoke devem usar prefixo `SMOKE_`.
+Preencher a evidencia da janela em documento privado ou issue operacional sem secrets.
 
 ### Pre-Janela
 
@@ -144,49 +144,18 @@ Preencher a evidencia da janela em documento privado ou issue operacional sem se
 - Confirmar que `ASOF_INTEGRATIONS_ENABLED=false` em producao.
 - Confirmar que nenhum webhook real sera ativado durante o smoke.
 
-### Passos De Smoke
+### Execução do Smoke
 
-1. Login admin: entrar em `https://intranet.asof.com.br/login` com o admin operacional.
-2. Troca obrigatoria de senha: se `must_change_password=true`, concluir `/change-password` e confirmar redirecionamento para `/app`.
-3. Dashboard: abrir `/app` e validar cards, links e ausencia de erro server-side.
-4. Associados: criar ou editar registro `SMOKE_ASSOCIADO_<timestamp>`, validar lista, filtros, perfil e exportacao permitida apenas para role autorizada.
-5. Atividades: criar atividade `SMOKE_ATIVIDADE_<timestamp>`, mover status no kanban, atribuir responsavel e concluir.
-6. Juridico: criar consulta `SMOKE_JURIDICO_<timestamp>`, validar status, prazo/SLA e historico basico.
-7. Secretaria/Oficios: criar oficio `SMOKE_OFICIO_<timestamp>`, validar edicao, geracao/download de PDF e cancelamento quando aplicavel.
-8. Financeiro: criar ou atualizar mensalidade vinculada ao associado smoke, validar status, metodo de pagamento e auditoria.
-9. Auditoria: abrir `/app/config/auditoria` e confirmar entradas dos passos anteriores sem plaintext de senha, token, CPF, SIAPE ou segredo.
-10. Notificacoes persistidas: gerar acao que crie notificacao, recarregar a pagina e confirmar persistencia no inbox/lista.
-11. Crons com `CRON_SECRET`: validar as duas rotas de `vercel.json` com bearer real somente no terminal operacional, sem imprimir o valor:
+O smoke test automatizado cobre fluxo E2E, criação de dados com prefixo `SMOKE_`, validações e limpeza automática ao final do script. A conta de execução é `smoke-admin@asof.local` gerida pelo pipeline CI/CD (GitHub Actions).
+
+Para executar localmente contra produção (requer credenciais corretas):
 
 ```bash
-curl --fail --silent --show-error \
-  -H "Authorization: Bearer ${CRON_SECRET}" \
-  "https://intranet.asof.com.br/api/v1/events/dispatch?limit=1"
-
-curl --fail --silent --show-error \
-  -H "Authorization: Bearer ${CRON_SECRET}" \
-  "https://intranet.asof.com.br/api/v1/juridico/sla-warnings?limit=1"
+npm run smoke:prod
 ```
 
-Tambem validar um request sem bearer e registrar apenas o status esperado `401`, sem payload sensivel.
-
-Nao incluir `CRON_SECRET` em shell history, screenshots ou evidencias. Quando possivel, executar em shell operacional com variavel ja carregada de arquivo externo ao Git e registrar apenas rota, status HTTP, `requestId`, horario UTC e resultado resumido.
-
-### Limpeza `SMOKE_*`
-
-Limpar dados criados no smoke antes da liberacao para usuarios finais, preservando auditoria. Executar SQL direto apenas por operador autorizado e somente depois de revisar os IDs afetados.
-
-Padrao recomendado:
-
-```sql
-begin;
--- Primeiro listar os IDs candidatos por prefixo SMOKE_*.
--- Depois remover apenas entidades criadas na janela.
--- Nao apagar audit_logs.
-rollback;
-```
-
-Trocar `rollback` por `commit` somente apos revisar as linhas candidatas. Registrar contagem removida por tabela, sem PII.
+Alternativamente, dispare via GitHub Actions (`workflow_dispatch`) na aba Actions > "Playwright E2E Smoke (Produção)".
+O script garante a limpeza de todos os dados gerados, preservando apenas os logs de auditoria (`audit_logs`) com os eventos.
 
 ### Criterios De Sucesso
 

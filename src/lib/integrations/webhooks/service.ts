@@ -1,4 +1,4 @@
-import { isPublicWebhookUrl } from '@/lib/validation/schemas';
+import { isPublicWebhookUrl } from '@/lib/integrations/webhooks/validation';
 import { randomUUID } from 'node:crypto';
 import { db, type DbExecutor } from '@/lib/db';
 import {
