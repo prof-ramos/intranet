@@ -182,6 +182,7 @@ export const ASSOCIATE_EXPORT_FIELDS: AnnotatedField[] = [
   { key: 'admissionDate', label: 'Data de Admissão', sensitivity: 'public' },
   { key: 'inaugurationDate', label: 'Data de Posse', sensitivity: 'public' },
   { key: 'retirementDate', label: 'Data de Aposentadoria', sensitivity: 'public' },
+  { key: 'leaveDate', label: 'Data de Licença', sensitivity: 'public' },
   { key: 'cancellationDate', label: 'Data de Cancelamento do Vínculo ASOF', sensitivity: 'public' },
   { key: 'paymentMethod', label: 'Forma de Pagamento', sensitivity: 'public' },
   { key: 'ceocMember', label: 'Membro CEOC', sensitivity: 'public' },

@@ -5,6 +5,7 @@ import {
   findAssociateById,
   updateAssociateById,
   insertAssociate,
+  createDependent,
   findAssociateByCpfHash,
   findAssociateBySiapeHash,
   findAssociateByPrimaryEmailHash,
@@ -96,8 +97,11 @@ interface AssociateFields {
   inaugurationDate: string | null;
   retirementDate: string | null;
   cancellationDate: string | null;
+  leaveDate: string | null;
+  joinedAt: string | null;
   ceocMember: boolean | null;
   caocMember: boolean | null;
+  numberOfDependents: number | null;
   internalNotes: string | null;
 }
 
@@ -173,8 +177,11 @@ function mapRowToEditDTO(
     inaugurationDate: row.inaugurationDate,
     retirementDate: row.retirementDate,
     cancellationDate: row.cancellationDate,
+    leaveDate: row.leaveDate,
+    joinedAt: row.joinedAt,
     ceocMember: row.ceocMember,
     caocMember: row.caocMember,
+    numberOfDependents: row.numberOfDependents,
     internalNotes: row.internalNotes,
     canEditInternalNotes: role === 'admin',
   };
@@ -264,8 +271,11 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
     inaugurationDate: input.inaugurationDate,
     retirementDate: input.retirementDate,
     cancellationDate: input.cancellationDate,
+    leaveDate: input.leaveDate,
+    joinedAt: input.joinedAt,
     ceocMember: input.ceocMember,
     caocMember: input.caocMember,
+    numberOfDependents: input.numberOfDependents,
     ...buildPiiPatch({
       cpf: input.cpf,
       rg: input.rg,
@@ -329,6 +339,9 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
     }
   }
   if (input.internalNotes !== undefined) values.internalNotes = input.internalNotes;
+  if (input.joinedAt !== undefined) values.joinedAt = toJoinedAtTimestamp(input.joinedAt);
+  if (input.leaveDate !== undefined) values.leaveDate = emptyToNull(input.leaveDate);
+  if (input.numberOfDependents !== undefined) values.numberOfDependents = input.numberOfDependents;
 
   await db.transaction(async (tx) => {
     const current = await findAssociateById(input.id, tx);
@@ -363,10 +376,25 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
   });
 }
 
+export type CreateAssociateDependentInput = {
+  name: string;
+  relationship: string;
+};
+
 export type CreateAssociateInput = Partial<AssociateFields> & {
   fullName: string;
   createdBy?: number | null;
+  /** Dependentes criados atomicamente com o oficial. */
+  dependents?: CreateAssociateDependentInput[];
 };
+
+/** Normaliza date-only (YYYY-MM-DD) para timestamptz ISO usado em `joinedAt`. */
+export function toJoinedAtTimestamp(value: string | null | undefined): string | null {
+  const raw = emptyToNull(value);
+  if (!raw) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return `${raw}T00:00:00Z`;
+  return raw;
+}
 
 
 /**
@@ -437,6 +465,13 @@ export async function createAssociateData(input: CreateAssociateInput): Promise<
       }
     }
 
+    const dependents = (input.dependents ?? [])
+      .map((d) => ({
+        name: d.name.trim(),
+        relationship: d.relationship.trim(),
+      }))
+      .filter((d) => d.name.length > 0 && d.relationship.length > 0);
+
     const values: UpdateAssociateValues = {
       fullName: input.fullName,
       secondaryEmail: emptyToNull(input.secondaryEmail),
@@ -459,8 +494,11 @@ export async function createAssociateData(input: CreateAssociateInput): Promise<
       inaugurationDate: emptyToNull(input.inaugurationDate),
       retirementDate: emptyToNull(input.retirementDate),
       cancellationDate: emptyToNull(input.cancellationDate),
+      leaveDate: emptyToNull(input.leaveDate),
+      joinedAt: toJoinedAtTimestamp(input.joinedAt),
       ceocMember: input.ceocMember ?? null,
       caocMember: input.caocMember ?? null,
+      numberOfDependents: dependents.length > 0 ? dependents.length : (input.numberOfDependents ?? null),
       ...piiPatch,
       functionalStatus: functionalStatus as FsEnum | null,
       associationStatus: associationStatus as AsEnum,
@@ -474,6 +512,10 @@ export async function createAssociateData(input: CreateAssociateInput): Promise<
     };
 
     const id = await insertAssociate(values, tx);
+
+    for (const dep of dependents) {
+      await createDependent({ associateId: id, name: dep.name, relationship: dep.relationship }, tx);
+    }
 
     return id;
   });

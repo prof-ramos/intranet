@@ -127,6 +127,79 @@ function CheckboxField({
   );
 }
 
+function DependentsCreateSection() {
+  const [rows, setRows] = useState<Array<{ key: string; name: string; relationship: string }>>([
+    { key: 'dep-0', name: '', relationship: '' },
+  ]);
+
+  return (
+    <section className="mb-6 rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-5 sm:p-7">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="font-serif text-[22px] leading-tight font-bold">Dependentes</h2>
+        <button
+          type="button"
+          className={`inline-flex h-9 items-center rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-3 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
+          onClick={() =>
+            setRows((prev) => [
+              ...prev,
+              { key: `dep-${prev.length}-${Date.now()}`, name: '', relationship: '' },
+            ])
+          }
+        >
+          Adicionar dependente
+        </button>
+      </div>
+      <p className="text-base-content/60 mb-4 text-sm">
+        Opcional no cadastro. Linhas vazias são ignoradas. É possível editar depois no perfil.
+      </p>
+      <div className="space-y-3">
+        {rows.map((row, index) => (
+          <div key={row.key} className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto]">
+            <div>
+              <label htmlFor={`dependentName-${index}`} className="label">
+                <span className="label-text font-semibold">Nome</span>
+              </label>
+              <input
+                id={`dependentName-${index}`}
+                name="dependentName"
+                type="text"
+                defaultValue={row.name}
+                className={inputStyle}
+                placeholder="Nome completo"
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label htmlFor={`dependentRelationship-${index}`} className="label">
+                <span className="label-text font-semibold">Parentesco</span>
+              </label>
+              <input
+                id={`dependentRelationship-${index}`}
+                name="dependentRelationship"
+                type="text"
+                defaultValue={row.relationship}
+                className={inputStyle}
+                placeholder="Ex.: cônjuge, filho(a)"
+                autoComplete="off"
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                type="button"
+                className={`mb-1 inline-flex h-10 items-center rounded-[8px] px-3 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 disabled:opacity-40 ${focusRingClass}`}
+                disabled={rows.length <= 1}
+                onClick={() => setRows((prev) => prev.filter((r) => r.key !== row.key))}
+              >
+                Remover
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function CriarAssociadoForm({ canEditInternalNotes }: Props) {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -451,6 +524,13 @@ export function CriarAssociadoForm({ canEditInternalNotes }: Props) {
             </div>
 
             <div>
+              <label htmlFor="leaveDate" className="label">
+                <span className="label-text font-semibold">Data de licença</span>
+              </label>
+              <input id="leaveDate" name="leaveDate" type="date" defaultValue="" className={inputStyle} />
+            </div>
+
+            <div>
               <label htmlFor="cancellationDate" className="label">
                 <span className="label-text font-semibold">Data de cancelamento do vínculo ASOF</span>
               </label>
@@ -468,6 +548,13 @@ export function CriarAssociadoForm({ canEditInternalNotes }: Props) {
                 <span className="label-text font-semibold">Categoria</span>
               </label>
               <input id="associationCategory" name="associationCategory" type="text" defaultValue="" className={inputStyle} />
+            </div>
+
+            <div>
+              <label htmlFor="joinedAt" className="label">
+                <span className="label-text font-semibold">Data de adesão à ASOF</span>
+              </label>
+              <input id="joinedAt" name="joinedAt" type="date" defaultValue="" className={inputStyle} />
             </div>
 
             <SelectField
@@ -495,6 +582,9 @@ export function CriarAssociadoForm({ canEditInternalNotes }: Props) {
             <CheckboxField id="caocMember" label="Membro CAOC" />
           </div>
         </section>
+
+        {/* Dependentes */}
+        <DependentsCreateSection />
 
         {canEditInternalNotes && (
           /* Observações */

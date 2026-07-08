@@ -391,8 +391,11 @@ export interface UpdateAssociateValues {
   inaugurationDate?: string | null;
   retirementDate?: string | null;
   cancellationDate?: string | null;
+  leaveDate?: string | null;
+  joinedAt?: string | null;
   ceocMember?: boolean | null;
   caocMember?: boolean | null;
+  numberOfDependents?: number | null;
   paymentMethod?: PaymentMethodEnum;
   internalNotes?: string | null;
 }
@@ -508,8 +511,11 @@ export interface UpdateDependentInput {
   relationship?: string;
 }
 
-export async function createDependent(input: CreateDependentInput): Promise<DependentItem> {
-  const [row] = await db
+export async function createDependent(
+  input: CreateDependentInput,
+  executor: DbExecutor = db,
+): Promise<DependentItem> {
+  const [row] = await executor
     .insert(dependents)
     .values({
       associateId: input.associateId,

@@ -64,6 +64,7 @@ export type ReportAssociate = {
   admissionDate: string | null;
   inaugurationDate: string | null;
   retirementDate: string | null;
+  leaveDate: string | null;
   cancellationDate: string | null;
   paymentMethod: string | null;
   ceocMember: boolean | null;
@@ -115,6 +116,7 @@ const reportColumns = {
   admissionDate: associates.admissionDate,
   inaugurationDate: associates.inaugurationDate,
   retirementDate: associates.retirementDate,
+  leaveDate: associates.leaveDate,
   cancellationDate: associates.cancellationDate,
   paymentMethod: associates.paymentMethod,
   ceocMember: associates.ceocMember,
@@ -215,6 +217,7 @@ export async function getAssociatesForReport(
     admissionDate: row.admissionDate,
     inaugurationDate: row.inaugurationDate,
     retirementDate: row.retirementDate,
+    leaveDate: row.leaveDate,
     cancellationDate: row.cancellationDate,
     paymentMethod: row.paymentMethod,
     ceocMember: row.ceocMember,

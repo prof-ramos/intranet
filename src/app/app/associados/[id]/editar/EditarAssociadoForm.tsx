@@ -111,11 +111,18 @@ interface Props {
     inaugurationDate: string | null;
     retirementDate: string | null;
     cancellationDate: string | null;
+    leaveDate: string | null;
+    joinedAt: string | null;
     ceocMember: boolean | null;
     caocMember: boolean | null;
     internalNotes?: string | null;
   };
   canEditInternalNotes: boolean;
+}
+
+function toDateInputValue(value: string | null | undefined): string {
+  if (!value) return '';
+  return value.slice(0, 10);
 }
 
 function SelectField({
@@ -622,7 +629,20 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 id="retirementDate"
                 name="retirementDate"
                 type="date"
-                defaultValue={associate.retirementDate ?? ''}
+                defaultValue={toDateInputValue(associate.retirementDate)}
+                className={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="leaveDate" className="label">
+                <span className="label-text font-semibold">Data de licença</span>
+              </label>
+              <input
+                id="leaveDate"
+                name="leaveDate"
+                type="date"
+                defaultValue={toDateInputValue(associate.leaveDate)}
                 className={inputStyle}
               />
             </div>
@@ -635,7 +655,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 id="cancellationDate"
                 name="cancellationDate"
                 type="date"
-                defaultValue={associate.cancellationDate ?? ''}
+                defaultValue={toDateInputValue(associate.cancellationDate)}
                 className={inputStyle}
               />
             </div>
@@ -655,6 +675,19 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
                 name="associationCategory"
                 type="text"
                 defaultValue={associate.associationCategory ?? ''}
+                className={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="joinedAt" className="label">
+                <span className="label-text font-semibold">Data de adesão à ASOF</span>
+              </label>
+              <input
+                id="joinedAt"
+                name="joinedAt"
+                type="date"
+                defaultValue={toDateInputValue(associate.joinedAt)}
                 className={inputStyle}
               />
             </div>

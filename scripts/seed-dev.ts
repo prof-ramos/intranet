@@ -28,32 +28,28 @@ const ACTIVITY_PRIORITIES = ['baixa', 'normal', 'alta', 'urgente'] as const;
 const LEGAL_STATUSES = ['aberta', 'aguardando_escritorio', 'respondida', 'arquivada'] as const;
 const OFICIO_STATUSES = ['gerado', 'rascunho', 'cancelado'] as const;
 
-const firstNames = [
-  'Ana',
-  'Bruno',
-  'Carla',
-  'Daniel',
-  'Eduarda',
-  'Felipe',
-  'Gabriela',
-  'Henrique',
-  'Isabela',
-  'Joao',
-  'Laura',
-  'Marcos',
+const maleNames = [
+  'André', 'Antônio', 'Bruno', 'Carlos', 'Diego', 'Eduardo', 'Felipe',
+  'Fernando', 'Gabriel', 'Gustavo', 'Henrique', 'João', 'José', 'Leandro',
+  'Lucas', 'Luís', 'Luiz', 'Marcelo', 'Marcos', 'Mateus', 'Paulo', 'Pedro',
+  'Rafael', 'Ricardo', 'Roberto', 'Rodrigo', 'Samuel', 'Sérgio', 'Thiago',
+  'Vinícius',
 ];
 
+const femaleNames = [
+  'Adriana', 'Ana', 'Beatriz', 'Camila', 'Carla', 'Carolina', 'Daniela',
+  'Fernanda', 'Isabela', 'Júlia', 'Letícia', 'Luciana', 'Mariana',
+  'Patrícia', 'Renata', 'Tatiane',
+];
+
+const firstNames = [...maleNames, ...femaleNames];
+
 const lastNames = [
-  'Almeida',
-  'Barbosa',
-  'Cardoso',
-  'Duarte',
-  'Esteves',
-  'Ferreira',
-  'Gomes',
-  'Lima',
-  'Moraes',
-  'Nogueira',
+  'Almeida', 'Araújo', 'Barbosa', 'Barros', 'Campos', 'Cardoso', 'Carvalho',
+  'Castro', 'Correia', 'Costa', 'Dias', 'Fernandes', 'Ferreira', 'Freitas',
+  'Gomes', 'Lima', 'Martins', 'Melo', 'Monteiro', 'Moraes', 'Moreira',
+  'Nascimento', 'Oliveira', 'Pereira', 'Ribeiro', 'Santos', 'Silva', 'Souza',
+  'Teixeira', 'Vieira',
 ];
 
 const assignments = [
@@ -65,8 +61,63 @@ const assignments = [
   ['Consulado-Geral em Toquio', 'Toquio', 'Japao'],
 ] as const;
 
+const brazilianCities = [
+  ['Rio de Janeiro', 'RJ'], ['São Paulo', 'SP'], ['Brasília', 'DF'],
+  ['Belo Horizonte', 'MG'], ['Salvador', 'BA'], ['Fortaleza', 'CE'],
+  ['Recife', 'PE'], ['Porto Alegre', 'RS'], ['Curitiba', 'PR'],
+  ['Manaus', 'AM'], ['Belém', 'PA'], ['Goiânia', 'GO'],
+  ['Vitória', 'ES'], ['Florianópolis', 'SC'], ['João Pessoa', 'PB'],
+  ['Natal', 'RN'], ['São Luís', 'MA'], ['Maceió', 'AL'],
+  ['Cuiabá', 'MT'], ['Campo Grande', 'MS'],
+] as const;
+
+const issuers = ['SSP', 'SSP', 'SSP', 'SSP', 'DETRAN', 'IFP'] as const;
+
+const streetNames = [
+  'SQS 308 Bloco K', 'SHIS QI 11 Conjunto 6', 'CLN 406 Bloco D',
+  'SQN 207 Bloco A', 'SGAN 604 Lote 23', 'SHIN QL 10 Conjunto 4',
+  'SEPS 709/909 Bloco E', 'SIA Trecho 17 Lote 6', 'SCRN 716 Bloco H',
+  'SQSW 101 Bloco F', 'SMPW 16 Conjunto 3', 'SHCES Quadra 1301',
+  'SQN 105 Bloco C', 'SQS 202 Bloco L', 'CLSW 103 Bloco A',
+  'SQN 306 Bloco H', 'SAS Quadra 5 Lote 11', 'SHS Quadra 6 Conjunto A',
+];
+
+const neighborhoods = [
+  'Asa Sul', 'Asa Norte', 'Sudoeste', 'Lago Sul', 'Lago Norte',
+  'Jardim Botanico', 'Guara', 'Taguatinga', 'Águas Claras',
+  'Nucleo Bandeirante', 'Park Way', 'Sobradinho',
+];
+
+const ceps = [
+  '70390-110', '70297-400', '70650-550', '70840-080', '71680-360',
+  '71520-100', '70610-210', '70367-100', '70740-545', '71994-290',
+];
+
 function pick<T>(items: readonly T[], index: number): T {
   return items[index % items.length];
+}
+
+function sexFromName(name: string): 'M' | 'F' {
+  return maleNames.includes(name) ? 'M' : 'F';
+}
+
+function syntheticCpf(seq: number): string {
+  const n = (seq * 423871 + 5737) % 1000000000;
+  const base = String(n).padStart(9, '0');
+  let d1 = 0; for (let i = 0; i < 9; i++) d1 += Number(base[i]) * (10 - i);
+  d1 = (d1 % 11 < 2) ? 0 : 11 - (d1 % 11);
+  let d2 = 0; for (let i = 0; i < 9; i++) d2 += Number(base[i]) * (11 - i);
+  d2 += d1 * 2; d2 = (d2 % 11 < 2) ? 0 : 11 - (d2 % 11);
+  return `${base.slice(0, 3)}.${base.slice(3, 6)}.${base.slice(6, 9)}-${d1}${d2}`;
+}
+
+function syntheticRg(seq: number): string {
+  const digits = String(seq * 9817 + 593).padStart(8, '0').slice(0, 8);
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}`;
+}
+
+function fmtDate(year: number, month: number, day: number): string {
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
 function monthAgo(monthOffset: number): Date {
@@ -129,7 +180,9 @@ async function ensureDevLawyers() {
 function buildAssociates(): NewAssociate[] {
   return Array.from({ length: 120 }, (_, index) => {
     const seq = index + 1;
+    const firstName = pick(firstNames, index);
     const [assignment, city, country] = pick(assignments, index);
+    const [bCity, bState] = pick(brazilianCities, index * 3 + 1);
     const isAssociated = index < 82;
     const functionalStatus =
       index % 17 === 0
@@ -139,26 +192,50 @@ function buildAssociates(): NewAssociate[] {
           : index % 31 === 0
             ? FUNCTIONAL_STATUSES[2]
             : FUNCTIONAL_STATUSES[3];
-    const retirementDate =
-      functionalStatus === 'aposentado'
-        ? `${2021 + (index % 6)}-${String((index % 12) + 1).padStart(2, '0')}-01`
-        : null;
+    const isRetired = functionalStatus === 'aposentado';
+    const isCancelled = !isAssociated && index % 13 === 0;
+    const birthYear = 1965 - (index % 25) - (index % 7 === 0 ? 10 : 0);
+    const admissionYear = birthYear + 28 + (index % 10);
+    const inaugurationYear = admissionYear;
     const contributionStatus = isAssociated && index % 5 !== 0 ? 'em_dia' : 'inadimplente';
 
     return {
       sourceRowNumber: `${DEV_SOURCE_PREFIX}${String(seq).padStart(3, '0')}`,
-      fullName: `${pick(firstNames, index)} ${pick(lastNames, index * 3)} ${String(seq).padStart(3, '0')}`,
+      fullName: `${firstName} ${pick(lastNames, index)} ${pick(lastNames, index + 15)}`,
+      sex: sexFromName(firstName),
       primaryEmail: `oficial.${String(seq).padStart(3, '0')}@asof.local`,
       secondaryEmail: `oficial.${String(seq).padStart(3, '0')}@itamaraty.local`,
+      cpf: syntheticCpf(seq),
       siape: `DEV${String(seq).padStart(7, '0')}`,
       phone: `(61) 9${String(90000000 + seq).slice(1)}`,
+      whatsapp: `(61) 9${String(91000000 + seq).slice(1)}`,
+      rg: syntheticRg(seq),
+      rgIssuer: pick(issuers, index),
+      rgState: pick(brazilianCities, index * 5 + 3)[1],
+      rgExpeditionDate: fmtDate(birthYear + 20, (index % 12) + 1, 15),
+      birthDate: fmtDate(birthYear, (index % 12) + 1, (index % 28) + 1),
+      birthCity: bCity,
+      birthState: bState,
+      address: `${pick(streetNames, index)}, apto ${(index % 10) + 1}${index % 3 === 0 ? '02' : '00'} — ${pick(neighborhoods, index)}`,
+      addressState: bState === 'DF' ? 'DF' : pick(['DF', 'SP', 'RJ', 'MG'], index * 3),
+      neighborhood: pick(neighborhoods, index),
+      zipCode: pick(ceps, index),
+      maritalStatus: pick(['casado', 'solteiro', 'divorciado', 'casado', 'casado'], index),
+      numberOfDependents: index % 7 === 0 ? 0 : index % 5 === 0 ? 3 : index % 3 === 0 ? 2 : 1,
       assignment,
       assignmentStartDate: `${2020 + (index % 6)}-${String((index % 12) + 1).padStart(2, '0')}-15`,
       locationCity: city,
       locationCountry: country,
+      admissionDate: fmtDate(admissionYear, (index % 12) + 1, 1),
+      inaugurationDate: fmtDate(inaugurationYear, Math.min((index % 12) + 1, 11), 15),
+      retirementDate: isRetired ? fmtDate(2021 + (index % 4), (index % 12) + 1, 1) : null,
+      cancellationDate: isCancelled ? fmtDate(2020 + (index % 4), (index % 12) + 1, 1) : null,
+      missionType: pick(['permanente', 'transitoria', 'permanente', 'permanente'], index),
+      careerOrigin: pick(['brasil', 'brasil', 'brasil', 'exterior', 'outros_orgaos'], index),
+      ceocMember: index % 13 === 0,
+      caocMember: index % 17 === 0,
       classPattern: pick(CLASS_PATTERNS, index),
       functionalStatus,
-      retirementDate,
       associationStatus: isAssociated ? 'associado' : 'nao_associado',
       contributionStatus,
       associationCategory: isAssociated ? pick(['mensalista', 'anual'], index) : null,

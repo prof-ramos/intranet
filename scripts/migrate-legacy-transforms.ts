@@ -507,6 +507,8 @@ export function transformLegacyRecord(
     admissionDate: parseDate(getString('Data de Admissão')),
     inaugurationDate: parseDate(getString('Data de Posse')),
     cancellationDate: parseDate(getString('Data de Cancelamento')),
+    leaveDate: parseDate(getString('Data de Licença')),
+    classPattern: n('Classe e Padrão'),
     careerOrigin: mapCareerOrigin(getString('Origem')),
     missionType: mapMissionType(getString('Missão')),
     associationStatus: mapAssociationStatus(getString('Associado')) ?? 'nao_associado',

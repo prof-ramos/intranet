@@ -407,6 +407,10 @@ export default async function AssociadoPerfilPage({
                 value={formatAssociateDate(associate.retirementDate)}
               />
               <Row
+                label="Data de licença"
+                value={formatAssociateDate(associate.leaveDate)}
+              />
+              <Row
                 label="Data de cancelamento do vínculo ASOF"
                 value={formatAssociateDate(associate.cancellationDate)}
               />
@@ -420,6 +424,10 @@ export default async function AssociadoPerfilPage({
           >
             <dl className="m-0">
               <Row label="Categoria" value={associate.associationCategory} />
+              <Row
+                label="Data de adesão à ASOF"
+                value={formatAssociateDate(associate.joinedAt)}
+              />
               <Row
                 label="Vínculo ASOF"
                 value={getAssociateStatusLabel(associate.associationStatus)}

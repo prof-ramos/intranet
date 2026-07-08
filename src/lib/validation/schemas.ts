@@ -231,6 +231,20 @@ export const updateAssociateSchema = z.object({
     .nullable()
     .or(z.literal(''))
     .optional(),
+  leaveDate: z
+    .string()
+    .trim()
+    .refine(isValidDateString, 'Data de licença inválida.')
+    .nullable()
+    .or(z.literal(''))
+    .optional(),
+  joinedAt: z
+    .string()
+    .trim()
+    .refine(isValidDateString, 'Data de adesão inválida.')
+    .nullable()
+    .or(z.literal(''))
+    .optional(),
   ceocMember: z
     .union([z.boolean(), z.literal('true'), z.literal('false'), z.literal(''), z.null()])
     .transform((v) => (v === '' ? null : v === 'true' ? true : v === 'false' ? false : v === null ? null : v))
@@ -250,8 +264,21 @@ export const updateAssociateSchema = z.object({
  * existe após o insert. Os status com default no banco
  * (`associationStatus=nao_associado`, `contributionStatus=inadimplente`,
  * `paymentMethod=folha`) são aplicados pelo service quando ausentes.
+ * Dependentes opcionais vêm em pares `dependentName` / `dependentRelationship`
+ * (preprocess no action).
  */
-export const createAssociateSchema = updateAssociateSchema.omit({ id: true });
+export const createAssociateSchema = updateAssociateSchema.omit({ id: true }).extend({
+  dependents: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1, 'Nome do dependente é obrigatório.').max(200),
+        relationship: z.string().trim().min(1, 'Parentesco é obrigatório.').max(100),
+      }),
+    )
+    .max(20)
+    .optional()
+    .default([]),
+});
 
 // ─── Dependent & Health Agreement Schemas ────────────────────────────────
 

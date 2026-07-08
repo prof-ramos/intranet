@@ -375,8 +375,24 @@ describe('transformLegacyRecord', () => {
     expect(result.associate.careerOrigin).toBe('brasil');
     expect(result.associate.missionType).toBe('permanente');
     expect(result.associate.functionalStatus).toBe('ativo');
+    expect(result.associate.classPattern).toBe('CLASSE C - V');
+    expect(result.associate.leaveDate).toBeNull();
     expect(result.dependents).toHaveLength(2);
     expect(result.healthAgreements).toEqual(['SINDITAMARATY']);
+  });
+
+  it('maps leaveDate and classPattern from legacy columns', () => {
+    const record = {
+      Nome: 'SERVIDOR EM LICENÇA',
+      Licença: '1',
+      'Data de Licença': '10/2/2020',
+      'Classe e Padrão': 'CLASSE A - III',
+      Lotação: 'ATIVO - SERE',
+    } as Record<string, string>;
+    const result = transformLegacyRecord(record, 2);
+    expect(result.associate.functionalStatus).toBe('em_licenca');
+    expect(result.associate.leaveDate).toBe('2020-02-10');
+    expect(result.associate.classPattern).toBe('CLASSE A - III');
   });
 
   it('maps AC sentinel to null in all UF fields', () => {

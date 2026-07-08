@@ -4,7 +4,7 @@ Checklist canonica de go-live da intranet ASOF. Itens historicos ja executados
 permanecem aqui apenas quando ainda orientam operacao ou auditoria; evidencias
 pontuais antigas ficam em `docs/operations/archive/`.
 
-Atualizado em 2026-06-23. Última verificação de gates locais: 2026-06-23.
+Atualizado em 2026-07-08. Última verificação de gates locais: 2026-07-08.
 
 Para ambientes, bancos, dados, migrations e CI/CD, a fonte oficial pós-go-live é
 [`docs/environments.md`](./docs/environments.md) (ADR 015). Este checklist
@@ -36,7 +36,7 @@ de staging/dev/preview.
 - [x] Admin gabriel.org.br seedado no Neon com must_change_password=true.
 - [x] Login do admin validado em producao: gabriel.org.br acessou intranet.asof.com.br com redirect para troca de senha obrigatoria.
 - [x] Troca de senha obrigatoria realizada pelo admin apos primeiro login. (gabriel@asof.org.br → nova senha definida em 2026-05-26 via intranet.asof.com.br/change-password)
-- [x] Rodar gates locais — `lint`, `typecheck`, `test` (1535 testes) e `build`: todos passaram em 2026-06-23 (branch `chore/safe-cleanup`).
+- [x] Rodar gates locais — `lint`, `typecheck`, `test` (1535 → 1598 testes) e `build`: todos passaram em 2026-07-08 (branch `main`, PR #297 + seed-dev/cadastro local).
 - [x] Rodar `npm run test:db` contra Neon produção antes do go-live — schema contract passou em 2026-05-26.
 - [x] Smoke test automatizado de producao implementado e validado (ADR 009):
   - Spec E2E Playwright (`e2e/smoke-prod.spec.ts`) cobre login, dashboard, associados, atividades, juridico, oficios, financeiro, auditoria, notificacoes e reset de senha.
@@ -70,7 +70,7 @@ de staging/dev/preview.
   - [ ] Definir baseline operacional da POC: backup diario do banco do Papra por 14 dias, snapshot/versionamento do storage por 30 dias e restore simples testado ao menos uma vez em ambiente separado.
   - [ ] Documentar a criptografia em repouso fornecida pelo stack/storage escolhido e seus limites; a POC nao adiciona camada extra propria de criptografia.
   - [ ] Revisar implicacoes de LGPD, backup, retencao, exportacao e licencas open source (incluindo AGPL-3.0 quando aplicavel) antes de qualquer uso em producao.
-- [x] Rodar `npm audit` — 2 vulnerabilidades transitivas (esbuild em dev, ws em @novu/react) em 2026-06-14; nenhuma afeta produção. Fix requer breaking change (drizzle-kit downgrade), portanto monitorar advisories.
+- [x] Rodar `npm audit` — `npm audit --production` reporta 1 vulnerabilidade transitiva moderada (`protobufjs` via `@google/genai`); dev audit adicional: esbuild (Windows-only), js-yaml, undici (Next.js transitiva). Nenhuma com fix sem breaking change imediato. Monitorar advisories.
 - [x] E2E local contra `asof_test` aprovado em 2026-05-26 (`npm run test:e2e`, 52 testes). E2E em staging dedicado nao e gate do dia 1 (ADR 009); avaliar pos-estreia se Neon branch staging for adotado.
 - [x] Plano de rollback registrado em ADR 010: Neon PITR + branch de restauracao como mecanismo primario, com gatilho objetivo de 30 min em fluxos criticos. Pre-janela exige anotar timestamp/LSN e confirmar `history_retention` Neon suficiente.
 - [x] Owners de incidente registrados em ADR 011: papel primario tecnico (app/banco/Vercel/DNS/Mailjet), papel substituto de decisao na Diretoria, papel LGPD/DPO (acumulado pela Diretoria ate formalizacao), e canal unico de incidente. Nomes e contatos vivem em anexo privado fora do repo.
@@ -158,6 +158,22 @@ _Nota: `audit_log` e preservado (ADR 009)._
 - **Otimização N+1 queries:** `identifyLawyerId` e `domainMaterializer` corrigidos para batch de queries em vez de loops individuais.
 - **Schema validation em server actions:** `defineFormAction()` com tipagem forte e validação Zod v4; 15+ actions migradas.
 - **Segurança:** SSRF validation para webhook URLs; `assigneeName`/`associateName` sanitizados como PII em logs.
-- Gates locais: `lint` ✓ · `typecheck` ✓ · `test` 1535/1535 ✓ · `build` ✓ (2026-06-23, branch `chore/safe-cleanup`).
+
+### Melhorias pós-go-live (2026-07-08)
+
+- **ADR 018 — Activity domain events outbox (PR #278):** eventos `activity.*` (6 tipos: created, status_changed, assigned, completed, priority_changed, due_date_changed) emitidos transacionalmente em `db.transaction` via `domain_events` outbox; dispatch inline fire-and-forget após commit + cron de retry diário. ADR 018 aceito e formalizado.
+- **Security hardening + tech-debt migration (PR #297, 2026-07-08):** remoção do módulo `src/lib/storage/` (108 linhas, dead code); webhook validation com HMAC timestamp + nonce anti-replay em `src/lib/integrations/webhooks/validation.ts`; `define-form-action.ts` refatorado com tipagem Zod v4 completa; remoção de fallback de chave PII legada; schemas de validação expandidos (96 → 65 linhas líquidas, tipos canônicos).
+- **Segurança:** prompt-injection delimiters adicionados em geração de email (#269); `allow-same-origin` removido de email preview iframe sandbox (#268); `requireAuth` corrigido para não depender de `x-pathname` (#234); SSRF validation consolidada.
+- **Performance:** `Intl.DateTimeFormat` cacheado em formatTimestamp e auditoria; `getAssociatesForReport` com `limit` + sinal de truncamento (#271); webhook dispatch executado fora da transação DB (#267); `logAuditAction` rodando best-effort fora da tx (#266).
+- **Infra:** `engines.node >=20` declarado em `package.json` (#276); MCP servers (context7 + postgres) formalizados no repo (#279); lint-staged + pre-push `validate:quick` via husky (#270); migrations 0017/0018 corrigidas com `IF NOT EXISTS` em `ALTER TYPE ... ADD VALUE` (#272). Histórico Drizzle em `drizzle/postgres/`: 30 arquivos SQL (baseline `0000` … `0029_pagination_count_index.sql`).
+- **Testes:** 1598 testes (+63 desde 2026-06-23), 170 arquivos; cobertura para outbox atomicidade (#265), ErrorBoundary + error.tsx (#273), relatórios (#275), integration tests (oficios, financeiro, webhooks).
+- **Cadastro × legado (`asof_final_limpo.csv`, 39 campos de negócio):** auditoria de paridade schema/forms/perfil. Quase todos os campos existem no modelo; dependentes e convênios vivem em tabelas filhas + UI no perfil. **Fax fica fora de propósito** — `transformLegacyRecord` já ignora a coluna; não quebra migração CSV→intranet (perda intencional, ~3,5% das linhas, muitas ruidosas).
+- **Seed sintético local (`npm run db:seed:dev`):** factories em `scripts/seed-dev-data.ts` — perfis de endereço coerentes, CPF/RG sintéticos válidos, `whatsapp`, `cancellationDate` só para ex-associados, `numberOfDependents` alinhado a linhas em `dependents`.
+- **Lacunas restantes de paridade (não bloqueantes de go-live, backlog de cadastro):**
+  - [ ] `joinedAt` (Data de Adesão) no formulário criar/editar — existe no schema, import e timeline do perfil; ausente na UI de edição.
+  - [ ] `Data de Licença` como campo próprio — hoje só `functionalStatus = em_licenca` (flag legada `Licença=1`); ~45 linhas no CSV com data.
+  - [ ] `classPattern` no `transformLegacyRecord` — form/schema têm o campo; o transform de import legado ainda não grava “Classe e Padrão”.
+  - [ ] Dependentes/convênios no fluxo de criar oficial (hoje só após o cadastro, no perfil).
+- Gates locais revalidados: `lint` ✓ · `typecheck` ✓ · `test` 1606/1606 ✓ (171 files) · `test:db` 5/5 ✓ · `build` ✓ (2026-07-08).
 
 Este arquivo substitui as pendencias antigas de smoke de tempo real e reconciliacao de projetos de banco. Elas nao sao mais caminho de go-live.

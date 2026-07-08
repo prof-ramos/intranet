@@ -21,7 +21,7 @@ const FIELD_GROUPS: { title: string; fields: AnnotatedField[] }[] = [
   {
     title: 'Administrativo',
     fields: ASSOCIATE_EXPORT_FIELDS.filter((f) =>
-      ['siape', 'assignment', 'assignmentStartDate', 'classPattern', 'functionalStatus', 'associationStatus', 'contributionStatus', 'joinedAt', 'associationCategory', 'missionType', 'careerOrigin', 'admissionDate', 'inaugurationDate', 'retirementDate', 'cancellationDate', 'paymentMethod', 'ceocMember', 'caocMember'].includes(f.key),
+      ['siape', 'assignment', 'assignmentStartDate', 'classPattern', 'functionalStatus', 'associationStatus', 'contributionStatus', 'joinedAt', 'associationCategory', 'missionType', 'careerOrigin', 'admissionDate', 'inaugurationDate', 'retirementDate', 'leaveDate', 'cancellationDate', 'paymentMethod', 'ceocMember', 'caocMember'].includes(f.key),
     ),
   },
 ];

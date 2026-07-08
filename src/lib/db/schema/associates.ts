@@ -104,6 +104,8 @@ export const associates = pgTable(
     inaugurationDate: date('inauguration_date', { mode: 'string' }),
     retirementDate: date('retirement_date', { mode: 'string' }),
     cancellationDate: date('cancellation_date', { mode: 'string' }),
+    /** Data de início da licença (legado "Data de Licença"); status em `functionalStatus`. */
+    leaveDate: date('leave_date', { mode: 'string' }),
     ceocMember: boolean('ceoc_member'),
     caocMember: boolean('caoc_member'),
     numberOfDependents: integer('number_of_dependents'), // denormalized cache — cross-check with dependents table

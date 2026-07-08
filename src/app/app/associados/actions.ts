@@ -4,13 +4,35 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import type { z } from 'zod';
 import { defineFormAction } from '@/lib/server-actions/define-form-action';
 import { updateAssociateSchema, createAssociateSchema } from '@/lib/validation/schemas';
-import { updateAssociateData, createAssociateData } from '@/lib/associates/service';
+import { updateAssociateData, createAssociateData, toJoinedAtTimestamp } from '@/lib/associates/service';
 import { emptyToNull } from '@/lib/utils/strings';
 
-function mapFormToServiceFields(
-  data: z.infer<typeof createAssociateSchema>,
-  role: string,
-) {
+function asStringList(value: unknown): string[] {
+  if (value == null || value === '') return [];
+  if (Array.isArray(value)) return value.map(String);
+  return [String(value)];
+}
+
+/** Emparelha campos multi-valor do form em lista de dependentes. */
+export function pairDependentsFromForm(raw: Record<string, unknown>): Array<{ name: string; relationship: string }> {
+  const names = asStringList(raw.dependentName);
+  const relationships = asStringList(raw.dependentRelationship);
+  const len = Math.max(names.length, relationships.length);
+  const out: Array<{ name: string; relationship: string }> = [];
+  for (let i = 0; i < len; i++) {
+    const name = (names[i] ?? '').trim();
+    const relationship = (relationships[i] ?? '').trim();
+    if (!name && !relationship) continue;
+    out.push({ name, relationship });
+  }
+  return out;
+}
+
+type AssociateFormPayload = Omit<z.infer<typeof createAssociateSchema>, 'dependents'> & {
+  id?: number;
+};
+
+function mapFormToServiceFields(data: AssociateFormPayload, role: string) {
   return {
     fullName: data.fullName,
     cpf: data.cpf ?? null,
@@ -48,6 +70,8 @@ function mapFormToServiceFields(
     inaugurationDate: emptyToNull(data.inaugurationDate),
     retirementDate: emptyToNull(data.retirementDate),
     cancellationDate: emptyToNull(data.cancellationDate),
+    leaveDate: emptyToNull(data.leaveDate),
+    joinedAt: toJoinedAtTimestamp(emptyToNull(data.joinedAt)),
     ceocMember: data.ceocMember,
     caocMember: data.caocMember,
     internalNotes: role === 'admin' ? (data.internalNotes ?? null) : undefined,
@@ -78,9 +102,18 @@ export const updateAssociate = defineFormAction({
 export const createAssociate = defineFormAction({
   auth: ['admin', 'secretaria'],
   schema: createAssociateSchema,
+  preprocess: (raw) => {
+    const next = { ...raw } as Record<string, unknown>;
+    next.dependents = pairDependentsFromForm(raw);
+    delete next.dependentName;
+    delete next.dependentRelationship;
+    return next;
+  },
   service: async (data, actor) => {
+    const { dependents, ...fields } = data;
     const { id } = await createAssociateData({
-      ...mapFormToServiceFields(data, actor.role),
+      ...mapFormToServiceFields(fields, actor.role),
+      dependents: dependents ?? [],
       createdBy: actor.userId,
     });
 
