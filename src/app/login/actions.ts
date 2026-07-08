@@ -42,18 +42,15 @@ export async function login(formData: FormData) {
   const { email, password } = parsed.data;
 
   // ponytail: IP rate limit before email rate limit (fail-closed — deny by default)
-  let rateLimitAllowed = false;
+  let ipRateLimitAllowed = false;
   try {
     const h = await headers();
     const ip = getTrustedClientIp(h);
     const ipLimit = await consumeIpRateLimit(ip, 'login', {
       windowMs: 15 * 60 * 1000,
-      maxRequests: 20,
+      maxRequests: 200,
     });
-    if (!ipLimit.allowed) {
-      logger.warn('[Login] IP rate limit exceeded', { reason: 'ip_rate_limited' });
-      redirect('/login?error=rate-limit');
-    }
+    ipRateLimitAllowed = ipLimit.allowed;
   } catch (error) {
     logger.warn(
       '[Login] IP rate-limit check failed; blocking login attempt.',
@@ -63,6 +60,12 @@ export async function login(formData: FormData) {
     redirect('/login?error=1');
   }
 
+  if (!ipRateLimitAllowed) {
+    logger.warn('[Login] IP rate limit exceeded', { reason: 'ip_rate_limited' });
+    redirect('/login?error=rate-limit');
+  }
+
+  let rateLimitAllowed = false;
   try {
     const rateLimit = await loginRateLimiter.consume(email);
     rateLimitAllowed = rateLimit.allowed;
