@@ -6,7 +6,7 @@ import { createLogger } from '@/lib/logger';
 import { createNotificationsBatch } from '@/lib/notifications/repository';
 import { admins } from '@/lib/db/schema';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
-import type { AssinafyWebhookEvent } from './types';
+import type { AssinafyStatusPatch, AssinafyWebhookEvent } from './types';
 import { findOficioByAssinafyDocumentId, updateAssinafyStatus } from './repository';
 
 const logger = createLogger('assinafy:service');
@@ -45,24 +45,30 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
 
       // Idempotency guard — inside tx, so no concurrent retry can pass simultaneously.
       if (previousStatus === mappedStatus) {
-        logger.info('Duplicate webhook event, status unchanged', { documentId, eventName, status: mappedStatus });
+        logger.info('Duplicate webhook event, status unchanged', {
+          documentId,
+          eventName,
+          status: mappedStatus,
+        });
         return { result: oficio, auditArgs: null };
       }
 
-      // ponytail: known fields are assinafySignedAt/assinafyError, but spread into
-      // updateAssinafyStatus which accepts Record<string, unknown>
-      const additionalFields: Record<string, unknown> = {};
+      const additionalFields: AssinafyStatusPatch = {};
 
       if (eventName === 'signer_signed_document' || eventName === 'document_ready') {
         additionalFields.assinafySignedAt = new Date();
       }
 
       if (eventName === 'signer_rejected_document') {
-        additionalFields.assinafyError = String(event.payload?.decline_reason ?? 'Rejeitado pelo signatário');
+        additionalFields.assinafyError = String(
+          event.payload.decline_reason ?? 'Rejeitado pelo signatário',
+        );
       }
 
       if (eventName === 'document_processing_failed') {
-        additionalFields.assinafyError = String(event.payload?.error_message ?? 'Erro no processamento');
+        additionalFields.assinafyError = String(
+          event.payload.error_message ?? 'Erro no processamento',
+        );
       }
 
       if (eventName === 'user_rejected_document') {
@@ -95,7 +101,7 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
         .where(eq(admins.isActive, true));
 
       if (activeAdmins.length > 0) {
-        const notifications = activeAdmins.map(admin => ({
+        const notifications = activeAdmins.map((admin) => ({
           userId: admin.id,
           actorId: null,
           type: 'oficio.status_changed' as const,

@@ -1,5 +1,9 @@
 'use server';
 
+// not defineFormAction: intentional holdout — custom redirect-on-error
+// (query-string errors, timing floor) cannot map to the factory without
+// changing public UX. See #255 / plan 017.
+
 import { redirect } from 'next/navigation';
 import { randomInt } from 'node:crypto';
 import { forgotPasswordSchema } from '@/lib/validation/schemas';

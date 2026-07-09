@@ -9,6 +9,11 @@
 
 - **Priority**: P2 | **Effort**: L | **Risk**: MED | **Depends on**: none
 - **Category**: tech-debt | **Planned at**: `844df3b`, 2026-06-30 | **Issue**: [#255](https://github.com/prof-ramos/intranet/issues/255)
+- **Resolution (2026-07-09)**: All non-auth app `actions.ts` files use `defineFormAction` /
+  `defineServerAction` / `defineNoInputServerAction` / `defineFormStateAction`. Last bare
+  app file was `etiquetas/actions.ts` → `defineServerAction`. **Intentional holdouts**
+  (custom redirect-on-error UX): `login`, `change-password`, `forgot-password`,
+  `reset-password` — documented with `// not defineFormAction` comments.
 
 ## Why this matters
 
@@ -26,15 +31,16 @@ action files. Migrating the 17 — money/auth first — closes the drift.
 
 ## Commands you will need
 
-| Purpose | Command | Expected |
-|---------|---------|----------|
-| Typecheck | `npm run typecheck` | exit 0 |
-| Tests | `npx vitest run src/app/<module>` | pass |
-| Validate | `npm run validate:quick` | exit 0 |
+| Purpose   | Command                           | Expected |
+| --------- | --------------------------------- | -------- |
+| Typecheck | `npm run typecheck`               | exit 0   |
+| Tests     | `npx vitest run src/app/<module>` | pass     |
+| Validate  | `npm run validate:quick`          | exit 0   |
 
 ## Scope
 
 **In scope** (migrate one per PR, priority order):
+
 1. `src/app/login/actions.ts` (auth-critical; coordinate with plan 005)
 2. `src/app/forgot-password/actions.ts`
 3. `src/app/reset-password/actions.ts`

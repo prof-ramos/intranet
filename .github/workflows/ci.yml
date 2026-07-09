@@ -32,6 +32,10 @@ jobs:
       - name: Unit Tests
         run: npm run test
 
+      # Enforces vitest.config.ts coverage.thresholds (issue #248 / plan 010).
+      - name: Unit Tests with coverage thresholds
+        run: npm run test:coverage
+
   build:
     name: Build Verification
     runs-on: ubuntu-latest
