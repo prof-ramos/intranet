@@ -1,5 +1,9 @@
 'use server';
 
+// not defineFormAction: intentional holdout — custom redirect-on-error
+// (query-string errors, session cookie, fail-closed rate limit) cannot map
+// to the factory without changing public UX. See #255 / plan 017.
+
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { loginRateLimiter } from '@/lib/auth/login-rate-limit';
