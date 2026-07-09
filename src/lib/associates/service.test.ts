@@ -313,4 +313,32 @@ describe('createAssociateData', () => {
     const auditCall = vi.mocked(audit.logAuditAction).mock.calls.at(-1)![0];
     expect(auditCall.executor).toBeUndefined();
   });
+
+  it('does not uniqueness-check blank CPF/SIAPE (empty form fields)', async () => {
+    const repository = await import('./repository');
+    const { buildPiiPatch } = await import('./pii-mapping');
+    vi.mocked(repository.insertAssociate).mockResolvedValue(99);
+    vi.mocked(repository.findAssociateByCpfHash).mockResolvedValue(null as never);
+    vi.mocked(repository.findAssociateBySiapeHash).mockResolvedValue(null as never);
+    vi.mocked(repository.findAssociateByPrimaryEmailHash).mockResolvedValue(null as never);
+
+    await createAssociateData({
+      fullName: 'Oficial Sem PII',
+      cpf: '',
+      siape: '  ',
+      primaryEmail: '',
+      createdBy: 1,
+    });
+
+    // Blank PII must not produce blind indexes (would collide across creates)
+    const blankPatch = buildPiiPatch({ cpf: '', siape: '  ', primaryEmail: '' });
+    expect(blankPatch.cpfHash).toBeNull();
+    expect(blankPatch.siapeHash).toBeNull();
+    expect(blankPatch.primaryEmailHash).toBeNull();
+
+    expect(repository.findAssociateByCpfHash).not.toHaveBeenCalled();
+    expect(repository.findAssociateBySiapeHash).not.toHaveBeenCalled();
+    expect(repository.findAssociateByPrimaryEmailHash).not.toHaveBeenCalled();
+    expect(repository.insertAssociate).toHaveBeenCalled();
+  });
 });

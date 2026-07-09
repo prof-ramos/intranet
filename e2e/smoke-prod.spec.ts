@@ -83,7 +83,9 @@ async function expectSmokeLoginSuccess(page: Page) {
   }
 
   if (loginResult === 'timeout') {
-    throw new Error(`Smoke login failed: safe code "timeout" while waiting for login result at path "${parsed.pathname}".`);
+    throw new Error(
+      `Smoke login failed: safe code "timeout" while waiting for login result at path "${parsed.pathname}".`,
+    );
   }
 
   throw new Error(`Smoke login failed: unexpected safe path "${parsed.pathname}".`);
@@ -145,7 +147,27 @@ test('3. Cadastro de Oficiais — criar oficial e validar perfil', async ({ page
   await page.fill('input[name="fullName"]', ASSOCIADO_NAME);
   // Submeter via server action (form action) — aguardar redirect ao perfil criado
   await page.click('button[type="submit"]');
-  await page.waitForURL(/\/app\/associados\/\d+$/, { timeout: 20_000 });
+  // Fail fast with form error text if create stays on /novo (e.g. empty-PII hash collision)
+  const createResult = await Promise.race([
+    page.waitForURL(/\/app\/associados\/\d+$/, { timeout: 30_000 }).then(() => 'ok' as const),
+    page
+      .locator('[role="alert"], .alert-error, .text-error, .text-red-600, .text-red-700')
+      .first()
+      .waitFor({ state: 'visible', timeout: 30_000 })
+      .then(() => 'form-error' as const),
+  ]).catch(() => 'timeout' as const);
+
+  if (createResult !== 'ok') {
+    const errText = (
+      await page
+        .locator('main')
+        .innerText()
+        .catch(() => '')
+    ).slice(0, 400);
+    throw new Error(
+      `Smoke create oficial failed (${createResult}). url=${page.url()} body=${errText}`,
+    );
+  }
 
   // Perfil do oficial recém-criado carrega e exibe o nome
   await expect(page.locator('h1, h2').first()).toBeVisible();
@@ -157,7 +179,9 @@ test('3. Cadastro de Oficiais — criar oficial e validar perfil', async ({ page
   await page.fill('input[name="q"]', ASSOCIADO_NAME.slice(0, 15));
   await page.keyboard.press('Enter');
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
-  await expect(page.locator('body')).toContainText(ASSOCIADO_NAME.slice(0, 20), { timeout: 10_000 });
+  await expect(page.locator('body')).toContainText(ASSOCIADO_NAME.slice(0, 20), {
+    timeout: 10_000,
+  });
 });
 
 // ── 4. Atividades ───────────────────────────────────────────────────────────
@@ -171,13 +195,18 @@ test('4. Atividades — criar e verificar no board', async ({ page }) => {
 
   // Formulário usa id= e botões type="button" (não type="submit")
   await page.fill('#activity-title', ATIVIDADE_TITLE);
-  await fillIfVisible(page, '#activity-description',
-    `Criada pelo smoke test automatizado (${TS}).`);
+  await fillIfVisible(
+    page,
+    '#activity-description',
+    `Criada pelo smoke test automatizado (${TS}).`,
+  );
 
   await page.getByRole('button', { name: 'Criar atividade' }).last().click();
 
   // Aguardar toast de sucesso (confirma persistência no banco)
-  await expect(page.locator('body')).toContainText('Atividade criada com sucesso', { timeout: 15_000 });
+  await expect(page.locator('body')).toContainText('Atividade criada com sucesso', {
+    timeout: 15_000,
+  });
 
   // Navegar ao board e recarregar para garantir dados atualizados
   await page.goto('/app/atividades');
@@ -188,7 +217,9 @@ test('4. Atividades — criar e verificar no board', async ({ page }) => {
 
   await expect(page.locator('h1')).toBeVisible({ timeout: 10_000 });
   // Verificar que o título aparece em algum lugar da página (Kanban card ou lista)
-  await expect(page.locator('body')).toContainText(ATIVIDADE_TITLE.slice(0, 20), { timeout: 10_000 });
+  await expect(page.locator('body')).toContainText(ATIVIDADE_TITLE.slice(0, 20), {
+    timeout: 10_000,
+  });
 });
 
 // ── 5. Jurídico ─────────────────────────────────────────────────────────────
@@ -198,10 +229,16 @@ test('5. Jurídico — criar consulta e avançar status', async ({ page }) => {
   await expect(page.locator('h1')).toBeVisible();
 
   await page.fill('input[name="title"]', CONSULTA_TITLE);
-  await fillIfVisible(page, 'input[name="questionSummary"]',
-    'Consulta criada pelo smoke test automatizado.');
-  await fillIfVisible(page, 'textarea[name="questionFullText"]',
-    `Texto completo da consulta smoke (${TS}).`);
+  await fillIfVisible(
+    page,
+    'input[name="questionSummary"]',
+    'Consulta criada pelo smoke test automatizado.',
+  );
+  await fillIfVisible(
+    page,
+    'textarea[name="questionFullText"]',
+    `Texto completo da consulta smoke (${TS}).`,
+  );
   await fillIfVisible(page, 'input[name="slaDays"]', '30');
 
   await page.click('button[type="submit"]');
@@ -212,7 +249,12 @@ test('5. Jurídico — criar consulta e avançar status', async ({ page }) => {
   const statusControl = page.locator(
     'select[name="status"], button[data-testid="status-btn"], [data-testid="status-select"]',
   );
-  if (await statusControl.first().isVisible({ timeout: 2_000 }).catch(() => false)) {
+  if (
+    await statusControl
+      .first()
+      .isVisible({ timeout: 2_000 })
+      .catch(() => false)
+  ) {
     await statusControl.first().click();
     // Selecionar próxima opção no select ou um botão de avançar
     const options = page.locator('select[name="status"] option');
@@ -279,7 +321,9 @@ test('9. Notificações — central abre', async ({ page }) => {
   await expect(page.locator('h1')).toBeVisible();
 
   // Notificações: tentar sino (Novu/NotificationInbox) ou confirmar header
-  const bell = page.locator('[data-testid="notification-inbox"] button, [data-testid="notification-bell"]').first();
+  const bell = page
+    .locator('[data-testid="notification-inbox"] button, [data-testid="notification-bell"]')
+    .first();
   if (await bell.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await bell.click();
     await expect(

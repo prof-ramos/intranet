@@ -73,12 +73,14 @@ describe('buildPiiPatch', () => {
     expect(patch.phoneHash).toBeUndefined();
   });
 
-  it('handles empty string as non-null (encrypts it)', () => {
-    const patch = buildPiiPatch({ cpf: '' });
+  it('treats empty/whitespace string as clear (no hash) to avoid create collisions', () => {
+    for (const blank of ['', '   ', '\t']) {
+      const patch = buildPiiPatch({ cpf: blank });
 
-    expect(patch.cpf).toBeNull();
-    expect(patch.cpfCiphertext).toBe('enc:');
-    expect(patch.cpfHash).toBe('hash:');
+      expect(patch.cpf).toBeNull();
+      expect(patch.cpfCiphertext).toBeNull();
+      expect(patch.cpfHash).toBeNull();
+    }
   });
 
   it('covers all registered PII fields in a single call', () => {

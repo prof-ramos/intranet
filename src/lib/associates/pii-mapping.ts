@@ -91,17 +91,20 @@ const PII_FIELDS: PiiFieldDescriptor[] = [
  * Build the PII portion of an UpdateAssociateValues patch from user input.
  *
  * For each registered PII field:
- * - If the input field is defined (including null), the plaintext column is set to null.
- * - If the input field is a string (including empty), ciphertext is encrypted and hash is blind-indexed.
- * - If the input field is explicitly null, ciphertext and hash are set to null.
+ * - If the input field is defined (including null/empty), the plaintext column is set to null.
+ * - If the input field is a non-empty string, ciphertext is encrypted and hash is blind-indexed.
+ * - If the input field is null or blank ('' / whitespace), ciphertext and hash are set to null.
  * - If the input field is undefined, all three columns are omitted (undefined).
+ *
+ * Empty strings must NOT be hashed: forms submit blank inputs as `''`, and a shared
+ * empty-string blind index would make the second create fail uniqueness checks
+ * ("Já existe um oficial cadastrado com este CPF/SIAPE").
  *
  * This centralises the F-008 rule (no plaintext PII writes) in one place.
  */
-export function buildPiiPatch(input: Partial<PiiInputShape>): Pick<
-  UpdateAssociateValues,
-  PiiPatchKeys
-> {
+export function buildPiiPatch(
+  input: Partial<PiiInputShape>,
+): Pick<UpdateAssociateValues, PiiPatchKeys> {
   const patch: Record<string, string | null | undefined> = {};
 
   for (const field of PII_FIELDS) {
@@ -115,20 +118,22 @@ export function buildPiiPatch(input: Partial<PiiInputShape>): Pick<
     // F-008: never write plaintext PII; set legacy column to null
     patch[field.plaintextCol] = null;
 
-    if (value === null) {
-      // Explicitly clearing the field
+    // Blank form fields arrive as '' (or whitespace) — treat as clear, not as a value.
+    const normalized =
+      value === null || (typeof value === 'string' && value.trim() === '') ? null : value;
+
+    if (normalized === null) {
       patch[field.ciphertextCol] = null;
       patch[field.hashCol] = null;
     } else {
-      // String value (including empty): encrypt and index
-      patch[field.ciphertextCol] = encryptPii(value);
-      patch[field.hashCol] = piiBlindIndex(value);
+      patch[field.ciphertextCol] = encryptPii(normalized);
+      patch[field.hashCol] = piiBlindIndex(normalized);
     }
   }
 
-  return Object.fromEntries(
-    Object.entries(patch).filter(([, v]) => v !== undefined),
-  ) as ReturnType<typeof buildPiiPatch>;
+  return Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)) as ReturnType<
+    typeof buildPiiPatch
+  >;
 }
 
 /**
