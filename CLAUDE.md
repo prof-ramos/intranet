@@ -80,18 +80,18 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 
 ## Estrutura
 
-| Diretório | Conteúdo |
-|-----------|----------|
-| `src/app/` | App Router pages e Server Actions |
-| `src/app/app/` | Área autenticada (sidebar + layout) |
-| `src/app/login/` | Login e troca de senha |
-| `src/components/` | UI components compartilhados |
-| `src/lib/` | Serviços, repositórios, schema Drizzle |
-| `src/hooks/` | React hooks |
+| Diretório            | Conteúdo                                                                                                                                                            |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app/`           | App Router pages e Server Actions                                                                                                                                   |
+| `src/app/app/`       | Área autenticada (sidebar + layout)                                                                                                                                 |
+| `src/app/login/`     | Login e troca de senha                                                                                                                                              |
+| `src/components/`    | UI components compartilhados                                                                                                                                        |
+| `src/lib/`           | Serviços, repositórios, schema Drizzle                                                                                                                              |
+| `src/hooks/`         | React hooks                                                                                                                                                         |
 | `src/lib/db/schema/` | Schemas Drizzle (admins, associates, activities, audit, finance, legal, monthly_payments, oficios, assignments, notifications, dependents, health_agreements, etc.) |
-| `drizzle/postgres/` | Migrations SQL (baseline `0000_green_glorian.sql` + incrementais) |
-| `docs/adr/` | ADRs — decisões arquiteturais |
-| `docs/` | Runbook, compliance LGPD, design, jornadas |
+| `drizzle/postgres/`  | Migrations SQL (baseline `0000_green_glorian.sql` + incrementais)                                                                                                   |
+| `docs/adr/`          | ADRs — decisões arquiteturais                                                                                                                                       |
+| `docs/`              | Runbook, compliance LGPD, design, jornadas                                                                                                                          |
 
 ## Arquivos Importantes
 
@@ -184,14 +184,17 @@ Single-context: `CONTEXT.md` at root + `docs/adr/`. See `docs/agents/domain.md`.
 
 - **CI "Database Contract" ≠ só schema:** o job roda migrate + `test:db` + `test:integration`. Falha pode ser `server-only` sem alias no `vitest.integration.config.ts` (unit já tem). Ler o step do log antes de culpar migration.
 - **Deploy Vercel não migra Neon:** após PR com coluna nova, aplicar `ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate` (ou neonctl connection-string + guarded-migrate) **antes** de confiar no smoke prod. Sintoma clássico: `column "X" does not exist` no POST de create.
-- **Smoke prod em cascata:** após fix de schema, limpar `SMOKE_%` em associates/activities/etc. antes de re-run; residual gera "CPF já cadastrado" e mascara o sucesso do migrate.
-- **vercel env pull production:** keys DATABASE_* podem vir com valor vazio (Neon integration). Preferir `neonctl connection-string` (org `org-red-mode-09715915`, project `long-leaf-97822199`) e **não imprimir** a URL com senha.
+- **Smoke "CPF já existe" sem CPF no form:** `buildPiiPatch` não pode hashear `''` — blank → clear (hash null). 1º create sem PII grava hash de vazio; 2º colide. Ver `docs/agent-memory` + PR #302.
+- **Smoke fail-fast:** só `form [role="alert"]`; `.text-red-*` casa botão Remover e gera falso positivo (create pode ter sucesso no DB). PR #303.
+- **Smoke residual:** limpar `SMOKE_%` após qualquer run (SQL impresso no log não auto-executa). Combinar com check de `cpf_hash`/`siape_hash` no residual.
+- **vercel env pull production:** keys DATABASE\_\* podem vir com valor vazio (Neon integration). Preferir `neonctl connection-string` (org `org-red-mode-09715915`, project `long-leaf-97822199`) e **não imprimir** a URL com senha.
+- **Husky pre-commit:** precisa shebang + mode 100755; leve no commit (lint-staged+typecheck), suite no pre-push. PR #300.
 - **Orquestrador babysita CI até o fim:** após push, polle checks, fixe falhas e só encerre com status final — não "aguardar re-run" e parar.
 
-- **Neon Free Tier Retention Limit:** O roteiro de Go-Live exige retenção de backup contínuo (PITR) de no mínimo 24h. No entanto, o plano *Free* do Neon Database limita o `history_retention_seconds` a 21600 (exatas 6 horas). Não é possível alterar este valor via API ou CLI (`neonctl projects update ...`) sem antes migrar o projeto para o plano Launch/Pro. Se for realizar validações de Go-Live e rollbacks na camada Free, a janela completa deve durar menos de 6 horas.
+- **Neon Free Tier Retention Limit:** O roteiro de Go-Live exige retenção de backup contínuo (PITR) de no mínimo 24h. No entanto, o plano _Free_ do Neon Database limita o `history_retention_seconds` a 21600 (exatas 6 horas). Não é possível alterar este valor via API ou CLI (`neonctl projects update ...`) sem antes migrar o projeto para o plano Launch/Pro. Se for realizar validações de Go-Live e rollbacks na camada Free, a janela completa deve durar menos de 6 horas.
 - **Vercel CLI Interactive Prompts:** Ao usar `vercel env add <KEY> production --force` em um processo não interativo (background), a CLI pode congelar esperando confirmação `(y/N)` se a variável já existir ou for sobreposição. **Solução:** Sempre use a flag combinada `--force --yes` para scripts automatizados ou background tasks.
 - **Vercel Postgres Integration (Branching):** Na integração oficial da Neon com a Vercel, o setup de "Create Database Branch For Deployment" permite injetar o prefixo customizado `DATABASE` (gerando a esperada `DATABASE_URL`). O **checkbox de Preview** deve ser marcado para rodar testes em clones descartáveis, mas o **checkbox de Production** deve ser rigorosamente **desmarcado** para que o ambiente Vercel de produção se conecte à branch principal (`main`) e não crie ramificações divergentes na produção.
-- **Variáveis Obrigatórias no Next.js (CRON_SECRET):** O esquema de validação em `src/lib/env.ts` exige a presença de `CRON_SECRET` e `ASOF_INTRANET_URL` no Vercel (se `VERCEL_ENV === 'production'`). Sem essas variáveis cadastradas via painel ou Vercel CLI, o *build* (e consequentemente o E2E test) falha. Em testes locais/E2E com pipeline simulando produção (`global-setup.ts`), essas variáveis devem ser explicitamente mockadas.
+- **Variáveis Obrigatórias no Next.js (CRON_SECRET):** O esquema de validação em `src/lib/env.ts` exige a presença de `CRON_SECRET` e `ASOF_INTRANET_URL` no Vercel (se `VERCEL_ENV === 'production'`). Sem essas variáveis cadastradas via painel ou Vercel CLI, o _build_ (e consequentemente o E2E test) falha. Em testes locais/E2E com pipeline simulando produção (`global-setup.ts`), essas variáveis devem ser explicitamente mockadas.
 - **Next.js Native Code Signing em Agentes (E2E):** O ambiente do Next.js (pacotes nativos como `@next/swc-darwin-arm64` e `lightningcss`) falha com erros de `dlopen` sob o Node.js embutido do Codex.app/Antigravity devido a uma divergência estrita de Team ID no macOS (Code Signing). Ao rodar `npm run test:e2e` ou `npm run dev` localmente através da IA no Mac, deve-se forçar o uso do Node do sistema (ex: `PATH="/opt/homebrew/bin:$PATH" npm run test:e2e`) para evitar falhas silenciosas de runtime.
 - **Timeout Oculto no Playwright `global-setup.ts`:** Durante o setup do E2E, se o `fetch` que verifica a prontidão do Next.js (dev server) não tiver um `AbortSignal` configurado, uma compilação lenta do Next.js (comum em setups frios, levando mais de 60s) fará a requisição travar indefinidamente. Isso estoura o deadline do `global-setup` silenciosamente sem expor a causa raiz. Sempre use timeouts curtos no `fetch` (5-10s) dentro do loop de verificação, junto com um deadline elástico (ex: 120s).
-- **Processos Órfãos do Next.js (EADDRINUSE):** Ao rodar E2E local, matar o processo de PID registrado frequentemente deixa os *workers* filhos do Next.js ativos, travando a porta 3001 nas execuções subsequentes. Use sempre a porta para limpeza agressiva: `lsof -ti:3001 | xargs kill -9`.
+- **Processos Órfãos do Next.js (EADDRINUSE):** Ao rodar E2E local, matar o processo de PID registrado frequentemente deixa os _workers_ filhos do Next.js ativos, travando a porta 3001 nas execuções subsequentes. Use sempre a porta para limpeza agressiva: `lsof -ti:3001 | xargs kill -9`.
