@@ -4,6 +4,47 @@
 
 ---
 
+## 2026-07-09 — Job CI "Database Contract" = migrate + test:db + test:integration
+
+- **Tipo**: Fato de pipeline
+- **Escopo**: `.github/workflows/ci.yml`
+- **Memória**: O job `Database Contract` aplica migrations no Postgres do service, roda `npm run test:db` (schema contract) e **também** `npm run test:integration` (DML). Falha no job pode ser schema **ou** integration (ex.: `server-only` sem alias).
+- **Evidência**: `ci.yml` steps Apply migrations / Run database contract tests / Run DML integration tests; PR #298.
+- **Regra preventiva**: Ler qual step falhou no log do job antes de escolher o fix.
+- **Confiança**: alta
+
+## 2026-07-09 — `vitest.integration.config.ts` deve aliasar `server-only`
+
+- **Tipo**: Convenção de teste
+- **Escopo**: Vitest integration
+- **Memória**: Unit config (`vitest.config.ts`) já mapeia `server-only` → `src/__mocks__/server-only.ts`. Integration config **precisa do mesmo alias**. Services (finance, activities, webhooks) importam cadeias com `import 'server-only'` (validation, secrets, config); sem alias, `import('./service')` nos `*.integration.test.ts` quebra.
+- **Evidência**: PR #298 fix CI.
+- **Confiança**: alta
+
+## 2026-07-09 — Produção Neon: migrate via neonctl + guarded-migrate
+
+- **Tipo**: Procedimento operacional
+- **Escopo**: Neon `intranet-db` / produção
+- **Memória**: `vercel env pull --environment production` pode listar keys `DATABASE_URL`/`DATABASE_MIGRATION_URL` com **valor vazio** (integração Neon/sensitive). Caminho que funcionou: `neonctl projects list --org-id org-red-mode-09715915` → project `long-leaf-97822199` → `neonctl connection-string --project-id ... --branch main --pooled false` → `ALLOW_PRODUCTION_MIGRATIONS=true DATABASE_MIGRATION_URL=... node --import tsx scripts/guarded-migrate.ts`. **Nunca logar a connection string completa** (senha em plain text no stdout do neonctl).
+- **Evidência**: Sessão 2026-07-09 — leave_date aplicado em prod; smoke verde após migrate + cleanup SMOKE.
+- **Confiança**: alta
+
+## 2026-07-09 — Fax legado fora de propósito; leaveDate é o campo de licença
+
+- **Tipo**: Decisão de produto/domínio
+- **Escopo**: Cadastro de oficiais / import CSV
+- **Memória**: Campo **Fax** do CSV legado **não** entra no schema/forms; `transformLegacyRecord` ignora e a migração não quebra. **Data de Licença** do CSV mapeia para `associates.leave_date` (`leaveDate`); situação `em_licenca` continua em `functionalStatus`. Papra/DMS externo: decisão 2026-07-08 de **não seguir** (TODO-PROD).
+- **Evidência**: Auditoria CSV `asof_final_limpo.csv` + sessão 2026-07-08/09.
+- **Confiança**: alta
+
+## 2026-07-09 — Pipeline de campo associado expandido (adesão, licença, dependentes create)
+
+- **Tipo**: Extensão do pipeline de 7 camadas
+- **Escopo**: associates
+- **Memória**: Além das 7 camadas clássicas, campos novos frequentemente exigem: migration SQL + journal, `schema.integration.test.ts` expectedColumns, `lgpd.ts` PUBLIC/EXPORT, `reports/queries.ts` + RelatorioForm, `migrate-legacy-transforms.ts` + testes, `scripts/seed-dev.ts` (e contagem denormalizada alinhada a tabelas filhas), e se houver multi-valor de form → helper puro (`form-helpers`) + preprocess no action. Normalização de `joinedAt` (date → timestamptz ISO) vive no **service**.
+- **Evidência**: leaveDate/joinedAt/dependents create na sessão 2026-07-08/09.
+- **Confiança**: alta
+
 ## 2026-06-18 — `retirementDate` e `cancellationDate` são conceitos distintos
 
 - **Tipo**: Regra de domínio confirmada

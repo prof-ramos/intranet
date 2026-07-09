@@ -182,6 +182,12 @@ Single-context: `CONTEXT.md` at root + `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Feedback e Armadilhas Operacionais (Memória)
 
+- **CI "Database Contract" ≠ só schema:** o job roda migrate + `test:db` + `test:integration`. Falha pode ser `server-only` sem alias no `vitest.integration.config.ts` (unit já tem). Ler o step do log antes de culpar migration.
+- **Deploy Vercel não migra Neon:** após PR com coluna nova, aplicar `ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate` (ou neonctl connection-string + guarded-migrate) **antes** de confiar no smoke prod. Sintoma clássico: `column "X" does not exist` no POST de create.
+- **Smoke prod em cascata:** após fix de schema, limpar `SMOKE_%` em associates/activities/etc. antes de re-run; residual gera "CPF já cadastrado" e mascara o sucesso do migrate.
+- **vercel env pull production:** keys DATABASE_* podem vir com valor vazio (Neon integration). Preferir `neonctl connection-string` (org `org-red-mode-09715915`, project `long-leaf-97822199`) e **não imprimir** a URL com senha.
+- **Orquestrador babysita CI até o fim:** após push, polle checks, fixe falhas e só encerre com status final — não "aguardar re-run" e parar.
+
 - **Neon Free Tier Retention Limit:** O roteiro de Go-Live exige retenção de backup contínuo (PITR) de no mínimo 24h. No entanto, o plano *Free* do Neon Database limita o `history_retention_seconds` a 21600 (exatas 6 horas). Não é possível alterar este valor via API ou CLI (`neonctl projects update ...`) sem antes migrar o projeto para o plano Launch/Pro. Se for realizar validações de Go-Live e rollbacks na camada Free, a janela completa deve durar menos de 6 horas.
 - **Vercel CLI Interactive Prompts:** Ao usar `vercel env add <KEY> production --force` em um processo não interativo (background), a CLI pode congelar esperando confirmação `(y/N)` se a variável já existir ou for sobreposição. **Solução:** Sempre use a flag combinada `--force --yes` para scripts automatizados ou background tasks.
 - **Vercel Postgres Integration (Branching):** Na integração oficial da Neon com a Vercel, o setup de "Create Database Branch For Deployment" permite injetar o prefixo customizado `DATABASE` (gerando a esperada `DATABASE_URL`). O **checkbox de Preview** deve ser marcado para rodar testes em clones descartáveis, mas o **checkbox de Production** deve ser rigorosamente **desmarcado** para que o ambiente Vercel de produção se conecte à branch principal (`main`) e não crie ramificações divergentes na produção.
