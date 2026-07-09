@@ -435,14 +435,15 @@ export async function createAssociateData(input: CreateAssociateInput): Promise<
     throw new ValidationError('Método de pagamento inválido.');
   }
 
+  // emptyToNull: forms send blank inputs as ''; hashing '' would collide across creates.
   const piiPatch = buildPiiPatch({
-    cpf: input.cpf ?? null,
-    rg: input.rg ?? null,
-    siape: input.siape ?? null,
-    primaryEmail: input.primaryEmail ?? null,
-    phone: input.phone ?? null,
-    whatsapp: input.whatsapp ?? null,
-    address: input.address ?? null,
+    cpf: emptyToNull(input.cpf ?? null),
+    rg: emptyToNull(input.rg ?? null),
+    siape: emptyToNull(input.siape ?? null),
+    primaryEmail: emptyToNull(input.primaryEmail ?? null),
+    phone: emptyToNull(input.phone ?? null),
+    whatsapp: emptyToNull(input.whatsapp ?? null),
+    address: emptyToNull(input.address ?? null),
   });
 
   const id = await db.transaction(async (tx) => {
@@ -495,7 +496,8 @@ export async function createAssociateData(input: CreateAssociateInput): Promise<
       joinedAt: toJoinedAtTimestamp(input.joinedAt),
       ceocMember: input.ceocMember ?? null,
       caocMember: input.caocMember ?? null,
-      numberOfDependents: dependents.length > 0 ? dependents.length : (input.numberOfDependents ?? null),
+      numberOfDependents:
+        dependents.length > 0 ? dependents.length : (input.numberOfDependents ?? null),
       ...piiPatch,
       functionalStatus: functionalStatus as FsEnum | null,
       associationStatus: associationStatus as AsEnum,
