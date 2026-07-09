@@ -173,6 +173,18 @@ npm run validate:full
 npm run pr:check
 ```
 
+### Git hooks (husky)
+
+| Hook           | O que roda                                                        | Objetivo                                        |
+| -------------- | ----------------------------------------------------------------- | ----------------------------------------------- |
+| **pre-commit** | `lint-staged` (eslint + prettier no staged) → `typecheck`         | Barato, no diff; falha cedo em formatação/tipos |
+| **pre-push**   | `validate:quick` (lint + typecheck + testes unitários)            | Não empurrar unitários quebrados                |
+| **CI**         | quick + `test:db` + integration + build + e2e (+ smoke em `main`) | Contrato de ambiente e regressão completa       |
+
+Após `npm install` (`prepare` → husky), confira que os hooks são executáveis: `ls -la .husky/pre-commit .husky/pre-push` deve mostrar `x`. Se o git avisar que o hook foi ignorado, rode `chmod +x .husky/pre-commit .husky/pre-push`.
+
+Não use `git commit --no-verify` / `git push --no-verify` sem motivo documentado no PR.
+
 `npm run pr:check` é o melhor gate único antes de abrir ou atualizar PR porque combina escopo, typecheck, lint, testes, contrato de banco e build.
 
 ### Antes de abrir PR
