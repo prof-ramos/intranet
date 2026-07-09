@@ -17,10 +17,15 @@ function makeSelect(rows: unknown[]) {
   };
 }
 
-function makeInsert(returningRows: unknown[] = []) {
+/** Supports both rate-limit (`onConflictDoUpdate().returning()`) and token (`returning()`). */
+function makeInsert(returningRows: unknown[] = [{ attempts: 1, id: 99 }]) {
+  const returning = vi.fn(async () => returningRows);
   return {
     values: vi.fn(() => ({
-      returning: vi.fn(async () => returningRows),
+      returning,
+      onConflictDoUpdate: vi.fn(() => ({
+        returning,
+      })),
     })),
   };
 }
@@ -105,6 +110,8 @@ vi.mock('@/lib/env', () => ({
     MAILJET_API_KEY: 'key',
     MAILJET_SECRET_KEY: 'secret',
     MAILJET_SENDER_VALIDATED: true,
+    // Required by hashEmail (rate-limit key material) — test-only fixture, not a real secret.
+    ENCRYPTION_MASTER_KEY: 'test-master-key-32-bytes-long-xxxx',
   },
 }));
 
@@ -174,7 +181,8 @@ describe('password reset', () => {
     dbMock.select.mockReturnValue(
       makeSelect([{ id: 7, name: 'Admin', email: 'admin@asof.local', isActive: true }]),
     );
-    dbMock.insert.mockReturnValue(makeInsert([{ id: 99 }]));
+    // rate-limit row (attempts) + token row (id) share the same mock shape
+    dbMock.insert.mockReturnValue(makeInsert([{ attempts: 1, id: 99 }]));
     // cleanup de tokens expirados (best-effort) + rollback token em caso de falha de email
     let deleteCallCount = 0;
     dbMock.delete.mockImplementation((..._args: unknown[]) => {
@@ -193,7 +201,13 @@ describe('password reset', () => {
     await vi.advanceTimersByTimeAsync(1200);
     await promise;
 
-    expect(events).toEqual(['db:delete:cleanup', 'email:sent', 'tx:start', 'tx:delete-old-tokens', 'tx:audit']);
+    expect(events).toEqual([
+      'db:delete:cleanup',
+      'email:sent',
+      'tx:start',
+      'tx:delete-old-tokens',
+      'tx:audit',
+    ]);
   });
 
   it('keeps older reset tokens when email delivery fails', async () => {
@@ -201,7 +215,7 @@ describe('password reset', () => {
     dbMock.select.mockReturnValue(
       makeSelect([{ id: 7, name: 'Admin', email: 'admin@asof.local', isActive: true }]),
     );
-    dbMock.insert.mockReturnValue(makeInsert([{ id: 99 }]));
+    dbMock.insert.mockReturnValue(makeInsert([{ attempts: 1, id: 99 }]));
     // cleanup de tokens expirados (best-effort) + rollback token em caso de falha de email
     let deleteCallCount = 0;
     dbMock.delete.mockImplementation((..._args: unknown[]) => {
@@ -220,5 +234,42 @@ describe('password reset', () => {
 
     expect(events).toEqual(['db:delete:cleanup', 'db:delete']);
     expect(dbMock.transaction).not.toHaveBeenCalled();
+  });
+
+  it('denies password reset when rate-limit storage fails (fail-closed)', async () => {
+    vi.useFakeTimers();
+    dbMock.insert.mockImplementation(() => {
+      throw new Error('password_reset_attempts unavailable');
+    });
+
+    const { requestPasswordReset } = await import('./password-reset');
+    const promise = requestPasswordReset('admin@asof.local');
+    await vi.advanceTimersByTimeAsync(1200);
+    await promise;
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+    expect(dbMock.select).not.toHaveBeenCalled();
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      '[requestPasswordReset] Rate-limit check failed; denying request (fail-closed).',
+      expect.any(Object),
+      expect.any(Error),
+    );
+  });
+
+  it('denies password reset when rate-limit attempts are exceeded', async () => {
+    vi.useFakeTimers();
+    dbMock.insert.mockReturnValue(makeInsert([{ attempts: 4, id: 1 }]));
+
+    const { requestPasswordReset } = await import('./password-reset');
+    const promise = requestPasswordReset('admin@asof.local');
+    await vi.advanceTimersByTimeAsync(1200);
+    await promise;
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+    expect(dbMock.select).not.toHaveBeenCalled();
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      '[requestPasswordReset] Rate limit exceeded or unavailable.',
+      expect.objectContaining({ emailHash: expect.any(String) }),
+    );
   });
 });

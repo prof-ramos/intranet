@@ -9,6 +9,56 @@ Para a janela operacional da Release 1.0, use tambem o roteiro detalhado em
 Ele cobre smoke manual em producao, backup Nivel 1 com `pg_dump`, restore de
 teste, validacao de crons e revisao minima de integracoes/API keys sem secrets.
 
+Higiene de secrets: [`operations/secrets-hygiene.md`](./operations/secrets-hygiene.md).  
+Plano de sunset de PII plaintext: [`operations/pii-plaintext-sunset.md`](./operations/pii-plaintext-sunset.md).
+
+## 0. Checklist Único De Release (Deploy → Migrate → Smoke)
+
+Use esta seção como **procedimento canônico** após merge em `main` que altere
+código e/ou schema. Não inverter a ordem quando houver migration SQL nova.
+
+### Antes do merge
+
+- [ ] `npm run pr:check` (ou `validate:full`) verde localmente
+- [ ] Se houver mudança em `src/lib/db/schema` ou `drizzle/postgres/`:
+  - [ ] migration SQL versionada e journal atualizado
+  - [ ] `src/lib/db/schema.integration.test.ts` atualizado (colunas/enums/índices)
+- [ ] PR revisado; CI do PR verde (lint, typecheck, unit+coverage, build, DB contract, E2E)
+
+### Ordem obrigatória em produção
+
+1. **Anotar baseline**
+   - [ ] Deployment Vercel atual “last known good” (ID + URL) — ADR 010
+   - [ ] Timestamp UTC / LSN ou branch backup Neon se a janela for destrutiva
+2. **Deploy da app**
+   - [ ] Merge/`push` em `main` → aguardar Vercel production `READY`
+   - [ ] Confirmar domínio `intranet.asof.com.br` no deployment novo
+3. **Migrate (somente se houver SQL novo no commit)**
+   - [ ] Backup Nível 1 ou branch Neon copy-on-write (seção 11)
+   - [ ] `ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate` com
+         `DATABASE_MIGRATION_URL` **direct** (nunca pooler 6543)
+   - [ ] Confirmar hashes em `drizzle.__drizzle_migrations`
+   - [ ] Se a migration for `CONCURRENTLY` / `ALTER TYPE ... ADD VALUE` fora de
+         transação: seguir procedimento manual do próprio SQL + journal
+4. **Smoke**
+   - [ ] CI job `Smoke Test — Production` em `main` **ou**
+         `npm run smoke:prod` em janela controlada com `SMOKE_ADMIN_*`
+   - [ ] 10/10 testes; se falhar por coluna/enum ausente → voltar ao passo 3
+5. **Limpeza pós-smoke**
+   - [ ] Executar o SQL de limpeza `SMOKE_*` impresso pelo spec
+   - [ ] Preservar `audit_logs`; zerar contagens operacionais `SMOKE_*`
+6. **Encerramento**
+   - [ ] Anotar no canal de incidente (ADR 011) se houve incidente ou rollback
+   - [ ] Se migrate não era necessária, pular passo 3 explicitamente no registro
+
+### Anti-padrões (não fazer)
+
+- Deploy e assumir que o schema Neon acompanhou sozinho
+- Rodar migrate sem backup quando a mudança é destrutiva ou de alto risco
+- Smoke durante migrate incompleta
+- Deixar dados `SMOKE_*` em produção após a janela
+- Guardar `.env` de produção no root do repositório (mesmo gitignored)
+
 ## 1. Preparacao Do Banco
 
 1. Confirmar o ambiente alvo em [`environments.md`](./environments.md).
@@ -169,36 +219,110 @@ Documentos fisicos nao bloqueiam o go-live enquanto nao houver provider de stora
 1. Se a migration falhar antes do deploy, restaurar snapshot do banco novo ou descartar o banco e recriar.
 2. Se o deploy falhar com banco migrado, preferir rollback de app para SHA anterior compativel ou forward-fix documentado.
 3. Nao usar bancos investigados anteriormente como rollback operacional.
+4. Preferir restore via branch Neon / PITR (ADR 010) quando o incidente for de dados; ver seção 8.
 
-## 8. Incidentes LGPD
+## 8. Backup Periódico E Restore Drill
+
+O Neon Free Tier limita Instant Restore / Time Travel a **6 horas**. Não confiar
+somente em PITR para incidentes descobertos depois. Complementar com backup
+Nível 1 (`pg_dump`) e drills periódicos.
+
+### 8.1 Backup Nível 1 (semanal, mínimo)
+
+Script: `scripts/backup-neon-level1.sh`
+
+```bash
+# URL direta (non-pooling), idealmente role de leitura/backup dedicada — nunca logar a URL
+export DATABASE_BACKUP_URL='postgres://…'   # direct host, sem printar
+export BACKUP_DIR="${BACKUP_DIR:-$HOME/asof-intranet-backups}"
+export RETENTION_DAYS=14
+
+# Dry-run (não grava dump)
+DRY_RUN=true ./scripts/backup-neon-level1.sh
+
+# Backup real: gera .sql.gz + .sha256, valida gzip, aplica retenção
+umask 077
+./scripts/backup-neon-level1.sh
+```
+
+Regras:
+
+- Agendar **no mínimo 1× por semana** (cron do operador ou máquina segura).
+- Antes de migrate de produção de risco: **sempre** um backup ad hoc ou branch Neon.
+- `BACKUP_DIR` com permissão `700`; arquivos `600`.
+- Não commitar dumps; não colar connection strings em chat/issue.
+- No Free Tier, branch Neon copy-on-write pré-janela continua obrigatório para
+  mudanças destrutivas (ADR 010 / 016).
+
+### 8.2 Restore drill (mensal, mínimo)
+
+Objetivo: provar que o time restaura e sobe app legível em &lt; meta acordada
+(sugestão: 60 min para drill controlado).
+
+1. **Preparar alvo descartável**
+   - Branch Neon novo a partir de backup/PITR **ou** Postgres local vazio
+   - Nunca restaurar dump em cima de `main` de produção no drill
+2. **Restaurar**
+   ```bash
+   # Exemplo local (ajuste DB name)
+   createdb asof_restore_drill
+   gunzip -c "$BACKUP_DIR/asof-intranet-….sql.gz" | psql "postgres://…/asof_restore_drill"
+   ```
+3. **Validar**
+   - [ ] `SELECT count(*) FROM associates;` (ordem de grandeza esperada)
+   - [ ] `SELECT count(*) FROM drizzle.__drizzle_migrations;`
+   - [ ] App local apontando `DATABASE_URL`/`DATABASE_MIGRATION_URL` do drill:
+         `npm run test:db` (ou smoke mínimo de login em dev)
+   - [ ] Decrypt de 1 registro PII de teste **somente** se a chave do dump for a
+         mesma e o ambiente for autorizado (LGPD)
+4. **Encerrar**
+   - [ ] Destruir branch/DB de drill
+   - [ ] Registrar data, duração e dono no canal operacional (sem secrets)
+
+### 8.3 Critérios de sucesso do drill
+
+| Critério                             | Meta                                    |
+| ------------------------------------ | --------------------------------------- |
+| Dump abre / `gzip -t` ok             | Sempre                                  |
+| Restore aplica sem erro fatal        | Sempre                                  |
+| Schema contract ou contagens básicas | Passa                                   |
+| Tempo total do drill                 | &lt; 60 min (ajustar se volume crescer) |
+| Artefato de evidência                | Data + resultado no canal privado       |
+
+Se o drill falhar: abrir incidente operacional, não esperar o próximo incidente real.
+
+## 9. Incidentes LGPD
 
 - Nao registrar CPF, SIAPE, endereco, senha temporaria, token, cookie ou segredo em logs.
 - Usar `src/lib/logger.ts` e `src/lib/sanitize-pii.ts`.
 - Em suspeita de vazamento, preservar evidencias, rotacionar segredos afetados e registrar incidente.
 
-## 9. Limpeza de integration_signature_nonces
+## 10. Limpeza de integration_signature_nonces
 
 A tabela `integration_signature_nonces` armazena nonces de replay attack para integrações M2M (veja ADR 014). Cada nonce expira após a janela de tolerância de timestamp (`ASOF_INTEGRATION_TIMESTAMP_TOLERANCE_SECONDS`), mas não há cron de limpeza automática ainda.
 
 **Monitorar crescimento:**
+
 ```sql
 SELECT count(*) FROM integration_signature_nonces WHERE expires_at < now();
 ```
 
 **Limpeza manual (segura — remove apenas expirados):**
+
 ```sql
 DELETE FROM integration_signature_nonces WHERE expires_at < now();
 ```
 
 Executar via `psql "$DATABASE_MIGRATION_URL"` ou pelo Drizzle Studio (`npm run db:studio`). Recomendado verificar periodicamente em produção; em dev realista restrito, siga a política de reset/descarte definida em `docs/environments.md`.
 
-## 10. Eventos presos no outbox (`domain_events`)
+## 11. Eventos presos no outbox (`domain_events`)
 
 O outbox de webhooks (`domain_events`) acumula eventos emitidos por serviços internos (associados, jurídico, ofícios, mensalidades e, a partir do ADR 018, atividades do Kanban). Cada evento é inserido com `delivery_status = 'pending'` e dispatch inline fire-and-forget após commit; o cron `/api/v1/events/dispatch` (Vercel Cron, `0 3 * * *`) é a rede que recupera eventos não entregues na via inline, com retry exponencial (máx. 5). Eventos expiram após 90 dias (`expires_at`).
 
 **Sintoma:** um consumer de webhook não recebe notificações de uma mudança que ocorreu no Kanban (ex.: tarefa atribuída não chegou ao sistema de automação/push).
 
 **Investigação — eventos presos em `pending`:**
+
 ```sql
 SELECT event_type, delivery_status, count(*), max(created_at) AS latest
 FROM domain_events
