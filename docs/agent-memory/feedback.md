@@ -4,6 +4,69 @@
 
 ---
 
+## 2026-07-09 — Diagnóstico de CI pelo nome do job (falso positivo leave_date)
+
+- **Tipo**: Suposição incorreta / diagnóstico preguiçoso
+- **Escopo**: CI Database Contract, migrations
+- **Memória**: No PR #298 o job "Database Contract" falhou e a hipótese inicial foi "falta leave_date / migration 0030". O log real mostrou: `test:db` (schema) **passou**; a falha estava em `test:integration` com `server-only` (`This module cannot be imported from a Client Component module`) nos smokes de finance/activities/webhooks. Causa: `vitest.integration.config.ts` não aliasava `server-only` (unit config já aliasava).
+- **Evidência**: Sessão 2026-07-08/09 — PR #298, run 28983717875; fix em `vitest.integration.config.ts` (commit 7ec7733).
+- **Regra preventiva**: Ao falhar o job "Database Contract", ler o log completo e separar `test:db` vs `test:integration`. Não assumir migration/schema só pelo nome do job. Conferir alias de `server-only` em **ambos** os configs Vitest.
+- **Confiança**: alta
+
+## 2026-07-09 — Deploy Vercel ≠ migration aplicada no Neon
+
+- **Tipo**: Armadilha operacional (reconfirmada e expandida)
+- **Escopo**: Produção, smoke, schema
+- **Memória**: Merge na `main` + deploy Vercel Ready **não** aplica migrations Drizzle. App em produção passou a SELECTionar `leave_date` enquanto a coluna ainda não existia no Neon → POST `/app/associados/novo` 500 (`42703 column "leave_date" does not exist`) e smoke #3 falhou no redirect. Sequência correta: merge → **migrate prod com `ALLOW_PRODUCTION_MIGRATIONS=true`** → validar coluna → smoke.
+- **Evidência**: Sessão 2026-07-09 — Vercel logs + smoke run 28984631622; migrate via neonctl connection-string + `scripts/guarded-migrate.ts` resolveu.
+- **Regra preventiva**: Todo PR com migration + código que usa a coluna exige checklist de pós-merge: (1) migrate no Neon `main`, (2) confirmar coluna/`__drizzle_migrations` count, (3) só então tratar smoke como sinal de go/no-go. Não esperar o smoke para "descobrir" schema atrasado se o log de deploy for claro.
+- **Confiança**: alta
+
+## 2026-07-09 — Smoke prod: falhas em cascata após schema fix
+
+- **Tipo**: Armadilha de re-run / estado residual
+- **Escopo**: `e2e/smoke-prod.spec.ts`, limpeza pós-smoke
+- **Memória**: Após corrigir `leave_date`, o smoke falhou de novo com `Já existe um oficial cadastrado com este CPF` por residual `SMOKE_%` (e hash de CPF) deixado por tentativa anterior. Login/dashboard ok; create falha sem limpar. Smoke só preenche `fullName` — colisões de unicidade (cpf_hash etc.) ainda podem aparecer se residual/hash existir.
+- **Evidência**: Sessão 2026-07-09 — 1 oficial SMOKE com `has_cpf_hash=true`; cleanup DELETE + re-run smoke → success.
+- **Regra preventiva**: Antes de re-rodar smoke após falha no passo de criar oficial, executar o SQL de limpeza impresso pelo spec (e checar `associates WHERE full_name ILIKE 'SMOKE_%'`). Ideal: smoke enviar SIAPE/CPF sintéticos únicos por run.
+- **Confiança**: alta
+
+## 2026-07-09 — Orquestrador não "entrega" CI sem acompanhar até o fim
+
+- **Tipo**: Ajuste de conduta
+- **Escopo**: PR babysitting / CI
+- **Memória**: Após push de fix de CI, reportar "aguardando re-run" e parar é insuficiente. O usuário espera que o orquestrador **polle** checks (Database Contract, E2E, Smoke), aja em falhas e só encerre com status final (merge/verde ou bloqueio explícito).
+- **Evidência**: Sessão 2026-07-09 — "Você, como Orquestrador, é que tem que acompanhar isso, uai".
+- **Regra preventiva**: Depois de push que afeta CI, loop de acompanhamento até todos os checks relevantes terminarem; em falha, log + fix + re-push/re-run; em verde, reportar mergeable e executar merge se o plano do usuário incluir "merge quando verde".
+- **Confiança**: alta
+
+## 2026-07-09 — Preprocess de FormData que engole validação
+
+- **Tipo**: Bug de design de API de formulário
+- **Escopo**: Dependentes no create de associados
+- **Memória**: `pairDependentsFromForm` com `if (!name || !relationship) continue` **descartava silenciosamente** linhas parciais; o Zod do schema nunca via o erro. Secretaria perde dado sem feedback. Correto: falhar com mensagem explícita se um lado vier preenchido e o outro vazio; só skip linha totalmente vazia.
+- **Evidência**: Code review local 2026-07-08; fix em `src/lib/associates/form-helpers.ts` + testes.
+- **Regra preventiva**: Preprocess de FormData não deve "sanitizar para sucesso". Se a regra de negócio exige par de campos, a falha deve ser explícita (throw ou Zod), nunca drop silencioso.
+- **Confiança**: alta
+
+## 2026-07-09 — Normalização duplicada action vs service
+
+- **Tipo**: Ambiguidade de contrato
+- **Escopo**: `joinedAt` / `leaveDate` em associados
+- **Memória**: Action chamava `toJoinedAtTimestamp` e o service chamava de novo (e ainda double-assign no object literal + if). Quem normaliza fica opaco e convida bugs em callers diretos do service.
+- **Evidência**: Code review + fix: normalização canônica **só no service**; action repassa raw do form.
+- **Regra preventiva**: Para datas de domínio, um único dono de normalização (preferir service). Action só faz parse/emptyToNull genérico se necessário; não ISO-ificar `joinedAt` em duas camadas.
+- **Confiança**: alta
+
+## 2026-07-09 — Documentar artefato inexistente no TODO/checklist
+
+- **Tipo**: Honestidade de documentação
+- **Escopo**: TODO-PROD / seeds
+- **Memória**: TODO citou `scripts/seed-dev-data.ts` que não existia no tree (só `seed-dev.ts`). Checklist operacional com path fantasma engana o próximo agente.
+- **Evidência**: Code review 2026-07-08.
+- **Regra preventiva**: Antes de marcar item como feito com path de arquivo, `ls`/git path real. Preferir path existente ou criar o módulo de fato.
+- **Confiança**: alta
+
 ## 2026-06-18 — Não basta mudar schema/UI; seeds e dados sintéticos precisam acompanhar
 
 - **Tipo**: Lacuna de verificação
