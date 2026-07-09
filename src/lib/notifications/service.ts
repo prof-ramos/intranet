@@ -60,7 +60,8 @@ export async function createNotificationFromEvent(
       href: payload.href ?? null,
       entityType: payload.entityType ?? null,
       entityId: payload.entityId ?? null,
-      metadata: payload.metadata ?? null,
+      // Persistence layer stores open jsonb; emit sites use typed NotificationMetadata.
+      metadata: (payload.metadata ?? null) as Record<string, unknown> | null,
       dedupeKey: payload.dedupeKey ?? null,
     },
     tx,

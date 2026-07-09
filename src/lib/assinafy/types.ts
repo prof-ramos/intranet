@@ -1,3 +1,5 @@
+import type { oficios } from '@/lib/db/schema/oficios';
+
 export enum AssinafyDocumentStatus {
   UPLOADING = 'uploading',
   UPLOADED = 'uploaded',
@@ -12,12 +14,26 @@ export enum AssinafyDocumentStatus {
   FAILED = 'failed',
 }
 
+/**
+ * Keys read by `handleWebhookEvent` from Assinafy's event-specific payload.
+ * The outer webhook envelope is still open: Assinafy varies payload shape by
+ * event type and vendor version (plan 019 STOP — intentional open boundary).
+ */
+export interface AssinafyWebhookPayloadKnown {
+  decline_reason?: string;
+  error_message?: string;
+}
+
 export interface AssinafyWebhookEvent {
   id: number;
   event: string;
   message: string | null;
-  // ponytail: intentionally open — Assinafy webhook payload varies by event type
-  payload: Record<string, unknown>;
+  /**
+   * Intentionally open at the HTTP boundary (plan 019 STOP).
+   * Known fields used internally are documented on `AssinafyWebhookPayloadKnown`.
+   * Do not replace with a strict Zod schema without vendor contract coverage.
+   */
+  payload: AssinafyWebhookPayloadKnown & Record<string, unknown>;
   origin: {
     ip: string;
     'user-agent': string;
@@ -36,3 +52,11 @@ export interface AssinafyWebhookEvent {
   };
   account_id: string;
 }
+
+/**
+ * Internal patch for ofício Assinafy columns written by the webhook handler.
+ * Prefer this over open bags when updating status-adjacent fields.
+ */
+export type AssinafyStatusPatch = Partial<
+  Pick<typeof oficios.$inferInsert, 'assinafySignedAt' | 'assinafyError'>
+>;
