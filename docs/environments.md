@@ -84,12 +84,54 @@ ambiente e mascarar logs.
 
 #### Registro operacional 2026-07-09 (pós-merge #311 / smoke)
 
-| Ação              | Resultado                                                                                 |
-| ----------------- | ----------------------------------------------------------------------------------------- |
-| Proteger `main`   | Bloqueado pelo plano Free                                                                 |
-| Branch COW        | `backup/post-audit-311-20260709T1748Z` (`br-rapid-mode-ackam8op`, parent LSN `0/7F82478`) |
-| Dump Nível 1      | `~/asof-intranet-backups/asof-intranet-*.sql.gz` (modo `600`)                             |
-| Limpeza `SMOKE_*` | Zerado em `main` (activities/associates/consultas/ofícios)                                |
+| Ação              | Resultado                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| Proteger `main`   | Bloqueado pelo plano Free                                                                   |
+| Branch COW        | `backup/post-audit-311-20260709T1748Z` (`br-rapid-mode-ackam8op`, parent LSN `0/7F82478`)   |
+| Dump Nível 1      | `~/asof-intranet-backups/asof-intranet-*.sql.gz` (modo `600`)                               |
+| Limpeza `SMOKE_*` | Zerado em `main` (activities/associates/consultas/ofícios)                                  |
+| Contagens `main`  | `associates=0`, `monthly_payments=0`, `admins=2` (30 migrations no journal)                 |
+| Branches archived | `backup-pre-retirement-*`, `backup/post-clean-main-*`, `vercel-dev` também com associates=0 |
+
+### Reimportação de oficiais (quando o dump existir)
+
+Script: `scripts/migrate-legacy.ts` (default
+`data/asof-prod-dump/chancelaria_web_full.json`; preferir
+`chancelaria_web_indexed.json` se disponível — ver `docs/agent-memory/project.md`).
+
+O diretório `data/` é **gitignored** (LGPD). Em 2026-07-09 **não havia**
+`data/asof-prod-dump/` na máquina de operação; reimport em produção **bloqueada**
+até o operador restaurar o JSON legado localmente.
+
+```bash
+# 1) Colocar o dump em data/asof-prod-dump/ (fora do git)
+# 2) Dry-run — nunca main no primeiro run
+npm run migrate:legacy:dry-run -- --limit 10 --verbose
+
+# 3) Apply controlado (ENCRYPTION_MASTER_KEY + DATABASE_URL do alvo)
+# Preferir branch de ensaio; só depois main com COW + dump Nível 1
+npm run migrate:legacy -- --source data/asof-prod-dump/chancelaria_web_indexed.json
+```
+
+### Upgrade de plano Neon (Launch+)
+
+Não há `neonctl` de billing para upgrade silencioso. Org atual: `free_v3`,
+managed via Vercel (`org-red-mode-09715915`).
+
+**Launch desbloqueia (ASOF):** branch protection, history até 7 dias (vs 6h Free),
+mais snapshots, autoscaling maior.
+
+**Passos do operador (console — gera cobrança):**
+
+1. Neon Console → billing **ou** Vercel Marketplace → integração Neon
+2. Upgrade para **Launch** (pay-as-you-go)
+3. Após ativo, proteger `main`:
+   ```bash
+   npx neonctl@latest api "/projects/long-leaf-97822199/branches/br-bold-bar-acge6h1w" \
+     --method PATCH -d '{"branch":{"protected":true}}'
+   ```
+4. Confirmar retenção de histórico ≥ 24h se a UI permitir
+5. Manter dump Nível 1 semanal mesmo no Launch
 
 ### Governança pós-reset (ADR 017)
 
