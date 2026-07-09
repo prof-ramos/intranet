@@ -2,7 +2,7 @@ const DOMAIN_ERROR_MARKER = Symbol.for('asof.DomainError');
 
 export class DomainError extends Error {
   readonly code: string;
-  readonly cause?: unknown;
+  override readonly cause?: unknown;
   [DOMAIN_ERROR_MARKER] = true;
 
   constructor(message: string, code: string, options?: { cause?: unknown }) {
@@ -45,7 +45,9 @@ export class ExternalServiceError extends DomainError {
 
   constructor(service: string, originalMessage?: string, options?: { cause?: unknown }) {
     super(
-      originalMessage ? `Erro no serviço externo ${service}: ${originalMessage}` : `Erro no serviço externo ${service}.`,
+      originalMessage
+        ? `Erro no serviço externo ${service}: ${originalMessage}`
+        : `Erro no serviço externo ${service}.`,
       'EXTERNAL_SERVICE_ERROR',
       options,
     );
@@ -60,4 +62,6 @@ export class UnauthorizedError extends DomainError {
 }
 
 export const isDomainError = (err: unknown): err is DomainError =>
-  err != null && typeof err === 'object' && (err as Record<symbol, unknown>)[DOMAIN_ERROR_MARKER] === true;
+  err != null &&
+  typeof err === 'object' &&
+  (err as Record<symbol, unknown>)[DOMAIN_ERROR_MARKER] === true;
