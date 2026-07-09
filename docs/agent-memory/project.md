@@ -4,6 +4,30 @@
 
 ---
 
+## 2026-07-09 — `buildPiiPatch` trata blank como clear (sem blind index)
+
+- **Tipo**: Contrato de escrita PII
+- **Escopo**: `src/lib/associates/pii-mapping.ts`, create/update de associados
+- **Memória**: Strings vazias ou só whitespace em CPF/SIAPE/e-mail/telefone/etc. devem zerar ciphertext+hash (clear), **nunca** `encryptPii('')` / `piiBlindIndex('')`. Caso contrário todos os creates sem PII colidem no mesmo hash e o 2º create falha com unicidade. Create path também aplica `emptyToNull` antes do patch. Teste unitário cobre blank → hash null.
+- **Evidência**: PR #302 (`d419f4a`); smoke 10/10 após deploy + #303.
+- **Confiança**: alta
+
+## 2026-07-09 — Husky pre-commit precisa shebang + bit executável
+
+- **Tipo**: Tooling local
+- **Escopo**: `.husky/pre-commit`, pirâmide de gates
+- **Memória**: Hook ignorado se sem `#!/usr/bin/env sh` ou sem `chmod +x` (git mode 100755). Conteúdo leve no pre-commit: lint-staged + typecheck; suite completa no pre-push (`validate:quick`). Documentado em `CONTRIBUTING.md`. Commit de mode: `git update-index --chmod=+x .husky/pre-commit`.
+- **Evidência**: PR #300 (`9949b26`).
+- **Confiança**: alta
+
+## 2026-07-09 — Smoke prod: fail-fast só com `form [role="alert"]`
+
+- **Tipo**: Convenção de teste
+- **Escopo**: `e2e/smoke-prod.spec.ts`
+- **Memória**: Após submit do cadastro de oficial, race entre redirect `/app/associados/\d+` e `form [role="alert"]` (timeout 30s). Não usar classes de cor. Timeout genérico reporta `alert=(none)` + URL.
+- **Evidência**: PR #303 (`9a4b390`); run main 29029445495 10/10.
+- **Confiança**: alta
+
 ## 2026-07-09 — Job CI "Database Contract" = migrate + test:db + test:integration
 
 - **Tipo**: Fato de pipeline
@@ -199,10 +223,10 @@
 ## 2026-06-15 — GROUP BY com expressão CASE no Drizzle: colunas internas devem ser explícitas no `.groupBy()`
 
 - **Tipo**: Restrição técnica / SQL semantics
-- **Escopo**: Drizzle ORM queries com `.groupBy()` e expressões `sql\`case\`` no `.select()`
-- **Memória**: A query `_getTopRegions` usava `correctedCountry` (uma expressão `sql\`case\``) no `.select()` e `.groupBy(correctedCountry)`. A expressão CASE internamente referencia `assignments.type` e `associates.locationCountry`. PostgreSQL exige que toda coluna não-agregada no SELECT também apareça no GROUP BY. O erro `42803` ocorreu porque Drizzle traduziu `.groupBy(correctedCountry)` para o SQL da expressão inteira, mas PostgreSQL ainda exige as colunas de base explícitas no GROUP BY clause.
+- **Escopo**: Drizzle ORM queries com `.groupBy()` e expressões `sql\`case\``no`.select()`
+- **Memória**: A query `_getTopRegions` usava `correctedCountry` (uma expressão `sql\`case\``) no `.select()`e`.groupBy(correctedCountry)`. A expressão CASE internamente referencia `assignments.type`e`associates.locationCountry`. PostgreSQL exige que toda coluna não-agregada no SELECT também apareça no GROUP BY. O erro `42803`ocorreu porque Drizzle traduziu`.groupBy(correctedCountry)` para o SQL da expressão inteira, mas PostgreSQL ainda exige as colunas de base explícitas no GROUP BY clause.
 - **Evidência**: Sessão 2026-06-15 — E2E dashboard falhou com `PostgresError 42803: column "associates.location_country" must appear in GROUP BY`. Corrigido com `.groupBy(correctedCountry, assignments.type, associates.locationCountry)`.
-- **Regra preventiva**: Ao usar expressões SQL `sql\`case\`` ou similares no `.select()` com `.groupBy()`, verificar se a expressão referencia colunas de outras tabelas. Se sim, adicionar explicitamente cada coluna não-agregada ao `.groupBy()`. Não confiar que Drizzle infira automaticamente.
+- **Regra preventiva**: Ao usar expressões SQL `sql\`case\``ou similares no`.select()`com`.groupBy()`, verificar se a expressão referencia colunas de outras tabelas. Se sim, adicionar explicitamente cada coluna não-agregada ao `.groupBy()`. Não confiar que Drizzle infira automaticamente.
 - **Confiança**: alta
 
 ## 2026-06-15 — E2E dev server log como fonte primária de diagnóstico

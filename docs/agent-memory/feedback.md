@@ -22,13 +22,31 @@
 - **Regra preventiva**: Todo PR com migration + código que usa a coluna exige checklist de pós-merge: (1) migrate no Neon `main`, (2) confirmar coluna/`__drizzle_migrations` count, (3) só então tratar smoke como sinal de go/no-go. Não esperar o smoke para "descobrir" schema atrasado se o log de deploy for claro.
 - **Confiança**: alta
 
-## 2026-07-09 — Smoke prod: falhas em cascata após schema fix
+## 2026-07-09 — Smoke "CPF já existe" sem CPF no form = blind index de string vazia
+
+- **Tipo**: Bug de domínio + diagnóstico incompleto
+- **Escopo**: `buildPiiPatch`, create de associados, smoke prod
+- **Memória**: O form envia PII vazia como `''`. `buildPiiPatch` **hasheava e criptografava `''`**, gerando o mesmo `cpf_hash`/`siape_hash` para todo create sem CPF/SIAPE. O 1º smoke passava; o 2º falhava com _Já existe um oficial cadastrado com este CPF_ embora o smoke só preencha `fullName`. Residual `SMOKE_%` agrava, mas a **raiz** era o hash de vazio. Fix (#302): blank/whitespace → clear (sem hash) + `emptyToNull` no create. Evidência: `cpf_hash === siape_hash` no residual; após fix, hashes NULL.
+- **Evidência**: Sessão 2026-07-09 — smoke em cascata após #298; PR #302; prod id=6 hashes NULL.
+- **Regra preventiva**: (1) Nunca hashear/encryptar PII blank. (2) Em "CPF já existe" no smoke, checar se `cpf_hash`/`siape_hash` estão SET e se são iguais entre campos. (3) Limpar `SMOKE_%` antes de re-run, mas não parar no cleanup se o bug de hash vazio ainda existir no código.
+- **Confiança**: alta
+
+## 2026-07-09 — Smoke fail-fast com `.text-red-*` gera falso positivo
+
+- **Tipo**: Armadilha de seletor Playwright
+- **Escopo**: `e2e/smoke-prod.spec.ts`
+- **Memória**: Fail-fast com `.text-red-700` casou o botão **Remover** de dependentes (sempre visível). O race resolvia `form-error` antes do redirect e falhava o teste **enquanto o create em prod já tinha sucesso**. Só `form [role="alert"]` é seguro.
+- **Evidência**: Sessão 2026-07-09 — smoke pós-#302 vermelho; associate id=6 no mesmo segundo; PR #303.
+- **Regra preventiva**: Fail-fast de erro de form = `role="alert"` (ou seletor do container de erro), nunca classes de cor reutilizadas em botões. Se smoke falhar com `form-error` e body sem mensagem, checar se o create foi gravado no DB antes de reverter fix de produto.
+- **Confiança**: alta
+
+## 2026-07-09 — Smoke residual: SQL de limpeza não auto-executa
 
 - **Tipo**: Armadilha de re-run / estado residual
 - **Escopo**: `e2e/smoke-prod.spec.ts`, limpeza pós-smoke
-- **Memória**: Após corrigir `leave_date`, o smoke falhou de novo com `Já existe um oficial cadastrado com este CPF` por residual `SMOKE_%` (e hash de CPF) deixado por tentativa anterior. Login/dashboard ok; create falha sem limpar. Smoke só preenche `fullName` — colisões de unicidade (cpf_hash etc.) ainda podem aparecer se residual/hash existir.
-- **Evidência**: Sessão 2026-07-09 — 1 oficial SMOKE com `has_cpf_hash=true`; cleanup DELETE + re-run smoke → success.
-- **Regra preventiva**: Antes de re-rodar smoke após falha no passo de criar oficial, executar o SQL de limpeza impresso pelo spec (e checar `associates WHERE full_name ILIKE 'SMOKE_%'`). Ideal: smoke enviar SIAPE/CPF sintéticos únicos por run.
+- **Memória**: Após qualquer smoke (verde ou vermelho), residual `SMOKE_%` permanece — o SQL só é impresso no log. Combinar com a memória de hash de string vazia.
+- **Evidência**: Sessão 2026-07-09 — cleanup manual via neonctl+psql após runs.
+- **Regra preventiva**: Após smoke, executar o SQL impresso e confirmar counts zerados. Não depender só do próximo run “passar”.
 - **Confiança**: alta
 
 ## 2026-07-09 — Orquestrador não "entrega" CI sem acompanhar até o fim
