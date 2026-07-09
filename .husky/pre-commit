@@ -1,2 +1,8 @@
-npm run typecheck
+#!/usr/bin/env sh
+# Barato e local ao diff: formata/linta o staged, depois typecheck.
+# Suite unitária completa fica no pre-push (validate:quick).
+# CI: + test:db, test:integration, build, e2e.
+
+set -e
 npx lint-staged
+npm run typecheck
