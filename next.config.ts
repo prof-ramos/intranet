@@ -15,8 +15,13 @@ const hasMigrationUrl =
 if ((!process.env.DATABASE_URL || !hasMigrationUrl) && process.env.VERCEL_ENV !== 'production') {
   const missing = [];
   if (!process.env.DATABASE_URL) missing.push('DATABASE_URL');
-  if (!hasMigrationUrl) missing.push('DATABASE_MIGRATION_URL (ou DATABASE_URL_UNPOOLED / DATABASE_POSTGRES_URL_NON_POOLING / POSTGRES_URL_NON_POOLING / DATABASE_POSTGRES_URL)');
-  console.warn(`⚠ ${missing.join(' e ')} não definida(s) — app falhará em runtime se precisar de DB`);
+  if (!hasMigrationUrl)
+    missing.push(
+      'DATABASE_MIGRATION_URL (ou DATABASE_URL_UNPOOLED / DATABASE_POSTGRES_URL_NON_POOLING / POSTGRES_URL_NON_POOLING / DATABASE_POSTGRES_URL)',
+    );
+  console.warn(
+    `⚠ ${missing.join(' e ')} não definida(s) — app falhará em runtime se precisar de DB`,
+  );
 }
 
 import withBundleAnalyzer from '@next/bundle-analyzer';
@@ -27,14 +32,19 @@ const analyzeBundle = withBundleAnalyzer({
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 const isE2E = process.env.NEXT_E2E === '1';
 // Dev-only allowance so impeccable live mode can load.
-const __impeccableLiveDev =
-  process.env.NODE_ENV === 'development' ? ' http://localhost:8400' : '';
+const __impeccableLiveDev = process.env.NODE_ENV === 'development' ? ' http://localhost:8400' : '';
 
 const securityHeaders = [
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  // HSTS: browsers ignore on plain HTTP; safe for local http://localhost.
+  // 2 years + includeSubDomains; enable preload only after confirming all HTTPS subdomains.
+  {
+    key: 'Strict-Transport-Security',
+    value: 'max-age=63072000; includeSubDomains',
+  },
   {
     key: 'Content-Security-Policy',
     value: [

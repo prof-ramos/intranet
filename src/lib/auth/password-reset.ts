@@ -75,31 +75,35 @@ export async function requestPasswordReset(email: string): Promise<void> {
   // Best-effort cleanup de tokens expirados
   try {
     await retryTransientConnection(() =>
-      db
-        .delete(passwordResetTokens)
-        .where(lt(passwordResetTokens.expiresAt, new Date())),
+      db.delete(passwordResetTokens).where(lt(passwordResetTokens.expiresAt, new Date())),
     );
   } catch {
     // Falha silenciosa — não bloqueia o fluxo principal
   }
 
-  // Rate limit por email (usa hash do login-rate-limit existente)
-  let allowed = true;
+  // Rate limit por email (fail-closed: erro de DB ou infra nega o pedido)
+  let allowed = false;
   try {
     allowed = await checkRateLimit(normalizedEmail);
   } catch (error) {
     logger.warn(
-      '[requestPasswordReset] Rate-limit check failed; allowing request.',
+      '[requestPasswordReset] Rate-limit check failed; denying request (fail-closed).',
       { error: toSafeErrorLog(error) },
       ensureError(error),
     );
+    allowed = false;
   }
 
   if (!allowed) {
-    logger.warn('[requestPasswordReset] Rate limit exceeded.', {
+    logger.warn('[requestPasswordReset] Rate limit exceeded or unavailable.', {
       emailHash: hashEmail(normalizedEmail),
     });
-    return; // Silencioso — não revelar ao cliente
+    // Timing-safe: não revelar se o e-mail existe nem se o limite falhou por erro
+    const jitter = randomInt(50, 200);
+    const elapsed = Date.now() - startTime;
+    const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed + jitter);
+    await new Promise((resolve) => setTimeout(resolve, wait));
+    return;
   }
 
   // Busca admin pelo email
