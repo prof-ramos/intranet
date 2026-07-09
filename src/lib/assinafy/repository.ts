@@ -1,6 +1,7 @@
 import { db, type DbExecutor } from '@/lib/db';
 import { oficios } from '@/lib/db/schema/oficios';
 import { eq } from 'drizzle-orm';
+import type { AssinafyStatusPatch } from './types';
 
 export async function findOficioByAssinafyDocumentId(documentId: string, tx: DbExecutor = db) {
   const [result] = await tx
@@ -14,7 +15,7 @@ export async function findOficioByAssinafyDocumentId(documentId: string, tx: DbE
 export async function updateAssinafyStatus(
   oficioId: number,
   status: string,
-  additionalFields?: Record<string, unknown>,
+  additionalFields?: AssinafyStatusPatch,
   tx: DbExecutor = db,
 ) {
   const [result] = await tx

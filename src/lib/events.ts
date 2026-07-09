@@ -20,35 +20,59 @@ export type NotificationEntity = 'activity' | 'legal_consultation' | 'email_tria
 
 // ─── Per-event-type metadata shapes ───────────────────────────────────
 
-interface ActivityCompletedMetadata {
+export interface ActivityCompletedMetadata {
   activityId: number;
   assigneeId: number | null;
   associateId: number | null;
   completedAt: string;
 }
 
-interface ActivityAssignedMetadata {
+export interface ActivityAssignedMetadata {
   activityId: number;
   previousAssigneeId: number | null;
 }
 
-interface SlaWarningMetadata {
+export interface SlaWarningMetadata {
   consultationId: number;
   slaDueDate: string;
 }
 
-interface OficioStatusChangedMetadata {
+export interface OficioStatusChangedMetadata {
   previousStatus: string | null;
   newStatus: string;
   documentId: string;
 }
 
-type NotificationMetadataByType = {
+/**
+ * Events that currently carry no structured metadata at emit sites.
+ * Using `null` (or omitting the field) is the supported contract.
+ */
+export type EmptyNotificationMetadata = null;
+
+/**
+ * Map of notification event type → typed metadata.
+ * Every `NotificationEventType` is covered so emit sites cannot pass open bags.
+ */
+export type NotificationMetadataByType = {
   'activity.completed': ActivityCompletedMetadata;
   'activity.assigned': ActivityAssignedMetadata;
   'legal_consultation.sla_warning': SlaWarningMetadata;
   'oficio.status_changed': OficioStatusChangedMetadata;
+  // No structured metadata today — call sites pass null/omit only
+  'legal_consultation.answered': EmptyNotificationMetadata;
+  lgpd_request: EmptyNotificationMetadata;
+  email_triage_pending: EmptyNotificationMetadata;
 };
+
+export type NotificationMetadataFor<T extends NotificationEventType> =
+  NotificationMetadataByType[T];
+
+/** Union of all structured metadata shapes (excludes empty/null-only event types). */
+export type NotificationMetadata =
+  | ActivityCompletedMetadata
+  | ActivityAssignedMetadata
+  | SlaWarningMetadata
+  | OficioStatusChangedMetadata;
 
 export interface NotificationEventPayload {
   actorId: number | null;
@@ -58,15 +82,22 @@ export interface NotificationEventPayload {
   title: string;
   message: string;
   href?: string | null;
-  metadata?: Record<string, unknown> | null;
+  /** Structured metadata when known; null/undefined when the event has no payload bag. */
+  metadata?: NotificationMetadata | null;
   dedupeKey?: string | null;
 }
+
+/** Payload for a specific event type with correctly typed metadata. */
+export type TypedNotificationEventPayload<T extends NotificationEventType> = Omit<
+  NotificationEventPayload,
+  'metadata'
+> & {
+  metadata?: NotificationMetadataFor<T> | null;
+};
 
 interface EmitEventOptions {
   tx?: DbExecutor;
 }
-
-
 
 interface ActivityCompletedPayload {
   activityId: number;
@@ -79,7 +110,7 @@ interface ActivityCompletedPayload {
 
 export async function emitEvent<T extends NotificationEventType>(
   type: T,
-  payload: Omit<NotificationEventPayload, 'metadata'> & { metadata?: (T extends keyof NotificationMetadataByType ? NotificationMetadataByType[T] : Record<string, unknown>) | null },
+  payload: TypedNotificationEventPayload<T>,
   options: EmitEventOptions = {},
 ) {
   assertValidPayload(type, payload as NotificationEventPayload);

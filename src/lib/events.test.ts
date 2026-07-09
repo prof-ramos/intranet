@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Logger } from '@/lib/logger';
-import { emitActivityCompleted, emitEvent } from './events';
+import {
+  emitActivityCompleted,
+  emitEvent,
+  type ActivityCompletedMetadata,
+  type OficioStatusChangedMetadata,
+} from './events';
 
 const createNotificationFromEvent = vi.fn();
 
@@ -79,6 +84,31 @@ describe('events', () => {
     );
   });
 
+  it('accepts typed oficio.status_changed metadata', async () => {
+    const metadata: OficioStatusChangedMetadata = {
+      previousStatus: 'pending_signature',
+      newStatus: 'partially_signed',
+      documentId: 'doc-1',
+    };
+
+    await emitEvent('oficio.status_changed', {
+      actorId: null,
+      recipientId: 2,
+      entityType: 'oficio',
+      entityId: 7,
+      title: 'Status alterado',
+      message: 'Ofício alterado.',
+      metadata,
+      dedupeKey: 'oficio.status_changed:7:partially_signed',
+    });
+
+    expect(createNotificationFromEvent).toHaveBeenCalledWith(
+      'oficio.status_changed',
+      expect.objectContaining({ metadata }),
+      undefined,
+    );
+  });
+
   it('supports the activity-completed compatibility emitter used by activities service', async () => {
     await emitActivityCompleted({
       activityId: 12,
@@ -88,6 +118,13 @@ describe('events', () => {
       associateId: 20,
       completedAt: '2026-05-13T12:00:00.000Z',
     });
+
+    const expectedMetadata: ActivityCompletedMetadata = {
+      activityId: 12,
+      assigneeId: 9,
+      associateId: 20,
+      completedAt: '2026-05-13T12:00:00.000Z',
+    };
 
     expect(createNotificationFromEvent).toHaveBeenCalledWith(
       'activity.completed',
@@ -99,12 +136,7 @@ describe('events', () => {
         title: 'Atividade concluída',
         message: 'A atividade "Fechar pendencia" foi concluída.',
         href: '/app/atividades',
-        metadata: {
-          activityId: 12,
-          assigneeId: 9,
-          associateId: 20,
-          completedAt: '2026-05-13T12:00:00.000Z',
-        },
+        metadata: expectedMetadata,
         dedupeKey: 'activity.completed:12:4',
       },
       undefined,
