@@ -17,16 +17,16 @@ ou instrução de migration sem atualizar esta matriz e o ADR correspondente.
 
 ## Matriz
 
-| Ambiente | Banco oficial | Dados | Uso permitido | Migration |
-|---|---|---|---|---|
-| Produção | Neon `main`, endpoint `ep-empty-cake-ac26vl6w` | reais | runtime Vercel, smoke controlado, operação ASOF | manual via `ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate` após backup, janela e rollback |
-| Staging | Neon branch dedicado e nomeado, quando provisionado | snapshot controlado ou seed representativo | validação pré-produção, ensaio de migrations e smoke não destrutivo | `npm run db:migrate` com `DATABASE_MIGRATION_ENV=staging`, `ALLOW_STAGING_MIGRATIONS=true` e `DATABASE_STAGING_HOST` igual ao host direto oficial; nunca usar secrets de produção |
-| Preview PR | branch Neon descartável ou sem banco real | sintético/anônimo | build, UI e verificações de PR | somente em banco descartável; Preview não herda envs gerais de produção |
-| Dev diário | Postgres local `asof_intranet` | seed sintético robusto, sem PII real | desenvolvimento normal, refactors, UI, testes manuais comuns | `npm run db:migrate` |
-| Dev realista restrito | Neon `vercel-dev` ou clone local autorizado | PII real copiada de produção | bugs de volume, importação, relatórios, performance e filtros dependentes de dados reais | controlada; não aplicar migration direto na branch Neon `main` |
-| Integração local | Postgres local `asof_intranet_test` | sintético | testes DML/integration | `npm run db:migrate`, bloqueado contra host remoto por padrão |
-| E2E local/CI | Postgres local `asof_test` | sintético recriado | Playwright em `127.0.0.1:3001` | recriado pelo `e2e/global-setup.ts` |
-| Smoke produção | produção live | reais + registros `SMOKE_*` temporários | validação pós-deploy em janela controlada com conta dedicada `smoke-admin@asof.local` | sem migration durante o smoke; cria dados marcados, limpa dados operacionais e preserva auditoria |
+| Ambiente              | Banco oficial                                       | Dados                                      | Uso permitido                                                                            | Migration                                                                                                                                                                         |
+| --------------------- | --------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Produção              | Neon `main`, endpoint `ep-empty-cake-ac26vl6w`      | reais                                      | runtime Vercel, smoke controlado, operação ASOF                                          | manual via `ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate` após backup, janela e rollback                                                                                   |
+| Staging               | Neon branch dedicado e nomeado, quando provisionado | snapshot controlado ou seed representativo | validação pré-produção, ensaio de migrations e smoke não destrutivo                      | `npm run db:migrate` com `DATABASE_MIGRATION_ENV=staging`, `ALLOW_STAGING_MIGRATIONS=true` e `DATABASE_STAGING_HOST` igual ao host direto oficial; nunca usar secrets de produção |
+| Preview PR            | branch Neon descartável ou sem banco real           | sintético/anônimo                          | build, UI e verificações de PR                                                           | somente em banco descartável; Preview não herda envs gerais de produção                                                                                                           |
+| Dev diário            | Postgres local `asof_intranet`                      | seed sintético robusto, sem PII real       | desenvolvimento normal, refactors, UI, testes manuais comuns                             | `npm run db:migrate`                                                                                                                                                              |
+| Dev realista restrito | Neon `vercel-dev` ou clone local autorizado         | PII real copiada de produção               | bugs de volume, importação, relatórios, performance e filtros dependentes de dados reais | controlada; não aplicar migration direto na branch Neon `main`                                                                                                                    |
+| Integração local      | Postgres local `asof_intranet_test`                 | sintético                                  | testes DML/integration                                                                   | `npm run db:migrate`, bloqueado contra host remoto por padrão                                                                                                                     |
+| E2E local/CI          | Postgres local `asof_test`                          | sintético recriado                         | Playwright em `127.0.0.1:3001`                                                           | recriado pelo `e2e/global-setup.ts`                                                                                                                                               |
+| Smoke produção        | produção live                                       | reais + registros `SMOKE_*` temporários    | validação pós-deploy em janela controlada com conta dedicada `smoke-admin@asof.local`    | sem migration durante o smoke; cria dados marcados, limpa dados operacionais e preserva auditoria                                                                                 |
 
 ## Produção E Pré-Go-Live
 
@@ -72,13 +72,33 @@ o `main`, crie um branch backup copy-on-write e um dump local comprimido. Após 
 validação do novo estado, mantenha apenas backups necessários e nunca commite
 dumps.
 
+**Branch protection (`protected: true`)** só está nos **planos pagos** Neon
+(até 5 branches protegidas). No Free a API recusa proteger `main`. Mitigações:
+disciplina no console, branch COW antes de migrate e dump Nível 1
+(`scripts/backup-neon-level1.sh`) fora do repo (ex.: `~/asof-intranet-backups`,
+diretório `700`).
+
+`neonctl branches create --output json` pode imprimir `connection_uris` com
+senha — não colar em chat/PR; capturar com `connection-string` em variável de
+ambiente e mascarar logs.
+
+#### Registro operacional 2026-07-09 (pós-merge #311 / smoke)
+
+| Ação              | Resultado                                                                                 |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| Proteger `main`   | Bloqueado pelo plano Free                                                                 |
+| Branch COW        | `backup/post-audit-311-20260709T1748Z` (`br-rapid-mode-ackam8op`, parent LSN `0/7F82478`) |
+| Dump Nível 1      | `~/asof-intranet-backups/asof-intranet-*.sql.gz` (modo `600`)                             |
+| Limpeza `SMOKE_*` | Zerado em `main` (activities/associates/consultas/ofícios)                                |
+
 ### Governança pós-reset (ADR 017)
 
 Após o reset ADR 016, a área Neon foi limpa: `vercel-dev` foi resetado para
 `main` (mantido como slot "Dev realista restrito"); `dev/migration-test` e
 `backup/pre-reset-20260618T191453Z` foram excluídos; `backup/post-clean-main`
-permanece como rollback net até o go-live estabilizar. Restam 3 branches no
-projeto `intranet-db` (limite Free Tier: 10).
+permanece como rollback net até o go-live estabilizar. Inventário vivo de
+branches muda com o tempo (limite Free: 10); listar com
+`neonctl branches list --project-id long-leaf-97822199`.
 
 Rotação de credenciais pendente no console Neon (a org é "managed by Vercel",
 o que restringe `neonctl`/API para operações de projeto):
