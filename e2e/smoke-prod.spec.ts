@@ -147,25 +147,27 @@ test('3. Cadastro de Oficiais — criar oficial e validar perfil', async ({ page
   await page.fill('input[name="fullName"]', ASSOCIADO_NAME);
   // Submeter via server action (form action) — aguardar redirect ao perfil criado
   await page.click('button[type="submit"]');
-  // Fail fast with form error text if create stays on /novo (e.g. empty-PII hash collision)
+  // Fail-fast: only role=alert (form error). Do NOT match .text-red-* — the
+  // "Remover" dependente button uses text-red-700 and would false-positive.
   const createResult = await Promise.race([
     page.waitForURL(/\/app\/associados\/\d+$/, { timeout: 30_000 }).then(() => 'ok' as const),
     page
-      .locator('[role="alert"], .alert-error, .text-error, .text-red-600, .text-red-700')
+      .locator('form [role="alert"]')
       .first()
       .waitFor({ state: 'visible', timeout: 30_000 })
       .then(() => 'form-error' as const),
   ]).catch(() => 'timeout' as const);
 
   if (createResult !== 'ok') {
-    const errText = (
+    const alertText = (
       await page
-        .locator('main')
+        .locator('form [role="alert"]')
+        .first()
         .innerText()
         .catch(() => '')
-    ).slice(0, 400);
+    ).slice(0, 300);
     throw new Error(
-      `Smoke create oficial failed (${createResult}). url=${page.url()} body=${errText}`,
+      `Smoke create oficial failed (${createResult}). url=${page.url()} alert=${alertText || '(none)'}`,
     );
   }
 
