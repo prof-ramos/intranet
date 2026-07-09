@@ -5,7 +5,7 @@ import {
   findAssociateById,
   updateAssociateById,
   insertAssociate,
-  createDependent,
+  createDependentsBatch,
   findAssociateByCpfHash,
   findAssociateBySiapeHash,
   findAssociateByPrimaryEmailHash,
@@ -29,6 +29,7 @@ import { logAuditAction, logDataAccess } from '@/lib/audit/service';
 import { buildPiiPatch, decryptAssociatePii } from './pii-mapping';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { emptyToNull } from '@/lib/utils/strings';
+import { toJoinedAtTimestamp } from './form-helpers';
 
 type FsEnum = (typeof fsEnum.enumValues)[number];
 type AsEnum = (typeof asEnum.enumValues)[number];
@@ -249,6 +250,7 @@ function getChangedWebhookSafeFields(
 }
 
 export async function updateAssociateData(input: UpdateAssociateInput) {
+  // Normalização canônica de datas de domínio: só aqui (não no action).
   const values: UpdateAssociateValues = {
     fullName: input.fullName,
     secondaryEmail: input.secondaryEmail,
@@ -271,11 +273,8 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
     inaugurationDate: input.inaugurationDate,
     retirementDate: input.retirementDate,
     cancellationDate: input.cancellationDate,
-    leaveDate: input.leaveDate,
-    joinedAt: input.joinedAt,
     ceocMember: input.ceocMember,
     caocMember: input.caocMember,
-    numberOfDependents: input.numberOfDependents,
     ...buildPiiPatch({
       cpf: input.cpf,
       rg: input.rg,
@@ -286,6 +285,16 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
       address: input.address,
     }),
   };
+
+  if (input.leaveDate !== undefined) {
+    values.leaveDate = emptyToNull(input.leaveDate);
+  }
+  if (input.joinedAt !== undefined) {
+    values.joinedAt = toJoinedAtTimestamp(input.joinedAt);
+  }
+  if (input.numberOfDependents !== undefined) {
+    values.numberOfDependents = input.numberOfDependents;
+  }
 
   if (input.functionalStatus !== undefined) {
     if (input.functionalStatus !== null && !isFsEnum(input.functionalStatus)) {
@@ -339,9 +348,6 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
     }
   }
   if (input.internalNotes !== undefined) values.internalNotes = input.internalNotes;
-  if (input.joinedAt !== undefined) values.joinedAt = toJoinedAtTimestamp(input.joinedAt);
-  if (input.leaveDate !== undefined) values.leaveDate = emptyToNull(input.leaveDate);
-  if (input.numberOfDependents !== undefined) values.numberOfDependents = input.numberOfDependents;
 
   await db.transaction(async (tx) => {
     const current = await findAssociateById(input.id, tx);
@@ -387,15 +393,6 @@ export type CreateAssociateInput = Partial<AssociateFields> & {
   /** Dependentes criados atomicamente com o oficial. */
   dependents?: CreateAssociateDependentInput[];
 };
-
-/** Normaliza date-only (YYYY-MM-DD) para timestamptz ISO usado em `joinedAt`. */
-export function toJoinedAtTimestamp(value: string | null | undefined): string | null {
-  const raw = emptyToNull(value);
-  if (!raw) return null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return `${raw}T00:00:00Z`;
-  return raw;
-}
-
 
 /**
  * Cria um novo associado criptografando PII, validando unicidade por blind
@@ -512,10 +509,7 @@ export async function createAssociateData(input: CreateAssociateInput): Promise<
     };
 
     const id = await insertAssociate(values, tx);
-
-    for (const dep of dependents) {
-      await createDependent({ associateId: id, name: dep.name, relationship: dep.relationship }, tx);
-    }
+    await createDependentsBatch(id, dependents, tx);
 
     return id;
   });

@@ -21,6 +21,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(dirname, './src'),
+      // Same as unit config: finance/activities/webhooks pull modules that
+      // import `server-only` (validation, secrets, config). Without the alias,
+      // dynamic `import('./service')` in integration smoke tests throws.
+      'server-only': path.resolve(dirname, './src/__mocks__/server-only.ts'),
     },
   },
 });

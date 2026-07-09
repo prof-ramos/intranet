@@ -51,25 +51,7 @@ de staging/dev/preview.
 ## Recomendado Antes Do Go-Live
 
 - [x] Documentos fora do go-live: modulo de upload/download de arquivos legados nao entra no dia 1 (ADR 008). Storage de objetos sera frente separada pos-estreia.
-- [ ] Avaliar Papra como DMS externo para Documentos da ASOF, mantendo Neon/PostgreSQL como banco transacional da intranet — frente pos-estreia, nao bloqueante para operacao atual; ADR 012 aceita; implementacao/spike rastreada pela issue: https://github.com/prof-ramos/intranet/issues/116.
-  - [ ] Subir prova de conceito self-hosted do Papra em VPS isolada, com banco, storage e auth/admin separados da intranet.
-  - [ ] Restringir exposicao da VPS: Papra nao deve ser interface publica; API/endpoint apenas para a intranet e administracao via VPN ou allowlist de IP, com TLS.
-  - [ ] Definir backend de storage privado para documentos do Papra com software open source e self-hosted, preferencialmente S3 compativel (ex: MinIO ou Garage); evitar filesystem local simples e servico proprietario gerenciado na POC.
-  - [ ] Validar upload manual pela intranet como canal operacional inicial.
-  - [ ] Validar ingestao por email/webhook apenas como entrada tecnica para triagem, sem criar Documento valido fora da autorizacao/auditoria da intranet.
-  - [ ] Validar OCR/extracao de conteudo, busca full-text contextual, tags, propriedades customizadas e auditoria basica.
-  - [ ] Confirmar API/SDK/webhooks e capacidade de integrar com a intranet como fonte canônica de autorização, sem expor documentos sensiveis publicamente.
-  - [ ] Integrar a intranet ao Papra apenas por chamadas server-to-server, com token de servico/API key de escopo minimo guardado em ambiente server-side.
-  - [ ] Validar experiencia de uso em que a intranet lista, audita e medeia acesso aos Documentos, sem exigir navegacao operacional direta no Papra.
-  - [ ] Separar auditoria de negocio e logs tecnicos da integracao: a intranet registra quem acessou qual Documento e os logs tecnicos registram chamadas ao Papra com `requestId`, acao e resultado, sem conteudo sensivel.
-  - [ ] Validar busca contextual por módulo/entidade; busca global de Documentos fica fora da POC inicial.
-  - [ ] Dividir ownership de metadados: a intranet e canonica para metadados de dominio/autorizacao (`papraDocumentId`, tipo, entidade relacionada opcional, autor, datas, tags internas e status) e o Papra e canonico para metadados tecnicos do arquivo (MIME, tamanho, hash, OCR e timestamps tecnicos).
-  - [ ] Validar Documentos Vinculados e Documentos de Acervo, sem forcar vinculos artificiais.
-  - [ ] Definir tratamento de falha parcial: se a intranet salvar metadados locais e o upload no Papra falhar, o registro fica em estado explicito de falha pendente (`upload_failed` ou `pending_external_sync`), visivel apenas para `admin`/`secretaria`, com retry manual; Documento valido nao nasce pela metade.
-  - [ ] Validar ciclo de vida com arquivamento/desativacao como fluxo normal e expurgo fisico apenas como excecao LGPD/erro grave auditada e restrita a `admin`.
-  - [ ] Definir baseline operacional da POC: backup diario do banco do Papra por 14 dias, snapshot/versionamento do storage por 30 dias e restore simples testado ao menos uma vez em ambiente separado.
-  - [ ] Documentar a criptografia em repouso fornecida pelo stack/storage escolhido e seus limites; a POC nao adiciona camada extra propria de criptografia.
-  - [ ] Revisar implicacoes de LGPD, backup, retencao, exportacao e licencas open source (incluindo AGPL-3.0 quando aplicavel) antes de qualquer uso em producao.
+- [x] **Papra / DMS externo — decisão de não seguir (2026-07-08):** POC Papra e subitens de integração **não serão necessários** no caminho operacional da intranet. ADR 012 e a issue #116 permanecem como registro histórico; não reabrir como gate de go-live nem como checklist ativo. Se documentos reentrarem no roadmap, será decisão de produto nova (stack a definir), não retomada automática da POC Papra.
 - [x] Rodar `npm audit` — `npm audit --production` reporta 1 vulnerabilidade transitiva moderada (`protobufjs` via `@google/genai`); dev audit adicional: esbuild (Windows-only), js-yaml, undici (Next.js transitiva). Nenhuma com fix sem breaking change imediato. Monitorar advisories.
 - [x] E2E local contra `asof_test` aprovado em 2026-05-26 (`npm run test:e2e`, 52 testes). E2E em staging dedicado nao e gate do dia 1 (ADR 009); avaliar pos-estreia se Neon branch staging for adotado.
 - [x] Plano de rollback registrado em ADR 010: Neon PITR + branch de restauracao como mecanismo primario, com gatilho objetivo de 30 min em fluxos criticos. Pre-janela exige anotar timestamp/LSN e confirmar `history_retention` Neon suficiente.
@@ -168,12 +150,17 @@ _Nota: `audit_log` e preservado (ADR 009)._
 - **Infra:** `engines.node >=20` declarado em `package.json` (#276); MCP servers (context7 + postgres) formalizados no repo (#279); lint-staged + pre-push `validate:quick` via husky (#270); migrations 0017/0018 corrigidas com `IF NOT EXISTS` em `ALTER TYPE ... ADD VALUE` (#272). Histórico Drizzle em `drizzle/postgres/`: 30 arquivos SQL (baseline `0000` … `0029_pagination_count_index.sql`).
 - **Testes:** 1598 testes (+63 desde 2026-06-23), 170 arquivos; cobertura para outbox atomicidade (#265), ErrorBoundary + error.tsx (#273), relatórios (#275), integration tests (oficios, financeiro, webhooks).
 - **Cadastro × legado (`asof_final_limpo.csv`, 39 campos de negócio):** auditoria de paridade schema/forms/perfil. Quase todos os campos existem no modelo; dependentes e convênios vivem em tabelas filhas + UI no perfil. **Fax fica fora de propósito** — `transformLegacyRecord` já ignora a coluna; não quebra migração CSV→intranet (perda intencional, ~3,5% das linhas, muitas ruidosas).
-- **Seed sintético local (`npm run db:seed:dev`):** factories em `scripts/seed-dev-data.ts` — perfis de endereço coerentes, CPF/RG sintéticos válidos, `whatsapp`, `cancellationDate` só para ex-associados, `numberOfDependents` alinhado a linhas em `dependents`.
-- **Lacunas restantes de paridade (não bloqueantes de go-live, backlog de cadastro):**
-  - [ ] `joinedAt` (Data de Adesão) no formulário criar/editar — existe no schema, import e timeline do perfil; ausente na UI de edição.
-  - [ ] `Data de Licença` como campo próprio — hoje só `functionalStatus = em_licenca` (flag legada `Licença=1`); ~45 linhas no CSV com data.
-  - [ ] `classPattern` no `transformLegacyRecord` — form/schema têm o campo; o transform de import legado ainda não grava “Classe e Padrão”.
-  - [ ] Dependentes/convênios no fluxo de criar oficial (hoje só após o cadastro, no perfil).
-- Gates locais revalidados: `lint` ✓ · `typecheck` ✓ · `test` 1606/1606 ✓ (171 files) · `test:db` 5/5 ✓ · `build` ✓ (2026-07-08).
+- **Seed sintético local (`npm run db:seed:dev` em `scripts/seed-dev.ts`):** CPF/RG sintéticos, `whatsapp`, endereço residencial DF coerente, `cancellationDate` só em ex-associados (com `joinedAt`), `numberOfDependents` alinhado a linhas em `dependents` via `dependentCountForIndex`.
+- **Cadastro completo (Coordenador/Secretaria) — 2026-07-08:**
+  - [x] `joinedAt` (Data de Adesão) nos forms criar/editar + perfil administrativo (normalização canônica no service).
+  - [x] `leaveDate` / Data de Licença — coluna `leave_date` (migration `0030`), form, perfil, relatórios e import legado.
+  - [x] `classPattern` mapeado em `transformLegacyRecord` a partir de “Classe e Padrão”.
+  - [x] Dependentes no fluxo de **criar** oficial (linhas dinâmicas; batch insert atômico). Linhas parciais falham com erro explícito. Convênios permanecem no perfil.
+  - Fax continua fora de propósito (não bloqueia migração).
+- Gates desta frente (2026-07-08): unitários focados de `form-helpers`, `service` e
+  `migrate-legacy-transforms` passam localmente no momento desta frente
+  (`npx vitest run src/lib/associates/form-helpers.test.ts src/lib/associates/service.test.ts scripts/migrate-legacy-transforms.test.ts`).
+  Contagem exata e suite completa (`lint`/`typecheck`/`test`/`test:db`/`build`)
+  devem ser revalidadas na janela de PR — não reexecutadas integralmente aqui.
 
 Este arquivo substitui as pendencias antigas de smoke de tempo real e reconciliacao de projetos de banco. Elas nao sao mais caminho de go-live.

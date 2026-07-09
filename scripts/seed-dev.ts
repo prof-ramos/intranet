@@ -5,12 +5,14 @@ import {
   activities,
   admins,
   associates,
+  dependents,
   lawyers,
   legalConsultations,
   monthlyPayments,
   oficios,
   type NewActivity,
   type NewAssociate,
+  type NewDependent,
   type NewLegalConsultation,
   type NewMonthlyPayment,
   type NewOfficialLetter,
@@ -177,13 +179,24 @@ async function ensureDevLawyers() {
     .where(inArray(lawyers.email, values.map((lawyer) => lawyer.email)));
 }
 
+/** Contagem canônica de dependentes (cache denormalizado + linhas em `dependents`). */
+function dependentCountForIndex(index: number): number {
+  if (index % 7 === 0) return 0;
+  if (index % 5 === 0) return 3;
+  if (index % 3 === 0) return 2;
+  return 1;
+}
+
 function buildAssociates(): NewAssociate[] {
   return Array.from({ length: 120 }, (_, index) => {
     const seq = index + 1;
     const firstName = pick(firstNames, index);
     const [assignment, city, country] = pick(assignments, index);
     const [bCity, bState] = pick(brazilianCities, index * 3 + 1);
-    const isAssociated = index < 82;
+    // index < 82: já teve vínculo; % 11 === 0 → ex-associado (cancelou)
+    const everAssociated = index < 82;
+    const isCancelled = everAssociated && index % 11 === 0;
+    const isAssociated = everAssociated && !isCancelled;
     const functionalStatus =
       index % 17 === 0
         ? FUNCTIONAL_STATUSES[0]
@@ -193,11 +206,15 @@ function buildAssociates(): NewAssociate[] {
             ? FUNCTIONAL_STATUSES[2]
             : FUNCTIONAL_STATUSES[3];
     const isRetired = functionalStatus === 'aposentado';
-    const isCancelled = !isAssociated && index % 13 === 0;
     const birthYear = 1965 - (index % 25) - (index % 7 === 0 ? 10 : 0);
     const admissionYear = birthYear + 28 + (index % 10);
     const inaugurationYear = admissionYear;
-    const contributionStatus = isAssociated && index % 5 !== 0 ? 'em_dia' : 'inadimplente';
+    const joinYear = 2010 + (index % 13);
+    const joinedAt = everAssociated ? `${joinYear}-03-10T12:00:00Z` : null;
+    const contributionStatus =
+      isAssociated && index % 5 !== 0 ? 'em_dia' : 'inadimplente';
+    const neighborhood = pick(neighborhoods, index);
+    const street = pick(streetNames, index);
 
     return {
       sourceRowNumber: `${DEV_SOURCE_PREFIX}${String(seq).padStart(3, '0')}`,
@@ -216,12 +233,13 @@ function buildAssociates(): NewAssociate[] {
       birthDate: fmtDate(birthYear, (index % 12) + 1, (index % 28) + 1),
       birthCity: bCity,
       birthState: bState,
-      address: `${pick(streetNames, index)}, apto ${(index % 10) + 1}${index % 3 === 0 ? '02' : '00'} — ${pick(neighborhoods, index)}`,
-      addressState: bState === 'DF' ? 'DF' : pick(['DF', 'SP', 'RJ', 'MG'], index * 3),
-      neighborhood: pick(neighborhoods, index),
+      address: `${street}, apto ${(index % 10) + 1}${index % 3 === 0 ? '02' : '00'} — ${neighborhood}`,
+      // All streetNames/ceps/neighborhoods in this seed are Brasília/DF — keep addressState as DF.
+      addressState: 'DF',
+      neighborhood,
       zipCode: pick(ceps, index),
       maritalStatus: pick(['casado', 'solteiro', 'divorciado', 'casado', 'casado'], index),
-      numberOfDependents: index % 7 === 0 ? 0 : index % 5 === 0 ? 3 : index % 3 === 0 ? 2 : 1,
+      numberOfDependents: dependentCountForIndex(index),
       assignment,
       assignmentStartDate: `${2020 + (index % 6)}-${String((index % 12) + 1).padStart(2, '0')}-15`,
       locationCity: city,
@@ -229,7 +247,13 @@ function buildAssociates(): NewAssociate[] {
       admissionDate: fmtDate(admissionYear, (index % 12) + 1, 1),
       inaugurationDate: fmtDate(inaugurationYear, Math.min((index % 12) + 1, 11), 15),
       retirementDate: isRetired ? fmtDate(2021 + (index % 4), (index % 12) + 1, 1) : null,
-      cancellationDate: isCancelled ? fmtDate(2020 + (index % 4), (index % 12) + 1, 1) : null,
+      leaveDate:
+        functionalStatus === 'em_licenca'
+          ? fmtDate(2023 + (index % 2), (index % 12) + 1, 1)
+          : null,
+      cancellationDate: isCancelled
+        ? fmtDate(joinYear + 2 + (index % 3), (index % 12) + 1, 1)
+        : null,
       missionType: pick(['permanente', 'transitoria', 'permanente', 'permanente'], index),
       careerOrigin: pick(['brasil', 'brasil', 'brasil', 'exterior', 'outros_orgaos'], index),
       ceocMember: index % 13 === 0,
@@ -240,9 +264,23 @@ function buildAssociates(): NewAssociate[] {
       contributionStatus,
       associationCategory: isAssociated ? pick(['mensalista', 'anual'], index) : null,
       paymentMethod: pick(PAYMENT_METHODS, index),
-      joinedAt: isAssociated ? `${2010 + (index % 13)}-03-10T12:00:00Z` : null,
+      joinedAt,
       internalNotes: 'Registro sintético de desenvolvimento. Não representa pessoa real.',
     };
+  });
+}
+
+function buildDependents(
+  associateRows: Array<{ id: number; fullName: string }>,
+): NewDependent[] {
+  return associateRows.flatMap((row, index) => {
+    const count = dependentCountForIndex(index);
+    if (count === 0) return [];
+    return Array.from({ length: count }, (_, depIndex) => ({
+      associateId: row.id,
+      name: `Dependente ${depIndex + 1} de ${row.fullName.split(' ')[0]}`,
+      relationship: pick(['cônjuge', 'filho(a)', 'filho(a)', 'pai/mãe'] as const, index + depIndex),
+    }));
   });
 }
 
@@ -299,6 +337,11 @@ async function main() {
         associationStatus: associates.associationStatus,
         paymentMethod: associates.paymentMethod,
       });
+
+    const dependentRows = buildDependents(insertedAssociates);
+    if (dependentRows.length > 0) {
+      await tx.insert(dependents).values(dependentRows);
+    }
 
     await tx.insert(monthlyPayments).values(buildPayments(insertedAssociates, adminId));
 
