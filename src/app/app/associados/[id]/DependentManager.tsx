@@ -153,11 +153,18 @@ interface HealthAgreementManagerProps {
   items: HealthAgreementViewItem[];
 }
 
+// ⚡ Bolt: Cache Intl.DateTimeFormat instance to avoid expensive object creation on every render cycle.
+const shortDateFormatter = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+
 function formatDateShort(dateStr: string | null): string {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
   if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return shortDateFormatter.format(d);
 }
 
 export function HealthAgreementManager({ associateId, items }: HealthAgreementManagerProps) {
