@@ -86,6 +86,7 @@ quanto nos logs. Logs devem continuar sem PII.
 - `src/app/api/webhooks/assinafy/route.ts`
 - `src/app/api/webhooks/assinafy/route.test.ts`
 - `src/lib/assinafy/service.integration.test.ts`
+- `src/lib/oficios/repository.ts` (se necessário para a query com row-locking)
 - `advisor-plans/README.md` apenas para status
 
 **Fora do escopo**:
@@ -130,7 +131,7 @@ Mova o claim para o início da transação existente. Se não for adquirido,
 retorne `duplicate`. Se adquirido:
 
 1. mapeie/valide o tipo do evento;
-2. encontre o Ofício usando o mesmo executor;
+2. encontre o Ofício usando o mesmo executor com bloqueio de linha (`SELECT ... FOR UPDATE` / `.for('update')` no Drizzle) para evitar condições de corrida de múltiplos webhooks atualizando o mesmo Ofício;
 3. atualize o status Assinafy;
 4. emita o evento de domínio;
 5. crie notificações;
@@ -145,7 +146,8 @@ faz log sanitizado e retorna `failed`. Audite somente `processed`, após commit,
 usando `db` padrão.
 
 **Verificar**: unit tests cobrem os cinco estados e confirmam o executor
-transacional em todas as escritas.
+transacional em todas as escritas com bloqueio de linha no Ofício. O teste de
+integração com PG real deve cobrir chamadas concorrentes com IDs distintos disputando o mesmo Ofício.
 
 ### Etapa 3: Remover persistência de nonce da rota
 
