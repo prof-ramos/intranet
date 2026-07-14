@@ -296,13 +296,25 @@ function getChangedAuditFields(
     }
   }
 
-  const decrypted = decryptAssociatePii(current);
-  for (const field of PII_AUDIT_FIELDS) {
-    if (!Object.prototype.hasOwnProperty.call(input, field) || input[field] === undefined) continue;
-    if (
-      normalizePiiComparableValue(decrypted[field]) !==
-      normalizePiiComparableValue(input[field] as string | null | undefined)
-    ) {
+  const suppliedPiiFields = PII_AUDIT_FIELDS.filter(
+    (field) => Object.prototype.hasOwnProperty.call(input, field) && input[field] !== undefined,
+  );
+  if (suppliedPiiFields.length === 0) return [...changedFields];
+
+  try {
+    const decrypted = decryptAssociatePii(current);
+    for (const field of suppliedPiiFields) {
+      if (
+        normalizePiiComparableValue(decrypted[field]) !==
+        normalizePiiComparableValue(input[field] as string | null | undefined)
+      ) {
+        changedFields.add(field);
+      }
+    }
+  } catch {
+    // Audit comparison is best-effort: when legacy PII cannot be decrypted, record only
+    // the canonical fields supplied by the caller and let the mutation proceed.
+    for (const field of suppliedPiiFields) {
       changedFields.add(field);
     }
   }

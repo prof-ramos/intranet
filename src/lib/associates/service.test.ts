@@ -316,6 +316,26 @@ describe('updateAssociateData', () => {
     });
   });
 
+  it('does not decrypt stored PII for an update containing only common fields', async () => {
+    mockFindAssociateById.mockResolvedValue({
+      ...baseAssociate,
+      cpf: null,
+      cpfCiphertext: 'invalid-ciphertext',
+    });
+
+    await expect(
+      updateAssociateData({ id: 1, fullName: 'Alice Silva' }, 7),
+    ).resolves.toBeUndefined();
+    expect(mockUpdateAssociateById).toHaveBeenCalled();
+    expect(mockLogAuditAction).toHaveBeenCalledWith({
+      adminId: 7,
+      action: 'associate_updated',
+      entityType: 'associate',
+      entityId: 1,
+      metadata: { changedFields: ['fullName'] },
+    });
+  });
+
   it('audits PII changes by canonical names without values or storage-field names', async () => {
     await updateAssociateData(
       {
@@ -343,6 +363,26 @@ describe('updateAssociateData', () => {
     expect(serialized).not.toContain('enc:v2');
     expect(serialized).not.toContain('hash-');
     expect(serialized).not.toContain('new@example.com');
+  });
+
+  it('conservatively audits supplied PII when stored PII cannot be decrypted', async () => {
+    mockFindAssociateById.mockResolvedValue({
+      ...baseAssociate,
+      cpf: null,
+      cpfCiphertext: 'invalid-ciphertext',
+    });
+
+    await expect(
+      updateAssociateData({ id: 1, fullName: 'Alice', primaryEmail: 'new@example.com' }, 7),
+    ).resolves.toBeUndefined();
+    expect(mockUpdateAssociateById).toHaveBeenCalled();
+    expect(mockLogAuditAction).toHaveBeenCalledWith({
+      adminId: 7,
+      action: 'associate_updated',
+      entityType: 'associate',
+      entityId: 1,
+      metadata: { changedFields: ['primaryEmail'] },
+    });
   });
 
   it('does not audit or emit an event for a proven no-op update', async () => {
