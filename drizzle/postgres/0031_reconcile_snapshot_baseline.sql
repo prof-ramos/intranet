@@ -1,0 +1,20 @@
+-- Baseline-only migration: no database changes are intentionally applied here.
+--
+-- Drizzle Kit generated the schema delta between the stale 0024 snapshot and
+-- the current TypeScript schema. Every generated statement was reconciled
+-- against migrations that are already present in the journal:
+--
+-- - domain_event_entity_type/activity and the six activity domain-event values
+--   were applied by 0028_activity_domain_events.sql;
+-- - rebuilding association_status and contribution_status with their current
+--   values and defaults was applied safely by 0025_officials_domain_statuses.sql;
+-- - associates.retirement_date was added by
+--   0026_add_associate_retirement_date.sql;
+-- - associates.leave_date was added by 0030_add_associate_leave_date.sql;
+-- - idx_associates_name_lower_trgm was created by
+--   0027_add_associates_name_translated_trgm_index.sql.
+--
+-- Migration 0029_pagination_count_index.sql contains no corresponding generated
+-- statement because that manually managed index is not declared by the current
+-- TypeScript schema; the live schema contract separately requires the index.
+-- This file only advances the Drizzle snapshot baseline to the current schema.

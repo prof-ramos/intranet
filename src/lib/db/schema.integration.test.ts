@@ -136,6 +136,12 @@ const expectedIndexes = {
 
 type ContractMap = Record<string, string[]>;
 
+type MigrationJournal = {
+  entries: Array<{ idx: number; tag: string; when: number }>;
+};
+
+const SNAPSHOT_BASELINE_INDEX = 31;
+
 function addContractValue(acc: ContractMap, key: string, value: string) {
   acc[key] ??= [];
   acc[key].push(value);
@@ -158,6 +164,21 @@ function expectContractMap(kind: string, actual: ContractMap, expected: Contract
       `${kind} mismatch for "${name}"`,
     ).toEqual(normalize(expectedValues));
   }
+}
+
+function validateLatestJournalSnapshot(journal: MigrationJournal, snapshotFiles: string[]) {
+  const latestEntry = journal.entries.at(-1);
+  if (!latestEntry) {
+    return 'Migration journal must contain at least one entry';
+  }
+  if (latestEntry.idx < SNAPSHOT_BASELINE_INDEX) {
+    return null;
+  }
+
+  const expectedSnapshot = `${String(latestEntry.idx).padStart(4, '0')}_snapshot.json`;
+  return snapshotFiles.includes(expectedSnapshot)
+    ? null
+    : `Missing Drizzle snapshot for latest journal entry ${latestEntry.tag}: ${expectedSnapshot}`;
 }
 
 afterAll(async () => {
@@ -236,8 +257,24 @@ describe('database schema contract', () => {
 
   it('has migration journal aligned', async () => {
     const migrationsDir = path.join(process.cwd(), 'drizzle/postgres');
-    const journal = JSON.parse(fs.readFileSync(path.join(migrationsDir, 'meta/_journal.json'), 'utf8')) as { entries: Array<{ idx: number; tag: string; when: number }> };
+    const journal = JSON.parse(fs.readFileSync(path.join(migrationsDir, 'meta/_journal.json'), 'utf8')) as MigrationJournal;
     const sqlFiles = fs.readdirSync(migrationsDir).filter((file) => file.endsWith('.sql')).sort();
     expect(sqlFiles).toEqual(journal.entries.map((entry) => `${entry.tag}.sql`));
+  });
+
+  it('has a snapshot for the latest journal entry from the reconciled baseline onward', () => {
+    const metaDir = path.join(process.cwd(), 'drizzle/postgres/meta');
+    const journal = JSON.parse(fs.readFileSync(path.join(metaDir, '_journal.json'), 'utf8')) as MigrationJournal;
+    const snapshotFiles = fs.readdirSync(metaDir).filter((file) => /^\d{4}_snapshot\.json$/.test(file));
+
+    expect(validateLatestJournalSnapshot(journal, snapshotFiles)).toBeNull();
+    expect(
+      validateLatestJournalSnapshot(
+        { entries: [{ idx: SNAPSHOT_BASELINE_INDEX, tag: '0031_reconcile_snapshot_baseline', when: 0 }] },
+        [],
+      ),
+    ).toBe(
+      'Missing Drizzle snapshot for latest journal entry 0031_reconcile_snapshot_baseline: 0031_snapshot.json',
+    );
   });
 });
