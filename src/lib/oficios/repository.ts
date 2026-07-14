@@ -2,7 +2,10 @@ import { db, type DbExecutor } from '@/lib/db';
 import { oficios, type NewOfficialLetter } from '@/lib/db/schema/oficios';
 import { and, desc, eq } from 'drizzle-orm';
 
-export async function findOfficialLetters(year?: number, options?: { limit?: number; tx?: DbExecutor }) {
+export async function findOfficialLetters(
+  year?: number,
+  options?: { limit?: number; tx?: DbExecutor },
+) {
   const limit = options?.limit ?? 100;
   const tx = options?.tx ?? db;
   const filters = [];
@@ -21,6 +24,25 @@ export async function findOfficialLetters(year?: number, options?: { limit?: num
 export async function findOfficialLetterById(id: number, tx: DbExecutor = db) {
   const [result] = await tx.select().from(oficios).where(eq(oficios.id, id));
   return result || null;
+}
+
+/**
+ * Fetches an Assinafy-linked Ofício while locking the row for the duration of
+ * the caller's transaction. The explicit executor prevents the lock from being
+ * acquired on a connection outside the transaction that owns the webhook claim.
+ */
+export async function findOfficialLetterByAssinafyDocumentIdForUpdate(
+  documentId: string,
+  tx: DbExecutor,
+) {
+  const [result] = await tx
+    .select()
+    .from(oficios)
+    .where(eq(oficios.assinafyDocumentId, documentId))
+    .limit(1)
+    .for('update');
+
+  return result ?? null;
 }
 
 export async function getLastSequenceForYear(year: number, tx: DbExecutor = db) {

@@ -4,12 +4,29 @@ import { db } from '@/lib/db';
 import { logAuditAction } from '@/lib/audit/service';
 import { createLogger } from '@/lib/logger';
 import { createNotificationsBatch } from '@/lib/notifications/repository';
-import { admins } from '@/lib/db/schema';
+import { admins, integrationSignatureNonces } from '@/lib/db/schema';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
+import { findOfficialLetterByAssinafyDocumentIdForUpdate } from '@/lib/oficios/repository';
 import type { AssinafyStatusPatch, AssinafyWebhookEvent } from './types';
-import { findOficioByAssinafyDocumentId, updateAssinafyStatus } from './repository';
+import { updateAssinafyStatus } from './repository';
 
 const logger = createLogger('assinafy:service');
+
+const ASSINAFY_NONCE_KEY = 'assinafy';
+const WEBHOOK_NONCE_TTL_MS = 24 * 60 * 60 * 1000;
+
+export type AssinafyWebhookResult =
+  | {
+      status: 'processed';
+      entityId: number;
+      action: 'official_letter_status_changed';
+      actorId: null;
+      changedFields: readonly string[];
+    }
+  | { status: 'duplicate' }
+  | { status: 'ignored' }
+  | { status: 'failed' }
+  | { status: 'invalid' };
 
 const EVENT_STATUS_MAP: Record<string, string> = {
   signer_signed_document: 'partially_signed',
@@ -22,35 +39,56 @@ const EVENT_STATUS_MAP: Record<string, string> = {
   document_processing_failed: 'failed',
 };
 
-export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
-  const { event: eventName, object } = event;
-  const documentId = object.id;
+async function claimWebhookEvent(
+  eventId: number,
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+): Promise<boolean> {
+  const expiresAt = new Date(Date.now() + WEBHOOK_NONCE_TTL_MS);
+  const [inserted] = await tx
+    .insert(integrationSignatureNonces)
+    .values({ keyId: ASSINAFY_NONCE_KEY, signature: String(eventId), expiresAt })
+    .onConflictDoNothing()
+    .returning({ id: integrationSignatureNonces.id });
 
-  const mappedStatus = EVENT_STATUS_MAP[eventName];
-  if (!mappedStatus) {
-    logger.info('Unknown webhook event, ignoring', { eventName, documentId });
-    return null;
+  return Boolean(inserted);
+}
+
+function isValidEventId(eventId: unknown): eventId is number {
+  return typeof eventId === 'number' && Number.isSafeInteger(eventId) && eventId > 0;
+}
+
+export async function handleWebhookEvent(
+  event: AssinafyWebhookEvent,
+): Promise<AssinafyWebhookResult> {
+  const eventName = event.event;
+  const eventId: unknown = event.id;
+  if (!isValidEventId(eventId)) {
+    logger.warn('Invalid webhook event ID', { event: eventName });
+    return { status: 'invalid' };
   }
+  const documentId = event.object.id;
 
   try {
     const { result, auditArgs } = await db.transaction(async (tx) => {
-      // Re-read inside the transaction to prevent TOCTOU race on concurrent retries.
-      const oficio = await findOficioByAssinafyDocumentId(documentId, tx);
+      const claimed = await claimWebhookEvent(eventId, tx);
+      if (!claimed) {
+        return { result: { status: 'duplicate' } as const, auditArgs: null };
+      }
+
+      const mappedStatus = EVENT_STATUS_MAP[eventName];
+      if (!mappedStatus) {
+        return { result: { status: 'ignored' } as const, auditArgs: null };
+      }
+
+      const oficio = await findOfficialLetterByAssinafyDocumentIdForUpdate(documentId, tx);
       if (!oficio) {
-        logger.warn('Ofício not found for assinafy document', { documentId, eventName });
-        return { result: null, auditArgs: null };
+        throw new Error('Ofício referenced by Assinafy document ID not found.');
       }
 
       const previousStatus = oficio.assinafyStatus;
 
-      // Idempotency guard — inside tx, so no concurrent retry can pass simultaneously.
       if (previousStatus === mappedStatus) {
-        logger.info('Duplicate webhook event, status unchanged', {
-          documentId,
-          eventName,
-          status: mappedStatus,
-        });
-        return { result: oficio, auditArgs: null };
+        return { result: { status: 'ignored' } as const, auditArgs: null };
       }
 
       const additionalFields: AssinafyStatusPatch = {};
@@ -76,6 +114,9 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
       }
 
       const updated = await updateAssinafyStatus(oficio.id, mappedStatus, additionalFields, tx);
+      if (!updated) {
+        throw new Error('Assinafy status update did not return an Ofício.');
+      }
 
       await emitDomainEvent(
         {
@@ -118,7 +159,13 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
       }
 
       return {
-        result: updated,
+        result: {
+          status: 'processed',
+          entityId: oficio.id,
+          action: 'official_letter_status_changed',
+          actorId: null,
+          changedFields: ['assinafyStatus', ...Object.keys(additionalFields)],
+        } as const,
         auditArgs: {
           adminId: null,
           action: 'official_letter_status_changed',
@@ -133,28 +180,28 @@ export async function handleWebhookEvent(event: AssinafyWebhookEvent) {
       };
     });
 
-    if (result) {
-      logger.info('Assinafy status updated', { documentId, eventName });
+    if (result.status === 'processed') {
+      logger.info('Assinafy status updated', {
+        event: eventName,
+        entityId: result.entityId,
+        changedFields: result.changedFields,
+      });
     }
 
     // Audit is best-effort and runs AFTER the transaction commits. A failed audit
     // INSERT must not abort the mutation's tx (passing tx as the audit executor poisons
     // the PG tx on failure). Default `db` isolates the audit to its own connection.
-    if (auditArgs) {
+    if (result.status === 'processed' && auditArgs) {
       try {
         await logAuditAction(auditArgs);
       } catch {
-        logger.error('Audit log failed (non-critical)', { oficioId: auditArgs.entityId });
+        logger.error('Audit log failed (non-critical)', { entityId: auditArgs.entityId });
       }
     }
 
     return result;
-  } catch (error) {
-    logger.error('Failed to update assinafy status', {
-      documentId,
-      eventName,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return null;
+  } catch {
+    logger.error('Failed to process Assinafy webhook', { event: eventName });
+    return { status: 'failed' };
   }
 }

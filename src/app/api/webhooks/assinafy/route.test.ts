@@ -1,36 +1,13 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { POST, GET } from './route';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { GET, POST } from './route';
 
-const {
-  mockHandleWebhookEvent,
-  mockLimit,
-  mockInsert,
-  mockOnConflictDoNothing,
-  mockSelect,
-} = vi.hoisted(() => {
-  const mockLimit = vi.fn();
-  const mockOnConflictDoNothing = vi.fn();
-  const mockValues = vi.fn(() => ({ onConflictDoNothing: mockOnConflictDoNothing }));
-  const mockInsert = vi.fn(() => ({ values: mockValues }));
-  const mockWhere = vi.fn(() => ({ limit: mockLimit }));
-  const mockFrom = vi.fn(() => ({ where: mockWhere }));
-  const mockSelect = vi.fn(() => ({ from: mockFrom }));
-  return {
-    mockHandleWebhookEvent: vi.fn(),
-    mockLimit,
-    mockInsert,
-    mockSelect,
-    mockOnConflictDoNothing,
-  };
-});
-
-vi.mock('@/lib/assinafy/service', () => ({
-  handleWebhookEvent: mockHandleWebhookEvent,
+const { mockHandleWebhookEvent, mockLogger } = vi.hoisted(() => ({
+  mockHandleWebhookEvent: vi.fn(),
+  mockLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
-vi.mock('@/lib/db', () => ({
-  db: { select: mockSelect, insert: mockInsert },
-}));
+vi.mock('@/lib/assinafy/service', () => ({ handleWebhookEvent: mockHandleWebhookEvent }));
+vi.mock('@/lib/logger', () => ({ createLogger: () => mockLogger }));
 
 const VALID_SECRET = 'test-webhook-secret-32chars-long!!';
 
@@ -39,10 +16,15 @@ function makeEvent(overrides: Record<string, unknown> = {}) {
     id: 1,
     event: 'signer_signed_document',
     message: null,
-    payload: { signer_full_name: 'João' },
-    origin: { ip: '127.0.0.1', 'user-agent': 'Mozilla/5.0' },
+    payload: { signer_full_name: 'Test signer' },
+    origin: { ip: '127.0.0.1', 'user-agent': 'test' },
     created_at: Math.floor(Date.now() / 1000),
-    subject: { id: 's1', full_name: 'João', email: 'j@x.com', type: 'Signer' },
+    subject: {
+      id: 's1',
+      full_name: 'Test signer',
+      email: 'test@example.test',
+      type: 'Signer',
+    },
     object: { id: 'doc123', status: 'partially_signed', type: 'Document' },
     account_id: 'acc1',
     ...overrides,
@@ -64,81 +46,123 @@ describe('POST /api/webhooks/assinafy', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env = { ...originalEnv };
-    mockHandleWebhookEvent.mockResolvedValue({ id: 1 });
-    mockLimit.mockResolvedValue([]); // no existing nonce by default
-    mockOnConflictDoNothing.mockResolvedValue(undefined);
+    process.env = { ...originalEnv, ASSINAFY_WEBHOOK_SECRET: VALID_SECRET };
+    mockHandleWebhookEvent.mockResolvedValue({
+      status: 'processed',
+      entityId: 42,
+      action: 'official_letter_status_changed',
+      actorId: null,
+      changedFields: ['assinafyStatus'],
+    });
   });
 
   it('returns 503 when ASSINAFY_WEBHOOK_SECRET is not set', async () => {
     delete process.env.ASSINAFY_WEBHOOK_SECRET;
     const res = await POST(makeRequest(makeEvent(), VALID_SECRET));
     expect(res.status).toBe(503);
+    expect(mockHandleWebhookEvent).not.toHaveBeenCalled();
   });
 
-  it('returns 401 when X-Webhook-Secret header is missing', async () => {
-    process.env.ASSINAFY_WEBHOOK_SECRET = VALID_SECRET;
-    const res = await POST(makeRequest(makeEvent()));
-    expect(res.status).toBe(401);
+  it('returns 401 when X-Webhook-Secret header is missing or wrong', async () => {
+    const missing = await POST(makeRequest(makeEvent()));
+    const wrong = await POST(makeRequest(makeEvent(), 'wrong-secret'));
+
+    expect(missing.status).toBe(401);
+    expect(wrong.status).toBe(401);
+    expect(mockHandleWebhookEvent).not.toHaveBeenCalled();
   });
 
-  it('returns 401 when X-Webhook-Secret is wrong', async () => {
-    process.env.ASSINAFY_WEBHOOK_SECRET = VALID_SECRET;
-    const res = await POST(makeRequest(makeEvent(), 'wrong-secret'));
-    expect(res.status).toBe(401);
-  });
-
-  it('returns 401 when event timestamp is stale', async () => {
-    process.env.ASSINAFY_WEBHOOK_SECRET = VALID_SECRET;
+  it('returns 401 when the event timestamp is stale', async () => {
     const staleCreatedAt = Math.floor(Date.now() / 1000) - 700;
     const res = await POST(makeRequest(makeEvent({ created_at: staleCreatedAt }), VALID_SECRET));
+
     expect(res.status).toBe(401);
     expect(mockHandleWebhookEvent).not.toHaveBeenCalled();
   });
 
-  it('returns 200 on valid event and records nonce', async () => {
-    process.env.ASSINAFY_WEBHOOK_SECRET = VALID_SECRET;
-    const event = makeEvent();
+  it.each(['processed', 'duplicate', 'ignored'] as const)(
+    'returns 200 for a %s service result and calls the service exactly once',
+    async (status) => {
+      const result =
+        status === 'processed'
+          ? {
+              status,
+              entityId: 42,
+              action: 'official_letter_status_changed',
+              actorId: null,
+              changedFields: ['assinafyStatus'],
+            }
+          : { status };
+      mockHandleWebhookEvent.mockResolvedValue(result);
+      const event = makeEvent();
+
+      const res = await POST(makeRequest(event, VALID_SECRET));
+
+      expect(res.status).toBe(200);
+      await expect(res.json()).resolves.toEqual({ received: true });
+      expect(mockHandleWebhookEvent).toHaveBeenCalledOnce();
+      expect(mockHandleWebhookEvent).toHaveBeenCalledWith(event);
+    },
+  );
+
+  it('returns terminal HTTP 200 for an invalid event ID without logging identifiers', async () => {
+    mockHandleWebhookEvent.mockResolvedValue({ status: 'invalid' });
+    const event = makeEvent({ id: null });
+
     const res = await POST(makeRequest(event, VALID_SECRET));
+
     expect(res.status).toBe(200);
-    expect(mockHandleWebhookEvent).toHaveBeenCalledWith(event);
-    expect(mockInsert).toHaveBeenCalled();
+    await expect(res.json()).resolves.toEqual({ received: true, ignored: true });
+    expect(mockHandleWebhookEvent).toHaveBeenCalledOnce();
+    expect(mockLogger.warn).toHaveBeenCalledWith('Invalid Assinafy webhook event format', {
+      event: event.event,
+    });
+    expect(JSON.stringify(mockLogger.warn.mock.calls)).not.toContain('doc123');
   });
 
-  it('returns 200 on unknown event (no-op) and records nonce', async () => {
-    process.env.ASSINAFY_WEBHOOK_SECRET = VALID_SECRET;
-    mockHandleWebhookEvent.mockResolvedValue(null);
-    const res = await POST(makeRequest(makeEvent({ event: 'unknown_event' }), VALID_SECRET));
-    expect(res.status).toBe(200);
-    expect(mockInsert).toHaveBeenCalled();
-  });
+  it('returns HTTP 500 for failed while returning a sanitized body and log', async () => {
+    mockHandleWebhookEvent.mockResolvedValue({ status: 'failed' });
+    const event = makeEvent();
 
-  it('returns 200 on duplicate delivery without reprocessing', async () => {
-    process.env.ASSINAFY_WEBHOOK_SECRET = VALID_SECRET;
-    mockLimit.mockResolvedValue([{ id: 999 }]); // nonce already exists
-    const res = await POST(makeRequest(makeEvent(), VALID_SECRET));
-    expect(res.status).toBe(200);
-    expect(mockHandleWebhookEvent).not.toHaveBeenCalled();
-    expect(mockInsert).not.toHaveBeenCalled();
-  });
+    const res = await POST(makeRequest(event, VALID_SECRET));
 
-  it('returns 500 when handler fails (signals retry to Assinafy)', async () => {
-    process.env.ASSINAFY_WEBHOOK_SECRET = VALID_SECRET;
-    mockHandleWebhookEvent.mockRejectedValue(new Error('DB connection failed'));
-    const res = await POST(makeRequest(makeEvent(), VALID_SECRET));
     expect(res.status).toBe(500);
-    expect(mockInsert).not.toHaveBeenCalled(); // nonce not recorded on failure
+    await expect(res.json()).resolves.toEqual({ error: 'Internal server error' });
+    expect(mockHandleWebhookEvent).toHaveBeenCalledOnce();
+    expect(mockLogger.error).toHaveBeenCalledWith('Assinafy webhook processing failed (retryable)', {
+      event: event.event,
+    });
+    const logged = JSON.stringify(mockLogger.error.mock.calls);
+    expect(logged).not.toContain('doc123');
+    expect(logged).not.toContain('test@example.test');
+  });
+
+  it('returns generic HTTP 500 when the service rejects unexpectedly', async () => {
+    mockHandleWebhookEvent.mockRejectedValue(new Error('sensitive failure detail'));
+    const event = makeEvent();
+
+    const res = await POST(makeRequest(event, VALID_SECRET));
+
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toEqual({ error: 'Internal server error' });
+    expect(mockLogger.error).toHaveBeenCalledWith('Unexpected Assinafy webhook handler failure', {
+      event: event.event,
+    });
+    const logged = JSON.stringify(mockLogger.error.mock.calls);
+    expect(logged).not.toContain('sensitive failure detail');
+    expect(logged).not.toContain('doc123');
   });
 
   it('returns 400 on invalid JSON body', async () => {
-    process.env.ASSINAFY_WEBHOOK_SECRET = VALID_SECRET;
     const req = new Request('http://localhost/api/webhooks/assinafy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Webhook-Secret': VALID_SECRET },
       body: 'not-json',
     });
+
     const res = await POST(req);
     expect(res.status).toBe(400);
+    expect(mockHandleWebhookEvent).not.toHaveBeenCalled();
   });
 });
 
