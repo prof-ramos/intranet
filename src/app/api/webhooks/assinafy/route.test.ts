@@ -105,31 +105,31 @@ describe('POST /api/webhooks/assinafy', () => {
     },
   );
 
-  it('returns terminal HTTP 400 for an invalid event ID without logging identifiers', async () => {
+  it('returns terminal HTTP 200 for an invalid event ID without logging identifiers', async () => {
     mockHandleWebhookEvent.mockResolvedValue({ status: 'invalid' });
     const event = makeEvent({ id: null });
 
     const res = await POST(makeRequest(event, VALID_SECRET));
 
-    expect(res.status).toBe(400);
-    await expect(res.json()).resolves.toEqual({ error: 'Invalid event' });
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({ received: true, ignored: true });
     expect(mockHandleWebhookEvent).toHaveBeenCalledOnce();
-    expect(mockLogger.warn).toHaveBeenCalledWith('Invalid Assinafy webhook event', {
+    expect(mockLogger.warn).toHaveBeenCalledWith('Invalid Assinafy webhook event format', {
       event: event.event,
     });
     expect(JSON.stringify(mockLogger.warn.mock.calls)).not.toContain('doc123');
   });
 
-  it('temporarily preserves HTTP 200 for failed while returning a sanitized body and log', async () => {
+  it('returns HTTP 500 for failed while returning a sanitized body and log', async () => {
     mockHandleWebhookEvent.mockResolvedValue({ status: 'failed' });
     const event = makeEvent();
 
     const res = await POST(makeRequest(event, VALID_SECRET));
 
-    expect(res.status).toBe(200);
-    await expect(res.json()).resolves.toEqual({ received: false });
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toEqual({ error: 'Internal server error' });
     expect(mockHandleWebhookEvent).toHaveBeenCalledOnce();
-    expect(mockLogger.error).toHaveBeenCalledWith('Assinafy webhook processing failed', {
+    expect(mockLogger.error).toHaveBeenCalledWith('Assinafy webhook processing failed (retryable)', {
       event: event.event,
     });
     const logged = JSON.stringify(mockLogger.error.mock.calls);

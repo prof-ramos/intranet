@@ -82,9 +82,7 @@ export async function handleWebhookEvent(
 
       const oficio = await findOfficialLetterByAssinafyDocumentIdForUpdate(documentId, tx);
       if (!oficio) {
-        // Assinafy callbacks only reference documents previously persisted by
-        // this application, so an absent Ofício is definitive for this event.
-        return { result: { status: 'ignored' } as const, auditArgs: null };
+        throw new Error('Ofício referenced by Assinafy document ID not found.');
       }
 
       const previousStatus = oficio.assinafyStatus;

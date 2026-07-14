@@ -164,12 +164,11 @@ describe('assinafy/service', () => {
     expect(mockEmitDomainEvent).not.toHaveBeenCalled();
   });
 
-  it('classifies a missing Ofício as definitively ignored and confirms the nonce', async () => {
+  it('rolls back the nonce and returns failed when the referenced Ofício is not found', async () => {
     mockFindOficioForUpdate.mockResolvedValue(null);
 
-    await expect(handleWebhookEvent(BASE_EVENT)).resolves.toEqual({ status: 'ignored' });
+    await expect(handleWebhookEvent(BASE_EVENT)).resolves.toEqual({ status: 'failed' });
 
-    expect(mockInsert).toHaveBeenCalledOnce();
     expect(mockUpdateAssinafyStatus).not.toHaveBeenCalled();
     expect(mockEmitDomainEvent).not.toHaveBeenCalled();
   });

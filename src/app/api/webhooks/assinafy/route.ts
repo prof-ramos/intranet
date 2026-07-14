@@ -57,14 +57,13 @@ export const POST = createWebhookHandler<AssinafyWebhookEvent>({
       const result = await handleWebhookEvent(event);
 
       if (result.status === 'invalid') {
-        logger.warn('Invalid Assinafy webhook event', { event: event.event });
-        return NextResponse.json({ error: 'Invalid event' }, { status: 400 });
+        logger.warn('Invalid Assinafy webhook event format', { event: event.event });
+        return NextResponse.json({ received: true, ignored: true });
       }
 
       if (result.status === 'failed') {
-        logger.error('Assinafy webhook processing failed', { event: event.event });
-        // Preserved until Plan 037 switches retryable failures to HTTP 500.
-        return NextResponse.json({ received: false });
+        logger.error('Assinafy webhook processing failed (retryable)', { event: event.event });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
       }
 
       logger.info('Assinafy webhook handled', { event: event.event, status: result.status });

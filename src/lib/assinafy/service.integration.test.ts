@@ -458,4 +458,16 @@ describe.skipIf(!hasTestEnv)('assinafy service integration (real PG)', () => {
     expect(events).toHaveLength(0);
     expect(nonces).toHaveLength(1);
   });
+
+  it('rolls back the nonce and returns failed when the referenced Oficio is not found', async () => {
+    const event = makeEvent('non-existent-doc-id');
+
+    await expect(handleWebhookEvent(event)).resolves.toEqual({ status: 'failed' });
+
+    const nonces = await db
+      .select({ id: integrationSignatureNonces.id })
+      .from(integrationSignatureNonces)
+      .where(eq(integrationSignatureNonces.signature, String(event.id)));
+    expect(nonces).toHaveLength(0);
+  });
 });
