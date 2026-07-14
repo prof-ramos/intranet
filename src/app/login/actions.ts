@@ -117,14 +117,22 @@ export async function login(formData: FormData) {
 
   try {
     await loginRateLimiter.reset(email);
-    await createSession({ userId: user.id, email: user.email });
-    return redirect(user.mustChangePassword ? '/change-password' : '/app');
-  } catch (error) {
-    logger.warn(
-      '[Login] Rate-limit reset failed after successful login.',
-      { error: toSafeErrorLog(error) },
-      ensureError(error),
-    );
+  } catch {
+    logger.warn('login_rate_limit_reset_failed');
   }
-  redirect(user.mustChangePassword ? '/change-password' : '/app');
+
+  let sessionCreated = false;
+  try {
+    await createSession({ userId: user.id, email: user.email });
+    sessionCreated = true;
+  } catch {
+    logger.warn('session_creation_failed');
+  }
+
+  if (!sessionCreated) {
+    redirect('/login?error=1');
+  }
+
+  const destination = user.mustChangePassword ? '/change-password' : '/app';
+  redirect(destination);
 }
