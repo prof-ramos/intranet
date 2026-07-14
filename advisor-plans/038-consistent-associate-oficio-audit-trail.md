@@ -62,9 +62,10 @@ auditoria sanitizada e best-effort.
 | Finalidade | Comando | Resultado esperado |
 | --- | --- | --- |
 | Service associados | `npx vitest run src/lib/associates/service.test.ts` | todos passam |
+| Action de edição | `npx vitest run src/app/app/associados/actions.test.ts` | todos passam |
 | Actions filhos | `npx vitest run 'src/app/app/associados/[id]/actions.test.ts'` | todos passam |
 | Ofícios | `npx vitest run src/lib/oficios/service.test.ts` | todos passam |
-| Conjunto focado | `npx vitest run src/lib/associates/service.test.ts 'src/app/app/associados/[id]/actions.test.ts' src/lib/oficios/service.test.ts` | todos passam |
+| Conjunto focado | `npx vitest run src/lib/associates/service.test.ts src/app/app/associados/actions.test.ts 'src/app/app/associados/[id]/actions.test.ts' src/lib/oficios/service.test.ts` | todos passam |
 | Gate completo | `npm run lint && npm run typecheck && npm run test && npm run test:db && npm run build` | todos saem 0, nessa ordem |
 
 ## Escopo
@@ -73,6 +74,8 @@ auditoria sanitizada e best-effort.
 
 - `src/lib/associates/service.ts`
 - `src/lib/associates/service.test.ts`
+- `src/app/app/associados/actions.ts`
+- `src/app/app/associados/actions.test.ts`
 - `src/app/app/associados/[id]/actions.ts`
 - `src/app/app/associados/[id]/actions.test.ts`
 - `src/lib/oficios/service.ts`
@@ -98,8 +101,11 @@ auditoria sanitizada e best-effort.
 
 ### Etapa 1: Auditar nomes canônicos dos campos alterados
 
-Em `updateAssociateData`, calcule quais campos de negócio realmente mudam
-enquanto a linha atual está disponível. Para PII criptografada:
+Em `updateAssociateData`, separe o ator do payload mutável na assinatura
+(`updateAssociateData(input, actorId)` ou objeto de ator equivalente) e calcule
+quais campos de negócio realmente mudam enquanto a linha atual está disponível.
+O action autenticado deve passar `actor.userId`; o mesmo ID alimenta o evento
+de domínio e a auditoria. Para PII criptografada:
 
 - compare na fronteira normalizada já existente;
 - converta patches de três colunas de volta para `cpf`, `rg`, `siape`,
@@ -109,8 +115,8 @@ enquanto a linha atual está disponível. Para PII criptografada:
 
 Retorne `auditArgs` da transação junto do resultado do outbox. Após commit,
 chame `logAuditAction` em proteção best-effort estreita com action
-`associate_updated`, ator derivado de `actor.userId` (nunca `input.updatedBy`
-controlado pelo cliente) e `metadata.changedFields`. Não audite no-op
+`associate_updated`, ator derivado do parâmetro separado (nunca de
+`input.updatedBy`) e `metadata.changedFields`. Não audite no-op
 comprovado. O outbox continua recebendo apenas
 `WEBHOOK_SAFE_ASSOCIATE_FIELDS`.
 

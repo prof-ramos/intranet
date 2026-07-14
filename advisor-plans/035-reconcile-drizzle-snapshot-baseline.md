@@ -144,8 +144,8 @@ já foram aplicadas por 0025–0030. Arquivo comment-only é suportado pelo pró
 Drizzle, que gera esse formato para migrations `--custom`. Nunca aplique o SQL
 duplicado intermediário em banco algum.
 
-**Verificar**: `rg -n '^(ALTER|CREATE|DROP|UPDATE|INSERT|DELETE|SELECT)' drizzle/postgres/0031_reconcile_snapshot_baseline.sql`
-não produz saída; snapshot e journal permanecem intactos.
+**Verificar**: `rg -v '^\s*(--.*)?$' drizzle/postgres/0031_reconcile_snapshot_baseline.sql`
+não produz saída (provando que cada linha não em branco é exclusivamente um comentário `--`); snapshot e journal permanecem intactos.
 
 ### Etapa 4: Provar que uma segunda geração não encontra diff
 

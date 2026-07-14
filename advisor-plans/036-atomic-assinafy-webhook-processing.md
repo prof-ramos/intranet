@@ -60,8 +60,7 @@ de resultado inequívoco.
   repetição inútil;
 - `failed`: a transação, inclusive o nonce, foi revertida e o evento pode ser
   tentado novamente;
-- `invalid`: `event.id` ausente ou diferente de um número inteiro positivo; o
-  nonce não é persistido e a rota retorna erro terminal (HTTP 400), sem retry.
+- `invalid`: `event.id` ausente ou diferente de um número inteiro positivo seguro (menor ou igual a `Number.MAX_SAFE_INTEGER`); o nonce não é persistido e a rota retorna erro terminal (HTTP 400), sem retry.
 
 Não inclua exceções ou payloads no resultado público. O retorno `processed` deve
 conter apenas campos de uma allowlist canônica definida pelo contrato do Plano
@@ -113,8 +112,8 @@ Em `service.ts`, exporte o tipo discriminado com os cinco estados: `processed | 
 interno que:
 
 1. Valide `event.id` conforme o contrato vigente de `AssinafyWebhookEvent`:
-   aceite somente número inteiro positivo e rejeite valor ausente, nulo,
-   string, não finito, fracionário ou não positivo com `invalid` **sem**
+   aceite somente número inteiro positivo seguro (`Number.isSafeInteger(event.id)`) e rejeite valor ausente, nulo,
+   string, não finito, fracionário, não positivo ou acima do limite seguro com `invalid` **sem**
    persistir nonce. Testes de runtime podem construir entradas malformadas por
    cast explícito, sem ampliar o tipo público nem editar `types.ts`;
 2. Insira `integrationSignatureNonces` com:
