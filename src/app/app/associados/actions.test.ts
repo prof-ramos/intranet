@@ -41,6 +41,7 @@ describe('associados actions', () => {
     formData.set('functionalStatus', 'ativo');
     formData.set('associationStatus', 'associado');
     formData.set('contributionStatus', 'em_dia');
+    formData.set('updatedBy', '999');
 
     await expect(updateAssociate(formData)).rejects.toThrow('NEXT_REDIRECT:/app/associados/15');
 
@@ -53,9 +54,12 @@ describe('associados actions', () => {
         functionalStatus: 'ativo',
         associationStatus: 'associado',
         contributionStatus: 'em_dia',
-        updatedBy: 7,
       }),
+      7,
     );
+    const [serviceInput, auditActorId] = updateAssociateDataMock.mock.calls[0]!;
+    expect(serviceInput).not.toHaveProperty('updatedBy');
+    expect(auditActorId).toBe(7);
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados/15');
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');

@@ -9,8 +9,18 @@ import {
   findAssociateByCpfHash,
   findAssociateBySiapeHash,
   findAssociateByPrimaryEmailHash,
+  createDependent,
+  updateDependentById,
+  deleteDependentById,
+  createHealthAgreement,
+  updateHealthAgreementById,
+  deleteHealthAgreementById,
   type UpdateAssociateValues,
   type AssociatesFilters,
+  type CreateDependentInput,
+  type UpdateDependentInput,
+  type CreateHealthAgreementInput,
+  type UpdateHealthAgreementInput,
 } from './repository';
 import { type AssociateSearchMode } from './search-params';
 import { db } from '@/lib/db';
@@ -30,6 +40,9 @@ import { buildPiiPatch, decryptAssociatePii } from './pii-mapping';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { emptyToNull } from '@/lib/utils/strings';
 import { toJoinedAtTimestamp } from './form-helpers';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('associates:service');
 
 type FsEnum = (typeof fsEnum.enumValues)[number];
 type AsEnum = (typeof asEnum.enumValues)[number];
@@ -213,7 +226,6 @@ export async function getAssociateForEdit(
 export type UpdateAssociateInput = Partial<AssociateFields> & {
   id: number;
   fullName: string;
-  updatedBy?: number | null;
 };
 
 const WEBHOOK_SAFE_ASSOCIATE_FIELDS: Array<keyof UpdateAssociateValues> = [
@@ -245,11 +257,90 @@ function getChangedWebhookSafeFields(
   return WEBHOOK_SAFE_ASSOCIATE_FIELDS.filter(
     (field) =>
       Object.prototype.hasOwnProperty.call(values, field) &&
+      values[field] !== undefined &&
       normalizeComparableValue(current[field]) !== normalizeComparableValue(values[field]),
   );
 }
 
-export async function updateAssociateData(input: UpdateAssociateInput) {
+const PII_AUDIT_FIELDS = [
+  'cpf',
+  'rg',
+  'siape',
+  'primaryEmail',
+  'phone',
+  'whatsapp',
+  'address',
+] as const;
+
+const PII_STORAGE_FIELDS = new Set<string>([
+  ...PII_AUDIT_FIELDS,
+  ...PII_AUDIT_FIELDS.flatMap((field) => [`${field}Ciphertext`, `${field}Hash`]),
+]);
+
+function normalizePiiComparableValue(value: string | null | undefined) {
+  return value === undefined || value === null || value.trim() === '' ? null : value;
+}
+
+function getChangedAuditFields(
+  current: NonNullable<Awaited<ReturnType<typeof findAssociateById>>>,
+  values: UpdateAssociateValues,
+  input: UpdateAssociateInput,
+) {
+  const changedFields = new Set<string>();
+
+  for (const [field, value] of Object.entries(values)) {
+    if (value === undefined || PII_STORAGE_FIELDS.has(field)) continue;
+    const currentValue = current[field as keyof typeof current];
+    if (normalizeComparableValue(currentValue) !== normalizeComparableValue(value)) {
+      changedFields.add(field);
+    }
+  }
+
+  const suppliedPiiFields = PII_AUDIT_FIELDS.filter(
+    (field) => Object.prototype.hasOwnProperty.call(input, field) && input[field] !== undefined,
+  );
+  if (suppliedPiiFields.length === 0) return [...changedFields];
+
+  try {
+    const decrypted = decryptAssociatePii(current);
+    for (const field of suppliedPiiFields) {
+      if (
+        normalizePiiComparableValue(decrypted[field]) !==
+        normalizePiiComparableValue(input[field] as string | null | undefined)
+      ) {
+        changedFields.add(field);
+      }
+    }
+  } catch {
+    // Audit comparison is best-effort: when legacy PII cannot be decrypted, record only
+    // the canonical fields supplied by the caller and let the mutation proceed.
+    for (const field of suppliedPiiFields) {
+      changedFields.add(field);
+    }
+  }
+
+  return [...changedFields];
+}
+
+type AssociateAuditArgs = Parameters<typeof logAuditAction>[0];
+
+async function logAssociateAuditBestEffort(auditArgs: AssociateAuditArgs) {
+  try {
+    await logAuditAction(auditArgs);
+  } catch {
+    logger.warn('Audit log failed after committed associate mutation', {
+      action: auditArgs.action,
+      entityType: auditArgs.entityType,
+      entityId: auditArgs.entityId,
+    });
+  }
+}
+
+export async function updateAssociateData(input: UpdateAssociateInput, actorId: number) {
+  if (!Number.isInteger(actorId) || actorId <= 0) {
+    throw new ValidationError('Ator inválido.');
+  }
+
   // Normalização canônica de datas de domínio: só aqui (não no action).
   const values: UpdateAssociateValues = {
     fullName: input.fullName,
@@ -349,36 +440,156 @@ export async function updateAssociateData(input: UpdateAssociateInput) {
   }
   if (input.internalNotes !== undefined) values.internalNotes = input.internalNotes;
 
-  await db.transaction(async (tx) => {
+  const auditArgs = await db.transaction(async (tx) => {
     const current = await findAssociateById(input.id, tx);
     if (!current) {
       throw new NotFoundError('Associado');
     }
 
     const changedFields = getChangedWebhookSafeFields(current, values);
+    const auditChangedFields = getChangedAuditFields(current, values, input);
 
     await updateAssociateById(input.id, values, tx);
 
-    if (changedFields.length === 0) {
-      return;
-    }
-
-    await emitDomainEvent(
-      {
-        type: 'associate.updated',
-        entityType: 'associate',
-        entityId: input.id,
-        actorAdminId: input.updatedBy ?? null,
-        payload: {
-          associateId: input.id,
-          changedFields,
-          links: {
-            app: `/app/associados/${input.id}`,
+    if (changedFields.length > 0) {
+      await emitDomainEvent(
+        {
+          type: 'associate.updated',
+          entityType: 'associate',
+          entityId: input.id,
+          actorAdminId: actorId,
+          payload: {
+            associateId: input.id,
+            changedFields,
+            links: {
+              app: `/app/associados/${input.id}`,
+            },
           },
         },
-      },
-      tx,
-    );
+        tx,
+      );
+    }
+
+    return auditChangedFields.length > 0
+      ? {
+          adminId: actorId,
+          action: 'associate_updated',
+          entityType: 'associate' as const,
+          entityId: input.id,
+          metadata: { changedFields: auditChangedFields },
+        }
+      : null;
+  });
+
+  if (auditArgs) {
+    await logAssociateAuditBestEffort(auditArgs);
+  }
+}
+
+function assertPositiveInteger(value: number, field: string) {
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new ValidationError(`${field} inválido.`);
+  }
+}
+
+export async function createAssociateDependent(input: CreateDependentInput, actorId: number) {
+  assertPositiveInteger(input.associateId, 'Associado');
+  assertPositiveInteger(actorId, 'Ator');
+  const result = await createDependent(input);
+  await logAssociateAuditBestEffort({
+    adminId: actorId,
+    action: 'associate_dependent_created',
+    entityType: 'associate',
+    entityId: input.associateId,
+    metadata: { dependentId: result.id },
+  });
+  return result;
+}
+
+export async function updateAssociateDependent(
+  id: number,
+  values: UpdateDependentInput,
+  associateId: number,
+  actorId: number,
+) {
+  assertPositiveInteger(id, 'Dependente');
+  assertPositiveInteger(associateId, 'Associado');
+  assertPositiveInteger(actorId, 'Ator');
+  await updateDependentById(id, values, associateId);
+  await logAssociateAuditBestEffort({
+    adminId: actorId,
+    action: 'associate_dependent_updated',
+    entityType: 'associate',
+    entityId: associateId,
+    metadata: { dependentId: id },
+  });
+}
+
+export async function deleteAssociateDependent(id: number, associateId: number, actorId: number) {
+  assertPositiveInteger(id, 'Dependente');
+  assertPositiveInteger(associateId, 'Associado');
+  assertPositiveInteger(actorId, 'Ator');
+  await deleteDependentById(id, associateId);
+  await logAssociateAuditBestEffort({
+    adminId: actorId,
+    action: 'associate_dependent_deleted',
+    entityType: 'associate',
+    entityId: associateId,
+    metadata: { dependentId: id },
+  });
+}
+
+export async function createAssociateHealthAgreement(
+  input: CreateHealthAgreementInput,
+  actorId: number,
+) {
+  assertPositiveInteger(input.associateId, 'Associado');
+  assertPositiveInteger(actorId, 'Ator');
+  const result = await createHealthAgreement(input);
+  await logAssociateAuditBestEffort({
+    adminId: actorId,
+    action: 'associate_health_agreement_created',
+    entityType: 'associate',
+    entityId: input.associateId,
+    metadata: { healthAgreementId: result.id },
+  });
+  return result;
+}
+
+export async function updateAssociateHealthAgreement(
+  id: number,
+  values: UpdateHealthAgreementInput,
+  associateId: number,
+  actorId: number,
+) {
+  assertPositiveInteger(id, 'Convênio');
+  assertPositiveInteger(associateId, 'Associado');
+  assertPositiveInteger(actorId, 'Ator');
+  await updateHealthAgreementById(id, values, associateId);
+  await logAssociateAuditBestEffort({
+    adminId: actorId,
+    action: 'associate_health_agreement_updated',
+    entityType: 'associate',
+    entityId: associateId,
+    metadata: { healthAgreementId: id },
+  });
+}
+
+export async function deleteAssociateHealthAgreement(
+  id: number,
+  associateId: number,
+  actorId: number,
+) {
+  assertPositiveInteger(id, 'Convênio');
+  assertPositiveInteger(associateId, 'Associado');
+  assertPositiveInteger(actorId, 'Ator');
+  await deleteHealthAgreementById(id, associateId);
+  await logAssociateAuditBestEffort({
+    adminId: actorId,
+    action: 'associate_health_agreement_deleted',
+    entityType: 'associate',
+    entityId: associateId,
+    metadata: { healthAgreementId: id },
   });
 }
 

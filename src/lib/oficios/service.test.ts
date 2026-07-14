@@ -7,12 +7,17 @@ import {
   sendForSignature,
 } from './service';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
+import { logAuditAction } from '@/lib/audit/service';
 import type { NewOfficialLetter, OfficialLetter } from '@/lib/db/schema/oficios';
 
 const transactionMock = vi.hoisted(() => ({ tx: { __tx: true } }));
+const serviceMocks = vi.hoisted(() => ({
+  dbTransaction: vi.fn(),
+  loggerWarn: vi.fn(),
+}));
 const BASE_OFFICIAL_LETTER: OfficialLetter = {
   id: 12,
-number: 'OFÍCIO Nº 001/2026/ASOF',
+  number: 'OFÍCIO Nº 001/2026/ASOF',
   year: 2026,
   sequence: 1,
   recipient: 'Destinatário',
@@ -47,9 +52,7 @@ number: 'OFÍCIO Nº 001/2026/ASOF',
 
 vi.mock('@/lib/db', () => ({
   db: {
-    transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
-      callback(transactionMock.tx),
-    ),
+    transaction: (...args: unknown[]) => serviceMocks.dbTransaction(...args),
   },
 }));
 
@@ -109,18 +112,34 @@ vi.mock('@/lib/env', () => ({
 }));
 
 vi.mock('@/lib/logger', () => ({
-  createLogger: vi.fn().mockReturnValue({ info: vi.fn(), error: vi.fn(), warn: vi.fn() }),
+  createLogger: vi.fn().mockReturnValue({
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: (...args: unknown[]) => serviceMocks.loggerWarn(...args),
+  }),
 }));
 
 describe('oficios service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    serviceMocks.dbTransaction.mockImplementation(
+      async (callback: (tx: unknown) => Promise<unknown>) => callback(transactionMock.tx),
+    );
+    vi.mocked(logAuditAction).mockResolvedValue(undefined);
 
     process.env.ASSINAFY_API_KEY = 'test-api-key';
     process.env.ASSINAFY_ACCOUNT_ID = 'test-account-id';
 
-    assinafyMocks.mockUploadDocument.mockResolvedValue({ id: 'doc-123', name: 'test.pdf', status: 'pending' });
-    assinafyMocks.mockCreateSigner.mockResolvedValue({ id: 'signer-456', full_name: 'Clean Name', email: 'signer@test.com' });
+    assinafyMocks.mockUploadDocument.mockResolvedValue({
+      id: 'doc-123',
+      name: 'test.pdf',
+      status: 'pending',
+    });
+    assinafyMocks.mockCreateSigner.mockResolvedValue({
+      id: 'signer-456',
+      full_name: 'Clean Name',
+      email: 'signer@test.com',
+    });
     assinafyMocks.mockCreateAssignment.mockResolvedValue({
       id: 'assign-789',
       method: 'virtual',
@@ -212,6 +231,82 @@ describe('oficios service', () => {
     expect(emitDomainEvent).not.toHaveBeenCalled();
   });
 
+  it('attempts create audit only after the transaction resolves', async () => {
+    const repository = await import('./repository');
+    vi.mocked(repository.createOfficialLetter).mockResolvedValue({
+      ...BASE_OFFICIAL_LETTER,
+      status: 'rascunho',
+    });
+    let releaseCommit!: () => void;
+    const commitGate = new Promise<void>((resolve) => {
+      releaseCommit = resolve;
+    });
+    let callbackFinished = false;
+    serviceMocks.dbTransaction.mockImplementationOnce(async (callback) => {
+      const value = await callback(transactionMock.tx);
+      callbackFinished = true;
+      await commitGate;
+      return value;
+    });
+
+    const savePromise = saveOfficialLetter(
+      {
+        recipient: 'Destinatário',
+        recipientRole: 'Cargo',
+        vocativo: 'Senhor',
+        letterDate: '13 de maio de 2026',
+        subject: 'Assunto',
+        itamaratySector: 'SGP',
+        signatoryName: 'Nome',
+        signatoryRole: 'Cargo',
+        closure: 'Atenciosamente,',
+        bodyRichText: 'Texto',
+        bodyPlainText: 'Texto',
+      },
+      7,
+    );
+
+    await vi.waitFor(() => expect(callbackFinished).toBe(true));
+    expect(logAuditAction).not.toHaveBeenCalled();
+    releaseCommit();
+    await expect(savePromise).resolves.toEqual(expect.objectContaining({ id: 12 }));
+    expect(logAuditAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        adminId: 7,
+        action: 'official_letter_created',
+        entityType: 'official_letter',
+        entityId: 12,
+      }),
+    );
+    expect(vi.mocked(logAuditAction).mock.calls[0]![0].executor).toBeUndefined();
+  });
+
+  it('does not audit a create when the transactional outbox write fails', async () => {
+    const repository = await import('./repository');
+    vi.mocked(repository.createOfficialLetter).mockResolvedValue(BASE_OFFICIAL_LETTER);
+    vi.mocked(emitDomainEvent).mockRejectedValueOnce(new Error('outbox failed'));
+
+    await expect(
+      saveOfficialLetter(
+        {
+          recipient: 'Destinatário',
+          recipientRole: 'Cargo',
+          vocativo: 'Senhor',
+          letterDate: '13 de maio de 2026',
+          subject: 'Assunto',
+          itamaratySector: 'SGP',
+          signatoryName: 'Nome',
+          signatoryRole: 'Cargo',
+          closure: 'Atenciosamente,',
+          bodyRichText: 'Texto',
+          bodyPlainText: 'Texto',
+        },
+        1,
+      ),
+    ).rejects.toThrow('outbox failed');
+    expect(logAuditAction).not.toHaveBeenCalled();
+  });
+
   it('emits a published event when an existing draft transitions to gerado', async () => {
     const repository = await import('./repository');
     vi.mocked(repository.findOfficialLetterById).mockResolvedValue({
@@ -239,6 +334,24 @@ describe('oficios service', () => {
       }),
       transactionMock.tx,
     );
+    expect(logAuditAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'official_letter_updated',
+        entityId: 12,
+      }),
+    );
+    expect(vi.mocked(logAuditAction).mock.calls[0]![0].executor).toBeUndefined();
+  });
+
+  it('does not audit an update when the repository fails', async () => {
+    const repository = await import('./repository');
+    vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
+    vi.mocked(repository.updateOfficialLetter).mockRejectedValueOnce(new Error('update failed'));
+
+    await expect(updateOfficialLetter(12, { subject: 'Novo assunto' }, 1)).rejects.toThrow(
+      'update failed',
+    );
+    expect(logAuditAction).not.toHaveBeenCalled();
   });
 
   it('cancels an official letter and logs audit action', async () => {
@@ -259,6 +372,32 @@ describe('oficios service', () => {
         action: 'official_letter_cancelled',
         entityId: 12,
       }),
+    );
+    expect(vi.mocked(logAuditAction).mock.calls[0]![0].executor).toBeUndefined();
+  });
+
+  it('preserves a committed cancellation and warns safely when audit rejects', async () => {
+    const repository = await import('./repository');
+    vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
+    vi.mocked(repository.cancelOfficialLetter).mockResolvedValue({
+      ...BASE_OFFICIAL_LETTER,
+      status: 'cancelado',
+    });
+    vi.mocked(logAuditAction).mockRejectedValueOnce(new Error('recipient secret leaked'));
+
+    await expect(cancelOfficialLetter(12, 1)).resolves.toEqual(
+      expect.objectContaining({ status: 'cancelado' }),
+    );
+    expect(serviceMocks.loggerWarn).toHaveBeenCalledWith(
+      'Audit log failed after committed official letter mutation',
+      {
+        action: 'official_letter_cancelled',
+        entityType: 'official_letter',
+        entityId: 12,
+      },
+    );
+    expect(JSON.stringify(serviceMocks.loggerWarn.mock.calls)).not.toContain(
+      'recipient secret leaked',
     );
   });
 
@@ -281,21 +420,30 @@ describe('oficios service', () => {
       vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
 
       const assinafyRepo = await import('@/lib/assinafy/repository');
-      const updatedOficio = { ...BASE_OFFICIAL_LETTER, assinafyDocumentId: 'doc-123', assinafyStatus: 'pending_signature' as const };
+      const updatedOficio = {
+        ...BASE_OFFICIAL_LETTER,
+        assinafyDocumentId: 'doc-123',
+        assinafyStatus: 'pending_signature' as const,
+      };
       vi.mocked(assinafyRepo.updateAssinafyFields).mockResolvedValue(updatedOficio);
 
       const result = await sendForSignature(OFICIO_ID, SIGNER_EMAIL, USER_ID);
 
       expect(vi.mocked(repository.findOfficialLetterById)).toHaveBeenCalledWith(OFICIO_ID);
       expect(assinafyMocks.mockGeneratePdf).toHaveBeenCalledWith(BASE_OFFICIAL_LETTER);
-      expect(assinafyMocks.mockCleanSignatoryName).toHaveBeenCalledWith(BASE_OFFICIAL_LETTER.signatoryName);
+      expect(assinafyMocks.mockCleanSignatoryName).toHaveBeenCalledWith(
+        BASE_OFFICIAL_LETTER.signatoryName,
+      );
       expect(assinafyMocks.mockUploadDocument).toHaveBeenCalledOnce();
       expect(assinafyMocks.mockUploadDocument).toHaveBeenCalledWith(
         expect.any(Buffer),
         'OFÍCIO_Nº_001_2026_ASOF.pdf',
       );
       expect(assinafyMocks.mockCreateSigner).toHaveBeenCalledWith('Clean Name', SIGNER_EMAIL);
-      expect(assinafyMocks.mockCreateAssignment).toHaveBeenCalledWith('doc-123', expect.objectContaining({ method: 'virtual' }));
+      expect(assinafyMocks.mockCreateAssignment).toHaveBeenCalledWith(
+        'doc-123',
+        expect.objectContaining({ method: 'virtual' }),
+      );
       expect(assinafyRepo.updateAssinafyFields).toHaveBeenCalledWith(
         OFICIO_ID,
         expect.objectContaining({
@@ -317,7 +465,11 @@ describe('oficios service', () => {
       vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
 
       const assinafyRepo = await import('@/lib/assinafy/repository');
-      const updatedOficio = { ...BASE_OFFICIAL_LETTER, assinafyDocumentId: 'doc-123', assinafyStatus: 'pending_signature' as const };
+      const updatedOficio = {
+        ...BASE_OFFICIAL_LETTER,
+        assinafyDocumentId: 'doc-123',
+        assinafyStatus: 'pending_signature' as const,
+      };
       vi.mocked(assinafyRepo.updateAssinafyFields).mockResolvedValue(updatedOficio);
 
       await sendForSignature(OFICIO_ID, SIGNER_EMAIL, USER_ID);

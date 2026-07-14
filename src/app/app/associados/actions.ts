@@ -67,11 +67,13 @@ export const updateAssociate = defineFormAction({
   schema: updateAssociateSchema,
   service: async (data, actor) => {
     const { id, ...fields } = data;
-    await updateAssociateData({
-      id,
-      ...mapFormToServiceFields(fields, actor.role),
-      updatedBy: actor.userId,
-    });
+    await updateAssociateData(
+      {
+        id,
+        ...mapFormToServiceFields(fields, actor.role),
+      },
+      actor.userId,
+    );
 
     revalidatePath('/app/associados');
     revalidatePath(`/app/associados/${id}`);
