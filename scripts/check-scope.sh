@@ -25,7 +25,16 @@ repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
 failures=()
-snapshot_baseline_index=31
+snapshot_baseline_index="$(
+  node -e '
+    const fs = require("node:fs");
+    const baseline = JSON.parse(
+      fs.readFileSync("drizzle/postgres/snapshot-baseline.json", "utf8"),
+    );
+    if (!Number.isInteger(baseline.index) || baseline.index < 0) process.exit(1);
+    process.stdout.write(String(baseline.index));
+  '
+)"
 
 add_failure() {
   failures+=("$1")

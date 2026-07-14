@@ -140,7 +140,22 @@ type MigrationJournal = {
   entries: Array<{ idx: number; tag: string; when: number }>;
 };
 
-const SNAPSHOT_BASELINE_INDEX = 31;
+type SnapshotBaseline = {
+  index: number;
+};
+
+const snapshotBaseline = JSON.parse(
+  fs.readFileSync(
+    path.join(process.cwd(), 'drizzle/postgres/snapshot-baseline.json'),
+    'utf8',
+  ),
+) as SnapshotBaseline;
+
+if (!Number.isInteger(snapshotBaseline.index) || snapshotBaseline.index < 0) {
+  throw new Error('Drizzle snapshot baseline index must be a non-negative integer.');
+}
+
+const SNAPSHOT_BASELINE_INDEX = snapshotBaseline.index;
 
 function addContractValue(acc: ContractMap, key: string, value: string) {
   acc[key] ??= [];
