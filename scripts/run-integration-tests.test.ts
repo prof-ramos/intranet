@@ -38,6 +38,7 @@ describe('run-integration-tests', () => {
     unsafeUrl.hostname = 'db.example.com';
     unsafeUrl.username = 'integration_test';
     delete env.DATABASE_URL;
+    delete env.INTEGRATION_TESTS_ALLOW_REMOTE;
     writeFileSync(
       path.join(directory, '.env.test.local'),
       `${databaseUrlKey}=${unsafeUrl.toString()}\n`,
