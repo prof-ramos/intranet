@@ -12,22 +12,22 @@ const {
   requireAuthMock,
   revalidatePathMock,
   revalidateTagMock,
-  createDependentMock,
-  updateDependentByIdMock,
-  deleteDependentByIdMock,
-  createHealthAgreementMock,
-  updateHealthAgreementByIdMock,
-  deleteHealthAgreementByIdMock,
+  createAssociateDependentMock,
+  updateAssociateDependentMock,
+  deleteAssociateDependentMock,
+  createAssociateHealthAgreementMock,
+  updateAssociateHealthAgreementMock,
+  deleteAssociateHealthAgreementMock,
 } = vi.hoisted(() => ({
   requireAuthMock: vi.fn(),
   revalidatePathMock: vi.fn(),
   revalidateTagMock: vi.fn(),
-  createDependentMock: vi.fn(),
-  updateDependentByIdMock: vi.fn(),
-  deleteDependentByIdMock: vi.fn(),
-  createHealthAgreementMock: vi.fn(),
-  updateHealthAgreementByIdMock: vi.fn(),
-  deleteHealthAgreementByIdMock: vi.fn(),
+  createAssociateDependentMock: vi.fn(),
+  updateAssociateDependentMock: vi.fn(),
+  deleteAssociateDependentMock: vi.fn(),
+  createAssociateHealthAgreementMock: vi.fn(),
+  updateAssociateHealthAgreementMock: vi.fn(),
+  deleteAssociateHealthAgreementMock: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/require-auth', () => ({
@@ -39,13 +39,16 @@ vi.mock('next/cache', () => ({
   revalidateTag: (...args: unknown[]) => revalidateTagMock(...args),
 }));
 
-vi.mock('@/lib/associates/repository', () => ({
-  createDependent: (...args: unknown[]) => createDependentMock(...args),
-  updateDependentById: (...args: unknown[]) => updateDependentByIdMock(...args),
-  deleteDependentById: (...args: unknown[]) => deleteDependentByIdMock(...args),
-  createHealthAgreement: (...args: unknown[]) => createHealthAgreementMock(...args),
-  updateHealthAgreementById: (...args: unknown[]) => updateHealthAgreementByIdMock(...args),
-  deleteHealthAgreementById: (...args: unknown[]) => deleteHealthAgreementByIdMock(...args),
+vi.mock('@/lib/associates/service', () => ({
+  createAssociateDependent: (...args: unknown[]) => createAssociateDependentMock(...args),
+  updateAssociateDependent: (...args: unknown[]) => updateAssociateDependentMock(...args),
+  deleteAssociateDependent: (...args: unknown[]) => deleteAssociateDependentMock(...args),
+  createAssociateHealthAgreement: (...args: unknown[]) =>
+    createAssociateHealthAgreementMock(...args),
+  updateAssociateHealthAgreement: (...args: unknown[]) =>
+    updateAssociateHealthAgreementMock(...args),
+  deleteAssociateHealthAgreement: (...args: unknown[]) =>
+    deleteAssociateHealthAgreementMock(...args),
 }));
 
 function fd(fields: Record<string, string | null>) {
@@ -72,13 +75,14 @@ describe('associate [id] actions', () => {
   // ─── addDependentAction ─────────────────────────────────────────────────
 
   it('addDependentAction: creates dependent and revalidates', async () => {
-    await addDependentAction(fd({ associateId: '42', name: 'Maria Silva', relationship: 'conjuge' }));
+    await addDependentAction(
+      fd({ associateId: '42', name: 'Maria Silva', relationship: 'conjuge' }),
+    );
 
-    expect(createDependentMock).toHaveBeenCalledWith({
-      associateId: 42,
-      name: 'Maria Silva',
-      relationship: 'conjuge',
-    });
+    expect(createAssociateDependentMock).toHaveBeenCalledWith(
+      { associateId: 42, name: 'Maria Silva', relationship: 'conjuge' },
+      5,
+    );
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados/42');
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
@@ -89,18 +93,21 @@ describe('associate [id] actions', () => {
     await expect(
       addDependentAction(fd({ associateId: '42', name: '', relationship: 'filho' })),
     ).rejects.toThrow();
-    expect(createDependentMock).not.toHaveBeenCalled();
+    expect(createAssociateDependentMock).not.toHaveBeenCalled();
   });
 
   // ─── editDependentAction ────────────────────────────────────────────────
 
   it('editDependentAction: updates dependent and revalidates', async () => {
-    await editDependentAction(fd({ id: '7', associateId: '42', name: 'João', relationship: 'filho' }));
+    await editDependentAction(
+      fd({ id: '7', associateId: '42', name: 'João', relationship: 'filho' }),
+    );
 
-    expect(updateDependentByIdMock).toHaveBeenCalledWith(
+    expect(updateAssociateDependentMock).toHaveBeenCalledWith(
       7,
       { name: 'João', relationship: 'filho' },
       42,
+      5,
     );
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
     expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
@@ -109,14 +116,17 @@ describe('associate [id] actions', () => {
   it('editDependentAction: secretaria role is accepted', async () => {
     requireAuthMock.mockResolvedValue({ userId: 9, role: 'secretaria' });
     await editDependentAction(fd({ id: '7', associateId: '42', name: 'Ana', relationship: 'mae' }));
-    expect(updateDependentByIdMock).toHaveBeenCalled();
+    expect(updateAssociateDependentMock).toHaveBeenCalledWith(
+      7,
+      { name: 'Ana', relationship: 'mae' },
+      42,
+      9,
+    );
   });
 
   it('editDependentAction: throws on Zod failure when id is missing', async () => {
-    await expect(
-      editDependentAction(fd({ associateId: '42', name: 'João' })),
-    ).rejects.toThrow();
-    expect(updateDependentByIdMock).not.toHaveBeenCalled();
+    await expect(editDependentAction(fd({ associateId: '42', name: 'João' }))).rejects.toThrow();
+    expect(updateAssociateDependentMock).not.toHaveBeenCalled();
   });
 
   // ─── removeDependentAction ──────────────────────────────────────────────
@@ -124,17 +134,15 @@ describe('associate [id] actions', () => {
   it('removeDependentAction: deletes dependent and revalidates', async () => {
     await removeDependentAction(fd({ id: '3', associateId: '42' }));
 
-    expect(deleteDependentByIdMock).toHaveBeenCalledWith(3, 42);
+    expect(deleteAssociateDependentMock).toHaveBeenCalledWith(3, 42, 5);
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados');
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
     expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
   });
 
   it('removeDependentAction: throws on Zod failure when id is not a number', async () => {
-    await expect(
-      removeDependentAction(fd({ id: 'abc', associateId: '42' })),
-    ).rejects.toThrow();
-    expect(deleteDependentByIdMock).not.toHaveBeenCalled();
+    await expect(removeDependentAction(fd({ id: 'abc', associateId: '42' }))).rejects.toThrow();
+    expect(deleteAssociateDependentMock).not.toHaveBeenCalled();
   });
 
   // ─── addHealthAgreementAction ───────────────────────────────────────────
@@ -144,12 +152,10 @@ describe('associate [id] actions', () => {
       fd({ associateId: '42', provider: 'Unimed', startDate: '2026-01-01', endDate: '' }),
     );
 
-    expect(createHealthAgreementMock).toHaveBeenCalledWith({
-      associateId: 42,
-      provider: 'Unimed',
-      startDate: '2026-01-01',
-      endDate: null,
-    });
+    expect(createAssociateHealthAgreementMock).toHaveBeenCalledWith(
+      { associateId: 42, provider: 'Unimed', startDate: '2026-01-01', endDate: null },
+      5,
+    );
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
     expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
   });
@@ -158,7 +164,7 @@ describe('associate [id] actions', () => {
     await expect(
       addHealthAgreementAction(fd({ associateId: '42', provider: '' })),
     ).rejects.toThrow();
-    expect(createHealthAgreementMock).not.toHaveBeenCalled();
+    expect(createAssociateHealthAgreementMock).not.toHaveBeenCalled();
   });
 
   // ─── editHealthAgreementAction ──────────────────────────────────────────
@@ -166,10 +172,11 @@ describe('associate [id] actions', () => {
   it('editHealthAgreementAction: updates health agreement and revalidates', async () => {
     await editHealthAgreementAction(fd({ id: '10', associateId: '42', provider: 'SulAmérica' }));
 
-    expect(updateHealthAgreementByIdMock).toHaveBeenCalledWith(
+    expect(updateAssociateHealthAgreementMock).toHaveBeenCalledWith(
       10,
       expect.objectContaining({ provider: 'SulAmérica' }),
       42,
+      5,
     );
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
     expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
@@ -178,14 +185,19 @@ describe('associate [id] actions', () => {
   it('editHealthAgreementAction: diretoria role is accepted', async () => {
     requireAuthMock.mockResolvedValue({ userId: 8, role: 'diretoria' });
     await editHealthAgreementAction(fd({ id: '10', associateId: '42', provider: 'Bradesco' }));
-    expect(updateHealthAgreementByIdMock).toHaveBeenCalled();
+    expect(updateAssociateHealthAgreementMock).toHaveBeenCalledWith(
+      10,
+      expect.objectContaining({ provider: 'Bradesco' }),
+      42,
+      8,
+    );
   });
 
   it('editHealthAgreementAction: throws on Zod failure when id is missing', async () => {
     await expect(
       editHealthAgreementAction(fd({ associateId: '42', provider: 'Unimed' })),
     ).rejects.toThrow();
-    expect(updateHealthAgreementByIdMock).not.toHaveBeenCalled();
+    expect(updateAssociateHealthAgreementMock).not.toHaveBeenCalled();
   });
 
   // ─── removeHealthAgreementAction ────────────────────────────────────────
@@ -193,16 +205,14 @@ describe('associate [id] actions', () => {
   it('removeHealthAgreementAction: deletes health agreement and revalidates', async () => {
     await removeHealthAgreementAction(fd({ id: '5', associateId: '42' }));
 
-    expect(deleteHealthAgreementByIdMock).toHaveBeenCalledWith(5, 42);
+    expect(deleteAssociateHealthAgreementMock).toHaveBeenCalledWith(5, 42, 5);
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados');
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
     expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
   });
 
   it('removeHealthAgreementAction: throws on Zod failure when associateId is invalid', async () => {
-    await expect(
-      removeHealthAgreementAction(fd({ id: '5', associateId: '-1' })),
-    ).rejects.toThrow();
-    expect(deleteHealthAgreementByIdMock).not.toHaveBeenCalled();
+    await expect(removeHealthAgreementAction(fd({ id: '5', associateId: '-1' }))).rejects.toThrow();
+    expect(deleteAssociateHealthAgreementMock).not.toHaveBeenCalled();
   });
 });

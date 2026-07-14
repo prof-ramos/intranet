@@ -3,13 +3,13 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { defineFormAction } from '@/lib/server-actions/define-form-action';
 import {
-  createDependent,
-  updateDependentById,
-  deleteDependentById,
-  createHealthAgreement,
-  updateHealthAgreementById,
-  deleteHealthAgreementById,
-} from '@/lib/associates/repository';
+  createAssociateDependent,
+  updateAssociateDependent,
+  deleteAssociateDependent,
+  createAssociateHealthAgreement,
+  updateAssociateHealthAgreement,
+  deleteAssociateHealthAgreement,
+} from '@/lib/associates/service';
 import {
   createDependentSchema,
   updateDependentSchema,
@@ -32,8 +32,8 @@ function revalidateAssociatePaths(associateId: number) {
 export const addDependentAction = defineFormAction({
   auth: ['admin', 'diretoria', 'secretaria'] as const,
   schema: createDependentSchema,
-  service: async (data) => {
-    await createDependent(data);
+  service: async (data, actor) => {
+    await createAssociateDependent(data, actor.userId);
     revalidateAssociatePaths(data.associateId);
   },
 });
@@ -41,10 +41,10 @@ export const addDependentAction = defineFormAction({
 export const editDependentAction = defineFormAction({
   auth: ['admin', 'diretoria', 'secretaria'] as const,
   schema: updateDependentSchema,
-  service: async (data) => {
+  service: async (data, actor) => {
     const { id, associateId, ...values } = data;
     if (Object.keys(values).length === 0) return;
-    await updateDependentById(id, values, associateId);
+    await updateAssociateDependent(id, values, associateId, actor.userId);
     revalidateAssociatePaths(associateId);
   },
 });
@@ -52,8 +52,8 @@ export const editDependentAction = defineFormAction({
 export const removeDependentAction = defineFormAction({
   auth: ['admin', 'diretoria', 'secretaria'] as const,
   schema: deleteDependentSchema,
-  service: async (data) => {
-    await deleteDependentById(data.id, data.associateId);
+  service: async (data, actor) => {
+    await deleteAssociateDependent(data.id, data.associateId, actor.userId);
     revalidateAssociatePaths(data.associateId);
   },
 });
@@ -68,8 +68,8 @@ export const addHealthAgreementAction = defineFormAction({
     if (r.endDate === '') r.endDate = null;
     return r;
   },
-  service: async (data) => {
-    await createHealthAgreement(data);
+  service: async (data, actor) => {
+    await createAssociateHealthAgreement(data, actor.userId);
     revalidateAssociatePaths(data.associateId);
   },
 });
@@ -82,10 +82,10 @@ export const editHealthAgreementAction = defineFormAction({
     if (r.endDate === '') r.endDate = undefined;
     return r;
   },
-  service: async (data) => {
+  service: async (data, actor) => {
     const { id, associateId, ...values } = data;
     if (Object.keys(values).length === 0) return;
-    await updateHealthAgreementById(id, values, associateId);
+    await updateAssociateHealthAgreement(id, values, associateId, actor.userId);
     revalidateAssociatePaths(associateId);
   },
 });
@@ -93,8 +93,8 @@ export const editHealthAgreementAction = defineFormAction({
 export const removeHealthAgreementAction = defineFormAction({
   auth: ['admin', 'diretoria', 'secretaria'] as const,
   schema: deleteHealthAgreementSchema,
-  service: async (data) => {
-    await deleteHealthAgreementById(data.id, data.associateId);
+  service: async (data, actor) => {
+    await deleteAssociateHealthAgreement(data.id, data.associateId, actor.userId);
     revalidateAssociatePaths(data.associateId);
   },
 });

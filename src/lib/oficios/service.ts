@@ -16,6 +16,20 @@ import { NotFoundError } from '@/lib/errors';
 
 const logger = createLogger('oficios:service');
 
+type OfficialLetterAuditArgs = Parameters<typeof logAuditAction>[0];
+
+async function logOfficialLetterAuditBestEffort(auditArgs: OfficialLetterAuditArgs) {
+  try {
+    await logAuditAction(auditArgs);
+  } catch {
+    logger.warn('Audit log failed after committed official letter mutation', {
+      action: auditArgs.action,
+      entityType: auditArgs.entityType,
+      entityId: auditArgs.entityId,
+    });
+  }
+}
+
 const OFFICIAL_LETTER_OPERATIONAL_STATUS = 'gerado' satisfies NewOfficialLetter['status'];
 
 function isOperationalOfficialLetterStatus(status: NewOfficialLetter['status']) {
@@ -37,7 +51,7 @@ export async function saveOfficialLetter(
   data: Omit<NewOfficialLetter, 'number' | 'year' | 'sequence' | 'createdBy'>,
   userId: number,
 ) {
-  return db.transaction(async (tx) => {
+  const { result, auditArgs } = await db.transaction(async (tx) => {
     const year = new Date().getFullYear();
     const { number, sequence } = await generateOfficialLetterNumber(year, tx);
 
@@ -51,15 +65,6 @@ export async function saveOfficialLetter(
       },
       tx,
     );
-
-    await logAuditAction({
-      adminId: userId,
-      action: 'official_letter_created',
-      entityType: 'official_letter',
-      entityId: result.id,
-      changes: { old: {}, new: result },
-      metadata: { number: result.number },
-    });
 
     if (isOperationalOfficialLetterStatus(result.status)) {
       await emitDomainEvent(
@@ -82,8 +87,21 @@ export async function saveOfficialLetter(
       );
     }
 
-    return result;
+    return {
+      result,
+      auditArgs: {
+        adminId: userId,
+        action: 'official_letter_created',
+        entityType: 'official_letter' as const,
+        entityId: result.id,
+        changes: { old: {}, new: result },
+        metadata: { number: result.number },
+      },
+    };
   });
+
+  await logOfficialLetterAuditBestEffort(auditArgs);
+  return result;
 }
 
 export async function updateOfficialLetter(
@@ -91,7 +109,7 @@ export async function updateOfficialLetter(
   data: Partial<NewOfficialLetter>,
   userId: number,
 ) {
-  return db.transaction(async (tx) => {
+  const { result, auditArgs } = await db.transaction(async (tx) => {
     const old = await repository.findOfficialLetterById(id, tx);
     if (!old) throw new NotFoundError('Ofício');
 
@@ -100,14 +118,6 @@ export async function updateOfficialLetter(
       throw new Error('Falha ao atualizar ofício.');
       // ponytail: generic internal failure — not classifiable as a domain error
     }
-
-    await logAuditAction({
-      adminId: userId,
-      action: 'official_letter_updated',
-      entityType: 'official_letter',
-      entityId: id,
-      changes: { old, new: result },
-    });
 
     if (
       !isOperationalOfficialLetterStatus(old.status) &&
@@ -133,27 +143,43 @@ export async function updateOfficialLetter(
       );
     }
 
-    return result;
+    return {
+      result,
+      auditArgs: {
+        adminId: userId,
+        action: 'official_letter_updated',
+        entityType: 'official_letter' as const,
+        entityId: id,
+        changes: { old, new: result },
+      },
+    };
   });
+
+  await logOfficialLetterAuditBestEffort(auditArgs);
+  return result;
 }
 
 export async function cancelOfficialLetter(id: number, userId: number) {
-  return db.transaction(async (tx) => {
+  const { result, auditArgs } = await db.transaction(async (tx) => {
     const old = await repository.findOfficialLetterById(id, tx);
     if (!old) throw new NotFoundError('Ofício');
 
     const result = await repository.cancelOfficialLetter(id, userId, tx);
 
-    await logAuditAction({
-      adminId: userId,
-      action: 'official_letter_cancelled',
-      entityType: 'official_letter',
-      entityId: id,
-      changes: { old, new: result },
-    });
-
-    return result;
+    return {
+      result,
+      auditArgs: {
+        adminId: userId,
+        action: 'official_letter_cancelled',
+        entityType: 'official_letter' as const,
+        entityId: id,
+        changes: { old, new: result },
+      },
+    };
   });
+
+  await logOfficialLetterAuditBestEffort(auditArgs);
+  return result;
 }
 
 export async function sendForSignature(
@@ -165,7 +191,10 @@ export async function sendForSignature(
   const apiKey = env.ASSINAFY_API_KEY;
   const accountId = env.ASSINAFY_ACCOUNT_ID;
   if (!apiKey || !accountId) {
-    return { success: false, error: 'Assinafy não está configurado. Verifique as variáveis de ambiente.' };
+    return {
+      success: false,
+      error: 'Assinafy não está configurado. Verifique as variáveis de ambiente.',
+    };
   }
 
   // 2. Fetch oficio
@@ -176,7 +205,10 @@ export async function sendForSignature(
 
   // 3. Eligibility check: only gerado or rascunho
   if (oficio.status !== 'gerado' && oficio.status !== 'rascunho') {
-    return { success: false, error: `Ofício com status "${oficio.status}" não pode ser enviado para assinatura.` };
+    return {
+      success: false,
+      error: `Ofício com status "${oficio.status}" não pode ser enviado para assinatura.`,
+    };
   }
 
   // 4. Idempotency check
@@ -232,7 +264,10 @@ export async function sendForSignature(
         documentId: doc.id,
         assignmentId: assignment.id,
       });
-      return { success: false, error: 'Falha ao obter URL de assinatura. Recursos órfãos criados na Assinafy.' };
+      return {
+        success: false,
+        error: 'Falha ao obter URL de assinatura. Recursos órfãos criados na Assinafy.',
+      };
     }
 
     const signingUrl = assignment.signing_urls[0]!.url;
@@ -285,13 +320,7 @@ export async function sendForSignature(
       };
     });
 
-    // Best-effort audit AFTER the tx commits. A failed audit INSERT must not abort the
-    // mutation's tx (the audit executor poisons PG tx on failure). Default `db` isolates the audit.
-    try {
-      await logAuditAction(auditArgs);
-    } catch {
-      logger.error('Audit log failed (non-critical)', { oficioId });
-    }
+    await logOfficialLetterAuditBestEffort(auditArgs);
 
     if (!updated) {
       return { success: false, error: 'Ofício não encontrado ao atualizar.' };
