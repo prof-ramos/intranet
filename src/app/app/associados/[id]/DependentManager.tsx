@@ -95,23 +95,54 @@ export function DependentManager({ associateId, items }: DependentManagerProps) 
           <form key={dep.id} onSubmit={handleEdit} className="flex items-center gap-2">
             <input type="hidden" name="id" value={dep.id} />
             <input type="hidden" name="associateId" value={associateId} />
-            <input name="name" aria-label="Nome do dependente" defaultValue={dep.name} required style={inputStyle} className="max-w-[180px]" />
-            <input name="relationship" aria-label="Parentesco" defaultValue={dep.relationship} required style={inputStyle} className="max-w-[120px]" />
+            <input
+              name="name"
+              aria-label="Nome do dependente"
+              defaultValue={dep.name}
+              required
+              style={inputStyle}
+              className="max-w-[180px]"
+            />
+            <input
+              name="relationship"
+              aria-label="Parentesco"
+              defaultValue={dep.relationship}
+              required
+              style={inputStyle}
+              className="max-w-[120px]"
+            />
             <button type="submit" disabled={pending} className={btnSmall} aria-label="Salvar">
               <Check size={14} />
             </button>
-            <button type="button" onClick={() => setEditingId(null)} className={btnSmall} aria-label="Cancelar">
+            <button
+              type="button"
+              onClick={() => setEditingId(null)}
+              className={btnSmall}
+              aria-label="Cancelar"
+            >
               <X size={14} />
             </button>
           </form>
         ) : (
           <div key={dep.id} className="group flex items-center gap-2">
             <span className="text-sm">{dep.name}</span>
-            <span className="text-xs" style={{ color: 'rgba(13,31,60,0.55)' }}>{dep.relationship}</span>
-            <button type="button" onClick={() => setEditingId(dep.id)} className={`${btnSmall} opacity-0 group-hover:opacity-100`} aria-label="Editar dependente">
+            <span className="text-xs" style={{ color: 'rgba(13,31,60,0.55)' }}>
+              {dep.relationship}
+            </span>
+            <button
+              type="button"
+              onClick={() => setEditingId(dep.id)}
+              className={`${btnSmall} opacity-0 group-hover:opacity-100`}
+              aria-label="Editar dependente"
+            >
               <Pencil size={13} />
             </button>
-            <button type="button" onClick={() => handleDelete(dep.id)} className={`${btnSmall} opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700`} aria-label="Remover dependente">
+            <button
+              type="button"
+              onClick={() => handleDelete(dep.id)}
+              className={`${btnSmall} text-red-500 opacity-0 group-hover:opacity-100 hover:text-red-700`}
+              aria-label="Remover dependente"
+            >
               <Trash2 size={13} />
             </button>
           </div>
@@ -121,12 +152,31 @@ export function DependentManager({ associateId, items }: DependentManagerProps) 
       {adding && (
         <form onSubmit={handleAdd} className="flex items-center gap-2">
           <input type="hidden" name="associateId" value={associateId} />
-          <input name="name" aria-label="Nome do dependente" placeholder="Nome" required style={inputStyle} className="max-w-[180px]" />
-          <input name="relationship" aria-label="Parentesco" placeholder="Parentesco" required style={inputStyle} className="max-w-[120px]" />
+          <input
+            name="name"
+            aria-label="Nome do dependente"
+            placeholder="Nome"
+            required
+            style={inputStyle}
+            className="max-w-[180px]"
+          />
+          <input
+            name="relationship"
+            aria-label="Parentesco"
+            placeholder="Parentesco"
+            required
+            style={inputStyle}
+            className="max-w-[120px]"
+          />
           <button type="submit" disabled={pending} className={btnSmall} aria-label="Adicionar">
             <Check size={14} />
           </button>
-          <button type="button" onClick={() => setAdding(false)} className={btnSmall} aria-label="Cancelar">
+          <button
+            type="button"
+            onClick={() => setAdding(false)}
+            className={btnSmall}
+            aria-label="Cancelar"
+          >
             <X size={14} />
           </button>
         </form>
@@ -153,11 +203,18 @@ interface HealthAgreementManagerProps {
   items: HealthAgreementViewItem[];
 }
 
+// ⚡ Bolt: Cache Intl.DateTimeFormat instance to avoid expensive object creation on every render cycle.
+const shortDateFormatter = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+
 function formatDateShort(dateStr: string | null): string {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
   if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return shortDateFormatter.format(d);
 }
 
 export function HealthAgreementManager({ associateId, items }: HealthAgreementManagerProps) {
@@ -216,13 +273,39 @@ export function HealthAgreementManager({ associateId, items }: HealthAgreementMa
           <form key={ha.id} onSubmit={handleEdit} className="flex flex-wrap items-center gap-2">
             <input type="hidden" name="id" value={ha.id} />
             <input type="hidden" name="associateId" value={associateId} />
-            <input name="provider" aria-label="Nome do convênio" defaultValue={ha.provider} required style={inputStyle} className="max-w-[180px]" />
-            <input name="startDate" aria-label="Data de início" type="date" defaultValue={ha.startDate ?? ''} style={inputStyle} className="max-w-[140px]" />
-            <input name="endDate" aria-label="Data de fim" type="date" defaultValue={ha.endDate ?? ''} style={inputStyle} className="max-w-[140px]" />
+            <input
+              name="provider"
+              aria-label="Nome do convênio"
+              defaultValue={ha.provider}
+              required
+              style={inputStyle}
+              className="max-w-[180px]"
+            />
+            <input
+              name="startDate"
+              aria-label="Data de início"
+              type="date"
+              defaultValue={ha.startDate ?? ''}
+              style={inputStyle}
+              className="max-w-[140px]"
+            />
+            <input
+              name="endDate"
+              aria-label="Data de fim"
+              type="date"
+              defaultValue={ha.endDate ?? ''}
+              style={inputStyle}
+              className="max-w-[140px]"
+            />
             <button type="submit" disabled={pending} className={btnSmall} aria-label="Salvar">
               <Check size={14} />
             </button>
-            <button type="button" onClick={() => setEditingId(null)} className={btnSmall} aria-label="Cancelar">
+            <button
+              type="button"
+              onClick={() => setEditingId(null)}
+              className={btnSmall}
+              aria-label="Cancelar"
+            >
               <X size={14} />
             </button>
           </form>
@@ -238,10 +321,20 @@ export function HealthAgreementManager({ associateId, items }: HealthAgreementMa
                     : `Até ${formatDateShort(ha.endDate!)}`}
               </span>
             )}
-            <button type="button" onClick={() => setEditingId(ha.id)} className={`${btnSmall} opacity-0 group-hover:opacity-100`} aria-label="Editar convênio">
+            <button
+              type="button"
+              onClick={() => setEditingId(ha.id)}
+              className={`${btnSmall} opacity-0 group-hover:opacity-100`}
+              aria-label="Editar convênio"
+            >
               <Pencil size={13} />
             </button>
-            <button type="button" onClick={() => handleDelete(ha.id)} className={`${btnSmall} opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700`} aria-label="Remover convênio">
+            <button
+              type="button"
+              onClick={() => handleDelete(ha.id)}
+              className={`${btnSmall} text-red-500 opacity-0 group-hover:opacity-100 hover:text-red-700`}
+              aria-label="Remover convênio"
+            >
               <Trash2 size={13} />
             </button>
           </div>
@@ -251,13 +344,37 @@ export function HealthAgreementManager({ associateId, items }: HealthAgreementMa
       {adding && (
         <form onSubmit={handleAdd} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="associateId" value={associateId} />
-          <input name="provider" aria-label="Nome do convênio" placeholder="Convênio" required style={inputStyle} className="max-w-[180px]" />
-          <input name="startDate" aria-label="Data de início" type="date" style={inputStyle} className="max-w-[140px]" />
-          <input name="endDate" aria-label="Data de fim" type="date" style={inputStyle} className="max-w-[140px]" />
+          <input
+            name="provider"
+            aria-label="Nome do convênio"
+            placeholder="Convênio"
+            required
+            style={inputStyle}
+            className="max-w-[180px]"
+          />
+          <input
+            name="startDate"
+            aria-label="Data de início"
+            type="date"
+            style={inputStyle}
+            className="max-w-[140px]"
+          />
+          <input
+            name="endDate"
+            aria-label="Data de fim"
+            type="date"
+            style={inputStyle}
+            className="max-w-[140px]"
+          />
           <button type="submit" disabled={pending} className={btnSmall} aria-label="Adicionar">
             <Check size={14} />
           </button>
-          <button type="button" onClick={() => setAdding(false)} className={btnSmall} aria-label="Cancelar">
+          <button
+            type="button"
+            onClick={() => setAdding(false)}
+            className={btnSmall}
+            aria-label="Cancelar"
+          >
             <X size={14} />
           </button>
         </form>
