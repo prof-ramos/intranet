@@ -134,6 +134,7 @@ describe('activities repository', () => {
       expect(dbMock._selectChain.orderBy).toHaveBeenCalledWith(
         expect.anything(),
         expect.anything(),
+        expect.anything(),
       );
     });
   });

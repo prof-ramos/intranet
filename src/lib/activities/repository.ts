@@ -74,10 +74,10 @@ export async function findActivities(options: { limit?: number; offset?: number 
   const limit = Math.min(Math.max(options.limit ?? DEFAULT_ACTIVITY_LIMIT, 1), MAX_ACTIVITY_LIMIT);
   const offset = Math.max(options.offset ?? 0, 0);
 
-  // The board is deliberately bounded. Select the most recently changed
-  // activities first so a newly-created card cannot fall outside the window
-  // merely because older rows have the same status/priority/due date. Sort the
-  // selected window back into board order before returning it to the UI.
+  // The board is deliberately bounded. Keep open work ahead of completed work,
+  // then select the most recently changed rows so a newly-created card cannot
+  // fall outside the window merely because older rows have the same board rank.
+  // Sort the selected window back into board order before returning it to the UI.
   const rows = await db
     .select({
       id: activities.id,
@@ -96,7 +96,11 @@ export async function findActivities(options: { limit?: number; offset?: number 
     .from(activities)
     .leftJoin(admins, eq(activities.assigneeId, admins.id))
     .leftJoin(associates, eq(activities.associateId, associates.id))
-    .orderBy(desc(activities.updatedAt), desc(activities.id))
+    .orderBy(
+      asc(sql`case when ${activities.status} = 'concluido' then 1 else 0 end`),
+      desc(activities.updatedAt),
+      desc(activities.id),
+    )
     .limit(limit)
     .offset(offset);
 
