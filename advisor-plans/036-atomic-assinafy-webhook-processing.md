@@ -59,7 +59,8 @@ de resultado inequívoco.
 - `ignored`: tipo desconhecido ou Ofício ausente; o nonce confirma para evitar
   repetição inútil;
 - `failed`: a transação, inclusive o nonce, foi revertida e o evento pode ser
-  tentado novamente.
+  tentado novamente;
+- `invalid`: evento com `event.id` inválido ou malformado (vazio, nulo ou não-string); o nonce não é persistido e a rota retorna erro terminal (HTTP 400), sem retry.
 
 Não inclua exceções ou payloads no resultado público. O retorno `processed` deve
 conter apenas campos de uma allowlist canônica definida pelo contrato do Plano
