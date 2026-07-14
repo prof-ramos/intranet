@@ -106,11 +106,11 @@ quanto nos logs. Logs devem continuar sem PII.
 
 ### Etapa 1: Criar resultado explícito e helper de claim
 
-Em `service.ts`, exporte o tipo discriminado com os quatro estados. Crie helper
+Em `service.ts`, exporte o tipo discriminado com os cinco estados: `processed | duplicate | ignored | failed | invalid`. Crie helper
 interno que:
 
 1. Valide `event.id` — rejeite eventos com `id` vazio, nulo ou não-string com
-   `failed` **sem** persistir nonce;
+   `invalid` **sem** persistir nonce;
 2. Insira `integrationSignatureNonces` com:
    - `keyId = 'assinafy'`;
    - `signature = String(event.id)` (válido após validação);

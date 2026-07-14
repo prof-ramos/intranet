@@ -47,15 +47,11 @@ return NextResponse.json({ received: true });
 ```
 
 Após o Plano 036, o service deve retornar
-`processed | duplicate | ignored | failed`, e `failed` deve significar rollback
+`processed | duplicate | ignored | failed | invalid`, e `failed` deve significar rollback
 do nonce — representa exclusivamente falhas recuperáveis com nonce revertido.
 A rota não pode mais persistir nonce.
 
-Se o Plano 036 também retornar `failed` para falhas não recuperáveis (ex.:
-event.id inválido, evento malformado sem possibilidade de retry), introduza uma
-distinção entre `failed` (recuperável, HTTP 500) e um resultado terminal (ex.:
-`rejected` ou `invalid`) que retorne HTTP 200 ou 400 — evitando que a rota
-converta toda falha em retry infinito. Defina testes para ambos os casos.
+Como o Plano 036 retorna `invalid` para falhas não recuperáveis (como event.id inválido/malformado), a rota deve retornar HTTP 400 ou 200 (terminal) para o caso de `invalid`, e HTTP 500 (retryable) apenas para o caso de `failed`, evitando que a rota converta falhas permanentes em retry infinito. Defina testes para ambos os casos.
 
 Este plano é inválido enquanto essas condições não forem verdadeiras.
 
@@ -105,12 +101,12 @@ dados sensíveis. Devolva o corpo genérico existente
 `{ error: 'Internal server error' }` com status 500. Não registre payload,
 exceção, PII nem mensagem interna na rota.
 
-Retorne 200 `{ received: true }` para `processed`, `duplicate` e `ignored`.
+Retorne 200 `{ received: true }` para `processed`, `duplicate` e `ignored`, e HTTP 400 para `invalid`.
 Mantenha o `catch` defensivo da rota para rejeições inesperadas.
 
-**Verificar**: testes da rota cobrem status exato dos quatro estados e de uma
+**Verificar**: testes da rota cobrem status exato dos cinco estados e de uma
 rejeição inesperada. Testes adicionais confirmam que payload, exceção, event.id
-e dados sensíveis não chegam ao logger no caso `failed`.
+e dados sensíveis não chegam ao logger no caso `failed` ou `invalid`.
 
 ### Etapa 2: Corrigir o teste mockado enganoso
 
@@ -147,6 +143,7 @@ Rode a sequência oficial e revise o diff contra vazamento de erro interno.
 ## Plano de testes
 
 - `processed`, `duplicate` e `ignored` → 200.
+- `invalid` → 400.
 - `failed` resolvido → 500 genérico.
 - rejeição inesperada → 500 genérico.
 - falha real → sem nonce; mesmo evento processa uma vez posteriormente.
@@ -154,6 +151,7 @@ Rode a sequência oficial e revise o diff contra vazamento de erro interno.
 ## Critérios de conclusão
 
 - [ ] Falha real do service produz HTTP 500.
+- [ ] Evento inválido produz HTTP 400.
 - [ ] Duplicado e no-op continuam HTTP 200.
 - [ ] Tentativa falha não confirma nonce.
 - [ ] Resposta/log não expõe exceção nem payload.

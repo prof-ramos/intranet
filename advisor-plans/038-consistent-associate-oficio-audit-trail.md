@@ -188,8 +188,7 @@ não encontra novos payloads de auditoria, e todos os gates passam.
 - [ ] Toda mutação selecionada tenta auditoria atribuível após sucesso
       (best-effort; falha de auditoria não altera resultado confirmado).
 - [ ] Falha/rollback não grava auditoria.
-- [ ] Falha de auditoria é observável (log de warning) e possui caminho de
-      recuperação (reintentável sem alterar o código de produção).
+- [ ] Falha de auditoria é observável (log de warning, sem interromper o fluxo de produção).
 - [ ] Auditoria de Ofícios ocorre após commit.
 - [ ] Payload não contém PII, nomes de dependentes, plano, ciphertext ou hashes.
 - [ ] Autorização e outbox permanecem iguais.
