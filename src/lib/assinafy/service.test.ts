@@ -1,81 +1,87 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { handleWebhookEvent } from './service';
 import type { AssinafyWebhookEvent } from './types';
 
-const { mockUpdateAssinafyStatus, mockFindOficioByAssinafyDocumentId, mockAdminQueryResult } =
-  vi.hoisted(() => ({
-    mockUpdateAssinafyStatus: vi.fn(),
-    mockFindOficioByAssinafyDocumentId: vi.fn(),
-    mockAdminQueryResult: { current: [] as Array<{ id: number }> },
-  }));
-
-vi.mock('./repository', () => ({
-  findOficioByAssinafyDocumentId: mockFindOficioByAssinafyDocumentId,
-  updateAssinafyStatus: mockUpdateAssinafyStatus,
-}));
-
-vi.mock('@/lib/db', () => {
-  // Chainable mock for Drizzle's query builder inside transactions.
-  // Supports select().from().where() and insert().values().onConflictDoNothing().returning().
-  const thenable = { then: (resolve: (val: unknown) => void) => resolve([]) };
-
-  const queryBuilder: Record<string, unknown> = {
-    orderBy: () => ({
-      ...thenable,
-      limit: () => Promise.resolve([]),
-    }),
+const {
+  mockAdminRows,
+  mockClaimRows,
+  mockCreateNotificationsBatch,
+  mockEmitDomainEvent,
+  mockFindOficioForUpdate,
+  mockInsert,
+  mockLogAuditAction,
+  mockLogger,
+  mockReturning,
+  mockTransaction,
+  mockTx,
+  mockUpdateAssinafyStatus,
+  mockValues,
+} = vi.hoisted(() => {
+  const mockAdminRows = { current: [] as Array<{ id: number }> };
+  const mockClaimRows = { current: [{ id: 99 }] as Array<{ id: number }> };
+  const mockReturning = vi.fn(() => Promise.resolve(mockClaimRows.current));
+  const mockOnConflictDoNothing = vi.fn(() => ({ returning: mockReturning }));
+  const mockValues = vi.fn(() => ({ onConflictDoNothing: mockOnConflictDoNothing }));
+  const mockInsert = vi.fn(() => ({ values: mockValues }));
+  const mockWhere = vi.fn(() => Promise.resolve(mockAdminRows.current));
+  const mockFrom = vi.fn(() => ({ where: mockWhere }));
+  const mockTx = {
+    insert: mockInsert,
+    select: vi.fn(() => ({ from: mockFrom })),
   };
-  (queryBuilder as Record<string, unknown>).then = (resolve: (val: unknown) => void) =>
-    resolve(mockAdminQueryResult.current);
-
-  const mockTx = new Proxy({} as Record<string, unknown>, {
-    get(_target, prop: string) {
-      if (prop === 'then') return undefined;
-      return () => {
-        if (prop === 'where') return queryBuilder;
-        if (prop === 'limit') return Promise.resolve([]);
-        if (prop === 'returning') return Promise.resolve([]);
-        return mockTx;
-      };
-    },
-  });
+  const mockTransaction = vi.fn(async (callback: (tx: typeof mockTx) => Promise<unknown>) =>
+    callback(mockTx),
+  );
 
   return {
-    db: {
-      transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb(mockTx)),
-    },
+    mockAdminRows,
+    mockClaimRows,
+    mockCreateNotificationsBatch: vi.fn(),
+    mockEmitDomainEvent: vi.fn(),
+    mockFindOficioForUpdate: vi.fn(),
+    mockInsert,
+    mockLogAuditAction: vi.fn(),
+    mockLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+    mockReturning,
+    mockTransaction,
+    mockTx,
+    mockUpdateAssinafyStatus: vi.fn(),
+    mockValues,
   };
 });
 
-vi.mock('@/lib/audit/service', () => ({
-  logAuditAction: vi.fn(),
+vi.mock('@/lib/db', () => ({ db: { transaction: mockTransaction } }));
+
+vi.mock('@/lib/oficios/repository', () => ({
+  findOfficialLetterByAssinafyDocumentIdForUpdate: mockFindOficioForUpdate,
 }));
 
-vi.mock('@/lib/integrations/outbox', () => ({
-  emitDomainEvent: vi.fn(),
-}));
+vi.mock('./repository', () => ({ updateAssinafyStatus: mockUpdateAssinafyStatus }));
 
+vi.mock('@/lib/audit/service', () => ({ logAuditAction: mockLogAuditAction }));
+vi.mock('@/lib/integrations/outbox', () => ({ emitDomainEvent: mockEmitDomainEvent }));
 vi.mock('@/lib/notifications/repository', () => ({
-  createNotification: vi.fn(),
-  createNotificationsBatch: vi.fn(),
+  createNotificationsBatch: mockCreateNotificationsBatch,
 }));
+vi.mock('@/lib/logger', () => ({ createLogger: () => mockLogger }));
 
 const BASE_EVENT: AssinafyWebhookEvent = {
   id: 1,
   event: 'signer_signed_document',
   message: null,
-  payload: { signer_full_name: 'João' },
-  origin: { ip: '127.0.0.1', 'user-agent': 'Mozilla/5.0' },
-  created_at: 1705312200,
-  subject: { id: 's1', full_name: 'João', email: 'j@x.com', type: 'Signer' },
+  payload: { signer_full_name: 'Test signer' },
+  origin: { ip: '127.0.0.1', 'user-agent': 'test' },
+  created_at: 1_705_312_200,
+  subject: { id: 's1', full_name: 'Test signer', email: 'test@example.test', type: 'Signer' },
   object: { id: 'doc123', status: 'partially_signed', type: 'Document' },
   account_id: 'acc1',
 };
 
-const mockOficio = {
+const MOCK_OFICIO = {
   id: 1,
   createdBy: 1,
-  number: 'Ofício nº 001/2026-ASOF',
+  number: 'OF-TEST-001',
+  recipient: 'Test recipient',
   year: 2026,
   sequence: 1,
   assinafyStatus: null,
@@ -85,181 +91,161 @@ const mockOficio = {
 describe('assinafy/service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockAdminQueryResult.current = [];
-    mockFindOficioByAssinafyDocumentId.mockResolvedValue({ ...mockOficio });
+    mockAdminRows.current = [];
+    mockClaimRows.current = [{ id: 99 }];
+    mockFindOficioForUpdate.mockResolvedValue({ ...MOCK_OFICIO });
     mockUpdateAssinafyStatus.mockResolvedValue({ id: 1 });
+    mockEmitDomainEvent.mockResolvedValue({ id: 10 });
+    mockCreateNotificationsBatch.mockResolvedValue([]);
+    mockLogAuditAction.mockResolvedValue(undefined);
   });
 
-  describe('handleWebhookEvent', () => {
-    it('handles signer_signed_document', async () => {
-      await handleWebhookEvent(BASE_EVENT);
-      expect(mockFindOficioByAssinafyDocumentId).toHaveBeenCalledWith('doc123', expect.anything());
-      expect(mockUpdateAssinafyStatus).toHaveBeenCalledWith(
-        1,
-        'partially_signed',
-        expect.objectContaining({ assinafySignedAt: expect.any(Date) }),
-        expect.anything(),
-      );
+  it('claims the nonce first and commits all effects with the same transaction executor', async () => {
+    mockAdminRows.current = [{ id: 5 }];
+
+    const result = await handleWebhookEvent(BASE_EVENT);
+
+    expect(result).toEqual({
+      status: 'processed',
+      entityId: 1,
+      action: 'official_letter_status_changed',
+      actorId: null,
+      changedFields: ['assinafyStatus', 'assinafySignedAt'],
+    });
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({ keyId: 'assinafy', signature: '1', expiresAt: expect.any(Date) }),
+    );
+    expect(mockReturning).toHaveBeenCalledWith(expect.objectContaining({ id: expect.anything() }));
+    expect(mockFindOficioForUpdate).toHaveBeenCalledWith('doc123', mockTx);
+    expect(mockUpdateAssinafyStatus).toHaveBeenCalledWith(
+      1,
+      'partially_signed',
+      expect.objectContaining({ assinafySignedAt: expect.any(Date) }),
+      mockTx,
+    );
+    expect(mockEmitDomainEvent).toHaveBeenCalledWith(expect.any(Object), mockTx);
+    expect(mockCreateNotificationsBatch).toHaveBeenCalledWith(expect.any(Array), mockTx);
+    expect(mockInsert.mock.invocationCallOrder[0]).toBeLessThan(
+      mockFindOficioForUpdate.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('returns duplicate without domain reads or writes when the claim loses', async () => {
+    mockClaimRows.current = [];
+
+    await expect(handleWebhookEvent(BASE_EVENT)).resolves.toEqual({ status: 'duplicate' });
+
+    expect(mockFindOficioForUpdate).not.toHaveBeenCalled();
+    expect(mockUpdateAssinafyStatus).not.toHaveBeenCalled();
+    expect(mockEmitDomainEvent).not.toHaveBeenCalled();
+    expect(mockCreateNotificationsBatch).not.toHaveBeenCalled();
+    expect(mockLogAuditAction).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, null, '', '1', 0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'returns invalid without opening a transaction for malformed event id %s',
+    async (id) => {
+      const malformed = { ...BASE_EVENT, id } as unknown as AssinafyWebhookEvent;
+
+      await expect(handleWebhookEvent(malformed)).resolves.toEqual({ status: 'invalid' });
+
+      expect(mockTransaction).not.toHaveBeenCalled();
+      expect(mockInsert).not.toHaveBeenCalled();
+    },
+  );
+
+  it('confirms the nonce and ignores an unknown event type', async () => {
+    const event = { ...BASE_EVENT, event: 'unknown_event' };
+
+    await expect(handleWebhookEvent(event)).resolves.toEqual({ status: 'ignored' });
+
+    expect(mockInsert).toHaveBeenCalledOnce();
+    expect(mockFindOficioForUpdate).not.toHaveBeenCalled();
+    expect(mockEmitDomainEvent).not.toHaveBeenCalled();
+  });
+
+  it('classifies a missing Ofício as definitively ignored and confirms the nonce', async () => {
+    mockFindOficioForUpdate.mockResolvedValue(null);
+
+    await expect(handleWebhookEvent(BASE_EVENT)).resolves.toEqual({ status: 'ignored' });
+
+    expect(mockInsert).toHaveBeenCalledOnce();
+    expect(mockUpdateAssinafyStatus).not.toHaveBeenCalled();
+    expect(mockEmitDomainEvent).not.toHaveBeenCalled();
+  });
+
+  it('ignores a new event whose mapped status is already current', async () => {
+    mockFindOficioForUpdate.mockResolvedValue({
+      ...MOCK_OFICIO,
+      assinafyStatus: 'partially_signed',
     });
 
-    it('handles document_ready', async () => {
-      const event = { ...BASE_EVENT, event: 'document_ready', object: { ...BASE_EVENT.object, status: 'certificated' } };
-      await handleWebhookEvent(event);
-      expect(mockUpdateAssinafyStatus).toHaveBeenCalledWith(
-        1,
-        'certificated',
-        expect.objectContaining({ assinafySignedAt: expect.any(Date) }),
-        expect.anything(),
-      );
+    await expect(handleWebhookEvent(BASE_EVENT)).resolves.toEqual({ status: 'ignored' });
+    expect(mockUpdateAssinafyStatus).not.toHaveBeenCalled();
+    expect(mockEmitDomainEvent).not.toHaveBeenCalled();
+  });
+
+  it('returns failed when a transactional effect rejects and does not audit', async () => {
+    mockAdminRows.current = [{ id: 5 }];
+    mockCreateNotificationsBatch.mockRejectedValueOnce(new Error('sensitive database detail'));
+
+    await expect(handleWebhookEvent(BASE_EVENT)).resolves.toEqual({ status: 'failed' });
+
+    expect(mockLogAuditAction).not.toHaveBeenCalled();
+    expect(mockLogger.error).toHaveBeenCalledWith('Failed to process Assinafy webhook', {
+      event: BASE_EVENT.event,
     });
+    expect(JSON.stringify(mockLogger.error.mock.calls)).not.toContain('sensitive database detail');
+    expect(JSON.stringify(mockLogger.error.mock.calls)).not.toContain(BASE_EVENT.object.id);
+  });
 
-    it('handles signer_rejected_document', async () => {
-      const event = { ...BASE_EVENT, event: 'signer_rejected_document', object: { ...BASE_EVENT.object, status: 'rejected_by_signer' } };
-      await handleWebhookEvent(event);
-      expect(mockUpdateAssinafyStatus).toHaveBeenCalledWith(
-        1,
-        'rejected_by_signer',
-        expect.objectContaining({ assinafyError: expect.any(String) }),
-        expect.anything(),
-      );
-    });
+  it('audits only after a processed transaction and never passes the transaction executor', async () => {
+    const result = await handleWebhookEvent(BASE_EVENT);
 
-    it('handles document_processing_failed', async () => {
-      const event = { ...BASE_EVENT, event: 'document_processing_failed', payload: { error_message: 'PDF corrupt' }, object: { ...BASE_EVENT.object, status: 'failed' } };
-      await handleWebhookEvent(event);
-      expect(mockUpdateAssinafyStatus).toHaveBeenCalledWith(
-        1,
-        'failed',
-        expect.objectContaining({ assinafyError: 'PDF corrupt' }),
-        expect.anything(),
-      );
-    });
+    expect(result.status).toBe('processed');
+    expect(mockLogAuditAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        adminId: null,
+        action: 'official_letter_status_changed',
+        entityType: 'official_letter',
+        entityId: 1,
+      }),
+    );
+    expect(mockLogAuditAction.mock.calls[0][0]).not.toHaveProperty('executor');
+    expect(mockTransaction.mock.invocationCallOrder[0]).toBeLessThan(
+      mockLogAuditAction.mock.invocationCallOrder[0],
+    );
+  });
 
-    it('returns null when ofício not found', async () => {
-      mockFindOficioByAssinafyDocumentId.mockResolvedValue(null);
-      const result = await handleWebhookEvent(BASE_EVENT);
-      expect(result).toBeNull();
-      expect(mockUpdateAssinafyStatus).not.toHaveBeenCalled();
-    });
+  it('keeps the processed result when best-effort audit rejects', async () => {
+    mockLogAuditAction.mockRejectedValueOnce(new Error('audit unavailable'));
 
-    it('handles unknown event gracefully', async () => {
-      const event = { ...BASE_EVENT, event: 'unknown_event' };
-      const result = await handleWebhookEvent(event);
-      expect(result).toBeNull();
-    });
+    await expect(handleWebhookEvent(BASE_EVENT)).resolves.toEqual(
+      expect.objectContaining({ status: 'processed', entityId: 1 }),
+    );
+  });
 
-    it('emits domain event on status change', async () => {
-      const { emitDomainEvent } = await import('@/lib/integrations/outbox');
-      await handleWebhookEvent(BASE_EVENT);
-      expect(emitDomainEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'official_letter.status_changed',
-          entityType: 'official_letter',
-          entityId: 1,
-          payload: expect.objectContaining({ status: 'partially_signed' }),
-        }),
-        expect.anything(),
-      );
-    });
+  it('maps provider failure details to the transaction but exposes only changed field names', async () => {
+    const event = {
+      ...BASE_EVENT,
+      event: 'document_processing_failed',
+      payload: { error_message: 'provider detail' },
+    };
 
-    it('logs audit action on status change', async () => {
-      const { logAuditAction } = await import('@/lib/audit/service');
-      await handleWebhookEvent(BASE_EVENT);
-      expect(logAuditAction).toHaveBeenCalledWith(
-        expect.objectContaining({
-          adminId: null,
-          action: 'official_letter_status_changed',
-          entityType: 'official_letter',
-          entityId: 1,
-        }),
-      );
-    });
+    const result = await handleWebhookEvent(event);
 
-    it('does not pass executor to logAuditAction (audit is best-effort, outside tx)', async () => {
-      const { logAuditAction } = await import('@/lib/audit/service');
-      await handleWebhookEvent(BASE_EVENT);
-      expect(logAuditAction).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: 'official_letter_status_changed',
-          entityType: 'official_letter',
-          entityId: 1,
-        }),
-      );
-      const auditCall = vi.mocked(logAuditAction).mock.calls.at(-1)![0];
-      expect(auditCall.executor).toBeUndefined();
-    });
-
-    it('skips update when status is already the mapped value (idempotency)', async () => {
-      mockFindOficioByAssinafyDocumentId.mockResolvedValue({
-        ...mockOficio,
-        assinafyStatus: 'partially_signed',
-      });
-      const result = await handleWebhookEvent(BASE_EVENT);
-      expect(mockUpdateAssinafyStatus).not.toHaveBeenCalled();
-      expect(result).toEqual(expect.objectContaining({ id: 1 }));
-    });
-
-    it('returns transaction result when audit log fails (no false-negative)', async () => {
-      const { logAuditAction } = await import('@/lib/audit/service');
-      vi.mocked(logAuditAction).mockRejectedValueOnce(new Error('Audit DB unavailable'));
-      const result = await handleWebhookEvent(BASE_EVENT);
-      expect(mockUpdateAssinafyStatus).toHaveBeenCalled();
-      expect(result).toEqual(expect.objectContaining({ id: 1 }));
-    });
-
-    it('creates notifications for all active admins', async () => {
-      const { createNotificationsBatch } = await import('@/lib/notifications/repository');
-      mockAdminQueryResult.current = [{ id: 5 }, { id: 7 }];
-
-      await handleWebhookEvent(BASE_EVENT);
-
-      expect(createNotificationsBatch).toHaveBeenCalledTimes(1);
-      expect(createNotificationsBatch).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            userId: 5,
-            actorId: null,
-            type: 'oficio.status_changed',
-            title: 'Status do ofício alterado',
-            dedupeKey: 'oficio.status_changed:1:partially_signed',
-            entityType: 'oficio',
-            entityId: 1,
-          }),
-          expect.objectContaining({
-            userId: 7,
-            actorId: null,
-            dedupeKey: 'oficio.status_changed:1:partially_signed',
-          }),
-        ]),
-        expect.anything(),
-      );
-    });
-
-    it('includes dedupeKey in notification to prevent duplicates', async () => {
-      const { createNotificationsBatch } = await import('@/lib/notifications/repository');
-      mockAdminQueryResult.current = [{ id: 5 }];
-
-      await handleWebhookEvent(BASE_EVENT);
-
-      expect(createNotificationsBatch).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            dedupeKey: 'oficio.status_changed:1:partially_signed',
-          })
-        ]),
-        expect.anything(),
-      );
-    });
-
-    it('returns null when transaction fails (e.g. notification creation error)', async () => {
-      const { createNotificationsBatch } = await import('@/lib/notifications/repository');
-      mockAdminQueryResult.current = [{ id: 5 }];
-      vi.mocked(createNotificationsBatch).mockRejectedValueOnce(new Error('DB insert failed'));
-
-      const result = await handleWebhookEvent(BASE_EVENT);
-
-      // Transaction rejection is caught by outer try/catch
-      expect(result).toBeNull();
-    });
+    expect(mockUpdateAssinafyStatus).toHaveBeenCalledWith(
+      1,
+      'failed',
+      { assinafyError: 'provider detail' },
+      mockTx,
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        status: 'processed',
+        changedFields: ['assinafyStatus', 'assinafyError'],
+      }),
+    );
+    expect(JSON.stringify(result)).not.toContain('provider detail');
   });
 });

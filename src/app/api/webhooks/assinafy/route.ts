@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { and, eq, gt, sql } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
 import { handleWebhookEvent } from '@/lib/assinafy/service';
 import type { AssinafyWebhookEvent } from '@/lib/assinafy/types';
@@ -8,16 +7,11 @@ import {
   parseJsonWebhook,
   requireSecretHeader,
 } from '@/lib/integrations/webhook-handler';
-import { db } from '@/lib/db';
-import { integrationSignatureNonces } from '@/lib/db/schema';
 
 const logger = createLogger('assinafy:webhook');
 
 // Generous tolerance to accommodate Assinafy retries arriving slightly late.
 const WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS = 600;
-// Nonces expire after 24 h; combined with the timestamp check this covers the full replay window.
-const WEBHOOK_NONCE_TTL_MS = 24 * 60 * 60 * 1000;
-
 export const dynamic = 'force-dynamic';
 
 export const POST = createWebhookHandler<AssinafyWebhookEvent>({
@@ -43,8 +37,8 @@ export const POST = createWebhookHandler<AssinafyWebhookEvent>({
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (typeof event.id !== 'number' || typeof event.created_at !== 'number') {
-      logger.warn('Missing event ID or timestamp in webhook event', { event: event.event });
+    if (typeof event.created_at !== 'number') {
+      logger.warn('Missing timestamp in webhook event', { event: event.event });
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -52,56 +46,31 @@ export const POST = createWebhookHandler<AssinafyWebhookEvent>({
     const skewSeconds = Math.abs(Math.floor(Date.now() / 1000) - event.created_at);
     if (skewSeconds > WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS) {
       logger.warn('Webhook event timestamp out of tolerance', {
-        eventId: event.id,
+        event: event.event,
         skewSeconds,
         tolerance: WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS,
       });
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Idempotency: return 200 immediately if this event was already successfully processed
-    const nonceKey = 'assinafy';
-    const nonceValue = String(event.id);
-    const existing = await db
-      .select({ id: integrationSignatureNonces.id })
-      .from(integrationSignatureNonces)
-      .where(
-        and(
-          eq(integrationSignatureNonces.keyId, nonceKey),
-          eq(integrationSignatureNonces.signature, nonceValue),
-          gt(integrationSignatureNonces.expiresAt, sql`now()`),
-        ),
-      )
-      .limit(1);
-
-    if (existing.length > 0) {
-      logger.info('Duplicate webhook event, already processed', { eventId: event.id });
-      return NextResponse.json({ received: true });
-    }
-
-    // Process event (return 500 on failure so Assinafy can retry)
     try {
-      await handleWebhookEvent(event);
-      logger.info('Webhook processed', {
-        eventId: event.id,
-        event: event.event,
-        documentId: event.object.id,
-      });
+      const result = await handleWebhookEvent(event);
 
-      // Record nonce only after successful processing so retries can proceed on failure
-      const expiresAt = new Date(Date.now() + WEBHOOK_NONCE_TTL_MS);
-      await db
-        .insert(integrationSignatureNonces)
-        .values({ keyId: nonceKey, signature: nonceValue, expiresAt })
-        .onConflictDoNothing();
+      if (result.status === 'invalid') {
+        logger.warn('Invalid Assinafy webhook event', { event: event.event });
+        return NextResponse.json({ error: 'Invalid event' }, { status: 400 });
+      }
 
+      if (result.status === 'failed') {
+        logger.error('Assinafy webhook processing failed', { event: event.event });
+        // Preserved until Plan 037 switches retryable failures to HTTP 500.
+        return NextResponse.json({ received: false });
+      }
+
+      logger.info('Assinafy webhook handled', { event: event.event, status: result.status });
       return NextResponse.json({ received: true });
-    } catch (error) {
-      logger.error('Webhook handler error', {
-        eventId: event.id,
-        event: event.event,
-        error: error instanceof Error ? error.message : String(error),
-      });
+    } catch {
+      logger.error('Unexpected Assinafy webhook handler failure', { event: event.event });
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   },
