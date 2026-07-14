@@ -69,13 +69,14 @@ quanto nos logs. Logs devem continuar sem PII.
 
 ## Comandos necessários
 
-| Finalidade | Comando | Resultado esperado |
-| --- | --- | --- |
-| Unit service | `npx vitest run src/lib/assinafy/service.test.ts` | todos passam |
-| Unit rota | `npx vitest run src/app/api/webhooks/assinafy/route.test.ts` | todos passam |
-| Integração Assinafy | `npx vitest run --config vitest.integration.config.ts src/lib/assinafy/service.integration.test.ts` | casos com PG real passam |
-| Integração completa | `npm run test:integration` | passa ou skip documentado sem `.env.test.local` |
-| Gate completo | `npm run lint && npm run typecheck && npm run test && npm run test:db && npm run build` | todos saem 0, nessa ordem |
+| Finalidade          | Comando                                                                                             | Resultado esperado                                         |
+| ------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Unit service        | `npx vitest run src/lib/assinafy/service.test.ts`                                                   | todos passam                                               |
+| Benchmark service   | `npx vitest run src/lib/assinafy/benchmark.test.ts`                                                 | percorre `processed` e prova batch com 1.000 destinatários |
+| Unit rota           | `npx vitest run src/app/api/webhooks/assinafy/route.test.ts`                                        | todos passam                                               |
+| Integração Assinafy | `npx vitest run --config vitest.integration.config.ts src/lib/assinafy/service.integration.test.ts` | casos com PG real passam                                   |
+| Integração completa | `npm run test:integration`                                                                          | passa ou skip documentado sem `.env.test.local`            |
+| Gate completo       | `npm run lint && npm run typecheck && npm run test && npm run test:db && npm run build`             | todos saem 0, nessa ordem                                  |
 
 ## Escopo
 
@@ -83,6 +84,7 @@ quanto nos logs. Logs devem continuar sem PII.
 
 - `src/lib/assinafy/service.ts`
 - `src/lib/assinafy/service.test.ts`
+- `src/lib/assinafy/benchmark.test.ts`
 - `src/app/api/webhooks/assinafy/route.ts`
 - `src/app/api/webhooks/assinafy/route.test.ts`
 - `src/lib/assinafy/service.integration.test.ts`
@@ -149,6 +151,11 @@ usando `db` padrão.
 transacional em todas as escritas com bloqueio de linha no Ofício. O teste de
 integração com PG real deve cobrir chamadas concorrentes com IDs distintos disputando o mesmo Ofício.
 
+Atualize também o benchmark existente para o novo contrato: o mock do claim
+deve adquirir o nonce, a busca com row lock deve retornar o Ofício e o teste
+deve afirmar estruturalmente que `createNotificationsBatch` recebeu os 1.000
+destinatários. Medir uma saída `duplicate` não preserva a intenção do benchmark.
+
 ### Etapa 3: Remover persistência de nonce da rota
 
 Remova `SELECT` e `INSERT` de nonce da rota. Ela deve chamar
@@ -193,6 +200,7 @@ sobreponham antes de prosseguir. Não dependa exclusivamente de `Promise.all`
 sem sincronização — chamadas sequenciais não provam a correção.
 
 Para o teste de falha transacional:
+
 1. provoque uma violação real de constraint criada pelas fixtures;
 2. confirme rollback: nenhum nonce, nenhum efeito de domínio;
 3. remova da fixture apenas o conflito persistente;
