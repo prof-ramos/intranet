@@ -25,6 +25,16 @@ repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
 failures=()
+snapshot_baseline_index="$(
+  node -e '
+    const fs = require("node:fs");
+    const baseline = JSON.parse(
+      fs.readFileSync("drizzle/postgres/snapshot-baseline.json", "utf8"),
+    );
+    if (!Number.isInteger(baseline.index) || baseline.index < 0) process.exit(1);
+    process.stdout.write(String(baseline.index));
+  '
+)"
 
 add_failure() {
   failures+=("$1")
@@ -52,7 +62,37 @@ if git diff --cached --name-only | grep -Eq '^drizzle/postgres/.*\.sql$'; then
   fi
 fi
 
-if git diff --cached --check --quiet; then
+staged_files="$(git diff --cached --name-only)"
+if grep -Eq '^drizzle/postgres/(.*\.sql|meta/_journal\.json)$' <<<"$staged_files"; then
+  if grep -Fxq 'drizzle/postgres/meta/_journal.json' <<<"$staged_files"; then
+    if latest_snapshot_path="$({
+      git show :drizzle/postgres/meta/_journal.json
+    } | node -e '
+      let input = "";
+      process.stdin.setEncoding("utf8");
+      process.stdin.on("data", (chunk) => { input += chunk; });
+      process.stdin.on("end", () => {
+        const journal = JSON.parse(input);
+        const latest = journal.entries?.at(-1);
+        if (!Number.isInteger(latest?.idx)) process.exit(1);
+        process.stdout.write(
+          `${latest.idx}\tdrizzle/postgres/meta/${String(latest.idx).padStart(4, "0")}_snapshot.json`,
+        );
+      });
+    ')"; then
+      latest_index="${latest_snapshot_path%%$'\t'*}"
+      latest_snapshot="${latest_snapshot_path#*$'\t'}"
+      if (( latest_index >= snapshot_baseline_index )) &&
+        ! grep -Fxq "$latest_snapshot" <<<"$staged_files"; then
+        add_failure "staged Drizzle migration journal without snapshot for latest index ${latest_index}: ${latest_snapshot}"
+      fi
+    else
+      add_failure "staged drizzle/postgres/meta/_journal.json is missing or invalid"
+    fi
+  fi
+fi
+
+if git diff --cached --check >/dev/null; then
   echo "Whitespace check: clean"
 else
   add_failure "staged diff has whitespace errors"
@@ -74,4 +114,3 @@ if [[ "${#failures[@]}" -gt 0 ]]; then
   echo "Warnings:"
   printf ' - %s\n' "${failures[@]}"
 fi
-
