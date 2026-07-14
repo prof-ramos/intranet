@@ -13,6 +13,13 @@ const PRIORITY_ORDER = {
   baixa: 1,
 } as const satisfies Record<Priority, number>;
 
+const STATUS_ORDER = {
+  a_fazer: 0,
+  em_andamento: 1,
+  aguardando_terceiros: 2,
+  concluido: 3,
+} as const satisfies Record<Status, number>;
+
 interface ActivityBoardRow {
   id: number;
   title: string;
@@ -26,6 +33,23 @@ interface ActivityBoardRow {
   associateId: number | null;
   associateName: string | null;
   tags: string[] | null;
+}
+
+function compareBoardRows(left: ActivityBoardRow, right: ActivityBoardRow): number {
+  const statusOrder = STATUS_ORDER[left.status] - STATUS_ORDER[right.status];
+  if (statusOrder !== 0) return statusOrder;
+
+  const priorityOrder = PRIORITY_ORDER[right.priority] - PRIORITY_ORDER[left.priority];
+  if (priorityOrder !== 0) return priorityOrder;
+
+  if (left.dueDate !== right.dueDate) {
+    if (left.dueDate === null) return 1;
+    if (right.dueDate === null) return -1;
+    const dueDateOrder = left.dueDate.localeCompare(right.dueDate);
+    if (dueDateOrder !== 0) return dueDateOrder;
+  }
+
+  return right.id - left.id;
 }
 
 export function mapActivityRowToBoardActivity(activity: ActivityBoardRow): BoardActivity {
@@ -49,12 +73,12 @@ export function mapActivityRowToBoardActivity(activity: ActivityBoardRow): Board
 export async function findActivities(options: { limit?: number; offset?: number } = {}) {
   const limit = Math.min(Math.max(options.limit ?? DEFAULT_ACTIVITY_LIMIT, 1), MAX_ACTIVITY_LIMIT);
   const offset = Math.max(options.offset ?? 0, 0);
-  const priorityOrderChunks = Object.entries(PRIORITY_ORDER).map(
-    ([priority, order]) => sql`when ${priority} then ${order}`,
-  );
-  const priorityOrderSql = sql.join(priorityOrderChunks, sql` `);
 
-  return db
+  // The board is deliberately bounded. Select the most recently changed
+  // activities first so a newly-created card cannot fall outside the window
+  // merely because older rows have the same status/priority/due date. Sort the
+  // selected window back into board order before returning it to the UI.
+  const rows = await db
     .select({
       id: activities.id,
       title: activities.title,
@@ -72,16 +96,11 @@ export async function findActivities(options: { limit?: number; offset?: number 
     .from(activities)
     .leftJoin(admins, eq(activities.assigneeId, admins.id))
     .leftJoin(associates, eq(activities.associateId, associates.id))
-    .orderBy(
-      asc(activities.status),
-      desc(sql`case ${activities.priority}
-        ${priorityOrderSql}
-        else 0
-      end`),
-      asc(activities.dueDate),
-    )
+    .orderBy(desc(activities.updatedAt), desc(activities.id))
     .limit(limit)
     .offset(offset);
+
+  return rows.sort(compareBoardRows);
 }
 
 export async function findActiveAdmins() {

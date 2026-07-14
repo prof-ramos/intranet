@@ -120,6 +120,22 @@ describe('activities repository', () => {
       await findActivities({ offset: 20 });
       expect(dbMock._selectChain.offset).toHaveBeenCalledWith(20);
     });
+
+    it('sorts the recent window into board order with newest cards as tie-breaker', async () => {
+      dbMock.setSelectResult([
+        { ...MOCK_ACTIVITY, id: 3, status: 'em_andamento', priority: 'urgente' },
+        { ...MOCK_ACTIVITY, id: 1, status: 'a_fazer', priority: 'normal', dueDate: null },
+        { ...MOCK_ACTIVITY, id: 2, status: 'a_fazer', priority: 'normal', dueDate: null },
+      ]);
+
+      const results = await findActivities();
+
+      expect(results.map((activity) => activity.id)).toEqual([2, 1, 3]);
+      expect(dbMock._selectChain.orderBy).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+      );
+    });
   });
 
   describe('findActiveAdmins', () => {
