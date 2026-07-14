@@ -1,75 +1,92 @@
-import { describe, it, vi, expect } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { handleWebhookEvent } from './service';
 import type { AssinafyWebhookEvent } from './types';
 
-const mockAdminQueryResult = { current: Array.from({ length: 1000 }, (_, i) => ({ id: i })) };
-
-vi.mock('./repository', () => ({
-  findOficioByAssinafyDocumentId: vi.fn().mockResolvedValue({
-    id: 1,
-    createdBy: 1,
-    number: 'Ofício nº 001/2026-ASOF',
-    year: 2026,
-    sequence: 1,
-    assinafyStatus: null,
-    status: 'gerado',
-  }),
-  updateAssinafyStatus: vi.fn().mockResolvedValue({ id: 1 }),
-}));
-
-vi.mock('@/lib/db', () => {
-  const thenable = { then: (resolve: (val: unknown) => void) => resolve([]) };
-  const queryBuilder: Record<string, unknown> = {
-    orderBy: () => ({ ...thenable, limit: () => Promise.resolve([]) }),
+const {
+  mockCreateNotificationsBatch,
+  mockFindOficioForUpdate,
+  mockTransaction,
+  mockTx,
+  mockUpdateAssinafyStatus,
+} = vi.hoisted(() => {
+  const adminRows = Array.from({ length: 1_000 }, (_, index) => ({ id: index + 1 }));
+  const mockReturning = vi.fn().mockResolvedValue([{ id: 1 }]);
+  const mockOnConflictDoNothing = vi.fn(() => ({ returning: mockReturning }));
+  const mockValues = vi.fn(() => ({ onConflictDoNothing: mockOnConflictDoNothing }));
+  const mockTx = {
+    insert: vi.fn(() => ({ values: mockValues })),
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({ where: vi.fn().mockResolvedValue(adminRows) })),
+    })),
   };
-  (queryBuilder as Record<string, unknown>).then = (resolve: (val: unknown) => void) =>
-    resolve(mockAdminQueryResult.current);
-
-  const mockTx = new Proxy({} as Record<string, unknown>, {
-    get(_target, prop: string) {
-      if (prop === 'then') return undefined;
-      return () => {
-        if (prop === 'where') return queryBuilder;
-        if (prop === 'limit') return Promise.resolve([]);
-        if (prop === 'returning') return Promise.resolve([]);
-        return mockTx;
-      };
-    },
-  });
+  const mockTransaction = vi.fn(async (callback: (tx: typeof mockTx) => Promise<unknown>) =>
+    callback(mockTx),
+  );
 
   return {
-    db: {
-      transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) => cb(mockTx)),
-    },
+    mockCreateNotificationsBatch: vi.fn().mockResolvedValue([]),
+    mockFindOficioForUpdate: vi.fn().mockResolvedValue({
+      id: 1,
+      createdBy: 1,
+      number: 'OF-TEST-001',
+      recipient: 'Synthetic recipient',
+      year: 2026,
+      sequence: 1,
+      assinafyStatus: null,
+      status: 'gerado',
+    }),
+    mockTransaction,
+    mockTx,
+    mockUpdateAssinafyStatus: vi.fn().mockResolvedValue({ id: 1 }),
   };
 });
 
+vi.mock('@/lib/db', () => ({ db: { transaction: mockTransaction } }));
+vi.mock('@/lib/oficios/repository', () => ({
+  findOfficialLetterByAssinafyDocumentIdForUpdate: mockFindOficioForUpdate,
+}));
+vi.mock('./repository', () => ({ updateAssinafyStatus: mockUpdateAssinafyStatus }));
 vi.mock('@/lib/audit/service', () => ({ logAuditAction: vi.fn() }));
 vi.mock('@/lib/integrations/outbox', () => ({ emitDomainEvent: vi.fn() }));
 vi.mock('@/lib/notifications/repository', () => ({
-  createNotification: vi.fn().mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 1))),
-  createNotificationsBatch: vi.fn().mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 1))),
+  createNotificationsBatch: mockCreateNotificationsBatch,
 }));
 
 const BASE_EVENT: AssinafyWebhookEvent = {
   id: 1,
   event: 'signer_signed_document',
   message: null,
-  payload: { signer_full_name: 'João' },
-  origin: { ip: '127.0.0.1', 'user-agent': 'Mozilla/5.0' },
-  created_at: 1705312200,
-  subject: { id: 's1', full_name: 'João', email: 'j@x.com', type: 'Signer' },
+  payload: { signer_full_name: 'Synthetic signer' },
+  origin: { ip: '127.0.0.1', 'user-agent': 'benchmark' },
+  created_at: 1_705_312_200,
+  subject: {
+    id: 's1',
+    full_name: 'Synthetic signer',
+    email: 'synthetic@example.test',
+    type: 'Signer',
+  },
   object: { id: 'doc123', status: 'partially_signed', type: 'Document' },
   account_id: 'acc1',
 };
 
 describe('Performance benchmark for handleWebhookEvent', () => {
-  it('measures time to handle notifications', async () => {
-    const start = Date.now();
-    await handleWebhookEvent(BASE_EVENT);
-    const end = Date.now();
-    const duration = end - start;
-    console.log(`Execution time for 1000 notifications: ${duration} ms`);
-    expect(duration).toBeDefined();
+  it('measures creation of one notification batch with 1,000 recipients', async () => {
+    const start = performance.now();
+    const result = await handleWebhookEvent(BASE_EVENT);
+    const duration = performance.now() - start;
+
+    console.log(`Execution time for 1000 notifications: ${duration.toFixed(2)} ms`);
+    expect(result).toEqual(expect.objectContaining({ status: 'processed', entityId: 1 }));
+    expect(mockFindOficioForUpdate).toHaveBeenCalledWith('doc123', mockTx);
+    expect(mockCreateNotificationsBatch).toHaveBeenCalledOnce();
+
+    const [notifications, executor] = mockCreateNotificationsBatch.mock.calls[0] as [
+      Array<{ userId: number }>,
+      unknown,
+    ];
+    expect(notifications).toHaveLength(1_000);
+    expect(new Set(notifications.map((notification) => notification.userId)).size).toBe(1_000);
+    expect(executor).toBe(mockTx);
+    expect(duration).toBeGreaterThanOrEqual(0);
   });
 });
