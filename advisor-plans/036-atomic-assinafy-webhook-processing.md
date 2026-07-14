@@ -60,7 +60,8 @@ de resultado inequívoco.
   repetição inútil;
 - `failed`: a transação, inclusive o nonce, foi revertida e o evento pode ser
   tentado novamente;
-- `invalid`: evento com `event.id` inválido ou malformado (vazio, nulo ou não-string); o nonce não é persistido e a rota retorna erro terminal (HTTP 400), sem retry.
+- `invalid`: `event.id` ausente ou diferente de um número inteiro positivo; o
+  nonce não é persistido e a rota retorna erro terminal (HTTP 400), sem retry.
 
 Não inclua exceções ou payloads no resultado público. O retorno `processed` deve
 conter apenas campos de uma allowlist canônica definida pelo contrato do Plano
@@ -111,11 +112,14 @@ quanto nos logs. Logs devem continuar sem PII.
 Em `service.ts`, exporte o tipo discriminado com os cinco estados: `processed | duplicate | ignored | failed | invalid`. Crie helper
 interno que:
 
-1. Valide `event.id` — rejeite eventos com `id` vazio, nulo ou não-string com
-   `invalid` **sem** persistir nonce;
+1. Valide `event.id` conforme o contrato vigente de `AssinafyWebhookEvent`:
+   aceite somente número inteiro positivo e rejeite valor ausente, nulo,
+   string, não finito, fracionário ou não positivo com `invalid` **sem**
+   persistir nonce. Testes de runtime podem construir entradas malformadas por
+   cast explícito, sem ampliar o tipo público nem editar `types.ts`;
 2. Insira `integrationSignatureNonces` com:
    - `keyId = 'assinafy'`;
-   - `signature = String(event.id)` (válido após validação);
+   - `signature = String(event.id)` (inteiro positivo após validação);
    - TTL já usado pela rota;
    - `onConflictDoNothing().returning({ id })`;
    - executor da transação, nunca `db` global.

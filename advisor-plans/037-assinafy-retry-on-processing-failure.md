@@ -51,7 +51,11 @@ Após o Plano 036, o service deve retornar
 do nonce — representa exclusivamente falhas recuperáveis com nonce revertido.
 A rota não pode mais persistir nonce.
 
-Como o Plano 036 retorna `invalid` para falhas não recuperáveis (como event.id inválido/malformado), a rota deve retornar HTTP 400 ou 200 (terminal) para o caso de `invalid`, e HTTP 500 (retryable) apenas para o caso de `failed`, evitando que a rota converta falhas permanentes em retry infinito. Defina testes para ambos os casos.
+Como o Plano 036 retorna `invalid` para falhas não recuperáveis (como
+`event.id` ausente ou diferente de um inteiro positivo), a rota deve retornar
+HTTP 400 para `invalid`, e HTTP 500 (retryable) apenas para `failed`, evitando
+que a rota converta falhas permanentes em retry infinito. Defina testes para
+ambos os casos.
 
 Este plano é inválido enquanto essas condições não forem verdadeiras.
 
