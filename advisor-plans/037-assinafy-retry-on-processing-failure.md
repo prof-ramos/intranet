@@ -161,7 +161,8 @@ Rode a sequência oficial e revise o diff contra vazamento de erro interno.
 
 ## Condições de STOP
 
-- Plano 036 não está DONE ou não possui contrato com quatro estados.
+- Plano 036 não está DONE ou não possui contrato com cinco estados:
+  `processed`, `duplicate`, `ignored`, `failed` e `invalid`.
 - `failed` pode coexistir com nonce confirmado.
 - Contrato verificado do provedor exige status de retry diferente de 5xx.
 - O mapeamento exige alterar autenticação/validação.

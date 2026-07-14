@@ -144,24 +144,25 @@ para permitir retry. Se qualquer escrita falhar, reverta tudo; o `catch` externo
 faz log sanitizado e retorna `failed`. Audite somente `processed`, após commit,
 usando `db` padrão.
 
-**Verificar**: unit tests cobrem os quatro estados e confirmam o executor
+**Verificar**: unit tests cobrem os cinco estados e confirmam o executor
 transacional em todas as escritas.
 
 ### Etapa 3: Remover persistência de nonce da rota
 
 Remova `SELECT` e `INSERT` de nonce da rota. Ela deve chamar
-`handleWebhookEvent(event)` exatamente uma vez e tratar explicitamente os quatro
+`handleWebhookEvent(event)` exatamente uma vez e tratar explicitamente os cinco
 estados:
 
 - `processed` → log sanitizado, 200;
 - `duplicate` → log sanitizado, 200;
 - `ignored` → log sanitizado, 200;
+- `invalid` → log sanitizado, 400 terminal, sem retry;
 - `failed` → log sanitizado (sem payload, sem PII, sem IDs internos), 200
   (preservado para o Plano 037).
 
-Para `failed`, o log deve conter apenas `event.type` e o fato da falha, nunca
-`event.id`, document ID, exceção ou mensagem de erro. O `catch` defensivo da
-rota cobre rejeições inesperadas com 500 genérico.
+Para `invalid` e `failed`, o log deve conter apenas `event.type` e o fato da
+falha, nunca `event.id`, document ID, exceção ou mensagem de erro. O `catch`
+defensivo da rota cobre rejeições inesperadas com 500 genérico.
 
 Atualize mocks para representar o resultado do service. A rota não deve mais
 importar `db`, predicados Drizzle nem `integrationSignatureNonces`.
@@ -212,7 +213,8 @@ mudanças acidentais de schema.
 
 - Unit: claim inicial, duplicado, ignorado, falha, auditoria apenas após commit e
   ausência de escritas após duplicado.
-- Rota: cada resultado chama o service uma vez; nenhuma query de nonce na rota.
+- Rota: cada resultado chama o service uma vez; `invalid` retorna 400 terminal;
+  nenhuma query de nonce na rota.
 - Integração: mesmo ID concorrente confirma um conjunto de efeitos; rollback não
   deixa nonce e permite retry.
 - Regressão: secret, timestamp, JSON inválido e GET 405 continuam verdes.
@@ -223,6 +225,7 @@ mudanças acidentais de schema.
 - [ ] Claim, status, outbox e notificações compartilham uma transação.
 - [ ] Só uma chamada concorrente retorna `processed`.
 - [ ] Falha não deixa nonce nem efeito de domínio.
+- [ ] Evento inválido retorna HTTP 400 terminal, sem retry.
 - [ ] No-op intencional é `ignored`, não `failed`.
 - [ ] Testes com PG real cobrem concorrência e rollback.
 - [ ] Gates oficiais passam na ordem exigida.
