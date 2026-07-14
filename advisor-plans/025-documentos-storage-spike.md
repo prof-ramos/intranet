@@ -1,23 +1,24 @@
 # Plan 025 (direction): Documentos module storage backend spike
 
-> **Executor instructions**: This is a **spike/design plan**, not a build plan. Produce
-> a decision document, not a feature. STOP → report.
+> **REJECTED 2026-07-14 @ `e0be30d`**: Do not execute this plan. ADR 019
+> (`docs/adr/019-privacidade-data-export.md:23-29`) records this storage spike as
+> obsolete, keeps object storage outside day 1, and says reopening the work
+> requires a new architecture/product decision.
+
+> **Executor instructions**: ~~This is a **spike/design plan**, not a build plan. Produce
+> a decision document, not a feature. STOP → report.~~
 >
-> **Drift check (run first)**: `git diff --stat 844df3b..HEAD -- src/lib/storage/index.ts src/app/app/secretaria/documentos`
-> If changed, compare against live code; on mismatch, STOP.
+> ~~**Drift check (run first)**: `git diff --stat 844df3b..HEAD -- src/lib/storage/index.ts src/app/app/secretaria/documentos`
+> If changed, compare against live code; on mismatch, STOP.~~
+
+> Todo o conteúdo abaixo é **histórico/arquivado**. A retomada deste trabalho
+> exige uma nova decisão de arquitetura/produto (ver ADR 019).
 
 ## Status
 
+- **Plan status**: REJECTED — obsolete per ADR 019
 - **Priority**: P3 | **Effort**: M (spike) | **Risk**: LOW | **Depends on**: none
 - **Category**: direction | **Planned at**: `844df3b`, 2026-06-30 | **Issue**: [#263](https://github.com/prof-ramos/intranet/issues/263)
-
-## Why this matters
-
-The Documentos module is fully wired (upload UI, action handlers, DB rows) but
-`src/lib/storage/index.ts` `storageDisabled()` throws — there's no backend. This is
-the single biggest "looks done, isn't" gap in the product. Picking a backend is a
-decision with LGPD, retention, cost, and ops implications that should be settled
-before any wiring PR. This plan produces the decision, not the wiring.
 
 ## Current state
 
