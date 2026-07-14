@@ -52,8 +52,8 @@ do nonce — representa exclusivamente falhas recuperáveis com nonce revertido.
 A rota não pode mais persistir nonce.
 
 Como o Plano 036 retorna `invalid` para falhas não recuperáveis (como
-`event.id` ausente ou diferente de um inteiro positivo), a rota deve retornar
-HTTP 400 para `invalid`, e HTTP 500 (retryable) apenas para `failed`, evitando
+`event.id` ausente ou diferente de um inteiro positivo seguro), a rota deve retornar
+HTTP 200 (com resposta terminal/ignorada) para `invalid`, e HTTP 500 (retryable) apenas para `failed`, evitando
 que a rota converta falhas permanentes em retry infinito. Defina testes para
 ambos os casos.
 
@@ -105,7 +105,7 @@ dados sensíveis. Devolva o corpo genérico existente
 `{ error: 'Internal server error' }` com status 500. Não registre payload,
 exceção, PII nem mensagem interna na rota.
 
-Retorne 200 `{ received: true }` para `processed`, `duplicate` e `ignored`, e HTTP 400 para `invalid`.
+Retorne 200 `{ received: true }` para `processed`, `duplicate` e `ignored`, e HTTP 200 `{ received: true, ignored: true }` (ou similar indicando rejeição terminal sem persistência do nonce) para `invalid`.
 Mantenha o `catch` defensivo da rota para rejeições inesperadas.
 
 **Verificar**: testes da rota cobrem status exato dos cinco estados e de uma
@@ -146,16 +146,15 @@ Rode a sequência oficial e revise o diff contra vazamento de erro interno.
 
 ## Plano de testes
 
-- `processed`, `duplicate` e `ignored` → 200.
-- `invalid` → 400.
+- `processed`, `duplicate`, `ignored` e `invalid` → 200 (evitando loops de retentativa).
 - `failed` resolvido → 500 genérico.
 - rejeição inesperada → 500 genérico.
 - falha real → sem nonce; mesmo evento processa uma vez posteriormente.
 
 ## Critérios de conclusão
 
-- [ ] Falha real do service produz HTTP 500.
-- [ ] Evento inválido produz HTTP 400.
+- [ ] Falha real do service produz HTTP 500 (retryable).
+- [ ] Evento inválido produz HTTP 200 terminal (sem persistir nonce).
 - [ ] Duplicado e no-op continuam HTTP 200.
 - [ ] Tentativa falha não confirma nonce.
 - [ ] Resposta/log não expõe exceção nem payload.

@@ -56,11 +56,10 @@ de resultado inequívoco.
 
 - `processed`: esta chamada adquiriu o claim e confirmou os efeitos;
 - `duplicate`: outra chamada já confirmou o nonce;
-- `ignored`: tipo desconhecido ou Ofício ausente; o nonce confirma para evitar
-  repetição inútil;
+- `ignored`: tipo desconhecido (ou outros eventos intencionalmente ignorados); o nonce confirma para evitar repetição inútil;
 - `failed`: a transação, inclusive o nonce, foi revertida e o evento pode ser
-  tentado novamente;
-- `invalid`: `event.id` ausente ou diferente de um número inteiro positivo seguro (menor ou igual a `Number.MAX_SAFE_INTEGER`); o nonce não é persistido e a rota retorna erro terminal (HTTP 400), sem retry.
+  tentado novamente (incluindo o caso de Ofício ausente, permitindo retentativa caso a criação do Ofício ocorra depois);
+- `invalid`: `event.id` ausente ou diferente de um número inteiro positivo seguro (menor ou igual a `Number.MAX_SAFE_INTEGER`); o nonce não é persistido e a rota retorna HTTP 200 (terminal para o provedor, evitando loops de retentativas infinitas), mas ignora o processamento do evento.
 
 Não inclua exceções ou payloads no resultado público. O retorno `processed` deve
 conter apenas campos de uma allowlist canônica definida pelo contrato do Plano
@@ -142,10 +141,7 @@ retorne `duplicate`. Se adquirido:
 6. retorne argumentos de auditoria e estado `processed`.
 
 Para evento desconhecido, retorne `ignored` dentro da transação, confirmando o
-nonce. Para Ofício ausente: se a ausência for definitiva (ex.: tipo de evento
-que exige Ofício já existente), retorne `ignored`; se for transitória (ex.:
-Ofício pode ser criado posteriormente), reverta o nonce e propague `failed`
-para permitir retry. Se qualquer escrita falhar, reverta tudo; o `catch` externo
+nonce. Para Ofício ausente (reconhecido mas não encontrado no banco): reverta a transação (incluindo o nonce) e propague `failed` para permitir retentativas futuras caso o Ofício correspondente ainda esteja sendo criado ou sincronizado. Se qualquer escrita falhar, reverta tudo; o `catch` externo
 faz log sanitizado e retorna `failed`. Audite somente `processed`, após commit,
 usando `db` padrão.
 
@@ -162,7 +158,7 @@ estados:
 - `processed` → log sanitizado, 200;
 - `duplicate` → log sanitizado, 200;
 - `ignored` → log sanitizado, 200;
-- `invalid` → log sanitizado, 400 terminal, sem retry;
+- `invalid` → log sanitizado, 200 terminal (sem persistir nonce, com resposta/payload que indica evento inválido para o provedor);
 - `failed` → log sanitizado (sem payload, sem PII, sem IDs internos), 200
   (preservado para o Plano 037).
 
@@ -219,7 +215,7 @@ mudanças acidentais de schema.
 
 - Unit: claim inicial, duplicado, ignorado, falha, auditoria apenas após commit e
   ausência de escritas após duplicado.
-- Rota: cada resultado chama o service uma vez; `invalid` retorna 400 terminal;
+- Rota: cada resultado chama o service uma vez; `invalid` retorna 200 terminal;
   nenhuma query de nonce na rota.
 - Integração: mesmo ID concorrente confirma um conjunto de efeitos; rollback não
   deixa nonce e permite retry.
@@ -231,7 +227,8 @@ mudanças acidentais de schema.
 - [ ] Claim, status, outbox e notificações compartilham uma transação.
 - [ ] Só uma chamada concorrente retorna `processed`.
 - [ ] Falha não deixa nonce nem efeito de domínio.
-- [ ] Evento inválido retorna HTTP 400 terminal, sem retry.
+- [ ] Evento inválido retorna HTTP 200 terminal, sem persistir nonce.
+- [ ] Ofício ausente reverte nonce e retorna `failed`.
 - [ ] No-op intencional é `ignored`, não `failed`.
 - [ ] Testes com PG real cobrem concorrência e rollback.
 - [ ] Gates oficiais passam na ordem exigida.
