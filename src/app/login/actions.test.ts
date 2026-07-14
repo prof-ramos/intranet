@@ -5,10 +5,12 @@ type MockLoginSchemaResult =
   | { success: true; data: { email: string; password: string } }
   | { success: false; error: { issues: Array<{ code: string; path: string[] }> } };
 
-const mockSafeParse = vi.fn((_: unknown): MockLoginSchemaResult => ({
-  success: true,
-  data: { email: 'admin@asof.local', password: 'Senha-Forte-2026!' },
-}));
+const mockSafeParse = vi.fn(
+  (_: unknown): MockLoginSchemaResult => ({
+    success: true,
+    data: { email: 'admin@asof.local', password: 'Senha-Forte-2026!' },
+  }),
+);
 
 vi.mock('@/lib/auth/service', () => ({
   authenticate: (...args: unknown[]) => mockAuthenticate(...args),
@@ -20,8 +22,10 @@ vi.mock('@/lib/auth/service', () => ({
   },
 }));
 
+const mockCreateSession = vi.fn(async () => ({}));
+
 vi.mock('@/lib/auth/session', () => ({
-  createSession: vi.fn(async () => ({})),
+  createSession: mockCreateSession,
 }));
 
 const mockConsume = vi.fn(async () => ({ allowed: true }));
@@ -113,7 +117,9 @@ describe('login action', () => {
       userId: 1,
       email: 'admin@asof.local',
     });
+    expect(redirect).toHaveBeenCalledTimes(1);
     expect(redirect).toHaveBeenCalledWith('/app');
+    expect(mockLogger.warn).not.toHaveBeenCalled();
   });
 
   it('redirects to change-password when mustChangePassword is true', async () => {
@@ -133,7 +139,63 @@ describe('login action', () => {
       await login(buildForm());
     } catch {}
 
+    expect(redirect).toHaveBeenCalledTimes(1);
     expect(redirect).toHaveBeenCalledWith('/change-password');
+    expect(mockLogger.warn).not.toHaveBeenCalled();
+  });
+
+  it('creates the session and redirects after a rate-limit reset failure', async () => {
+    mockAuthenticate.mockResolvedValue({
+      id: 1,
+      name: 'Admin',
+      email: 'admin@asof.local',
+      role: 'admin',
+      isActive: true,
+      mustChangePassword: false,
+    });
+    mockReset.mockRejectedValueOnce(new Error('reset unavailable'));
+
+    const { login } = await import('@/app/login/actions');
+    const { redirect } = await import('next/navigation');
+
+    try {
+      await login(buildForm());
+    } catch {}
+
+    expect(mockCreateSession).toHaveBeenCalledWith({
+      userId: 1,
+      email: 'admin@asof.local',
+    });
+    expect(redirect).toHaveBeenCalledTimes(1);
+    expect(redirect).toHaveBeenCalledWith('/app');
+    expect(mockLogger.warn).toHaveBeenCalledTimes(1);
+    expect(mockLogger.warn).toHaveBeenCalledWith('login_rate_limit_reset_failed');
+  });
+
+  it('redirects only to a generic error when session creation fails', async () => {
+    mockAuthenticate.mockResolvedValue({
+      id: 1,
+      name: 'Admin',
+      email: 'admin@asof.local',
+      role: 'admin',
+      isActive: true,
+      mustChangePassword: false,
+    });
+    mockCreateSession.mockRejectedValueOnce(new Error('session unavailable'));
+
+    const { login } = await import('@/app/login/actions');
+    const { redirect } = await import('next/navigation');
+
+    try {
+      await login(buildForm());
+    } catch {}
+
+    expect(redirect).toHaveBeenCalledTimes(1);
+    expect(redirect).toHaveBeenCalledWith('/login?error=1');
+    expect(redirect).not.toHaveBeenCalledWith('/app');
+    expect(redirect).not.toHaveBeenCalledWith('/change-password');
+    expect(mockLogger.warn).toHaveBeenCalledTimes(1);
+    expect(mockLogger.warn).toHaveBeenCalledWith('session_creation_failed');
   });
 
   it('redirects to rate-limit error when rate limit is exceeded', async () => {
@@ -146,10 +208,9 @@ describe('login action', () => {
     } catch {}
 
     expect(redirect).toHaveBeenCalledWith('/login?error=rate-limit');
-    expect(mockLogger.warn).toHaveBeenCalledWith(
-      '[Login] Login rate limit exceeded',
-      { reason: 'rate_limited' },
-    );
+    expect(mockLogger.warn).toHaveBeenCalledWith('[Login] Login rate limit exceeded', {
+      reason: 'rate_limited',
+    });
   });
 
   it('redirects to generic error and logs safe details on invalid form input', async () => {
@@ -171,16 +232,13 @@ describe('login action', () => {
     } catch {}
 
     expect(redirect).toHaveBeenCalledWith('/login?error=1');
-    expect(mockLogger.warn).toHaveBeenCalledWith(
-      '[Login] Invalid login form submission',
-      {
-        reason: 'validation_failed',
-        issues: [
-          { code: 'invalid_string', path: 'email' },
-          { code: 'too_small', path: 'password' },
-        ],
-      },
-    );
+    expect(mockLogger.warn).toHaveBeenCalledWith('[Login] Invalid login form submission', {
+      reason: 'validation_failed',
+      issues: [
+        { code: 'invalid_string', path: 'email' },
+        { code: 'too_small', path: 'password' },
+      ],
+    });
     expect(mockAuthenticate).not.toHaveBeenCalled();
   });
 
