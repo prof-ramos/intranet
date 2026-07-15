@@ -9,7 +9,7 @@ export function LogoutButton() {
     <>
       <button
         type="button"
-        className="flex items-center gap-2 rounded-[4px] text-sm text-white/50 transition-colors duration-150 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:ring-offset-[#06284f]"
+        className="flex items-center gap-2 rounded-[4px] text-sm text-white/50 transition-colors duration-150 hover:text-white focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:ring-offset-[#06284f] focus-visible:outline-none"
         onClick={() => {
           const dialog = document.getElementById('logout-modal') as HTMLDialogElement;
           dialog?.showModal();
@@ -27,7 +27,7 @@ export function LogoutButton() {
           <p className="py-4">Deseja realmente sair do sistema?</p>
           <div className="modal-action">
             <form method="dialog">
-              <button className="inline-flex items-center justify-center rounded-[8px] text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:outline-none">
+              <button className="inline-flex h-11 items-center justify-center rounded-[8px] px-5 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:outline-none">
                 Cancelar
               </button>
             </form>
@@ -37,13 +37,14 @@ export function LogoutButton() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button tabIndex={-1} aria-label="Fechar modal">fechar</button>
+          <button tabIndex={-1} aria-label="Fechar modal">
+            fechar
+          </button>
         </form>
       </dialog>
     </>
   );
 }
-
 
 function LogoutSubmitButton() {
   const { pending } = useFormStatus();
