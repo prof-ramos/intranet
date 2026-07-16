@@ -67,6 +67,7 @@ describe('juridico actions', () => {
       'NEXT_REDIRECT:/app/juridico/consultas/15',
     );
 
+    expect(requireRoleMock).toHaveBeenCalledWith(['admin', 'diretoria']);
     expect(createConsultationServiceMock).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Consulta nova',
@@ -112,6 +113,7 @@ describe('juridico actions', () => {
 
     await updateConsultationStatusFromForm(formData);
 
+    expect(requireRoleMock).toHaveBeenCalledWith(['admin', 'diretoria']);
     expect(updateConsultationStatusServiceMock).toHaveBeenCalledWith(21, 'respondida');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/juridico');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/juridico/consultas');
@@ -129,6 +131,7 @@ describe('juridico actions', () => {
 
     await addNote(formData);
 
+    expect(requireRoleMock).toHaveBeenCalledWith(['admin', 'diretoria']);
     expect(addNoteServiceMock).toHaveBeenCalledWith(
       expect.objectContaining({
         entityType: 'consultation',
@@ -143,5 +146,36 @@ describe('juridico actions', () => {
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/juridico/consultas/33');
     expect(revalidateTagMock).toHaveBeenCalledWith('legal-notes', {});
     expect(revalidateTagMock).toHaveBeenCalledWith('consultation-detail', {});
+  });
+
+  it('rejects every mutation when the juridico role boundary denies access', async () => {
+    requireRoleMock.mockRejectedValue(new Error('Acesso negado.'));
+
+    const createFormData = new FormData();
+    createFormData.set('title', 'Consulta nova');
+    createFormData.set('questionSummary', 'Resumo');
+
+    const updateFormData = new FormData();
+    updateFormData.set('id', '21');
+    updateFormData.set('status', 'respondida');
+
+    const noteFormData = new FormData();
+    noteFormData.set('entityType', 'consultation');
+    noteFormData.set('entityId', '33');
+    noteFormData.set('content', 'Nova nota');
+
+    await expect(createConsultation(createFormData)).rejects.toThrow('Acesso negado.');
+    await expect(updateConsultationStatusFromForm(updateFormData)).rejects.toThrow(
+      'Acesso negado.',
+    );
+    await expect(addNote(noteFormData)).rejects.toThrow('Acesso negado.');
+
+    expect(requireRoleMock).toHaveBeenCalledTimes(3);
+    expect(requireRoleMock).toHaveBeenNthCalledWith(1, ['admin', 'diretoria']);
+    expect(requireRoleMock).toHaveBeenNthCalledWith(2, ['admin', 'diretoria']);
+    expect(requireRoleMock).toHaveBeenNthCalledWith(3, ['admin', 'diretoria']);
+    expect(createConsultationServiceMock).not.toHaveBeenCalled();
+    expect(updateConsultationStatusServiceMock).not.toHaveBeenCalled();
+    expect(addNoteServiceMock).not.toHaveBeenCalled();
   });
 });
