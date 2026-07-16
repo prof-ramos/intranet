@@ -27,11 +27,12 @@ const FIELD_ORDER: EtiquetaFieldKey[] = [
 function clean(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const normalized = value.replace(/\s+/g, ' ').trim();
-  if (!normalized || normalized === 'undefined' || normalized === 'null' || normalized === 'NaN') return null;
+  if (!normalized || normalized === 'undefined' || normalized === 'null' || normalized === 'NaN')
+    return null;
   return normalized;
 }
 
-function formatCep(value?: string | null): string | null {
+export function formatCep(value?: string | null): string | null {
   const normalized = clean(value);
   if (!normalized) return null;
   const digits = normalized.replace(/\D/g, '');
@@ -125,7 +126,11 @@ export function formatMalaDiplomaticaLabel(
 ): LabelContent {
   return {
     id: recipient.id,
-    lines: uniqueNonEmpty([recipient.nome, recipient.posto ?? recipient.lotacao, ...flagLines(flags)]),
+    lines: uniqueNonEmpty([
+      recipient.nome,
+      recipient.posto ?? recipient.lotacao,
+      ...flagLines(flags),
+    ]),
   };
 }
 
@@ -137,7 +142,10 @@ export function formatCustomLabel(
   const orderedFields = FIELD_ORDER.filter((field) => fields.includes(field));
   return {
     id: recipient.id,
-    lines: uniqueNonEmpty([...orderedFields.map((field) => labelForField(field, recipient)), ...flagLines(flags)]),
+    lines: uniqueNonEmpty([
+      ...orderedFields.map((field) => labelForField(field, recipient)),
+      ...flagLines(flags),
+    ]),
   };
 }
 
@@ -147,7 +155,8 @@ export function formatEtiquetaLines(input: EtiquetaGenerationInput): LabelConten
   return input.recipients.map((recipient) => {
     if (hasManualFieldSelection) return formatCustomLabel(recipient, fields, input.flags);
     if (input.mode === 'postal') return formatPostalLabel(recipient, input.flags);
-    if (input.mode === 'mala_diplomatica') return formatMalaDiplomaticaLabel(recipient, input.flags);
+    if (input.mode === 'mala_diplomatica')
+      return formatMalaDiplomaticaLabel(recipient, input.flags);
     return formatCustomLabel(recipient, fields, input.flags);
   });
 }

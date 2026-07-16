@@ -4,6 +4,7 @@ import {
   formatEtiquetaLines,
   formatMalaDiplomaticaLabel,
   formatPostalLabel,
+  formatCep,
   type EtiquetaRecipient,
 } from '@/lib/etiquetas';
 
@@ -24,6 +25,29 @@ const recipient: EtiquetaRecipient = {
   telefone: '(61) 99999-0000',
 };
 
+describe('formatCep', () => {
+  it('formats an 8 digit CEP correctly', () => {
+    expect(formatCep('12345678')).toBe('12345-678');
+    expect(formatCep('12.345-678')).toBe('12345-678');
+    expect(formatCep('  12345678  ')).toBe('12345-678');
+  });
+
+  it('returns normalized string when length is not 8 digits', () => {
+    expect(formatCep('1234567')).toBe('1234567');
+    expect(formatCep('123456789')).toBe('123456789');
+    expect(formatCep('invalid')).toBe('invalid');
+  });
+
+  it('returns null for empty, null, or invalid input', () => {
+    expect(formatCep(null)).toBeNull();
+    expect(formatCep(undefined)).toBeNull();
+    expect(formatCep('')).toBeNull();
+    expect(formatCep('   ')).toBeNull();
+    expect(formatCep('undefined')).toBeNull();
+    expect(formatCep('null')).toBeNull();
+  });
+});
+
 describe('formatter de etiquetas', () => {
   it('formata postal com CEP e flags', () => {
     const label = formatPostalLabel(recipient, { peo: true, ectOpenable: true });
@@ -35,7 +59,10 @@ describe('formatter de etiquetas', () => {
   });
 
   it('formata mala diplomática sem exigir endereço', () => {
-    const label = formatMalaDiplomaticaLabel({ id: '2', nome: 'João Souza', lotacao: 'SERE' }, { peo: true });
+    const label = formatMalaDiplomaticaLabel(
+      { id: '2', nome: 'João Souza', lotacao: 'SERE' },
+      { peo: true },
+    );
     expect(label.lines).toEqual(['João Souza', 'SERE', 'P.E.O.']);
   });
 
