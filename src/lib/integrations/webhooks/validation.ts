@@ -1,6 +1,6 @@
 import 'server-only';
 import { z } from 'zod';
-import { isIPv6 } from 'node:net';
+import { isIP, isIPv6 } from 'node:net';
 import { lookup } from 'node:dns/promises';
 import { domainEventType } from '@/lib/db/schema/integrations';
 
@@ -53,16 +53,37 @@ function isPrivateIPv6(ip: string): boolean {
   return false;
 }
 
-export async function isPublicWebhookUrl(value: string): Promise<boolean> {
+export interface ValidatedWebhookAddress {
+  address: string;
+  family: 4 | 6;
+}
+
+export interface ValidatedWebhookTarget {
+  url: string;
+  hostname: string;
+  addresses: ValidatedWebhookAddress[];
+}
+
+function isPublicAddress({ address, family }: ValidatedWebhookAddress): boolean {
+  if (family === 6) {
+    return isIPv6(address) && !isPrivateIPv6(address);
+  }
+
+  return isIP(address) === 4 && !PRIVATE_IPV4_RANGES.some((pattern) => pattern.test(address));
+}
+
+export async function resolvePublicWebhookTarget(
+  value: string,
+): Promise<ValidatedWebhookTarget | null> {
   let url: URL;
   try {
     url = new URL(value);
   } catch {
-    return false;
+    return null;
   }
 
   if (url.protocol !== 'https:') {
-    return false;
+    return null;
   }
 
   const hostname = url.hostname.toLowerCase();
@@ -72,7 +93,7 @@ export async function isPublicWebhookUrl(value: string): Promise<boolean> {
     hostname.endsWith('.local') ||
     hostname.endsWith('.internal')
   ) {
-    return false;
+    return null;
   }
 
   // Strip brackets for IPv6 — URL.hostname includes them
@@ -80,35 +101,43 @@ export async function isPublicWebhookUrl(value: string): Promise<boolean> {
 
   // Direct IPv6 address (includes ::ffff: mapped — handled in isPrivateIPv6)
   if (isIPv6(stripped)) {
-    return !isPrivateIPv6(stripped);
+    const addresses: ValidatedWebhookAddress[] = [{ address: stripped, family: 6 }];
+    return isPublicAddress(addresses[0]) ? { url: url.href, hostname: stripped, addresses } : null;
   }
 
   // Direct IPv4 address
-  if (PRIVATE_IPV4_RANGES.some((pattern) => pattern.test(hostname))) {
-    return false;
+  if (isIP(stripped) === 4) {
+    const addresses: ValidatedWebhookAddress[] = [{ address: stripped, family: 4 }];
+    return isPublicAddress(addresses[0]) ? { url: url.href, hostname: stripped, addresses } : null;
   }
 
   // DNS rebinding guard: resolve hostname, reject if any resolved IP is private
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    // ponytail: 2s timeout via race, no cache. Per-subscription cache if throughput matters.
-    const addresses = await Promise.race([
+    const resolved = await Promise.race([
       lookup(hostname, { all: true }) as Promise<Array<{ address: string; family: number }>>,
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('DNS timeout')), 2000),
+      new Promise<never>(
+        (_, reject) => (timeout = setTimeout(() => reject(new Error('DNS timeout')), 2000)),
       ),
     ]);
-    for (const { address } of addresses) {
-      if (isIPv6(address)) {
-        if (isPrivateIPv6(address)) return false;
-      } else if (PRIVATE_IPV4_RANGES.some((pattern) => pattern.test(address))) {
-        return false;
-      }
-    }
-  } catch {
-    return false;
-  }
 
-  return true;
+    const addresses = resolved.flatMap<ValidatedWebhookAddress>(({ address, family }) =>
+      family === 4 || family === 6 ? [{ address, family }] : [],
+    );
+    if (addresses.length === 0 || addresses.length !== resolved.length) {
+      return null;
+    }
+
+    return addresses.every(isPublicAddress) ? { url: url.href, hostname, addresses } : null;
+  } catch {
+    return null;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+export async function isPublicWebhookUrl(value: string): Promise<boolean> {
+  return (await resolvePublicWebhookTarget(value)) !== null;
 }
 
 export const webhookSubscriptionFormSchema = z.object({

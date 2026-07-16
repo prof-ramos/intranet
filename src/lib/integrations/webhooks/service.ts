@@ -1,4 +1,5 @@
-import { isPublicWebhookUrl } from '@/lib/integrations/webhooks/validation';
+import { resolvePublicWebhookTarget } from '@/lib/integrations/webhooks/validation';
+import { sendPinnedWebhook } from '@/lib/integrations/webhooks/transport';
 import { randomUUID } from 'node:crypto';
 import { db, type DbExecutor } from '@/lib/db';
 import {
@@ -107,9 +108,12 @@ async function deliverEventToSubscription(
   attempt: number,
   executor: DbExecutor,
 ) {
-  if (!(await isPublicWebhookUrl(subscription.targetUrl))) {
+  const target = await resolvePublicWebhookTarget(subscription.targetUrl);
+  if (!target) {
     const failureReason = `Webhook target URL failed security validation: ${subscription.targetUrl}`;
-    logger.error('Webhook target URL failed security validation', { subscriptionId: subscription.id });
+    logger.error('Webhook target URL failed security validation', {
+      subscriptionId: subscription.id,
+    });
     await insertWebhookDelivery(
       {
         domainEventId: eventId,
@@ -149,7 +153,7 @@ async function deliverEventToSubscription(
   const timeout = setTimeout(() => abortController.abort(), WEBHOOK_TIMEOUT_MS);
 
   try {
-    const response = await fetch(subscription.targetUrl, {
+    const response = await sendPinnedWebhook(target, {
       method: 'POST',
       redirect: 'manual',
       headers: {
@@ -170,23 +174,26 @@ async function deliverEventToSubscription(
       statusCode = response.status;
       responseExcerpt = 'Redirect blocked for security reasons.';
       const failureReason = `Webhook redirect blocked: HTTP ${response.status}`;
-      await insertWebhookDelivery({
-        domainEventId: eventId,
-        webhookSubscriptionId: subscription.id,
-        attempt,
-        requestId,
-        idempotencyKey,
-        status: 'failed',
-        statusCode,
-        responseExcerpt,
-        failedAt: new Date(),
-        failureReason,
-      }, executor);
+      await insertWebhookDelivery(
+        {
+          domainEventId: eventId,
+          webhookSubscriptionId: subscription.id,
+          attempt,
+          requestId,
+          idempotencyKey,
+          status: 'failed',
+          statusCode,
+          responseExcerpt,
+          failedAt: new Date(),
+          failureReason,
+        },
+        executor,
+      );
       return 'failed' as const;
     }
 
     statusCode = response.status;
-    responseExcerpt = sanitizeResponseExcerpt(await response.text());
+    responseExcerpt = sanitizeResponseExcerpt(response.body);
 
     if (response.ok) {
       await insertWebhookDelivery(
@@ -241,10 +248,7 @@ async function deliverEventToSubscription(
   return shouldRetry ? ('retry_scheduled' as const) : ('failed' as const);
 }
 
-async function dispatchEventToSubscriptions(
-  event: DomainEventForDispatch,
-  executor: DbExecutor,
-) {
+async function dispatchEventToSubscriptions(event: DomainEventForDispatch, executor: DbExecutor) {
   const bodyEnvelope = buildWebhookBody(event);
   const body = JSON.stringify(bodyEnvelope);
   const subscriptions = await listActiveWebhookSubscriptionsForEvent(event.eventType, executor);
@@ -322,7 +326,9 @@ export async function dispatchDomainEventById(eventId: number) {
   return dispatchEventToSubscriptions(event, db);
 }
 
-async function dispatchClaimedEvent(event: Awaited<ReturnType<typeof lockAndFetchDispatchableEvents>>[number]) {
+async function dispatchClaimedEvent(
+  event: Awaited<ReturnType<typeof lockAndFetchDispatchableEvents>>[number],
+) {
   return dispatchEventToSubscriptions(event, db);
 }
 
@@ -333,9 +339,7 @@ export async function dispatchPendingDomainEvents(limit = 20) {
   // Atomically lock and claim dispatchable events using FOR UPDATE SKIP LOCKED
   // so concurrent dispatchers do not double-process the same events.
   const pendingEvents = await lockAndFetchDispatchableEvents(limit);
-  const results = await Promise.all(
-    pendingEvents.map((event) => dispatchClaimedEvent(event))
-  );
+  const results = await Promise.all(pendingEvents.map((event) => dispatchClaimedEvent(event)));
 
   return {
     processed: pendingEvents.length,
