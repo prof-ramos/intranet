@@ -8,7 +8,12 @@ import {
   dispatchPendingDomainEvents,
 } from '@/lib/integrations/webhooks/service';
 import { createWebhookHandler } from '@/lib/integrations/webhook-handler';
-import { getIntegrationRateLimitKey, integrationRateLimiter } from '@/lib/integrations/rate-limit';
+import {
+  getIntegrationPreAuthRateLimitKey,
+  getIntegrationPrincipalRateLimitKey,
+  integrationPreAuthRateLimiter,
+  integrationPrincipalRateLimiter,
+} from '@/lib/integrations/rate-limit';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 
@@ -60,10 +65,12 @@ function getOperatorId(
 }
 
 export async function GET(request: Request) {
-  const rateLimitResult = await integrationRateLimiter.consume(getIntegrationRateLimitKey(request));
-  if (!rateLimitResult.allowed) {
+  const preAuthRateLimit = await integrationPreAuthRateLimiter.consume(
+    getIntegrationPreAuthRateLimitKey(request),
+  );
+  if (!preAuthRateLimit.allowed) {
     return jsonError(429, 'rate_limit_exceeded', 'Too many requests. Please try again later.', {
-      details: { retryAfterMs: rateLimitResult.retryAfterMs },
+      details: { retryAfterMs: preAuthRateLimit.retryAfterMs },
     });
   }
 
@@ -74,6 +81,16 @@ export async function GET(request: Request) {
 
   if (!authorization.ok) {
     return authorization.response;
+  }
+
+  const principalRateLimit = await integrationPrincipalRateLimiter.consume(
+    getIntegrationPrincipalRateLimitKey(authorization.principal),
+  );
+  if (!principalRateLimit.allowed) {
+    return jsonError(429, 'rate_limit_exceeded', 'Too many requests. Please try again later.', {
+      requestId: authorization.requestId,
+      details: { retryAfterMs: principalRateLimit.retryAfterMs },
+    });
   }
 
   return jsonOk(
@@ -95,13 +112,20 @@ export const POST = createWebhookHandler<
   Extract<Awaited<ReturnType<typeof authorizeIntegrationRequest>>, { ok: true }>
 >({
   authenticate: async (request) => {
-    const rateLimitResult = await integrationRateLimiter.consume(getIntegrationRateLimitKey(request));
-    if (!rateLimitResult.allowed) {
+    const preAuthRateLimit = await integrationPreAuthRateLimiter.consume(
+      getIntegrationPreAuthRateLimitKey(request),
+    );
+    if (!preAuthRateLimit.allowed) {
       return {
         ok: false,
-        response: jsonError(429, 'rate_limit_exceeded', 'Too many requests. Please try again later.', {
-          details: { retryAfterMs: rateLimitResult.retryAfterMs },
-        }),
+        response: jsonError(
+          429,
+          'rate_limit_exceeded',
+          'Too many requests. Please try again later.',
+          {
+            details: { retryAfterMs: preAuthRateLimit.retryAfterMs },
+          },
+        ),
       };
     }
 
@@ -112,6 +136,24 @@ export const POST = createWebhookHandler<
 
     if (!authorization.ok) {
       return { ok: false, response: authorization.response };
+    }
+
+    const principalRateLimit = await integrationPrincipalRateLimiter.consume(
+      getIntegrationPrincipalRateLimitKey(authorization.principal),
+    );
+    if (!principalRateLimit.allowed) {
+      return {
+        ok: false,
+        response: jsonError(
+          429,
+          'rate_limit_exceeded',
+          'Too many requests. Please try again later.',
+          {
+            requestId: authorization.requestId,
+            details: { retryAfterMs: principalRateLimit.retryAfterMs },
+          },
+        ),
+      };
     }
 
     return { ok: true, context: authorization };

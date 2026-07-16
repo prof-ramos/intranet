@@ -1,14 +1,21 @@
 import { authorizeIntegrationRequest } from '@/lib/integrations/auth';
 import { jsonError, jsonOk } from '@/lib/integrations/http';
-import { getIntegrationRateLimitKey, integrationRateLimiter } from '@/lib/integrations/rate-limit';
+import {
+  getIntegrationPreAuthRateLimitKey,
+  getIntegrationPrincipalRateLimitKey,
+  integrationPreAuthRateLimiter,
+  integrationPrincipalRateLimiter,
+} from '@/lib/integrations/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  const rateLimitResult = await integrationRateLimiter.consume(getIntegrationRateLimitKey(request));
-  if (!rateLimitResult.allowed) {
+  const preAuthRateLimit = await integrationPreAuthRateLimiter.consume(
+    getIntegrationPreAuthRateLimitKey(request),
+  );
+  if (!preAuthRateLimit.allowed) {
     return jsonError(429, 'rate_limit_exceeded', 'Too many requests. Please try again later.', {
-      details: { retryAfterMs: rateLimitResult.retryAfterMs },
+      details: { retryAfterMs: preAuthRateLimit.retryAfterMs },
     });
   }
 
@@ -19,6 +26,16 @@ export async function GET(request: Request) {
 
   if (!authorization.ok) {
     return authorization.response;
+  }
+
+  const principalRateLimit = await integrationPrincipalRateLimiter.consume(
+    getIntegrationPrincipalRateLimitKey(authorization.principal),
+  );
+  if (!principalRateLimit.allowed) {
+    return jsonError(429, 'rate_limit_exceeded', 'Too many requests. Please try again later.', {
+      requestId: authorization.requestId,
+      details: { retryAfterMs: principalRateLimit.retryAfterMs },
+    });
   }
 
   return jsonOk(

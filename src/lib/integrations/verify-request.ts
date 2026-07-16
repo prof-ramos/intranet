@@ -225,7 +225,8 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
       principal: {
         kind: 'integration',
         scheme: INTEGRATION_AUTH_SCHEME,
-        keyId: key,
+        // The authenticated principal must never retain the raw credential.
+        keyId: sha256Hex(key),
         // No scopes — env-var keys have unrestricted access.
       },
     };
@@ -287,7 +288,7 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
     principal: {
       kind: 'integration',
       scheme: INTEGRATION_AUTH_SCHEME,
-      keyId: tableKey.name,
+      keyId: String(tableKey.id),
       scopes: tableKey.scopes,
     },
   };
