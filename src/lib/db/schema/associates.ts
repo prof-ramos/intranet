@@ -15,10 +15,7 @@ import { sql } from 'drizzle-orm';
 import { paymentMethod } from './enums';
 
 export const associationStatus = pgEnum('association_status', ['associado', 'nao_associado']);
-export const contributionStatus = pgEnum('contribution_status', [
-  'em_dia',
-  'inadimplente',
-]);
+export const contributionStatus = pgEnum('contribution_status', ['em_dia', 'inadimplente']);
 export const functionalStatus = pgEnum('functional_status', [
   'ativo',
   'aposentado',
@@ -34,7 +31,6 @@ export const maritalStatus = pgEnum('marital_status', [
   'divorciado',
   'viuvo',
   'separado',
-  'outros', // TODO: normalize over time — legacy catch-all for 285 records
 ]);
 export const missionType = pgEnum('mission_type', ['permanente', 'transitoria']);
 export const careerOrigin = pgEnum('career_origin', ['brasil', 'exterior', 'outros_orgaos']);
@@ -71,9 +67,7 @@ export const associates = pgTable(
     associationStatus: associationStatus('association_status').notNull().default('nao_associado'),
     joinedAt: timestamp('joined_at', { mode: 'string', withTimezone: true }),
     associationCategory: text('association_category'),
-    contributionStatus: contributionStatus('contribution_status')
-      .notNull()
-      .default('inadimplente'),
+    contributionStatus: contributionStatus('contribution_status').notNull().default('inadimplente'),
     paymentMethod: paymentMethod('payment_method').notNull().default('folha'),
     secondaryEmail: text('secondary_email'),
     internalNotes: text('internal_notes'),
@@ -137,14 +131,17 @@ export const associates = pgTable(
     index('idx_associates_name_trgm').using('gin', table.fullName.op('gin_trgm_ops')),
     index('idx_associates_name_lower_trgm').using(
       'gin',
-      sql`translate(lower(${table.fullName}), 'ÁÀÂÃÄÅáàâãäåÉÈÊËéèêëÍÌÎÏíìîïÓÒÔÕÖóòôõöÚÙÛÜúùûüÇçÑñ', 'AAAAAAaaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn') gin_trgm_ops`
+      sql`translate(lower(${table.fullName}), 'ÁÀÂÃÄÅáàâãäåÉÈÊËéèêëÍÌÎÏíìîïÓÒÔÕÖóòôõöÚÙÛÜúùûüÇçÑñ', 'AAAAAAaaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn') gin_trgm_ops`,
     ),
     check('chk_associates_cpf_pii', sql`${table.cpf} IS NULL OR ${table.cpfCiphertext} IS NULL`),
     check(
       'chk_associates_email_pii',
       sql`${table.primaryEmail} IS NULL OR ${table.primaryEmailCiphertext} IS NULL`,
     ),
-    check('chk_associates_phone_pii', sql`${table.phone} IS NULL OR ${table.phoneCiphertext} IS NULL`),
+    check(
+      'chk_associates_phone_pii',
+      sql`${table.phone} IS NULL OR ${table.phoneCiphertext} IS NULL`,
+    ),
     check(
       'chk_associates_address_pii',
       sql`${table.address} IS NULL OR ${table.addressCiphertext} IS NULL`,
@@ -153,7 +150,10 @@ export const associates = pgTable(
       'chk_associates_whatsapp_pii',
       sql`${table.whatsapp} IS NULL OR ${table.whatsappCiphertext} IS NULL`,
     ),
-    check('chk_associates_siape_pii', sql`${table.siape} IS NULL OR ${table.siapeCiphertext} IS NULL`),
+    check(
+      'chk_associates_siape_pii',
+      sql`${table.siape} IS NULL OR ${table.siapeCiphertext} IS NULL`,
+    ),
     check('chk_associates_rg_pii', sql`${table.rg} IS NULL OR ${table.rgCiphertext} IS NULL`),
   ],
 );

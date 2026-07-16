@@ -57,7 +57,11 @@ export function parseDate(value: string | null | undefined): string | null {
 
   // Validate calendar date (e.g., Feb 31, Apr 31 are invalid)
   const dateObj = new Date(Date.UTC(year, month - 1, day));
-  if (dateObj.getUTCFullYear() !== year || dateObj.getUTCMonth() !== month - 1 || dateObj.getUTCDate() !== day) {
+  if (
+    dateObj.getUTCFullYear() !== year ||
+    dateObj.getUTCMonth() !== month - 1 ||
+    dateObj.getUTCDate() !== day
+  ) {
     return null;
   }
 
@@ -79,12 +83,11 @@ const MARITAL_STATUS_MAP: Record<string, string> = {
   'DIVORCIADO(A)': 'divorciado',
   'VIÚVO(A)': 'viuvo',
   'SEPARADO(A)': 'separado',
-  OUTROS: 'outros',
 };
 
 const MISSION_TYPE_MAP: Record<string, string> = {
   PERMANENTE: 'permanente',
-  'TRANSITÓRIA': 'transitoria',
+  TRANSITÓRIA: 'transitoria',
   TRANSITORIA: 'transitoria',
 };
 
@@ -445,10 +448,7 @@ export interface TransformResult {
  * PII fields are NOT encrypted here — the main script handles encryption.
  * Returns normalized values suitable for the Drizzle schema.
  */
-export function transformLegacyRecord(
-  record: LegacyRecord,
-  rowIndex: number,
-): TransformResult {
+export function transformLegacyRecord(record: LegacyRecord, rowIndex: number): TransformResult {
   const warnings: string[] = [];
 
   const getString = (key: string): string => record[key] ?? '';
@@ -515,12 +515,13 @@ export function transformLegacyRecord(
     functionalStatus,
     assignment: n('Lotação'),
     assignmentStartDate: parseDate(getString('Data de Lotação')),
-    joinedAt: parseDate(getString('Data de Adesão')) != null
-      ? (() => {
-          const d = parseDate(getString('Data de Adesão'));
-          return d != null ? `${d}T00:00:00Z` : null;
-        })()
-      : null,
+    joinedAt:
+      parseDate(getString('Data de Adesão')) != null
+        ? (() => {
+            const d = parseDate(getString('Data de Adesão'));
+            return d != null ? `${d}T00:00:00Z` : null;
+          })()
+        : null,
     numberOfDependents: (() => {
       const raw = getString('Número de Dependentes');
       if (raw === '-' || raw === '') return null;

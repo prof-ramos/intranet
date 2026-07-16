@@ -94,7 +94,7 @@ describe('mapMaritalStatus', () => {
     expect(mapMaritalStatus('DIVORCIADO(A)')).toBe('divorciado');
     expect(mapMaritalStatus('VIÚVO(A)')).toBe('viuvo');
     expect(mapMaritalStatus('SEPARADO(A)')).toBe('separado');
-    expect(mapMaritalStatus('OUTROS')).toBe('outros');
+    expect(mapMaritalStatus('OUTROS')).toBe(null);
   });
   it('returns null for dash', () => expect(mapMaritalStatus('-')).toBeNull());
 });
@@ -120,7 +120,8 @@ describe('mapCareerOrigin', () => {
 describe('mapAssociationStatus', () => {
   it('maps sim to associado', () => expect(mapAssociationStatus('sim')).toBe('associado'));
   it('maps não to nao_associado', () => expect(mapAssociationStatus('não')).toBe('nao_associado'));
-  it('maps nao to nao_associado (no accent)', () => expect(mapAssociationStatus('nao')).toBe('nao_associado'));
+  it('maps nao to nao_associado (no accent)', () =>
+    expect(mapAssociationStatus('nao')).toBe('nao_associado'));
   it('returns null for dash', () => expect(mapAssociationStatus('-')).toBeNull());
 });
 
@@ -331,12 +332,12 @@ describe('transformLegacyRecord', () => {
       'Data de Nascimento': '15/3/1980',
       'C.P.F.': '104.332.181-00',
       'R.G.': '1234567',
-      'UF_2': 'RJ',
+      UF_2: 'RJ',
       'Órgão Expedidor': 'SSP',
       'Data de Expedição': '10/5/2000',
       Endereço: 'RUA A, 123',
       Cidade: 'RIO DE JANEIRO',
-      'UF_3': 'RJ',
+      UF_3: 'RJ',
       Bairro: 'COPACABANA',
       'C.E.P.': '22010-000',
       País: 'BRASIL',
@@ -358,7 +359,7 @@ describe('transformLegacyRecord', () => {
       'Data de Licença': '-',
       'Data de Cancelamento': '-',
       'Classe e Padrão': 'CLASSE C - V',
-      'Convênios': 'SINDITAMARATY',
+      Convênios: 'SINDITAMARATY',
     };
 
     const result = transformLegacyRecord(record, 1);
