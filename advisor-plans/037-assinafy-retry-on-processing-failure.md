@@ -162,7 +162,8 @@ Rode a sequência oficial e revise o diff contra vazamento de erro interno.
 - [x] Tentativa falha não confirma nonce.
 - [x] Resposta/log não expõe exceção nem payload.
 - [x] Regressões de rota e integração passam.
-- [x] Gates oficiais passam na ordem exigida.
+- [ ] Gates oficiais passam na ordem exigida — execução sequencial completa ainda
+  não registrada neste documento.
 - [x] `advisor-plans/README.md` foi atualizado.
 
 ## Condições de STOP
