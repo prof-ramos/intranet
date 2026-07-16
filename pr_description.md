@@ -1,0 +1,4 @@
+🎯 **What:** Extracted large, inline HTML sections (`Identificação`, `Endereço`, `Dados Profissionais`, `Administrativo`) from the `CriarAssociadoForm` React component into their own separate functional components.
+💡 **Why:** The main component was overly complex (over 400 lines of inline JSX). By pulling out the individual sections into dedicated components, the code becomes much more readable and maintainable without affecting form submission behavior, as it relies on uncontrolled inputs and FormData.
+✅ **Verification:** Verified the refactor by testing the page rendering with a Playwright script and checking that all fields display properly. Also ran `pnpm lint` and `pnpm test` to ensure no regressions were introduced.
+✨ **Result:** The `CriarAssociadoForm` function is now clean, concise, and focused solely on form logic, leaving the UI presentation to the extracted subcomponents.
