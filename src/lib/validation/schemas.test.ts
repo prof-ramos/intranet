@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { isPublicWebhookUrl } from '@/lib/integrations/webhooks/validation';
+import {
+  isPublicWebhookUrl,
+  resolvePublicWebhookTarget,
+} from '@/lib/integrations/webhooks/validation';
 import {
   loginSchema,
   changePasswordSchema,
@@ -527,6 +530,25 @@ describe('isPublicWebhookUrl', () => {
   });
 
   describe('DNS rebinding', () => {
+    test('retorna o hostname original e somente os endereços aprovados', async () => {
+      lookupMock.mockResolvedValueOnce([
+        { address: '93.184.216.34', family: 4 },
+        { address: '2606:2800:220:1:248:1893:25c8:1946', family: 6 },
+      ]);
+
+      await expect(
+        resolvePublicWebhookTarget('https://hooks.example.com/webhook'),
+      ).resolves.toEqual({
+        url: 'https://hooks.example.com/webhook',
+        hostname: 'hooks.example.com',
+        addresses: [
+          { address: '93.184.216.34', family: 4 },
+          { address: '2606:2800:220:1:248:1893:25c8:1946', family: 6 },
+        ],
+      });
+      expect(lookupMock).toHaveBeenCalledTimes(1);
+    });
+
     test('rejeita hostname que resolve para IP privado', async () => {
       lookupMock.mockResolvedValueOnce([{ address: '10.0.0.1', family: 4 }]);
 

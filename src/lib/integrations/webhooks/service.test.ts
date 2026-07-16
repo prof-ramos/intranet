@@ -14,6 +14,16 @@ const mockUpdateDomainEventDeliveryStatus = vi.fn();
 const mockDecryptWebhookSecret = vi.fn();
 const mockRecoverStuckProcessingEvents = vi.fn();
 const mockLockAndFetchDispatchableEvents = vi.fn();
+const mockResolvePublicWebhookTarget = vi.fn();
+const mockSendPinnedWebhook = vi.fn();
+
+vi.mock('@/lib/integrations/webhooks/validation', () => ({
+  resolvePublicWebhookTarget: (...args: unknown[]) => mockResolvePublicWebhookTarget(...args),
+}));
+
+vi.mock('@/lib/integrations/webhooks/transport', () => ({
+  sendPinnedWebhook: (...args: unknown[]) => mockSendPinnedWebhook(...args),
+}));
 
 vi.mock('@/lib/integrations/webhooks/repository', () => ({
   claimDispatchableDomainEventById: (...args: unknown[]) =>
@@ -57,8 +67,12 @@ vi.mock('@/lib/db', () => ({
 describe('dispatchDomainEventById', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubGlobal('fetch', vi.fn());
     mockDecryptWebhookSecret.mockReturnValue('webhook-secret');
+    mockResolvePublicWebhookTarget.mockResolvedValue({
+      url: 'https://example.com/webhook',
+      hostname: 'example.com',
+      addresses: [{ address: '93.184.216.34', family: 4 }],
+    });
     mockClaimDispatchableDomainEventById.mockResolvedValue({
       id: 99,
       eventType: 'associate.updated',
@@ -111,7 +125,7 @@ describe('dispatchDomainEventById', () => {
       subscriptions: 1,
       results: ['delivered'],
     });
-    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(mockSendPinnedWebhook).not.toHaveBeenCalled();
     expect(mockInsertWebhookDelivery).not.toHaveBeenCalled();
     expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'delivered', db);
   });
@@ -129,7 +143,7 @@ describe('dispatchDomainEventById', () => {
       dispatched: false,
       reason: 'not_dispatchable',
     });
-    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(mockSendPinnedWebhook).not.toHaveBeenCalled();
   });
 
   it('waits until nextRetryAt before retrying scheduled failures', async () => {
@@ -149,7 +163,7 @@ describe('dispatchDomainEventById', () => {
       subscriptions: 1,
       results: ['retry_scheduled'],
     });
-    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(mockSendPinnedWebhook).not.toHaveBeenCalled();
     expect(mockInsertWebhookDelivery).not.toHaveBeenCalled();
     expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'pending', db);
   });
@@ -171,17 +185,18 @@ describe('dispatchDomainEventById', () => {
       subscriptions: 1,
       results: ['failed'],
     });
-    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(mockSendPinnedWebhook).not.toHaveBeenCalled();
     expect(mockInsertWebhookDelivery).not.toHaveBeenCalled();
     expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'failed', db);
   });
 
   it('records failureReason when delivery permanently fails with non-retryable status', async () => {
     mockListWebhookDeliveriesForEvent.mockResolvedValue([]);
-    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+    mockSendPinnedWebhook.mockResolvedValue({
       ok: false,
       status: 403,
-      text: () => Promise.resolve('Forbidden'),
+      type: 'basic',
+      body: 'Forbidden',
     });
 
     const result = await dispatchDomainEventById(99);
@@ -206,10 +221,11 @@ describe('dispatchDomainEventById', () => {
         nextRetryAt: new Date(Date.now() - 60_000),
       },
     ]);
-    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+    mockSendPinnedWebhook.mockResolvedValue({
       ok: false,
       status: 503,
-      text: () => Promise.resolve('Service Unavailable'),
+      type: 'basic',
+      body: 'Service Unavailable',
     });
 
     const result = await dispatchDomainEventById(99);
@@ -235,15 +251,17 @@ describe('dispatchDomainEventById', () => {
       },
     ]);
     mockListWebhookDeliveriesForEvent.mockResolvedValue([]);
+    mockResolvePublicWebhookTarget.mockResolvedValueOnce(null);
 
     const result = await dispatchDomainEventById(99);
 
     expect(result).toMatchObject({ dispatched: true, results: ['failed'] });
-    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(mockSendPinnedWebhook).not.toHaveBeenCalled();
     expect(mockInsertWebhookDelivery).toHaveBeenCalledWith(
       expect.objectContaining({
         status: 'failed',
-        failureReason: 'Webhook target URL failed security validation: http://127.0.0.1:8080/webhook',
+        failureReason:
+          'Webhook target URL failed security validation: http://127.0.0.1:8080/webhook',
         failedAt: expect.any(Date),
       }),
       db,
@@ -258,17 +276,24 @@ describe('dispatchDomainEventById', () => {
     expect(db.transaction).not.toHaveBeenCalled();
   });
 
-  it('still calls fetch for a dispatchable event with active subscriptions', async () => {
+  it('sends through the pinned transport for a dispatchable event', async () => {
     mockListWebhookDeliveriesForEvent.mockResolvedValue([]);
-    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+    mockSendPinnedWebhook.mockResolvedValue({
       ok: true,
       status: 200,
-      text: () => Promise.resolve('OK'),
+      type: 'basic',
+      body: 'OK',
     });
 
     await dispatchDomainEventById(99);
 
-    expect(globalThis.fetch).toHaveBeenCalled();
+    expect(mockSendPinnedWebhook).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hostname: 'example.com',
+        addresses: [{ address: '93.184.216.34', family: 4 }],
+      }),
+      expect.objectContaining({ redirect: 'manual' }),
+    );
   });
 });
 
