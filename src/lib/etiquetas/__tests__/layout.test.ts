@@ -30,7 +30,28 @@ describe('layout de etiquetas', () => {
     expect(shifted.y).toBeLessThan(base.y);
   });
 
-  it('valida startPosition', () => {
-    expect(() => calculateLabelPosition(template, 0, { startPosition: 0 })).toThrow('posição inicial');
+  describe('validação de limites (boundary conditions) para startPosition', () => {
+    it('deve lançar erro se startPosition for menor que 1', () => {
+      expect(() => calculateLabelPosition(template, 0, { startPosition: 0 })).toThrow(
+        'A posição inicial deve estar entre 1 e 33.'
+      );
+      expect(() => calculateLabelPosition(template, 0, { startPosition: -5 })).toThrow(
+        'A posição inicial deve estar entre 1 e 33.'
+      );
+    });
+
+    it('deve lançar erro se startPosition for maior que labelsPerPage', () => {
+      expect(() => calculateLabelPosition(template, 0, { startPosition: 34 })).toThrow(
+        'A posição inicial deve estar entre 1 e 33.'
+      );
+      expect(() => calculateLabelPosition(template, 0, { startPosition: 100 })).toThrow(
+        'A posição inicial deve estar entre 1 e 33.'
+      );
+    });
+
+    it('não deve lançar erro nos limites válidos (1 e labelsPerPage)', () => {
+      expect(() => calculateLabelPosition(template, 0, { startPosition: 1 })).not.toThrow();
+      expect(() => calculateLabelPosition(template, 0, { startPosition: 33 })).not.toThrow();
+    });
   });
 });
