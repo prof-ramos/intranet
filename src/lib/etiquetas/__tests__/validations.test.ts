@@ -1,7 +1,37 @@
 import { describe, expect, it } from 'vitest';
-import { etiquetaGenerationInputSchema, etiquetaRouteRequestSchema } from '@/lib/etiquetas/validations';
+import {
+  etiquetaGenerationInputSchema,
+  etiquetaRouteRequestSchema,
+  resolveFieldsForMode,
+  DEFAULT_FIELDS_BY_MODE,
+} from '@/lib/etiquetas/validations';
+import type { EtiquetaFieldKey } from '@/lib/etiquetas/types';
 
 describe('validações de etiquetas', () => {
+  describe('resolveFieldsForMode', () => {
+    it('retorna os campos selecionados quando fornecidos e não vazios', () => {
+      const selectedFields: EtiquetaFieldKey[] = ['nome', 'email'];
+      const result = resolveFieldsForMode('postal', selectedFields);
+      expect(result).toEqual(['nome', 'email']);
+    });
+
+    it('faz fallback para campos padrão do modo quando selectedFields é undefined', () => {
+      const resultPostal = resolveFieldsForMode('postal');
+      expect(resultPostal).toEqual(DEFAULT_FIELDS_BY_MODE['postal']);
+
+      const resultMala = resolveFieldsForMode('mala_diplomatica');
+      expect(resultMala).toEqual(DEFAULT_FIELDS_BY_MODE['mala_diplomatica']);
+
+      const resultCustom = resolveFieldsForMode('custom');
+      expect(resultCustom).toEqual(DEFAULT_FIELDS_BY_MODE['custom']);
+    });
+
+    it('faz fallback para campos padrão do modo quando selectedFields é um array vazio', () => {
+      const result = resolveFieldsForMode('postal', []);
+      expect(result).toEqual(DEFAULT_FIELDS_BY_MODE['postal']);
+    });
+  });
+
   it('valida startPosition contra o template selecionado', () => {
     const parsed = etiquetaGenerationInputSchema.safeParse({
       templateCode: '6182',
