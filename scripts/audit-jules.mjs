@@ -40,7 +40,9 @@ const ghResult = run('gh', [
 const errors = [];
 let openPullRequests = [];
 
-if (ghResult.ok) {
+if (!ghResult.ok) {
+  errors.push(`gh: ${ghResult.stderr || `exit ${ghResult.status}`}`);
+} else {
   try {
     const parsedPullRequests = JSON.parse(ghResult.stdout || '[]');
     if (!Array.isArray(parsedPullRequests)) {
@@ -69,7 +71,6 @@ const activeSessions = julesResult.ok
 
 const nonDraftPullRequests = openPullRequests.filter((pr) => !pr.isDraft);
 
-if (!ghResult.ok) errors.push(`gh: ${ghResult.stderr || `exit ${ghResult.status}`}`);
 if (!julesResult.ok) errors.push(`jules: ${julesResult.stderr || `exit ${julesResult.status}`}`);
 
 const report = {
