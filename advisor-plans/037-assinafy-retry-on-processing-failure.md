@@ -11,12 +11,15 @@
 
 ## Status
 
+- **Status**: DONE
 - **Prioridade**: P1
 - **Esforço**: S
 - **Risco**: BAIXO
 - **Depende de**: Plano 036
 - **Categoria**: bug
 - **Planejado em**: commit `e0be30d`, 2026-07-14
+- **Implementado em**: PR [#323](https://github.com/prof-ramos/intranet/pull/323)
+  (`f9bec20`), 2026-07-14
 
 ## Por que isso importa
 
@@ -153,14 +156,15 @@ Rode a sequência oficial e revise o diff contra vazamento de erro interno.
 
 ## Critérios de conclusão
 
-- [ ] Falha real do service produz HTTP 500 (retryable).
-- [ ] Evento inválido produz HTTP 200 terminal (sem persistir nonce).
-- [ ] Duplicado e no-op continuam HTTP 200.
-- [ ] Tentativa falha não confirma nonce.
-- [ ] Resposta/log não expõe exceção nem payload.
-- [ ] Regressões de rota e integração passam.
-- [ ] Gates oficiais passam na ordem exigida.
-- [ ] `advisor-plans/README.md` foi atualizado.
+- [x] Falha real do service produz HTTP 500 (retryable).
+- [x] Evento inválido produz HTTP 200 terminal (sem persistir nonce).
+- [x] Duplicado e no-op continuam HTTP 200.
+- [x] Tentativa falha não confirma nonce.
+- [x] Resposta/log não expõe exceção nem payload.
+- [x] Regressões de rota e integração passam.
+- [ ] Gates oficiais passam na ordem exigida — execução sequencial completa ainda
+  não registrada neste documento.
+- [x] `advisor-plans/README.md` foi atualizado.
 
 ## Condições de STOP
 
