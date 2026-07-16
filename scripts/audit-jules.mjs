@@ -25,16 +25,10 @@ function run(command, args) {
 }
 
 const ghResult = run('gh', [
-  'pr',
-  'list',
-  '--repo',
-  repo,
-  '--state',
-  'open',
-  '--limit',
-  '100',
-  '--json',
-  'number,title,headRefName,isDraft,url,createdAt,labels',
+  'api',
+  '--paginate',
+  '--slurp',
+  `repos/${repo}/pulls?state=open&per_page=100`,
 ]);
 
 const errors = [];
@@ -44,16 +38,27 @@ if (!ghResult.ok) {
   errors.push(`gh: ${ghResult.stderr || `exit ${ghResult.status}`}`);
 } else {
   try {
-    const parsedPullRequests = JSON.parse(ghResult.stdout || '[]');
-    if (!Array.isArray(parsedPullRequests)) {
-      throw new TypeError('expected a JSON array');
+    const parsedPages = JSON.parse(ghResult.stdout || '[]');
+    if (!Array.isArray(parsedPages) || parsedPages.some((page) => !Array.isArray(page))) {
+      throw new TypeError('expected an array of JSON page arrays');
     }
 
-    openPullRequests = parsedPullRequests.filter(
-      (pr) =>
-        (typeof pr?.headRefName === 'string' && pr.headRefName.startsWith('jules-')) ||
-        (Array.isArray(pr?.labels) && pr.labels.some((label) => label?.name === 'agent:jules')),
-    );
+    openPullRequests = parsedPages
+      .flat()
+      .map((pr) => ({
+        number: pr?.number,
+        title: pr?.title,
+        headRefName: pr?.head?.ref,
+        isDraft: pr?.draft,
+        url: pr?.html_url,
+        createdAt: pr?.created_at,
+        labels: pr?.labels,
+      }))
+      .filter(
+        (pr) =>
+          (typeof pr.headRefName === 'string' && pr.headRefName.startsWith('jules-')) ||
+          (Array.isArray(pr.labels) && pr.labels.some((label) => label?.name === 'agent:jules')),
+      );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     errors.push(`gh: invalid JSON output (${message})`);
@@ -61,11 +66,12 @@ if (!ghResult.ok) {
 }
 
 const julesResult = run('jules', ['remote', 'list', '--session', '--repo', repo]);
-const activeSessionPattern = /\s(?:Planning|In Progress)\s*$/;
+const nonTerminalSessionPattern =
+  /\s(?:Queued|Planning|Awaiting Plan Approval|Awaiting User Feedback|In Progress|Paused)\s*$/;
 const activeSessions = julesResult.ok
   ? julesResult.stdout
       .split('\n')
-      .filter((line) => line.includes(repo) && activeSessionPattern.test(line))
+      .filter((line) => line.includes(repo) && nonTerminalSessionPattern.test(line))
       .map((line) => line.trim())
   : [];
 
