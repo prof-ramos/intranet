@@ -58,7 +58,7 @@ npm run typecheck && npm run test && npm run build
 - **main**: PR obrigatório, histórico linear, conversas resolvidas, force-push e exclusão bloqueados; regras também se aplicam a administradores.
 - **Checks obrigatórios**: `Lint, Typecheck & Test`, `Database Contract`, `Build Verification` e `E2E Tests (Playwright)` em branch atualizada com `main`.
 - O repositório é mantido por uma pessoa; a proteção exige o PR e os checks, mas não exige aprovação de outra conta.
-- **Sempre**: executar typecheck + test + build antes de push/merge.
+- **Sempre**: executar lint + typecheck + test + test:db + build antes de push/merge.
 - PRs gerados pelo Jules devem nascer como draft e só podem sair de draft após revisão humana do diff e dos checks.
 - Comentários sem menção explícita a `@jules` não autorizam novas alterações automatizadas.
 - Sugestões proativas, CI Fixer e exportação automática de PR devem permanecer desativados para este repositório.

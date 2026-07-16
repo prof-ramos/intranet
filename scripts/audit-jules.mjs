@@ -37,13 +37,26 @@ const ghResult = run('gh', [
   'number,title,headRefName,isDraft,url,createdAt,labels',
 ]);
 
-const openPullRequests = ghResult.ok
-  ? JSON.parse(ghResult.stdout || '[]').filter(
+const errors = [];
+let openPullRequests = [];
+
+if (ghResult.ok) {
+  try {
+    const parsedPullRequests = JSON.parse(ghResult.stdout || '[]');
+    if (!Array.isArray(parsedPullRequests)) {
+      throw new TypeError('expected a JSON array');
+    }
+
+    openPullRequests = parsedPullRequests.filter(
       (pr) =>
-        pr.headRefName.startsWith('jules-') ||
-        pr.labels.some((label) => label.name === 'agent:jules'),
-    )
-  : [];
+        (typeof pr?.headRefName === 'string' && pr.headRefName.startsWith('jules-')) ||
+        (Array.isArray(pr?.labels) && pr.labels.some((label) => label?.name === 'agent:jules')),
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    errors.push(`gh: invalid JSON output (${message})`);
+  }
+}
 
 const julesResult = run('jules', ['remote', 'list', '--session', '--repo', repo]);
 const activeSessionPattern = /\s(?:Planning|In Progress)\s*$/;
@@ -55,7 +68,6 @@ const activeSessions = julesResult.ok
   : [];
 
 const nonDraftPullRequests = openPullRequests.filter((pr) => !pr.isDraft);
-const errors = [];
 
 if (!ghResult.ok) errors.push(`gh: ${ghResult.stderr || `exit ${ghResult.status}`}`);
 if (!julesResult.ok) errors.push(`jules: ${julesResult.stderr || `exit ${julesResult.status}`}`);
