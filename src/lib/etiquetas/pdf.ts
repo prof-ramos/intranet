@@ -35,7 +35,7 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): 
   return lines;
 }
 
-function splitLongWord(word: string, font: PDFFont, size: number, maxWidth: number): string[] {
+export function splitLongWord(word: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const chunks: string[] = [];
   let current = '';
   for (const char of word) {

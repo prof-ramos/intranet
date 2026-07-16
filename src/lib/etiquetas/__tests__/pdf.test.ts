@@ -1,6 +1,7 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, type PDFFont } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 import { generateEtiquetasFromRecipients } from '@/lib/etiquetas';
+import { splitLongWord } from '@/lib/etiquetas/pdf';
 import { etiquetaGenerationInputSchema } from '@/lib/etiquetas/validations';
 
 describe('PDF de etiquetas', () => {
@@ -47,5 +48,32 @@ describe('PDF de etiquetas', () => {
       recipients: [],
     });
     expect(parsed.success).toBe(false);
+  });
+});
+
+describe('splitLongWord', () => {
+  const mockFont = {
+    widthOfTextAtSize: (text: string, size: number) => text.length * size,
+  } as unknown as PDFFont;
+
+  it('splits word correctly based on max width', () => {
+    const result = splitLongWord('abcdef', mockFont, 10, 20);
+    expect(result).toEqual(['ab', 'cd', 'ef']);
+  });
+
+  it('handles word shorter than max width', () => {
+    const result = splitLongWord('abc', mockFont, 10, 50);
+    expect(result).toEqual(['abc']);
+  });
+
+  it('handles single character longer than max width', () => {
+    const result = splitLongWord('a', mockFont, 10, 5);
+    // It should still return the character, as it needs to make progress
+    expect(result).toEqual(['a']);
+  });
+
+  it('handles characters larger than max width within a string', () => {
+    const result = splitLongWord('abcd', mockFont, 10, 5);
+    expect(result).toEqual(['a', 'b', 'c', 'd']);
   });
 });
