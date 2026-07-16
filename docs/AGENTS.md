@@ -9,11 +9,12 @@ Documentation directory covering architecture decisions, design guidelines, comp
 
 ## Key Files
 
-| File                         | Description                                                                           |
-| ---------------------------- | ------------------------------------------------------------------------------------- |
-| `runbook.md`                 | Operations runbook — deployment, monitoring, troubleshooting, and rollback procedures |
-| `environments.md`            | Official source for environments, databases, data classes, migrations, and CI/CD      |
-| `agents/jules-governance.md` | Approval, publication, environment, audit, and incident controls for Google Jules     |
+| File                              | Description                                                                             |
+| --------------------------------- | --------------------------------------------------------------------------------------- |
+| `runbook.md`                      | Operations runbook — deployment, monitoring, troubleshooting, and rollback procedures   |
+| `environments.md`                 | Official source for environments, databases, data classes, migrations, and CI/CD        |
+| `agents/jules-governance.md`      | Approval, publication, environment, audit, and incident controls for Google Jules       |
+| `agents/coderabbit-governance.md` | OSS plan, opt-in review, security, quota, labels, and operating controls for CodeRabbit |
 
 ## Subdirectories
 

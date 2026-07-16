@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
 language: pt-BR
 tone_instructions: >
   Revise em português brasileiro. Seja direto e técnico. Foque em:
@@ -8,19 +10,38 @@ reviews:
   profile: assertive
   request_changes_workflow: false
   high_level_summary: true
+  review_status: true
+  review_details: false
+  commit_status: true
+  fail_commit_status: false
+  collapse_walkthrough: true
   changed_files_summary: true
   sequence_diagrams: false
   estimate_code_review_effort: true
   poem: false
   in_progress_fortune: false
-  auto_review:
+  enable_prompt_for_ai_agents: true
+  slop_detection:
     enabled: true
-    auto_incremental_review: true
+    label: ai-slop
+  auto_review:
+    enabled: false
+    auto_incremental_review: false
+    auto_pause_after_reviewed_commits: 2
+    ignore_title_keywords:
+      - WIP
+      - DO NOT MERGE
+    labels:
+      - review-ready
+      - '!do-not-review'
     drafts: false
   path_filters:
     - '!node_modules/**'
     - '!.next/**'
     - '!*.lock'
+    - '!coverage/**'
+    - '!playwright-report/**'
+    - '!test-results/**'
   path_instructions:
     - path: 'drizzle/postgres/**/*.sql'
       instructions: >
@@ -46,15 +67,39 @@ reviews:
         Server Actions devem validar input antes de tocar no banco.
         Verifique se `revalidatePath` é chamado após mutações.
         Nunca exponha CPF, SIAPE, email ou dados pessoais em respostas ou logs.
+    - path: 'src/app/api/**/route.ts'
+      instructions: >
+        Confirme autenticação/autorização, validação de entrada e respostas genéricas.
+        Rotas cron e webhooks devem validar segredo ou assinatura antes de qualquer efeito.
+        Nunca registre payloads, tokens, cookies, CPF, SIAPE, email ou outros dados pessoais.
+    - path: 'src/lib/auth/**/*.ts'
+      instructions: >
+        Revise limites de confiança, autorização por role, expiração/rotação de sessão e
+        comparação segura de segredos. Falhas de autenticação devem ser genéricas e não podem
+        criar sessão nem revelar se uma conta existe.
+    - path: 'src/proxy.ts'
+      instructions: >
+        Confirme que todas as rotas protegidas continuam cobertas e que cookies inválidos,
+        ausentes ou expirados nunca liberam acesso. Evite redirects abertos.
     - path: 'src/app/**/*.tsx'
       instructions: >
         Server Components não devem ter event handlers (onChange, onClick, etc).
         Verifique se cores usam tokens do `src/lib/ui/tokens.ts` em vez de classes DaisyUI quando possível.
-    - path: 'src/**/*.test.ts'
+    - path: 'src/**/*.{test,integration.test}.{ts,tsx}'
       instructions: >
         Testes devem ser determinísticos. Não use timers reais; use fake timers quando necessário.
+    - path: '.github/workflows/**/*.{yml,yaml}'
+      instructions: >
+        Exija actions fixadas por SHA imutável, permissions mínimas, persist-credentials: false
+        quando o job não publica e proteção contra injeção de contextos não confiáveis em shell.
+        Sinalize segredos em argumentos, logs ou artefatos e gatilhos com privilégios excessivos.
 
   tools:
+    github-checks:
+      enabled: true
+      timeout_ms: 900000
+    languagetool:
+      enabled: false
     eslint:
       enabled: true
     biome:
@@ -100,6 +145,8 @@ reviews:
     regal:
       enabled: false
     actionlint:
+      enabled: true
+    zizmor:
       enabled: true
     pmd:
       enabled: false
@@ -151,6 +198,8 @@ reviews:
       enabled: false
     fortitudeLint:
       enabled: false
+    skillspector:
+      enabled: true
 
   finishing_touches:
     docstrings:
@@ -159,8 +208,11 @@ reviews:
       enabled: false
     simplify:
       enabled: false
+    autofix:
+      enabled: false
 
   pre_merge_checks:
+    override_requested_reviewers_only: true
     docstrings:
       mode: off
     title:
@@ -169,14 +221,47 @@ reviews:
         Título deve ser conciso (idealmente < 70 caracteres) e descrever a mudança em português.
     description:
       mode: off
+    issue_assessment:
+      mode: warning
+    custom_checks:
+      - name: Contrato de banco sincronizado
+        mode: warning
+        instructions: >
+          Se o PR altera schema Drizzle ou migrations PostgreSQL, passe somente quando journal,
+          contrato de schema e documentação operacional afetada também estiverem sincronizados,
+          ou quando o diff demonstrar objetivamente que cada item não se aplica. Se o PR não
+          altera banco, marque como não aplicável.
+      - name: Limites de confiança preservados
+        mode: warning
+        instructions: >
+          Passe somente se mudanças em autenticação, Server Actions, rotas HTTP, webhooks, cron,
+          logs ou auditoria preservarem autorização, validação de entrada e sigilo de tokens,
+          cookies e dados pessoais. Se o PR não toca esses limites, marque como não aplicável.
 
 chat:
-  auto_reply: true
+  art: false
+  allow_non_org_members: false
+  auto_reply: false
 
 knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true
   code_guidelines:
     enabled: true
     filePatterns:
-      - 'CLAUDE.md'
-      - 'AGENTS.md'
       - 'DESIGN.md'
+      - 'CONTEXT.md'
+      - 'DATABASE.md'
+      - files: 'docs/environments.md'
+        applyTo: '**/*'
+  learnings:
+    scope: local
+    approval_delay: 7
+  issues:
+    scope: local
+  pull_requests:
+    scope: local
+  mcp:
+    usage: disabled
+  automatic_repository_linking: false
