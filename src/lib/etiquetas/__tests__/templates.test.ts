@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getLabelsPerPage, getPimacoTemplate, mmToPoints } from '@/lib/etiquetas';
+import type { PimacoTemplateCode } from '@/lib/etiquetas/types';
 
 describe('templates Pimaco', () => {
   it('converte milímetros para pontos', () => {
@@ -13,6 +14,18 @@ describe('templates Pimaco', () => {
   });
 
   it('rejeita modelo inexistente', () => {
-    expect(() => getPimacoTemplate('9999' as '6182')).toThrow('Modelo Pimaco');
+    expect(() => getPimacoTemplate('9999' as '6182')).toThrow('Modelo Pimaco não suportado.');
+  });
+
+  it('rejeita valores vazios ou inválidos', () => {
+    expect(() => getPimacoTemplate('' as PimacoTemplateCode)).toThrow(
+      'Modelo Pimaco não suportado.',
+    );
+    expect(() => getPimacoTemplate(undefined as unknown as PimacoTemplateCode)).toThrow(
+      'Modelo Pimaco não suportado.',
+    );
+    expect(() => getPimacoTemplate(null as unknown as PimacoTemplateCode)).toThrow(
+      'Modelo Pimaco não suportado.',
+    );
   });
 });
