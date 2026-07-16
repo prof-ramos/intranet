@@ -24,17 +24,19 @@ const PRIVATE_IPV4_RANGES = [
 ];
 
 function isPrivateIPv6(ip: string): boolean {
+  const normalizedIp = ip.toLowerCase();
   // ::1 loopback
-  if (ip === '::1') return true;
+  if (normalizedIp === '::1') return true;
   // fc00::/7 Unique Local Addresses (ULA)
-  if (ip.startsWith('fc') || ip.startsWith('fd')) return true;
+  if (normalizedIp.startsWith('fc') || normalizedIp.startsWith('fd')) return true;
   // fe80::/10 link-local
-  if (ip.startsWith('fe80')) return true;
+  const firstHextet = Number.parseInt(normalizedIp.split(':', 1)[0], 16);
+  if ((firstHextet & 0xffc0) === 0xfe80) return true;
   // 64:ff9b::/96 NAT64 / Well-Known Prefix
-  if (ip.startsWith('64:ff9b')) return true;
+  if (normalizedIp.startsWith('64:ff9b')) return true;
   // ::ffff:x (IPv4-mapped) — Node URL normalizes to hex form ::ffff:aabb:ccdd
-  if (ip.startsWith('::ffff:')) {
-    const embedded = ip.slice(7);
+  if (normalizedIp.startsWith('::ffff:')) {
+    const embedded = normalizedIp.slice(7);
     // Hex-form like "7f00:1" from URL normalization
     if (/^[0-9a-f]{1,4}:[0-9a-f]{1,4}$/i.test(embedded)) {
       const parts = embedded.split(':');
