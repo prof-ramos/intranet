@@ -37,7 +37,6 @@ import { buildCorrelationContext } from './correlation-context';
 import { applyCorrelationActions } from './correlation-actions';
 import { persistTriage, persistFailure } from './persister';
 import { notifyNeedsValidation } from './notifier';
-import { materializarNoDominio } from './domain-materializer';
 
 const log = createLogger('email-triage');
 
@@ -188,17 +187,6 @@ export async function processEmail(
     return { success: false, messageId, error: `DB persist failed: ${error}` };
   }
 
-  // ── Step 5b: Materialize into domain (Controller ASOF) ──────────────
-  // Skipped when human validation is required: ambiguous triages must not
-  // create domain records automatically (mirrors the correlation gate below).
-  if (!triageResult.exige_validacao_humana) {
-    try {
-      await materializarNoDominio(payload, triageResult, triageId);
-    } catch (err) {
-      log.warn('materializarNoDominio failed (non-fatal).', { messageId }, err instanceof Error ? err : undefined);
-    }
-  }
-
   if (triageResult.exige_validacao_humana) {
     const notifyResult = await notifyNeedsValidation(triageResult, triageId, payload);
     if (!notifyResult.ok) {
@@ -216,9 +204,13 @@ export async function processEmail(
       const context = await buildCorrelationContext(payload);
       const actions = correlate(payload, triageResult, context);
       await applyCorrelationActions(actions);
-  } catch (err) {
-    log.warn('Correlation engine failed (non-fatal).', { messageId }, err instanceof Error ? err : undefined);
-  }
+    } catch (err) {
+      log.warn(
+        'Correlation engine failed (non-fatal).',
+        { messageId },
+        err instanceof Error ? err : undefined,
+      );
+    }
   }
 
   // ── Step 7: Mark as triaged ───────────────────────────────────────────
