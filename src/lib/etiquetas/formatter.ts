@@ -81,7 +81,7 @@ function labelForField(field: EtiquetaFieldKey, recipient: EtiquetaRecipient): s
   }
 }
 
-function uniqueNonEmpty(lines: Array<string | null | undefined>): string[] {
+export function uniqueNonEmpty(lines: Array<string | null | undefined>): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const line of lines) {

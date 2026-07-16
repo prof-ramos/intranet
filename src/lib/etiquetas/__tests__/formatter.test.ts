@@ -4,6 +4,7 @@ import {
   formatEtiquetaLines,
   formatMalaDiplomaticaLabel,
   formatPostalLabel,
+  uniqueNonEmpty,
   type EtiquetaRecipient,
 } from '@/lib/etiquetas';
 
@@ -63,5 +64,23 @@ describe('formatter de etiquetas', () => {
     });
 
     expect(labels[0].lines).toEqual(['Maria Silva', 'Brasília/DF']);
+  });
+});
+
+describe('uniqueNonEmpty', () => {
+  it('removes null, undefined, and empty values', () => {
+    expect(uniqueNonEmpty(['a', null, 'b', undefined, '', 'c', '   '])).toEqual(['a', 'b', 'c']);
+  });
+
+  it('performs case-insensitive deduplication', () => {
+    expect(uniqueNonEmpty(['Teste', 'teste', 'TESTE', 'Outro', 'outro'])).toEqual(['Teste', 'Outro']);
+  });
+
+  it('normalizes whitespace and trims strings', () => {
+    expect(uniqueNonEmpty(['  Espaço  Duplo  ', 'Espaço Duplo', '  Normal '])).toEqual(['Espaço Duplo', 'Normal']);
+  });
+
+  it('filters out literal string representations of null/undefined/NaN', () => {
+    expect(uniqueNonEmpty(['válido', 'null', 'undefined', 'NaN', 'outro válido'])).toEqual(['válido', 'outro válido']);
   });
 });
