@@ -10,7 +10,7 @@ const MIN_FONT_SIZE = 6;
 const LINE_HEIGHT_FACTOR = 1.18;
 const PADDING_MM = 2.2;
 
-function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+export function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let current = '';
