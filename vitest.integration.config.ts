@@ -8,8 +8,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     env: {
-      DATABASE_URL:
-        process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/postgres',
+      DATABASE_URL: process.env.DATABASE_URL ?? '',
       ENCRYPTION_MASTER_KEY:
         process.env.ENCRYPTION_MASTER_KEY ?? 'test-encryption-master-key-at-least-32-chars',
       SESSION_SECRET: process.env.SESSION_SECRET ?? 'a'.repeat(32),
