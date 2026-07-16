@@ -14,7 +14,7 @@ import {
 } from '@/lib/validation/schemas';
 
 export const createConsultation = defineFormAction({
-  auth: ['admin', 'diretoria', 'secretaria'],
+  auth: ['admin', 'diretoria'],
   schema: createConsultationSchema,
   service: async (data, user) => {
     const inserted = await createConsultationService({
@@ -33,7 +33,7 @@ export const createConsultation = defineFormAction({
 });
 
 export const updateConsultationStatusFromForm = defineFormAction({
-  auth: ['admin', 'diretoria', 'secretaria'],
+  auth: ['admin', 'diretoria'],
   schema: updateConsultationStatusSchema,
   service: async (data) => {
     await updateConsultationStatusService(data.id, data.status);
@@ -47,7 +47,7 @@ export const updateConsultationStatusFromForm = defineFormAction({
 });
 
 export const addNote = defineFormAction({
-  auth: ['admin', 'diretoria', 'secretaria'],
+  auth: ['admin', 'diretoria'],
   schema: addNoteSchema,
   preprocess: (raw) => ({
     ...raw,
