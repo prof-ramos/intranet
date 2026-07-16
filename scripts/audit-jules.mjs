@@ -11,11 +11,16 @@ function run(command, args) {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
+  const errorMessage = result.error instanceof Error ? result.error.message : '';
+
   return {
-    ok: result.status === 0,
-    status: result.status,
-    stdout: result.stdout.trim(),
-    stderr: result.stderr.trim(),
+    ok: result.status === 0 && !result.error,
+    status: result.status ?? 1,
+    stdout: typeof result.stdout === 'string' ? result.stdout.trim() : '',
+    stderr:
+      typeof result.stderr === 'string' && result.stderr.trim()
+        ? result.stderr.trim()
+        : errorMessage,
   };
 }
 
