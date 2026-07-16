@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-05-26 | Updated: 2026-05-26 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-07-16 -->
 
 # docs
 
@@ -9,10 +9,11 @@ Documentation directory covering architecture decisions, design guidelines, comp
 
 ## Key Files
 
-| File              | Description                                                                           |
-| ----------------- | ------------------------------------------------------------------------------------- |
-| `runbook.md`      | Operations runbook — deployment, monitoring, troubleshooting, and rollback procedures |
-| `environments.md` | Official source for environments, databases, data classes, migrations, and CI/CD      |
+| File                         | Description                                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------------- |
+| `runbook.md`                 | Operations runbook — deployment, monitoring, troubleshooting, and rollback procedures |
+| `environments.md`            | Official source for environments, databases, data classes, migrations, and CI/CD      |
+| `agents/jules-governance.md` | Approval, publication, environment, audit, and incident controls for Google Jules     |
 
 ## Subdirectories
 

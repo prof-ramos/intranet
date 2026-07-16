@@ -17,6 +17,7 @@
     "validate:full": "npm run validate:quick && npm run test:db && npm run test:integration && npm run build",
     "scope:check": "bash scripts/check-scope.sh --strict",
     "scope:status": "bash scripts/check-scope.sh",
+    "jules:audit": "node scripts/audit-jules.mjs",
     "pr:check": "bash scripts/check-pr-ready.sh",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
