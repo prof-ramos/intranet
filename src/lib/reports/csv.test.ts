@@ -1,6 +1,27 @@
 import { describe, it, expect } from 'vitest';
+import { execFileSync } from 'node:child_process';
 import { toCsvCell, generateCsv, ALL_FIELDS } from './csv';
 import type { ReportAssociate } from './queries';
+
+function formatBirthDateInTimezone(value: string, timeZone: string): string {
+  const script = `
+    const csvModule = await import('./src/lib/reports/csv.ts');
+    const fields = csvModule.ALL_FIELDS ?? csvModule.default?.ALL_FIELDS;
+
+    const birthDateField = fields.find((field) => field.key === 'birthDate');
+    process.stdout.write(String(birthDateField?.get({ birthDate: ${JSON.stringify(value)} })));
+  `;
+
+  return execFileSync(
+    process.execPath,
+    ['--import', 'tsx', '--input-type=module', '--eval', script],
+    {
+      cwd: process.cwd(),
+      env: { ...process.env, TZ: timeZone },
+      encoding: 'utf8',
+    },
+  );
+}
 
 // Mock row with all new fields matching ASSOCIATE_EXPORT_FIELDS
 const mockRow = {
@@ -117,6 +138,14 @@ describe('CSV field formatting', () => {
     expect(formatted).toBe('15/03/1985');
   });
 
+  it.each(['UTC', 'America/Sao_Paulo', 'Pacific/Kiritimati'])(
+    'formats date-only and timestamp values consistently in %s',
+    (timeZone) => {
+      expect(formatBirthDateInTimezone('2024-03-15', timeZone)).toBe('15/03/2024');
+      expect(formatBirthDateInTimezone('2024-03-15T00:30:00Z', timeZone)).toBe('15/03/2024');
+    },
+  );
+
   it('returns null for null date fields', () => {
     const cancellationDateField = ALL_FIELDS.find((f) => f.key === 'cancellationDate');
     expect(cancellationDateField).toBeDefined();
@@ -125,7 +154,11 @@ describe('CSV field formatting', () => {
 
   it('returns null for null boolean fields', () => {
     // mockRow has ceocMember=true and caocMember=false, but if a row had null
-    const nullRow = { ...mockRow, ceocMember: null, caocMember: null } as unknown as ReportAssociate;
+    const nullRow = {
+      ...mockRow,
+      ceocMember: null,
+      caocMember: null,
+    } as unknown as ReportAssociate;
     const ceocMemberField = ALL_FIELDS.find((f) => f.key === 'ceocMember');
     expect(ceocMemberField!.get(nullRow)).toBeNull();
   });
@@ -170,10 +203,26 @@ describe('ALL_FIELDS completeness', () => {
   it('includes all new fields added in the expansion', () => {
     const keys = ALL_FIELDS.map((f) => f.key);
     const newFields = [
-      'sex', 'maritalStatus', 'birthCity', 'birthState', 'rg', 'rgIssuer',
-      'rgState', 'neighborhood', 'addressState', 'zipCode', 'missionType',
-      'careerOrigin', 'admissionDate', 'inaugurationDate', 'retirementDate', 'cancellationDate',
-      'paymentMethod', 'ceocMember', 'caocMember', 'secondaryEmail',
+      'sex',
+      'maritalStatus',
+      'birthCity',
+      'birthState',
+      'rg',
+      'rgIssuer',
+      'rgState',
+      'neighborhood',
+      'addressState',
+      'zipCode',
+      'missionType',
+      'careerOrigin',
+      'admissionDate',
+      'inaugurationDate',
+      'retirementDate',
+      'cancellationDate',
+      'paymentMethod',
+      'ceocMember',
+      'caocMember',
+      'secondaryEmail',
     ];
     for (const field of newFields) {
       expect(keys).toContain(field);

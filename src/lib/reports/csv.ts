@@ -60,7 +60,10 @@ const contributionStatusLabels: Record<string, string> = {
   inadimplente: 'Inadimplente',
 };
 
-function formatEnum(value: string | null | undefined, labels: Record<string, string>): string | null {
+function formatEnum(
+  value: string | null | undefined,
+  labels: Record<string, string>,
+): string | null {
   if (!value) return null;
   return labels[value] ?? value;
 }
@@ -75,12 +78,14 @@ const csvDateFormatter = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
   month: '2-digit',
   year: 'numeric',
+  timeZone: 'UTC',
 });
 
 function formatDate(value: string | null | undefined): string | null {
   if (!value) return null;
-  // Handle both ISO dates and date-only strings
-  const date = new Date(value + (value.length === 10 ? 'T00:00:00' : ''));
+  // Date-only values need an explicit UTC midnight; timestamps already carry
+  // their instant and are formatted in UTC by csvDateFormatter.
+  const date = new Date(value.length === 10 ? `${value}T00:00:00Z` : value);
   if (isNaN(date.getTime())) return value;
   return csvDateFormatter.format(date);
 }
@@ -112,7 +117,9 @@ export const ALL_FIELDS: FieldDef[] = ASSOCIATE_EXPORT_FIELDS.map((f) => {
     key: f.key,
     label: f.label,
     sensitivity: f.sensitivity,
-    get: formatters[f.key] ?? ((r: ReportAssociate) => r[f.key as keyof ReportAssociate] as string | null | undefined),
+    get:
+      formatters[f.key] ??
+      ((r: ReportAssociate) => r[f.key as keyof ReportAssociate] as string | null | undefined),
   };
 });
 
