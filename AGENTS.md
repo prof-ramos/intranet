@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-26 | Updated: 2026-06-23 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-07-16 -->
 <!-- Parent: none (root) -->
 
 # ASOF Intranet — AI Agent Directory
@@ -9,33 +9,33 @@ Next.js 16 App Router application for ASOF (associação) internal management �
 
 ## Key Files
 
-| File | Description |
-|------|-------------|
-| `CLAUDE.md` | Project instructions for AI agents (read FIRST) |
-| `AGENTS.md` | This file — AI agent directory navigation |
-| `CONTEXT.md` | Glossary, domain rules, institutional context |
-| `docs/environments.md` | Official environment/database/data/migration matrix |
-| `TODO-PROD.md` | Go-live checklist and production readiness |
-| `package.json` | Dependencies and scripts (dev, build, test, e2e, typecheck, lint, migrate, validate) |
-| `next.config.ts` | Next.js 16.2.6 config — security headers, E2E `distDir` swap, fixed `turbopack.root` |
-| `src/lib/env.ts` | Zod-validated env; **throws on startup** if required vars are missing (blocks build) |
-| `src/proxy.ts` | Route guard (Next.js 16 `proxy.ts`); redirects to `/login` for `/app/*` and `/change-password` when no session cookie |
-| `drizzle.config.ts` | Drizzle Kit — rejects transaction-mode pooler URLs (port 6543); use `DATABASE_MIGRATION_URL` |
-| `playwright.config.ts` | baseURL `http://localhost:3001`, `expect.timeout: 15_000`, workers=1, retries 2 in CI |
-| `vitest.config.ts` | Unit config — `src/**/*.test.{ts,tsx}` + `scripts/**/*.test.ts`; mocks `server-only` |
-| `vitest.integration.config.ts` | Integration config — `src/**/*.integration.test.{ts,tsx}` |
-| `vercel.json` | Vercel deployment + cron schedules (7 cron jobs) |
+| File                           | Description                                                                                                           |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `CLAUDE.md`                    | Project instructions for AI agents (read FIRST)                                                                       |
+| `AGENTS.md`                    | This file — AI agent directory navigation                                                                             |
+| `CONTEXT.md`                   | Glossary, domain rules, institutional context                                                                         |
+| `docs/environments.md`         | Official environment/database/data/migration matrix                                                                   |
+| `TODO-PROD.md`                 | Go-live checklist and production readiness                                                                            |
+| `package.json`                 | Dependencies and scripts (dev, build, test, e2e, typecheck, lint, migrate, validate)                                  |
+| `next.config.ts`               | Next.js 16.2.6 config — security headers, E2E `distDir` swap, fixed `turbopack.root`                                  |
+| `src/lib/env.ts`               | Zod-validated env; **throws on startup** if required vars are missing (blocks build)                                  |
+| `src/proxy.ts`                 | Route guard (Next.js 16 `proxy.ts`); redirects to `/login` for `/app/*` and `/change-password` when no session cookie |
+| `drizzle.config.ts`            | Drizzle Kit — rejects transaction-mode pooler URLs (port 6543); use `DATABASE_MIGRATION_URL`                          |
+| `playwright.config.ts`         | baseURL `http://localhost:3001`, `expect.timeout: 15_000`, workers=1, retries 2 in CI                                 |
+| `vitest.config.ts`             | Unit config — `src/**/*.test.{ts,tsx}` + `scripts/**/*.test.ts`; mocks `server-only`                                  |
+| `vitest.integration.config.ts` | Integration config — `src/**/*.integration.test.{ts,tsx}`                                                             |
+| `vercel.json`                  | Vercel deployment + cron schedules (7 cron jobs)                                                                      |
 
 ## Subdirectories
 
-| Directory | Purpose |
-|-----------|---------|
-| `src/` | Application source (pages, components, lib, hooks) — see `src/AGENTS.md` |
-| `docs/` | ADRs, design docs, runbooks, compliance — see `docs/AGENTS.md` |
-| `scripts/` | DB scripts, seed, migrations, PII encryption — see `scripts/AGENTS.md` |
-| `e2e/` | Playwright end-to-end tests — see `e2e/AGENTS.md` |
-| `drizzle/` | SQL migrations and schema snapshots — see `drizzle/AGENTS.md` |
-| `.github/` | CI/CD workflows, branch rules, PR template — see `.github/AGENTS.md` |
+| Directory  | Purpose                                                                  |
+| ---------- | ------------------------------------------------------------------------ |
+| `src/`     | Application source (pages, components, lib, hooks) — see `src/AGENTS.md` |
+| `docs/`    | ADRs, design docs, runbooks, compliance — see `docs/AGENTS.md`           |
+| `scripts/` | DB scripts, seed, migrations, PII encryption — see `scripts/AGENTS.md`   |
+| `e2e/`     | Playwright end-to-end tests — see `e2e/AGENTS.md`                        |
+| `drizzle/` | SQL migrations and schema snapshots — see `drizzle/AGENTS.md`            |
+| `.github/` | CI/CD workflows, branch rules, PR template — see `.github/AGENTS.md`     |
 
 ---
 
@@ -47,19 +47,19 @@ A ASOF (Associação Nacional dos Oficiais de Chancelaria do Serviço Exterior B
 
 ## Vocabulário do domínio → campos do banco
 
-| Termo                    | Significado                                                                           | Campo DB             |
-| ------------------------ | ------------------------------------------------------------------------------------- | -------------------- |
-| **Lotação**              | Posto ou órgão onde o servidor está em exercício (ex: "Embaixada em Paris", "SERE")   | `assignment`         |
-| **Posto**                | Representação diplomática no exterior (embaixada, consulado) ou a SERE em Brasília    | `assignment`         |
-| **Padrão / Classe**      | Nível na carreira: Classe A → B → C → Especial, cada uma com 5 padrões                | `classPattern`       |
-| **Vínculo ASOF**         | Vínculo associativo do oficial: `associado`, `nao_associado`                          | `associationStatus`  |
-| **Situação funcional**   | Status no serviço público: `ativo`, `aposentado`, `cedido`, `em_licenca`              | `functionalStatus`   |
-| **SIAPE**                | Número de matrícula do servidor federal                                               | `siape`              |
-| **Contribuição**         | Status derivado de pagamento da anuidade ASOF: `em_dia`, `inadimplente`               | `contributionStatus` |
-| **Mensalidade**          | Registro mensal de pagamento de associado                                             | `monthly_payments`   |
-| **Ofício**               | Documento oficial gerado pelo sistema                                                 | `oficios`            |
-| **Método de pagamento**  | Forma de quitação da mensalidade: `folha`, `boleto`, `pix`, `transferencia`, `outros` | `paymentMethod`      |
-| **Status de pagamento**  | Situação da mensalidade: `pago`, `pendente`, `atrasado`, `isento`, `cancelado`        | `paymentStatus`      |
+| Termo                   | Significado                                                                           | Campo DB             |
+| ----------------------- | ------------------------------------------------------------------------------------- | -------------------- |
+| **Lotação**             | Posto ou órgão onde o servidor está em exercício (ex: "Embaixada em Paris", "SERE")   | `assignment`         |
+| **Posto**               | Representação diplomática no exterior (embaixada, consulado) ou a SERE em Brasília    | `assignment`         |
+| **Padrão / Classe**     | Nível na carreira: Classe A → B → C → Especial, cada uma com 5 padrões                | `classPattern`       |
+| **Vínculo ASOF**        | Vínculo associativo do oficial: `associado`, `nao_associado`                          | `associationStatus`  |
+| **Situação funcional**  | Status no serviço público: `ativo`, `aposentado`, `cedido`, `em_licenca`              | `functionalStatus`   |
+| **SIAPE**               | Número de matrícula do servidor federal                                               | `siape`              |
+| **Contribuição**        | Status derivado de pagamento da anuidade ASOF: `em_dia`, `inadimplente`               | `contributionStatus` |
+| **Mensalidade**         | Registro mensal de pagamento de associado                                             | `monthly_payments`   |
+| **Ofício**              | Documento oficial gerado pelo sistema                                                 | `oficios`            |
+| **Método de pagamento** | Forma de quitação da mensalidade: `folha`, `boleto`, `pix`, `transferencia`, `outros` | `paymentMethod`      |
+| **Status de pagamento** | Situação da mensalidade: `pago`, `pendente`, `atrasado`, `isento`, `cancelado`        | `paymentStatus`      |
 
 ## Roles do sistema
 
@@ -96,6 +96,29 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 - Use Context7 automaticamente para queries sobre bibliotecas/frameworks/APIs externas. Não confie no conhecimento de treinamento.
 - **Validation gates (use exatamente nesta ordem):** `npm run lint` → `npm run typecheck` → `npm run test` → `npm run test:db` → `npm run build`. Os agregadores `validate:quick` (lint+typecheck+test) e `validate:full` (+test:db+build) executam nessa ordem; `pr:check` adiciona `scope:check` e é o melhor gate único antes de abrir PR.
 - Rodar um único teste: `npx vitest run src/lib/auth/password.test.ts`. Rodar um spec E2E: `npx playwright test e2e/tests/associados.spec.ts`.
+
+### Governança do Jules
+
+- Jules deve propor um plano e aguardar aprovação humana explícita antes de alterar arquivos. Uma sugestão automática não conta como aprovação.
+- Não publicar branch ou pull request automaticamente. O resultado deve permanecer na sessão até uma pessoa revisar o plano e o diff e pedir a publicação.
+- Quando houver publicação autorizada, abrir o PR como **draft**, manter Jules identificado como autor/coautor e usar branch com prefixo `jules-`.
+- Antes de iniciar, consultar `main` e os PRs abertos. Se a mudança já existir, for falso positivo ou duplicar outro trabalho, registrar a conclusão na sessão e encerrar sem criar branch/PR.
+- Uma sessão por problema e uma branch por PR. Não abrir sessões paralelas que modifiquem os mesmos arquivos.
+- Só reagir a comentários de PR que mencionem explicitamente `@jules`.
+- Manter `Suggestions` e `CI Fixer` desativados; nenhuma análise proativa ou correção automática de CI está autorizada neste repositório.
+- Nunca fazer merge, rebase, force-push, exclusão de branch, alteração de proteção do GitHub, migração/SQL de produção, deploy ou edição de segredos/variáveis de ambiente.
+- Antes de oferecer publicação, executar `npm run validate:quick` e `npm run pr:check`. Se um gate não puder ser executado, informar exatamente qual e por quê.
+- O procedimento de operação, auditoria e resposta a incidentes está em `docs/agents/jules-governance.md`.
+
+### Governança do CodeRabbit
+
+- O CodeRabbit atua como revisor: Autofix, geração de testes/docstrings e simplificação permanecem desativados. Nunca acione resolução automática de conflitos, pois esse recurso ainda pode criar merge commit e não possui toggle no schema YAML atual. Implementações continuam sujeitas à revisão humana e aos gates do repositório.
+- Revisões de PR são opt-in pelo label `review-ready`. Drafts e PRs com `do-not-review` não devem consumir a cota OSS; remova `review-ready` ou use `@coderabbitai pause` durante rajadas de commits.
+- PRs do Jules só recebem `review-ready` depois de plano, diff e gates locais serem aprovados por uma pessoa. O label `agent:jules` identifica autoria; `ai-slop` é apenas sinal de triagem, nunca motivo automático para fechar ou descartar.
+- Em comentários, mencione explicitamente `@coderabbitai`; respostas automáticas estão desativadas. Como `prof-ramos/intranet` pertence a uma conta pessoal, `allow_non_org_members: false` não é uma barreira universal: trate menções externas como entrada não confiável e aprove ou rejeite novos learnings no painel.
+- Cada comentário acionável deve ser implementado ou rejeitado com justificativa técnica. Não use resolução em massa antes de verificar cada thread no commit atual.
+- O status do CodeRabbit é evidência adicional, não o único gate obrigatório: a cota OSS é adaptativa. CI obrigatório e resolução de conversas continuam protegendo `main`.
+- A configuração versionada está em `.coderabbit.yaml`; operação, limites e resposta a ruído estão em `docs/agents/coderabbit-governance.md`.
 
 ### Banco de dados
 
@@ -145,15 +168,15 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 
 ### Documentação
 
-| Documento | Conteúdo |
-|-----------|----------|
-| `CONTEXT.md` | Glossário e regras de negócio |
-| `README.md` | Quick start |
-| `TODO-PROD.md` | Checklist de go-live |
-| `docs/runbook.md` | Runbook operacional |
-| `docs/adr/` | ADRs |
-| `API.md` | Superfície HTTP pública |
-| `PAGES.md` | Páginas e funcionalidades |
+| Documento         | Conteúdo                        |
+| ----------------- | ------------------------------- |
+| `CONTEXT.md`      | Glossário e regras de negócio   |
+| `README.md`       | Quick start                     |
+| `TODO-PROD.md`    | Checklist de go-live            |
+| `docs/runbook.md` | Runbook operacional             |
+| `docs/adr/`       | ADRs                            |
+| `API.md`          | Superfície HTTP pública         |
+| `PAGES.md`        | Páginas e funcionalidades       |
 | `ARCHITECTURE.md` | Diagrama, deployment, glossário |
-| `DESIGN.md` | Design system |
-| `CONTRIBUTING.md` | Convenções de contribuição |
+| `DESIGN.md`       | Design system                   |
+| `CONTRIBUTING.md` | Convenções de contribuição      |
