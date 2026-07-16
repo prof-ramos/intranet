@@ -65,13 +65,12 @@ if (!ghResult.ok) {
   }
 }
 
-const julesResult = run('jules', ['remote', 'list', '--session', '--repo', repo]);
-const nonTerminalSessionPattern =
-  /\s(?:Queued|Planning|Awaiting Plan Approval|Awaiting User Feedback|In Progress|Paused)\s*$/;
+const julesResult = run('jules', ['remote', 'list', '--session']);
+const inactiveSessionPattern = /\s(?:Awaiting User F(?:eedback)?|Paused|Failed|Completed)\s*$/;
 const activeSessions = julesResult.ok
   ? julesResult.stdout
       .split('\n')
-      .filter((line) => line.includes(repo) && nonTerminalSessionPattern.test(line))
+      .filter((line) => line.includes(repo) && !inactiveSessionPattern.test(line))
       .map((line) => line.trim())
   : [];
 
@@ -95,7 +94,7 @@ if (jsonOutput) {
   console.log(`Jules audit — ${repo}`);
   console.log(`Open Jules PRs: ${openPullRequests.length}`);
   console.log(`Open non-draft Jules PRs: ${nonDraftPullRequests.length}`);
-  console.log(`Active Jules sessions: ${activeSessions.length}`);
+  console.log(`Pending/active Jules sessions: ${activeSessions.length}`);
 
   for (const pr of openPullRequests) {
     console.log(`- PR #${pr.number} ${pr.isDraft ? '[draft]' : '[OPEN]'} ${pr.title} — ${pr.url}`);

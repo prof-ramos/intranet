@@ -66,13 +66,13 @@ npm run jules:audit -- --json
 Consultas manuais:
 
 ```bash
-jules remote list --session --repo prof-ramos/intranet
+jules remote list --session
 gh pr list --repo prof-ramos/intranet --state open \
   --json number,title,headRefName,isDraft,url
 git ls-remote --heads origin 'jules-*'
 ```
 
-O audit retorna código `1` quando encontra sessão em `Planning`/`In Progress`, PR do Jules aberto fora de draft ou falha de autenticação/ferramenta. Sessões aguardando feedback e PRs draft permanecem visíveis nas ferramentas de origem, mas não tornam o resultado insalubre por si sós. Como a CLI não distingue uma sessão pausada, confirme o botão **Resume session** na interface antes de tratá-la como execução real.
+O audit retorna código `1` quando encontra sessão pendente ou em execução (`Queued`, status vazio/desconhecido, `Planning`, `Awaiting Plan Approval` ou `In Progress`), PR do Jules aberto fora de draft ou falha de autenticação/ferramenta. Sessões `Paused` ou aguardando feedback e PRs draft permanecem visíveis nas ferramentas de origem, mas não tornam o resultado insalubre por si sós. A CLI pode truncar `Awaiting User Feedback` para `Awaiting User F`; o auditor reconhece as duas formas.
 
 ## Resposta a uma tempestade de tarefas
 

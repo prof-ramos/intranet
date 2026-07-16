@@ -18,6 +18,7 @@ case " $* " in *" --slurp "*) ;; *) echo "missing --slurp" >&2; exit 2 ;; esac
 printf '%s\\n' '${JSON.stringify(options.ghOutput)}'
 `;
   const julesScript = `#!/bin/sh
+[ "$*" = "remote list --session" ] || { echo "unexpected Jules arguments: $*" >&2; exit 2; }
 printf '%s\\n' '${options.julesOutput.replaceAll("'", "'\\''")}'
 `;
 
@@ -90,38 +91,37 @@ describe('audit-jules', () => {
     });
   });
 
-  it.each([
-    'Queued',
-    'Planning',
-    'Awaiting Plan Approval',
-    'Awaiting User Feedback',
-    'In Progress',
-    'Paused',
-  ])('treats the non-terminal %s state as active', (state) => {
-    const cliDirectory = createFakeCliDirectory({
-      ghOutput: [[]],
-      julesOutput: `prof-ramos/intranet  ${state}`,
-    });
+  it.each(['', 'Queued', 'Planning', 'Awaiting Plan Approval', 'In Progress'])(
+    'treats the pending or executing %s state as active',
+    (state) => {
+      const cliDirectory = createFakeCliDirectory({
+        ghOutput: [[]],
+        julesOutput: `prof-ramos/intranet  ${state}`,
+      });
 
-    const result = runAudit(cliDirectory);
-    const report = JSON.parse(result.stdout);
+      const result = runAudit(cliDirectory);
+      const report = JSON.parse(result.stdout);
 
-    expect(result.status).toBe(1);
-    expect(report.activeSessions).toEqual([`prof-ramos/intranet  ${state}`]);
-    expect(report.healthy).toBe(false);
-  });
+      expect(result.status).toBe(1);
+      expect(report.activeSessions).toEqual([`prof-ramos/intranet  ${state}`.trim()]);
+      expect(report.healthy).toBe(false);
+    },
+  );
 
-  it.each(['Failed', 'Completed'])('does not treat the terminal %s state as active', (state) => {
-    const cliDirectory = createFakeCliDirectory({
-      ghOutput: [[]],
-      julesOutput: `prof-ramos/intranet  ${state}`,
-    });
+  it.each(['Awaiting User Feedback', 'Awaiting User F', 'Paused', 'Failed', 'Completed'])(
+    'does not treat the inactive %s state as active',
+    (state) => {
+      const cliDirectory = createFakeCliDirectory({
+        ghOutput: [[]],
+        julesOutput: `prof-ramos/intranet  ${state}`,
+      });
 
-    const result = runAudit(cliDirectory);
-    const report = JSON.parse(result.stdout);
+      const result = runAudit(cliDirectory);
+      const report = JSON.parse(result.stdout);
 
-    expect(result.status).toBe(0);
-    expect(report.activeSessions).toEqual([]);
-    expect(report.healthy).toBe(true);
-  });
+      expect(result.status).toBe(0);
+      expect(report.activeSessions).toEqual([]);
+      expect(report.healthy).toBe(true);
+    },
+  );
 });
