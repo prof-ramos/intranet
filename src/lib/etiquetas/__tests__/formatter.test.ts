@@ -25,13 +25,61 @@ const recipient: EtiquetaRecipient = {
 };
 
 describe('formatter de etiquetas', () => {
-  it('formata postal com CEP e flags', () => {
-    const label = formatPostalLabel(recipient, { peo: true, ectOpenable: true });
-    expect(label.lines).toContain('Maria Silva');
-    expect(label.lines).toContain('Brasília/DF');
-    expect(label.lines).toContain('CEP 70170-900');
-    expect(label.lines).toContain('P.E.O.');
-    expect(label.lines).toContain('PODE SER ABERTO PELA ECT');
+  describe('formatPostalLabel', () => {
+    it('formata postal completo com CEP e flags', () => {
+      const label = formatPostalLabel(recipient, { peo: true, ectOpenable: true });
+      expect(label.lines).toEqual([
+        'Maria Silva',
+        'Rua das Flores, 100',
+        'Centro',
+        'Brasília/DF',
+        'CEP 70170-900',
+        'P.E.O.',
+        'PODE SER ABERTO PELA ECT',
+      ]);
+    });
+
+    it('omite campos opcionais ausentes', () => {
+      const label = formatPostalLabel({ id: '2', nome: 'João Souza', enderecoCompleto: 'Rua A' });
+      expect(label.lines).toEqual(['João Souza', 'Rua A']);
+    });
+
+    it('formata corretamente apenas com cidade ou apenas com uf', () => {
+      const labelCidade = formatPostalLabel({ id: '3', nome: 'Ana', cidade: 'Goiânia' });
+      expect(labelCidade.lines).toEqual(['Ana', 'Goiânia']);
+
+      const labelUf = formatPostalLabel({ id: '4', nome: 'Beto', uf: 'GO' });
+      expect(labelUf.lines).toEqual(['Beto', 'GO']);
+    });
+
+    it('mantém CEP sem formatação se não tiver 8 dígitos', () => {
+      const label = formatPostalLabel({ id: '5', nome: 'Carlos', cep: '12345' });
+      expect(label.lines).toContain('CEP 12345');
+    });
+
+    it('remove linhas duplicadas (case insensitive)', () => {
+      const label = formatPostalLabel({
+        id: '6',
+        nome: 'Diana',
+        enderecoCompleto: 'Rua A',
+        complemento: 'Rua a', // Duplicado com enderecoCompleto, ignora case
+      });
+      expect(label.lines).toEqual(['Diana', 'Rua A']);
+    });
+
+    it('aplica flags individuais', () => {
+      const labelPeo = formatPostalLabel(recipient, { peo: true });
+      expect(labelPeo.lines).toContain('P.E.O.');
+      expect(labelPeo.lines).not.toContain('PODE SER ABERTO PELA ECT');
+
+      const labelEct = formatPostalLabel(recipient, { ectOpenable: true });
+      expect(labelEct.lines).not.toContain('P.E.O.');
+      expect(labelEct.lines).toContain('PODE SER ABERTO PELA ECT');
+
+      const labelNone = formatPostalLabel(recipient);
+      expect(labelNone.lines).not.toContain('P.E.O.');
+      expect(labelNone.lines).not.toContain('PODE SER ABERTO PELA ECT');
+    });
   });
 
   it('formata mala diplomática sem exigir endereço', () => {
