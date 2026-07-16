@@ -123,14 +123,22 @@ export interface OverduePaymentTransition {
   cancelledBy: number | null;
 }
 
+// ⚡ Bolt: Cache Intl instance for extracting year/month components to avoid
+// slow implicit instantiation inside `toLocaleString` and unnecessary string-to-Date parsing.
+const spFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Sao_Paulo',
+  year: 'numeric',
+  month: 'numeric',
+});
+
 export async function markOverduePaymentsForAudit(
   executor: DbExecutor = db,
 ): Promise<OverduePaymentTransition[]> {
   // Use America/Sao_Paulo timezone to avoid marking payments overdue
   // 3 hours early when the server runs in UTC (e.g. Vercel).
-  const spNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-  const thisYear = spNow.getFullYear();
-  const thisMonth = spNow.getMonth() + 1;
+  const parts = spFormatter.formatToParts(new Date());
+  const thisYear = parseInt(parts.find((p) => p.type === 'year')!.value, 10);
+  const thisMonth = parseInt(parts.find((p) => p.type === 'month')!.value, 10);
 
   return executor
     .update(monthlyPayments)
