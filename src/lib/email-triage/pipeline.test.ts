@@ -100,10 +100,6 @@ vi.mock('./notifier', () => ({
   notifyNeedsValidation: (...args: any[]) => mockNotifyNeedsValidation(...args),
 }));
 
-vi.mock('./domain-materializer', () => ({
-  materializarNoDominio: vi.fn(() => Promise.resolve()),
-}));
-
 // ─── Tests ───────────────────────────────────────────────────────────────
 
 describe('processEmail', () => {
@@ -182,7 +178,9 @@ describe('processEmail', () => {
     });
 
     expect(mockMarkAsTriaged).toHaveBeenCalledWith('fake-token', 'msg-123', 'label-id-123', 'me');
-    expect(mockApplyCorrelationActions).toHaveBeenCalled();
+    expect(mockApplyCorrelationActions).toHaveBeenCalledWith([
+      expect.objectContaining({ type: 'insert_note', consultationId: 1 }),
+    ]);
   });
 
   it('falls back to current date when Date header is empty', async () => {
@@ -206,7 +204,10 @@ describe('processEmail', () => {
       const header = msg.payload.headers.find((h: { name: string }) => h.name === name);
       return header ? header.value : null;
     });
-    mockExtractTextAndAttachments.mockReturnValue({ text: 'Responder ate 10/06/2026.', attachments: [] });
+    mockExtractTextAndAttachments.mockReturnValue({
+      text: 'Responder ate 10/06/2026.',
+      attachments: [],
+    });
     mockRedactExcerpt.mockImplementation((text: string) => text);
     mockBuildPersistedExcerpt.mockReturnValue('[short-body-redacted; sha256 stored]');
 
@@ -236,7 +237,10 @@ describe('processEmail', () => {
     mockAnalyzeEmail.mockResolvedValue(triageResult);
     mockEnsureLabel.mockResolvedValue('label-id-123');
     mockMarkAsTriaged.mockResolvedValue(undefined);
-    mockBuildCorrelationContext.mockResolvedValue({ associate: { id: 1 }, consultations: [{ id: 1 }] });
+    mockBuildCorrelationContext.mockResolvedValue({
+      associate: { id: 1 },
+      consultations: [{ id: 1 }],
+    });
     mockApplyCorrelationActions.mockResolvedValue(undefined);
 
     const before = Date.now();
@@ -252,6 +256,70 @@ describe('processEmail', () => {
     expect(Number.isNaN(parsed)).toBe(false);
     expect(parsed).toBeGreaterThanOrEqual(before);
     expect(parsed).toBeLessThanOrEqual(after + 1000);
+  });
+
+  it('keeps an email pending when the associate has no open consultation', async () => {
+    mockGetMessage.mockResolvedValue({
+      id: 'msg-no-consultation',
+      threadId: 'thread-no-consultation',
+      historyId: 'hist-no-consultation',
+      payload: { headers: [], body: { data: '' } },
+    });
+    mockExtractTextAndAttachments.mockReturnValue({ text: 'test', attachments: [] });
+    mockAnalyzeEmail.mockResolvedValue({
+      categoria: 'juridico',
+      exige_validacao_humana: false,
+    });
+    mockPersistTriage.mockResolvedValue(42);
+    mockBuildCorrelationContext.mockResolvedValue({
+      associate: { id: 1 },
+      consultations: [],
+    });
+    mockApplyCorrelationActions.mockResolvedValue(undefined);
+    mockEnsureLabel.mockResolvedValue('label-id-123');
+    mockMarkAsTriaged.mockResolvedValue(undefined);
+
+    const result = await processEmail('fake-token', 'msg-no-consultation');
+
+    expect(result.success).toBe(true);
+    expect(mockApplyCorrelationActions).toHaveBeenCalledWith([
+      {
+        type: 'skip',
+        reason: 'associado sem consultas jurídicas abertas',
+      },
+    ]);
+  });
+
+  it('keeps an ambiguous email pending for coordinator review', async () => {
+    mockGetMessage.mockResolvedValue({
+      id: 'msg-ambiguous',
+      threadId: 'thread-ambiguous',
+      historyId: 'hist-ambiguous',
+      payload: { headers: [], body: { data: '' } },
+    });
+    mockExtractTextAndAttachments.mockReturnValue({ text: 'test', attachments: [] });
+    mockAnalyzeEmail.mockResolvedValue({
+      categoria: 'juridico',
+      exige_validacao_humana: false,
+    });
+    mockPersistTriage.mockResolvedValue(42);
+    mockBuildCorrelationContext.mockResolvedValue({
+      associate: { id: 1 },
+      consultations: [{ id: 10 }, { id: 11 }],
+    });
+    mockApplyCorrelationActions.mockResolvedValue(undefined);
+    mockEnsureLabel.mockResolvedValue('label-id-123');
+    mockMarkAsTriaged.mockResolvedValue(undefined);
+
+    const result = await processEmail('fake-token', 'msg-ambiguous');
+
+    expect(result.success).toBe(true);
+    expect(mockApplyCorrelationActions).toHaveBeenCalledWith([
+      {
+        type: 'skip',
+        reason: 'ambíguo — 2 consultas abertas; coordenador deve vincular',
+      },
+    ]);
   });
 
   it('notifies admins and skips correlation when triage requires human validation', async () => {
@@ -466,7 +534,6 @@ describe('processEmail', () => {
       exige_validacao_humana: false,
     });
     mockPersistTriage.mockResolvedValue(42);
-    // materializarNoDominio succeeds
     mockBuildCorrelationContext.mockRejectedValue(new Error('Correlation timeout'));
     mockEnsureLabel.mockResolvedValue('label-id-123');
     mockMarkAsTriaged.mockResolvedValue(undefined);
@@ -506,39 +573,6 @@ describe('processEmail', () => {
     expect(result).toMatchObject({
       success: true,
       messageId: 'msg-label-fail',
-      categoria: 'juridico',
-    });
-  });
-
-  it('logs warning and continues when materializarNoDominio fails', async () => {
-    const gmailMessage = {
-      id: 'msg-mat-fail',
-      threadId: 'thread-999',
-      historyId: 'hist-111',
-      payload: { headers: [], body: { data: '' } },
-    };
-
-    const { materializarNoDominio } = await import('./domain-materializer');
-
-    mockGetMessage.mockResolvedValue(gmailMessage);
-    mockExtractTextAndAttachments.mockReturnValue({ text: 'test', attachments: [] });
-    mockAnalyzeEmail.mockResolvedValue({
-      categoria: 'juridico',
-      exige_validacao_humana: false,
-    });
-    mockPersistTriage.mockResolvedValue(42);
-    vi.mocked(materializarNoDominio).mockRejectedValueOnce(new Error('Domain materialization error'));
-    mockBuildCorrelationContext.mockResolvedValue({ associate: null, consultations: [] });
-    mockApplyCorrelationActions.mockResolvedValue(undefined);
-    mockEnsureLabel.mockResolvedValue('label-id-123');
-    mockMarkAsTriaged.mockResolvedValue(undefined);
-
-    const result = await processEmail('fake-token', 'msg-mat-fail');
-
-    // Email still considered success because materialization is non-fatal
-    expect(result).toMatchObject({
-      success: true,
-      messageId: 'msg-mat-fail',
       categoria: 'juridico',
     });
   });
