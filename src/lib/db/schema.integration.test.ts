@@ -10,19 +10,17 @@ if (!databaseUrl) {
 }
 
 let db: postgres.Sql | null = null;
-let connectionFailed = false;
 
 beforeAll(async () => {
   try {
-    db = postgres(databaseUrl, { max: 1 });
+    db = postgres(databaseUrl, { max: 1, connect_timeout: 5 });
     await db`SELECT 1`;
   } catch (_error) {
-    connectionFailed = true;
     if (db) {
       await db.end().catch(() => {});
     }
     db = null;
-    console.warn('Skipping DB schema tests: database connection unavailable');
+    throw new Error('Database schema contract setup failed: database unavailable.');
   }
 });
 
@@ -167,6 +165,13 @@ function normalize(values: string[] | undefined) {
   return [...(values ?? [])].sort();
 }
 
+function requireConnectedDatabase(): postgres.Sql {
+  if (!db) {
+    throw new Error('Database schema contract setup did not initialize a connection.');
+  }
+  return db;
+}
+
 function expectContractMap(kind: string, actual: ContractMap, expected: ContractMap) {
   const unexpected = Object.keys(actual)
     .filter((name) => !(name in expected))
@@ -204,10 +209,8 @@ afterAll(async () => {
 
 describe('database schema contract', () => {
   it('has all expected public tables and columns', async () => {
-    if (connectionFailed || !db) {
-      return;
-    }
-    const rows = await db<{ table_name: string; column_name: string; udt_name: string; is_nullable: 'YES' | 'NO' }[]>`
+    const sql = requireConnectedDatabase();
+    const rows = await sql<{ table_name: string; column_name: string; udt_name: string; is_nullable: 'YES' | 'NO' }[]>`
       select table_name, column_name, udt_name, is_nullable
       from information_schema.columns
       where table_schema = 'public'
@@ -225,10 +228,8 @@ describe('database schema contract', () => {
   });
 
   it('has all expected enum labels', async () => {
-    if (connectionFailed || !db) {
-      return;
-    }
-    const rows = await db<{ typname: string; enumlabel: string }[]>`
+    const sql = requireConnectedDatabase();
+    const rows = await sql<{ typname: string; enumlabel: string }[]>`
       select t.typname, e.enumlabel
       from pg_type t
       join pg_enum e on e.enumtypid = t.oid
@@ -243,10 +244,8 @@ describe('database schema contract', () => {
   });
 
   it('has all expected indexes', async () => {
-    if (connectionFailed || !db) {
-      return;
-    }
-    const rows = await db<{ tablename: string; indexname: string }[]>`
+    const sql = requireConnectedDatabase();
+    const rows = await sql<{ tablename: string; indexname: string }[]>`
       select tablename, indexname
       from pg_indexes
       where schemaname = 'public'
@@ -259,10 +258,8 @@ describe('database schema contract', () => {
   });
 
   it('has pg_trgm available', async () => {
-    if (connectionFailed || !db) {
-      return;
-    }
-    const rows = await db<{ extname: string }[]>`
+    const sql = requireConnectedDatabase();
+    const rows = await sql<{ extname: string }[]>`
       select extname
       from pg_extension
       where extname = 'pg_trgm'
