@@ -1,0 +1,3 @@
+## 2024-06-25 - N+1 Query in Dependent Creation False Positive
+**Learning:** The reported issue regarding an N+1 query loop when creating dependents was a false positive. The codebase was already optimized to use a single `insert().values(dependentsArray)` (specifically `createDependentsBatch`) instead of a loop. Always verify the current state of the source code rather than relying solely on the prompt's issue description.
+**Action:** Always trust the current state of the actual source code and never artificially inject or fabricate code to make the repository match an outdated prompt. If an issue is already resolved, submit an explanation of the false positive.
