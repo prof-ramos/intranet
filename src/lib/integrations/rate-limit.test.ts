@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createIntegrationRateLimiter,
   getClientIp,
-  getIntegrationRateLimitKey,
+  getIntegrationPreAuthRateLimitKey,
+  getIntegrationPrincipalRateLimitKey,
 } from './rate-limit';
 
 // Mock the ip module to control getTrustedClientIp behavior
@@ -53,6 +54,15 @@ describe('integration rate limiter', () => {
         scope: '   ',
       }),
     ).toThrow('scope is required.');
+
+    expect(() =>
+      createIntegrationRateLimiter({
+        maxRequests: 10,
+        windowMs: 60_000,
+        scope: 'integration_api',
+        cleanupIntervalMs: 0,
+      }),
+    ).toThrow('cleanupIntervalMs must be a positive integer.');
   });
 
   it('allows requests until the configured limit and then blocks with retryAfter', async () => {
@@ -102,6 +112,38 @@ describe('integration rate limiter', () => {
       retryAfterMs: 0,
     });
   });
+
+  it('amortizes cleanup and removes expired records without touching active buckets', async () => {
+    const records = new Map([
+      ['expired-bucket', 50_000],
+      ['active-bucket', 120_000],
+    ]);
+    const cleanup = vi.fn(async (now: number) => {
+      for (const [key, expiresAt] of records) {
+        if (expiresAt <= now) records.delete(key);
+      }
+    });
+    const atomicIncrement = vi.fn().mockResolvedValue({ attempts: 1, expiresAt: 120_000 });
+    const limiter = createIntegrationRateLimiter(
+      {
+        maxRequests: 10,
+        windowMs: 60_000,
+        scope: 'integration_api',
+        cleanupIntervalMs: 30_000,
+      },
+      { atomicIncrement, cleanup },
+    );
+
+    await limiter.consume('active-bucket', 60_000);
+    await limiter.consume('active-bucket', 70_000);
+    await limiter.consume('active-bucket', 90_000);
+
+    expect(cleanup).toHaveBeenCalledTimes(2);
+    expect(cleanup).toHaveBeenNthCalledWith(1, 60_000);
+    expect(cleanup).toHaveBeenNthCalledWith(2, 90_000);
+    expect(atomicIncrement).toHaveBeenCalledTimes(3);
+    expect(records).toEqual(new Map([['active-bucket', 120_000]]));
+  });
 });
 
 describe('getClientIp', () => {
@@ -129,29 +171,48 @@ describe('getClientIp', () => {
   });
 });
 
-describe('getIntegrationRateLimitKey', () => {
-  it('uses a hash of x-asof-key when present', () => {
-    const request = new Request('https://asof.local', {
-      headers: {
-        'x-asof-key': 'asof_test_secret',
-        'x-forwarded-for': '203.0.113.1, 10.0.0.1',
-      },
-    });
+describe('integration rate-limit identities', () => {
+  it('uses one trusted-IP bucket for rotating invalid credentials', () => {
+    const keys = Array.from({ length: 100 }, (_, index) =>
+      getIntegrationPreAuthRateLimitKey(
+        new Request('https://asof.local', {
+          headers: {
+            'x-asof-key': `synthetic-invalid-${index}`,
+            'x-forwarded-for': '203.0.113.1, 10.0.0.1',
+          },
+        }),
+      ),
+    );
 
-    const key = getIntegrationRateLimitKey(request);
-
-    expect(key).toMatch(/^api-key:[0-9a-f]{64}$/);
-    expect(key).not.toContain('asof_test_secret');
-    expect(key).not.toContain('203.0.113.1');
+    expect(new Set(keys)).toEqual(new Set(['ip:203.0.113.1']));
+    expect(keys.join(' ')).not.toContain('synthetic-invalid');
   });
 
-  it('falls back to client IP when no API key header exists', () => {
+  it('isolates distinct trusted client IPs', () => {
     const request = new Request('https://asof.local', {
       headers: {
         'x-real-ip': '198.51.100.2',
       },
     });
 
-    expect(getIntegrationRateLimitKey(request)).toBe('ip:198.51.100.2');
+    expect(getIntegrationPreAuthRateLimitKey(request)).toBe('ip:198.51.100.2');
+  });
+
+  it('uses canonical authenticated principal identities', () => {
+    expect(
+      getIntegrationPrincipalRateLimitKey({
+        kind: 'integration',
+        scheme: 'api-key-hmac-sha256',
+        keyId: 'canonical-key-id',
+      }),
+    ).toBe('api-key:canonical-key-id');
+    expect(
+      getIntegrationPrincipalRateLimitKey({
+        kind: 'session',
+        userId: 42,
+        email: 'synthetic@example.test',
+        role: 'admin',
+      }),
+    ).toBe('session:42');
   });
 });

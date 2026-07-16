@@ -173,7 +173,8 @@ describe('verifyIntegrationRequest (dual-auth)', () => {
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.principal.kind).toBe('integration');
-        expect(result.principal.keyId).toBe(TEST_API_KEY);
+        expect(result.principal.keyId).toMatch(/^[0-9a-f]{64}$/);
+        expect(result.principal.keyId).not.toContain(TEST_API_KEY);
         if (result.principal.kind === 'integration') {
           expect(result.principal.scopes).toBeUndefined();
         }
@@ -259,7 +260,7 @@ describe('verifyIntegrationRequest (dual-auth)', () => {
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.principal.kind).toBe('integration');
-        expect(result.principal.keyId).toBe('test-table-key');
+        expect(result.principal.keyId).toBe('1');
         if (result.principal.kind === 'integration') {
           expect(result.principal.scopes).toEqual(['events:read', 'events:write']);
         }

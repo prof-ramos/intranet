@@ -3,7 +3,8 @@ import { Logger } from '@/lib/logger';
 import { DELETE, GET, PATCH, POST, PUT } from './route';
 
 const mockAuthorizeIntegrationRequest = vi.fn();
-const mockConsume = vi.fn();
+const mockPreAuthConsume = vi.fn();
+const mockPrincipalConsume = vi.fn();
 const mockDispatchDomainEventById = vi.fn();
 const mockDispatchPendingDomainEvents = vi.fn();
 const auditValues = vi.fn();
@@ -13,9 +14,18 @@ vi.mock('@/lib/integrations/auth', () => ({
 }));
 
 vi.mock('@/lib/integrations/rate-limit', () => ({
-  getIntegrationRateLimitKey: () => 'ip:127.0.0.1',
-  integrationRateLimiter: {
-    consume: (...args: unknown[]) => mockConsume(...args),
+  getIntegrationPreAuthRateLimitKey: () => 'ip:127.0.0.1',
+  getIntegrationPrincipalRateLimitKey: (principal: {
+    kind: string;
+    userId?: number;
+    keyId?: string;
+  }) =>
+    principal.kind === 'session' ? `session:${principal.userId}` : `api-key:${principal.keyId}`,
+  integrationPreAuthRateLimiter: {
+    consume: (...args: unknown[]) => mockPreAuthConsume(...args),
+  },
+  integrationPrincipalRateLimiter: {
+    consume: (...args: unknown[]) => mockPrincipalConsume(...args),
   },
 }));
 
@@ -37,7 +47,8 @@ vi.mock('@/lib/db/schema', () => ({
 describe('/api/v1/events route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockConsume.mockResolvedValue({ allowed: true });
+    mockPreAuthConsume.mockResolvedValue({ allowed: true });
+    mockPrincipalConsume.mockResolvedValue({ allowed: true });
     mockAuthorizeIntegrationRequest.mockResolvedValue({
       ok: true,
       requestId: 'events-request',
@@ -71,7 +82,8 @@ describe('/api/v1/events route', () => {
         requiredScopes: ['events:read'],
       }),
     );
-    expect(mockConsume).toHaveBeenCalledWith('ip:127.0.0.1');
+    expect(mockPreAuthConsume).toHaveBeenCalledWith('ip:127.0.0.1');
+    expect(mockPrincipalConsume).toHaveBeenCalledWith('session:7');
   });
 
   it('dispatches a single event on POST with eventId', async () => {
@@ -99,6 +111,8 @@ describe('/api/v1/events route', () => {
         requiredScopes: ['events:write'],
       }),
     );
+    expect(mockPreAuthConsume).toHaveBeenCalledWith('ip:127.0.0.1');
+    expect(mockPrincipalConsume).toHaveBeenCalledWith('session:7');
   });
 
   it('dispatches a batch when no eventId is provided', async () => {
@@ -128,6 +142,45 @@ describe('/api/v1/events route', () => {
 
     expect(response.status).toBe(400);
     expect(body.error.code).toBe('invalid_request');
+  });
+
+  it('blocks before authentication using the trusted-IP bucket', async () => {
+    mockPreAuthConsume.mockResolvedValue({ allowed: false, retryAfterMs: 5000 });
+
+    const response = await GET(new Request('https://asof.local/api/v1/events'));
+
+    expect(response.status).toBe(429);
+    expect(mockAuthorizeIntegrationRequest).not.toHaveBeenCalled();
+    expect(mockPrincipalConsume).not.toHaveBeenCalled();
+  });
+
+  it('does not consume a principal bucket when authentication fails', async () => {
+    mockAuthorizeIntegrationRequest.mockResolvedValue({
+      ok: false,
+      response: new Response(null, { status: 401 }),
+    });
+
+    const response = await GET(new Request('https://asof.local/api/v1/events'));
+
+    expect(response.status).toBe(401);
+    expect(mockPreAuthConsume).toHaveBeenCalledWith('ip:127.0.0.1');
+    expect(mockPrincipalConsume).not.toHaveBeenCalled();
+  });
+
+  it('blocks an authenticated API key by its canonical principal bucket', async () => {
+    mockAuthorizeIntegrationRequest.mockResolvedValue({
+      ok: true,
+      requestId: 'events-request',
+      principal: { kind: 'integration', keyId: 'canonical-key-id' },
+    });
+    mockPrincipalConsume.mockResolvedValue({ allowed: false, retryAfterMs: 2500 });
+
+    const response = await GET(new Request('https://asof.local/api/v1/events'));
+    const body = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(mockPrincipalConsume).toHaveBeenCalledWith('api-key:canonical-key-id');
+    expect(body.error.details.retryAfterMs).toBe(2500);
   });
 
   it('logs a safe audit error without failing dispatch', async () => {

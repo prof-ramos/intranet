@@ -78,6 +78,7 @@ export interface IntegrationSignatureInput {
 export interface IntegrationPrincipal {
   kind: 'integration';
   scheme: typeof INTEGRATION_AUTH_SCHEME;
+  /** Stable, non-secret identifier established only after successful authentication. */
   keyId: string;
   /** Scopes from the database-backed API key. Absent for env-var-backed keys (full access). */
   scopes?: IntegrationScope[];

@@ -1,14 +1,14 @@
-import { createHash } from 'node:crypto';
 import { db } from '@/lib/db';
 import { rateLimits } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
 import { getTrustedClientIp } from '@/lib/ip';
-import { INTEGRATION_HEADER_NAMES } from '@/lib/integrations/types';
+import type { RequestPrincipal } from '@/lib/integrations/types';
 
 export interface IntegrationRateLimitOptions {
   maxRequests: number;
   windowMs: number;
   scope: string;
+  cleanupIntervalMs?: number;
 }
 
 export interface IntegrationRateLimitResult {
@@ -85,8 +85,28 @@ export function createIntegrationRateLimiter(
     throw new Error('scope is required.');
   }
 
+  if (
+    options.cleanupIntervalMs != null &&
+    (!Number.isInteger(options.cleanupIntervalMs) || options.cleanupIntervalMs < 1)
+  ) {
+    throw new Error('cleanupIntervalMs must be a positive integer.');
+  }
+
+  const cleanupIntervalMs = options.cleanupIntervalMs ?? 5 * 60 * 1000;
+  let lastCleanupAt: number | null = null;
+
   return {
     async consume(key: string, now = Date.now()): Promise<IntegrationRateLimitResult> {
+      if (lastCleanupAt == null || now - lastCleanupAt >= cleanupIntervalMs) {
+        lastCleanupAt = now;
+        try {
+          await store.cleanup(now);
+        } catch (error) {
+          lastCleanupAt = null;
+          throw error;
+        }
+      }
+
       const { attempts, expiresAt } = await store.atomicIncrement(
         key,
         options.scope,
@@ -114,22 +134,28 @@ export function createIntegrationRateLimiter(
   };
 }
 
-export const integrationRateLimiter = createIntegrationRateLimiter({
+export const integrationPreAuthRateLimiter = createIntegrationRateLimiter({
   maxRequests: 60,
   windowMs: 15 * 60 * 1000,
-  scope: 'integration_api',
+  scope: 'integration_api_preauth',
+});
+
+export const integrationPrincipalRateLimiter = createIntegrationRateLimiter({
+  maxRequests: 60,
+  windowMs: 15 * 60 * 1000,
+  scope: 'integration_api_principal',
 });
 
 export function getClientIp(request: Request): string {
   return getTrustedClientIp(request.headers);
 }
 
-export function getIntegrationRateLimitKey(request: Request): string {
-  const apiKey = request.headers.get(INTEGRATION_HEADER_NAMES.key)?.trim();
-  if (apiKey) {
-    const keyHash = createHash('sha256').update(apiKey).digest('hex');
-    return `api-key:${keyHash}`;
-  }
-
+export function getIntegrationPreAuthRateLimitKey(request: Request): string {
   return `ip:${getClientIp(request)}`;
+}
+
+export function getIntegrationPrincipalRateLimitKey(principal: RequestPrincipal): string {
+  return principal.kind === 'session'
+    ? `session:${principal.userId}`
+    : `api-key:${principal.keyId}`;
 }
