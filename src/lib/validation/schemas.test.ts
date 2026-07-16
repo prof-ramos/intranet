@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { isPublicWebhookUrl } from '@/lib/integrations/webhooks/validation';
 import {
   loginSchema,
@@ -10,6 +10,19 @@ import {
   addNoteSchema,
   webhookSubscriptionFormSchema,
 } from './schemas';
+
+const { lookupMock } = vi.hoisted(() => ({
+  lookupMock: vi.fn(),
+}));
+
+vi.mock('node:dns/promises', () => ({
+  lookup: lookupMock,
+}));
+
+beforeEach(() => {
+  lookupMock.mockReset();
+  lookupMock.mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
+});
 
 describe('loginSchema', () => {
   test('aceita e-mail e senha válidos', () => {
@@ -478,8 +491,17 @@ describe('isPublicWebhookUrl', () => {
       await expect(isPublicWebhookUrl('https://[fd00::1]/webhook')).resolves.toBe(false);
     });
 
-    test('rejeita IPv6 link-local (fe80::/10)', async () => {
-      await expect(isPublicWebhookUrl('https://[fe80::1]/webhook')).resolves.toBe(false);
+    test.each([
+      'https://[fe80::1]/webhook',
+      'https://[fe90::1]/webhook',
+      'https://[fea0::1]/webhook',
+      'https://[febf:ffff::1]/webhook',
+    ])('rejeita IPv6 link-local no intervalo fe80::/10: %s', async (url) => {
+      await expect(isPublicWebhookUrl(url)).resolves.toBe(false);
+    });
+
+    test('aceita fec0::/10, primeiro intervalo após fe80::/10 na política atual', async () => {
+      await expect(isPublicWebhookUrl('https://[fec0::1]/webhook')).resolves.toBe(true);
     });
 
     test('rejeita IPv6 loopback (::1)', async () => {
@@ -506,11 +528,15 @@ describe('isPublicWebhookUrl', () => {
 
   describe('DNS rebinding', () => {
     test('rejeita hostname que resolve para IP privado', async () => {
-      await expect(isPublicWebhookUrl('https://localhost/webhook')).resolves.toBe(false);
+      lookupMock.mockResolvedValueOnce([{ address: '10.0.0.1', family: 4 }]);
+
+      await expect(isPublicWebhookUrl('https://hooks.example.com/webhook')).resolves.toBe(false);
     });
 
-    test('rejeita hostname que resolve para IP loopback', async () => {
-      await expect(isPublicWebhookUrl('https://127.0.0.1.nip.io/webhook')).resolves.toBe(false);
+    test('rejeita hostname que resolve para endereço no interior de fe80::/10', async () => {
+      lookupMock.mockResolvedValueOnce([{ address: 'fe90::1', family: 6 }]);
+
+      await expect(isPublicWebhookUrl('https://hooks.example.com/webhook')).resolves.toBe(false);
     });
   });
 
