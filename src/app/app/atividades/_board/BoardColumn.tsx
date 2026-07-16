@@ -15,7 +15,7 @@ interface BoardColumnProps {
   peopleById: Map<number, BoardPerson>;
   setCollapsedDone: React.Dispatch<React.SetStateAction<boolean>>;
   openDrawer: (id: number) => void;
-  handleAdd: (title: string, status: Status) => void;
+  handleAdd: (title: string, status: Status) => Promise<void>;
 }
 
 export function BoardColumn({
