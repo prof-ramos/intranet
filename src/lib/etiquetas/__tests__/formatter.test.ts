@@ -34,9 +34,26 @@ describe('formatter de etiquetas', () => {
     expect(label.lines).toContain('PODE SER ABERTO PELA ECT');
   });
 
-  it('formata mala diplomática sem exigir endereço', () => {
-    const label = formatMalaDiplomaticaLabel({ id: '2', nome: 'João Souza', lotacao: 'SERE' }, { peo: true });
-    expect(label.lines).toEqual(['João Souza', 'SERE', 'P.E.O.']);
+  describe('formatMalaDiplomaticaLabel', () => {
+    it('formata mala diplomática sem exigir endereço e aplica flags', () => {
+      const label = formatMalaDiplomaticaLabel({ id: '2', nome: 'João Souza', lotacao: 'SERE' }, { peo: true });
+      expect(label.lines).toEqual(['João Souza', 'SERE', 'P.E.O.']);
+    });
+
+    it('usa posto quando disponível (prioridade sobre lotacao)', () => {
+      const label = formatMalaDiplomaticaLabel({ id: '2', nome: 'João Souza', lotacao: 'SERE', posto: 'Embaixada' });
+      expect(label.lines).toEqual(['João Souza', 'Embaixada']);
+    });
+
+    it('usa lotacao quando posto não está disponível', () => {
+      const label = formatMalaDiplomaticaLabel({ id: '2', nome: 'João Souza', lotacao: 'SERE' });
+      expect(label.lines).toEqual(['João Souza', 'SERE']);
+    });
+
+    it('omite a linha caso nem posto nem lotacao estejam disponíveis', () => {
+      const label = formatMalaDiplomaticaLabel({ id: '2', nome: 'João Souza' });
+      expect(label.lines).toEqual(['João Souza']);
+    });
   });
 
   it('formata campos customizados em ordem previsível', () => {
