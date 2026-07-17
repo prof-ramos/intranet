@@ -18,11 +18,18 @@ import type { DomainEventType } from '@/lib/integrations/outbox';
 import { decryptWebhookSecret } from '@/lib/integrations/webhooks/secrets';
 import { sanitizePiiValue } from '@/lib/sanitize-pii';
 import { createLogger } from '@/lib/logger';
+import {
+  createConcurrencyLimiter,
+  mapSettledWithConcurrency,
+  type ConcurrencyLimiter,
+} from '@/lib/integrations/webhooks/concurrency';
 
 const logger = createLogger('webhooks:service');
 const MAX_WEBHOOK_ATTEMPTS = 5;
 const RESPONSE_EXCERPT_LIMIT = 500;
 const WEBHOOK_TIMEOUT_MS = 10_000;
+export const WEBHOOK_DELIVERY_CONCURRENCY = 5;
+export const WEBHOOK_EVENT_CONCURRENCY = 3;
 
 type DomainEventForDispatch = NonNullable<Awaited<ReturnType<typeof getDomainEventById>>>;
 
@@ -248,7 +255,11 @@ async function deliverEventToSubscription(
   return shouldRetry ? ('retry_scheduled' as const) : ('failed' as const);
 }
 
-async function dispatchEventToSubscriptions(event: DomainEventForDispatch, executor: DbExecutor) {
+async function dispatchEventToSubscriptions(
+  event: DomainEventForDispatch,
+  executor: DbExecutor,
+  deliveryLimiter: ConcurrencyLimiter,
+) {
   const bodyEnvelope = buildWebhookBody(event);
   const body = JSON.stringify(bodyEnvelope);
   const subscriptions = await listActiveWebhookSubscriptionsForEvent(event.eventType, executor);
@@ -264,36 +275,38 @@ async function dispatchEventToSubscriptions(event: DomainEventForDispatch, execu
     };
   }
 
-  const dispatchPromises = subscriptions.map(async (subscription) => {
-    const previous = getLastDeliveryAttemptForSubscription(previousDeliveries, subscription.id);
-    if (previous?.status === 'delivered') {
-      return 'delivered' as const;
-    }
+  const settled = await mapSettledWithConcurrency(
+    subscriptions,
+    deliveryLimiter,
+    async (subscription) => {
+      const previous = getLastDeliveryAttemptForSubscription(previousDeliveries, subscription.id);
+      if (previous?.status === 'delivered') {
+        return 'delivered' as const;
+      }
 
-    if (
-      previous?.status === 'retry_scheduled' &&
-      previous.nextRetryAt &&
-      previous.nextRetryAt.getTime() > Date.now()
-    ) {
-      return 'retry_scheduled' as const;
-    }
+      if (
+        previous?.status === 'retry_scheduled' &&
+        previous.nextRetryAt &&
+        previous.nextRetryAt.getTime() > Date.now()
+      ) {
+        return 'retry_scheduled' as const;
+      }
 
-    if (previous?.status === 'failed') {
-      return 'failed' as const;
-    }
+      if (previous?.status === 'failed') {
+        return 'failed' as const;
+      }
 
-    const attempt = (previous?.attempt ?? 0) + 1;
-    return deliverEventToSubscription(
-      event.id,
-      event.eventType,
-      subscription,
-      body,
-      attempt,
-      executor,
-    );
-  });
-
-  const settled = await Promise.allSettled(dispatchPromises);
+      const attempt = (previous?.attempt ?? 0) + 1;
+      return deliverEventToSubscription(
+        event.id,
+        event.eventType,
+        subscription,
+        body,
+        attempt,
+        executor,
+      );
+    },
+  );
   const results = settled.map((outcome) =>
     outcome.status === 'fulfilled' ? outcome.value : ('retry_scheduled' as const),
   );
@@ -323,26 +336,62 @@ export async function dispatchDomainEventById(eventId: number) {
         };
   }
 
-  return dispatchEventToSubscriptions(event, db);
+  return dispatchEventToSubscriptions(
+    event,
+    db,
+    createConcurrencyLimiter(WEBHOOK_DELIVERY_CONCURRENCY),
+  );
 }
 
 async function dispatchClaimedEvent(
   event: Awaited<ReturnType<typeof lockAndFetchDispatchableEvents>>[number],
+  deliveryLimiter: ConcurrencyLimiter,
 ) {
-  return dispatchEventToSubscriptions(event, db);
+  return dispatchEventToSubscriptions(event, db, deliveryLimiter);
 }
 
 export async function dispatchPendingDomainEvents(limit = 20) {
   // Recover events stuck in "processing" status (e.g. if a dispatcher crashed)
   await recoverStuckProcessingEvents();
 
-  // Atomically lock and claim dispatchable events using FOR UPDATE SKIP LOCKED
-  // so concurrent dispatchers do not double-process the same events.
-  const pendingEvents = await lockAndFetchDispatchableEvents(limit);
-  const results = await Promise.all(pendingEvents.map((event) => dispatchClaimedEvent(event)));
+  const deliveryLimiter = createConcurrencyLimiter(WEBHOOK_DELIVERY_CONCURRENCY);
+  const eventLimiter = createConcurrencyLimiter(WEBHOOK_EVENT_CONCURRENCY);
+  const results: Array<
+    | Awaited<ReturnType<typeof dispatchClaimedEvent>>
+    | { dispatched: false; reason: 'dispatch_failed'; eventId: number }
+  > = [];
+  let processed = 0;
+
+  while (processed < limit) {
+    // Claim only events that can begin immediately. Claiming the entire request
+    // limit up front can leave queued events in "processing" long enough for the
+    // stuck-event recovery job to reclaim them during this invocation.
+    const claimLimit = Math.min(WEBHOOK_EVENT_CONCURRENCY, limit - processed);
+    const pendingEvents = await lockAndFetchDispatchableEvents(claimLimit);
+    if (pendingEvents.length === 0) break;
+
+    const settled = await mapSettledWithConcurrency(pendingEvents, eventLimiter, (event) =>
+      dispatchClaimedEvent(event, deliveryLimiter),
+    );
+    results.push(
+      ...settled.map((outcome, index) => {
+        if (outcome.status === 'fulfilled') return outcome.value;
+
+        logger.error('Webhook event dispatch failed', { eventId: pendingEvents[index].id });
+        return {
+          dispatched: false as const,
+          reason: 'dispatch_failed' as const,
+          eventId: pendingEvents[index].id,
+        };
+      }),
+    );
+    processed += pendingEvents.length;
+
+    if (pendingEvents.length < claimLimit) break;
+  }
 
   return {
-    processed: pendingEvents.length,
+    processed,
     results,
   };
 }
