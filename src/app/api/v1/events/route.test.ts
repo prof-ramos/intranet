@@ -130,6 +130,29 @@ describe('/api/v1/events route', () => {
     expect(body.data.mode).toBe('batch');
   });
 
+  it('reuses the authenticated body without reading the request stream twice', async () => {
+    const request = new Request('https://asof.local/api/v1/events', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ eventId: 99 }),
+    });
+    const textSpy = vi.spyOn(request, 'text');
+    mockAuthorizeIntegrationRequest.mockImplementationOnce(
+      async (authenticatedRequest: Request) => ({
+        ok: true,
+        requestId: 'events-request',
+        principal: { kind: 'integration', keyId: 'canonical-key-id' },
+        verifiedBody: await authenticatedRequest.text(),
+      }),
+    );
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(200);
+    expect(textSpy).toHaveBeenCalledOnce();
+    expect(mockDispatchDomainEventById).toHaveBeenCalledWith(99);
+  });
+
   it('returns 400 for invalid payload', async () => {
     const response = await POST(
       new Request('https://asof.local/api/v1/events', {

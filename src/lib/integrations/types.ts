@@ -101,6 +101,7 @@ export type IntegrationAuthFailureReason =
   | 'invalid_signature'
   | 'invalid_timestamp'
   | 'body_too_large'
+  | 'body_read_failed'
   | 'timestamp_skew'
   | 'insufficient_scope'
   | 'replay_detected';
@@ -109,6 +110,8 @@ export type IntegrationAuthResult =
   | {
       ok: true;
       principal: IntegrationPrincipal;
+      /** Internal-only body representation used to verify the request signature. */
+      verifiedBody: string;
     }
   | {
       ok: false;

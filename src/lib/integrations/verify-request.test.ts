@@ -92,13 +92,14 @@ vi.mock('@/lib/integrations/http', () => ({
 }));
 
 // Import after mocks
-import { verifyIntegrationRequest } from './verify-request';
+import { authorizeIntegrationRequest, verifyIntegrationRequest } from './verify-request';
 
 // --- Helpers ---
 
 const API_KEY = 'asof_verify_test_key_abc123';
 const HMAC_SECRET = 'verify-test-hmac-secret-xyz';
 const NOW_SECONDS = Math.floor(Date.now() / 1000);
+const MAX_INTEGRATION_BODY_BYTES = 10 * 1024 * 1024;
 
 function sha256Hex(value: string): string {
   return createHash('sha256').update(value).digest('hex');
@@ -436,7 +437,13 @@ describe('verifyIntegrationRequest — empty body', () => {
 
     const timestamp = String(NOW_SECONDS);
     // Signature was computed for a non-empty body but we send an empty body
-    const sig = computeSignature('POST', '/api/v1/webhooks', timestamp, '{"data":"x"}', HMAC_SECRET);
+    const sig = computeSignature(
+      'POST',
+      '/api/v1/webhooks',
+      timestamp,
+      '{"data":"x"}',
+      HMAC_SECRET,
+    );
     const request = makeRequest(API_KEY, timestamp, sig, {
       method: 'POST',
       url: 'https://api.example.com/api/v1/webhooks',
@@ -474,6 +481,7 @@ describe('verifyIntegrationRequest — body size limits', () => {
       headers,
       body: '',
     });
+    const getReader = vi.spyOn(request.body!, 'getReader');
 
     const result = await verifyIntegrationRequest(request);
 
@@ -482,6 +490,172 @@ describe('verifyIntegrationRequest — body size limits', () => {
       expect(result.reason).toBe('body_too_large');
       expect(result.details).toEqual({ limitBytes: 10 * 1024 * 1024 });
     }
+    expect(getReader).not.toHaveBeenCalled();
+  });
+
+  it('accepts a chunked body at the exact byte limit without Content-Length', async () => {
+    mockGetIntegrationConfig.mockReturnValue(defaultConfig());
+    mockIsIntegrationAuthConfigured.mockReturnValue(true);
+
+    const body = 'a'.repeat(MAX_INTEGRATION_BODY_BYTES);
+    const timestamp = String(NOW_SECONDS);
+    const signature = computeSignature('POST', '/api/v1/webhooks', timestamp, body, HMAC_SECRET);
+    const firstHalf = new TextEncoder().encode(body.slice(0, body.length / 2));
+    const secondHalf = new TextEncoder().encode(body.slice(body.length / 2));
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(firstHalf);
+        controller.enqueue(secondHalf);
+        controller.close();
+      },
+    });
+    const request = new Request('https://api.example.com/api/v1/webhooks', {
+      method: 'POST',
+      headers: {
+        'x-asof-key': API_KEY,
+        'x-asof-timestamp': timestamp,
+        'x-asof-signature': `sha256=${signature}`,
+      },
+      body: stream,
+      duplex: 'half',
+    } as RequestInit & { duplex: 'half' });
+
+    const result = await verifyIntegrationRequest(request);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.verifiedBody).toBe(body);
+  });
+
+  it('rejects and cancels a chunked body one byte above the limit', async () => {
+    mockGetIntegrationConfig.mockReturnValue(defaultConfig());
+    mockIsIntegrationAuthConfigured.mockReturnValue(true);
+
+    const cancel = vi.fn();
+    const timestamp = String(NOW_SECONDS);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array(MAX_INTEGRATION_BODY_BYTES));
+        controller.enqueue(new Uint8Array([1]));
+      },
+      cancel,
+    });
+    const request = new Request('https://api.example.com/api/v1/webhooks', {
+      method: 'POST',
+      headers: {
+        'x-asof-key': API_KEY,
+        'x-asof-timestamp': timestamp,
+        'x-asof-signature': 'sha256=synthetic-signature',
+      },
+      body: stream,
+      duplex: 'half',
+    } as RequestInit & { duplex: 'half' });
+
+    const result = await verifyIntegrationRequest(request);
+
+    expect(result).toEqual({
+      ok: false,
+      reason: 'body_too_large',
+      details: { limitBytes: MAX_INTEGRATION_BODY_BYTES },
+    });
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it('counts UTF-8 bytes and decodes multibyte chunks only once after reading', async () => {
+    mockGetIntegrationConfig.mockReturnValue(defaultConfig());
+    mockIsIntegrationAuthConfigured.mockReturnValue(true);
+
+    const body = '{"text":"ação🙂"}';
+    const bytes = new TextEncoder().encode(body);
+    const emojiStart = bytes.findIndex((byte) => byte === 0xf0);
+    const timestamp = String(NOW_SECONDS);
+    const signature = computeSignature('POST', '/api/v1/webhooks', timestamp, body, HMAC_SECRET);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(bytes.slice(0, emojiStart + 2));
+        controller.enqueue(bytes.slice(emojiStart + 2));
+        controller.close();
+      },
+    });
+    const request = new Request('https://api.example.com/api/v1/webhooks', {
+      method: 'POST',
+      headers: {
+        'x-asof-key': API_KEY,
+        'x-asof-timestamp': timestamp,
+        'x-asof-signature': `sha256=${signature}`,
+      },
+      body: stream,
+      duplex: 'half',
+    } as RequestInit & { duplex: 'half' });
+
+    const result = await verifyIntegrationRequest(request);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.verifiedBody).toBe(body);
+  });
+
+  it('fails closed when the body stream cannot be read', async () => {
+    mockGetIntegrationConfig.mockReturnValue(defaultConfig());
+    mockIsIntegrationAuthConfigured.mockReturnValue(true);
+
+    const timestamp = String(NOW_SECONDS);
+    const request = new Request('https://api.example.com/api/v1/webhooks', {
+      method: 'POST',
+      headers: {
+        'x-asof-key': API_KEY,
+        'x-asof-timestamp': timestamp,
+        'x-asof-signature': 'sha256=synthetic-signature',
+      },
+      body: new ReadableStream({
+        pull() {
+          throw new Error('synthetic reader failure containing private body data');
+        },
+      }),
+      duplex: 'half',
+    } as RequestInit & { duplex: 'half' });
+
+    await expect(verifyIntegrationRequest(request)).resolves.toEqual({
+      ok: false,
+      reason: 'body_read_failed',
+      details: {},
+    });
+  });
+
+  it('maps reader failures to a generic safe 400 response', async () => {
+    mockGetIntegrationConfig.mockReturnValue(defaultConfig());
+    mockIsIntegrationAuthConfigured.mockReturnValue(true);
+
+    const timestamp = String(NOW_SECONDS);
+    const sensitiveErrorText = 'synthetic reader failure containing private body data';
+    const request = new Request('https://api.example.com/api/v1/webhooks', {
+      method: 'POST',
+      headers: {
+        'x-asof-key': API_KEY,
+        'x-asof-timestamp': timestamp,
+        'x-asof-signature': 'sha256=synthetic-signature',
+      },
+      body: new ReadableStream({
+        pull() {
+          throw new Error(sensitiveErrorText);
+        },
+      }),
+      duplex: 'half',
+    } as RequestInit & { duplex: 'half' });
+
+    const result = await authorizeIntegrationRequest(request);
+
+    expect(result).toMatchObject({
+      ok: false,
+      response: {
+        status: 400,
+        body: {
+          error: {
+            code: 'invalid_request',
+            message: 'Integration request body could not be read.',
+          },
+        },
+      },
+    });
+    expect(JSON.stringify(result)).not.toContain(sensitiveErrorText);
   });
 });
 

@@ -40,19 +40,54 @@ function normalizeSignatureHeader(signature: string | null): string | null {
   return normalized.startsWith('sha256=') ? normalized.slice('sha256='.length) : normalized;
 }
 
-const MAX_BODY_BYTES = 10 * 1024 * 1024;
+const MAX_INTEGRATION_BODY_BYTES = 10 * 1024 * 1024;
 
-async function readRequestBody(
-  request: Request,
-): Promise<{ ok: true; body: string } | { ok: false; reason: 'body_too_large' }> {
+type RequestBodyReadResult =
+  | { ok: true; body: string }
+  | { ok: false; reason: 'body_too_large' | 'body_read_failed' };
+
+async function readRequestBody(request: Request): Promise<RequestBodyReadResult> {
   const contentLength = Number(request.headers.get('content-length'));
-  if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+  if (Number.isFinite(contentLength) && contentLength > MAX_INTEGRATION_BODY_BYTES) {
     return { ok: false, reason: 'body_too_large' };
   }
-  try {
-    return { ok: true, body: await request.clone().text() };
-  } catch {
+
+  if (!request.body) {
     return { ok: true, body: '' };
+  }
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      totalBytes += value.byteLength;
+      if (totalBytes > MAX_INTEGRATION_BODY_BYTES) {
+        await reader.cancel().catch(() => {});
+        return { ok: false, reason: 'body_too_large' };
+      }
+      chunks.push(value);
+    }
+  } catch {
+    await reader.cancel().catch(() => {});
+    return { ok: false, reason: 'body_read_failed' };
+  }
+
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  try {
+    return { ok: true, body: new TextDecoder('utf-8', { fatal: true }).decode(bytes) };
+  } catch {
+    return { ok: false, reason: 'body_read_failed' };
   }
 }
 
@@ -171,7 +206,9 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
       ok: false,
       reason: bodyResult.reason,
       details: {
-        limitBytes: MAX_BODY_BYTES,
+        ...(bodyResult.reason === 'body_too_large'
+          ? { limitBytes: MAX_INTEGRATION_BODY_BYTES }
+          : {}),
       },
     };
   }
@@ -222,6 +259,7 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
 
     return {
       ok: true,
+      verifiedBody: bodyResult.body,
       principal: {
         kind: 'integration',
         scheme: INTEGRATION_AUTH_SCHEME,
@@ -285,6 +323,7 @@ export async function verifyIntegrationRequest(request: Request): Promise<Integr
 
   return {
     ok: true,
+    verifiedBody: bodyResult.body,
     principal: {
       kind: 'integration',
       scheme: INTEGRATION_AUTH_SCHEME,
@@ -367,12 +406,15 @@ function mapIntegrationFailureToResponse(
       });
     case 'invalid_timestamp':
     case 'body_too_large':
+    case 'body_read_failed':
       return jsonError(
         400,
         'invalid_request',
         reason.reason === 'body_too_large'
           ? 'Integration request body exceeds the maximum allowed size.'
-          : 'Integration timestamp must be a Unix time in seconds.',
+          : reason.reason === 'body_read_failed'
+            ? 'Integration request body could not be read.'
+            : 'Integration timestamp must be a Unix time in seconds.',
         {
           requestId,
           details: reason.details,
@@ -422,6 +464,7 @@ export async function authorizeIntegrationRequest(
       ok: true;
       principal: RequestPrincipal;
       requestId: string;
+      verifiedBody?: string;
     }
   | {
       ok: false;
@@ -464,6 +507,7 @@ export async function authorizeIntegrationRequest(
       ok: true,
       principal: integrationResult.principal,
       requestId,
+      verifiedBody: integrationResult.verifiedBody,
     };
   }
 
