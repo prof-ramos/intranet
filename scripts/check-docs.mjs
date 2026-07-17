@@ -9,9 +9,64 @@ function parseLinkTarget(rawTarget) {
   const trimmed = rawTarget.trim();
   if (trimmed.startsWith('<')) {
     const closing = trimmed.indexOf('>');
-    return closing === -1 ? trimmed : trimmed.slice(1, closing);
+    return unescapeMarkdownPunctuation(closing === -1 ? trimmed : trimmed.slice(1, closing));
   }
-  return trimmed.split(/\s+/u, 1)[0] ?? '';
+  return unescapeMarkdownPunctuation(trimmed.split(/\s+/u, 1)[0] ?? '');
+}
+
+function unescapeMarkdownPunctuation(value) {
+  return value.replace(/\\([!-/:-@[-`{-~])/gu, '$1');
+}
+
+function inlineLinkTargets(line) {
+  const targets = [];
+
+  for (let index = 0; index < line.length - 1; index += 1) {
+    if (line[index] !== ']' || line[index + 1] !== '(' || line[index - 1] === '\\') continue;
+
+    const targetStart = index + 2;
+    let depth = 1;
+    let angleDestination = false;
+    let quote = null;
+
+    for (let cursor = targetStart; cursor < line.length; cursor += 1) {
+      const character = line[cursor];
+      if (character === '\\') {
+        cursor += 1;
+        continue;
+      }
+      if (angleDestination) {
+        if (character === '>') angleDestination = false;
+        continue;
+      }
+      if (quote) {
+        if (character === quote) quote = null;
+        continue;
+      }
+      if (cursor === targetStart && character === '<') {
+        angleDestination = true;
+        continue;
+      }
+      if ((character === '"' || character === "'") && /\s/u.test(line[cursor - 1] ?? '')) {
+        quote = character;
+        continue;
+      }
+      if (character === '(') {
+        depth += 1;
+        continue;
+      }
+      if (character !== ')') continue;
+
+      depth -= 1;
+      if (depth === 0) {
+        targets.push(line.slice(targetStart, cursor));
+        index = cursor;
+        break;
+      }
+    }
+  }
+
+  return targets;
 }
 
 function isLocalRelativeTarget(target) {
@@ -81,8 +136,8 @@ export function checkMarkdownFiles({ rootDir, markdownFiles, scripts }) {
 
       if (fence) continue;
 
-      for (const match of line.matchAll(/!?\[[^\]]*\]\(([^)]+)\)/gu)) {
-        validateLink(file, lineNumber, match[1], rootDir, issues);
+      for (const target of inlineLinkTargets(line)) {
+        validateLink(file, lineNumber, target, rootDir, issues);
       }
 
       const referenceMatch = line.match(/^\s*\[[^\]]+\]:\s*(\S+)/u);
