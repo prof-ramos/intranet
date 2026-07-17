@@ -1,6 +1,6 @@
 import { db, type DbExecutor } from '@/lib/db';
 import { oficios } from '@/lib/db/schema/oficios';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, lt } from 'drizzle-orm';
 import type { AssinafyStatusPatch } from './types';
 
 export async function findOficioByAssinafyDocumentId(documentId: string, tx: DbExecutor = db) {
@@ -81,6 +81,35 @@ export async function claimAssinafySubmission(
         inArray(oficios.status, ['gerado', 'rascunho']),
         isNull(oficios.assinafyDocumentId),
         isNull(oficios.assinafyStatus),
+      ),
+    )
+    .returning();
+  return result ?? null;
+}
+
+/**
+ * Releases a crashed submission claim when no provider identifiers were
+ * persisted. Claims with any external identifier remain locked for manual
+ * reconciliation because the provider may already have side effects.
+ */
+export async function recoverStaleAssinafySubmission(
+  oficioId: number,
+  updatedBy: number,
+  staleThresholdMinutes = 10,
+  tx: DbExecutor = db,
+) {
+  const cutoff = new Date(Date.now() - staleThresholdMinutes * 60 * 1000);
+  const [result] = await tx
+    .update(oficios)
+    .set({ assinafyStatus: null, assinafyError: null, updatedBy, updatedAt: new Date() })
+    .where(
+      and(
+        eq(oficios.id, oficioId),
+        eq(oficios.assinafyStatus, 'uploading'),
+        lt(oficios.updatedAt, cutoff),
+        isNull(oficios.assinafyDocumentId),
+        isNull(oficios.assinafyAssignmentId),
+        isNull(oficios.assinafySignerId),
       ),
     )
     .returning();
