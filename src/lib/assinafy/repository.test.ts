@@ -2,9 +2,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   claimAssinafySubmission,
+  failStaleAssinafySubmission,
   findOficioByAssinafyDocumentId,
+  INTERRUPTED_ASSINAFY_SUBMISSION_ERROR,
   recordAssinafyReconciliationContext,
-  recoverStaleAssinafySubmission,
   updateAssinafyStatus,
 } from './repository';
 
@@ -58,8 +59,12 @@ const { dbMock, MOCK_OFICIO } = vi.hoisted(() => {
   const dbMock = {
     select: vi.fn().mockReturnValue(selectChain),
     update: vi.fn().mockReturnValue(updateChain),
-    _setSelectResult: (r: any[]) => { _selectResult = r; },
-    _setUpdateResult: (r: any[]) => { _updateResult = r; },
+    _setSelectResult: (r: any[]) => {
+      _selectResult = r;
+    },
+    _setUpdateResult: (r: any[]) => {
+      _updateResult = r;
+    },
     _selectChain: selectChain,
     _updateChain: updateChain,
   };
@@ -140,19 +145,23 @@ describe('assinafy/repository', () => {
     });
   });
 
-  describe('recoverStaleAssinafySubmission', () => {
-    it('conditionally releases an old claim with no provider identifiers', async () => {
-      await recoverStaleAssinafySubmission(1, 7);
+  describe('failStaleAssinafySubmission', () => {
+    it('closes an old claim without making it eligible for another send', async () => {
+      await failStaleAssinafySubmission(1, 7);
 
       expect(dbMock._updateChain.set).toHaveBeenCalledWith(
-        expect.objectContaining({ assinafyStatus: null, assinafyError: null, updatedBy: 7 }),
+        expect.objectContaining({
+          assinafyStatus: 'failed',
+          assinafyError: INTERRUPTED_ASSINAFY_SUBMISSION_ERROR,
+          updatedBy: 7,
+        }),
       );
       expect(dbMock._updateChain.where).toHaveBeenCalled();
     });
 
     it('returns null when the claim is fresh, already reconciled, or concurrently changed', async () => {
       dbMock._setUpdateResult([]);
-      await expect(recoverStaleAssinafySubmission(1, 7)).resolves.toBeNull();
+      await expect(failStaleAssinafySubmission(1, 7)).resolves.toBeNull();
     });
   });
 });

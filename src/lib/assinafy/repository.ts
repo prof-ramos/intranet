@@ -87,12 +87,14 @@ export async function claimAssinafySubmission(
   return result ?? null;
 }
 
+export const INTERRUPTED_ASSINAFY_SUBMISSION_ERROR =
+  'Envio interrompido. Reconcilie o ofício na Assinafy antes de qualquer novo envio.';
+
 /**
- * Releases a crashed submission claim when no provider identifiers were
- * persisted. Claims with any external identifier remain locked for manual
- * reconciliation because the provider may already have side effects.
+ * Closes an abandoned claim without making it eligible for another blind POST.
+ * Missing local provider IDs do not prove that the provider had no side effects.
  */
-export async function recoverStaleAssinafySubmission(
+export async function failStaleAssinafySubmission(
   oficioId: number,
   updatedBy: number,
   staleThresholdMinutes = 10,
@@ -101,7 +103,12 @@ export async function recoverStaleAssinafySubmission(
   const cutoff = new Date(Date.now() - staleThresholdMinutes * 60 * 1000);
   const [result] = await tx
     .update(oficios)
-    .set({ assinafyStatus: null, assinafyError: null, updatedBy, updatedAt: new Date() })
+    .set({
+      assinafyStatus: 'failed',
+      assinafyError: INTERRUPTED_ASSINAFY_SUBMISSION_ERROR,
+      updatedBy,
+      updatedAt: new Date(),
+    })
     .where(
       and(
         eq(oficios.id, oficioId),
@@ -130,7 +137,12 @@ export async function finalizeAssinafySubmission(
 ) {
   const [result] = await tx
     .update(oficios)
-    .set({ ...fields, assinafyStatus: 'pending_signature', assinafyError: null, updatedAt: new Date() })
+    .set({
+      ...fields,
+      assinafyStatus: 'pending_signature',
+      assinafyError: null,
+      updatedAt: new Date(),
+    })
     .where(and(eq(oficios.id, oficioId), eq(oficios.assinafyStatus, 'uploading')))
     .returning();
   return result ?? null;

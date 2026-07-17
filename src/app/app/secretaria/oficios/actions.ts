@@ -15,6 +15,7 @@ import {
 import { z } from 'zod';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
+import { isDomainError } from '@/lib/errors';
 
 const logger = createLogger('oficios:actions');
 
@@ -159,6 +160,28 @@ export const cancelOfficialLetterAction = defineServerAction({
         error instanceof Error ? error : undefined,
       );
       return { success: false, error: 'Falha ao cancelar o ofício.' };
+    }
+  },
+});
+
+export const markAssinafySubmissionInterruptedAction = defineServerAction({
+  auth: ALLOWED_ROLES,
+  schema: officialLetterIdSchema,
+  service: async (id: number, user) => {
+    try {
+      const result = await service.markAssinafySubmissionInterrupted(id, user.userId);
+      revalidatePath('/app/secretaria/oficios');
+      return { success: true, data: result };
+    } catch (error) {
+      logger.error(
+        '[markAssinafySubmissionInterruptedAction] update failed',
+        { error: toSafeErrorLog(error) },
+        error instanceof Error ? error : undefined,
+      );
+      return {
+        success: false,
+        error: isDomainError(error) ? error.message : 'Falha ao marcar o envio como interrompido.',
+      };
     }
   },
 });

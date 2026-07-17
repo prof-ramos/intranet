@@ -169,7 +169,9 @@ export async function cancelOfficialLetter(id: number, userId: number) {
 
     const result = await repository.cancelOfficialLetter(id, userId, tx);
     if (!result) {
-      throw new ValidationError('Ofício não pode ser cancelado enquanto o envio está em andamento.');
+      throw new ValidationError(
+        'Ofício não pode ser cancelado enquanto o envio está em andamento.',
+      );
     }
 
     return {
@@ -180,6 +182,40 @@ export async function cancelOfficialLetter(id: number, userId: number) {
         entityType: 'official_letter' as const,
         entityId: id,
         changes: { old, new: result },
+      },
+    };
+  });
+
+  await logOfficialLetterAuditBestEffort(auditArgs);
+  return result;
+}
+
+export async function markAssinafySubmissionInterrupted(id: number, userId: number) {
+  const { result, auditArgs } = await db.transaction(async (tx) => {
+    const oficio = await repository.findOfficialLetterById(id, tx);
+    if (!oficio) throw new NotFoundError('Ofício');
+
+    const result = await assinafyRepository.failStaleAssinafySubmission(id, userId, 10, tx);
+    if (!result) {
+      throw new ValidationError(
+        'O envio ainda está em andamento ou já foi reconciliado. Aguarde 10 minutos antes de marcar uma interrupção.',
+      );
+    }
+
+    return {
+      result,
+      auditArgs: {
+        adminId: userId,
+        action: 'official_letter_assinafy_submission_interrupted',
+        entityType: 'official_letter' as const,
+        entityId: id,
+        changes: {
+          old: { assinafyStatus: oficio.assinafyStatus },
+          new: {
+            assinafyStatus: result.assinafyStatus,
+            assinafyError: result.assinafyError,
+          },
+        },
       },
     };
   });
@@ -203,17 +239,14 @@ export async function sendForSignature(
     };
   }
 
-  // 2. Recover a crashed claim before evaluating eligibility. Claims with
-  // provider identifiers are intentionally left for manual reconciliation.
-  await assinafyRepository.recoverStaleAssinafySubmission(oficioId, userId);
-
-  // 3. Fetch oficio
+  // 2. Fetch oficio. Abandoned claims are resolved explicitly by an operator;
+  // they are never released automatically because provider side effects may exist.
   const oficio = await repository.findOfficialLetterById(oficioId);
   if (!oficio) {
     return { success: false, error: 'Ofício não encontrado.' };
   }
 
-  // 4. Eligibility check: only gerado or rascunho
+  // 3. Eligibility check: only gerado or rascunho
   if (oficio.status !== 'gerado' && oficio.status !== 'rascunho') {
     return {
       success: false,
@@ -221,12 +254,12 @@ export async function sendForSignature(
     };
   }
 
-  // 5. Idempotency check
+  // 4. Idempotency check
   if (oficio.assinafyDocumentId !== null) {
     return { success: false, error: 'Este ofício já foi enviado para assinatura.' };
   }
 
-  // 6. Validate signer email before acquiring the operational claim.
+  // 5. Validate signer email before acquiring the operational claim.
   if (!signerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail)) {
     return { success: false, error: 'Email do signatário inválido.' };
   }
@@ -271,28 +304,28 @@ export async function sendForSignature(
   };
 
   try {
-    // 7. Generate PDF
+    // 6. Generate PDF
     const pdfBytes = await generateOfficialLetterPdf(claimedOficio);
     const pdfBuffer = Buffer.from(pdfBytes);
 
-    // 8. Init client
+    // 7. Init client
     const client = new AssinafyClient({
       apiKey,
       accountId,
       baseUrl: env.ASSINAFY_BASE_URL,
     });
 
-    // 9. Upload document — filename sanitized for API safety
+    // 8. Upload document — filename sanitized for API safety
     const docFilename = `${claimedOficio.number.replace(/[\s/]+/g, '_')}.pdf`;
     const doc = await client.uploadDocument(pdfBuffer, docFilename);
     documentId = doc.id;
 
-    // 10. Create signer
+    // 9. Create signer
     const cleanName = cleanSignatoryName(claimedOficio.signatoryName);
     const signer = await client.createSigner(cleanName, signerEmail);
     signerId = signer.id;
 
-    // 11. Create assignment (virtual method, 30 days expiration)
+    // 10. Create assignment (virtual method, 30 days expiration)
 
     const expiresAt = new Date(Date.now() + 30 * 86400000).toISOString();
     const assignment = await client.createAssignment(doc.id, {
@@ -336,7 +369,7 @@ export async function sendForSignature(
     }
     const validatedSigningUrl = signingUrl;
 
-    // 13. DB transaction: update oficio + audit log
+    // 11. DB transaction: update oficio + audit log
     const { result: updated, auditArgs } = await db.transaction(async (tx) => {
       const txResult = await assinafyRepository.finalizeAssinafySubmission(
         oficioId,
@@ -403,7 +436,7 @@ export async function sendForSignature(
       assignmentId: assignment.id,
     });
 
-    // 14. Return success
+    // 12. Return success
     return { success: true, data: updated };
   } catch (error) {
     logger.error(
