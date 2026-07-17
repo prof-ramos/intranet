@@ -139,8 +139,8 @@ export function CriarAssociadoForm({ canEditInternalNotes }: Props) {
           values={createAssociateFormValues}
           mode="create"
           canEditInternalNotes={canEditInternalNotes}
+          afterAdministrative={<DependentsCreateSection />}
         />
-        <DependentsCreateSection />
         {error && (
           <div
             role="alert"
