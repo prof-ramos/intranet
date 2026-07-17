@@ -1,6 +1,6 @@
 import { db, type DbExecutor } from '@/lib/db';
-import { oficios, type NewOfficialLetter } from '@/lib/db/schema/oficios';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { oficios, type NewOfficialLetter, type OfficialLetter } from '@/lib/db/schema/oficios';
+import { and, desc, eq, isNull, ne, or, sql } from 'drizzle-orm';
 
 // Stable two-int namespace: "ASOF" encoded as a signed-safe integer.
 const OFFICIAL_LETTER_SEQUENCE_LOCK_NAMESPACE = 0x41534f46;
@@ -79,11 +79,20 @@ export async function updateOfficialLetter(
   return result;
 }
 
-export async function cancelOfficialLetter(id: number, updatedBy: number, tx: DbExecutor = db) {
+export async function cancelOfficialLetter(
+  id: number,
+  updatedBy: number,
+  tx: DbExecutor = db,
+): Promise<OfficialLetter | null> {
   const [result] = await tx
     .update(oficios)
     .set({ status: 'cancelado', updatedBy, updatedAt: new Date() })
-    .where(eq(oficios.id, id))
+    .where(
+      and(
+        eq(oficios.id, id),
+        or(isNull(oficios.assinafyStatus), ne(oficios.assinafyStatus, 'uploading')),
+      ),
+    )
     .returning();
-  return result;
+  return result ?? null;
 }

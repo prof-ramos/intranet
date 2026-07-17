@@ -1,6 +1,6 @@
 import { db, type DbExecutor } from '@/lib/db';
 import { oficios } from '@/lib/db/schema/oficios';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { AssinafyStatusPatch } from './types';
 
 export async function findOficioByAssinafyDocumentId(documentId: string, tx: DbExecutor = db) {
@@ -78,6 +78,7 @@ export async function claimAssinafySubmission(
     .where(
       and(
         eq(oficios.id, oficioId),
+        inArray(oficios.status, ['gerado', 'rascunho']),
         isNull(oficios.assinafyDocumentId),
         isNull(oficios.assinafyStatus),
       ),
@@ -121,6 +122,34 @@ export async function failAssinafySubmission(
     .update(oficios)
     .set({ ...fields, assinafyStatus: 'failed', updatedAt: new Date() })
     .where(and(eq(oficios.id, oficioId), eq(oficios.assinafyStatus, 'uploading')))
+    .returning();
+  return result ?? null;
+}
+
+export async function recordAssinafyReconciliationContext(
+  oficioId: number,
+  fields: {
+    assinafyDocumentId?: string;
+    assinafySigningUrl?: string;
+    assinafyAssignmentId?: string;
+    assinafySignerId?: string;
+    assinafySentAt?: Date;
+    assinafyError: string;
+    updatedBy: number;
+  },
+  tx: DbExecutor = db,
+) {
+  const [result] = await tx
+    .update(oficios)
+    .set({ ...fields, updatedAt: new Date() })
+    .where(
+      and(
+        eq(oficios.id, oficioId),
+        isNull(oficios.assinafyDocumentId),
+        isNull(oficios.assinafyAssignmentId),
+        isNull(oficios.assinafySignerId),
+      ),
+    )
     .returning();
   return result ?? null;
 }

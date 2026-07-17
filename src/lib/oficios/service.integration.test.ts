@@ -5,7 +5,11 @@ import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { admins, auditLogs, domainEvents, oficios } from '@/lib/db/schema';
-import { claimAssinafySubmission } from '@/lib/assinafy/repository';
+import {
+  claimAssinafySubmission,
+  recordAssinafyReconciliationContext,
+} from '@/lib/assinafy/repository';
+import { cancelOfficialLetter as cancelOfficialLetterRecord } from './repository';
 import { saveOfficialLetter } from './service';
 
 // Must match repository.lockOfficialLetterSequenceYear namespace ("ASOF").
@@ -232,5 +236,61 @@ describe.skipIf(!hasTestEnv)('oficios service integration', () => {
       await barrier.release().catch(() => undefined);
       throw error;
     }
+  });
+  it('serializes Assinafy claim against cancellation', async () => {
+    await db
+      .update(oficios)
+      .set({ status: 'gerado', assinafyStatus: null })
+      .where(eq(oficios.id, oficioId));
+
+    const [claim, cancellation] = await Promise.all([
+      claimAssinafySubmission(oficioId, adminId),
+      cancelOfficialLetterRecord(oficioId, adminId),
+    ]);
+
+    expect([claim, cancellation].filter((result) => result !== null)).toHaveLength(1);
+    const [stored] = await db
+      .select({ status: oficios.status, assinafyStatus: oficios.assinafyStatus })
+      .from(oficios)
+      .where(eq(oficios.id, oficioId));
+    expect(
+      (stored.status === 'gerado' && stored.assinafyStatus === 'uploading') ||
+        (stored.status === 'cancelado' && stored.assinafyStatus === null),
+    ).toBe(true);
+  });
+
+  it('records external IDs without overwriting a state that won the claim', async () => {
+    await db
+      .update(oficios)
+      .set({
+        status: 'cancelado',
+        assinafyStatus: 'failed',
+        assinafyDocumentId: null,
+        assinafyAssignmentId: null,
+        assinafySignerId: null,
+      })
+      .where(eq(oficios.id, oficioId));
+
+    await recordAssinafyReconciliationContext(oficioId, {
+      assinafyDocumentId: `doc-reconcile-${runId}`,
+      assinafyAssignmentId: `assignment-reconcile-${runId}`,
+      assinafySignerId: `signer-reconcile-${runId}`,
+      assinafyError: 'Manual reconciliation required.',
+      updatedBy: adminId,
+    });
+
+    const [stored] = await db
+      .select({
+        status: oficios.status,
+        assinafyStatus: oficios.assinafyStatus,
+        documentId: oficios.assinafyDocumentId,
+      })
+      .from(oficios)
+      .where(eq(oficios.id, oficioId));
+    expect(stored).toMatchObject({
+      status: 'cancelado',
+      assinafyStatus: 'failed',
+      documentId: `doc-reconcile-${runId}`,
+    });
   });
 });

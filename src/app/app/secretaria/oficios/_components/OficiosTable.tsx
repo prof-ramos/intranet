@@ -127,7 +127,8 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                       </a>
                       {!isCancelled &&
                         (oficio.status === 'gerado' || oficio.status === 'rascunho') &&
-                        oficio.assinafyDocumentId === null && (
+                        oficio.assinafyDocumentId === null &&
+                        oficio.assinafyStatus === null && (
                           <button
                             type="button"
                             onClick={() => setSignatureModalOficio(oficio)}
@@ -231,7 +232,9 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                             ? 'Assinado'
                             : oficio.assinafyStatus === 'expired'
                               ? 'Expirado'
-                              : 'Rejeitado'}
+                              : oficio.assinafyStatus === 'failed'
+                                ? 'Falha'
+                                : 'Rejeitado'}
                         </span>
                       )}
                   </td>

@@ -12,7 +12,7 @@ import * as assinafyRepository from '@/lib/assinafy/repository';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 import { env } from '@/lib/env';
-import { NotFoundError } from '@/lib/errors';
+import { NotFoundError, ValidationError } from '@/lib/errors';
 import { getBusinessDateParts } from '@/lib/utils/date';
 
 const logger = createLogger('oficios:service');
@@ -168,6 +168,9 @@ export async function cancelOfficialLetter(id: number, userId: number) {
     if (!old) throw new NotFoundError('Ofício');
 
     const result = await repository.cancelOfficialLetter(id, userId, tx);
+    if (!result) {
+      throw new ValidationError('Ofício não pode ser cancelado enquanto o envio está em andamento.');
+    }
 
     return {
       result,
@@ -232,9 +235,38 @@ export async function sendForSignature(
   let documentId: string | undefined;
   let signerId: string | undefined;
   let assignmentId: string | undefined;
+  let signingUrl: string | undefined;
+
+  const persistFailureContext = async (message: string) => {
+    try {
+      const failed = await assinafyRepository.failAssinafySubmission(oficioId, {
+        assinafyDocumentId: documentId,
+        assinafySignerId: signerId,
+        assinafyAssignmentId: assignmentId,
+        assinafyError: message,
+        updatedBy: userId,
+      });
+
+      if (!failed) {
+        await assinafyRepository.recordAssinafyReconciliationContext(oficioId, {
+          assinafyDocumentId: documentId,
+          assinafySigningUrl: signingUrl,
+          assinafySignerId: signerId,
+          assinafyAssignmentId: assignmentId,
+          assinafySentAt: documentId ? new Date() : undefined,
+          assinafyError: message,
+          updatedBy: userId,
+        });
+      }
+    } catch (persistenceError) {
+      logger.error('[sendForSignature] failed to persist reconciliation context', {
+        oficioId,
+        error: toSafeErrorLog(persistenceError),
+      });
+    }
+  };
 
   try {
-
     // 6. Generate PDF
     const pdfBytes = await generateOfficialLetterPdf(claimedOficio);
     const pdfBuffer = Buffer.from(pdfBytes);
@@ -280,20 +312,14 @@ export async function sendForSignature(
         documentId: doc.id,
         assignmentId: assignment.id,
       });
-      await assinafyRepository.failAssinafySubmission(oficioId, {
-        assinafyDocumentId: documentId,
-        assinafySignerId: signerId,
-        assinafyAssignmentId: assignmentId,
-        assinafyError: 'Provider returned no signing URL.',
-        updatedBy: userId,
-      });
+      await persistFailureContext('Provider returned no signing URL.');
       return {
         success: false,
         error: 'Falha ao obter URL de assinatura. Recursos órfãos criados na Assinafy.',
       };
     }
 
-    const signingUrl = assignment.signing_urls[0]!.url;
+    signingUrl = assignment.signing_urls[0]!.url;
 
     if (!signingUrl) {
       logger.error('Assinafy returned signing_url element without url', {
@@ -301,15 +327,10 @@ export async function sendForSignature(
         documentId: doc.id,
         assignmentId: assignment.id,
       });
-      await assinafyRepository.failAssinafySubmission(oficioId, {
-        assinafyDocumentId: documentId,
-        assinafySignerId: signerId,
-        assinafyAssignmentId: assignmentId,
-        assinafyError: 'Provider returned an empty signing URL.',
-        updatedBy: userId,
-      });
+      await persistFailureContext('Provider returned an empty signing URL.');
       return { success: false, error: 'Falha ao obter URL de assinatura.' };
     }
+    const validatedSigningUrl = signingUrl;
 
     // 12. DB transaction: update oficio + audit log
     const { result: updated, auditArgs } = await db.transaction(async (tx) => {
@@ -317,7 +338,7 @@ export async function sendForSignature(
         oficioId,
         {
           assinafyDocumentId: doc.id,
-          assinafySigningUrl: signingUrl,
+          assinafySigningUrl: validatedSigningUrl,
           assinafyAssignmentId: assignment.id,
           assinafySignerId: signer.id,
           assinafySentAt: new Date(),
@@ -354,7 +375,19 @@ export async function sendForSignature(
     });
 
     if (!updated) {
-      return { success: false, error: 'Ofício não encontrado ao atualizar.' };
+      await persistFailureContext(
+        'Submission finalized externally after the local claim was lost; manual reconciliation required.',
+      );
+      logger.error('Assinafy submission claim lost after provider side effects', {
+        oficioId,
+        documentId,
+        signerId,
+        assignmentId,
+      });
+      return {
+        success: false,
+        error: 'Envio concluído externamente, mas requer reconciliação manual.',
+      };
     }
 
     await logOfficialLetterAuditBestEffort(auditArgs!);
@@ -369,18 +402,12 @@ export async function sendForSignature(
     // 13. Return success
     return { success: true, data: updated };
   } catch (error) {
-    await assinafyRepository.failAssinafySubmission(oficioId, {
-      assinafyDocumentId: documentId,
-      assinafySignerId: signerId,
-      assinafyAssignmentId: assignmentId,
-      assinafyError: 'Outbound submission failed; manual reconciliation required.',
-      updatedBy: userId,
-    });
     logger.error(
       '[sendForSignature] failed',
       { oficioId, error: toSafeErrorLog(error) },
       error instanceof Error ? error : undefined,
     );
+    await persistFailureContext('Outbound submission failed; manual reconciliation required.');
     return { success: false, error: 'Falha ao enviar ofício para assinatura.' };
   }
 }

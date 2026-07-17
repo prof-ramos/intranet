@@ -13,6 +13,7 @@ import type { NewOfficialLetter, OfficialLetter } from '@/lib/db/schema/oficios'
 const transactionMock = vi.hoisted(() => ({ tx: { __tx: true } }));
 const serviceMocks = vi.hoisted(() => ({
   dbTransaction: vi.fn(),
+  loggerError: vi.fn(),
   loggerWarn: vi.fn(),
 }));
 const BASE_OFFICIAL_LETTER: OfficialLetter = {
@@ -82,6 +83,7 @@ const assinafyMocks = vi.hoisted(() => ({
   mockClaimSubmission: vi.fn(),
   mockFinalizeSubmission: vi.fn(),
   mockFailSubmission: vi.fn(),
+  mockRecordReconciliationContext: vi.fn(),
 }));
 
 vi.mock('@/lib/assinafy/client', () => {
@@ -100,6 +102,7 @@ vi.mock('@/lib/assinafy/repository', () => ({
   claimAssinafySubmission: assinafyMocks.mockClaimSubmission,
   finalizeAssinafySubmission: assinafyMocks.mockFinalizeSubmission,
   failAssinafySubmission: assinafyMocks.mockFailSubmission,
+  recordAssinafyReconciliationContext: assinafyMocks.mockRecordReconciliationContext,
 }));
 
 vi.mock('./pdf', () => ({
@@ -121,7 +124,7 @@ vi.mock('@/lib/env', () => ({
 vi.mock('@/lib/logger', () => ({
   createLogger: vi.fn().mockReturnValue({
     info: vi.fn(),
-    error: vi.fn(),
+    error: (...args: unknown[]) => serviceMocks.loggerError(...args),
     warn: (...args: unknown[]) => serviceMocks.loggerWarn(...args),
   }),
 }));
@@ -162,6 +165,7 @@ describe('oficios service', () => {
       assinafyStatus: 'pending_signature',
     });
     assinafyMocks.mockFailSubmission.mockResolvedValue(BASE_OFFICIAL_LETTER);
+    assinafyMocks.mockRecordReconciliationContext.mockResolvedValue(BASE_OFFICIAL_LETTER);
   });
 
   it('emits an event when a generated official letter is created', async () => {
@@ -436,6 +440,17 @@ describe('oficios service', () => {
     await expect(cancelOfficialLetter(999, 1)).rejects.toThrow('Ofício não encontrado.');
   });
 
+  it('rejects cancellation when an Assinafy submission already holds the claim', async () => {
+    const repository = await import('./repository');
+    vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
+    vi.mocked(repository.cancelOfficialLetter).mockResolvedValue(null);
+
+    await expect(cancelOfficialLetter(12, 1)).rejects.toThrow(
+      'Ofício não pode ser cancelado enquanto o envio está em andamento.',
+    );
+    expect(logAuditAction).not.toHaveBeenCalled();
+  });
+
   describe('sendForSignature', () => {
     const SIGNER_EMAIL = 'signer@example.com';
     const USER_ID = 7;
@@ -653,6 +668,51 @@ describe('oficios service', () => {
         success: false,
         error: 'Falha ao obter URL de assinatura. Recursos órfãos criados na Assinafy.',
       });
+    });
+
+    it('persists provider IDs for reconciliation when finalization loses the claim', async () => {
+      const repository = await import('./repository');
+      vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
+      assinafyMocks.mockFinalizeSubmission.mockResolvedValue(null);
+      assinafyMocks.mockFailSubmission.mockResolvedValue(null);
+
+      const result = await sendForSignature(OFICIO_ID, SIGNER_EMAIL, USER_ID);
+
+      expect(assinafyMocks.mockRecordReconciliationContext).toHaveBeenCalledWith(
+        OFICIO_ID,
+        expect.objectContaining({
+          assinafyDocumentId: 'doc-123',
+          assinafySigningUrl: 'https://assinafy.com/sign/abc',
+          assinafySignerId: 'signer-456',
+          assinafyAssignmentId: 'assign-789',
+          updatedBy: USER_ID,
+        }),
+      );
+      expect(result).toEqual({
+        success: false,
+        error: 'Envio concluído externamente, mas requer reconciliação manual.',
+      });
+    });
+
+    it('preserves the original outbound failure when reconciliation persistence also fails', async () => {
+      const repository = await import('./repository');
+      vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
+      assinafyMocks.mockUploadDocument.mockRejectedValue(new Error('original upload failure'));
+      assinafyMocks.mockFailSubmission.mockRejectedValue(new Error('secondary database failure'));
+
+      await expect(sendForSignature(OFICIO_ID, SIGNER_EMAIL, USER_ID)).resolves.toEqual({
+        success: false,
+        error: 'Falha ao enviar ofício para assinatura.',
+      });
+      expect(serviceMocks.loggerError).toHaveBeenCalledWith(
+        '[sendForSignature] failed',
+        expect.objectContaining({ oficioId: OFICIO_ID }),
+        expect.objectContaining({ message: 'original upload failure' }),
+      );
+      expect(serviceMocks.loggerError).toHaveBeenCalledWith(
+        '[sendForSignature] failed to persist reconciliation context',
+        expect.objectContaining({ oficioId: OFICIO_ID }),
+      );
     });
   });
 });

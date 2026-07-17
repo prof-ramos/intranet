@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   claimAssinafySubmission,
   findOficioByAssinafyDocumentId,
+  recordAssinafyReconciliationContext,
   updateAssinafyStatus,
 } from './repository';
 
@@ -112,6 +113,29 @@ describe('assinafy/repository', () => {
     it('returns null when another process already won', async () => {
       dbMock._setUpdateResult([]);
       await expect(claimAssinafySubmission(1, 7)).resolves.toBeNull();
+    });
+  });
+
+  describe('recordAssinafyReconciliationContext', () => {
+    it('persists external IDs without changing the Assinafy status', async () => {
+      await recordAssinafyReconciliationContext(1, {
+        assinafyDocumentId: 'doc-new',
+        assinafySignerId: 'signer-new',
+        assinafyAssignmentId: 'assignment-new',
+        assinafyError: 'Manual reconciliation required.',
+        updatedBy: 7,
+      });
+
+      expect(dbMock._updateChain.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          assinafyDocumentId: 'doc-new',
+          assinafySignerId: 'signer-new',
+          assinafyAssignmentId: 'assignment-new',
+          assinafyError: 'Manual reconciliation required.',
+          updatedBy: 7,
+        }),
+      );
+      expect(dbMock._updateChain.set.mock.calls[0]![0]).not.toHaveProperty('assinafyStatus');
     });
   });
 });
