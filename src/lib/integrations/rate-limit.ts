@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { rateLimits } from '@/lib/db/schema';
-import { sql } from 'drizzle-orm';
+import { inArray, lte, sql } from 'drizzle-orm';
 import { getTrustedClientIp } from '@/lib/ip';
 import type { RequestPrincipal } from '@/lib/integrations/types';
 
@@ -9,6 +9,7 @@ export interface IntegrationRateLimitOptions {
   windowMs: number;
   scope: string;
   cleanupIntervalMs?: number;
+  cleanupBatchSize?: number;
 }
 
 export interface IntegrationRateLimitResult {
@@ -29,7 +30,7 @@ export interface IntegrationRateLimitStore {
     now: number,
     windowMs: number,
   ): Promise<AtomicIncrementResult>;
-  cleanup(now: number): Promise<void>;
+  cleanup(now: number, batchSize: number): Promise<void>;
 }
 
 const dbStore: IntegrationRateLimitStore = {
@@ -64,10 +65,15 @@ const dbStore: IntegrationRateLimitStore = {
     };
   },
 
-  async cleanup(now) {
-    await db
-      .delete(rateLimits)
-      .where(sql`${rateLimits.expiresAt} <= ${new Date(now).toISOString()}`);
+  async cleanup(now, batchSize) {
+    const expiredBatch = db
+      .select({ id: rateLimits.id })
+      .from(rateLimits)
+      .where(lte(rateLimits.expiresAt, new Date(now)))
+      .orderBy(rateLimits.expiresAt)
+      .limit(batchSize);
+
+    await db.delete(rateLimits).where(inArray(rateLimits.id, expiredBatch));
   },
 };
 
@@ -91,8 +97,15 @@ export function createIntegrationRateLimiter(
   ) {
     throw new Error('cleanupIntervalMs must be a positive integer.');
   }
+  if (
+    options.cleanupBatchSize != null &&
+    (!Number.isInteger(options.cleanupBatchSize) || options.cleanupBatchSize < 1)
+  ) {
+    throw new Error('cleanupBatchSize must be a positive integer.');
+  }
 
   const cleanupIntervalMs = options.cleanupIntervalMs ?? 5 * 60 * 1000;
+  const cleanupBatchSize = options.cleanupBatchSize ?? 1_000;
   let lastCleanupAt: number | null = null;
 
   return {
@@ -100,7 +113,7 @@ export function createIntegrationRateLimiter(
       if (lastCleanupAt == null || now - lastCleanupAt >= cleanupIntervalMs) {
         lastCleanupAt = now;
         try {
-          await store.cleanup(now);
+          await store.cleanup(now, cleanupBatchSize);
         } catch (error) {
           lastCleanupAt = null;
           throw error;
@@ -129,7 +142,7 @@ export function createIntegrationRateLimiter(
     },
 
     async cleanup(now = Date.now()): Promise<void> {
-      await store.cleanup(now);
+      await store.cleanup(now, cleanupBatchSize);
     },
   };
 }

@@ -63,6 +63,15 @@ describe('integration rate limiter', () => {
         cleanupIntervalMs: 0,
       }),
     ).toThrow('cleanupIntervalMs must be a positive integer.');
+
+    expect(() =>
+      createIntegrationRateLimiter({
+        maxRequests: 10,
+        windowMs: 60_000,
+        scope: 'integration_api',
+        cleanupBatchSize: 0,
+      }),
+    ).toThrow('cleanupBatchSize must be a positive integer.');
   });
 
   it('allows requests until the configured limit and then blocks with retryAfter', async () => {
@@ -130,6 +139,7 @@ describe('integration rate limiter', () => {
         windowMs: 60_000,
         scope: 'integration_api',
         cleanupIntervalMs: 30_000,
+        cleanupBatchSize: 25,
       },
       { atomicIncrement, cleanup },
     );
@@ -139,8 +149,8 @@ describe('integration rate limiter', () => {
     await limiter.consume('active-bucket', 90_000);
 
     expect(cleanup).toHaveBeenCalledTimes(2);
-    expect(cleanup).toHaveBeenNthCalledWith(1, 60_000);
-    expect(cleanup).toHaveBeenNthCalledWith(2, 90_000);
+    expect(cleanup).toHaveBeenNthCalledWith(1, 60_000, 25);
+    expect(cleanup).toHaveBeenNthCalledWith(2, 90_000, 25);
     expect(atomicIncrement).toHaveBeenCalledTimes(3);
     expect(records).toEqual(new Map([['active-bucket', 120_000]]));
   });
