@@ -1,4 +1,4 @@
-import type { HTMLInputTypeAttribute } from 'react';
+import type { HTMLInputTypeAttribute, ReactNode } from 'react';
 
 export const associateInputStyle = 'input input-bordered w-full';
 const selectStyle = 'select select-bordered w-full';
@@ -250,9 +250,15 @@ interface Props {
   values: AssociateFormValues;
   mode: 'create' | 'edit';
   canEditInternalNotes: boolean;
+  afterAdministrative?: ReactNode;
 }
 
-export function AssociateFormFields({ values, mode, canEditInternalNotes }: Props) {
+export function AssociateFormFields({
+  values,
+  mode,
+  canEditInternalNotes,
+  afterAdministrative,
+}: Props) {
   return (
     <>
       <section className={sectionStyle}>
@@ -471,6 +477,7 @@ export function AssociateFormFields({ values, mode, canEditInternalNotes }: Prop
           <CheckboxField id="caocMember" label="Membro CAOC" checked={values.caocMember} />
         </div>
       </section>
+      {afterAdministrative}
       {canEditInternalNotes && (
         <section className={sectionStyle}>
           <h2 className="mb-4 font-serif text-[22px] leading-tight font-bold">
