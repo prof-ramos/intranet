@@ -295,7 +295,7 @@ async function dispatchEventToSubscriptions(event: DomainEventForDispatch, execu
 
   const settled = await Promise.allSettled(dispatchPromises);
   const results = settled.map((outcome) =>
-    outcome.status === 'fulfilled' ? outcome.value : ('failed' as const),
+    outcome.status === 'fulfilled' ? outcome.value : ('retry_scheduled' as const),
   );
 
   await updateDomainEventDeliveryStatus(event.id, getOverallEventStatus(results), executor);

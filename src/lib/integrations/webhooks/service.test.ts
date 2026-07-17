@@ -324,6 +324,20 @@ describe('dispatchDomainEventById', () => {
     expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'pending', db);
   });
 
+  it('keeps unrecorded delivery exceptions retryable', async () => {
+    mockListWebhookDeliveriesForEvent.mockResolvedValue([]);
+    mockDecryptWebhookSecret.mockImplementationOnce(() => {
+      throw new Error('temporary key service failure');
+    });
+
+    const result = await dispatchDomainEventById(99);
+
+    expect(result).toMatchObject({ dispatched: true, results: ['retry_scheduled'] });
+    expect(mockSendPinnedWebhook).not.toHaveBeenCalled();
+    expect(mockInsertWebhookDelivery).not.toHaveBeenCalled();
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'pending', db);
+  });
+
   it('fails dispatch when webhook target URL fails SSRF validation', async () => {
     mockListActiveWebhookSubscriptionsForEvent.mockResolvedValue([
       {
