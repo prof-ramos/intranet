@@ -288,6 +288,17 @@ describe('processEmail', () => {
         reason: 'associado sem consultas jurídicas abertas',
       },
     ]);
+    expect(mockPersistTriage).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ exige_validacao_humana: true }),
+      expect.any(String),
+      null,
+    );
+    expect(mockNotifyNeedsValidation).toHaveBeenCalledWith(
+      expect.objectContaining({ exige_validacao_humana: true }),
+      42,
+      expect.objectContaining({ message_id: 'msg-no-consultation' }),
+    );
   });
 
   it('keeps an ambiguous email pending for coordinator review', async () => {
@@ -320,6 +331,17 @@ describe('processEmail', () => {
         reason: 'ambíguo — 2 consultas abertas; coordenador deve vincular',
       },
     ]);
+    expect(mockPersistTriage).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ exige_validacao_humana: true }),
+      expect.any(String),
+      null,
+    );
+    expect(mockNotifyNeedsValidation).toHaveBeenCalledWith(
+      expect.objectContaining({ exige_validacao_humana: true }),
+      42,
+      expect.objectContaining({ message_id: 'msg-ambiguous' }),
+    );
   });
 
   it('notifies admins and skips correlation when triage requires human validation', async () => {

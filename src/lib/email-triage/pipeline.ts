@@ -11,7 +11,7 @@
  */
 import { env } from '@/lib/env';
 import { EMAIL_TRIAGE_MODEL } from '@/lib/ai/constants';
-import { correlate } from './correlate';
+import { correlate, type CorrelationAction } from './correlate';
 import { createLogger } from '@/lib/logger';
 import { redactPiiString } from '@/lib/sanitize-pii';
 import { createHash } from 'node:crypto';
@@ -44,6 +44,16 @@ const log = createLogger('email-triage');
 
 const DEFAULT_MODEL = EMAIL_TRIAGE_MODEL;
 const MAX_CONCURRENCY = 3;
+
+function requiresOperationalReview(
+  result: EmailTriageResult,
+  actions: CorrelationAction[],
+): boolean {
+  return (
+    (result.categoria === 'juridico' || result.categoria === 'administrativo') &&
+    actions.some((action) => action.type === 'skip')
+  );
+}
 
 // ─── Exported Types ──────────────────────────────────────────────────────
 
@@ -173,37 +183,19 @@ export async function processEmail(
     return { success: false, messageId, error: `Analysis failed: ${error}` };
   }
 
-  // ── Step 5: Persist to DB ─────────────────────────────────────────────
-  let triageId: number;
-  try {
-    triageId = await persistTriage(payload, triageResult, DEFAULT_MODEL, null);
-    log.info('Triage result persisted.', {
-      messageId,
-      categoria: triageResult.categoria,
-    });
-  } catch (err) {
-    const error = err instanceof Error ? err.message : String(err);
-    log.error('Failed to persist triage result.', { messageId, error });
-    return { success: false, messageId, error: `DB persist failed: ${error}` };
-  }
+  // ── Step 5: Determine correlation outcome ─────────────────────────────
+  // Decide before persistence so legal/administrative emails that cannot be
+  // correlated are stored in the coordinator review queue from the outset.
+  let correlationActions: CorrelationAction[] | null = null;
+  let persistedTriageResult = triageResult;
 
-  if (triageResult.exige_validacao_humana) {
-    const notifyResult = await notifyNeedsValidation(triageResult, triageId, payload);
-    if (!notifyResult.ok) {
-      log.warn('Failed to notify admins of new triage (non-fatal).', {
-        error: redactPiiString(notifyResult.error ?? ''),
-      });
-    }
-  }
-
-  // ── Step 6: Correlation engine ────────────────────────────────────────
-  // Skipped when operational review is required; automatic notes are only
-  // created for low-ambiguity control of existing open demands.
   if (!triageResult.exige_validacao_humana) {
     try {
       const context = await buildCorrelationContext(payload);
-      const actions = correlate(payload, triageResult, context);
-      await applyCorrelationActions(actions);
+      correlationActions = correlate(payload, triageResult, context);
+      if (requiresOperationalReview(triageResult, correlationActions)) {
+        persistedTriageResult = { ...triageResult, exige_validacao_humana: true };
+      }
     } catch (err) {
       log.warn(
         'Correlation engine failed (non-fatal).',
@@ -213,7 +205,43 @@ export async function processEmail(
     }
   }
 
-  // ── Step 7: Mark as triaged ───────────────────────────────────────────
+  // ── Step 6: Persist to DB ─────────────────────────────────────────────
+  let triageId: number;
+  try {
+    triageId = await persistTriage(payload, persistedTriageResult, DEFAULT_MODEL, null);
+    log.info('Triage result persisted.', {
+      messageId,
+      categoria: persistedTriageResult.categoria,
+    });
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    log.error('Failed to persist triage result.', { messageId, error });
+    return { success: false, messageId, error: `DB persist failed: ${error}` };
+  }
+
+  if (persistedTriageResult.exige_validacao_humana) {
+    const notifyResult = await notifyNeedsValidation(persistedTriageResult, triageId, payload);
+    if (!notifyResult.ok) {
+      log.warn('Failed to notify admins of new triage (non-fatal).', {
+        error: redactPiiString(notifyResult.error ?? ''),
+      });
+    }
+  }
+
+  // ── Step 7: Apply correlation actions ─────────────────────────────────
+  if (correlationActions) {
+    try {
+      await applyCorrelationActions(correlationActions);
+    } catch (err) {
+      log.warn(
+        'Correlation engine failed (non-fatal).',
+        { messageId },
+        err instanceof Error ? err : undefined,
+      );
+    }
+  }
+
+  // ── Step 8: Mark as triaged ───────────────────────────────────────────
   try {
     const labelId = await ensureLabel(accessToken, userId);
     await markAsTriaged(accessToken, messageId, labelId, userId);
