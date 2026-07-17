@@ -1,12 +1,14 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { db } from '@/lib/db';
 import { admins, oficios } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { claimAssinafySubmission } from '@/lib/assinafy/repository';
+import { saveOfficialLetter } from './service';
 
 const runId = Date.now();
 let adminId: number;
 let oficioId: number;
+const createdOficioIds: number[] = [];
 
 describe('oficios service integration', () => {
   beforeAll(async () => {
@@ -36,6 +38,9 @@ describe('oficios service integration', () => {
   });
 
   afterAll(async () => {
+    if (createdOficioIds.length > 0) {
+      await db.delete(oficios).where(inArray(oficios.id, createdOficioIds));
+    }
     await db.delete(oficios).where(eq(oficios.id, oficioId));
     await db.delete(admins).where(eq(admins.id, adminId));
   });
@@ -59,5 +64,39 @@ describe('oficios service integration', () => {
       .from(oficios)
       .where(eq(oficios.id, oficioId));
     expect(stored.assinafyStatus).toBe('uploading');
+  });
+
+  it('serializes concurrent annual sequence allocation in PostgreSQL', async () => {
+    const makeInput = (subject: string) => ({
+      recipient: 'Destinatário sintético',
+      recipientRole: 'Cargo sintético',
+      vocativo: 'Senhor',
+      letterDate: '17 de julho de 2026',
+      subject,
+      itamaratySector: 'TESTE',
+      signatoryName: 'Signatário Sintético',
+      signatoryRole: 'Cargo sintético',
+      bodyRichText: '<p>Conteúdo sintético</p>',
+      bodyPlainText: 'Conteúdo sintético',
+      status: 'gerado' as const,
+      updatedBy: adminId,
+    });
+
+    const [first, second] = await Promise.all([
+      saveOfficialLetter(makeInput(`Concorrência A ${runId}`), adminId),
+      saveOfficialLetter(makeInput(`Concorrência B ${runId}`), adminId),
+    ]);
+    createdOficioIds.push(first.id, second.id);
+
+    const ordered = [first, second].sort((a, b) => a.sequence - b.sequence);
+    expect(ordered[1].sequence).toBe(ordered[0].sequence + 1);
+    expect(new Set(ordered.map((oficio) => oficio.number)).size).toBe(2);
+
+    const stored = await db
+      .select({ id: oficios.id, sequence: oficios.sequence, number: oficios.number })
+      .from(oficios)
+      .where(inArray(oficios.id, createdOficioIds));
+    expect(stored).toHaveLength(2);
+    expect(new Set(stored.map((oficio) => oficio.sequence)).size).toBe(2);
   });
 });

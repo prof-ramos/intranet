@@ -1,6 +1,15 @@
 import { db, type DbExecutor } from '@/lib/db';
 import { oficios, type NewOfficialLetter } from '@/lib/db/schema/oficios';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
+
+// Stable two-int namespace: "ASOF" encoded as a signed-safe integer.
+const OFFICIAL_LETTER_SEQUENCE_LOCK_NAMESPACE = 0x41534f46;
+
+export async function lockOfficialLetterSequenceYear(year: number, tx: DbExecutor) {
+  await tx.execute(
+    sql`select pg_advisory_xact_lock(${OFFICIAL_LETTER_SEQUENCE_LOCK_NAMESPACE}, ${year})`,
+  );
+}
 
 export async function findOfficialLetters(
   year?: number,
