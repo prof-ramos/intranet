@@ -75,6 +75,31 @@ describe('sendPinnedWebhook', () => {
     expect(agentCloseMock).toHaveBeenCalledTimes(1);
   });
 
+  it('devolve redirects sem consumir um body potencialmente lento', async () => {
+    const cancel = vi.fn().mockResolvedValue(undefined);
+    const text = vi.fn().mockRejectedValue(new Error('redirect body should not be read'));
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 302,
+      type: 'basic',
+      body: { cancel },
+      text,
+    });
+
+    await expect(sendPinnedWebhook(target, { method: 'POST', redirect: 'manual' })).resolves.toEqual(
+      {
+        ok: false,
+        status: 302,
+        type: 'basic',
+        body: '',
+      },
+    );
+
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(text).not.toHaveBeenCalled();
+    expect(agentCloseMock).toHaveBeenCalledTimes(1);
+  });
+
   it('fecha o dispatcher quando a requisição é abortada por timeout', async () => {
     fetchMock.mockRejectedValue(new DOMException('aborted', 'AbortError'));
 

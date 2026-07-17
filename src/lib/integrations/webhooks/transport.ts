@@ -50,6 +50,19 @@ export async function sendPinnedWebhook(
       dispatcher,
     });
 
+    if (response.status >= 300 && response.status < 400) {
+      if (response.body) {
+        await response.body.cancel().catch(() => {});
+      }
+
+      return {
+        ok: response.ok,
+        status: response.status,
+        type: response.type,
+        body: '',
+      };
+    }
+
     return {
       ok: response.ok,
       status: response.status,
