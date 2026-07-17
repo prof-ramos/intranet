@@ -64,4 +64,4 @@ refactor/issue-102-split-integrations-auth
 
 ## Related
 
-- [GitHub Issue Tracker guidance](../../agents/issue-tracker.md)
+- [GitHub Issue Tracker guidance](../agents/issue-tracker.md)

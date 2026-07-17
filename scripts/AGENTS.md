@@ -23,10 +23,6 @@ Purpose: Operational scripts — database, migrations, seed, PII, and dev utilit
 | `setup-production-env.sh`        | Production env setup                                                                                                                               |
 | `run-dev-60s.sh`                 | Controlled 60s dev server test                                                                                                                     |
 
-## Subdirectories
-
-- `test-metrics/` — metrics.ts, playwright-reporter, vitest-reporter, summary
-
 ## For AI Agents
 
 Scripts run against local dev DB (`asof_intranet`) or Neon for production. Use `npm run db:migrate` for safe migrations. Never run raw SQL against production.
