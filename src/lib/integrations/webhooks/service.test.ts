@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   dispatchDomainEventById,
   dispatchPendingDomainEvents,
+  WEBHOOK_DELIVERY_CONCURRENCY,
+  WEBHOOK_EVENT_CONCURRENCY,
 } from '@/lib/integrations/webhooks/service';
 import { db } from '@/lib/db';
 
@@ -391,6 +393,65 @@ describe('dispatchDomainEventById', () => {
       expect.objectContaining({ redirect: 'manual' }),
     );
   });
+
+  it('caps all deliveries for a single event at the shared delivery limit', async () => {
+    const subscriptions = Array.from({ length: 12 }, (_, index) => ({
+      id: index + 1,
+      targetUrl: `https://example.com/webhook/${index + 1}`,
+      secretCiphertext: 'enc:v1:test',
+    }));
+    let active = 0;
+    let peak = 0;
+    mockListActiveWebhookSubscriptionsForEvent.mockResolvedValue(subscriptions);
+    mockListWebhookDeliveriesForEvent.mockResolvedValue([]);
+    mockSendPinnedWebhook.mockImplementation(async () => {
+      active += 1;
+      peak = Math.max(peak, active);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      active -= 1;
+      return { ok: true, status: 200, type: 'basic', body: 'OK' };
+    });
+
+    const result = await dispatchDomainEventById(99);
+
+    expect(peak).toBe(WEBHOOK_DELIVERY_CONCURRENCY);
+    expect(mockSendPinnedWebhook).toHaveBeenCalledTimes(12);
+    expect(result).toMatchObject({ subscriptions: 12 });
+    if (!('results' in result)) throw new Error('expected dispatched event');
+    expect(result.results).toHaveLength(12);
+  });
+
+  it('continues remaining subscriptions when one mapper rejects', async () => {
+    const subscriptions = Array.from({ length: 8 }, (_, index) => ({
+      id: index + 1,
+      targetUrl: `https://example.com/webhook/${index + 1}`,
+      secretCiphertext: 'enc:v1:test',
+    }));
+    mockListActiveWebhookSubscriptionsForEvent.mockResolvedValue(subscriptions);
+    mockListWebhookDeliveriesForEvent.mockResolvedValue([]);
+    mockResolvePublicWebhookTarget
+      .mockRejectedValueOnce(new Error('resolver failed'))
+      .mockResolvedValue({
+        url: 'https://example.com/webhook',
+        hostname: 'example.com',
+        addresses: [{ address: '93.184.216.34', family: 4 }],
+      });
+    mockSendPinnedWebhook.mockResolvedValue({
+      ok: true,
+      status: 200,
+      type: 'basic',
+      body: 'OK',
+    });
+
+    const result = await dispatchDomainEventById(99);
+
+    expect(mockResolvePublicWebhookTarget).toHaveBeenCalledTimes(8);
+    expect(mockSendPinnedWebhook).toHaveBeenCalledTimes(7);
+    if (!('results' in result)) throw new Error('expected dispatched event');
+    expect(result.results).toHaveLength(8);
+    expect(result.results).toContain('retry_scheduled');
+    expect(result.results.filter((status) => status === 'delivered')).toHaveLength(7);
+  });
 });
 
 describe('dispatchPendingDomainEvents', () => {
@@ -408,12 +469,12 @@ describe('dispatchPendingDomainEvents', () => {
     expect(mockRecoverStuckProcessingEvents).toHaveBeenCalledTimes(1);
   });
 
-  it('uses lockAndFetchDispatchableEvents instead of listDispatchableDomainEvents', async () => {
+  it('claims only as many events as can start immediately', async () => {
     mockLockAndFetchDispatchableEvents.mockResolvedValue([]);
 
     await dispatchPendingDomainEvents(50);
 
-    expect(mockLockAndFetchDispatchableEvents).toHaveBeenCalledWith(50);
+    expect(mockLockAndFetchDispatchableEvents).toHaveBeenCalledWith(WEBHOOK_EVENT_CONCURRENCY);
   });
 
   it('dispatches each locked event and returns aggregated results', async () => {
@@ -459,5 +520,87 @@ describe('dispatchPendingDomainEvents', () => {
 
     expect(result).toEqual({ processed: 0, results: [] });
     expect(mockClaimDispatchableDomainEventById).not.toHaveBeenCalled();
+  });
+
+  it('limits event orchestration and preserves all 20 results in claim order', async () => {
+    const events = Array.from({ length: 20 }, (_, index) => ({
+      id: index + 1,
+      eventType: 'associate.updated' as const,
+      occurredAt: new Date(`2026-05-14T12:${String(index).padStart(2, '0')}:00.000Z`),
+      entityType: 'associate' as const,
+      entityId: index + 1,
+      actorAdminId: 1,
+      payload: {},
+    }));
+    let activeEvents = 0;
+    let eventPeak = 0;
+    let claimOffset = 0;
+    mockLockAndFetchDispatchableEvents.mockImplementation(async (claimLimit: number) => {
+      const claimed = events.slice(claimOffset, claimOffset + claimLimit);
+      claimOffset += claimed.length;
+      return claimed;
+    });
+    mockListActiveWebhookSubscriptionsForEvent.mockImplementation(async () => {
+      activeEvents += 1;
+      eventPeak = Math.max(eventPeak, activeEvents);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      activeEvents -= 1;
+      return [];
+    });
+
+    const result = await dispatchPendingDomainEvents(20);
+
+    expect(eventPeak).toBe(WEBHOOK_EVENT_CONCURRENCY);
+    expect(result.processed).toBe(20);
+    expect(result.results.map(({ eventId }) => eventId)).toEqual(events.map(({ id }) => id));
+    expect(mockLockAndFetchDispatchableEvents.mock.calls.map(([claimLimit]) => claimLimit)).toEqual([
+      3, 3, 3, 3, 3, 3, 2,
+    ]);
+  });
+
+  it('shares one delivery ceiling across multiple events and subscriptions', async () => {
+    const events = Array.from({ length: 6 }, (_, index) => ({
+      id: index + 1,
+      eventType: 'associate.updated' as const,
+      occurredAt: new Date(`2026-05-14T12:0${index}:00.000Z`),
+      entityType: 'associate' as const,
+      entityId: index + 1,
+      actorAdminId: 1,
+      payload: {},
+    }));
+    const subscriptions = Array.from({ length: 4 }, (_, index) => ({
+      id: index + 1,
+      targetUrl: `https://example.com/webhook/${index + 1}`,
+      secretCiphertext: 'enc:v1:test',
+    }));
+    let activeDeliveries = 0;
+    let deliveryPeak = 0;
+    let claimOffset = 0;
+    mockLockAndFetchDispatchableEvents.mockImplementation(async (claimLimit: number) => {
+      const claimed = events.slice(claimOffset, claimOffset + claimLimit);
+      claimOffset += claimed.length;
+      return claimed;
+    });
+    mockListActiveWebhookSubscriptionsForEvent.mockResolvedValue(subscriptions);
+    mockListWebhookDeliveriesForEvent.mockResolvedValue([]);
+    mockResolvePublicWebhookTarget.mockResolvedValue({
+      url: 'https://example.com/webhook',
+      hostname: 'example.com',
+      addresses: [{ address: '93.184.216.34', family: 4 }],
+    });
+    mockSendPinnedWebhook.mockImplementation(async () => {
+      activeDeliveries += 1;
+      deliveryPeak = Math.max(deliveryPeak, activeDeliveries);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      activeDeliveries -= 1;
+      return { ok: true, status: 200, type: 'basic', body: 'OK' };
+    });
+
+    const result = await dispatchPendingDomainEvents(6);
+
+    expect(deliveryPeak).toBe(WEBHOOK_DELIVERY_CONCURRENCY);
+    expect(mockSendPinnedWebhook).toHaveBeenCalledTimes(24);
+    expect(result.results.map(({ eventId }) => eventId)).toEqual(events.map(({ id }) => id));
+    expect(result.results).toHaveLength(6);
   });
 });
