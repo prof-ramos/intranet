@@ -1,6 +1,6 @@
 import { db, type DbExecutor } from '@/lib/db';
 import { oficios } from '@/lib/db/schema/oficios';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { AssinafyStatusPatch } from './types';
 
 export async function findOficioByAssinafyDocumentId(documentId: string, tx: DbExecutor = db) {
@@ -58,6 +58,69 @@ export async function updateAssinafyFields(
       updatedAt: new Date(),
     })
     .where(eq(oficios.id, oficioId))
+    .returning();
+  return result ?? null;
+}
+
+export async function claimAssinafySubmission(
+  oficioId: number,
+  updatedBy: number,
+  tx: DbExecutor = db,
+) {
+  const [result] = await tx
+    .update(oficios)
+    .set({
+      assinafyStatus: 'uploading',
+      assinafyError: null,
+      updatedBy,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(oficios.id, oficioId),
+        isNull(oficios.assinafyDocumentId),
+        isNull(oficios.assinafyStatus),
+      ),
+    )
+    .returning();
+  return result ?? null;
+}
+
+export async function finalizeAssinafySubmission(
+  oficioId: number,
+  fields: {
+    assinafyDocumentId: string;
+    assinafySigningUrl: string;
+    assinafyAssignmentId: string;
+    assinafySignerId: string;
+    assinafySentAt: Date;
+    updatedBy: number;
+  },
+  tx: DbExecutor = db,
+) {
+  const [result] = await tx
+    .update(oficios)
+    .set({ ...fields, assinafyStatus: 'pending_signature', assinafyError: null, updatedAt: new Date() })
+    .where(and(eq(oficios.id, oficioId), eq(oficios.assinafyStatus, 'uploading')))
+    .returning();
+  return result ?? null;
+}
+
+export async function failAssinafySubmission(
+  oficioId: number,
+  fields: {
+    assinafyDocumentId?: string;
+    assinafyAssignmentId?: string;
+    assinafySignerId?: string;
+    assinafyError: string;
+    updatedBy: number;
+  },
+  tx: DbExecutor = db,
+) {
+  const [result] = await tx
+    .update(oficios)
+    .set({ ...fields, assinafyStatus: 'failed', updatedAt: new Date() })
+    .where(and(eq(oficios.id, oficioId), eq(oficios.assinafyStatus, 'uploading')))
     .returning();
   return result ?? null;
 }

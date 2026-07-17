@@ -78,6 +78,9 @@ const assinafyMocks = vi.hoisted(() => ({
   mockCreateAssignment: vi.fn(),
   mockGeneratePdf: vi.fn(),
   mockCleanSignatoryName: vi.fn(),
+  mockClaimSubmission: vi.fn(),
+  mockFinalizeSubmission: vi.fn(),
+  mockFailSubmission: vi.fn(),
 }));
 
 vi.mock('@/lib/assinafy/client', () => {
@@ -93,6 +96,9 @@ vi.mock('@/lib/assinafy/client', () => {
 
 vi.mock('@/lib/assinafy/repository', () => ({
   updateAssinafyFields: vi.fn(),
+  claimAssinafySubmission: assinafyMocks.mockClaimSubmission,
+  finalizeAssinafySubmission: assinafyMocks.mockFinalizeSubmission,
+  failAssinafySubmission: assinafyMocks.mockFailSubmission,
 }));
 
 vi.mock('./pdf', () => ({
@@ -148,6 +154,13 @@ describe('oficios service', () => {
     });
     assinafyMocks.mockGeneratePdf.mockResolvedValue(new Uint8Array([1, 2, 3]));
     assinafyMocks.mockCleanSignatoryName.mockReturnValue('Clean Name');
+    assinafyMocks.mockClaimSubmission.mockResolvedValue(BASE_OFFICIAL_LETTER);
+    assinafyMocks.mockFinalizeSubmission.mockResolvedValue({
+      ...BASE_OFFICIAL_LETTER,
+      assinafyDocumentId: 'doc-123',
+      assinafyStatus: 'pending_signature',
+    });
+    assinafyMocks.mockFailSubmission.mockResolvedValue(BASE_OFFICIAL_LETTER);
   });
 
   it('emits an event when a generated official letter is created', async () => {
@@ -417,15 +430,15 @@ describe('oficios service', () => {
 
     it('succeeds when all steps complete', async () => {
       const repository = await import('./repository');
+      const assinafyRepo = await import('@/lib/assinafy/repository');
       vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
 
-      const assinafyRepo = await import('@/lib/assinafy/repository');
       const updatedOficio = {
         ...BASE_OFFICIAL_LETTER,
         assinafyDocumentId: 'doc-123',
         assinafyStatus: 'pending_signature' as const,
       };
-      vi.mocked(assinafyRepo.updateAssinafyFields).mockResolvedValue(updatedOficio);
+      assinafyMocks.mockFinalizeSubmission.mockResolvedValue(updatedOficio);
 
       const result = await sendForSignature(OFICIO_ID, SIGNER_EMAIL, USER_ID);
 
@@ -444,11 +457,10 @@ describe('oficios service', () => {
         'doc-123',
         expect.objectContaining({ method: 'virtual' }),
       );
-      expect(assinafyRepo.updateAssinafyFields).toHaveBeenCalledWith(
+      expect(assinafyRepo.finalizeAssinafySubmission).toHaveBeenCalledWith(
         OFICIO_ID,
         expect.objectContaining({
           assinafyDocumentId: 'doc-123',
-          assinafyStatus: 'pending_signature',
           assinafySigningUrl: 'https://assinafy.com/sign/abc',
           assinafyAssignmentId: 'assign-789',
           assinafySignerId: 'signer-456',
@@ -459,18 +471,36 @@ describe('oficios service', () => {
       expect(result).toEqual({ success: true, data: updatedOficio });
     });
 
+    it('allows only one concurrent submission to reach the provider', async () => {
+      const repository = await import('./repository');
+      vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
+      assinafyMocks.mockClaimSubmission
+        .mockResolvedValueOnce(BASE_OFFICIAL_LETTER)
+        .mockResolvedValueOnce(null);
+
+      const results = await Promise.all([
+        sendForSignature(OFICIO_ID, SIGNER_EMAIL, USER_ID),
+        sendForSignature(OFICIO_ID, SIGNER_EMAIL, USER_ID),
+      ]);
+
+      expect(results.filter((result) => result.success)).toHaveLength(1);
+      expect(assinafyMocks.mockGeneratePdf).toHaveBeenCalledOnce();
+      expect(assinafyMocks.mockUploadDocument).toHaveBeenCalledOnce();
+      expect(assinafyMocks.mockCreateSigner).toHaveBeenCalledOnce();
+      expect(assinafyMocks.mockCreateAssignment).toHaveBeenCalledOnce();
+    });
+
     it('logs audit without executor (best-effort, outside tx)', async () => {
       const repository = await import('./repository');
       const audit = await import('@/lib/audit/service');
       vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
 
-      const assinafyRepo = await import('@/lib/assinafy/repository');
       const updatedOficio = {
         ...BASE_OFFICIAL_LETTER,
         assinafyDocumentId: 'doc-123',
         assinafyStatus: 'pending_signature' as const,
       };
-      vi.mocked(assinafyRepo.updateAssinafyFields).mockResolvedValue(updatedOficio);
+      assinafyMocks.mockFinalizeSubmission.mockResolvedValue(updatedOficio);
 
       await sendForSignature(OFICIO_ID, SIGNER_EMAIL, USER_ID);
 
