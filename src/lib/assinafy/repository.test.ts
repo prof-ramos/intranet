@@ -4,6 +4,7 @@ import {
   claimAssinafySubmission,
   findOficioByAssinafyDocumentId,
   recordAssinafyReconciliationContext,
+  recoverStaleAssinafySubmission,
   updateAssinafyStatus,
 } from './repository';
 
@@ -136,6 +137,22 @@ describe('assinafy/repository', () => {
         }),
       );
       expect(dbMock._updateChain.set.mock.calls[0]![0]).not.toHaveProperty('assinafyStatus');
+    });
+  });
+
+  describe('recoverStaleAssinafySubmission', () => {
+    it('conditionally releases an old claim with no provider identifiers', async () => {
+      await recoverStaleAssinafySubmission(1, 7);
+
+      expect(dbMock._updateChain.set).toHaveBeenCalledWith(
+        expect.objectContaining({ assinafyStatus: null, assinafyError: null, updatedBy: 7 }),
+      );
+      expect(dbMock._updateChain.where).toHaveBeenCalled();
+    });
+
+    it('returns null when the claim is fresh, already reconciled, or concurrently changed', async () => {
+      dbMock._setUpdateResult([]);
+      await expect(recoverStaleAssinafySubmission(1, 7)).resolves.toBeNull();
     });
   });
 });

@@ -81,6 +81,7 @@ const assinafyMocks = vi.hoisted(() => ({
   mockGeneratePdf: vi.fn(),
   mockCleanSignatoryName: vi.fn(),
   mockClaimSubmission: vi.fn(),
+  mockRecoverStaleSubmission: vi.fn(),
   mockFinalizeSubmission: vi.fn(),
   mockFailSubmission: vi.fn(),
   mockRecordReconciliationContext: vi.fn(),
@@ -100,6 +101,7 @@ vi.mock('@/lib/assinafy/client', () => {
 vi.mock('@/lib/assinafy/repository', () => ({
   updateAssinafyFields: vi.fn(),
   claimAssinafySubmission: assinafyMocks.mockClaimSubmission,
+  recoverStaleAssinafySubmission: assinafyMocks.mockRecoverStaleSubmission,
   finalizeAssinafySubmission: assinafyMocks.mockFinalizeSubmission,
   failAssinafySubmission: assinafyMocks.mockFailSubmission,
   recordAssinafyReconciliationContext: assinafyMocks.mockRecordReconciliationContext,
