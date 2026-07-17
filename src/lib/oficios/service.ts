@@ -53,6 +53,7 @@ export async function saveOfficialLetter(
 ) {
   const { result, auditArgs } = await db.transaction(async (tx) => {
     const year = new Date().getFullYear();
+    await repository.lockOfficialLetterSequenceYear(year, tx);
     const { number, sequence } = await generateOfficialLetterNumber(year, tx);
 
     const result = await repository.createOfficialLetter(

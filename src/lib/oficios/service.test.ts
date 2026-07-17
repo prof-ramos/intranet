@@ -57,6 +57,7 @@ vi.mock('@/lib/db', () => ({
 }));
 
 vi.mock('./repository', () => ({
+  lockOfficialLetterSequenceYear: vi.fn().mockResolvedValue(undefined),
   getLastSequenceForYear: vi.fn().mockResolvedValue(0),
   createOfficialLetter: vi.fn(),
   findOfficialLetterById: vi.fn(),
@@ -186,6 +187,17 @@ describe('oficios service', () => {
       },
       1,
     );
+
+    expect(repository.lockOfficialLetterSequenceYear).toHaveBeenCalledWith(
+      expect.any(Number),
+      transactionMock.tx,
+    );
+    expect(
+      vi.mocked(repository.lockOfficialLetterSequenceYear).mock.invocationCallOrder[0],
+    ).toBeLessThan(vi.mocked(repository.getLastSequenceForYear).mock.invocationCallOrder[0]!);
+    expect(
+      vi.mocked(repository.getLastSequenceForYear).mock.invocationCallOrder[0],
+    ).toBeLessThan(vi.mocked(repository.createOfficialLetter).mock.invocationCallOrder[0]!);
 
     expect(emitDomainEvent).toHaveBeenCalledOnce();
     expect(emitDomainEvent).toHaveBeenCalledWith(
