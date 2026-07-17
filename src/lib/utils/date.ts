@@ -9,13 +9,24 @@
 const MS_PER_DAY = 86_400_000;
 export const BUSINESS_TIME_ZONE = 'America/Sao_Paulo';
 
+// Cache business-calendar formatters once: getBusinessDateParts is called per row
+// during AtividadesBoard hydration (up to 500 items).
+const businessDatePartsFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: BUSINESS_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+const businessLongDateFormatter = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: BUSINESS_TIME_ZONE,
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
 export function getBusinessDateParts(now: Date = new Date()) {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: BUSINESS_TIME_ZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(now);
+  const parts = businessDatePartsFormatter.formatToParts(now);
   const value = (type: Intl.DateTimeFormatPartTypes) =>
     Number(parts.find((part) => part.type === type)?.value);
   return { year: value('year'), month: value('month'), day: value('day') };
@@ -27,16 +38,12 @@ export function businessDateOnly(now: Date = new Date()): string {
 }
 
 export function formatBusinessDate(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat('pt-BR', {
-    timeZone: BUSINESS_TIME_ZONE,
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(now);
+  return businessLongDateFormatter.format(now);
 }
 
-function parseDateParts(value: string | Date | null | undefined): { year: number; month: number; day: number } | null {
+function parseDateParts(
+  value: string | Date | null | undefined,
+): { year: number; month: number; day: number } | null {
   const d = dateOnly(value);
   if (!d) return null;
   const [year, month, day] = d.split('-').map(Number);
@@ -77,7 +84,11 @@ const longDateFormatter = new Intl.DateTimeFormat('pt-BR', {
   year: 'numeric',
   timeZone: 'UTC',
 });
-const dueDateFormatter = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' });
+const dueDateFormatter = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: 'short',
+  timeZone: 'UTC',
+});
 
 /**
  * Format a date as DD/MM/YYYY (pt-BR short). Returns '—' for null.
