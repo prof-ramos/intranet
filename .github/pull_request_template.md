@@ -13,9 +13,7 @@
 
 ## Checklist
 
-- [ ] `npm run typecheck` passa
-- [ ] `npm run test` passa
-- [ ] `npm run build` passa
+- [ ] `npm run pr:check` passa em uma worktree limpa
 - [ ] E2E relevante executado (se aplicável)
 - [ ] Nenhum segredo ou credencial exposto
 
