@@ -284,16 +284,45 @@ const RESPONSE_JSON_SCHEMA = {
   properties: {
     categoria: {
       type: 'string',
-      enum: ['juridico', 'administrativo', 'financeiro', 'institucional', 'comunicacao', 'irrelevante'],
+      enum: [
+        'juridico',
+        'administrativo',
+        'financeiro',
+        'institucional',
+        'comunicacao',
+        'irrelevante',
+      ],
       description: 'Classificacao principal do e-mail.',
     },
     resumo: { type: 'string', description: 'Resumo factual do e-mail. Maximo 3 frases.' },
-    thread_context_summary: { type: 'string', description: 'Resumo do contexto anterior da thread, se relevante.' },
-    ha_prazo: { type: 'boolean', description: 'True se houver prazo, data-limite, vencimento, reuniao ou resposta marcada.' },
+    thread_context_summary: {
+      type: 'string',
+      description: 'Resumo do contexto anterior da thread, se relevante.',
+    },
+    ha_prazo: {
+      type: 'boolean',
+      description: 'True se houver prazo, data-limite, vencimento, reuniao ou resposta marcada.',
+    },
     prazo_data: { type: 'string', description: 'Data do prazo em ISO YYYY-MM-DD.' },
     prazo_hora: { type: 'string', description: 'Hora do prazo em HH:mm.' },
-    prazo_confianca_data: { type: 'string', enum: ['baixa', 'media', 'alta'], description: 'Confianca especifica na data extraida.' },
-    tipo_prazo: { type: 'string', enum: ['processual', 'administrativo', 'contratual', 'financeiro', 'reuniao', 'resposta', 'outro'], description: 'Natureza do prazo.' },
+    prazo_confianca_data: {
+      type: 'string',
+      enum: ['baixa', 'media', 'alta'],
+      description: 'Confianca especifica na data extraida.',
+    },
+    tipo_prazo: {
+      type: 'string',
+      enum: [
+        'processual',
+        'administrativo',
+        'contratual',
+        'financeiro',
+        'reuniao',
+        'resposta',
+        'outro',
+      ],
+      description: 'Natureza do prazo.',
+    },
     trecho_fonte_do_prazo: { type: 'string', description: 'Trecho literal que justifica o prazo.' },
     resumo_anexos: {
       type: 'array',
@@ -322,17 +351,48 @@ const RESPONSE_JSON_SCHEMA = {
         required: ['tipo', 'referencia', 'trecho'],
       },
     },
-    nivel_risco: { type: 'string', enum: ['baixo', 'medio', 'alto', 'critico'], description: 'Risco operacional ou juridico.' },
-    confianca: { type: 'string', enum: ['baixa', 'media', 'alta'], description: 'Confianca geral na interpretacao do e-mail.' },
+    nivel_risco: {
+      type: 'string',
+      enum: ['baixo', 'medio', 'alto', 'critico'],
+      description: 'Risco operacional ou juridico.',
+    },
+    confianca: {
+      type: 'string',
+      enum: ['baixa', 'media', 'alta'],
+      description: 'Confianca geral na interpretacao do e-mail.',
+    },
     acao_recomendada: { type: 'string', description: 'Proxima acao operacional sugerida.' },
-    responsavel_sugerido: { type: 'string', enum: ['juridico', 'administrativo', 'financeiro', 'diretoria'], description: 'Setor sugerido.' },
-    exige_validacao_humana: { type: 'boolean', description: 'Indica necessidade excepcional de revisao operacional humana.' },
-    legal_basis: { type: 'string', enum: ['interesse_legitimo', 'cumprimento_obrigacao_legal', 'execucao_contrato', 'avaliacao_humana_necessaria'], description: 'Sugestao operacional de base legal LGPD, sujeita a validacao.' },
+    responsavel_sugerido: {
+      type: 'string',
+      enum: ['juridico', 'administrativo', 'financeiro', 'diretoria'],
+      description: 'Setor sugerido.',
+    },
+    exige_validacao_humana: {
+      type: 'boolean',
+      description: 'Indica necessidade excepcional de revisao operacional humana.',
+    },
+    legal_basis: {
+      type: 'string',
+      enum: [
+        'interesse_legitimo',
+        'cumprimento_obrigacao_legal',
+        'execucao_contrato',
+        'avaliacao_humana_necessaria',
+      ],
+      description: 'Sugestao operacional de base legal LGPD, sujeita a validacao.',
+    },
     processed_purpose: { type: 'string', description: 'Finalidade explicita do processamento.' },
   },
   required: [
-    'categoria', 'resumo', 'ha_prazo', 'nivel_risco', 'confianca',
-    'acao_recomendada', 'exige_validacao_humana', 'legal_basis', 'processed_purpose',
+    'categoria',
+    'resumo',
+    'ha_prazo',
+    'nivel_risco',
+    'confianca',
+    'acao_recomendada',
+    'exige_validacao_humana',
+    'legal_basis',
+    'processed_purpose',
   ],
 };
 
@@ -357,11 +417,9 @@ export async function analyzeEmail(
     (signal) =>
       ai.models.generateContent({
         model: modelName,
-        contents: [
-          { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
-          { role: 'user', parts: [{ text: JSON.stringify(modelInput) }] },
-        ],
+        contents: [{ role: 'user', parts: [{ text: JSON.stringify(modelInput) }] }],
         config: {
+          systemInstruction: SYSTEM_PROMPT,
           responseMimeType: 'application/json',
           responseJsonSchema: RESPONSE_JSON_SCHEMA,
           abortSignal: signal,
