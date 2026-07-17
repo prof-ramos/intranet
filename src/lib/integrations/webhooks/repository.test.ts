@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getFailedEvents, cleanUpOldDeliveries } from '@/lib/integrations/webhooks/repository';
+import {
+  claimDispatchableDomainEventById,
+  cleanUpOldDeliveries,
+  getFailedEvents,
+  listDispatchableDomainEvents,
+  lockAndFetchDispatchableEvents,
+} from '@/lib/integrations/webhooks/repository';
 
 // Mock the Drizzle schema imports so we can control the table references
 vi.mock('@/lib/db/schema/integrations', () => ({
@@ -22,11 +28,26 @@ const mockWhere = vi.fn();
 const mockOrderBy = vi.fn();
 const mockLimit = vi.fn();
 const mockDelete = vi.fn();
+const mockUpdate = vi.fn();
+const mockSet = vi.fn();
+const mockClaimWhere = vi.fn();
+const mockReturning = vi.fn();
+const mockInArray = vi.fn((column: unknown, values: unknown) => ({
+  type: 'inArray',
+  column,
+  values,
+}));
+const mockSql = vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({
+  type: 'sql',
+  text: strings.join('?'),
+  values,
+}));
 
 vi.mock('@/lib/db', () => ({
   db: {
     select: (...args: unknown[]) => mockSelect(...args),
     delete: (...args: unknown[]) => mockDelete(...args),
+    update: (...args: unknown[]) => mockUpdate(...args),
   },
 }));
 
@@ -36,10 +57,49 @@ vi.mock('drizzle-orm', () => ({
   desc: (col: string) => ({ type: 'desc', col }),
   eq: (col: unknown, val: unknown) => ({ type: 'eq', col, val }),
   lt: (col: unknown, val: unknown) => ({ type: 'lt', col, val }),
-  inArray: () => ({}),
+  inArray: (column: unknown, values: unknown) => mockInArray(column, values),
   asc: () => ({}),
-  sql: {} as never,
+  sql: (...args: [TemplateStringsArray, ...unknown[]]) => mockSql(...args),
 }));
+
+describe('automatic dispatch claims', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSelect.mockReturnValue({ from: mockFrom });
+    mockFrom.mockReturnValue({ where: mockWhere });
+    mockWhere.mockReturnValue({ orderBy: mockOrderBy });
+    mockOrderBy.mockReturnValue({ limit: mockLimit });
+    mockLimit.mockResolvedValue([]);
+
+    mockUpdate.mockReturnValue({ set: mockSet });
+    mockSet.mockReturnValue({ where: mockClaimWhere });
+    mockClaimWhere.mockReturnValue({ returning: mockReturning });
+    mockReturning.mockResolvedValue([]);
+  });
+
+  it('excludes failed events from the dispatchable listing', async () => {
+    await listDispatchableDomainEvents();
+
+    expect(mockInArray).toHaveBeenCalledWith('delivery_status', ['pending', 'partially_delivered']);
+  });
+
+  it('excludes failed events from the atomic batch claim', async () => {
+    await lockAndFetchDispatchableEvents();
+
+    expect(mockSql).toHaveBeenCalled();
+    expect(mockSql.mock.calls[0][0].join('')).toContain(
+      "WHERE delivery_status IN ('pending', 'partially_delivered')",
+    );
+    expect(mockSql.mock.calls[0][0].join('')).not.toContain("'failed'");
+    expect(mockReturning).toHaveBeenCalled();
+  });
+
+  it('does not allow claim by id to reopen a failed event', async () => {
+    await expect(claimDispatchableDomainEventById(9)).resolves.toBeNull();
+
+    expect(mockInArray).toHaveBeenCalledWith('delivery_status', ['pending', 'partially_delivered']);
+  });
+});
 
 describe('getFailedEvents', () => {
   beforeEach(() => {
@@ -85,8 +145,6 @@ describe('getFailedEvents', () => {
 });
 
 describe('cleanUpOldDeliveries', () => {
-  const mockReturning = vi.fn();
-
   beforeEach(() => {
     vi.clearAllMocks();
     // Chain: db.delete(webhookDeliveries).where(and(...)).returning(...)

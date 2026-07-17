@@ -93,8 +93,8 @@ function getOverallEventStatus(results: Array<'delivered' | 'retry_scheduled' | 
       : ('pending' as const);
   }
 
-  if (results.some((result) => result === 'delivered')) {
-    return 'partially_delivered' as const;
+  if (results.some((result) => result === 'failed')) {
+    return 'failed' as const;
   }
 
   return 'failed' as const;
@@ -278,7 +278,7 @@ async function dispatchEventToSubscriptions(event: DomainEventForDispatch, execu
       return 'retry_scheduled' as const;
     }
 
-    if (previous?.status === 'failed' && previous.attempt >= MAX_WEBHOOK_ATTEMPTS) {
+    if (previous?.status === 'failed') {
       return 'failed' as const;
     }
 

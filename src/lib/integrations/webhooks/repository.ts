@@ -37,7 +37,7 @@ export async function listDispatchableDomainEvents(
   return executor
     .select()
     .from(domainEvents)
-    .where(inArray(domainEvents.deliveryStatus, ['pending', 'partially_delivered', 'failed']))
+    .where(inArray(domainEvents.deliveryStatus, ['pending', 'partially_delivered']))
     .orderBy(asc(domainEvents.occurredAt))
     .limit(limit);
 }
@@ -187,12 +187,12 @@ export async function lockAndFetchDispatchableEvents(
         domainEvents.id,
         sql`(
           SELECT id FROM domain_events
-          WHERE delivery_status IN ('pending', 'partially_delivered', 'failed')
+          WHERE delivery_status IN ('pending', 'partially_delivered')
           ORDER BY occurred_at ASC
           LIMIT ${limit}
           FOR UPDATE SKIP LOCKED
-        )`
-      )
+        )`,
+      ),
     )
     .returning();
 
@@ -213,8 +213,8 @@ export async function claimDispatchableDomainEventById(
     .where(
       and(
         eq(domainEvents.id, id),
-        inArray(domainEvents.deliveryStatus, ['pending', 'partially_delivered', 'failed'])
-      )
+        inArray(domainEvents.deliveryStatus, ['pending', 'partially_delivered']),
+      ),
     )
     .returning();
 
@@ -223,9 +223,10 @@ export async function claimDispatchableDomainEventById(
 
 /**
  * Retrieve domain events whose overall delivery status is "failed",
- * meaning all subscriptions have permanently failed (exhausted retries
- * or received a non-retryable status). These events form the dead-letter
- * queue and can be inspected or replayed by operators.
+ * meaning at least one subscription has permanently failed (exhausted retries
+ * or received a non-retryable status) and none have a retry pending. These
+ * events form the dead-letter queue and can be inspected by operators. Any
+ * future replay must use a separate, explicit and audited path.
  */
 export async function getFailedEvents(
   limit = 50,
