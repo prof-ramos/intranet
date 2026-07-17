@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Drizzle mock chains require any for self-referencing builders */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { findOficioByAssinafyDocumentId, updateAssinafyStatus } from './repository';
+import {
+  claimAssinafySubmission,
+  findOficioByAssinafyDocumentId,
+  updateAssinafyStatus,
+} from './repository';
 
 const { dbMock, MOCK_OFICIO } = vi.hoisted(() => {
   const MOCK_OFICIO = {
@@ -93,6 +97,21 @@ describe('assinafy/repository', () => {
       expect(dbMock.update).toHaveBeenCalled();
       expect(dbMock._updateChain.set).toHaveBeenCalled();
       expect(dbMock._updateChain.where).toHaveBeenCalled();
+    });
+  });
+
+  describe('claimAssinafySubmission', () => {
+    it('returns the claimed row from a conditional update', async () => {
+      expect(await claimAssinafySubmission(1, 7)).toEqual(MOCK_OFICIO);
+      expect(dbMock._updateChain.set).toHaveBeenCalledWith(
+        expect.objectContaining({ assinafyStatus: 'uploading', updatedBy: 7 }),
+      );
+      expect(dbMock._updateChain.where).toHaveBeenCalled();
+    });
+
+    it('returns null when another process already won', async () => {
+      dbMock._setUpdateResult([]);
+      await expect(claimAssinafySubmission(1, 7)).resolves.toBeNull();
     });
   });
 });

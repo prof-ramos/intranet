@@ -216,14 +216,24 @@ export async function sendForSignature(
     return { success: false, error: 'Este ofício já foi enviado para assinatura.' };
   }
 
+  // 5. Validate signer email before acquiring the operational claim.
+  if (!signerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail)) {
+    return { success: false, error: 'Email do signatário inválido.' };
+  }
+
+  const claimedOficio = await assinafyRepository.claimAssinafySubmission(oficioId, userId);
+  if (!claimedOficio) {
+    return { success: false, error: 'O envio deste ofício já foi iniciado ou concluído.' };
+  }
+
+  let documentId: string | undefined;
+  let signerId: string | undefined;
+  let assignmentId: string | undefined;
+
   try {
-    // 5. Validate signer email
-    if (!signerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail)) {
-      return { success: false, error: 'Email do signatário inválido.' };
-    }
 
     // 6. Generate PDF
-    const pdfBytes = await generateOfficialLetterPdf(oficio);
+    const pdfBytes = await generateOfficialLetterPdf(claimedOficio);
     const pdfBuffer = Buffer.from(pdfBytes);
 
     // 7. Init client
@@ -234,12 +244,14 @@ export async function sendForSignature(
     });
 
     // 8. Upload document — filename sanitized for API safety
-    const docFilename = `${oficio.number.replace(/[\s/]+/g, '_')}.pdf`;
+    const docFilename = `${claimedOficio.number.replace(/[\s/]+/g, '_')}.pdf`;
     const doc = await client.uploadDocument(pdfBuffer, docFilename);
+    documentId = doc.id;
 
     // 9. Create signer
-    const cleanName = cleanSignatoryName(oficio.signatoryName);
+    const cleanName = cleanSignatoryName(claimedOficio.signatoryName);
     const signer = await client.createSigner(cleanName, signerEmail);
+    signerId = signer.id;
 
     // 10. Create assignment (virtual method, 30 days expiration)
 
@@ -256,6 +268,7 @@ export async function sendForSignature(
       ],
       expires_at: expiresAt,
     });
+    assignmentId = assignment.id;
 
     // 11. Validate signing_urls
     if (!assignment.signing_urls || assignment.signing_urls.length === 0) {
@@ -263,6 +276,13 @@ export async function sendForSignature(
         oficioId,
         documentId: doc.id,
         assignmentId: assignment.id,
+      });
+      await assinafyRepository.failAssinafySubmission(oficioId, {
+        assinafyDocumentId: documentId,
+        assinafySignerId: signerId,
+        assinafyAssignmentId: assignmentId,
+        assinafyError: 'Provider returned no signing URL.',
+        updatedBy: userId,
       });
       return {
         success: false,
@@ -278,24 +298,22 @@ export async function sendForSignature(
         documentId: doc.id,
         assignmentId: assignment.id,
       });
+      await assinafyRepository.failAssinafySubmission(oficioId, {
+        assinafyDocumentId: documentId,
+        assinafySignerId: signerId,
+        assinafyAssignmentId: assignmentId,
+        assinafyError: 'Provider returned an empty signing URL.',
+        updatedBy: userId,
+      });
       return { success: false, error: 'Falha ao obter URL de assinatura.' };
     }
 
     // 12. DB transaction: update oficio + audit log
     const { result: updated, auditArgs } = await db.transaction(async (tx) => {
-      // Auto-transition rascunho → gerado before sending (ARCHITECTURE.md §101)
-      if (oficio.status === 'rascunho') {
-        await tx
-          .update(oficios)
-          .set({ status: 'gerado', updatedAt: new Date() })
-          .where(eq(oficios.id, oficioId));
-      }
-
-      const txResult = await assinafyRepository.updateAssinafyFields(
+      const txResult = await assinafyRepository.finalizeAssinafySubmission(
         oficioId,
         {
           assinafyDocumentId: doc.id,
-          assinafyStatus: 'pending_signature',
           assinafySigningUrl: signingUrl,
           assinafyAssignmentId: assignment.id,
           assinafySignerId: signer.id,
@@ -304,6 +322,18 @@ export async function sendForSignature(
         },
         tx,
       );
+
+      if (!txResult) {
+        return { result: null, auditArgs: null };
+      }
+
+      // Auto-transition rascunho → gerado only after the claimed submission is finalized.
+      if (oficio.status === 'rascunho') {
+        await tx
+          .update(oficios)
+          .set({ status: 'gerado', updatedAt: new Date() })
+          .where(eq(oficios.id, oficioId));
+      }
 
       return {
         result: txResult,
@@ -320,11 +350,11 @@ export async function sendForSignature(
       };
     });
 
-    await logOfficialLetterAuditBestEffort(auditArgs);
-
     if (!updated) {
       return { success: false, error: 'Ofício não encontrado ao atualizar.' };
     }
+
+    await logOfficialLetterAuditBestEffort(auditArgs!);
 
     logger.info('Ofício sent for signature', {
       oficioId,
@@ -336,6 +366,13 @@ export async function sendForSignature(
     // 13. Return success
     return { success: true, data: updated };
   } catch (error) {
+    await assinafyRepository.failAssinafySubmission(oficioId, {
+      assinafyDocumentId: documentId,
+      assinafySignerId: signerId,
+      assinafyAssignmentId: assignmentId,
+      assinafyError: 'Outbound submission failed; manual reconciliation required.',
+      updatedBy: userId,
+    });
     logger.error(
       '[sendForSignature] failed',
       { oficioId, error: toSafeErrorLog(error) },
