@@ -333,19 +333,18 @@ export function AtividadesBoard({
               const colItems = grouped[col.key];
               const isCollapsed = col.key === 'concluido' && collapsedDone;
               return (
-                <div key={col.key} className="min-w-[280px] snap-start md:min-w-0">
-                  <BoardColumn
-                    col={col}
-                    colItems={colItems}
-                    isCollapsed={isCollapsed}
-                    compact={compact}
-                    collapsedDone={collapsedDone}
-                    peopleById={peopleById}
-                    setCollapsedDone={setCollapsedDone}
-                    openDrawer={openDrawer}
-                    handleAdd={handleAdd}
-                  />
-                </div>
+                <BoardColumn
+                  key={col.key}
+                  col={col}
+                  colItems={colItems}
+                  isCollapsed={isCollapsed}
+                  compact={compact}
+                  collapsedDone={collapsedDone}
+                  peopleById={peopleById}
+                  setCollapsedDone={setCollapsedDone}
+                  openDrawer={openDrawer}
+                  handleAdd={handleAdd}
+                />
               );
             })}
           </div>
