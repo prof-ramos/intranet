@@ -168,11 +168,11 @@ describe('dispatchDomainEventById', () => {
     expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'pending', db);
   });
 
-  it('does not retry failed deliveries after the maximum attempts', async () => {
+  it('does not retry a terminal failed delivery regardless of attempt count', async () => {
     mockListWebhookDeliveriesForEvent.mockResolvedValue([
       {
         webhookSubscriptionId: 5,
-        attempt: 5,
+        attempt: 1,
         status: 'failed',
         nextRetryAt: null,
       },
@@ -212,6 +212,64 @@ describe('dispatchDomainEventById', () => {
     );
   });
 
+  it('does not redeliver a 403 terminal failure on a subsequent dispatch round', async () => {
+    mockListWebhookDeliveriesForEvent.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        webhookSubscriptionId: 5,
+        attempt: 1,
+        status: 'failed',
+        nextRetryAt: null,
+      },
+    ]);
+    mockSendPinnedWebhook.mockResolvedValue({
+      ok: false,
+      status: 403,
+      type: 'basic',
+      body: 'Forbidden',
+    });
+
+    await dispatchDomainEventById(99);
+    await dispatchDomainEventById(99);
+
+    expect(mockSendPinnedWebhook).toHaveBeenCalledTimes(1);
+    expect(mockInsertWebhookDelivery).toHaveBeenCalledTimes(1);
+  });
+
+  it('marks delivered plus terminal failed subscriptions as failed', async () => {
+    mockListActiveWebhookSubscriptionsForEvent.mockResolvedValue([
+      {
+        id: 5,
+        targetUrl: 'https://example.com/webhook',
+        secretCiphertext: 'enc:v1:test',
+      },
+      {
+        id: 6,
+        targetUrl: 'https://example.org/webhook',
+        secretCiphertext: 'enc:v1:test',
+      },
+    ]);
+    mockListWebhookDeliveriesForEvent.mockResolvedValue([
+      {
+        webhookSubscriptionId: 5,
+        attempt: 1,
+        status: 'delivered',
+        nextRetryAt: null,
+      },
+      {
+        webhookSubscriptionId: 6,
+        attempt: 1,
+        status: 'failed',
+        nextRetryAt: null,
+      },
+    ]);
+
+    const result = await dispatchDomainEventById(99);
+
+    expect(result).toMatchObject({ results: ['delivered', 'failed'] });
+    expect(mockSendPinnedWebhook).not.toHaveBeenCalled();
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'failed', db);
+  });
+
   it('records failureReason when delivery exhausts max retry attempts', async () => {
     mockListWebhookDeliveriesForEvent.mockResolvedValue([
       {
@@ -240,6 +298,30 @@ describe('dispatchDomainEventById', () => {
       }),
       db,
     );
+  });
+
+  it.each([408, 429, 503])('keeps temporary HTTP %i failures retryable', async (status) => {
+    mockListWebhookDeliveriesForEvent.mockResolvedValue([]);
+    mockSendPinnedWebhook.mockResolvedValue({
+      ok: false,
+      status,
+      type: 'basic',
+      body: 'Temporary failure',
+    });
+
+    const result = await dispatchDomainEventById(99);
+
+    expect(result).toMatchObject({ results: ['retry_scheduled'] });
+    expect(mockInsertWebhookDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'retry_scheduled',
+        nextRetryAt: expect.any(Date),
+        failedAt: null,
+        failureReason: null,
+      }),
+      db,
+    );
+    expect(mockUpdateDomainEventDeliveryStatus).toHaveBeenLastCalledWith(99, 'pending', db);
   });
 
   it('fails dispatch when webhook target URL fails SSRF validation', async () => {
