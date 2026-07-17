@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  businessDateOnly,
+  getBusinessDateParts,
   dateOnly,
   dateFromValue,
   formatDate,
@@ -37,6 +39,25 @@ describe('dateOnly', () => {
   it('returns null for strings without valid date pattern', () => {
     expect(dateOnly('not-a-date')).toBeNull();
     expect(dateOnly('hello world')).toBeNull();
+  });
+});
+
+describe('ASOF business calendar', () => {
+  it('keeps the prior civil year before midnight in Sao Paulo', () => {
+    const now = new Date('2026-01-01T01:00:00Z');
+    expect(getBusinessDateParts(now)).toEqual({ year: 2025, month: 12, day: 31 });
+    expect(businessDateOnly(now)).toBe('2025-12-31');
+  });
+
+  it('advances after midnight in Sao Paulo', () => {
+    expect(businessDateOnly(new Date('2026-01-01T04:00:00Z'))).toBe('2026-01-01');
+  });
+
+  it('calculates operational day offsets from the São Paulo civil date', () => {
+    const beforeMidnight = new Date('2026-01-01T01:00:00Z');
+    expect(daysFromToday('2026-01-01', beforeMidnight)).toBe(1);
+    expect(daysSince('2025-12-31', beforeMidnight)).toBe(0);
+    expect(daysSince('2026-01-01T00:30:00Z', beforeMidnight)).toBe(0);
   });
 });
 
@@ -116,17 +137,17 @@ describe('formatDueDate', () => {
 
 describe('daysFromToday', () => {
   it('returns 0 for today', () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = businessDateOnly();
     expect(daysFromToday(today)).toBe(0);
   });
 
   it('returns positive number for future dates', () => {
-    const future = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+    const future = businessDateOnly(new Date(Date.now() + 7 * 86_400_000));
     expect(daysFromToday(future)).toBeGreaterThan(0);
   });
 
   it('returns negative number for past dates', () => {
-    const past = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
+    const past = businessDateOnly(new Date(Date.now() - 7 * 86_400_000));
     expect(daysFromToday(past)).toBeLessThan(0);
   });
 
@@ -137,12 +158,12 @@ describe('daysFromToday', () => {
 
 describe('daysSince', () => {
   it('returns 0 for today', () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = businessDateOnly();
     expect(daysSince(today)).toBe(0);
   });
 
   it('returns positive number for past dates', () => {
-    const past = new Date(Date.now() - 10 * 86_400_000).toISOString().slice(0, 10);
+    const past = businessDateOnly(new Date(Date.now() - 10 * 86_400_000));
     expect(daysSince(past)).toBeGreaterThanOrEqual(9);
   });
 

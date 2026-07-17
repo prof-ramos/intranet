@@ -1,4 +1,4 @@
-import { dateOnly, daysFromToday } from '@/lib/utils/date';
+import { businessDateOnly, dateOnly, daysFromToday } from '@/lib/utils/date';
 import type { BoardActivity, Filters, Status } from './types';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 
@@ -8,8 +8,9 @@ export function deriveCompletedAt(
   nextStatus: string,
   currentStatus: string,
   currentCompletedAt: string | null,
+  now: Date = new Date(),
 ): string | null {
-  if (nextStatus === 'concluido') return currentCompletedAt ?? new Date().toISOString().slice(0, 10);
+  if (nextStatus === 'concluido') return currentCompletedAt ?? businessDateOnly(now);
   if (currentStatus === 'concluido') return null;
   return currentCompletedAt;
 }

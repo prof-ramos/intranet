@@ -114,6 +114,15 @@ describe('buildAssociateNameSearchPattern', () => {
 });
 
 describe('parseMonthlyPaymentsPageSearchParams', () => {
+  it('uses the São Paulo civil month and year for defaults', () => {
+    expect(
+      parseMonthlyPaymentsPageSearchParams({}, new Date('2026-01-01T01:00:00.000Z')),
+    ).toMatchObject({ year: 2025, month: 12 });
+    expect(
+      parseMonthlyPaymentsPageSearchParams({}, new Date('2026-01-01T04:00:00.000Z')),
+    ).toMatchObject({ year: 2026, month: 1 });
+  });
+
   it('parses valid year/month alongside filters', () => {
     const now = new Date('2026-05-17T12:00:00Z');
 

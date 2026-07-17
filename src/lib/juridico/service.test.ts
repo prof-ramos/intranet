@@ -11,6 +11,7 @@ import {
   updateConsultationStatus,
 } from './repository';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
+import type { DbExecutor } from '@/lib/db';
 
 const transactionMock = vi.hoisted(() => ({ tx: { __tx: true } }));
 const FIXED_CREATED_AT = '2026-05-13T10:00:00.000Z';
@@ -115,6 +116,22 @@ describe('juridico service', () => {
   });
 
   describe('generateInternalNumber retry exhaust', () => {
+    it('uses the São Paulo civil year around the UTC year boundary', async () => {
+      const executor = {
+        select: () => ({
+          from: () => ({ where: async () => [{ max: null }] }),
+        }),
+      } as unknown as DbExecutor;
+      const { generateInternalNumber } = await import('./service');
+
+      await expect(
+        generateInternalNumber(executor, new Date('2026-01-01T01:00:00.000Z')),
+      ).resolves.toBe('JUR-2025-001');
+      await expect(
+        generateInternalNumber(executor, new Date('2026-01-01T04:00:00.000Z')),
+      ).resolves.toBe('JUR-2026-001');
+    });
+
     it('throws after MAX_RETRIES attempts on unique constraint violation', async () => {
       const { db } = await import('@/lib/db');
       const uniqueError = new Error('unique constraint violation');
