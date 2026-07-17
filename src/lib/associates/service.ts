@@ -228,6 +228,26 @@ export type UpdateAssociateInput = Partial<AssociateFields> & {
   fullName: string;
 };
 
+/** Minimal authenticated context required by associate mutations. */
+export interface AssociateMutationActor {
+  userId: number;
+  role: Role;
+}
+
+function assertMutationActor(actor: AssociateMutationActor) {
+  if (!Number.isInteger(actor.userId) || actor.userId <= 0) {
+    throw new ValidationError('Ator inválido.');
+  }
+}
+
+function applyInternalNotesPolicy<T extends { internalNotes?: string | null }>(
+  input: T,
+  actor: AssociateMutationActor,
+): T {
+  if (actor.role === 'admin' || input.internalNotes === undefined) return input;
+  return { ...input, internalNotes: undefined };
+}
+
 const WEBHOOK_SAFE_ASSOCIATE_FIELDS: Array<keyof UpdateAssociateValues> = [
   'fullName',
   'locationCity',
@@ -336,10 +356,12 @@ async function logAssociateAuditBestEffort(auditArgs: AssociateAuditArgs) {
   }
 }
 
-export async function updateAssociateData(input: UpdateAssociateInput, actorId: number) {
-  if (!Number.isInteger(actorId) || actorId <= 0) {
-    throw new ValidationError('Ator inválido.');
-  }
+export async function updateAssociateData(
+  rawInput: UpdateAssociateInput,
+  actor: AssociateMutationActor,
+) {
+  assertMutationActor(actor);
+  const input = applyInternalNotesPolicy(rawInput, actor);
 
   // Normalização canônica de datas de domínio: só aqui (não no action).
   const values: UpdateAssociateValues = {
@@ -457,7 +479,7 @@ export async function updateAssociateData(input: UpdateAssociateInput, actorId: 
           type: 'associate.updated',
           entityType: 'associate',
           entityId: input.id,
-          actorAdminId: actorId,
+          actorAdminId: actor.userId,
           payload: {
             associateId: input.id,
             changedFields,
@@ -472,7 +494,7 @@ export async function updateAssociateData(input: UpdateAssociateInput, actorId: 
 
     return auditChangedFields.length > 0
       ? {
-          adminId: actorId,
+          adminId: actor.userId,
           action: 'associate_updated',
           entityType: 'associate' as const,
           entityId: input.id,
@@ -600,7 +622,6 @@ export type CreateAssociateDependentInput = {
 
 export type CreateAssociateInput = Partial<AssociateFields> & {
   fullName: string;
-  createdBy?: number | null;
   /** Dependentes criados atomicamente com o oficial. */
   dependents?: CreateAssociateDependentInput[];
 };
@@ -611,7 +632,12 @@ export type CreateAssociateInput = Partial<AssociateFields> & {
  * registrando auditoria. Não emite domain event — `associate.created` aguarda
  * adição ao enum `domain_event_type` (migration) para não onerar o pré-go-live.
  */
-export async function createAssociateData(input: CreateAssociateInput): Promise<{ id: number }> {
+export async function createAssociateData(
+  rawInput: CreateAssociateInput,
+  actor: AssociateMutationActor,
+): Promise<{ id: number }> {
+  assertMutationActor(actor);
+  const input = applyInternalNotesPolicy(rawInput, actor);
   const functionalStatus = emptyToNull(input.functionalStatus);
   const sex = emptyToNull(input.sex);
   const maritalStatus = emptyToNull(input.maritalStatus);
@@ -731,7 +757,7 @@ export async function createAssociateData(input: CreateAssociateInput): Promise<
   // mutation's tx (the audit executor poisons PG tx on failure). Default `db` isolates the audit.
   try {
     await logAuditAction({
-      adminId: input.createdBy ?? null,
+      adminId: actor.userId,
       action: 'create',
       entityType: 'associate',
       entityId: id,

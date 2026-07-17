@@ -16,7 +16,7 @@ type AssociateScalarForm = Omit<z.infer<typeof updateAssociateSchema>, 'id'>;
  * Scalar date fields for leaveDate/joinedAt are passed raw from the form;
  * the service is the canonical normalizer (emptyToNull + toJoinedAtTimestamp).
  */
-function mapFormToServiceFields(data: AssociateScalarForm, role: string) {
+function mapFormToServiceFields(data: AssociateScalarForm) {
   return {
     fullName: data.fullName,
     cpf: data.cpf ?? null,
@@ -58,7 +58,7 @@ function mapFormToServiceFields(data: AssociateScalarForm, role: string) {
     joinedAt: data.joinedAt,
     ceocMember: data.ceocMember,
     caocMember: data.caocMember,
-    internalNotes: role === 'admin' ? (data.internalNotes ?? null) : undefined,
+    internalNotes: data.internalNotes ?? null,
   };
 }
 
@@ -70,9 +70,9 @@ export const updateAssociate = defineFormAction({
     await updateAssociateData(
       {
         id,
-        ...mapFormToServiceFields(fields, actor.role),
+        ...mapFormToServiceFields(fields),
       },
-      actor.userId,
+      { userId: actor.userId, role: actor.role },
     );
 
     revalidatePath('/app/associados');
@@ -98,11 +98,13 @@ export const createAssociate = defineFormAction({
   },
   service: async (data, actor) => {
     const { dependents, ...fields } = data;
-    const { id } = await createAssociateData({
-      ...mapFormToServiceFields(fields, actor.role),
-      dependents: dependents ?? [],
-      createdBy: actor.userId,
-    });
+    const { id } = await createAssociateData(
+      {
+        ...mapFormToServiceFields(fields),
+        dependents: dependents ?? [],
+      },
+      { userId: actor.userId, role: actor.role },
+    );
 
     revalidatePath('/app/associados');
     revalidateTag('associates', 'max');

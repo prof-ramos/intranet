@@ -28,7 +28,7 @@ vi.mock('next/navigation', () => ({
 describe('associados actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    requireRoleMock.mockResolvedValue({ userId: 7 });
+    requireRoleMock.mockResolvedValue({ userId: 7, role: 'admin' });
     updateAssociateDataMock.mockResolvedValue(undefined);
   });
 
@@ -55,11 +55,11 @@ describe('associados actions', () => {
         associationStatus: 'associado',
         contributionStatus: 'em_dia',
       }),
-      7,
+      { userId: 7, role: 'admin' },
     );
-    const [serviceInput, auditActorId] = updateAssociateDataMock.mock.calls[0]!;
+    const [serviceInput, auditActor] = updateAssociateDataMock.mock.calls[0]!;
     expect(serviceInput).not.toHaveProperty('updatedBy');
-    expect(auditActorId).toBe(7);
+    expect(auditActor).toEqual({ userId: 7, role: 'admin' });
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados/15');
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');

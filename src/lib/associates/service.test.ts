@@ -119,6 +119,8 @@ const baseAssociate = {
   internalNotes: 'notes',
 };
 
+const adminActor = { userId: 7, role: 'admin' as const };
+
 describe('getAssociatesListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -213,7 +215,7 @@ describe('updateAssociateData', () => {
         associationStatus: 'associado',
         contributionStatus: 'em_dia',
       },
-      7,
+      adminActor,
     );
 
     expect(mockUpdateAssociateById).toHaveBeenCalledWith(
@@ -239,7 +241,7 @@ describe('updateAssociateData', () => {
         associationStatus: 'associado',
         contributionStatus: 'em_dia',
       },
-      7,
+      adminActor,
     );
 
     expect(mockUpdateAssociateById).toHaveBeenCalledWith(
@@ -267,7 +269,7 @@ describe('updateAssociateData', () => {
         associationStatus: 'associado',
         contributionStatus: 'em_dia',
       },
-      7,
+      adminActor,
     );
 
     expect(mockEmitDomainEvent).toHaveBeenCalledWith(
@@ -298,14 +300,14 @@ describe('updateAssociateData', () => {
         associationStatus: 'associado',
         contributionStatus: 'em_dia',
       },
-      7,
+      adminActor,
     );
 
     expect(mockEmitDomainEvent).not.toHaveBeenCalled();
   });
 
   it('audits a committed common-field change using only canonical field names', async () => {
-    await updateAssociateData({ id: 1, fullName: 'Alice Silva' }, 7);
+    await updateAssociateData({ id: 1, fullName: 'Alice Silva' }, adminActor);
 
     expect(mockLogAuditAction).toHaveBeenCalledWith({
       adminId: 7,
@@ -324,7 +326,7 @@ describe('updateAssociateData', () => {
     });
 
     await expect(
-      updateAssociateData({ id: 1, fullName: 'Alice Silva' }, 7),
+      updateAssociateData({ id: 1, fullName: 'Alice Silva' }, adminActor),
     ).resolves.toBeUndefined();
     expect(mockUpdateAssociateById).toHaveBeenCalled();
     expect(mockLogAuditAction).toHaveBeenCalledWith({
@@ -344,7 +346,7 @@ describe('updateAssociateData', () => {
         cpf: '999',
         primaryEmail: 'new@example.com',
       },
-      7,
+      adminActor,
     );
 
     const auditArgs = mockLogAuditAction.mock.calls[0]![0];
@@ -373,7 +375,10 @@ describe('updateAssociateData', () => {
     });
 
     await expect(
-      updateAssociateData({ id: 1, fullName: 'Alice', primaryEmail: 'new@example.com' }, 7),
+      updateAssociateData(
+        { id: 1, fullName: 'Alice', primaryEmail: 'new@example.com' },
+        adminActor,
+      ),
     ).resolves.toBeUndefined();
     expect(mockUpdateAssociateById).toHaveBeenCalled();
     expect(mockLogAuditAction).toHaveBeenCalledWith({
@@ -386,7 +391,7 @@ describe('updateAssociateData', () => {
   });
 
   it('does not audit or emit an event for a proven no-op update', async () => {
-    await updateAssociateData({ id: 1, fullName: 'Alice' }, 7);
+    await updateAssociateData({ id: 1, fullName: 'Alice' }, adminActor);
 
     expect(mockLogAuditAction).not.toHaveBeenCalled();
     expect(mockEmitDomainEvent).not.toHaveBeenCalled();
@@ -405,7 +410,7 @@ describe('updateAssociateData', () => {
       return result;
     });
 
-    const updatePromise = updateAssociateData({ id: 1, fullName: 'Alice Silva' }, 7);
+    const updatePromise = updateAssociateData({ id: 1, fullName: 'Alice Silva' }, adminActor);
     await vi.waitFor(() => expect(transactionCallbackFinished).toBe(true));
     expect(mockLogAuditAction).not.toHaveBeenCalled();
 
@@ -417,9 +422,9 @@ describe('updateAssociateData', () => {
   it('does not audit when the transactional outbox write fails', async () => {
     mockEmitDomainEvent.mockRejectedValueOnce(new Error('outbox failed'));
 
-    await expect(updateAssociateData({ id: 1, fullName: 'Alice Silva' }, 7)).rejects.toThrow(
-      'outbox failed',
-    );
+    await expect(
+      updateAssociateData({ id: 1, fullName: 'Alice Silva' }, adminActor),
+    ).rejects.toThrow('outbox failed');
     expect(mockLogAuditAction).not.toHaveBeenCalled();
   });
 
@@ -427,7 +432,7 @@ describe('updateAssociateData', () => {
     mockLogAuditAction.mockRejectedValueOnce(new Error('sensitive database failure'));
 
     await expect(
-      updateAssociateData({ id: 1, fullName: 'Alice Silva' }, 7),
+      updateAssociateData({ id: 1, fullName: 'Alice Silva' }, adminActor),
     ).resolves.toBeUndefined();
     expect(mockLoggerWarn).toHaveBeenCalledWith(
       'Audit log failed after committed associate mutation',
@@ -438,6 +443,29 @@ describe('updateAssociateData', () => {
       },
     );
     expect(JSON.stringify(mockLoggerWarn.mock.calls)).not.toContain('sensitive database failure');
+  });
+
+  it('enforces internal-notes authorization inside the domain module', async () => {
+    await updateAssociateData(
+      { id: 1, fullName: 'Alice', internalNotes: 'tentativa sem permissão' },
+      { userId: 9, role: 'secretaria' },
+    );
+
+    const values = mockUpdateAssociateById.mock.calls[0]![1];
+    expect(values).not.toHaveProperty('internalNotes');
+  });
+
+  it('accepts internal-notes updates from admins', async () => {
+    await updateAssociateData(
+      { id: 1, fullName: 'Alice', internalNotes: 'nota administrativa' },
+      adminActor,
+    );
+
+    expect(mockUpdateAssociateById).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ internalNotes: 'nota administrativa' }),
+      { tx: true },
+    );
   });
 });
 
@@ -586,7 +614,7 @@ describe('createAssociateData', () => {
     vi.mocked(repository.findAssociateBySiapeHash).mockResolvedValue(null as never);
     vi.mocked(repository.findAssociateByPrimaryEmailHash).mockResolvedValue(null as never);
 
-    const result = await createAssociateData({ fullName: 'Novo Oficial', createdBy: 7 });
+    const result = await createAssociateData({ fullName: 'Novo Oficial' }, adminActor);
 
     expect(result).toEqual({ id: 42 });
     expect(mockLogAuditAction).toHaveBeenCalledWith(
@@ -609,13 +637,15 @@ describe('createAssociateData', () => {
     vi.mocked(repository.findAssociateBySiapeHash).mockResolvedValue(null as never);
     vi.mocked(repository.findAssociateByPrimaryEmailHash).mockResolvedValue(null as never);
 
-    await createAssociateData({
-      fullName: 'Oficial Sem PII',
-      cpf: '',
-      siape: '  ',
-      primaryEmail: '',
-      createdBy: 1,
-    });
+    await createAssociateData(
+      {
+        fullName: 'Oficial Sem PII',
+        cpf: '',
+        siape: '  ',
+        primaryEmail: '',
+      },
+      adminActor,
+    );
 
     // Blank PII must not produce blind indexes (would collide across creates)
     const blankPatch = buildPiiPatch({ cpf: '', siape: '  ', primaryEmail: '' });
@@ -627,5 +657,28 @@ describe('createAssociateData', () => {
     expect(repository.findAssociateBySiapeHash).not.toHaveBeenCalled();
     expect(repository.findAssociateByPrimaryEmailHash).not.toHaveBeenCalled();
     expect(repository.insertAssociate).toHaveBeenCalled();
+  });
+
+  it('drops internal notes from non-admin create callers', async () => {
+    const repository = await import('./repository');
+    vi.mocked(repository.insertAssociate).mockResolvedValue(100);
+
+    await createAssociateData(
+      { fullName: 'Novo Oficial', internalNotes: 'tentativa sem permissão' },
+      { userId: 8, role: 'secretaria' },
+    );
+
+    expect(repository.insertAssociate).toHaveBeenCalledWith(
+      expect.objectContaining({ internalNotes: null }),
+      { tx: true },
+    );
+  });
+
+  it('rejects an invalid actor before opening a transaction', async () => {
+    await expect(
+      createAssociateData({ fullName: 'Novo Oficial' }, { userId: 0, role: 'admin' }),
+    ).rejects.toThrow('Ator inválido.');
+
+    expect(mockTransaction).not.toHaveBeenCalled();
   });
 });
