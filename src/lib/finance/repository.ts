@@ -7,10 +7,11 @@ import {
   type NewMonthlyPayment,
 } from '@/lib/db/schema/finance';
 import { associates } from '@/lib/db/schema/associates';
-import { and, desc, eq, ilike, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, lt, or, sql } from 'drizzle-orm';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
 import { effectivePaymentMethodSql } from './effective-payment';
 import { getBusinessDateParts } from '@/lib/utils/date';
+import { normalizePagination } from '@/lib/pagination';
 
 export interface PaymentHistoryItem {
   year: number;
@@ -62,6 +63,21 @@ export interface MonthlyPaymentsFilters {
   status?: (typeof paymentStatus.enumValues)[number];
   method?: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros';
   location?: 'brasil' | 'exterior';
+  page?: number;
+  pageSize?: number;
+}
+
+export interface MonthlyPaymentsAggregates {
+  total: number;
+  pagos: number;
+  pendentes: number;
+  atrasados: number;
+  isentos: number;
+  cancelados: number;
+  exterior: number;
+  folha: number;
+  boletoPix: number;
+  paymentRecords: number;
 }
 
 export async function findMonthlyPayment(associateId: number, year: number, month: number) {
@@ -104,11 +120,7 @@ export async function insertMonthlyPaymentsIfMissing(
   executor: DbExecutor = db,
 ) {
   if (payments.length === 0) return [];
-  return executor
-    .insert(monthlyPayments)
-    .values(payments)
-    .onConflictDoNothing()
-    .returning();
+  return executor.insert(monthlyPayments).values(payments).onConflictDoNothing().returning();
 }
 
 export interface OverduePaymentTransition {
@@ -169,6 +181,7 @@ export async function getAssociatesWithPayments(
   month: number,
   filters?: MonthlyPaymentsFilters,
 ) {
+  const { page, pageSize } = normalizePagination(filters?.page ?? 1, filters?.pageSize ?? 20);
   const conditions = [eq(associates.associationStatus, 'associado')];
 
   if (filters?.q && filters.q.trim()) {
@@ -202,7 +215,18 @@ export async function getAssociatesWithPayments(
     );
   }
 
-  return db
+  const joinCondition = and(
+    eq(associates.id, monthlyPayments.associateId),
+    eq(monthlyPayments.year, year),
+    eq(monthlyPayments.month, month),
+  );
+  const where = and(...conditions);
+  const effectiveMethod = effectivePaymentMethodSql(
+    monthlyPayments.paymentMethod,
+    associates.paymentMethod,
+  );
+
+  const rowsQuery = db
     .select({
       associateId: associates.id,
       fullName: associates.fullName,
@@ -216,14 +240,54 @@ export async function getAssociatesWithPayments(
       updatedAt: monthlyPayments.updatedAt,
     })
     .from(associates)
-    .leftJoin(
-      monthlyPayments,
-      and(
-        eq(associates.id, monthlyPayments.associateId),
-        eq(monthlyPayments.year, year),
-        eq(monthlyPayments.month, month),
-      ),
-    )
-    .where(and(...conditions))
-    .orderBy(associates.fullName);
+    .leftJoin(monthlyPayments, joinCondition)
+    .where(where)
+    .orderBy(asc(associates.fullName), asc(associates.id))
+    .offset((page - 1) * pageSize)
+    .limit(pageSize);
+
+  const countQuery = db
+    .select({ total: sql<number>`count(*)` })
+    .from(associates)
+    .leftJoin(monthlyPayments, joinCondition)
+    .where(where);
+
+  const aggregatesQuery = db
+    .select({
+      total: sql<number>`count(*)`,
+      pagos: sql<number>`count(*) filter (where ${monthlyPayments.status} = 'pago')`,
+      pendentes: sql<number>`count(*) filter (where ${monthlyPayments.status} = 'pendente' or ${monthlyPayments.id} is null)`,
+      atrasados: sql<number>`count(*) filter (where ${monthlyPayments.status} = 'atrasado')`,
+      isentos: sql<number>`count(*) filter (where ${monthlyPayments.status} = 'isento')`,
+      cancelados: sql<number>`count(*) filter (where ${monthlyPayments.status} = 'cancelado')`,
+      exterior: sql<number>`count(*) filter (where ${isExteriorCountrySql(associates.locationCountry)})`,
+      folha: sql<number>`count(*) filter (where ${effectiveMethod} = 'folha')`,
+      boletoPix: sql<number>`count(*) filter (where ${effectiveMethod} in ('boleto', 'pix'))`,
+      paymentRecords: sql<number>`count(${monthlyPayments.id})`,
+    })
+    .from(associates)
+    .leftJoin(monthlyPayments, joinCondition)
+    .where(where);
+
+  const [rows, countRows, aggregateRows] = await Promise.all([
+    rowsQuery,
+    countQuery,
+    aggregatesQuery,
+  ]);
+  const total = Number(countRows[0]?.total ?? 0);
+  const raw = aggregateRows[0];
+  const number = (value: number | undefined) => Number(value ?? 0);
+  const aggregates: MonthlyPaymentsAggregates = {
+    total: number(raw?.total),
+    pagos: number(raw?.pagos),
+    pendentes: number(raw?.pendentes),
+    atrasados: number(raw?.atrasados),
+    isentos: number(raw?.isentos),
+    cancelados: number(raw?.cancelados),
+    exterior: number(raw?.exterior),
+    folha: number(raw?.folha),
+    boletoPix: number(raw?.boletoPix),
+    paymentRecords: number(raw?.paymentRecords),
+  };
+  return { rows, total, aggregates, page, pageSize };
 }

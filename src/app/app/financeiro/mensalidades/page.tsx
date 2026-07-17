@@ -4,6 +4,7 @@ import { FinanceKPIs } from './FinanceKPIs';
 import { initializeMonthAction } from './actions';
 import { Calendar, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { textMuted, navy, hairline, focusRingClass, skyBlue, infoBg, info } from '@/lib/ui/tokens';
 import { requireRole } from '@/lib/auth/authorization';
 import {
@@ -53,7 +54,18 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
     status: currentFilters.status,
     method: currentFilters.method,
     location: currentFilters.location,
+    page: currentFilters.page,
+    pageSize: 20,
   });
+  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
+  if (currentFilters.page > totalPages) {
+    const params = new URLSearchParams(
+      buildMonthlyPaymentsSearchParams(currentFilters, { page: totalPages }),
+    );
+    params.set('year', String(currentYear));
+    params.set('month', String(currentMonth));
+    redirect(`/app/financeiro/mensalidades?${params.toString()}`);
+  }
 
   // Helper for prev/next month
   const getPrevMonth = () => {
@@ -88,7 +100,13 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
     currentFilters.method ||
     currentFilters.location
   );
-  const hasNoData = !hasActiveFilters && data.every((p) => !p.paymentId);
+  const getPageHref = (page: number) => {
+    const params = new URLSearchParams(buildMonthlyPaymentsSearchParams(currentFilters, { page }));
+    params.set('year', String(currentYear));
+    params.set('month', String(currentMonth));
+    return `/app/financeiro/mensalidades?${params.toString()}`;
+  };
+  const hasNoData = !hasActiveFilters && data.aggregates.paymentRecords === 0;
 
   return (
     <main className="mx-auto w-full max-w-[1400px] px-5 py-7 sm:px-8 lg:px-10">
@@ -175,15 +193,35 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
       )}
 
       {/* KPIs */}
-      <FinanceKPIs payments={data} />
+      <FinanceKPIs aggregates={data.aggregates} />
 
       {/* Table */}
       <MonthlyPaymentsTable
-        payments={data}
+        payments={data.rows}
         year={currentYear}
         month={currentMonth}
         currentFilters={currentFilters}
       />
+
+      <nav className="mt-5 flex items-center justify-between" aria-label="Paginação">
+        <Link
+          aria-disabled={currentFilters.page <= 1}
+          className={currentFilters.page <= 1 ? 'pointer-events-none opacity-50' : ''}
+          href={getPageHref(Math.max(1, currentFilters.page - 1))}
+        >
+          Anterior
+        </Link>
+        <span>
+          Página {currentFilters.page} de {totalPages}
+        </span>
+        <Link
+          aria-disabled={currentFilters.page >= totalPages}
+          className={currentFilters.page >= totalPages ? 'pointer-events-none opacity-50' : ''}
+          href={getPageHref(Math.min(totalPages, currentFilters.page + 1))}
+        >
+          Próxima
+        </Link>
+      </nav>
     </main>
   );
 }

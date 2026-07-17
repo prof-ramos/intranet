@@ -44,6 +44,7 @@ const { dbMock, MOCK_PAYMENT } = vi.hoisted(() => {
   selectChain.leftJoin = vi.fn().mockReturnValue(selectChain);
   selectChain.where = vi.fn().mockReturnValue(selectChain);
   selectChain.orderBy = vi.fn().mockReturnValue(selectChain);
+  selectChain.offset = vi.fn().mockReturnValue(selectChain);
   selectChain.limit = vi.fn().mockImplementation(() => Promise.resolve(_selectResult));
   selectChain.then = (resolve: any, reject: any) =>
     Promise.resolve(_selectResult).then(resolve, reject);
@@ -157,11 +158,24 @@ describe('finance repository', () => {
   });
 
   describe('getAssociatesWithPayments', () => {
+    it('normalizes pagination and applies stable page bounds', async () => {
+      await getAssociatesWithPayments(2026, 5, { page: 2, pageSize: 25 });
+
+      expect(dbMock._selectChain.orderBy).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+      );
+      expect(dbMock._selectChain.offset).toHaveBeenCalledWith(25);
+      expect(dbMock._selectChain.limit).toHaveBeenCalledWith(25);
+    });
+
     it('queries with default filters (only ativo associates)', async () => {
       dbMock.setSelectResult([{ associateId: 10, fullName: 'Test' }]);
       const results = await getAssociatesWithPayments(2026, 5);
-      expect(results).toHaveLength(1);
+      expect(results.rows).toHaveLength(1);
       expect(dbMock._selectChain.where).toHaveBeenCalled();
+      expect(dbMock._selectChain.limit).toHaveBeenCalledWith(20);
+      expect(dbMock._selectChain.offset).toHaveBeenCalledWith(0);
     });
 
     it('applies status filter', async () => {

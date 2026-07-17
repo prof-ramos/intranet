@@ -64,6 +64,11 @@ describe('parseMonthlyPaymentsSearchParams', () => {
 });
 
 describe('buildMonthlyPaymentsSearchParams', () => {
+  it('resets page when a filter changes', () => {
+    expect(
+      buildMonthlyPaymentsSearchParams({ q: '', status: 'pago', page: 4 }, { status: 'atrasado' }),
+    ).toEqual({ status: 'atrasado' });
+  });
   it('omits empty/default values', () => {
     const result = buildMonthlyPaymentsSearchParams(
       { q: '', page: 1, status: undefined, method: undefined, location: undefined },
