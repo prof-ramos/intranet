@@ -15,6 +15,10 @@ test.describe('Kanban de Atividades', () => {
       'Aguardando terceiros',
       'Concluído',
     ]);
+
+    // O estado de recolhimento continua ligado ao board após a extração de BoardColumn.
+    await page.getByRole('button', { name: 'Recolher concluídas' }).click();
+    await expect(page.getByRole('button', { name: 'Expandir concluídas' })).toBeVisible();
   });
 
   test('cria nova atividade via formulário e exibe no board', async ({ page, loginAsAdmin }) => {
