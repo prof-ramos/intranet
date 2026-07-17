@@ -7,6 +7,8 @@ import { db } from '@/lib/db';
 import { admins, auditLogs, domainEvents, oficios } from '@/lib/db/schema';
 import {
   claimAssinafySubmission,
+  failStaleAssinafySubmission,
+  INTERRUPTED_ASSINAFY_SUBMISSION_ERROR,
   recordAssinafyReconciliationContext,
 } from '@/lib/assinafy/repository';
 import { cancelOfficialLetter as cancelOfficialLetterRecord } from './repository';
@@ -257,6 +259,44 @@ describe.skipIf(!hasTestEnv)('oficios service integration', () => {
       (stored.status === 'gerado' && stored.assinafyStatus === 'uploading') ||
         (stored.status === 'cancelado' && stored.assinafyStatus === null),
     ).toBe(true);
+  });
+
+  it('fails an abandoned Assinafy claim without reopening blind retry', async () => {
+    await db
+      .update(oficios)
+      .set({
+        status: 'gerado',
+        assinafyStatus: 'uploading',
+        assinafyDocumentId: null,
+        assinafyAssignmentId: null,
+        assinafySignerId: null,
+        assinafyError: null,
+        updatedAt: new Date(Date.now() - 20 * 60 * 1000),
+      })
+      .where(eq(oficios.id, oficioId));
+
+    const interrupted = await failStaleAssinafySubmission(oficioId, adminId);
+
+    expect(interrupted).toMatchObject({
+      assinafyStatus: 'failed',
+      assinafyError: INTERRUPTED_ASSINAFY_SUBMISSION_ERROR,
+    });
+
+    await db
+      .update(oficios)
+      .set({
+        assinafyStatus: 'uploading',
+        assinafyError: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(oficios.id, oficioId));
+
+    await expect(failStaleAssinafySubmission(oficioId, adminId)).resolves.toBeNull();
+    const [freshClaim] = await db
+      .select({ assinafyStatus: oficios.assinafyStatus })
+      .from(oficios)
+      .where(eq(oficios.id, oficioId));
+    expect(freshClaim.assinafyStatus).toBe('uploading');
   });
 
   it('records external IDs without overwriting a state that won the claim', async () => {

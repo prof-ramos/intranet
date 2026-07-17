@@ -2,10 +2,21 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { Edit2, Download, Ban, Loader2, PenSquare } from 'lucide-react';
+import { Edit2, Download, Ban, Loader2, PenSquare, TriangleAlert } from 'lucide-react';
 import { SendForSignatureModal } from './SendForSignatureModal';
-import { cancelOfficialLetterAction } from '../actions';
-import { success, successBg, error, errorBg, warning, warningBg, info, infoBg, hairline, focusRingClass } from '@/lib/ui/tokens';
+import { cancelOfficialLetterAction, markAssinafySubmissionInterruptedAction } from '../actions';
+import {
+  success,
+  successBg,
+  error,
+  errorBg,
+  warning,
+  warningBg,
+  info,
+  infoBg,
+  hairline,
+  focusRingClass,
+} from '@/lib/ui/tokens';
 
 interface OficioRow {
   id: number;
@@ -24,6 +35,13 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
   const [cancelConfirmId, setCancelConfirmId] = useState<number | null>(null);
   const [isCancelling, startCancelTransition] = useTransition();
   const [cancelledIds, setCancelledIds] = useState<Set<number>>(new Set());
+  const [interruptedConfirmId, setInterruptedConfirmId] = useState<number | null>(null);
+  const [isMarkingInterrupted, startInterruptedTransition] = useTransition();
+  const [interruptedIds, setInterruptedIds] = useState<Set<number>>(new Set());
+  const [interruptionError, setInterruptionError] = useState<{
+    oficioId: number;
+    message: string;
+  } | null>(null);
   const [signatureModalOficio, setSignatureModalOficio] = useState<OficioRow | null>(null);
 
   function handleCancel(id: number) {
@@ -33,6 +51,22 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
         setCancelledIds((prev) => new Set(prev).add(id));
         setCancelConfirmId(null);
       }
+    });
+  }
+
+  function handleMarkInterrupted(id: number) {
+    setInterruptionError(null);
+    startInterruptedTransition(async () => {
+      const result = await markAssinafySubmissionInterruptedAction(id);
+      if (result.success) {
+        setInterruptedIds((prev) => new Set(prev).add(id));
+        setInterruptedConfirmId(null);
+        return;
+      }
+      setInterruptionError({
+        oficioId: id,
+        message: result.error ?? 'Falha ao marcar o envio como interrompido.',
+      });
     });
   }
 
@@ -81,6 +115,9 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
           <tbody className="divide-y" style={{ borderColor: hairline }}>
             {oficios.map((oficio) => {
               const isCancelled = oficio.status === 'cancelado' || cancelledIds.has(oficio.id);
+              const assinafyStatus = interruptedIds.has(oficio.id)
+                ? 'failed'
+                : oficio.assinafyStatus;
               const statusColor = isCancelled
                 ? error
                 : oficio.status === 'rascunho'
@@ -128,7 +165,7 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                       {!isCancelled &&
                         (oficio.status === 'gerado' || oficio.status === 'rascunho') &&
                         oficio.assinafyDocumentId === null &&
-                        oficio.assinafyStatus === null && (
+                        assinafyStatus === null && (
                           <button
                             type="button"
                             onClick={() => setSignatureModalOficio(oficio)}
@@ -140,6 +177,46 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                           </button>
                         )}
                       {!isCancelled &&
+                        assinafyStatus === 'uploading' &&
+                        (interruptedConfirmId === oficio.id ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-amber-800">Confirmar interrupção?</span>
+                            <button
+                              type="button"
+                              onClick={() => handleMarkInterrupted(oficio.id)}
+                              disabled={isMarkingInterrupted}
+                              className={`rounded-md bg-amber-600 px-2 py-0.5 text-xs font-semibold text-white transition-colors hover:bg-amber-700 disabled:opacity-50 ${focusRingClass}`}
+                            >
+                              {isMarkingInterrupted ? (
+                                <Loader2 className="motion-safe:animate-spin" size={12} />
+                              ) : (
+                                'Sim'
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setInterruptedConfirmId(null)}
+                              className={`rounded-md border border-[rgba(4,9,32,0.1)] px-2 py-0.5 text-xs font-medium text-[rgba(13,31,60,0.6)] transition-colors hover:bg-gray-50 ${focusRingClass}`}
+                            >
+                              Não
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInterruptionError(null);
+                              setInterruptedConfirmId(oficio.id);
+                            }}
+                            className={`p-1 text-amber-600 transition-colors hover:text-amber-800 ${focusRingClass}`}
+                            title="Marcar envio interrompido"
+                            aria-label="Marcar envio interrompido"
+                          >
+                            <TriangleAlert size={18} aria-hidden="true" />
+                          </button>
+                        ))}
+                      {!isCancelled &&
+                        assinafyStatus !== 'uploading' &&
                         (cancelConfirmId === oficio.id ? (
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs text-red-700">Confirmar?</span>
@@ -175,68 +252,83 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                           </button>
                         ))}
                     </div>
-                    {oficio.assinafyStatus === 'pending_signature' && oficio.assinafySigningUrl && oficio.assinafySigningUrl.startsWith('https://') && (
-                      <a
-                        href={oficio.assinafySigningUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`mt-1.5 inline-flex items-center gap-1 rounded-[6px] px-2 py-0.5 text-xs font-medium transition-colors hover:opacity-80 ${focusRingClass}`}
-                        style={{ backgroundColor: infoBg, color: info }}
-                        title="Abrir página de assinatura"
+                    {assinafyStatus === 'uploading' && (
+                      <span
+                        className="mt-1.5 inline-flex items-center rounded-[6px] px-2 py-0.5 text-xs font-medium"
+                        style={{ backgroundColor: warningBg, color: warning }}
                       >
-                        Assinatura pendente
-                        <svg
-                          className="inline-block"
-                          width="10"
-                          height="10"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
-                        >
-                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                          <polyline points="15 3 21 3 21 9" />
-                          <line x1="10" y1="14" x2="21" y2="3" />
-                        </svg>
-                      </a>
+                        Envio em andamento
+                      </span>
                     )}
-                    {oficio.assinafyStatus &&
+                    {assinafyStatus === 'pending_signature' &&
+                      oficio.assinafySigningUrl &&
+                      oficio.assinafySigningUrl.startsWith('https://') && (
+                        <a
+                          href={oficio.assinafySigningUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`mt-1.5 inline-flex items-center gap-1 rounded-[6px] px-2 py-0.5 text-xs font-medium transition-colors hover:opacity-80 ${focusRingClass}`}
+                          style={{ backgroundColor: infoBg, color: info }}
+                          title="Abrir página de assinatura"
+                        >
+                          Assinatura pendente
+                          <svg
+                            className="inline-block"
+                            width="10"
+                            height="10"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                            <polyline points="15 3 21 3 21 9" />
+                            <line x1="10" y1="14" x2="21" y2="3" />
+                          </svg>
+                        </a>
+                      )}
+                    {assinafyStatus &&
                       [
                         'certificated',
                         'expired',
                         'rejected_by_signer',
                         'rejected_by_user',
                         'failed',
-                      ].includes(oficio.assinafyStatus) && (
+                      ].includes(assinafyStatus) && (
                         <span
                           className="mt-1.5 inline-flex items-center rounded-[6px] px-2 py-0.5 text-xs font-medium"
                           style={{
                             backgroundColor:
-                              oficio.assinafyStatus === 'certificated'
+                              assinafyStatus === 'certificated'
                                 ? successBg
-                                : oficio.assinafyStatus === 'expired'
+                                : assinafyStatus === 'expired'
                                   ? warningBg
                                   : errorBg,
                             color:
-                              oficio.assinafyStatus === 'certificated'
+                              assinafyStatus === 'certificated'
                                 ? success
-                                : oficio.assinafyStatus === 'expired'
+                                : assinafyStatus === 'expired'
                                   ? warning
                                   : error,
                           }}
                         >
-                          {oficio.assinafyStatus === 'certificated'
+                          {assinafyStatus === 'certificated'
                             ? 'Assinado'
-                            : oficio.assinafyStatus === 'expired'
+                            : assinafyStatus === 'expired'
                               ? 'Expirado'
-                              : oficio.assinafyStatus === 'failed'
+                              : assinafyStatus === 'failed'
                                 ? 'Falha'
                                 : 'Rejeitado'}
                         </span>
                       )}
+                    {interruptionError?.oficioId === oficio.id && (
+                      <p className="mt-1.5 max-w-64 text-xs text-red-700" role="alert">
+                        {interruptionError.message}
+                      </p>
+                    )}
                   </td>
                 </tr>
               );

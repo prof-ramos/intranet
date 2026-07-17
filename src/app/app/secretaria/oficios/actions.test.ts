@@ -3,6 +3,7 @@ import { Logger } from '@/lib/logger';
 import {
   cancelOfficialLetterAction,
   generateAiTextAction,
+  markAssinafySubmissionInterruptedAction,
   saveOfficialLetterAction,
   sendForSignatureAction,
   updateOfficialLetterAction,
@@ -17,6 +18,7 @@ const {
   saveOfficialLetterMock,
   updateOfficialLetterMock,
   cancelOfficialLetterMock,
+  markAssinafySubmissionInterruptedMock,
   sendForSignatureMock,
   revalidatePathMock,
   envMock,
@@ -30,6 +32,7 @@ const {
   saveOfficialLetterMock: vi.fn(),
   updateOfficialLetterMock: vi.fn(),
   cancelOfficialLetterMock: vi.fn(),
+  markAssinafySubmissionInterruptedMock: vi.fn(),
   sendForSignatureMock: vi.fn(),
   revalidatePathMock: vi.fn(),
   envMock: { NEXT_PUBLIC_AI_ENABLED: true as boolean },
@@ -65,6 +68,8 @@ vi.mock('@/lib/oficios/service', () => ({
   saveOfficialLetter: (...args: unknown[]) => saveOfficialLetterMock(...args),
   updateOfficialLetter: (...args: unknown[]) => updateOfficialLetterMock(...args),
   cancelOfficialLetter: (...args: unknown[]) => cancelOfficialLetterMock(...args),
+  markAssinafySubmissionInterrupted: (...args: unknown[]) =>
+    markAssinafySubmissionInterruptedMock(...args),
   sendForSignature: (...args: unknown[]) => sendForSignatureMock(...args),
 }));
 
@@ -103,6 +108,7 @@ describe('secretaria oficios actions', () => {
     saveOfficialLetterMock.mockResolvedValue({ id: 1 });
     updateOfficialLetterMock.mockResolvedValue({ id: 1 });
     cancelOfficialLetterMock.mockResolvedValue({ id: 1 });
+    markAssinafySubmissionInterruptedMock.mockResolvedValue({ id: 1, assinafyStatus: 'failed' });
     sendForSignatureMock.mockResolvedValue({ success: true, data: { id: 12 } });
     isGeminiConfiguredMock.mockResolvedValue(true);
     envMock.NEXT_PUBLIC_AI_ENABLED = true;
@@ -251,6 +257,29 @@ describe('secretaria oficios actions', () => {
       undefined,
     );
     consoleErrorSpy.mockRestore();
+  });
+
+  describe('markAssinafySubmissionInterruptedAction', () => {
+    it('marks the interrupted claim and revalidates the list', async () => {
+      const result = await markAssinafySubmissionInterruptedAction(12);
+
+      expect(markAssinafySubmissionInterruptedMock).toHaveBeenCalledWith(12, 7);
+      expect(revalidatePathMock).toHaveBeenCalledWith('/app/secretaria/oficios');
+      expect(result).toEqual({ success: true, data: { id: 1, assinafyStatus: 'failed' } });
+    });
+
+    it('returns the safe domain error to the operator', async () => {
+      const { ValidationError } = await import('@/lib/errors');
+      const consoleErrorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
+      markAssinafySubmissionInterruptedMock.mockRejectedValue(
+        new ValidationError('O envio ainda está em andamento.'),
+      );
+
+      const result = await markAssinafySubmissionInterruptedAction(12);
+
+      expect(result).toEqual({ success: false, error: 'O envio ainda está em andamento.' });
+      consoleErrorSpy.mockRestore();
+    });
   });
 
   describe('sendForSignatureAction', () => {

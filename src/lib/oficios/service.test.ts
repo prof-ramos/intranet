@@ -4,6 +4,7 @@ import {
   updateOfficialLetter,
   cancelOfficialLetter,
   generateOfficialLetterNumber,
+  markAssinafySubmissionInterrupted,
   sendForSignature,
 } from './service';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
@@ -81,7 +82,7 @@ const assinafyMocks = vi.hoisted(() => ({
   mockGeneratePdf: vi.fn(),
   mockCleanSignatoryName: vi.fn(),
   mockClaimSubmission: vi.fn(),
-  mockRecoverStaleSubmission: vi.fn(),
+  mockFailStaleSubmission: vi.fn(),
   mockFinalizeSubmission: vi.fn(),
   mockFailSubmission: vi.fn(),
   mockRecordReconciliationContext: vi.fn(),
@@ -101,7 +102,7 @@ vi.mock('@/lib/assinafy/client', () => {
 vi.mock('@/lib/assinafy/repository', () => ({
   updateAssinafyFields: vi.fn(),
   claimAssinafySubmission: assinafyMocks.mockClaimSubmission,
-  recoverStaleAssinafySubmission: assinafyMocks.mockRecoverStaleSubmission,
+  failStaleAssinafySubmission: assinafyMocks.mockFailStaleSubmission,
   finalizeAssinafySubmission: assinafyMocks.mockFinalizeSubmission,
   failAssinafySubmission: assinafyMocks.mockFailSubmission,
   recordAssinafyReconciliationContext: assinafyMocks.mockRecordReconciliationContext,
@@ -161,6 +162,11 @@ describe('oficios service', () => {
     assinafyMocks.mockGeneratePdf.mockResolvedValue(new Uint8Array([1, 2, 3]));
     assinafyMocks.mockCleanSignatoryName.mockReturnValue('Clean Name');
     assinafyMocks.mockClaimSubmission.mockResolvedValue(BASE_OFFICIAL_LETTER);
+    assinafyMocks.mockFailStaleSubmission.mockResolvedValue({
+      ...BASE_OFFICIAL_LETTER,
+      assinafyStatus: 'failed',
+      assinafyError: 'Envio interrompido.',
+    });
     assinafyMocks.mockFinalizeSubmission.mockResolvedValue({
       ...BASE_OFFICIAL_LETTER,
       assinafyDocumentId: 'doc-123',
@@ -202,9 +208,9 @@ describe('oficios service', () => {
     expect(
       vi.mocked(repository.lockOfficialLetterSequenceYear).mock.invocationCallOrder[0],
     ).toBeLessThan(vi.mocked(repository.getLastSequenceForYear).mock.invocationCallOrder[0]!);
-    expect(
-      vi.mocked(repository.getLastSequenceForYear).mock.invocationCallOrder[0],
-    ).toBeLessThan(vi.mocked(repository.createOfficialLetter).mock.invocationCallOrder[0]!);
+    expect(vi.mocked(repository.getLastSequenceForYear).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(repository.createOfficialLetter).mock.invocationCallOrder[0]!,
+    );
 
     expect(emitDomainEvent).toHaveBeenCalledOnce();
     expect(emitDomainEvent).toHaveBeenCalledWith(
@@ -451,6 +457,45 @@ describe('oficios service', () => {
       'Ofício não pode ser cancelado enquanto o envio está em andamento.',
     );
     expect(logAuditAction).not.toHaveBeenCalled();
+  });
+
+  describe('markAssinafySubmissionInterrupted', () => {
+    it('closes a stale claim and audits the explicit operator action', async () => {
+      const repository = await import('./repository');
+      vi.mocked(repository.findOfficialLetterById).mockResolvedValue({
+        ...BASE_OFFICIAL_LETTER,
+        assinafyStatus: 'uploading',
+      });
+
+      const result = await markAssinafySubmissionInterrupted(12, 7);
+
+      expect(assinafyMocks.mockFailStaleSubmission).toHaveBeenCalledWith(
+        12,
+        7,
+        10,
+        transactionMock.tx,
+      );
+      expect(result.assinafyStatus).toBe('failed');
+      expect(logAuditAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          adminId: 7,
+          action: 'official_letter_assinafy_submission_interrupted',
+          entityId: 12,
+        }),
+      );
+    });
+
+    it('does not audit when the claim is fresh or already changed', async () => {
+      const repository = await import('./repository');
+      vi.mocked(repository.findOfficialLetterById).mockResolvedValue({
+        ...BASE_OFFICIAL_LETTER,
+        assinafyStatus: 'uploading',
+      });
+      assinafyMocks.mockFailStaleSubmission.mockResolvedValue(null);
+
+      await expect(markAssinafySubmissionInterrupted(12, 7)).rejects.toThrow('Aguarde 10 minutos');
+      expect(logAuditAction).not.toHaveBeenCalled();
+    });
   });
 
   describe('sendForSignature', () => {
