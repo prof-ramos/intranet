@@ -11,7 +11,7 @@
  */
 import { env } from '@/lib/env';
 import { EMAIL_TRIAGE_MODEL } from '@/lib/ai/constants';
-import { correlate, type CorrelationAction } from './correlate';
+import { correlate } from './correlate';
 import { createLogger } from '@/lib/logger';
 import { redactPiiString } from '@/lib/sanitize-pii';
 import { createHash } from 'node:crypto';
@@ -37,6 +37,7 @@ import { buildCorrelationContext } from './correlation-context';
 import { applyCorrelationActions } from './correlation-actions';
 import { persistTriage, persistFailure } from './persister';
 import { notifyNeedsValidation } from './notifier';
+import { decideTriageAutomation } from './automation-policy';
 
 const log = createLogger('email-triage');
 
@@ -44,16 +45,6 @@ const log = createLogger('email-triage');
 
 const DEFAULT_MODEL = EMAIL_TRIAGE_MODEL;
 const MAX_CONCURRENCY = 3;
-
-function requiresOperationalReview(
-  result: EmailTriageResult,
-  actions: CorrelationAction[],
-): boolean {
-  return (
-    (result.categoria === 'juridico' || result.categoria === 'administrativo') &&
-    actions.some((action) => action.type === 'skip')
-  );
-}
 
 // ─── Exported Types ──────────────────────────────────────────────────────
 
@@ -81,9 +72,10 @@ export interface BatchResult {
  *  2. Extract text and attachments
  *  3. Build EmailPayload (PII-redacted excerpts, SHA256 hash)
  *  4. Call Gemini analysis
- *  5. Persist to `email_triagens` (upsert on conflict message_id)
- *  6. Run correlation engine against existing consultations
- *  7. Mark email with `asof-triaged` label in Gmail
+ *  5. Resolve code-owned automation policy against existing consultations
+ *  6. Persist to `email_triagens` (upsert on conflict message_id)
+ *  7. Apply the authorized operational note or notify for human review
+ *  8. Mark email with `asof-triaged` label in Gmail
  *
  * Error isolation: if a step fails, the error is captured in the returned
  * `ProcessEmailResult` — it does NOT throw.
@@ -183,35 +175,32 @@ export async function processEmail(
     return { success: false, messageId, error: `Analysis failed: ${error}` };
   }
 
-  // ── Step 5: Determine correlation outcome ─────────────────────────────
-  // Decide before persistence so legal/administrative emails that cannot be
-  // correlated are stored in the coordinator review queue from the outset.
-  let correlationActions: CorrelationAction[] | null = null;
-  let persistedTriageResult = triageResult;
-
+  // ── Step 5: Persist to DB ─────────────────────────────────────────────
+  let automationDecision = decideTriageAutomation(triageResult, null, []);
   if (!triageResult.exige_validacao_humana) {
     try {
       const context = await buildCorrelationContext(payload);
-      correlationActions = correlate(payload, triageResult, context);
-      if (requiresOperationalReview(triageResult, correlationActions)) {
-        persistedTriageResult = { ...triageResult, exige_validacao_humana: true };
-      }
+      const actions = correlate(payload, triageResult, context);
+      automationDecision = decideTriageAutomation(triageResult, context, actions);
     } catch (err) {
       log.warn(
-        'Correlation engine failed (non-fatal).',
+        'Correlation engine failed; requiring operational review.',
         { messageId },
         err instanceof Error ? err : undefined,
       );
     }
   }
 
-  // ── Step 6: Persist to DB ─────────────────────────────────────────────
+  const effectiveTriageResult = automationDecision.requiresReview
+    ? { ...triageResult, exige_validacao_humana: true }
+    : triageResult;
+
   let triageId: number;
   try {
-    triageId = await persistTriage(payload, persistedTriageResult, DEFAULT_MODEL, null);
+    triageId = await persistTriage(payload, effectiveTriageResult, DEFAULT_MODEL, null);
     log.info('Triage result persisted.', {
       messageId,
-      categoria: persistedTriageResult.categoria,
+      categoria: triageResult.categoria,
     });
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err);
@@ -219,8 +208,8 @@ export async function processEmail(
     return { success: false, messageId, error: `DB persist failed: ${error}` };
   }
 
-  if (persistedTriageResult.exige_validacao_humana) {
-    const notifyResult = await notifyNeedsValidation(persistedTriageResult, triageId, payload);
+  if (automationDecision.requiresReview) {
+    const notifyResult = await notifyNeedsValidation(effectiveTriageResult, triageId, payload);
     if (!notifyResult.ok) {
       log.warn('Failed to notify admins of new triage (non-fatal).', {
         error: redactPiiString(notifyResult.error ?? ''),
@@ -228,20 +217,22 @@ export async function processEmail(
     }
   }
 
-  // ── Step 7: Apply correlation actions ─────────────────────────────────
-  if (correlationActions) {
+  // ── Step 6: Correlation engine ────────────────────────────────────────
+  // Skipped when operational review is required; automatic notes are only
+  // created for low-ambiguity control of existing open demands.
+  if (!automationDecision.requiresReview) {
     try {
-      await applyCorrelationActions(correlationActions);
+      await applyCorrelationActions(automationDecision.actions);
     } catch (err) {
       log.warn(
-        'Correlation engine failed (non-fatal).',
+        'Failed to apply authorized correlation action (non-fatal).',
         { messageId },
         err instanceof Error ? err : undefined,
       );
     }
   }
 
-  // ── Step 8: Mark as triaged ───────────────────────────────────────────
+  // ── Step 7: Mark as triaged ───────────────────────────────────────────
   try {
     const labelId = await ensureLabel(accessToken, userId);
     await markAsTriaged(accessToken, messageId, labelId, userId);

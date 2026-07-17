@@ -282,22 +282,13 @@ describe('processEmail', () => {
     const result = await processEmail('fake-token', 'msg-no-consultation');
 
     expect(result.success).toBe(true);
-    expect(mockApplyCorrelationActions).toHaveBeenCalledWith([
-      {
-        type: 'skip',
-        reason: 'associado sem consultas jurídicas abertas',
-      },
-    ]);
+    expect(mockApplyCorrelationActions).not.toHaveBeenCalled();
+    expect(mockNotifyNeedsValidation).toHaveBeenCalledOnce();
     expect(mockPersistTriage).toHaveBeenCalledWith(
-      expect.any(Object),
+      expect.anything(),
       expect.objectContaining({ exige_validacao_humana: true }),
       expect.any(String),
       null,
-    );
-    expect(mockNotifyNeedsValidation).toHaveBeenCalledWith(
-      expect.objectContaining({ exige_validacao_humana: true }),
-      42,
-      expect.objectContaining({ message_id: 'msg-no-consultation' }),
     );
   });
 
@@ -325,22 +316,13 @@ describe('processEmail', () => {
     const result = await processEmail('fake-token', 'msg-ambiguous');
 
     expect(result.success).toBe(true);
-    expect(mockApplyCorrelationActions).toHaveBeenCalledWith([
-      {
-        type: 'skip',
-        reason: 'ambíguo — 2 consultas abertas; coordenador deve vincular',
-      },
-    ]);
+    expect(mockApplyCorrelationActions).not.toHaveBeenCalled();
+    expect(mockNotifyNeedsValidation).toHaveBeenCalledOnce();
     expect(mockPersistTriage).toHaveBeenCalledWith(
-      expect.any(Object),
+      expect.anything(),
       expect.objectContaining({ exige_validacao_humana: true }),
       expect.any(String),
       null,
-    );
-    expect(mockNotifyNeedsValidation).toHaveBeenCalledWith(
-      expect.objectContaining({ exige_validacao_humana: true }),
-      42,
-      expect.objectContaining({ message_id: 'msg-ambiguous' }),
     );
   });
 
@@ -568,6 +550,45 @@ describe('processEmail', () => {
       messageId: 'msg-corr-fail',
       categoria: 'juridico',
     });
+    expect(mockApplyCorrelationActions).not.toHaveBeenCalled();
+    expect(mockNotifyNeedsValidation).toHaveBeenCalledOnce();
+  });
+
+  it('continues when applying an authorized correlation note fails', async () => {
+    mockGetMessage.mockResolvedValue({
+      id: 'msg-note-fail',
+      threadId: 'thread-note-fail',
+      historyId: 'hist-note-fail',
+      payload: { headers: [], body: { data: '' } },
+    });
+    mockExtractTextAndAttachments.mockReturnValue({ text: 'test', attachments: [] });
+    mockAnalyzeEmail.mockResolvedValue({
+      categoria: 'juridico',
+      exige_validacao_humana: false,
+      resumo: 'Demanda sintética para nota operacional.',
+      ha_prazo: false,
+      nivel_risco: 'baixo',
+      confianca: 'alta',
+      acao_recomendada: 'Acompanhar demanda.',
+    });
+    mockPersistTriage.mockResolvedValue(42);
+    mockBuildCorrelationContext.mockResolvedValue({
+      associate: { id: 1 },
+      consultations: [{ id: 10 }],
+    });
+    mockApplyCorrelationActions.mockRejectedValue(new Error('Note insert failed'));
+    mockEnsureLabel.mockResolvedValue('label-id-123');
+    mockMarkAsTriaged.mockResolvedValue(undefined);
+
+    const result = await processEmail('fake-token', 'msg-note-fail');
+
+    expect(result).toMatchObject({
+      success: true,
+      messageId: 'msg-note-fail',
+      categoria: 'juridico',
+    });
+    expect(mockMarkAsTriaged).toHaveBeenCalled();
+    expect(mockNotifyNeedsValidation).not.toHaveBeenCalled();
   });
 
   it('logs warning and continues when marking as triaged fails', async () => {
