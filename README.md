@@ -205,9 +205,9 @@ npm run format        # formata código com Prettier
 npm run format:check  # valida formatação
 npm run test          # Vitest (testes unitários)
 npm run test:watch    # Vitest em modo watch
-npm run test:coverage # cobertura de código com v8 (thresholds: lines 70%, fn 75%, branch 65%)
+npm run test:coverage # cobertura de código com v8 (thresholds: lines 70%, fn 70%, branch 65%)
 npm run audit         # npm audit
-npm run validate:quick  # typecheck + lint + testes unitários
+npm run validate:quick  # lint + typecheck + testes unitários
 npm run validate:full   # quick + test:db + test:integration (pula se sem .env.test.local) + build
 npm run scope:check   # verifica escopo de arquivos alterados
 npm run pr:check      # verificações de prontidão para PR

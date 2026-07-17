@@ -18,15 +18,15 @@ Documentation directory covering architecture decisions, design guidelines, comp
 
 ## Subdirectories
 
-| Directory      | Purpose                                                                                                                                                                                    |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `adr/`         | Architecture Decision Records covering auth, DB, RLS, PII, notifications, kanban, LGPD (incl. export/acesso — ADR 019), go-live, rollback, incident ownership, DMS/Papra, and environments |
-| `agents/`      | Agent-facing domain documentation — associates, issue-tracker, triage-labels (see `agents/AGENTS.md`)                                                                                      |
-| `compliance/`  | LGPD compliance checklist and data handling policies (see `compliance/AGENTS.md`)                                                                                                          |
-| `design/`      | Design system — theme tokens, oficios padrao templates, UI screenshots (see `design/AGENTS.md`)                                                                                            |
-| `development/` | Dev environment docs — Codex guardrails, FABRICA process, test-metrics (see `development/AGENTS.md`)                                                                                       |
-| `jornadas/`    | User journey maps — financeiro personas and monthly payment flows (see `jornadas/AGENTS.md`)                                                                                               |
-| `lotacao/`     | Geographic assignment docs — posteiros exterior posts and SERE (see `lotacao/AGENTS.md`)                                                                                                   |
+| Directory                        | Purpose                                                                                                               |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| [`adr/`](./adr/)                 | Architecture Decision Records covering auth, DB, RLS, notifications, kanban, LGPD, go-live, rollback and environments |
+| [`agents/`](./agents/)           | Agent-facing documentation — issue tracker, triage labels and agent governance                                        |
+| [`compliance/`](./compliance/)   | LGPD compliance checklist and data handling policies                                                                  |
+| [`design/`](./design/)           | Design system — theme tokens and oficios padrao templates                                                             |
+| [`development/`](./development/) | Development documentation — branch naming and the retired test-metrics schema note                                    |
+| [`jornadas/`](./jornadas/)       | User journey maps — financeiro personas and monthly payment flows                                                     |
+| [`lotacao/`](./lotacao/)         | Geographic assignment docs — postos no exterior and SERE                                                              |
 
 ## For AI Agents
 
