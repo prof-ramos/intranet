@@ -158,8 +158,8 @@ export const POST = createWebhookHandler<
 
     return { ok: true, context: authorization };
   },
-  parse: async (request) => {
-    const text = await request.text();
+  parse: async (request, { auth: authorization }) => {
+    const text = authorization.verifiedBody ?? (await request.text());
     const trimmed = text.trim();
 
     const parsedBody = trimmed.length === 0 ? {} : JSON.parse(trimmed);

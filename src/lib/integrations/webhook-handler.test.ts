@@ -5,7 +5,10 @@ describe('createWebhookHandler', () => {
   it('short-circuits when authentication returns a response', async () => {
     const handle = vi.fn();
     const handler = createWebhookHandler({
-      authenticate: () => ({ ok: false, response: Response.json({ error: 'no' }, { status: 401 }) }),
+      authenticate: () => ({
+        ok: false,
+        response: Response.json({ error: 'no' }, { status: 401 }),
+      }),
       parse: parseJsonWebhook,
       handle,
     });
@@ -48,6 +51,27 @@ describe('createWebhookHandler', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ id: 7, principal: 'api-key' });
+  });
+
+  it('lets parsers reuse an authenticated body carried only in the auth context', async () => {
+    const request = new Request('http://localhost/webhook', {
+      method: 'POST',
+      body: '{"id":7}',
+    });
+    const textSpy = vi.spyOn(request, 'text');
+    const handler = createWebhookHandler({
+      authenticate: async (authenticatedRequest) => ({
+        ok: true,
+        context: { verifiedBody: await authenticatedRequest.text() },
+      }),
+      parse: async (_request, { auth }) => JSON.parse(auth.verifiedBody) as { id: number },
+      handle: async (payload) => Response.json(payload),
+    });
+
+    const response = await handler(request);
+
+    await expect(response.json()).resolves.toEqual({ id: 7 });
+    expect(textSpy).toHaveBeenCalledOnce();
   });
 
   it('delegates errors to onError', async () => {
