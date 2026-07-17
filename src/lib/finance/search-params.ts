@@ -1,6 +1,7 @@
 import { monthlyPaymentsSearchParamsSchema } from '@/lib/validation/schemas';
 import { paymentStatus } from '@/lib/db/schema/finance';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
+import { getBusinessDateParts } from '@/lib/utils/date';
 
 export interface MonthlyPaymentsSearchParams {
   q: string;
@@ -62,9 +63,10 @@ export function parseMonthlyPaymentsPageSearchParams(
   },
   now = new Date(),
 ): MonthlyPaymentsPageSearchParams {
+  const businessDate = getBusinessDateParts(now);
   return {
-    year: parseBoundedInteger(params.year, now.getFullYear(), 1900, 2100),
-    month: parseBoundedInteger(params.month, now.getMonth() + 1, 1, 12),
+    year: parseBoundedInteger(params.year, businessDate.year, 1900, 2100),
+    month: parseBoundedInteger(params.month, businessDate.month, 1, 12),
     filters: parseMonthlyPaymentsSearchParams(params),
   };
 }

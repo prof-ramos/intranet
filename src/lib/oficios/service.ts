@@ -13,6 +13,7 @@ import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 import { env } from '@/lib/env';
 import { NotFoundError } from '@/lib/errors';
+import { getBusinessDateParts } from '@/lib/utils/date';
 
 const logger = createLogger('oficios:service');
 
@@ -50,9 +51,10 @@ export async function generateOfficialLetterNumber(year: number, tx: DbExecutor 
 export async function saveOfficialLetter(
   data: Omit<NewOfficialLetter, 'number' | 'year' | 'sequence' | 'createdBy'>,
   userId: number,
+  now: Date = new Date(),
 ) {
   const { result, auditArgs } = await db.transaction(async (tx) => {
-    const year = new Date().getFullYear();
+    const year = getBusinessDateParts(now).year;
     await repository.lockOfficialLetterSequenceYear(year, tx);
     const { number, sequence } = await generateOfficialLetterNumber(year, tx);
 

@@ -2,11 +2,39 @@
  * Date formatting and calculation utilities for the ASOF intranet.
  *
  * All functions handle null/undefined gracefully and produce pt-BR formatted output.
- * They operate on date-only values (YYYY-MM-DD strings or Date objects).
- * All date arithmetic uses UTC to avoid timezone-dependent results.
+ * Formatting helpers for persisted date-only values use UTC to avoid shifts.
+ * Institutional civil-date decisions explicitly use BUSINESS_TIME_ZONE.
  */
 
 const MS_PER_DAY = 86_400_000;
+export const BUSINESS_TIME_ZONE = 'America/Sao_Paulo';
+
+export function getBusinessDateParts(now: Date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: BUSINESS_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value);
+  return { year: value('year'), month: value('month'), day: value('day') };
+}
+
+export function businessDateOnly(now: Date = new Date()): string {
+  const { year, month, day } = getBusinessDateParts(now);
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+export function formatBusinessDate(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: BUSINESS_TIME_ZONE,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(now);
+}
 
 function parseDateParts(value: string | Date | null | undefined): { year: number; month: number; day: number } | null {
   const d = dateOnly(value);
@@ -101,26 +129,37 @@ export function formatDueDate(value: string | null | undefined): string | null {
 }
 
 /**
- * Calculate the number of days between today (UTC) and a date (positive = future, negative = past).
- * Returns null for nullish input. Both dates are computed in UTC.
+ * Calculate the number of civil days between today in São Paulo and a date-only value.
+ * Positive values are future dates and negative values are past dates.
  */
-export function daysFromToday(value: string | null | undefined): number | null {
+export function daysFromToday(
+  value: string | null | undefined,
+  now: Date = new Date(),
+): number | null {
   const date = dateFromValue(value);
   if (!date) return null;
-  const now = new Date();
-  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const todayParts = getBusinessDateParts(now);
+  const today = Date.UTC(todayParts.year, todayParts.month - 1, todayParts.day);
   return Math.round((date.getTime() - today) / MS_PER_DAY);
 }
 
 /**
- * Calculate how many days have passed since a date. Returns null for nullish input.
- * Uses UTC for consistency.
+ * Calculate civil days elapsed in the institutional calendar.
  */
-export function daysSince(value: string | Date | null | undefined): number | null {
-  const date = dateFromValue(value instanceof Date ? value.toISOString() : value);
+export function daysSince(
+  value: string | Date | null | undefined,
+  now: Date = new Date(),
+): number | null {
+  let sourceDate: string | null | undefined = typeof value === 'string' ? value : null;
+  if (value instanceof Date || (typeof value === 'string' && value.includes('T'))) {
+    const instant = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(instant.getTime())) return null;
+    sourceDate = businessDateOnly(instant);
+  }
+  const date = dateFromValue(sourceDate);
   if (!date) return null;
-  const now = new Date();
-  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const todayParts = getBusinessDateParts(now);
+  const today = Date.UTC(todayParts.year, todayParts.month - 1, todayParts.day);
   return Math.floor((today - date.getTime()) / MS_PER_DAY);
 }
 

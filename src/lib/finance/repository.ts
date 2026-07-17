@@ -10,6 +10,7 @@ import { associates } from '@/lib/db/schema/associates';
 import { and, desc, eq, ilike, lt, or, sql } from 'drizzle-orm';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
 import { effectivePaymentMethodSql } from './effective-payment';
+import { getBusinessDateParts } from '@/lib/utils/date';
 
 export interface PaymentHistoryItem {
   year: number;
@@ -125,12 +126,9 @@ export interface OverduePaymentTransition {
 
 export async function markOverduePaymentsForAudit(
   executor: DbExecutor = db,
+  now: Date = new Date(),
 ): Promise<OverduePaymentTransition[]> {
-  // Use America/Sao_Paulo timezone to avoid marking payments overdue
-  // 3 hours early when the server runs in UTC (e.g. Vercel).
-  const spNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-  const thisYear = spNow.getFullYear();
-  const thisMonth = spNow.getMonth() + 1;
+  const { year: thisYear, month: thisMonth } = getBusinessDateParts(now);
 
   return executor
     .update(monthlyPayments)

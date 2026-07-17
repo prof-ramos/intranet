@@ -186,10 +186,11 @@ describe('oficios service', () => {
         bodyPlainText: 'Texto',
       },
       1,
+      new Date('2026-01-01T01:00:00.000Z'),
     );
 
     expect(repository.lockOfficialLetterSequenceYear).toHaveBeenCalledWith(
-      expect.any(Number),
+      2025,
       transactionMock.tx,
     );
     expect(

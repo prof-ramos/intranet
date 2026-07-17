@@ -6,18 +6,14 @@ import Link from 'next/link';
 import { DashboardActivitiesOverview } from './_dashboard/DashboardActivitiesOverview';
 import { DashboardIndicators } from './_dashboard/DashboardIndicators';
 import { DashboardSidebar } from './_dashboard/DashboardSidebar';
+import { formatBusinessDate } from '@/lib/utils/date';
 
 export default async function DashboardPage() {
   const user = await requireAuth();
   const data = await getDashboardViewModel();
   const sidebarUser = { name: user.name, role: user.role };
 
-  const today = new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  const today = formatBusinessDate();
 
   return (
     <main className="mx-auto flex w-full max-w-[1180px] flex-1 flex-col px-5 py-7 sm:px-8 sm:py-8 lg:px-10 lg:py-10">

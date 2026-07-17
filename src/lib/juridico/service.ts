@@ -12,6 +12,7 @@ import {
 } from './repository';
 import { isLegalConsultationStatus, type LegalConsultationStatus } from '@/lib/juridico/status';
 import { NotFoundError, ValidationError } from '@/lib/errors';
+import { getBusinessDateParts } from '@/lib/utils/date';
 
 const MAX_RETRIES = 3;
 const WEBHOOKABLE_STATUS_TRANSITIONS = new Set<LegalConsultationStatus>([
@@ -25,8 +26,11 @@ const WEBHOOKABLE_STATUS_TRANSITIONS = new Set<LegalConsultationStatus>([
  * Se executado dentro de uma transação, recebe o executor via parâmetro.
  * Caso contrário, cria sua própria transação com retry em caso de conflito.
  */
-export async function generateInternalNumber(executor?: DbExecutor): Promise<string> {
-  const year = new Date().getFullYear();
+export async function generateInternalNumber(
+  executor?: DbExecutor,
+  now: Date = new Date(),
+): Promise<string> {
+  const year = getBusinessDateParts(now).year;
 
   async function nextNumber(tx: DbExecutor): Promise<string> {
     const likePattern = `JUR-${year}-%`;
