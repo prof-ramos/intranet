@@ -27,10 +27,14 @@ describe('documentation checker', () => {
       'README.md': [
         '`npm run test`',
         '[guide](docs/guide.md#usage)',
+        '[legacy guide](docs/foo_(legacy).md)',
+        '[escaped guide](docs/foo_\\(escaped\\).md)',
         '[site](https://example.test/docs)',
         '[section](#usage)',
       ].join('\n'),
       'docs/guide.md': '# Usage',
+      'docs/foo_(legacy).md': '# Legacy',
+      'docs/foo_(escaped).md': '# Escaped',
     });
 
     expect(
