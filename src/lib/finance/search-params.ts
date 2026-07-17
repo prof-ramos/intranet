@@ -76,6 +76,9 @@ export function buildMonthlyPaymentsSearchParams(
   updates: Partial<MonthlyPaymentsSearchParams>,
 ): Record<string, string> {
   const next = { ...current, ...updates };
+  if (['q', 'status', 'method', 'location'].some((key) => Object.hasOwn(updates, key))) {
+    next.page = 1;
+  }
   const params: Record<string, string> = {};
 
   if (next.q) params.q = next.q;

@@ -132,6 +132,7 @@ export default function MonthlyPaymentsTable({
         } else {
           params.delete('q');
         }
+        params.delete('page');
         params.set('year', String(year));
         params.set('month', String(month));
         startTransition(() => {
@@ -151,6 +152,7 @@ export default function MonthlyPaymentsTable({
       } else {
         params.delete(key);
       }
+      params.delete('page');
       params.set('year', String(year));
       params.set('month', String(month));
       startTransition(() => {
@@ -201,7 +203,13 @@ export default function MonthlyPaymentsTable({
       setSuccessMessage('Pagamento atualizado com sucesso.');
       window.setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
-      logger.error('Failed to update payment', { associateId, year, month, newStatus, error: toSafeErrorLog(err) });
+      logger.error('Failed to update payment', {
+        associateId,
+        year,
+        month,
+        newStatus,
+        error: toSafeErrorLog(err),
+      });
       setErrorMessage('Erro ao atualizar pagamento. Tente novamente.');
     } finally {
       setUpdatingId(null);
@@ -251,7 +259,12 @@ export default function MonthlyPaymentsTable({
       setSuccessMessage('Mensalidade cancelada com registro de auditoria.');
       window.setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
-      logger.error('Failed to cancel payment', { paymentId, year, month, error: toSafeErrorLog(err) });
+      logger.error('Failed to cancel payment', {
+        paymentId,
+        year,
+        month,
+        error: toSafeErrorLog(err),
+      });
       setErrorMessage('Erro ao cancelar mensalidade. Tente novamente.');
     } finally {
       setUpdatingId(null);

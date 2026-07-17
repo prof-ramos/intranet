@@ -1,6 +1,6 @@
 'use client';
 
-import { isExteriorCountry } from '@/lib/associates/location-country';
+import type { MonthlyPaymentsAggregates } from '@/lib/finance/repository';
 import {
   textMuted,
   textPrimary,
@@ -13,38 +13,13 @@ import {
 } from '@/lib/ui/tokens';
 import { DollarSign, CheckCircle, Clock, AlertCircle, Ban, XCircle } from 'lucide-react';
 
-interface Payment {
-  paymentStatus: 'pago' | 'pendente' | 'atrasado' | 'isento' | 'cancelado' | null;
-  monthPaymentMethod: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros' | null;
-  defaultPaymentMethod: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros';
-  locationCountry: string | null;
-}
-
 interface FinanceKPIsProps {
-  payments: Payment[];
+  aggregates: MonthlyPaymentsAggregates;
 }
 
-export function FinanceKPIs({ payments }: FinanceKPIsProps) {
-  const total = payments.length;
-  const pagos = payments.filter((p) => p.paymentStatus === 'pago').length;
-  const pendentes = payments.filter(
-    (p) => p.paymentStatus === 'pendente' || !p.paymentStatus,
-  ).length;
-  const atrasados = payments.filter((p) => p.paymentStatus === 'atrasado').length;
-  const isentos = payments.filter((p) => p.paymentStatus === 'isento').length;
-  const cancelados = payments.filter((p) => p.paymentStatus === 'cancelado').length;
-
-  const exterior = payments.filter((p) => {
-    return isExteriorCountry(p.locationCountry);
-  }).length;
-
-  const folha = payments.filter(
-    (p) => (p.monthPaymentMethod || p.defaultPaymentMethod) === 'folha',
-  ).length;
-  const boletoPix = payments.filter((p) => {
-    const m = p.monthPaymentMethod || p.defaultPaymentMethod;
-    return m === 'boleto' || m === 'pix';
-  }).length;
+export function FinanceKPIs({ aggregates }: FinanceKPIsProps) {
+  const { total, pagos, pendentes, atrasados, isentos, cancelados, exterior, folha, boletoPix } =
+    aggregates;
 
   const kpiItems = [
     {
