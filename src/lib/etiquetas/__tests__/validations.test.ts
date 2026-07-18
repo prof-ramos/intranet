@@ -1,7 +1,42 @@
 import { describe, expect, it } from 'vitest';
-import { etiquetaGenerationInputSchema, etiquetaRouteRequestSchema } from '@/lib/etiquetas/validations';
+import {
+  etiquetaGenerationInputSchema,
+  etiquetaRouteRequestSchema,
+  resolveFieldsForMode,
+} from '@/lib/etiquetas/validations';
+import type { EtiquetaFieldKey, EtiquetaPrintMode } from '@/lib/etiquetas/types';
 
 describe('validações de etiquetas', () => {
+  describe('resolveFieldsForMode', () => {
+    const defaultsByMode: Array<[EtiquetaPrintMode, EtiquetaFieldKey[]]> = [
+      [
+        'postal',
+        ['nome', 'endereco_completo', 'complemento', 'bairro', 'cidade_uf', 'cep'],
+      ],
+      ['mala_diplomatica', ['nome', 'lotacao']],
+      ['custom', ['nome', 'lotacao', 'endereco_completo', 'cidade_uf', 'cep']],
+    ];
+
+    it('preserva uma seleção explícita não vazia', () => {
+      const selectedFields: EtiquetaFieldKey[] = ['nome', 'email'];
+      expect(resolveFieldsForMode('postal', selectedFields)).toEqual(['nome', 'email']);
+    });
+
+    it.each(defaultsByMode)(
+      'usa os campos padrão de %s quando a seleção está ausente',
+      (mode, expected) => {
+        expect(resolveFieldsForMode(mode)).toEqual(expected);
+      },
+    );
+
+    it.each(defaultsByMode)(
+      'usa os campos padrão de %s quando a seleção está vazia',
+      (mode, expected) => {
+        expect(resolveFieldsForMode(mode, [])).toEqual(expected);
+      },
+    );
+  });
+
   it('valida startPosition contra o template selecionado', () => {
     const parsed = etiquetaGenerationInputSchema.safeParse({
       templateCode: '6182',
