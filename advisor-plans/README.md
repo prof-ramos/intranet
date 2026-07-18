@@ -119,7 +119,7 @@ the embedded Node on macOS — prefix `PATH="/opt/homebrew/bin:$PATH"` for E2E/b
 | 056  | Validar comandos e caminhos relativos da documentação              | P3       | M      | 054        | DONE — local (checker determinístico de comandos npm e links relativos; push/PR pendentes de autorização)                                                                                                          | advisor/056-docs-command-path-validation                  |
 | 057  | Concluir higiene operacional com inventário e aprovações nominais  | P1       | M      | —          | TODO                                                                                                                                                                                                               | plan-only (operação)                                      |
 | 058  | Revogar sessões em toda troca de senha                             | P1       | S      | —          | TODO                                                                                                                                                                                                               | plan-only (security)                                      |
-| 059  | Garantir unicidade dos blind indexes de identidade                 | P1       | M      | 057        | TODO                                                                                                                                                                                                               | plan-only (migration)                                     |
+| 059  | Garantir unicidade dos blind indexes de identidade                 | P1       | M      | 057, 064   | TODO                                                                                                                                                                                                               | plan-only (migration)                                     |
 | 060  | Vincular e conter o smoke de produção                              | P1       | M      | 057        | TODO                                                                                                                                                                                                               | plan-only (operação/CI)                                   |
 | 061  | Impedir regressões de estado Assinafy                              | P1       | M      | —          | TODO                                                                                                                                                                                                               | plan-only (bug)                                           |
 | 062  | Auditar mensalidades somente após commit                           | P1       | S      | —          | TODO                                                                                                                                                                                                               | plan-only (bug)                                           |
@@ -183,8 +183,8 @@ Status values: TODO | IN PROGRESS | DONE | MERGED | BLOCKED (one-line reason) | 
   reconcilie somente componentes inequívocos e só então imponha unicidade no
   PostgreSQL.
 - **058, 061 e 062 são independentes** — podem ser executados em worktrees
-  separadas porque não compartilham arquivos; publicação/merge continua sujeita
-  aos gates oficiais e autorização do operador.
+  separadas porque não compartilham arquivos; esta execução já autoriza
+  publicação/merge após os gates oficiais e revisão Standards/Spec.
 
 ## Findings considered and rejected
 

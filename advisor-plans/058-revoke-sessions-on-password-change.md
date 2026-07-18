@@ -64,7 +64,8 @@ restrição aplicada às páginas e Server Actions.
 
 - Branch: `advisor/058-revoke-sessions-on-password-change`.
 - Commit: `fix(auth): revoke sessions after password changes`.
-- Não publique sem autorização.
+- A execução integral já autoriza publicação, promoção, merge e limpeza da branch
+  depois dos gates e da revisão Standards/Spec.
 
 ## Etapas
 
@@ -109,7 +110,8 @@ provar que o helper de role nem foi chamado; API keys não podem ser bloqueadas.
 
 ### Etapa 5: Rodar gates
 
-Execute os testes focados e `npm run validate:quick`.
+Execute os testes focados e os gates oficiais na ordem documentada: lint,
+typecheck, unitários, contrato DB e build. Finalize com `npm run pr:check`.
 
 ## Plano de testes
 
@@ -124,7 +126,7 @@ Execute os testes focados e `npm run validate:quick`.
 - [ ] Todos os três fluxos de senha incrementam `sessionVersion`.
 - [ ] A troca própria termina em login explícito, não em sessão inválida oculta.
 - [ ] APIs por sessão respeitam `mustChangePassword`.
-- [ ] Testes focados e `npm run validate:quick` passam.
+- [ ] Testes focados, sequência oficial completa e `npm run pr:check` passam.
 - [ ] Nenhum arquivo fora do escopo foi alterado.
 
 ## Condições de STOP

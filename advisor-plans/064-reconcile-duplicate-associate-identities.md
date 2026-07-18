@@ -29,12 +29,12 @@ pessoas diferentes, perder mensalidades ou vazar PII em logs.
 
 Criar um comando administrativo com duas operações:
 
-- `npm run db:reconcile-associate-identities -- --mode report` gera JSON
-  determinístico somente com IDs técnicos, contagens, elegibilidade, códigos de
-  conflito e `evidenceHash` SHA-256.
-- `npm run db:reconcile-associate-identities -- --mode apply --evidence-hash <sha256>`
-  recalcula o relatório dentro da transação e só aplica quando o hash coincide e
-  todos os componentes são elegíveis.
+- A futura entrada npm `db:reconcile-associate-identities`, em modo `report`,
+  gera JSON determinístico somente com IDs técnicos, contagens, elegibilidade,
+  códigos de conflito e `evidenceHash` SHA-256.
+- A mesma entrada, em modo `apply` e com o argumento obrigatório
+  `--evidence-hash <sha256>`, recalcula o relatório dentro da transação e só
+  aplica quando o hash coincide e todos os componentes são elegíveis.
 
 O comando `report` é o default. `apply` sem hash, com hash divergente ou com um
 único componente ambíguo termina diferente de zero e não altera nenhuma tabela.
