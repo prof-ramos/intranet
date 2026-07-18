@@ -59,7 +59,6 @@ createdb asof_intranet
 npm run db:migrate
 
 # 5. Popular com dados iniciais
-npm run db:seed
 npm run db:seed:dev
 
 # 6. Subir o servidor de desenvolvimento
@@ -174,7 +173,15 @@ npm run db:studio     # abre Drizzle Studio no browser
 ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate
 ```
 
-`npm run db:seed:dev` é local-first e bloqueia hosts remotos por padrão. Para popular um branch remoto descartável com dados sintéticos, use a confirmação explícita `ALLOW_REMOTE_DEV_SEED=SEED_SYNTHETIC_DATA`.
+`npm run db:seed:dev` é local-first, materializa o admin técnico definido por
+`DEV_USER_ID`/`DEV_USER_EMAIL` e bloqueia hosts remotos por padrão. Se ID e e-mail já
+apontarem para registros diferentes, o seed falha sem alterar o banco. Para popular um
+branch remoto descartável com dados sintéticos, use a confirmação explícita
+`ALLOW_REMOTE_DEV_SEED=SEED_SYNTHETIC_DATA`.
+
+O onboarding local usa somente `db:seed:dev`. `npm run db:seed` cria um admin com
+senha para ambientes que exercitam login real e não deve ser combinado com o bypass
+de autenticação sem alinhar explicitamente `DEV_USER_ID` e `DEV_USER_EMAIL`.
 
 As migrações versionadas em `drizzle/postgres/` são tratadas como migrations transacionais. Operações PostgreSQL que exigem execução fora de transação, como `CREATE INDEX CONCURRENTLY` ou `DROP INDEX CONCURRENTLY`, não devem ser incluídas no fluxo `npm run db:migrate`. Para esses casos, use o procedimento operacional em `docs/runbook.md`: backup/snapshot, teste em staging, execução direta via `psql "$DATABASE_MIGRATION_URL"` em janela aprovada e validação posterior com `npm run test:db`.
 
@@ -361,7 +368,7 @@ Os passos a seguir resumem conteúdo detalhado em outras seções — consulte-a
 | Requisitos (Node.js 20+, npm, PostgreSQL) | [Pré-requisitos](#pré-requisitos) |
 | Instalar dependências (`npm install`) | [Início rápido](#início-rápido) passo 1 |
 | Configurar variáveis de ambiente | [Variáveis de ambiente](#variáveis-de-ambiente) |
-| Preparar o banco (`createdb`, `db:migrate`, `db:seed`) | [Banco de dados](#banco-de-dados) |
+| Preparar o banco (`createdb`, `db:migrate`, `db:seed:dev`) | [Banco de dados](#banco-de-dados) |
 | Executar em desenvolvimento (`npm run dev`) | [Início rápido](#início-rápido) passo 6 |
 | Rodar testes (`validate:quick`, `test:db`, `test:e2e`) | [Comandos > Qualidade e PR](#qualidade-e-pr) |
 | Build de produção (`npm run build`) | [Comandos > Desenvolvimento](#desenvolvimento) |

@@ -143,7 +143,7 @@ describe('requireAuth', () => {
     await expect(requireAuth()).rejects.toThrow('NEXT_REDIRECT:/login');
   });
 
-  it('returns the session-derived user without DB lookup when skip-auth is enabled', async () => {
+  it('fails with an actionable error when the configured development admin is missing', async () => {
     authConfigMock.isSkipAuthEnabled.mockReturnValue(true);
     mockSession = {
       userId: 42,
@@ -155,13 +155,85 @@ describe('requireAuth', () => {
     };
     mockDbAdmin = null;
 
+    await expect(requireAuth()).rejects.toThrow(
+      'Development admin 42 is unavailable. Run npm run db:seed:dev before starting the app.',
+    );
+  });
+
+  it('returns the database-backed development admin when skip-auth is enabled', async () => {
+    authConfigMock.isSkipAuthEnabled.mockReturnValue(true);
+    mockSession = {
+      userId: 42,
+      name: 'Stale Dev User',
+      email: 'dev@asof.local',
+      role: 'admin',
+      mustChangePassword: false,
+      isLoggedIn: true,
+    };
+    mockDbAdmin = {
+      id: 42,
+      name: 'ASOF Dev User',
+      email: 'dev@asof.local',
+      role: 'admin',
+      isActive: true,
+      mustChangePassword: false,
+    };
+
     await expect(requireAuth()).resolves.toEqual({
+      userId: 42,
+      name: 'ASOF Dev User',
+      email: 'dev@asof.local',
+      role: 'admin',
+      mustChangePassword: false,
+    });
+  });
+
+  it('rejects a development admin whose persisted email differs from the configured actor', async () => {
+    authConfigMock.isSkipAuthEnabled.mockReturnValue(true);
+    mockSession = {
       userId: 42,
       name: 'Dev User',
       email: 'dev@asof.local',
       role: 'admin',
       mustChangePassword: false,
-    });
+      isLoggedIn: true,
+    };
+    mockDbAdmin = {
+      id: 42,
+      name: 'Unrelated Admin',
+      email: 'other@asof.local',
+      role: 'admin',
+      isActive: true,
+      mustChangePassword: false,
+    };
+
+    await expect(requireAuth()).rejects.toThrow(
+      'Development admin 42 does not match DEV_USER_EMAIL. Run npm run db:seed:dev before starting the app.',
+    );
+  });
+
+  it('rejects a development admin whose persisted role exceeds the configured role', async () => {
+    authConfigMock.isSkipAuthEnabled.mockReturnValue(true);
+    mockSession = {
+      userId: 42,
+      name: 'Dev User',
+      email: 'dev@asof.local',
+      role: 'secretaria',
+      mustChangePassword: false,
+      isLoggedIn: true,
+    };
+    mockDbAdmin = {
+      id: 42,
+      name: 'Dev User',
+      email: 'dev@asof.local',
+      role: 'admin',
+      isActive: true,
+      mustChangePassword: false,
+    };
+
+    await expect(requireAuth()).rejects.toThrow(
+      'Development admin 42 does not match DEV_USER_ROLE. Run npm run db:seed:dev before starting the app.',
+    );
   });
 
   it('returns the authenticated user from the database (not stale session data)', async () => {

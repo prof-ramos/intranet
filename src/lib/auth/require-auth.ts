@@ -8,6 +8,7 @@ import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
 import { toSafeErrorLog, ensureError } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
+import { resolvePersistedDevelopmentUser } from '@/lib/auth/development-identity';
 
 const logger = createLogger('auth:require-auth');
 
@@ -30,14 +31,16 @@ export const requireAuth = cache(async (): Promise<AuthUser> => {
     redirect('/login');
   }
 
-  if (isSkipAuthEnabled()) {
-    return {
+  const skipAuth = isSkipAuthEnabled();
+
+  if (skipAuth) {
+    return resolvePersistedDevelopmentUser({
       userId: session.userId,
       name: session.name,
       email: session.email,
       role: session.role,
       mustChangePassword: session.mustChangePassword,
-    };
+    });
   }
 
   let admin:
@@ -67,7 +70,11 @@ export const requireAuth = cache(async (): Promise<AuthUser> => {
       .limit(1);
     admin = result[0];
   } catch (error) {
-    logger.error('requireAuth DB query failed', { error: toSafeErrorLog(error) }, ensureError(error));
+    logger.error(
+      'requireAuth DB query failed',
+      { error: toSafeErrorLog(error) },
+      ensureError(error),
+    );
     dbFailed = true;
   }
 

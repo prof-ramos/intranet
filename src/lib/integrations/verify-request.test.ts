@@ -9,6 +9,10 @@ const {
   mockUpdateApiKeyLastUsed,
   mockDecryptIntegrationSigningSecret,
   mockLoggerWarn,
+  mockGetSession,
+  mockCanAccessRole,
+  mockIsSkipAuthEnabled,
+  mockResolvePersistedDevelopmentUser,
   mockNonceSelectResult,
   mockNonceInsertResult,
 } = vi.hoisted(() => ({
@@ -18,6 +22,10 @@ const {
   mockUpdateApiKeyLastUsed: vi.fn(),
   mockDecryptIntegrationSigningSecret: vi.fn(),
   mockLoggerWarn: vi.fn(),
+  mockGetSession: vi.fn(),
+  mockCanAccessRole: vi.fn(),
+  mockIsSkipAuthEnabled: vi.fn(() => false),
+  mockResolvePersistedDevelopmentUser: vi.fn(),
   mockNonceSelectResult: { current: [] as Array<{ id: number }> },
   mockNonceInsertResult: { current: [{ id: 1 }] as Array<{ id: number }> },
 }));
@@ -48,11 +56,20 @@ vi.mock('@/lib/integrations/keys/signing-secrets', () => ({
 }));
 
 vi.mock('@/lib/auth/session', () => ({
-  getSession: vi.fn(),
+  getSession: mockGetSession,
 }));
 
 vi.mock('@/lib/auth/authorization', () => ({
-  canAccessRole: vi.fn(),
+  canAccessRole: mockCanAccessRole,
+}));
+
+vi.mock('@/lib/auth/config', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/auth/config')>()),
+  isSkipAuthEnabled: mockIsSkipAuthEnabled,
+}));
+
+vi.mock('@/lib/auth/development-identity', () => ({
+  resolvePersistedDevelopmentUser: mockResolvePersistedDevelopmentUser,
 }));
 
 vi.mock('@/lib/db', () => ({
@@ -146,6 +163,37 @@ function defaultConfig(overrides: Record<string, unknown> = {}) {
 }
 
 // --- Tests ---
+
+describe('authorizeIntegrationRequest — development session', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIsSkipAuthEnabled.mockReturnValue(false);
+  });
+
+  it('rejects a synthetic development session when its persisted actor is unavailable', async () => {
+    const session = {
+      isLoggedIn: true,
+      userId: 42,
+      name: 'Dev User',
+      email: 'dev@asof.local',
+      role: 'admin' as const,
+      mustChangePassword: false,
+    };
+    mockGetSession.mockResolvedValue(session);
+    mockCanAccessRole.mockReturnValue(true);
+    mockIsSkipAuthEnabled.mockReturnValue(true);
+    mockResolvePersistedDevelopmentUser.mockRejectedValueOnce(new Error('dev actor missing'));
+
+    const result = await authorizeIntegrationRequest(
+      new Request('https://api.example.com/api/v1/events'),
+      { allowSessionRoles: ['admin'] },
+    );
+
+    expect(result).toMatchObject({ ok: false, response: { status: 403 } });
+    expect(mockResolvePersistedDevelopmentUser).toHaveBeenCalledWith(session);
+    expect(mockCanAccessRole).not.toHaveBeenCalled();
+  });
+});
 
 describe('verifyIntegrationRequest — valid HMAC signature', () => {
   beforeEach(() => {
