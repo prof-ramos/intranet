@@ -4,22 +4,28 @@
  * Vars obrigatórias:
  *   SMOKE_ADMIN_EMAIL     ex: gabriel@asof.org.br
  *   SMOKE_ADMIN_PASSWORD  senha do admin
+ *   SMOKE_EXPECTED_COMMIT_SHA  SHA completo esperado no deployment
  *
- * Var opcional:
+ * Vars opcionais:
  *   SMOKE_BASE_URL        padrão: https://intranet.asof.com.br
+ *   SMOKE_ALLOW_MUTATIONS padrão: false; somente "true" habilita escrita
+ *   SMOKE_RUN_ID          obrigatório quando mutações são habilitadas
  *
  * Executar:
  *   npm run smoke:prod
  *
- * Após execução bem-sucedida, rodar o SQL de limpeza impresso no terminal.
+ * Após execução mutante, rodar manualmente o SQL run-scoped impresso no terminal.
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { waitForExpectedDeploymentSha } from '@/lib/smoke/deployment-wait';
+import { parseSmokeRuntimeContract } from '@/lib/smoke/runtime-contract';
 
 // ── Validação de env ────────────────────────────────────────────────────────
 
 const ADMIN_EMAIL = process.env.SMOKE_ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.SMOKE_ADMIN_PASSWORD;
+const smokeRuntime = parseSmokeRuntimeContract(process.env);
 
 if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
   throw new Error(
@@ -31,11 +37,13 @@ if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
 // ── Dados de smoke ──────────────────────────────────────────────────────────
 
 const TS = new Date().toISOString().slice(0, 16).replace('T', ' ');
-const ATIVIDADE_TITLE = `SMOKE_ Atividade Teste ${TS}`;
-const CONSULTA_TITLE = `SMOKE_ Consulta Teste ${TS}`;
-const OFICIO_SUBJECT = `SMOKE_ Oficio Teste ${TS}`;
-const ASSOCIADO_NAME = `SMOKE_ Oficial Teste ${TS}`;
-const SMOKE_RESET_EMAIL = 'smoke-reset@asof.org.br';
+const mutationMarker = smokeRuntime.markerPrefix;
+const cleanupLikePattern = smokeRuntime.cleanupLikePattern;
+const ATIVIDADE_TITLE = mutationMarker ? `${mutationMarker}Atividade Teste ${TS}` : null;
+const CONSULTA_TITLE = mutationMarker ? `${mutationMarker}Consulta Teste ${TS}` : null;
+const OFICIO_SUBJECT = mutationMarker ? `${mutationMarker}Oficio Teste ${TS}` : null;
+const ASSOCIADO_NAME = mutationMarker ? `${mutationMarker}Oficial Teste ${TS}` : null;
+const mutatingTest = smokeRuntime.allowMutations ? test : test.skip;
 
 // ── Helper de login ─────────────────────────────────────────────────────────
 
@@ -98,12 +106,45 @@ async function fillIfVisible(page: Page, selector: string, value: string) {
   }
 }
 
+function requireMutationValue(value: string | null): string {
+  if (!smokeRuntime.allowMutations || !value) {
+    throw new Error('Smoke runtime contract blocked a production mutation.');
+  }
+
+  return value;
+}
+
+async function readDeploymentSha(page: Page): Promise<unknown> {
+  const response = await page.request.get(new URL('/api/v1/health', page.url()).toString());
+  if (!response.ok()) {
+    return null;
+  }
+
+  const payload: unknown = await response.json().catch(() => null);
+  if (!payload || typeof payload !== 'object' || !('data' in payload)) {
+    return null;
+  }
+
+  const data = payload.data;
+  if (!data || typeof data !== 'object' || !('deployment' in data)) {
+    return null;
+  }
+
+  const deployment = data.deployment;
+  if (!deployment || typeof deployment !== 'object' || !('gitCommitSha' in deployment)) {
+    return null;
+  }
+
+  return deployment.gitCommitSha;
+}
+
 // ── Roteiro ─────────────────────────────────────────────────────────────────
 
 test.describe.configure({ mode: 'serial' });
 
 // ── 1. Login e Sessão ───────────────────────────────────────────────────────
 test('1. Login e Sessão', async ({ page }) => {
+  test.setTimeout(5 * 60_000);
   await page.goto('/login');
   await expect(page.locator('input[name="email"]')).toBeVisible();
 
@@ -118,6 +159,8 @@ test('1. Login e Sessão', async ({ page }) => {
   const cookies = await page.context().cookies();
   const sessionCookie = cookies.find((c) => c.httpOnly && c.name.toLowerCase().includes('session'));
   expect(sessionCookie, 'Cookie de sessão httpOnly não encontrado').toBeDefined();
+
+  await waitForExpectedDeploymentSha(smokeRuntime.expectedCommitSha, () => readDeploymentSha(page));
 });
 
 // ── 2. Dashboard ────────────────────────────────────────────────────────────
@@ -132,7 +175,8 @@ test('2. Dashboard', async ({ page }) => {
 });
 
 // ── 3. Associados ───────────────────────────────────────────────────────────
-test('3. Cadastro de Oficiais — criar oficial e validar perfil', async ({ page }) => {
+mutatingTest('3. Cadastro de Oficiais — criar oficial e validar perfil', async ({ page }) => {
+  const associadoName = requireMutationValue(ASSOCIADO_NAME);
   await loginAdmin(page);
   await page.goto('/app/associados');
 
@@ -144,7 +188,7 @@ test('3. Cadastro de Oficiais — criar oficial e validar perfil', async ({ page
   await page.goto('/app/associados/novo');
   await expect(page.locator('h1')).toContainText('Cadastrar oficial');
 
-  await page.fill('input[name="fullName"]', ASSOCIADO_NAME);
+  await page.fill('input[name="fullName"]', associadoName);
   // Submeter via server action (form action) — aguardar redirect ao perfil criado
   await page.click('button[type="submit"]');
   // Fail-fast: only role=alert (form error). Do NOT match .text-red-* — the
@@ -174,20 +218,21 @@ test('3. Cadastro de Oficiais — criar oficial e validar perfil', async ({ page
   // Perfil do oficial recém-criado carrega e exibe o nome
   await expect(page.locator('h1, h2').first()).toBeVisible();
   await expect(page.locator('body')).not.toContainText('não encontrado');
-  await expect(page.locator('body')).toContainText(ASSOCIADO_NAME.slice(0, 20));
+  await expect(page.locator('body')).toContainText(associadoName.slice(0, 20));
 
   // Voltar à lista e confirmar que o novo oficial aparece na busca
   await page.goto('/app/associados');
-  await page.fill('input[name="q"]', ASSOCIADO_NAME.slice(0, 15));
+  await page.fill('input[name="q"]', associadoName.slice(0, 15));
   await page.keyboard.press('Enter');
   await page.waitForLoadState('networkidle', { timeout: 10_000 }).catch(() => {});
-  await expect(page.locator('body')).toContainText(ASSOCIADO_NAME.slice(0, 20), {
+  await expect(page.locator('body')).toContainText(associadoName.slice(0, 20), {
     timeout: 10_000,
   });
 });
 
 // ── 4. Atividades ───────────────────────────────────────────────────────────
-test('4. Atividades — criar e verificar no board', async ({ page }) => {
+mutatingTest('4. Atividades — criar e verificar no board', async ({ page }) => {
+  const atividadeTitle = requireMutationValue(ATIVIDADE_TITLE);
   await loginAdmin(page);
   await page.goto('/app/atividades');
   await expect(page.locator('h1')).toBeVisible();
@@ -196,11 +241,11 @@ test('4. Atividades — criar e verificar no board', async ({ page }) => {
   await expect(page.locator('h1')).toBeVisible();
 
   // Formulário usa id= e botões type="button" (não type="submit")
-  await page.fill('#activity-title', ATIVIDADE_TITLE);
+  await page.fill('#activity-title', atividadeTitle);
   await fillIfVisible(
     page,
     '#activity-description',
-    `Criada pelo smoke test automatizado (${TS}).`,
+    `${mutationMarker}Criada pelo smoke test automatizado (${TS}).`,
   );
 
   await page.getByRole('button', { name: 'Criar atividade' }).last().click();
@@ -219,33 +264,34 @@ test('4. Atividades — criar e verificar no board', async ({ page }) => {
 
   await expect(page.locator('h1')).toBeVisible({ timeout: 10_000 });
   // Verificar que o título aparece em algum lugar da página (Kanban card ou lista)
-  await expect(page.locator('body')).toContainText(ATIVIDADE_TITLE.slice(0, 20), {
+  await expect(page.locator('body')).toContainText(atividadeTitle.slice(0, 20), {
     timeout: 10_000,
   });
 });
 
 // ── 5. Jurídico ─────────────────────────────────────────────────────────────
-test('5. Jurídico — criar consulta e avançar status', async ({ page }) => {
+mutatingTest('5. Jurídico — criar consulta e avançar status', async ({ page }) => {
+  const consultaTitle = requireMutationValue(CONSULTA_TITLE);
   await loginAdmin(page);
   await page.goto('/app/juridico/consultas/nova');
   await expect(page.locator('h1')).toBeVisible();
 
-  await page.fill('input[name="title"]', CONSULTA_TITLE);
+  await page.fill('input[name="title"]', consultaTitle);
   await fillIfVisible(
     page,
     'input[name="questionSummary"]',
-    'Consulta criada pelo smoke test automatizado.',
+    `${mutationMarker}Consulta criada pelo smoke test automatizado.`,
   );
   await fillIfVisible(
     page,
     'textarea[name="questionFullText"]',
-    `Texto completo da consulta smoke (${TS}).`,
+    `${mutationMarker}Texto completo da consulta smoke (${TS}).`,
   );
   await fillIfVisible(page, 'input[name="slaDays"]', '30');
 
   await page.click('button[type="submit"]');
   await page.waitForURL(/\/app\/juridico\/consultas\/\d+/, { timeout: 20_000 });
-  await expect(page.locator('body')).toContainText(CONSULTA_TITLE);
+  await expect(page.locator('body')).toContainText(consultaTitle);
 
   // Avançar status se o controle estiver visível
   const statusControl = page.locator(
@@ -281,16 +327,17 @@ test('6. Financeiro — mensalidades carregam', async ({ page }) => {
 });
 
 // ── 7. Ofícios ──────────────────────────────────────────────────────────────
-test('7. Ofícios — criar e confirmar na lista', async ({ page }) => {
+mutatingTest('7. Ofícios — criar e confirmar na lista', async ({ page }) => {
+  const oficioSubject = requireMutationValue(OFICIO_SUBJECT);
   await loginAdmin(page);
   await page.goto('/app/secretaria/oficios/novo');
   await expect(page.locator('h1')).toBeVisible();
 
   // Formulário usa id= e botões type="button"
-  await fillIfVisible(page, '#recipient', 'SMOKE_ Destinatário Teste');
+  await fillIfVisible(page, '#recipient', `${mutationMarker}Destinatário Teste`);
   await fillIfVisible(page, '#recipientRole', 'Diretor');
   await fillIfVisible(page, '#vocativo', 'Senhor Diretor,');
-  await fillIfVisible(page, '#subject', OFICIO_SUBJECT);
+  await fillIfVisible(page, '#subject', oficioSubject);
   await fillIfVisible(page, '#itamaratySector', 'SGP');
   await fillIfVisible(page, '#signatoryName', 'Administrador');
   await fillIfVisible(page, '#signatoryRole', 'Presidente');
@@ -298,20 +345,20 @@ test('7. Ofícios — criar e confirmar na lista', async ({ page }) => {
   // Rich text editor (TipTap) — clicar no contenteditable e digitar
   const editor = page.locator('[contenteditable="true"]').first();
   await editor.click();
-  await editor.fill(`Texto do ofício smoke test criado em ${TS}.`);
+  await editor.fill(`${mutationMarker}Texto do ofício smoke test criado em ${TS}.`);
 
   await page.getByRole('button', { name: /Salvar Ofício/i }).click();
   await page.waitForURL(/\/app\/secretaria\/oficios/, { timeout: 20_000 });
-  await expect(page.locator(`text=${OFICIO_SUBJECT}`)).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator(`text=${oficioSubject}`)).toBeVisible({ timeout: 10_000 });
 });
 
 // ── 8. Auditoria ────────────────────────────────────────────────────────────
-test('8. Auditoria — registros das ações do smoke', async ({ page }) => {
+test('8. Auditoria — listagem carrega', async ({ page }) => {
   await loginAdmin(page);
   await page.goto('/app/config/auditoria');
   await expect(page.locator('h1')).toBeVisible();
 
-  // Deve ter ao menos um registro das ações do smoke
+  // Leitura apenas: a listagem operacional deve estar disponível.
   const rows = page.locator('table tbody tr');
   await expect(rows.first()).toBeVisible({ timeout: 15_000 });
 });
@@ -338,23 +385,18 @@ test('9. Notificações — central abre', async ({ page }) => {
 });
 
 // ── 10. Reset de Senha ───────────────────────────────────────────────────────
-test('10. Reset de Senha — disparo da action', async ({ page }) => {
+test('10. Reset de Senha — página carrega sem disparar action', async ({ page }) => {
   await page.goto('/forgot-password');
   await expect(page.locator('input[name="email"], input[type="email"]').first()).toBeVisible();
-
-  // Usar email smoke (não o admin real) para não criar token desnecessário
-  await page.locator('input[name="email"], input[type="email"]').first().fill(SMOKE_RESET_EMAIL);
-  await page.click('button[type="submit"]');
-
-  // Resposta genérica (anti-enumeração) — seja sucesso ou email não encontrado
-  await expect(page.locator('body')).toContainText(
-    /enviamos|verifique|instru|sucesso|e-mail|email/i,
-    { timeout: 15_000 },
-  );
+  await expect(page.locator('button[type="submit"]')).toBeVisible();
 });
 
 // ── Cleanup SQL ──────────────────────────────────────────────────────────────
 test.afterAll(() => {
+  if (!smokeRuntime.allowMutations || !mutationMarker || !cleanupLikePattern) {
+    return;
+  }
+
   console.log(`
 ╔══════════════════════════════════════════════════════════════╗
 ║            SQL DE LIMPEZA PÓS-SMOKE (audit_logs intacto)    ║
@@ -362,28 +404,114 @@ test.afterAll(() => {
 ║  Executar via console Neon ou psql com DATABASE_MIGRATION_URL ║
 ╚══════════════════════════════════════════════════════════════╝
 
+BEGIN;
+
+-- Capturar os IDs tecnicos antes de remover as entidades. Nem todo payload do
+-- outbox repete o marcador textual (activity/oficio usam entity_type + entity_id).
+CREATE TEMP TABLE smoke_run_activities ON COMMIT DROP AS
+  SELECT id FROM activities WHERE title LIKE '${cleanupLikePattern}' ESCAPE '\\';
+CREATE TEMP TABLE smoke_run_associates ON COMMIT DROP AS
+  SELECT id FROM associates WHERE full_name LIKE '${cleanupLikePattern}' ESCAPE '\\';
+CREATE TEMP TABLE smoke_run_consultations ON COMMIT DROP AS
+  SELECT id FROM legal_consultations WHERE title LIKE '${cleanupLikePattern}' ESCAPE '\\';
+CREATE TEMP TABLE smoke_run_oficios ON COMMIT DROP AS
+  SELECT id FROM oficios WHERE subject LIKE '${cleanupLikePattern}' ESCAPE '\\';
+
+CREATE TEMP TABLE smoke_run_domain_events ON COMMIT DROP AS
+  SELECT id
+  FROM domain_events
+  WHERE (entity_type = 'activity' AND entity_id IN (SELECT id FROM smoke_run_activities))
+     OR (entity_type = 'associate' AND entity_id IN (SELECT id FROM smoke_run_associates))
+     OR (entity_type = 'legal_consultation' AND entity_id IN (SELECT id FROM smoke_run_consultations))
+     OR (entity_type = 'official_letter' AND entity_id IN (SELECT id FROM smoke_run_oficios))
+     OR payload::text LIKE '%${cleanupLikePattern}' ESCAPE '\\';
+
+DELETE FROM webhook_deliveries
+  WHERE domain_event_id IN (SELECT id FROM smoke_run_domain_events);
+DELETE FROM domain_events
+  WHERE id IN (SELECT id FROM smoke_run_domain_events);
+
 -- Atividades
-DELETE FROM activities WHERE title ILIKE 'SMOKE_%';
+DELETE FROM activities WHERE id IN (SELECT id FROM smoke_run_activities);
 
 -- Oficiais criados pelo smoke (dependents/health_agreements em cascade;
 -- activities/legal_consultations/legal_processes associate_id em set null)
-DELETE FROM associates WHERE full_name ILIKE 'SMOKE_%';
+DELETE FROM associates WHERE id IN (SELECT id FROM smoke_run_associates);
 
 -- Consultas jurídicas e suas notas
 DELETE FROM legal_notes
   WHERE entity_type = 'consultation'
-    AND entity_id IN (
-      SELECT id FROM legal_consultations WHERE title ILIKE 'SMOKE_%'
-    );
-DELETE FROM legal_consultations WHERE title ILIKE 'SMOKE_%';
+    AND entity_id IN (SELECT id FROM smoke_run_consultations);
+DELETE FROM legal_consultations WHERE id IN (SELECT id FROM smoke_run_consultations);
 
 -- Ofícios
-DELETE FROM oficios WHERE subject ILIKE 'SMOKE_%';
+DELETE FROM oficios WHERE id IN (SELECT id FROM smoke_run_oficios);
 
 -- Notificações de smoke
-DELETE FROM notifications WHERE message ILIKE '%SMOKE_%';
+DELETE FROM notifications
+  WHERE (entity_type = 'activity' AND entity_id IN (SELECT id FROM smoke_run_activities))
+     OR (entity_type = 'legal_consultation' AND entity_id IN (SELECT id FROM smoke_run_consultations))
+     OR (entity_type = 'oficio' AND entity_id IN (SELECT id FROM smoke_run_oficios))
+     OR title LIKE '%${cleanupLikePattern}' ESCAPE '\\'
+     OR message LIKE '%${cleanupLikePattern}' ESCAPE '\\';
+
+-- Gate fail-closed: qualquer residuo aborta toda a transacao.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM activities WHERE title LIKE '${cleanupLikePattern}' ESCAPE '\\')
+     OR EXISTS (SELECT 1 FROM associates WHERE full_name LIKE '${cleanupLikePattern}' ESCAPE '\\')
+     OR EXISTS (SELECT 1 FROM legal_consultations WHERE title LIKE '${cleanupLikePattern}' ESCAPE '\\')
+     OR EXISTS (SELECT 1 FROM oficios WHERE subject LIKE '${cleanupLikePattern}' ESCAPE '\\')
+     OR EXISTS (
+       SELECT 1 FROM notifications
+       WHERE (entity_type = 'activity' AND entity_id IN (SELECT id FROM smoke_run_activities))
+          OR (entity_type = 'legal_consultation' AND entity_id IN (SELECT id FROM smoke_run_consultations))
+          OR (entity_type = 'oficio' AND entity_id IN (SELECT id FROM smoke_run_oficios))
+          OR title LIKE '%${cleanupLikePattern}' ESCAPE '\\'
+          OR message LIKE '%${cleanupLikePattern}' ESCAPE '\\'
+     )
+     OR EXISTS (
+       SELECT 1 FROM domain_events
+       WHERE (entity_type = 'activity' AND entity_id IN (SELECT id FROM smoke_run_activities))
+          OR (entity_type = 'associate' AND entity_id IN (SELECT id FROM smoke_run_associates))
+          OR (entity_type = 'legal_consultation' AND entity_id IN (SELECT id FROM smoke_run_consultations))
+          OR (entity_type = 'official_letter' AND entity_id IN (SELECT id FROM smoke_run_oficios))
+          OR payload::text LIKE '%${cleanupLikePattern}' ESCAPE '\\'
+     )
+     OR EXISTS (
+       SELECT 1 FROM webhook_deliveries
+       WHERE domain_event_id IN (SELECT id FROM smoke_run_domain_events)
+     )
+  THEN
+    RAISE EXCEPTION 'smoke_cleanup_incomplete';
+  END IF;
+END $$;
+
+-- Evidencia run-scoped apos a assercao: todos os valores sao zero.
+SELECT
+  (SELECT count(*) FROM activities WHERE title LIKE '${cleanupLikePattern}' ESCAPE '\\') AS activities,
+  (SELECT count(*) FROM associates WHERE full_name LIKE '${cleanupLikePattern}' ESCAPE '\\') AS associates,
+  (SELECT count(*) FROM legal_consultations WHERE title LIKE '${cleanupLikePattern}' ESCAPE '\\') AS consultations,
+  (SELECT count(*) FROM oficios WHERE subject LIKE '${cleanupLikePattern}' ESCAPE '\\') AS oficios,
+  (SELECT count(*) FROM notifications
+    WHERE (entity_type = 'activity' AND entity_id IN (SELECT id FROM smoke_run_activities))
+       OR (entity_type = 'legal_consultation' AND entity_id IN (SELECT id FROM smoke_run_consultations))
+       OR (entity_type = 'oficio' AND entity_id IN (SELECT id FROM smoke_run_oficios))
+       OR title LIKE '%${cleanupLikePattern}' ESCAPE '\\'
+       OR message LIKE '%${cleanupLikePattern}' ESCAPE '\\') AS notifications,
+  (SELECT count(*) FROM domain_events
+    WHERE (entity_type = 'activity' AND entity_id IN (SELECT id FROM smoke_run_activities))
+       OR (entity_type = 'associate' AND entity_id IN (SELECT id FROM smoke_run_associates))
+       OR (entity_type = 'legal_consultation' AND entity_id IN (SELECT id FROM smoke_run_consultations))
+       OR (entity_type = 'official_letter' AND entity_id IN (SELECT id FROM smoke_run_oficios))
+       OR payload::text LIKE '%${cleanupLikePattern}' ESCAPE '\\') AS domain_events,
+  (SELECT count(*) FROM webhook_deliveries
+    WHERE domain_event_id IN (SELECT id FROM smoke_run_domain_events)) AS webhook_deliveries;
+
+COMMIT;
 
 -- NÃO apagar audit_logs (ADR 009).
--- Para identificar registros do smoke: WHERE description ILIKE '%SMOKE_%'
+-- Para identificar registros do smoke:
+-- WHERE description LIKE '%${cleanupLikePattern}' ESCAPE '\\'
 `);
 });

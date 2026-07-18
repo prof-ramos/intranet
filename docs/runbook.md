@@ -43,10 +43,13 @@ código e/ou schema. Não inverter a ordem quando houver migration SQL nova.
 4. **Smoke**
    - [ ] CI job `Smoke Test — Production` em `main` **ou**
          `npm run smoke:prod` em janela controlada com `SMOKE_ADMIN_*`
-   - [ ] 10/10 testes; se falhar por coluna/enum ausente → voltar ao passo 3
+   - [ ] Modo padrao read-only: 6 testes passam e 4 mutantes ficam skipped
+   - [ ] Dispatch mutante autorizado: 10/10 testes; se falhar por coluna/enum
+         ausente → voltar ao passo 3
 5. **Limpeza pós-smoke**
-   - [ ] Executar o SQL de limpeza `SMOKE_*` impresso pelo spec
-   - [ ] Preservar `audit_logs`; zerar contagens operacionais `SMOKE_*`
+   - [ ] Somente apos dispatch mutante, executar o SQL run-scoped
+         `SMOKE_<run-id>_*` impresso pelo spec
+   - [ ] Preservar `audit_logs`; zerar as contagens desse run
 6. **Encerramento**
    - [ ] Anotar no canal de incidente (ADR 011) se houve incidente ou rollback
    - [ ] Se migrate não era necessária, pular passo 3 explicitamente no registro
@@ -170,24 +173,25 @@ Execucao local em janela controlada:
 SMOKE_BASE_URL=https://intranet.asof.com.br \
 SMOKE_ADMIN_EMAIL=smoke-admin@asof.local \
 SMOKE_ADMIN_PASSWORD='...' \
+SMOKE_EXPECTED_COMMIT_SHA=<sha-completo> \
+SMOKE_ALLOW_MUTATIONS=false \
 npm run smoke:prod
 ```
 
 Execucao via GitHub Actions: o workflow `CI` aceita `workflow_dispatch` apos a
-versao do workflow estar em `main`. O job `Smoke Test — Production` roda em
-`push` para `main` ou disparo manual, e continua pulado em PRs.
+versao do workflow estar em `main`. O job `Smoke Test — Production` valida o
+SHA completo do deployment e roda somente leitura em `push` para `main` ou no
+dispatch padrao. Mutações exigem marcar explicitamente
+`production_mutations=true`; nesse caso o CI define um `SMOKE_RUN_ID` por run e
+tentativa. O job continua pulado em PRs.
 
-Depois de qualquer smoke que crie dados, execute a limpeza `SMOKE_*` impressa
-pelo spec e confirme que as contagens operacionais ficaram zeradas:
-
-```sql
-SELECT
-  (SELECT count(*) FROM activities WHERE title ILIKE 'SMOKE_%') AS activities,
-  (SELECT count(*) FROM associates WHERE full_name ILIKE 'SMOKE_%') AS associates,
-  (SELECT count(*) FROM legal_consultations WHERE title ILIKE 'SMOKE_%') AS consultations,
-  (SELECT count(*) FROM oficios WHERE subject ILIKE 'SMOKE_%') AS oficios,
-  (SELECT count(*) FROM notifications WHERE message ILIKE '%SMOKE_%') AS notifications;
-```
+Depois de qualquer smoke mutante, execute manualmente a limpeza
+`SMOKE_<run-id>_*` impressa pelo spec e confirme que as contagens desse run
+ficaram zeradas. A transacao captura primeiro os IDs tecnicos das entidades,
+deriva `domain_events` por `(entity_type, entity_id)`, apaga os respectivos
+`webhook_deliveries` por causa do FK restritivo e preserva `audit_logs`. O spec
+nunca recebe credencial de banco. Execute a transacao completa impressa; nao a
+substitua por deletes parciais reconstruidos do runbook.
 
 Se o smoke falhar na criacao de atividade com erro de enum
 `domain_event_type: "activity.created"`, a producao esta sem a migration manual

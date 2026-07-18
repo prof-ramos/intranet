@@ -40,11 +40,13 @@ de staging/dev/preview.
 - [x] Rodar gates — `Lint, Typecheck & Test`, `Database Contract`, `Build Verification` e `E2E Tests (Playwright)` passaram no `main` em 2026-07-18 (`79ab33e`, [CI run 29629899812](https://github.com/prof-ramos/intranet/actions/runs/29629899812)).
 - [x] Rodar `npm run test:db` contra Neon produção antes do go-live — schema contract passou em 2026-05-26.
 - [x] Smoke test automatizado de producao implementado e validado (ADR 009):
-  - Spec E2E Playwright (`e2e/smoke-prod.spec.ts`) cobre login, dashboard, associados, atividades, juridico, oficios, financeiro, auditoria, notificacoes e reset de senha.
-  - Executa contra `intranet.asof.com.br` com dados marcados `SMOKE_*`.
+  - Spec E2E Playwright (`e2e/smoke-prod.spec.ts`) cobre login, dashboard, associados, atividades, juridico, oficios, financeiro, auditoria, notificacoes e carregamento da pagina de reset de senha.
+  - Todo run confirma no health autenticado que `deployment.gitCommitSha` e o SHA completo esperado antes dos demais testes.
+  - Push em `main` executa somente login, dashboard, financeiro, auditoria e notificacoes em modo read-only.
+  - Escritas sao excepcionais: exigem `workflow_dispatch`, input `production_mutations=true` e marcadores `SMOKE_<run-id>_*`.
   - Conta dedicada de smoke: `smoke-admin@asof.local`, `role=admin`, `is_active=true`, `must_change_password=false`; senha gerenciada apenas por `SMOKE_ADMIN_PASSWORD` no GitHub Actions.
-  - Pos-smoke: executar o SQL de limpeza impresso pelo spec; dados operacionais `SMOKE_*` devem ficar zerados e `audit_log` e preservado.
-  - CI/CD: job `smoke-prod` roda em push para `main` e pode ser disparado manualmente por `workflow_dispatch` apos a publicacao do workflow.
+  - Pos-smoke mutante: executar manualmente o SQL run-scoped impresso pelo spec; entidades, notificacoes, `domain_events` e `webhook_deliveries` do run devem ficar zerados, com `audit_logs` preservado.
+  - CI/CD: o job protegido `Smoke Test — Production` roda read-only em push para `main`; dispatch manual tambem e read-only por default.
   - Última execução validada: 2026-07-18, `Smoke Test — Production` aprovado no [CI run 29629899812](https://github.com/prof-ramos/intranet/actions/runs/29629899812).
 - [x] Validar crons com `CRON_SECRET` antes de ativar operacao.
 - [x] Confirmar que previews/staging nao apontam para banco de producao — envs gerais de banco foram removidos do ambiente Preview no Vercel em 2026-05-26; restam apenas `SESSION_SECRET` em Preview e `GEMINI_API_KEY` restrita ao branch `feature/outbound-integrations-webhooks`.
@@ -81,44 +83,44 @@ Marcar a janela de go-live (ADR 009) somente quando todos os itens abaixo estive
 
 O roteiro de smoke e executado automaticamente pelo spec E2E Playwright `e2e/smoke-prod.spec.ts`.
 
-**Pre-requisitos:** `SMOKE_ADMIN_EMAIL` e `SMOKE_ADMIN_PASSWORD` configurados como secrets do GitHub Actions, apontando para a conta dedicada `smoke-admin@asof.local` em producao.
+**Pre-requisitos:** `SMOKE_ADMIN_EMAIL` e `SMOKE_ADMIN_PASSWORD` configurados como secrets do GitHub Actions, apontando para a conta dedicada `smoke-admin@asof.local` em producao. O runner exige `SMOKE_EXPECTED_COMMIT_SHA` completo; o CI usa `${{ github.sha }}`.
 
 **Execucao manual (local):**
 
 ```bash
-SMOKE_BASE_URL=https://intranet.asof.com.br SMOKE_ADMIN_EMAIL=smoke-admin@asof.local SMOKE_ADMIN_PASSWORD='...' npm run smoke:prod
+SMOKE_BASE_URL=https://intranet.asof.com.br SMOKE_ADMIN_EMAIL=smoke-admin@asof.local SMOKE_ADMIN_PASSWORD='...' SMOKE_EXPECTED_COMMIT_SHA=<sha-completo> SMOKE_ALLOW_MUTATIONS=false npm run smoke:prod
 ```
 
 **Execucao manual (GitHub Actions):** apos o workflow com `workflow_dispatch`
 estar publicado em `main`, usar a action `CI` no GitHub e disparar manualmente.
-O job `Smoke Test — Production` continua pulado em PRs.
+O default `production_mutations=false` e read-only. Marque `true` somente em uma
+janela mutante autorizada; o CI define `SMOKE_RUN_ID` com run e tentativa. O job
+`Smoke Test — Production` continua pulado em PRs.
 
 **Passos automatizados (10 testes serializados):**
 
-1. Login e Sessao — valida cookie `httpOnly` assinado.
+1. Login, Sessao e Deployment — valida cookie `httpOnly` e o SHA completo exato.
 2. Dashboard — verifica carregamento de KPIs.
-3. Associados — lista, busca e navegacao ao perfil do primeiro associado.
-4. Atividades — cria atividade `SMOKE_*` e verifica no board.
-5. Juridico — cria consulta `SMOKE_*` e avanca status.
+3. Associados — cria oficial `SMOKE_<run-id>_*` somente no modo mutante.
+4. Atividades — cria atividade `SMOKE_<run-id>_*` somente no modo mutante.
+5. Juridico — cria consulta `SMOKE_<run-id>_*` somente no modo mutante.
 6. Financeiro — mensalidades carregam (sem inicializacao de mes).
-7. Oficios — cria oficio `SMOKE_*` com TipTap e confirma na lista.
-8. Auditoria — verifica registros das acoes do smoke.
+7. Oficios — cria oficio `SMOKE_<run-id>_*` somente no modo mutante.
+8. Auditoria — confirma que a listagem abre em modo read-only.
 9. Notificacoes — central abre via `data-testid="notification-bell"`.
-10. Reset de Senha — dispara action de reset para email smoke.
+10. Reset de Senha — confirma que a pagina carrega sem disparar a action.
 
-**Pos-smoke (limpeza automatica no terminal):**
-O spec imprime o SQL de limpeza ao final. Executar via console Neon ou `psql` com `DATABASE_MIGRATION_URL`:
+**Pos-smoke mutante (limpeza manual obrigatoria):**
+O spec imprime SQL limitado ao `SMOKE_RUN_ID`. Execute-o via console Neon ou
+`psql` com `DATABASE_MIGRATION_URL`; substitua `<run-id>` pelo identificador
+validado do run. O modo read-only nao imprime SQL.
 
-```sql
-DELETE FROM activities WHERE title ILIKE 'SMOKE_%';
-DELETE FROM associates WHERE full_name ILIKE 'SMOKE_%';
-DELETE FROM legal_notes WHERE entity_id IN (SELECT id FROM legal_consultations WHERE title ILIKE 'SMOKE_%');
-DELETE FROM legal_consultations WHERE title ILIKE 'SMOKE_%';
-DELETE FROM oficios WHERE subject ILIKE 'SMOKE_%';
-DELETE FROM notifications WHERE message ILIKE '%SMOKE_%';
-```
+Nao reconstrua a limpeza com deletes parciais: a transacao impressa captura os
+IDs tecnicos das quatro entidades, remove `webhook_deliveries` antes de
+`domain_events`, limpa as tabelas operacionais e prova zero antes do commit.
 
-_Nota: `audit_log` e preservado (ADR 009)._
+_Nota: `audit_logs` e preservado (ADR 009). Residuos anteriores a esse contrato
+continuam pertencendo ao inventario e a limpeza controlada do Plano 057._
 
 ## Evidencia Desta Frente
 

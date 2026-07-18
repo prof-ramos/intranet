@@ -146,25 +146,35 @@ Preencher a evidencia da janela em documento privado ou issue operacional sem se
 
 ### Execução do Smoke
 
-O smoke test automatizado cobre fluxo E2E, criação de dados com prefixo `SMOKE_`, validações e limpeza automática ao final do script. A conta de execução é `smoke-admin@asof.local` gerida pelo pipeline CI/CD (GitHub Actions).
+O smoke automatizado confirma primeiro o SHA completo do deployment. Em push de
+`main`, cobre somente fluxos read-only. Escritas com prefixo
+`SMOKE_<run-id>_` exigem `workflow_dispatch` com
+`production_mutations=true`. A conta de execução e `smoke-admin@asof.local`,
+gerida pelo pipeline CI/CD (GitHub Actions).
 
 Para executar localmente contra produção (requer credenciais corretas):
 
 ```bash
-npm run smoke:prod
+SMOKE_EXPECTED_COMMIT_SHA=<sha-completo> SMOKE_ALLOW_MUTATIONS=false npm run smoke:prod
 ```
 
-Alternativamente, dispare via GitHub Actions (`workflow_dispatch`) na aba Actions > "Playwright E2E Smoke (Produção)".
-O script garante a limpeza de todos os dados gerados, preservando apenas os logs de auditoria (`audit_logs`) com os eventos.
+Alternativamente, dispare o workflow `CI` via GitHub Actions. O dispatch e
+read-only por default. Uma janela mutante exige opt-in booleano; ao final, o
+spec imprime SQL limitado ao run, que deve ser executado manualmente. O script
+nao possui credencial de banco; a limpeza e sempre uma operacao separada e
+`audit_logs` permanece intacto. A limpeza captura os IDs de `domain_events` do
+run antes de apagar as entidades e remove primeiro os respectivos
+`webhook_deliveries`, respeitando o FK restritivo.
 
 ### Criterios De Sucesso
 
-- Todos os modulos do smoke abriram e gravaram/leiram dados sem erro critico.
+- No modo read-only, os 6 passos de leitura passaram e os 4 mutantes ficaram skipped.
+- Em dispatch mutante autorizado, os 10 passos passaram sem erro critico.
 - Login, troca de senha, `requireAuth()` e `requireRole()` funcionaram.
 - `audit_logs` recebeu eventos esperados sem secrets ou PII indevida.
 - Notificacoes persistiram apos reload.
 - Rotas cron retornaram sucesso com bearer e `401` sem bearer.
-- Dados `SMOKE_*` foram removidos; auditoria permaneceu.
+- Dados `SMOKE_<run-id>_*` do run foram removidos; auditoria permaneceu.
 - Backup pre-janela e ponto de rollback foram registrados.
 
 ### Criterios De Falha E Rollback
@@ -215,6 +225,6 @@ Para fechar a Release 1.0 operacionalmente, anexar ou registrar fora do Git:
 - evidencia do backup/snapshot;
 - resultado do smoke por passo;
 - status das chamadas cron com e sem bearer;
-- lista de dados `SMOKE_*` removidos por tabela;
+- lista de dados `SMOKE_<run-id>_*` removidos por tabela;
 - resultado do restore de teste;
 - decisao final: liberar, pausar ou rollback.

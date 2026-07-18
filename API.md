@@ -382,6 +382,9 @@ Retorna um envelope JSON padronizado confirmando que a superficie versionada de 
     "capabilities": {
       "inboundEvents": false,
       "outboundWebhooks": true
+    },
+    "deployment": {
+      "gitCommitSha": "0123456789abcdef0123456789abcdef01234567"
     }
   },
   "meta": {
@@ -391,6 +394,10 @@ Retorna um envelope JSON padronizado confirmando que a superficie versionada de 
   }
 }
 ```
+
+`deployment` expoe somente o SHA completo do commit do deployment, ou `null`
+quando a variavel de sistema da Vercel estiver ausente ou malformada. Mensagem,
+branch e autor do commit nao sao retornados.
 
 #### Respostas de erro
 

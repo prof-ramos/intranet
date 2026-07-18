@@ -24,6 +24,7 @@ vi.mock('@/lib/integrations/rate-limit', () => ({
 describe('/api/v1/health route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA', 'ABCDEF0123456789ABCDEF0123456789ABCDEF01');
     mockPreAuthConsume.mockResolvedValue({ allowed: true });
     mockPrincipalConsume.mockResolvedValue({ allowed: true });
     mockAuthorizeIntegrationRequest.mockResolvedValue({
@@ -58,12 +59,30 @@ describe('/api/v1/health route', () => {
           inboundEvents: false,
           outboundWebhooks: true,
         },
+        deployment: {
+          gitCommitSha: 'abcdef0123456789abcdef0123456789abcdef01',
+        },
       },
       meta: {
         requestId: 'health-request',
       },
     });
   });
+
+  it.each([undefined, 'short-sha', 'g'.repeat(40)])(
+    'returns null without exposing other Git metadata when the deployment SHA is %s',
+    async (deploymentSha) => {
+      vi.stubEnv('NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA', deploymentSha ?? '');
+
+      const response = await GET(new Request('https://asof.local/api/v1/health'));
+      const body = await response.json();
+
+      expect(body.data.deployment).toEqual({ gitCommitSha: null });
+      expect(body.data.deployment).not.toHaveProperty('branch');
+      expect(body.data.deployment).not.toHaveProperty('message');
+      expect(body.data.deployment).not.toHaveProperty('author');
+    },
+  );
 
   it('returns rate-limit errors before auth', async () => {
     mockPreAuthConsume.mockResolvedValue({ allowed: false, retryAfterMs: 5000 });
