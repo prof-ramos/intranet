@@ -27,6 +27,13 @@ function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
+async function applyTimingFloor(startTime: number): Promise<void> {
+  const jitter = randomInt(50, 200);
+  const elapsed = Date.now() - startTime;
+  const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed + jitter);
+  await new Promise((resolve) => setTimeout(resolve, wait));
+}
+
 // ---------------------------------------------------------------------------
 // Rate limiting
 // ---------------------------------------------------------------------------
@@ -98,11 +105,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
     logger.warn('[requestPasswordReset] Rate limit exceeded or unavailable.', {
       emailHash: hashEmail(normalizedEmail),
     });
-    // Timing-safe: não revelar se o e-mail existe nem se o limite falhou por erro
-    const jitter = randomInt(50, 200);
-    const elapsed = Date.now() - startTime;
-    const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed + jitter);
-    await new Promise((resolve) => setTimeout(resolve, wait));
+    await applyTimingFloor(startTime);
     return;
   }
 
@@ -122,10 +125,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
 
   // Timing-safe: se admin não existe ou está inativo, espera o floor e retorna sem erro
   if (!admin || !admin.isActive) {
-    const jitter = randomInt(50, 200);
-    const elapsed = Date.now() - startTime;
-    const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed + jitter);
-    await new Promise((resolve) => setTimeout(resolve, wait));
+    await applyTimingFloor(startTime);
     return;
   }
 
@@ -133,10 +133,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
     logger.warn('[requestPasswordReset] Email not configured; keeping existing reset tokens.', {
       adminId: admin.id,
     });
-    // Timing-safe: espera o floor para não distinguir deste path
-    const elapsed = Date.now() - startTime;
-    const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed);
-    await new Promise((resolve) => setTimeout(resolve, wait));
+    await applyTimingFloor(startTime);
     return;
   }
 
@@ -185,10 +182,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
       { adminId: admin.id, error: toSafeErrorLog(emailError) },
       ensureError(emailError),
     );
-    // Timing-safe: espera o floor para não distinguir deste path
-    const elapsed = Date.now() - startTime;
-    const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed);
-    await new Promise((resolve) => setTimeout(resolve, wait));
+    await applyTimingFloor(startTime);
     return;
   }
 
@@ -212,11 +206,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
     }),
   );
 
-  // Timing-safe: espera até completar o floor + jitter para manter consistência
-  const jitter = randomInt(50, 200);
-  const elapsed = Date.now() - startTime;
-  const wait = Math.max(0, RESPONSE_TIME_FLOOR_MS - elapsed + jitter);
-  await new Promise((resolve) => setTimeout(resolve, wait));
+  await applyTimingFloor(startTime);
 }
 
 // ---------------------------------------------------------------------------
