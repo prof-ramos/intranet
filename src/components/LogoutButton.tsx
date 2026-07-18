@@ -9,7 +9,7 @@ export function LogoutButton() {
     <>
       <button
         type="button"
-        className="flex items-center gap-2 rounded-[4px] text-sm text-white/50 transition-colors duration-150 hover:text-white focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:ring-offset-[#06284f] focus-visible:outline-none"
+        className="flex items-center gap-2 rounded-[4px] text-sm text-white/50 transition-colors duration-150 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:ring-offset-[#06284f]"
         onClick={() => {
           const dialog = document.getElementById('logout-modal') as HTMLDialogElement;
           dialog?.showModal();
@@ -37,14 +37,13 @@ export function LogoutButton() {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button tabIndex={-1} aria-label="Fechar modal">
-            fechar
-          </button>
+          <button tabIndex={-1} aria-label="Fechar modal">fechar</button>
         </form>
       </dialog>
     </>
   );
 }
+
 
 function LogoutSubmitButton() {
   const { pending } = useFormStatus();
