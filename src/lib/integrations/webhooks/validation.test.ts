@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { resolvePublicWebhookTarget } from './validation';
+import { isPublicWebhookUrl, resolvePublicWebhookTarget } from './validation';
 
 const lookupMock = vi.hoisted(() => vi.fn());
 
@@ -64,5 +64,52 @@ describe('resolvePublicWebhookTarget', () => {
       addresses: [{ address: '8.8.8.8', family: 4 }],
     });
     expect(lookupMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    'https://[::ffff:10.0.0.1]/webhook',
+    'https://[::ffff:172.16.0.1]/webhook',
+  ])('rejeita IPv4 privado mapeado em IPv6: %s', async (url) => {
+    await expect(isPublicWebhookUrl(url)).resolves.toBe(false);
+    expect(lookupMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    'https://[::ffff:8.8.8.8]/webhook',
+    'https://[::ffff:1.1.1.1]/webhook',
+  ])('aceita IPv4 público mapeado em IPv6: %s', async (url) => {
+    await expect(isPublicWebhookUrl(url)).resolves.toBe(true);
+    expect(lookupMock).not.toHaveBeenCalled();
+  });
+
+  it('aceita um endereço IPv6 global real', async () => {
+    await expect(
+      isPublicWebhookUrl('https://[2606:4700:4700::1111]/webhook'),
+    ).resolves.toBe(true);
+    expect(lookupMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    'https://[::]/webhook',
+    'https://[ff02::1]/webhook',
+    'https://[::127.0.0.1]/webhook',
+  ])('rejeita endereço IPv6 não público: %s', async (url) => {
+    await expect(isPublicWebhookUrl(url)).resolves.toBe(false);
+    expect(lookupMock).not.toHaveBeenCalled();
+  });
+
+  it('rejeita NAT64 mesmo quando a entrada usa cauda IPv4 textual', async () => {
+    await expect(
+      isPublicWebhookUrl('https://[64:ff9b::192.0.2.33]/webhook'),
+    ).resolves.toBe(false);
+    expect(lookupMock).not.toHaveBeenCalled();
+  });
+
+  it('rejeita hostname que resolve para IPv6 ULA', async () => {
+    lookupMock.mockResolvedValue([{ address: 'fd00::1', family: 6 }]);
+
+    await expect(
+      resolvePublicWebhookTarget('https://hooks.example.com/webhook'),
+    ).resolves.toBeNull();
   });
 });
