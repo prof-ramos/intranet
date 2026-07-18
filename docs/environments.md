@@ -185,9 +185,13 @@ O caminho padrão de onboarding e desenvolvimento diário é:
 createdb asof_intranet
 cp .env.example .env.local
 npm run db:migrate
-npm run db:seed
+npm run db:seed:dev
 npm run dev
 ```
+
+`db:seed:dev` materializa a identidade técnica de `SKIP_AUTH` e a massa sintética.
+`db:seed` é reservado a ambientes que exercitam login real com o admin inicial; não
+combine os dois fluxos sem alinhar explicitamente `DEV_USER_ID` e `DEV_USER_EMAIL`.
 
 `vercel env pull` é um comando válido para espelhar variáveis de um ambiente
 Vercel em uma máquina local, especialmente para diagnósticos, `vercel dev` ou

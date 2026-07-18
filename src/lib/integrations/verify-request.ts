@@ -1,8 +1,9 @@
 'use server';
 
 import { createHash } from 'node:crypto';
-import type { AuthRole } from '@/lib/auth/config';
+import { isSkipAuthEnabled, type AuthRole } from '@/lib/auth/config';
 import { canAccessRole } from '@/lib/auth/authorization';
+import { resolvePersistedDevelopmentUser } from '@/lib/auth/development-identity';
 import { safeCompare } from '@/lib/crypto/safe-compare';
 import { getSession } from '@/lib/auth/session';
 import { db } from '@/lib/db';
@@ -20,6 +21,7 @@ import {
   type RequestPrincipal,
 } from '@/lib/integrations/types';
 import { createLogger } from '@/lib/logger';
+import { toSafeErrorLog } from '@/lib/error-log';
 
 const logger = createLogger('integrations:auth');
 
@@ -351,7 +353,20 @@ async function getAuthorizedSessionPrincipal(allowedRoles: readonly AuthRole[]):
     };
   }
 
-  if (!canAccessRole(session.role, allowedRoles)) {
+  let authorizedSession = session;
+  if (isSkipAuthEnabled()) {
+    try {
+      const persisted = await resolvePersistedDevelopmentUser(session);
+      authorizedSession = { ...persisted, isLoggedIn: true };
+    } catch (error) {
+      logger.warn('Rejected unavailable development session actor', {
+        error: toSafeErrorLog(error),
+      });
+      return { ok: false, status: 403 };
+    }
+  }
+
+  if (!canAccessRole(authorizedSession.role, allowedRoles)) {
     return {
       ok: false,
       status: 403,
@@ -362,9 +377,9 @@ async function getAuthorizedSessionPrincipal(allowedRoles: readonly AuthRole[]):
     ok: true,
     principal: {
       kind: 'session',
-      userId: session.userId,
-      email: session.email,
-      role: session.role,
+      userId: authorizedSession.userId,
+      email: authorizedSession.email,
+      role: authorizedSession.role,
     },
   };
 }

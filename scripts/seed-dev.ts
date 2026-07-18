@@ -1,9 +1,7 @@
-import bcrypt from 'bcryptjs';
 import { and, eq, inArray, like } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import {
   activities,
-  admins,
   associates,
   dependents,
   lawyers,
@@ -18,7 +16,7 @@ import {
   type NewOfficialLetter,
 } from '@/lib/db/schema';
 import { assertDevSeedDatabaseAllowed } from './dev-seed-safety';
-import { getInitialAdminCredentials } from './seed-admin-config';
+import { ensureDevelopmentAdminInDatabase } from './dev-admin-store';
 
 const DEV_SOURCE_PREFIX = 'dev-official-';
 const YEAR = 2026;
@@ -31,27 +29,90 @@ const LEGAL_STATUSES = ['aberta', 'aguardando_escritorio', 'respondida', 'arquiv
 const OFICIO_STATUSES = ['gerado', 'rascunho', 'cancelado'] as const;
 
 const maleNames = [
-  'André', 'Antônio', 'Bruno', 'Carlos', 'Diego', 'Eduardo', 'Felipe',
-  'Fernando', 'Gabriel', 'Gustavo', 'Henrique', 'João', 'José', 'Leandro',
-  'Lucas', 'Luís', 'Luiz', 'Marcelo', 'Marcos', 'Mateus', 'Paulo', 'Pedro',
-  'Rafael', 'Ricardo', 'Roberto', 'Rodrigo', 'Samuel', 'Sérgio', 'Thiago',
+  'André',
+  'Antônio',
+  'Bruno',
+  'Carlos',
+  'Diego',
+  'Eduardo',
+  'Felipe',
+  'Fernando',
+  'Gabriel',
+  'Gustavo',
+  'Henrique',
+  'João',
+  'José',
+  'Leandro',
+  'Lucas',
+  'Luís',
+  'Luiz',
+  'Marcelo',
+  'Marcos',
+  'Mateus',
+  'Paulo',
+  'Pedro',
+  'Rafael',
+  'Ricardo',
+  'Roberto',
+  'Rodrigo',
+  'Samuel',
+  'Sérgio',
+  'Thiago',
   'Vinícius',
 ];
 
 const femaleNames = [
-  'Adriana', 'Ana', 'Beatriz', 'Camila', 'Carla', 'Carolina', 'Daniela',
-  'Fernanda', 'Isabela', 'Júlia', 'Letícia', 'Luciana', 'Mariana',
-  'Patrícia', 'Renata', 'Tatiane',
+  'Adriana',
+  'Ana',
+  'Beatriz',
+  'Camila',
+  'Carla',
+  'Carolina',
+  'Daniela',
+  'Fernanda',
+  'Isabela',
+  'Júlia',
+  'Letícia',
+  'Luciana',
+  'Mariana',
+  'Patrícia',
+  'Renata',
+  'Tatiane',
 ];
 
 const firstNames = [...maleNames, ...femaleNames];
 
 const lastNames = [
-  'Almeida', 'Araújo', 'Barbosa', 'Barros', 'Campos', 'Cardoso', 'Carvalho',
-  'Castro', 'Correia', 'Costa', 'Dias', 'Fernandes', 'Ferreira', 'Freitas',
-  'Gomes', 'Lima', 'Martins', 'Melo', 'Monteiro', 'Moraes', 'Moreira',
-  'Nascimento', 'Oliveira', 'Pereira', 'Ribeiro', 'Santos', 'Silva', 'Souza',
-  'Teixeira', 'Vieira',
+  'Almeida',
+  'Araújo',
+  'Barbosa',
+  'Barros',
+  'Campos',
+  'Cardoso',
+  'Carvalho',
+  'Castro',
+  'Correia',
+  'Costa',
+  'Dias',
+  'Fernandes',
+  'Ferreira',
+  'Freitas',
+  'Gomes',
+  'Lima',
+  'Martins',
+  'Melo',
+  'Monteiro',
+  'Moraes',
+  'Moreira',
+  'Nascimento',
+  'Oliveira',
+  'Pereira',
+  'Ribeiro',
+  'Santos',
+  'Silva',
+  'Souza',
+  'Teixeira',
+  'Vieira',
 ];
 
 const assignments = [
@@ -64,35 +125,77 @@ const assignments = [
 ] as const;
 
 const brazilianCities = [
-  ['Rio de Janeiro', 'RJ'], ['São Paulo', 'SP'], ['Brasília', 'DF'],
-  ['Belo Horizonte', 'MG'], ['Salvador', 'BA'], ['Fortaleza', 'CE'],
-  ['Recife', 'PE'], ['Porto Alegre', 'RS'], ['Curitiba', 'PR'],
-  ['Manaus', 'AM'], ['Belém', 'PA'], ['Goiânia', 'GO'],
-  ['Vitória', 'ES'], ['Florianópolis', 'SC'], ['João Pessoa', 'PB'],
-  ['Natal', 'RN'], ['São Luís', 'MA'], ['Maceió', 'AL'],
-  ['Cuiabá', 'MT'], ['Campo Grande', 'MS'],
+  ['Rio de Janeiro', 'RJ'],
+  ['São Paulo', 'SP'],
+  ['Brasília', 'DF'],
+  ['Belo Horizonte', 'MG'],
+  ['Salvador', 'BA'],
+  ['Fortaleza', 'CE'],
+  ['Recife', 'PE'],
+  ['Porto Alegre', 'RS'],
+  ['Curitiba', 'PR'],
+  ['Manaus', 'AM'],
+  ['Belém', 'PA'],
+  ['Goiânia', 'GO'],
+  ['Vitória', 'ES'],
+  ['Florianópolis', 'SC'],
+  ['João Pessoa', 'PB'],
+  ['Natal', 'RN'],
+  ['São Luís', 'MA'],
+  ['Maceió', 'AL'],
+  ['Cuiabá', 'MT'],
+  ['Campo Grande', 'MS'],
 ] as const;
 
 const issuers = ['SSP', 'SSP', 'SSP', 'SSP', 'DETRAN', 'IFP'] as const;
 
 const streetNames = [
-  'SQS 308 Bloco K', 'SHIS QI 11 Conjunto 6', 'CLN 406 Bloco D',
-  'SQN 207 Bloco A', 'SGAN 604 Lote 23', 'SHIN QL 10 Conjunto 4',
-  'SEPS 709/909 Bloco E', 'SIA Trecho 17 Lote 6', 'SCRN 716 Bloco H',
-  'SQSW 101 Bloco F', 'SMPW 16 Conjunto 3', 'SHCES Quadra 1301',
-  'SQN 105 Bloco C', 'SQS 202 Bloco L', 'CLSW 103 Bloco A',
-  'SQN 306 Bloco H', 'SAS Quadra 5 Lote 11', 'SHS Quadra 6 Conjunto A',
+  'SQS 308 Bloco K',
+  'SHIS QI 11 Conjunto 6',
+  'CLN 406 Bloco D',
+  'SQN 207 Bloco A',
+  'SGAN 604 Lote 23',
+  'SHIN QL 10 Conjunto 4',
+  'SEPS 709/909 Bloco E',
+  'SIA Trecho 17 Lote 6',
+  'SCRN 716 Bloco H',
+  'SQSW 101 Bloco F',
+  'SMPW 16 Conjunto 3',
+  'SHCES Quadra 1301',
+  'SQN 105 Bloco C',
+  'SQS 202 Bloco L',
+  'CLSW 103 Bloco A',
+  'SQN 306 Bloco H',
+  'SAS Quadra 5 Lote 11',
+  'SHS Quadra 6 Conjunto A',
 ];
 
 const neighborhoods = [
-  'Asa Sul', 'Asa Norte', 'Sudoeste', 'Lago Sul', 'Lago Norte',
-  'Jardim Botanico', 'Guara', 'Taguatinga', 'Águas Claras',
-  'Nucleo Bandeirante', 'Park Way', 'Sobradinho',
+  'Asa Sul',
+  'Asa Norte',
+  'Sudoeste',
+  'Lago Sul',
+  'Lago Norte',
+  'Jardim Botanico',
+  'Guara',
+  'Taguatinga',
+  'Águas Claras',
+  'Nucleo Bandeirante',
+  'Park Way',
+  'Sobradinho',
 ];
 
 const ceps = [
-  '70390-110', '70297-400', '70650-550', '70840-080', '71680-360',
-  '71520-100', '70610-210', '70367-100', '70740-545', '71994-290',
+  '70390-110',
+  '70297-400',
+  '70650-550',
+  '70840-080',
+  '71680-360',
+  '71520-100',
+  '70610-210',
+  '70367-100',
+  '70740-545',
+  '71994-290',
 ];
 
 function pick<T>(items: readonly T[], index: number): T {
@@ -106,15 +209,20 @@ function sexFromName(name: string): 'M' | 'F' {
 function syntheticCpf(seq: number): string {
   const n = (seq * 423871 + 5737) % 1000000000;
   const base = String(n).padStart(9, '0');
-  let d1 = 0; for (let i = 0; i < 9; i++) d1 += Number(base[i]) * (10 - i);
-  d1 = (d1 % 11 < 2) ? 0 : 11 - (d1 % 11);
-  let d2 = 0; for (let i = 0; i < 9; i++) d2 += Number(base[i]) * (11 - i);
-  d2 += d1 * 2; d2 = (d2 % 11 < 2) ? 0 : 11 - (d2 % 11);
+  let d1 = 0;
+  for (let i = 0; i < 9; i++) d1 += Number(base[i]) * (10 - i);
+  d1 = d1 % 11 < 2 ? 0 : 11 - (d1 % 11);
+  let d2 = 0;
+  for (let i = 0; i < 9; i++) d2 += Number(base[i]) * (11 - i);
+  d2 += d1 * 2;
+  d2 = d2 % 11 < 2 ? 0 : 11 - (d2 % 11);
   return `${base.slice(0, 3)}.${base.slice(3, 6)}.${base.slice(6, 9)}-${d1}${d2}`;
 }
 
 function syntheticRg(seq: number): string {
-  const digits = String(seq * 9817 + 593).padStart(8, '0').slice(0, 8);
+  const digits = String(seq * 9817 + 593)
+    .padStart(8, '0')
+    .slice(0, 8);
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}`;
 }
 
@@ -128,30 +236,7 @@ function monthAgo(monthOffset: number): Date {
 }
 
 async function ensureDevAdmin() {
-  const { email, password } = getInitialAdminCredentials();
-  const passwordHash = await bcrypt.hash(password, 12);
-
-  const [existing] = await db
-    .select({ id: admins.id })
-    .from(admins)
-    .where(eq(admins.email, email))
-    .limit(1);
-
-  if (existing) return existing.id;
-
-  const [created] = await db
-    .insert(admins)
-    .values({
-      name: 'Administrador Dev',
-      email,
-      passwordHash,
-      role: 'admin',
-      isActive: true,
-      mustChangePassword: true,
-    })
-    .returning({ id: admins.id });
-
-  return created.id;
+  return db.transaction((tx) => ensureDevelopmentAdminInDatabase(tx));
 }
 
 async function ensureDevLawyers() {
@@ -176,7 +261,12 @@ async function ensureDevLawyers() {
   return db
     .select({ id: lawyers.id })
     .from(lawyers)
-    .where(inArray(lawyers.email, values.map((lawyer) => lawyer.email)));
+    .where(
+      inArray(
+        lawyers.email,
+        values.map((lawyer) => lawyer.email),
+      ),
+    );
 }
 
 /** Contagem canônica de dependentes (cache denormalizado + linhas em `dependents`). */
@@ -211,8 +301,7 @@ function buildAssociates(): NewAssociate[] {
     const inaugurationYear = admissionYear;
     const joinYear = 2010 + (index % 13);
     const joinedAt = everAssociated ? `${joinYear}-03-10T12:00:00Z` : null;
-    const contributionStatus =
-      isAssociated && index % 5 !== 0 ? 'em_dia' : 'inadimplente';
+    const contributionStatus = isAssociated && index % 5 !== 0 ? 'em_dia' : 'inadimplente';
     const neighborhood = pick(neighborhoods, index);
     const street = pick(streetNames, index);
 
@@ -248,9 +337,7 @@ function buildAssociates(): NewAssociate[] {
       inaugurationDate: fmtDate(inaugurationYear, Math.min((index % 12) + 1, 11), 15),
       retirementDate: isRetired ? fmtDate(2021 + (index % 4), (index % 12) + 1, 1) : null,
       leaveDate:
-        functionalStatus === 'em_licenca'
-          ? fmtDate(2023 + (index % 2), (index % 12) + 1, 1)
-          : null,
+        functionalStatus === 'em_licenca' ? fmtDate(2023 + (index % 2), (index % 12) + 1, 1) : null,
       cancellationDate: isCancelled
         ? fmtDate(joinYear + 2 + (index % 3), (index % 12) + 1, 1)
         : null,
@@ -270,9 +357,7 @@ function buildAssociates(): NewAssociate[] {
   });
 }
 
-function buildDependents(
-  associateRows: Array<{ id: number; fullName: string }>,
-): NewDependent[] {
+function buildDependents(associateRows: Array<{ id: number; fullName: string }>): NewDependent[] {
   return associateRows.flatMap((row, index) => {
     const count = dependentCountForIndex(index);
     if (count === 0) return [];
@@ -285,7 +370,11 @@ function buildDependents(
 }
 
 function buildPayments(
-  associateRows: Array<{ id: number; associationStatus: string; paymentMethod: NewAssociate['paymentMethod'] }>,
+  associateRows: Array<{
+    id: number;
+    associationStatus: string;
+    paymentMethod: NewAssociate['paymentMethod'];
+  }>,
   adminId: number,
 ): NewMonthlyPayment[] {
   return associateRows
@@ -321,22 +410,21 @@ async function main() {
 
     if (existingIds.length > 0) {
       await tx.delete(monthlyPayments).where(inArray(monthlyPayments.associateId, existingIds));
-      await tx.delete(legalConsultations).where(inArray(legalConsultations.associateId, existingIds));
+      await tx
+        .delete(legalConsultations)
+        .where(inArray(legalConsultations.associateId, existingIds));
       await tx.delete(activities).where(inArray(activities.associateId, existingIds));
       await tx.delete(associates).where(inArray(associates.id, existingIds));
     }
 
     await tx.delete(oficios).where(and(eq(oficios.year, YEAR), like(oficios.number, 'DEV-%')));
 
-    const insertedAssociates = await tx
-      .insert(associates)
-      .values(buildAssociates())
-      .returning({
-        id: associates.id,
-        fullName: associates.fullName,
-        associationStatus: associates.associationStatus,
-        paymentMethod: associates.paymentMethod,
-      });
+    const insertedAssociates = await tx.insert(associates).values(buildAssociates()).returning({
+      id: associates.id,
+      fullName: associates.fullName,
+      associationStatus: associates.associationStatus,
+      paymentMethod: associates.paymentMethod,
+    });
 
     const dependentRows = buildDependents(insertedAssociates);
     if (dependentRows.length > 0) {
@@ -345,8 +433,9 @@ async function main() {
 
     await tx.insert(monthlyPayments).values(buildPayments(insertedAssociates, adminId));
 
-    const devActivities: NewActivity[] =
-      insertedAssociates.slice(0, 30).map((associate, index) => ({
+    const devActivities: NewActivity[] = insertedAssociates
+      .slice(0, 30)
+      .map((associate, index) => ({
         title: `Recadastramento sintético #${String(index + 1).padStart(2, '0')}`,
         description: 'Atividade sintética para desenvolvimento local.',
         status: pick(ACTIVITY_STATUSES, index),
@@ -360,8 +449,9 @@ async function main() {
       }));
     await tx.insert(activities).values(devActivities);
 
-    const devConsultations: NewLegalConsultation[] =
-      insertedAssociates.slice(0, 20).map((associate, index) => ({
+    const devConsultations: NewLegalConsultation[] = insertedAssociates
+      .slice(0, 20)
+      .map((associate, index) => ({
         internalNumber: `DEV-JUR-${YEAR}-${String(index + 1).padStart(3, '0')}`,
         title: `Consulta sintética de ${associate.fullName}`,
         questionSummary: 'Dúvida funcional sintética para desenvolvimento.',
@@ -377,29 +467,33 @@ async function main() {
       }));
     await tx.insert(legalConsultations).values(devConsultations);
 
-    const devOficios: NewOfficialLetter[] =
-      Array.from({ length: 12 }, (_, index) => ({
-        number: `DEV-${String(index + 1).padStart(3, '0')}/${YEAR}-ASOF`,
-        year: YEAR,
-        sequence: 9000 + index,
-        recipient: pick(['Secretaria de Gestao de Pessoas', 'Departamento do Servico Exterior', 'Gabinete'], index),
-        recipientRole: pick(['Secretario', 'Diretor', 'Chefe de Gabinete'], index),
-        vocativo: 'Senhor(a)',
-        letterDate: `${index + 1} de junho de ${YEAR}`,
-        subject: `Oficio sintetico #${index + 1}`,
-        itamaratySector: pick(['SGP', 'DSE', 'SETEC'], index),
-        signatoryName: 'Presidencia ASOF',
-        signatoryRole: 'Presidente',
-        closure: 'Atenciosamente,',
-        bodyRichText: 'Conteudo sintetico para desenvolvimento local.',
-        bodyPlainText: 'Conteudo sintetico para desenvolvimento local.',
-        status: pick(OFICIO_STATUSES, index),
-        createdBy: adminId,
-      }));
+    const devOficios: NewOfficialLetter[] = Array.from({ length: 12 }, (_, index) => ({
+      number: `DEV-${String(index + 1).padStart(3, '0')}/${YEAR}-ASOF`,
+      year: YEAR,
+      sequence: 9000 + index,
+      recipient: pick(
+        ['Secretaria de Gestao de Pessoas', 'Departamento do Servico Exterior', 'Gabinete'],
+        index,
+      ),
+      recipientRole: pick(['Secretario', 'Diretor', 'Chefe de Gabinete'], index),
+      vocativo: 'Senhor(a)',
+      letterDate: `${index + 1} de junho de ${YEAR}`,
+      subject: `Oficio sintetico #${index + 1}`,
+      itamaratySector: pick(['SGP', 'DSE', 'SETEC'], index),
+      signatoryName: 'Presidencia ASOF',
+      signatoryRole: 'Presidente',
+      closure: 'Atenciosamente,',
+      bodyRichText: 'Conteudo sintetico para desenvolvimento local.',
+      bodyPlainText: 'Conteudo sintetico para desenvolvimento local.',
+      status: pick(OFICIO_STATUSES, index),
+      createdBy: adminId,
+    }));
     await tx.insert(oficios).values(devOficios);
   });
 
-  console.log('Development seed complete: 120 oficiais, mensalidades, atividades, consultas juridicas e oficios sintéticos.');
+  console.log(
+    'Development seed complete: 120 oficiais, mensalidades, atividades, consultas juridicas e oficios sintéticos.',
+  );
 }
 
 main().catch((error) => {

@@ -278,6 +278,7 @@ export function AtividadesBoard({
       setErrorMessage(
         error instanceof Error ? error.message : 'Não foi possível criar a atividade.',
       );
+      throw error;
     }
   }, []);
 
