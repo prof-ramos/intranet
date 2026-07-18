@@ -1,17 +1,18 @@
 # Architecture Review 2026: Candidatos 2 a 5
 
 Plano operacional para tratar os candidatos 2 a 5 de
-`architecture-review-2026.html`. Use junto com
-`docs/development/codex-worktrees-and-automations.md`.
+`architecture-review-2026.html`. Registro arquivado — `architecture-review-2026.html`
+e `docs/development/codex-worktrees-and-automations.md` (referenciados originalmente)
+não existem mais no repositório; todos os candidatos abaixo já estão implementados.
 
 ## Estado
 
-| Candidato | Tema | Execucao recomendada | Estado |
-| --- | --- | --- | --- |
-| 2 | PII do Associado | Local ou worktree isolado, sem swarm | Implementado |
-| 3 | Server Actions | Worktree dedicada; helper serial, migracao por swarm | Implementado no escopo seguro |
-| 4 | Rotas de Webhook | Worktree dedicada + swarm pequeno | Implementado |
-| 5 | Contexto de Correlacao | Local ou worktree isolado, sem swarm | Implementado |
+| Candidato | Tema                   | Execucao recomendada                                 | Estado                        |
+| --------- | ---------------------- | ---------------------------------------------------- | ----------------------------- |
+| 2         | PII do Associado       | Local ou worktree isolado, sem swarm                 | Implementado                  |
+| 3         | Server Actions         | Worktree dedicada; helper serial, migracao por swarm | Implementado no escopo seguro |
+| 4         | Rotas de Webhook       | Worktree dedicada + swarm pequeno                    | Implementado                  |
+| 5         | Contexto de Correlacao | Local ou worktree isolado, sem swarm                 | Implementado                  |
 
 ## Candidato 2: PII do Associado
 
@@ -66,13 +67,13 @@ falhas em redirects especificos, nao em `throw new Error(...)`.
 
 Swarm opcional restante:
 
-| Agente | Escopo |
-| --- | --- |
-| actions-auth | `src/app/login`, `change-password`, `forgot-password`, `reset-password`; migrar apenas com helper proprio para redirect |
-| actions-domain | `src/app/app/juridico`, `associados`, `atividades`, `financeiro` |
-| actions-config | `src/app/app/config/**/actions.ts` |
-| actions-secretaria | `src/app/app/secretaria/**/actions.ts` |
-| verifier | buscar boilerplate restante e rodar gates |
+| Agente             | Escopo                                                                                                                  |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| actions-auth       | `src/app/login`, `change-password`, `forgot-password`, `reset-password`; migrar apenas com helper proprio para redirect |
+| actions-domain     | `src/app/app/juridico`, `associados`, `atividades`, `financeiro`                                                        |
+| actions-config     | `src/app/app/config/**/actions.ts`                                                                                      |
+| actions-secretaria | `src/app/app/secretaria/**/actions.ts`                                                                                  |
+| verifier           | buscar boilerplate restante e rodar gates                                                                               |
 
 Regras de merge:
 
@@ -117,13 +118,13 @@ Mudanca aplicada:
 
 Swarm usado conceitualmente / escopos isolaveis:
 
-| Agente | Escopo |
-| --- | --- |
-| webhook-core | helper comum + testes unitarios |
-| webhook-events | `src/app/api/v1/events/route.ts` + `route.test.ts` |
+| Agente           | Escopo                                                     |
+| ---------------- | ---------------------------------------------------------- |
+| webhook-core     | helper comum + testes unitarios                            |
+| webhook-events   | `src/app/api/v1/events/route.ts` + `route.test.ts`         |
 | webhook-assinafy | `src/app/api/webhooks/assinafy/route.ts` + `route.test.ts` |
-| webhook-gmail | `src/app/api/v1/gmail-webhook/route.ts` + `route.test.ts` |
-| verifier | contratos HTTP, logs sem PII, lint/typecheck/test |
+| webhook-gmail    | `src/app/api/v1/gmail-webhook/route.ts` + `route.test.ts`  |
+| verifier         | contratos HTTP, logs sem PII, lint/typecheck/test          |
 
 Regras de merge:
 

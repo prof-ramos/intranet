@@ -28,24 +28,34 @@ Consistent, discoverable branch names that map 1:1 to GitHub Issues and make it 
 
 - **`<kebab-case-short-description>`**:
   - 3–8 words max
-  - Focus on the *what* (e.g. `lgpd-retention`, `documents-service`, `auth-service`)
+  - Focus on the _what_ (e.g. `lgpd-retention`, `documents-service`, `auth-service`)
   - Avoid implementation details (`extract-foo-from-bar` is ok only if that's the core of the PR title)
 
 ## Examples (Current Good Practice)
+
+Issue-mapped changes still follow the original convention:
 
 ```bash
 feat/issue-72-lgpd-retention
 refactor/issue-97-associates-profile
 fix/issue-73-lgpd-button-label
-docs/issue-93-papra-dms-evaluation
-refactor/issue-101-documents-service
-refactor/issue-102-split-integrations-auth
+```
+
+Work driven by a numbered advisor/executor plan under `advisor-plans/` uses the
+plan number instead of an issue number, with the executor as prefix:
+
+```bash
+advisor/057-operational-hygiene
+codex/060-read-only-production-smoke
+codex/064-reconcile-associate-identities
 ```
 
 ## Legacy / Acceptable (Minimize New Usage)
 
-- `feature/issue-98-auth-service` — older style, still present in some open PRs
-- `Pimaco` — anti-pattern (no type, no issue number, misleading name)
+- `Pimaco` — anti-pattern (no type, no issue number, misleading name); already
+  cleaned up, kept here only as a negative example.
+- `feature/<initiative-slug>` — pre-dates the `advisor/`/`codex/` plan-number
+  convention above; prefer the plan-numbered form for new plan-driven work.
 
 ## Workflow Rules
 
