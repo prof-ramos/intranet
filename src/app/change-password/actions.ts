@@ -6,6 +6,7 @@
 
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth/require-auth';
+import { destroySession } from '@/lib/auth/session';
 import { validateNewPassword } from '@/lib/auth/password';
 import {
   changePassword as changePasswordService,
@@ -14,7 +15,7 @@ import {
 } from '@/lib/auth/service';
 import { firstZodError } from '@/lib/server-actions/utils';
 import { changePasswordSchema } from '@/lib/validation/schemas';
-import { toSafeErrorLog } from '@/lib/error-log';
+import { ensureError, toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('auth:change-password');
@@ -64,5 +65,14 @@ export async function changePassword(formData: FormData) {
     changePasswordError('Não foi possível concluir a alteração de senha.');
   }
 
-  redirect('/app');
+  try {
+    await destroySession();
+  } catch (error) {
+    logger.error(
+      '[change-password] failed to destroy the rotated session cookie',
+      { error: toSafeErrorLog(error) },
+      ensureError(error),
+    );
+  }
+  redirect('/login?reset=success');
 }
