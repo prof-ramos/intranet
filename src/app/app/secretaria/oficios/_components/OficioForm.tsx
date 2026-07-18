@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useMemo, useTransition } from 'react';
+import { useMemo, useState, useTransition, type CSSProperties } from 'react';
 import { useEscapeKey } from '@/hooks/use-escape-key';
 import { useRouter } from 'next/navigation';
 import {
   useForm,
   useWatch,
-  UseFormRegister,
-  FieldErrors,
-  UseFormSetValue,
-  UseFormGetValues,
+  type FieldErrors,
+  type UseFormGetValues,
+  type UseFormRegister,
+  type UseFormSetValue,
 } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { officialLetterFormSchema, type OfficialLetterFormValues } from '@/lib/oficios/validations';
@@ -31,7 +31,6 @@ import {
   warningBorder,
   warningText,
 } from '@/lib/ui/tokens';
-import { CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
 
 const RichTextEditor = dynamic(() => import('./RichTextEditor').then((mod) => mod.RichTextEditor), {
@@ -42,6 +41,36 @@ const RichTextEditor = dynamic(() => import('./RichTextEditor').then((mod) => mo
 interface OficioFormProps {
   initialData?: Partial<OfficialLetterFormValues>;
   id?: number;
+}
+
+interface FormSectionProps {
+  register: UseFormRegister<OfficialLetterFormValues>;
+  errors: FieldErrors<OfficialLetterFormValues>;
+}
+
+interface CorpoSectionProps extends FormSectionProps {
+  setValue: UseFormSetValue<OfficialLetterFormValues>;
+  bodyRichText: string;
+  bodyPlainText: string;
+  onOpenAiModal: () => void;
+}
+
+interface FooterSectionProps {
+  submitError: string | null;
+  isSubmitPending: boolean;
+  isEditing: boolean;
+  onCancel: () => void;
+}
+
+interface AiModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  aiInstruction: string;
+  setAiInstruction: (value: string) => void;
+  aiError: string | null;
+  setAiError: (value: string | null) => void;
+  getValues: UseFormGetValues<OfficialLetterFormValues>;
+  setValue: UseFormSetValue<OfficialLetterFormValues>;
 }
 
 const defaultFormValues: Partial<OfficialLetterFormValues> = {
@@ -167,10 +196,7 @@ export function OficioForm({ initialData, id }: OficioFormProps) {
 function DestinatarioSection({
   register,
   errors,
-}: {
-  register: UseFormRegister<OfficialLetterFormValues>;
-  errors: FieldErrors<OfficialLetterFormValues>;
-}) {
+}: FormSectionProps) {
   return (
     <div
       className="space-y-4 rounded-2xl border bg-white p-6 shadow-sm"
@@ -305,10 +331,7 @@ function DestinatarioSection({
 function InformacoesSection({
   register,
   errors,
-}: {
-  register: UseFormRegister<OfficialLetterFormValues>;
-  errors: FieldErrors<OfficialLetterFormValues>;
-}) {
+}: FormSectionProps) {
   return (
     <div
       className="space-y-4 rounded-2xl border bg-white p-6 shadow-sm"
@@ -391,14 +414,7 @@ function CorpoSection({
   bodyRichText,
   bodyPlainText,
   onOpenAiModal,
-}: {
-  register: UseFormRegister<OfficialLetterFormValues>;
-  errors: FieldErrors<OfficialLetterFormValues>;
-  setValue: UseFormSetValue<OfficialLetterFormValues>;
-  bodyRichText: string;
-  bodyPlainText: string;
-  onOpenAiModal: () => void;
-}) {
+}: CorpoSectionProps) {
   const impersonalityWarnings = useMemo<ImpersonalityWarning[]>(
     () => (bodyPlainText.trim() ? checkImpersonality(bodyPlainText) : []),
     [bodyPlainText],
@@ -479,12 +495,7 @@ function FooterSection({
   isSubmitPending,
   isEditing,
   onCancel,
-}: {
-  submitError: string | null;
-  isSubmitPending: boolean;
-  isEditing: boolean;
-  onCancel: () => void;
-}) {
+}: FooterSectionProps) {
   return (
     <div className="flex flex-col items-end gap-3 lg:col-span-2">
       {submitError && (
@@ -534,16 +545,7 @@ function AiModal({
   setAiError,
   getValues,
   setValue,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  aiInstruction: string;
-  setAiInstruction: (val: string) => void;
-  aiError: string | null;
-  setAiError: (val: string | null) => void;
-  getValues: UseFormGetValues<OfficialLetterFormValues>;
-  setValue: UseFormSetValue<OfficialLetterFormValues>;
-}) {
+}: AiModalProps) {
   const [isAiPending, startAiTransition] = useTransition();
 
   useEscapeKey(onClose, isOpen);
