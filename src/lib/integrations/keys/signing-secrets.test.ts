@@ -13,13 +13,13 @@ describe('signing-secrets', () => {
   });
 
   describe('generateIntegrationSigningSecret', () => {
-    it('generates a random string', () => {
-      const secret = generateIntegrationSigningSecret();
-      expect(typeof secret).toBe('string');
-      expect(secret.length).toBeGreaterThan(0);
+    it('generates distinct 43-character base64url strings', () => {
+      const firstSecret = generateIntegrationSigningSecret();
+      const secondSecret = generateIntegrationSigningSecret();
 
-      const secret2 = generateIntegrationSigningSecret();
-      expect(secret).not.toBe(secret2);
+      expect(firstSecret).toMatch(/^[A-Za-z0-9_-]{43}$/);
+      expect(secondSecret).toMatch(/^[A-Za-z0-9_-]{43}$/);
+      expect(secondSecret).not.toBe(firstSecret);
     });
   });
 
@@ -31,26 +31,32 @@ describe('signing-secrets', () => {
 
       const ciphertext = encryptIntegrationSigningSecret(plaintext);
       expect(ciphertext).not.toBe(plaintext);
-      expect(ciphertext).toContain('enc:v2:');
+      expect(ciphertext).toMatch(/^enc:v2:/);
 
       const decrypted = decryptIntegrationSigningSecret(ciphertext);
       expect(decrypted).toBe(plaintext);
     });
 
-    it('throws an error if ENCRYPTION_MASTER_KEY is not set for encryption', () => {
-      vi.stubEnv('ENCRYPTION_MASTER_KEY', '');
+    it.each(['', '   '])(
+      'throws an error if ENCRYPTION_MASTER_KEY is missing for encryption (%j)',
+      (masterKey) => {
+        vi.stubEnv('ENCRYPTION_MASTER_KEY', masterKey);
 
-      expect(() => encryptIntegrationSigningSecret('test')).toThrow(
-        'ENCRYPTION_MASTER_KEY is required to encrypt integration signing secrets.'
-      );
-    });
+        expect(() => encryptIntegrationSigningSecret('test')).toThrow(
+          'ENCRYPTION_MASTER_KEY is required to encrypt integration signing secrets.',
+        );
+      },
+    );
 
-    it('throws an error if ENCRYPTION_MASTER_KEY is not set for decryption', () => {
-      vi.stubEnv('ENCRYPTION_MASTER_KEY', '');
+    it.each(['', '   '])(
+      'throws an error if ENCRYPTION_MASTER_KEY is missing for decryption (%j)',
+      (masterKey) => {
+        vi.stubEnv('ENCRYPTION_MASTER_KEY', masterKey);
 
-      expect(() => decryptIntegrationSigningSecret('enc:v2:test')).toThrow(
-        'ENCRYPTION_MASTER_KEY is required to decrypt integration signing secrets.'
-      );
-    });
+        expect(() => decryptIntegrationSigningSecret('enc:v2:test')).toThrow(
+          'ENCRYPTION_MASTER_KEY is required to decrypt integration signing secrets.',
+        );
+      },
+    );
   });
 });
