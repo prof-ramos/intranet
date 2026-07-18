@@ -2,6 +2,7 @@
 
 import { Search } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
+import { mobileTouchTargetClass } from '@/lib/ui/tokens';
 import { fetchAssociatesForEtiquetas, type EtiquetaAssociateOption } from '../actions';
 
 export function EtiquetasRecipientsSelector({
@@ -70,7 +71,9 @@ export function EtiquetasRecipientsSelector({
           <ul className="divide-y divide-base-300">
             {associates.map((associate) => (
               <li key={associate.id}>
-                <label className="flex cursor-pointer items-start gap-3 p-3 transition-colors hover:bg-base-200/50">
+                <label
+                  className={`${mobileTouchTargetClass} flex cursor-pointer items-start gap-3 p-3 transition-colors hover:bg-base-200/50`}
+                >
                   <input
                     type="checkbox"
                     className="checkbox checkbox-sm mt-1"
