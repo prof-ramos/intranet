@@ -6,6 +6,7 @@ import {
   integrationPreAuthRateLimiter,
   integrationPrincipalRateLimiter,
 } from '@/lib/integrations/rate-limit';
+import { normalizeFullGitSha } from '@/lib/smoke/runtime-contract';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +51,9 @@ export async function GET(request: Request) {
       capabilities: {
         inboundEvents: false,
         outboundWebhooks: true,
+      },
+      deployment: {
+        gitCommitSha: normalizeFullGitSha(process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA),
       },
     },
     {
