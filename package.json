@@ -37,6 +37,7 @@
     "db:migrate:unsafe": "drizzle-kit migrate",
     "db:seed": "node --env-file=.env.local --import tsx scripts/seed-admin.ts",
     "db:seed:dev": "node --env-file=.env.local --import tsx scripts/seed-dev.ts",
+    "db:reconcile-associate-identities": "node --env-file=.env.local --import tsx scripts/reconcile-associate-identities.ts",
     "migrate:legacy": "node --env-file=.env.local --import tsx scripts/migrate-legacy.ts",
     "migrate:legacy:dry-run": "node --env-file=.env.local --import tsx scripts/migrate-legacy.ts --dry-run",
     "db:studio": "drizzle-kit studio",

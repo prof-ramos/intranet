@@ -11,22 +11,22 @@ A superficie HTTP publica atual da ASOF Intranet e pequena e intencionalmente re
 
 Hoje existem **14 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
 
-| Metodo        | Rota                                 | Finalidade                                                                  |
-| ------------- | ------------------------------------ | --------------------------------------------------------------------------- |
-| `GET`         | `/app/associados/relatorio/download` | Exportar associados filtrados em CSV                                        |
-| `GET`         | `/api/oficios/[id]/download`         | Gerar e baixar PDF de um oficio                                             |
-| `GET`         | `/api/v1/health`                     | Healthcheck autenticado da fundacao de integracoes                          |
-| `GET`, `POST` | `/api/v1/events`                     | Superficie administrativa para dispatch outbound-only; sem ingestao inbound |
-| `GET`         | `/api/v1/events/dispatch`            | Dispatch agendado por cron bearer para pendencias e retries outbound        |
-| `GET`         | `/api/v1/juridico/sla-warnings`      | Job agendado por cron bearer para emitir notificacoes de SLA juridico       |
-| `POST`        | `/api/v1/email-triage/process`       | Processar emails pendentes na triagem (cron ou manual)                      |
-| `POST`        | `/api/v1/gmail-webhook`              | Webhook de notificacao push do Gmail (Pub/Sub)                              |
-| `GET`         | `/api/v1/cron/gmail-watch`           | Renovacao semanal do watch Gmail (cron bearer)                              |
-| `GET`         | `/api/v1/cron/lgpd-retention`        | Job agendado de retencao e anonimizacao LGPD (cron bearer)                  |
+| Metodo        | Rota                                 | Finalidade                                                                                         |
+| ------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `GET`         | `/app/associados/relatorio/download` | Exportar associados filtrados em CSV                                                               |
+| `GET`         | `/api/oficios/[id]/download`         | Gerar e baixar PDF de um oficio                                                                    |
+| `GET`         | `/api/v1/health`                     | Healthcheck autenticado da fundacao de integracoes                                                 |
+| `GET`, `POST` | `/api/v1/events`                     | Superficie administrativa para dispatch outbound-only; sem ingestao inbound                        |
+| `GET`         | `/api/v1/events/dispatch`            | Dispatch agendado por cron bearer para pendencias e retries outbound                               |
+| `GET`         | `/api/v1/juridico/sla-warnings`      | Job agendado por cron bearer para emitir notificacoes de SLA juridico                              |
+| `POST`        | `/api/v1/email-triage/process`       | Processar emails pendentes na triagem (cron ou manual)                                             |
+| `POST`        | `/api/v1/gmail-webhook`              | Webhook de notificacao push do Gmail (Pub/Sub)                                                     |
+| `GET`         | `/api/v1/cron/gmail-watch`           | Renovacao semanal do watch Gmail (cron bearer)                                                     |
+| `GET`         | `/api/v1/cron/lgpd-retention`        | Job agendado de retencao e anonimizacao LGPD (cron bearer)                                         |
 | `GET`         | `/api/v1/cron/overdue-payments`      | Marca mensalidades vencidas pendente → atrasado via `autoMarkOverduePaymentsService` (cron bearer) |
-| `GET`         | `/api/v1/cron/cleanup-nonces`        | Limpa nonces expirados de replay protection (cron bearer, diário 01:00 UTC) |
-| `POST`        | `/app/etiquetas/gerar`               | Geracao administrativa de etiquetas Pimaco em PDF                           |
-| `POST`        | `/api/webhooks/assinafy`             | Webhook de retorno de assinatura digital (Assinafy)                         |
+| `GET`         | `/api/v1/cron/cleanup-nonces`        | Limpa nonces expirados de replay protection (cron bearer, diário 01:00 UTC)                        |
+| `POST`        | `/app/etiquetas/gerar`               | Geracao administrativa de etiquetas Pimaco em PDF                                                  |
+| `POST`        | `/api/webhooks/assinafy`             | Webhook de retorno de assinatura digital (Assinafy)                                                |
 
 ### O que esta fora deste documento
 
@@ -382,6 +382,9 @@ Retorna um envelope JSON padronizado confirmando que a superficie versionada de 
     "capabilities": {
       "inboundEvents": false,
       "outboundWebhooks": true
+    },
+    "deployment": {
+      "gitCommitSha": "0123456789abcdef0123456789abcdef01234567"
     }
   },
   "meta": {
@@ -391,6 +394,10 @@ Retorna um envelope JSON padronizado confirmando que a superficie versionada de 
   }
 }
 ```
+
+`deployment` expoe somente o SHA completo do commit do deployment, ou `null`
+quando a variavel de sistema da Vercel estiver ausente ou malformada. Mensagem,
+branch e autor do commit nao sao retornados.
 
 #### Respostas de erro
 
@@ -707,17 +714,17 @@ Gera um arquivo PDF A4 com etiquetas Pimaco para impressao administrativa. A ger
 
 #### Corpo JSON
 
-| Parametro | Tipo | Obrigatorio | Descricao |
-|-----------|------|-------------|-----------|
-| `recipientIds` | `number[]` | Sim, quando `recipients` ausente | IDs dos associados selecionados |
-| `recipients` | `object[]` | Sim, quando `recipientIds` ausente | Destinatarios normalizados para geracao testavel |
-| `templateCode` | `'6182' \| '3080' \| 'A4256'` | Sim | Modelo Pimaco |
-| `mode` | `'postal' \| 'mala_diplomatica' \| 'custom'` | Sim | Modo de impressao |
-| `selectedFields` | `string[]` | Nao | Campos incluidos quando aplicavel |
-| `flags` | `object` | Nao | Flags `peo` e `ectOpenable` |
-| `startPosition` | `number` | Nao | Posicao inicial base 1 |
-| `offsetXmm` / `offsetYmm` | `number` | Nao | Ajuste fino em milimetros |
-| `debug` | `boolean` | Nao | Desenha bordas para calibracao |
+| Parametro                 | Tipo                                         | Obrigatorio                        | Descricao                                        |
+| ------------------------- | -------------------------------------------- | ---------------------------------- | ------------------------------------------------ |
+| `recipientIds`            | `number[]`                                   | Sim, quando `recipients` ausente   | IDs dos associados selecionados                  |
+| `recipients`              | `object[]`                                   | Sim, quando `recipientIds` ausente | Destinatarios normalizados para geracao testavel |
+| `templateCode`            | `'6182' \| '3080' \| 'A4256'`                | Sim                                | Modelo Pimaco                                    |
+| `mode`                    | `'postal' \| 'mala_diplomatica' \| 'custom'` | Sim                                | Modo de impressao                                |
+| `selectedFields`          | `string[]`                                   | Nao                                | Campos incluidos quando aplicavel                |
+| `flags`                   | `object`                                     | Nao                                | Flags `peo` e `ectOpenable`                      |
+| `startPosition`           | `number`                                     | Nao                                | Posicao inicial base 1                           |
+| `offsetXmm` / `offsetYmm` | `number`                                     | Nao                                | Ajuste fino em milimetros                        |
+| `debug`                   | `boolean`                                    | Nao                                | Desenha bordas para calibracao                   |
 
 #### Observacoes
 
@@ -753,15 +760,14 @@ Recebe callbacks da plataforma Assinafy quando um documento e assinado ou rejeit
   "documentId": "assinafy-doc-123",
   "status": "signed",
   "signedAt": "2026-06-03T12:00:00Z",
-  "signers": [
-    { "name": "Nome do Signatario", "email": "signatario@example.com" }
-  ]
+  "signers": [{ "name": "Nome do Signatario", "email": "signatario@example.com" }]
 }
 ```
 
 #### Resposta de sucesso
 
 **Status:** `200 OK`
+
 ```json
 { "ok": true }
 ```
