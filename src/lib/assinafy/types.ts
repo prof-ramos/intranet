@@ -6,6 +6,7 @@ export enum AssinafyDocumentStatus {
   METADATA_PROCESSING = 'metadata_processing',
   METADATA_READY = 'metadata_ready',
   PENDING_SIGNATURE = 'pending_signature',
+  PARTIALLY_SIGNED = 'partially_signed',
   CERTIFICATING = 'certificating',
   CERTIFICATED = 'certificated',
   EXPIRED = 'expired',
@@ -13,6 +14,8 @@ export enum AssinafyDocumentStatus {
   REJECTED_BY_USER = 'rejected_by_user',
   FAILED = 'failed',
 }
+
+export type AssinafyDocumentStatusValue = NonNullable<typeof oficios.$inferSelect.assinafyStatus>;
 
 /**
  * Keys read by `handleWebhookEvent` from Assinafy's event-specific payload.
