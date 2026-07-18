@@ -99,6 +99,10 @@ describe('finance service integration', () => {
       .where(
         and(eq(domainEvents.entityType, 'monthly_payment'), eq(domainEvents.entityId, fixture.id)),
       );
+    const audits = await db
+      .select()
+      .from(auditLogs)
+      .where(and(eq(auditLogs.entityType, 'monthly_payment'), eq(auditLogs.entityId, fixture.id)));
 
     expect(updated.status).toBe('pago');
     expect(persisted.status).toBe('pago');
@@ -110,6 +114,23 @@ describe('finance service integration', () => {
       status: 'pago',
       associateId: requireAssociateId(),
     });
+    expect(audits).toHaveLength(1);
+    expect(audits[0]).toMatchObject({
+      performedBy: requireAdminId(),
+      action: 'update',
+      entityType: 'monthly_payment',
+      entityId: fixture.id,
+      changes: {
+        old: { status: 'pendente', paymentMethod: 'pix' },
+        new: { status: 'pago', paymentMethod: 'pix' },
+      },
+      metadata: {
+        associateId: requireAssociateId(),
+        year: fixture.year,
+        month: fixture.month,
+      },
+    });
+    expect(JSON.stringify(audits[0])).not.toMatch(/cpf|siape|address/i);
   });
 
   it('rolls back both a payment mutation and its outbox event', async () => {
@@ -216,9 +237,14 @@ describe('finance service integration', () => {
       .where(
         and(eq(domainEvents.entityType, 'monthly_payment'), eq(domainEvents.entityId, fixture.id)),
       );
+    const audits = await db
+      .select({ id: auditLogs.id })
+      .from(auditLogs)
+      .where(and(eq(auditLogs.entityType, 'monthly_payment'), eq(auditLogs.entityId, fixture.id)));
 
     expect(persisted.status).toBe('pendente');
     expect(persisted.paidAt).toBeNull();
     expect(events).toEqual([]);
+    expect(audits).toEqual([]);
   });
 });

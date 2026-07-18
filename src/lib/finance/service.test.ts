@@ -8,6 +8,7 @@ import {
 import { emitDomainEvent, emitDomainEventsBatch } from '@/lib/integrations/outbox';
 import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
 import { logAuditAction } from '@/lib/audit/service';
+import { db } from '@/lib/db';
 
 const transactionMock = vi.hoisted(() => ({
   tx: {
@@ -141,9 +142,9 @@ describe('finance service', () => {
       ]),
       transactionMock.tx,
     );
-    expect(
-      JSON.stringify(vi.mocked(emitDomainEventsBatch).mock.calls[0][0][0]),
-    ).not.toMatch(/cpf|siape|address/i);
+    expect(JSON.stringify(vi.mocked(emitDomainEventsBatch).mock.calls[0][0][0])).not.toMatch(
+      /cpf|siape|address/i,
+    );
     // Post-commit fire-and-forget dispatch is invoked per event with the
     // inserted event id. The cron /api/v1/events/dispatch is the safety net.
     expect(dispatchDomainEventById).toHaveBeenCalledWith(4242);
@@ -220,6 +221,70 @@ describe('finance service', () => {
     expect(JSON.stringify(vi.mocked(emitDomainEvent).mock.calls[0][0])).not.toMatch(
       /cpf|siape|address/i,
     );
+  });
+
+  it('does not audit a payment update when the outbox write fails', async () => {
+    const effects: string[] = [];
+    vi.mocked(emitDomainEvent).mockImplementationOnce(async () => {
+      effects.push('outbox');
+      throw new Error('outbox unavailable');
+    });
+
+    await expect(
+      updateMonthlyPayment(1, {
+        associateId: 10,
+        year: 2026,
+        month: 5,
+        status: 'pago',
+        paymentMethod: 'boleto',
+      }),
+    ).rejects.toThrow('outbox unavailable');
+
+    expect(effects).toEqual(['outbox']);
+    expect(logAuditAction).not.toHaveBeenCalled();
+  });
+
+  it('audits a payment update only after its transaction commits', async () => {
+    const effects: string[] = [];
+    vi.mocked(db.transaction).mockImplementationOnce(async (callback) => {
+      const result = await callback(transactionMock.tx as never);
+      effects.push('commit');
+      return result;
+    });
+    vi.mocked(emitDomainEvent).mockImplementationOnce(async () => {
+      effects.push('outbox');
+      return { id: 4242 } as never;
+    });
+    vi.mocked(logAuditAction).mockImplementationOnce(async () => {
+      effects.push('audit');
+    });
+
+    await updateMonthlyPayment(1, {
+      associateId: 10,
+      year: 2026,
+      month: 5,
+      status: 'pago',
+      paymentMethod: 'boleto',
+    });
+
+    expect(effects).toEqual(['outbox', 'commit', 'audit']);
+  });
+
+  it('returns the committed payment when post-commit audit unexpectedly rejects', async () => {
+    vi.mocked(logAuditAction).mockRejectedValueOnce(new Error('audit adapter rejected'));
+
+    await expect(
+      updateMonthlyPayment(1, {
+        associateId: 10,
+        year: 2026,
+        month: 5,
+        status: 'pago',
+        paymentMethod: 'boleto',
+      }),
+    ).resolves.toEqual({ id: 5 });
+
+    expect(emitDomainEvent).toHaveBeenCalledWith(expect.anything(), transactionMock.tx);
+    expect(logAuditAction).toHaveBeenCalledOnce();
   });
 
   it('preserves paidAt when re-updating an already-pago payment', async () => {
