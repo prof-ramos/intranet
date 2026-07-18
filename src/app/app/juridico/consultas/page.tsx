@@ -8,7 +8,7 @@ import {
   getLegalConsultationStatusLabel,
   LEGAL_CONSULTATION_STATUS_FILTER_OPTIONS,
 } from '@/lib/juridico/status';
-import { ArrowLeft, Plus, Search } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Clock, FileQuestion, Plus, Search } from 'lucide-react';
 import { hairline, focusRingClass } from '@/lib/ui/tokens';
 import { calculatePaginationBounds } from '@/lib/pagination';
 import { StatusFilter } from './StatusFilter';
@@ -105,11 +105,39 @@ export default async function ConsultasPage({
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={6}
-                    className="px-4 py-8 text-center text-sm text-[rgba(13,31,60,0.60)]"
-                  >
-                    Nenhuma consulta encontrada.
+                  <td colSpan={6} className="px-4 py-14">
+                    <div className="mx-auto flex max-w-xs flex-col items-center text-center">
+                      <FileQuestion
+                        size={28}
+                        className="mb-3 text-[rgba(13,31,60,0.30)]"
+                        aria-hidden="true"
+                      />
+                      {q || status ? (
+                        <>
+                          <p className="text-sm font-semibold text-[#0d1f3c]">
+                            Nenhuma consulta encontrada
+                          </p>
+                          <p className="mt-1 text-sm text-[rgba(13,31,60,0.60)]">
+                            Ajuste a busca ou o filtro de status e tente novamente.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm font-semibold text-[#0d1f3c]">
+                            Nenhuma consulta cadastrada
+                          </p>
+                          <p className="mt-1 mb-4 text-sm text-[rgba(13,31,60,0.60)]">
+                            Registre a primeira consulta jurídica para começar.
+                          </p>
+                          <Link
+                            href="/app/juridico/consultas/nova"
+                            className={`inline-flex h-9 items-center gap-2 rounded-[8px] bg-[#040920] px-4 text-sm font-semibold text-white hover:bg-[#0d3260] ${focusRingClass}`}
+                          >
+                            <Plus size={14} aria-hidden="true" /> Nova consulta
+                          </Link>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -135,19 +163,27 @@ export default async function ConsultasPage({
                       <td className="px-4 py-3 text-sm">{row.associateName ?? '—'}</td>
                       <td className="px-4 py-3">
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getLegalConsultationStatusBadgeClass(row.status)}`}
+                          className={`inline-flex max-w-[10rem] items-center rounded-[4px] px-2.5 py-1 text-xs leading-tight font-semibold tracking-[-0.01em] ${getLegalConsultationStatusBadgeClass(row.status)}`}
                         >
                           {getLegalConsultationStatusLabel(row.status)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        <span className={slaOverdue ? 'font-semibold text-[#b91c1c]' : ''}>
-                          {formatDate(row.slaDueDate)}
-                        </span>
+                        {slaOverdue ? (
+                          <span className="inline-flex items-center gap-1.5 font-semibold text-[#b91c1c]">
+                            <AlertTriangle size={13} aria-hidden="true" />
+                            {formatDate(row.slaDueDate)}
+                          </span>
+                        ) : (
+                          formatDate(row.slaDueDate)
+                        )}
                       </td>
                       <td className="px-4 py-3 text-sm">
                         {stale !== null && stale > 7 ? (
-                          <span className="font-semibold text-[#a16207]">{stale} dias</span>
+                          <span className="inline-flex items-center gap-1.5 font-semibold text-[#a16207]">
+                            <Clock size={13} aria-hidden="true" />
+                            {stale} dias
+                          </span>
                         ) : (
                           <span className="text-[rgba(13,31,60,0.60)]">
                             {stale !== null ? `${stale} dias` : '—'}
