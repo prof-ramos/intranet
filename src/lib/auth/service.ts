@@ -105,10 +105,7 @@ export async function authenticate(
       .limit(1),
   );
 
-  const passwordMatches = await bcrypt.compare(
-    password,
-    user ? user.passwordHash : DUMMY_HASH,
-  );
+  const passwordMatches = await bcrypt.compare(password, user ? user.passwordHash : DUMMY_HASH);
 
   if (!user || !user.isActive || !passwordMatches) {
     throw new InvalidCredentialsError();
@@ -158,6 +155,7 @@ export async function changePassword(
       .set({
         passwordHash,
         mustChangePassword: false,
+        sessionVersion: sql`${admins.sessionVersion} + 1`,
         updatedAt: sql`now()`,
       })
       .where(eq(admins.id, userId)),
@@ -208,6 +206,7 @@ export async function resetPassword(
       .set({
         passwordHash,
         mustChangePassword: true,
+        sessionVersion: sql`${admins.sessionVersion} + 1`,
         updatedAt: sql`now()`,
       })
       .where(eq(admins.id, targetId));

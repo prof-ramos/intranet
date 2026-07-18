@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SQL } from 'drizzle-orm';
+import { PgDialect } from 'drizzle-orm/pg-core';
 
 const { mockLogger } = vi.hoisted(() => ({
   mockLogger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
@@ -28,7 +30,18 @@ vi.mock('bcryptjs', () => ({
 const selectQueue: unknown[][] = [];
 const mockLimit = vi.fn(async () => selectQueue.shift() ?? []);
 const mockUpdateWhere = vi.fn().mockResolvedValue(undefined);
+const mockUpdateSet = vi.fn((_values: unknown) => ({
+  where: mockUpdateWhere,
+}));
 const mockInsertValues = vi.fn();
+
+function expectAtomicSessionVersionIncrement() {
+  const update = mockUpdateSet.mock.calls[0]?.[0] as { sessionVersion?: SQL } | undefined;
+  expect(update?.sessionVersion).toBeDefined();
+  expect(new PgDialect().sqlToQuery(update!.sessionVersion!).sql).toBe(
+    '"admins"."session_version" + 1',
+  );
+}
 
 vi.mock('@/lib/db', () => ({
   db: {
@@ -40,9 +53,7 @@ vi.mock('@/lib/db', () => ({
       })),
     })),
     update: vi.fn(() => ({
-      set: vi.fn(() => ({
-        where: mockUpdateWhere,
-      })),
+      set: mockUpdateSet,
     })),
     insert: vi.fn(() => ({
       values: mockInsertValues,
@@ -171,6 +182,14 @@ describe('auth service', () => {
 
       expect(mockBcryptCompare).toHaveBeenCalledWith('old-password', 'old-hash');
       expect(mockBcryptHash).toHaveBeenCalledWith('new-password', 12);
+      expect(mockUpdateSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          passwordHash: 'new-hash',
+          mustChangePassword: false,
+          sessionVersion: expect.anything(),
+        }),
+      );
+      expectAtomicSessionVersionIncrement();
       expect(mockUpdateWhere).toHaveBeenCalled();
     });
 
@@ -187,6 +206,7 @@ describe('auth service', () => {
 
       const { changePassword, InvalidCurrentPasswordError } = await import('./service');
       await expect(changePassword(7, 'wrong', 'new')).rejects.toThrow(InvalidCurrentPasswordError);
+      expect(mockUpdateSet).not.toHaveBeenCalled();
     });
   });
 
@@ -205,6 +225,14 @@ describe('auth service', () => {
       expect(result.tempPassword.length).toBeGreaterThanOrEqual(8);
       expect(result.emailDelivered).toBe(false);
       expect(mockBcryptHash).toHaveBeenCalledWith(expect.any(String), 12);
+      expect(mockUpdateSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          passwordHash: 'hashed-temp',
+          mustChangePassword: true,
+          sessionVersion: expect.anything(),
+        }),
+      );
+      expectAtomicSessionVersionIncrement();
       expect(mockUpdateWhere).toHaveBeenCalled();
       expect(mockInsertValues).toHaveBeenCalledWith(
         expect.objectContaining({

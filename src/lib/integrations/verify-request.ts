@@ -366,6 +366,13 @@ async function getAuthorizedSessionPrincipal(allowedRoles: readonly AuthRole[]):
     }
   }
 
+  if (authorizedSession.mustChangePassword) {
+    return {
+      ok: false,
+      status: 403,
+    };
+  }
+
   if (!canAccessRole(authorizedSession.role, allowedRoles)) {
     return {
       ok: false,

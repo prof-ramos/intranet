@@ -164,10 +164,12 @@ function defaultConfig(overrides: Record<string, unknown> = {}) {
 
 // --- Tests ---
 
-describe('authorizeIntegrationRequest — development session', () => {
+describe('authorizeIntegrationRequest — operator and development sessions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockIsSkipAuthEnabled.mockReturnValue(false);
+    mockNonceInsertResult.current = [{ id: 1 }];
+    mockUpdateApiKeyLastUsed.mockResolvedValue([]);
   });
 
   it('rejects a synthetic development session when its persisted actor is unavailable', async () => {
@@ -191,6 +193,104 @@ describe('authorizeIntegrationRequest — development session', () => {
 
     expect(result).toMatchObject({ ok: false, response: { status: 403 } });
     expect(mockResolvePersistedDevelopmentUser).toHaveBeenCalledWith(session);
+    expect(mockCanAccessRole).not.toHaveBeenCalled();
+  });
+
+  it('blocks a development session when the persisted actor requires a password change', async () => {
+    const session = {
+      isLoggedIn: true,
+      userId: 42,
+      name: 'Configured Dev',
+      email: 'dev@asof.local',
+      role: 'admin' as const,
+      mustChangePassword: false,
+    };
+    mockGetSession.mockResolvedValue(session);
+    mockIsSkipAuthEnabled.mockReturnValue(true);
+    mockResolvePersistedDevelopmentUser.mockResolvedValue({
+      ...session,
+      name: 'Persisted Dev',
+      mustChangePassword: true,
+    });
+
+    const result = await authorizeIntegrationRequest(
+      new Request('https://api.example.com/api/v1/events'),
+      { allowSessionRoles: ['admin'] },
+    );
+
+    expect(result).toMatchObject({ ok: false, response: { status: 403 } });
+    expect(mockResolvePersistedDevelopmentUser).toHaveBeenCalledWith(session);
+    expect(mockCanAccessRole).not.toHaveBeenCalled();
+  });
+
+  it('rejects a session pending mandatory password change before role authorization', async () => {
+    mockGetSession.mockResolvedValue({
+      isLoggedIn: true,
+      userId: 7,
+      name: 'Admin',
+      email: 'admin@asof.local',
+      role: 'admin',
+      mustChangePassword: true,
+    });
+    mockCanAccessRole.mockReturnValue(true);
+
+    const result = await authorizeIntegrationRequest(
+      new Request('https://api.example.com/api/v1/events'),
+      { allowSessionRoles: ['admin'] },
+    );
+
+    expect(result).toMatchObject({ ok: false, response: { status: 403 } });
+    expect(mockCanAccessRole).not.toHaveBeenCalled();
+  });
+
+  it('authorizes a normal session with an allowed role', async () => {
+    mockGetSession.mockResolvedValue({
+      isLoggedIn: true,
+      userId: 7,
+      name: 'Admin',
+      email: 'admin@asof.local',
+      role: 'admin',
+      mustChangePassword: false,
+    });
+    mockCanAccessRole.mockReturnValue(true);
+
+    const result = await authorizeIntegrationRequest(
+      new Request('https://api.example.com/api/v1/events'),
+      { allowSessionRoles: ['admin'] },
+    );
+
+    expect(result).toMatchObject({
+      ok: true,
+      principal: {
+        kind: 'session',
+        userId: 7,
+        email: 'admin@asof.local',
+        role: 'admin',
+      },
+    });
+    expect(mockCanAccessRole).toHaveBeenCalledWith('admin', ['admin']);
+  });
+
+  it('authorizes a valid M2M credential without consulting password-rotation session state', async () => {
+    mockGetIntegrationConfig.mockReturnValue(defaultConfig());
+    mockIsIntegrationAuthConfigured.mockReturnValue(true);
+    mockGetSession.mockResolvedValue({
+      isLoggedIn: true,
+      userId: 7,
+      name: 'Admin',
+      email: 'admin@asof.local',
+      role: 'admin',
+      mustChangePassword: true,
+    });
+    const timestamp = String(NOW_SECONDS);
+    const signature = computeSignature('GET', '/api/v1/events', timestamp, '', HMAC_SECRET);
+
+    const result = await authorizeIntegrationRequest(makeRequest(API_KEY, timestamp, signature), {
+      allowSessionRoles: ['admin'],
+    });
+
+    expect(result).toMatchObject({ ok: true, principal: { kind: 'integration' } });
+    expect(mockGetSession).not.toHaveBeenCalled();
     expect(mockCanAccessRole).not.toHaveBeenCalled();
   });
 });
