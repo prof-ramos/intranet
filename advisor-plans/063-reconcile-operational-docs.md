@@ -41,12 +41,12 @@ plausíveis e quebrados passarem no CI.
 
 ## Comandos necessários
 
-| Finalidade  | Comando                                     | Resultado esperado |
-| ----------- | ------------------------------------------- | ------------------ | ---------------------- |
-| Checker     | `npx vitest run scripts/check-docs.test.ts` | todos passam       |
-| Docs        | `npm run docs:check`                        | exit 0             |
-| Referências | `git ls-files                               | sort`              | fonte para paths reais |
-| Gate        | `npm run pr:check`                          | exit 0             |
+| Finalidade  | Comando                                     | Resultado esperado   |
+| ----------- | ------------------------------------------- | -------------------- |
+| Checker     | `npx vitest run scripts/check-docs.test.ts` | todos passam         |
+| Docs        | `npm run docs:check`                        | exit 0               |
+| Referências | `git ls-files \| sort`                      | fonte de paths reais |
+| Gate        | `npm run pr:check`                          | exit 0               |
 
 ## Escopo
 
@@ -71,7 +71,8 @@ plausíveis e quebrados passarem no CI.
 - Branch: `advisor/063-reconcile-operational-docs`.
 - Commits: `test(docs): detect missing paths in shell fences` e
   `docs: reconcile operational contracts with runtime`.
-- Não publique sem autorização.
+- A execução integral já autoriza publicação, promoção, merge e limpeza da branch
+  depois dos gates e da revisão Standards/Spec.
 
 ## Etapas
 

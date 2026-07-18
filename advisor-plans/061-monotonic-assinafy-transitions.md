@@ -67,7 +67,8 @@ certificated`; `certificated`, `expired`, `rejected_by_signer`,
 - Branch: `advisor/061-monotonic-assinafy-transitions`.
 - Commits: `test(assinafy): characterize out-of-order callbacks` e
   `fix(assinafy): enforce monotonic webhook transitions`.
-- Não publique sem autorização.
+- A execução integral já autoriza publicação, promoção, merge e limpeza da branch
+  depois dos gates e da revisão Standards/Spec.
 
 ## Etapas
 

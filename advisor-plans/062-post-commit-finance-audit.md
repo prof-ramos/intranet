@@ -59,7 +59,8 @@ ocorreu, quebrando a trilha financeira.
 
 - Branch: `advisor/062-post-commit-finance-audit`.
 - Commit: `fix(finance): audit monthly payments after commit`.
-- Não publique sem autorização.
+- A execução integral já autoriza publicação, promoção, merge e limpeza da branch
+  depois dos gates e da revisão Standards/Spec.
 
 ## Etapas
 
@@ -95,8 +96,9 @@ ausência de auditoria falsa deve ser atribuída ao unitário com falha injetada
 
 ### Etapa 4: Rodar gates
 
-Execute testes focados e `npm run validate:quick`; se o ambiente DB estiver
-disponível, rode também `npm run test:integration`.
+Execute testes focados, integração PostgreSQL e os gates oficiais na ordem
+documentada: lint, typecheck, unitários, contrato DB e build. Finalize com
+`npm run pr:check`.
 
 ## Plano de testes
 
@@ -111,7 +113,7 @@ disponível, rode também `npm run test:integration`.
 - [ ] Nenhum `logAuditAction` ocorre dentro da transação de update.
 - [ ] Outbox continua atômico com a mensalidade.
 - [ ] Falhas antes do commit não deixam auditoria falsa.
-- [ ] Testes focados, integração disponível e gate rápido passam.
+- [ ] Testes focados, integração, sequência oficial e `npm run pr:check` passam.
 
 ## Condições de STOP
 

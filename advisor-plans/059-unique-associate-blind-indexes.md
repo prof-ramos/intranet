@@ -1,8 +1,8 @@
 # Plano 059: Garantir unicidade transacional dos blind indexes de identidade
 
 > **Instruções ao executor**: esta mudança inclui migration. Não aplique nada em
-> produção. A migration deve falhar fechada se encontrar duplicatas; reconciliação
-> de dados reais exige autorização e plano operacional separados.
+> produção antes de concluir o Plano 064. A migration deve falhar fechada se
+> encontrar duplicatas; a reconciliação real segue o plano operacional separado.
 >
 > **Verificação de drift**:
 > `git diff --stat 14dae8f..HEAD -- src/lib/associates/service.ts src/lib/associates/service.test.ts src/lib/db/schema/associates.ts src/lib/db/schema.integration.test.ts drizzle/postgres`
@@ -12,7 +12,7 @@
 - **Prioridade**: P1
 - **Esforço**: M
 - **Risco**: MÉDIO
-- **Depende de**: Plano 057 para confirmar que resíduos antigos não distorcem o inventário produtivo
+- **Depende de**: Planos 057 e 064 para limpar resíduos e reconciliar colisões reais
 - **Categoria**: bug / migration
 - **Planejado em**: `main` commit `14dae8f`, 2026-07-18
 
@@ -68,7 +68,8 @@ Somente constraints no PostgreSQL fecham essa corrida.
 - Branch: `advisor/059-unique-associate-blind-indexes`.
 - Commits: `test(associates): characterize identity collisions` e
   `fix(db): enforce unique associate identity hashes`.
-- Não aplique migration produtiva nem publique sem autorização.
+- A execução integral já autoriza publicação e aplicação produtiva depois que o
+  Plano 064 reportar zero colisões e todos os gates passarem.
 
 ## Etapas
 

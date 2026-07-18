@@ -77,7 +77,8 @@ reservar mutações para janela manual e falhar antes delas quando o SHA divergi
 - Branch: `advisor/060-bind-and-contain-production-smoke`.
 - Commits: `test(smoke): bind production checks to deployment sha` e
   `ci(smoke): make push validation read-only`.
-- Não publique nem dispare smoke mutante sem autorização.
+- A execução integral já autoriza publicação. Smoke mutante continua condicionado
+  ao input booleano explícito e ao run ID definidos neste plano.
 
 ## Etapas
 

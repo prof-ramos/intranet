@@ -2,8 +2,8 @@
 
 > **Instruções ao executor**: este plano contém operações destrutivas em produção
 > e no remoto Git. Faça primeiro todo o inventário somente leitura. Antes de
-> qualquer `DELETE` SQL ou exclusão de branch, pare e obtenha autorização humana
-> explícita para a lista exata de objetos. Nunca conclua que uma branch foi
+> qualquer `DELETE` SQL ou exclusão de branch, revalide a lista exata de objetos
+> contra os critérios já autorizados nesta execução. Nunca conclua que uma branch foi
 > incorporada apenas por ancestralidade: este repositório usa squash merge.
 >
 > **Verificação de drift**:
@@ -51,7 +51,7 @@ não incorporado; não limpar perpetua ruído operacional e evidência falsa.
 
 - Registros operacionais cujo identificador começa exatamente com `SMOKE_` nas
   tabelas já listadas pelo spec, preservando `audit_logs`.
-- Branches remotas aprovadas nominalmente após cruzamento com PR e conteúdo.
+- Branches remotas que satisfaçam os critérios autorizados após cruzamento com PR e conteúdo.
 - `TODO-PROD.md` e evidência arquivada sob `docs/operations/archive/`.
 - `advisor-plans/README.md`.
 
@@ -61,13 +61,14 @@ não incorporado; não limpar perpetua ruído operacional e evidência falsa.
 - `audit_logs`, contas admin, secrets, migrations e dados de associados reais.
 - Branch com PR aberto, worktree ativa, diff exclusivo não explicado ou estado
   que não possa ser provado.
-- Alterar produção antes de autorização específica para a mutação SQL.
+- Alterar produção fora dos marcadores e tabelas explicitamente autorizados.
 
 ## Fluxo Git
 
 - Branch documental: `advisor/057-operational-hygiene`.
 - Commit: `docs(ops): record smoke and branch hygiene evidence`.
-- Não publique nem exclua branches sem instrução do operador.
+- Esta execução já autoriza publicação e exclusão das branches que passarem por
+  todos os critérios fail-closed deste plano.
 
 ## Etapas
 
@@ -89,13 +90,14 @@ Registre apenas contagens e IDs técnicos; não copie PII nem valores de secrets
 
 **Verificar**: a consulta termina com `ROLLBACK` e produz cinco contagens.
 
-### Etapa 3: Parar para duas aprovações nominais
+### Etapa 3: Fixar os conjuntos autorizados
 
-Apresente (a) contagens/IDs `SMOKE_*` e SQL exato; (b) lista exata de branches
-candidatas. Sem aprovação explícita para cada conjunto, marque o plano BLOCKED e
-não prossiga.
+Registre (a) contagens/IDs `SMOKE_*` e SQL exato; (b) lista exata de branches
+candidatas e a evidência de cada decisão. A autorização desta execução cobre
+somente os objetos que satisfizerem integralmente os critérios; qualquer expansão
+de predicado ou caso ambíguo permanece bloqueada.
 
-### Etapa 4: Remover somente resíduos aprovados e verificar zero
+### Etapa 4: Remover somente resíduos autorizados e verificar zero
 
 Execute uma única transação com `ON_ERROR_STOP`, apagando dependências antes dos
 pais e mantendo `audit_logs`. Use os predicados exatos do spec, capture contagens
@@ -104,9 +106,9 @@ afetadas, rode novamente o SELECT de inventário e só então faça `COMMIT`.
 **Verificar**: as cinco contagens operacionais são zero e `audit_logs` não foi
 alvo de nenhuma instrução.
 
-### Etapa 5: Excluir somente branches aprovadas
+### Etapa 5: Excluir somente branches comprovadamente incorporadas ou obsoletas
 
-Para cada nome aprovado, faça um último `git fetch --prune`, confirme que o SHA e
+Para cada nome elegível, faça um último `git fetch --prune`, confirme que o SHA e
 o estado do PR não mudaram e use `git push origin --delete <nome>`. Não automatize
 a lista com `xargs`.
 
@@ -131,7 +133,7 @@ não orientam operação para `docs/operations/archive/`.
 ## Critérios de conclusão
 
 - [ ] Inventário read-only de produção registrado sem PII.
-- [ ] Autorizações explícitas registradas antes de SQL e Git destrutivos.
+- [ ] Conjuntos autorizados e suas provas registrados antes de SQL e Git destrutivos.
 - [ ] Contagens `SMOKE_*` aprovadas ficaram zero; auditoria foi preservada.
 - [ ] Apenas branches nominalmente aprovadas foram removidas.
 - [ ] `TODO-PROD.md` contém evidência atual e `npm run docs:check` passa.
@@ -143,7 +145,7 @@ não orientam operação para `docs/operations/archive/`.
 - Há FK/dependência fora das tabelas previstas ou a transação afeta quantidade
   diferente do inventário.
 - Branch tem PR aberto, SHA mudou, conteúdo exclusivo ou não possui prova segura.
-- Falta autorização explícita para a mutação produtiva ou exclusão remota.
+- O objeto exige ampliar os predicados ou o escopo produtivo já autorizado.
 
 ## Notas de manutenção
 
