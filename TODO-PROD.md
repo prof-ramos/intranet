@@ -4,7 +4,8 @@ Checklist canonica de go-live da intranet ASOF. Itens historicos ja executados
 permanecem aqui apenas quando ainda orientam operacao ou auditoria; evidencias
 pontuais antigas ficam em `docs/operations/archive/`.
 
-Atualizado em 2026-07-08. Última verificação de gates locais: 2026-07-08.
+Atualizado em 2026-07-18. Última verificação completa do `main`: 2026-07-18
+([CI run 29629899812](https://github.com/prof-ramos/intranet/actions/runs/29629899812)).
 
 Para ambientes, bancos, dados, migrations e CI/CD, a fonte oficial pós-go-live é
 [`docs/environments.md`](./docs/environments.md) (ADR 015). Este checklist
@@ -36,7 +37,7 @@ de staging/dev/preview.
 - [x] Admin gabriel.org.br seedado no Neon com must_change_password=true.
 - [x] Login do admin validado em producao: gabriel.org.br acessou intranet.asof.com.br com redirect para troca de senha obrigatoria.
 - [x] Troca de senha obrigatoria realizada pelo admin apos primeiro login. (gabriel@asof.org.br → nova senha definida em 2026-05-26 via intranet.asof.com.br/change-password)
-- [x] Rodar gates locais — `lint`, `typecheck`, `test` (1535 → 1598 testes) e `build`: todos passaram em 2026-07-08 (branch `main`, PR #297 + seed-dev/cadastro local).
+- [x] Rodar gates — `Lint, Typecheck & Test`, `Database Contract`, `Build Verification` e `E2E Tests (Playwright)` passaram no `main` em 2026-07-18 (`79ab33e`, [CI run 29629899812](https://github.com/prof-ramos/intranet/actions/runs/29629899812)).
 - [x] Rodar `npm run test:db` contra Neon produção antes do go-live — schema contract passou em 2026-05-26.
 - [x] Smoke test automatizado de producao implementado e validado (ADR 009):
   - Spec E2E Playwright (`e2e/smoke-prod.spec.ts`) cobre login, dashboard, associados, atividades, juridico, oficios, financeiro, auditoria, notificacoes e reset de senha.
@@ -44,7 +45,7 @@ de staging/dev/preview.
   - Conta dedicada de smoke: `smoke-admin@asof.local`, `role=admin`, `is_active=true`, `must_change_password=false`; senha gerenciada apenas por `SMOKE_ADMIN_PASSWORD` no GitHub Actions.
   - Pos-smoke: executar o SQL de limpeza impresso pelo spec; dados operacionais `SMOKE_*` devem ficar zerados e `audit_log` e preservado.
   - CI/CD: job `smoke-prod` roda em push para `main` e pode ser disparado manualmente por `workflow_dispatch` apos a publicacao do workflow.
-  - Ultima janela controlada validada: 2026-07-06, `npm run smoke:prod` contra producao passou 10/10 apos aplicar a migration manual `0028_activity_domain_events.sql` no Neon `main`.
+  - Última execução validada: 2026-07-18, `Smoke Test — Production` aprovado no [CI run 29629899812](https://github.com/prof-ramos/intranet/actions/runs/29629899812).
 - [x] Validar crons com `CRON_SECRET` antes de ativar operacao.
 - [x] Confirmar que previews/staging nao apontam para banco de producao — envs gerais de banco foram removidos do ambiente Preview no Vercel em 2026-05-26; restam apenas `SESSION_SECRET` em Preview e `GEMINI_API_KEY` restrita ao branch `feature/outbound-integrations-webhooks`.
 
@@ -73,7 +74,7 @@ Marcar a janela de go-live (ADR 009) somente quando todos os itens abaixo estive
   - Criado: 2026-05-29 (merge do PR #96)
   - Status: `READY`
 - [x] Roteiro de smoke escrito como lista de passos (com dados marcados `SMOKE_*`) e revisado pelo owner primario (ADR 009).
-  - *Roteiro disponivel no TODO-PROD.md — seção "Roteiro de Smoke Manual" abaixo.*
+  - _Roteiro disponivel no TODO-PROD.md — seção "Roteiro de Smoke Manual" abaixo._
 - [x] Janela aprovada pela Diretoria com data, hora UTC e duracao estimada registradas.
 
 ### Roteiro de Smoke (Automatizado)
@@ -83,6 +84,7 @@ O roteiro de smoke e executado automaticamente pelo spec E2E Playwright `e2e/smo
 **Pre-requisitos:** `SMOKE_ADMIN_EMAIL` e `SMOKE_ADMIN_PASSWORD` configurados como secrets do GitHub Actions, apontando para a conta dedicada `smoke-admin@asof.local` em producao.
 
 **Execucao manual (local):**
+
 ```bash
 SMOKE_BASE_URL=https://intranet.asof.com.br SMOKE_ADMIN_EMAIL=smoke-admin@asof.local SMOKE_ADMIN_PASSWORD='...' npm run smoke:prod
 ```
@@ -92,6 +94,7 @@ estar publicado em `main`, usar a action `CI` no GitHub e disparar manualmente.
 O job `Smoke Test — Production` continua pulado em PRs.
 
 **Passos automatizados (10 testes serializados):**
+
 1. Login e Sessao — valida cookie `httpOnly` assinado.
 2. Dashboard — verifica carregamento de KPIs.
 3. Associados — lista, busca e navegacao ao perfil do primeiro associado.
@@ -105,6 +108,7 @@ O job `Smoke Test — Production` continua pulado em PRs.
 
 **Pos-smoke (limpeza automatica no terminal):**
 O spec imprime o SQL de limpeza ao final. Executar via console Neon ou `psql` com `DATABASE_MIGRATION_URL`:
+
 ```sql
 DELETE FROM activities WHERE title ILIKE 'SMOKE_%';
 DELETE FROM associates WHERE full_name ILIKE 'SMOKE_%';
@@ -113,6 +117,7 @@ DELETE FROM legal_consultations WHERE title ILIKE 'SMOKE_%';
 DELETE FROM oficios WHERE subject ILIKE 'SMOKE_%';
 DELETE FROM notifications WHERE message ILIKE '%SMOKE_%';
 ```
+
 _Nota: `audit_log` e preservado (ADR 009)._
 
 ## Evidencia Desta Frente
