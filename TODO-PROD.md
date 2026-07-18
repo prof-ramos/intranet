@@ -4,8 +4,8 @@ Checklist canonica de go-live da intranet ASOF. Itens historicos ja executados
 permanecem aqui apenas quando ainda orientam operacao ou auditoria; evidencias
 pontuais antigas ficam em `docs/operations/archive/`.
 
-Atualizado em 2026-07-18. Última verificação completa do `main`: 2026-07-18
-([CI run 29629899812](https://github.com/prof-ramos/intranet/actions/runs/29629899812)).
+Atualizado em 2026-07-18. Última verificação completa do `main`: 2026-07-18,
+HEAD `997d5dd` ([CI run 29657944902](https://github.com/prof-ramos/intranet/actions/runs/29657944902)).
 
 Para ambientes, bancos, dados, migrations e CI/CD, a fonte oficial pós-go-live é
 [`docs/environments.md`](./docs/environments.md) (ADR 015). Este checklist
@@ -156,6 +156,14 @@ continuam pertencendo ao inventario e a limpeza controlada do Plano 057._
 - **Performance:** `Intl.DateTimeFormat` cacheado em formatTimestamp e auditoria; `getAssociatesForReport` com `limit` + sinal de truncamento (#271); webhook dispatch executado fora da transação DB (#267); `logAuditAction` rodando best-effort fora da tx (#266).
 - **Infra:** `engines.node >=20` declarado em `package.json` (#276); MCP servers (context7 + postgres) formalizados no repo (#279); lint-staged + pre-push `validate:quick` via husky (#270); migrations 0017/0018 corrigidas com `IF NOT EXISTS` em `ALTER TYPE ... ADD VALUE` (#272). Histórico Drizzle em `drizzle/postgres/`: 30 arquivos SQL (baseline `0000` … `0029_pagination_count_index.sql`).
 - **Testes:** 1598 testes (+63 desde 2026-06-23), 170 arquivos; cobertura para outbox atomicidade (#265), ErrorBoundary + error.tsx (#273), relatórios (#275), integration tests (oficios, financeiro, webhooks).
+
+### Higiene operacional (2026-07-18 — Plano 057)
+
+- **Correção do registro de maio:** a entrada de 29/05/2026 acima ("Higiene completa de branches e PRs") descrevia o estado daquela data; entre então e 2026-07-18 acumularam-se 25 branches remotas stale (PRs de bots automatizados — Bolt, Jules, palette, testing, false-positive — todos `CLOSED`, nenhum mergeado). Higiene revalidada e refeita nesta data; ver Plano 057 para o protocolo completo.
+- **Branches remotas:** inventariadas todas via `git ls-remote --heads origin`; as 25 branches de PRs fechados foram removidas (via API do GitHub, sem afetar branches com PR aberto). `codex/060-read-only-production-smoke` (PR #400) e `codex/064-reconcile-associate-identities` (PR #399) foram mergeadas em `main` em seguida e suas branches remotas excluídas; nenhuma branch além de `main` resta no remoto além desta evidência.
+- **Resíduos `SMOKE_*` em produção:** inventário `READ ONLY` prévio (sem PII, sem alterar `audit_logs`) contou `activities`: 59, `associates`: 58, `legal_consultations`: 57, `oficios`: 57, `notifications`: 0 (registros acumulados de execuções de smoke entre 2026-07-09 e 2026-07-18). `legal_notes`, `dependents` e `health_agreements` associados: 0 em todos os casos.
+- **Limpeza executada:** transação única (`BEGIN`/`COMMIT`, dependências antes dos pais) removeu exatamente os registros `SMOKE_*` acima. Contagem pós-limpeza verificada com conexão nova (fora da transação): zero nas cinco tabelas. `audit_logs` não foi tocado.
+- **Pendência remanescente:** nenhuma — o Plano 060 (contenção do smoke de produção, PR #400) foi mergeado em `main` em seguida a este inventário, substituindo a repetição manual pela contenção automática do smoke.
 - **Cadastro × legado (`asof_final_limpo.csv`, 39 campos de negócio):** auditoria de paridade schema/forms/perfil. Quase todos os campos existem no modelo; dependentes e convênios vivem em tabelas filhas + UI no perfil. **Fax fica fora de propósito** — `transformLegacyRecord` já ignora a coluna; não quebra migração CSV→intranet (perda intencional, ~3,5% das linhas, muitas ruidosas).
 - **Seed sintético local (`npm run db:seed:dev` em `scripts/seed-dev.ts`):** CPF/RG sintéticos, `whatsapp`, endereço residencial DF coerente, `cancellationDate` só em ex-associados (com `joinedAt`), `numberOfDependents` alinhado a linhas em `dependents` via `dependentCountForIndex`.
 - **Cadastro completo (Coordenador/Secretaria) — 2026-07-08:**

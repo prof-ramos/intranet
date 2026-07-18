@@ -21,10 +21,7 @@ export default defineConfig({
   forbidOnly: true,
   retries: 0,
   workers: 1,
-  reporter: [
-    ['list'],
-    ['html', { outputFolder: 'smoke-report', open: 'never' }],
-  ],
+  reporter: [['list'], ['html', { outputFolder: 'smoke-report', open: 'never' }]],
   use: {
     baseURL: process.env.SMOKE_BASE_URL ?? 'https://intranet.asof.com.br',
     trace: 'on',
