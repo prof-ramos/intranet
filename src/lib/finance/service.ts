@@ -13,6 +13,7 @@ import { auditLogs } from '@/lib/db/schema/audit';
 import { associates } from '@/lib/db/schema/associates';
 import { and, eq, sql } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
+import { toSafeErrorLog } from '@/lib/error-log';
 import { yearMonthObjectSchema } from '@/lib/validation/schemas';
 import { ConcurrencyConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 
@@ -163,7 +164,7 @@ export async function updateMonthlyPayment(
   payment: MonthlyPaymentUpdateInput,
   expectedUpdatedAt?: string | null,
 ) {
-  const result = await db.transaction(async (tx) => {
+  const { result, auditArgs } = await db.transaction(async (tx) => {
     const existing = await tx
       .select()
       .from(monthlyPayments)
@@ -232,10 +233,10 @@ export async function updateMonthlyPayment(
       throw new ConcurrencyConflictError();
     }
 
-    await logAuditAction({
+    const auditArgs = {
       adminId,
       action: 'update',
-      entityType: 'monthly_payment',
+      entityType: 'monthly_payment' as const,
       entityId: updatedPayment.id,
       changes: {
         old: oldState ?? {},
@@ -253,7 +254,7 @@ export async function updateMonthlyPayment(
         year: payment.year,
         month: payment.month,
       },
-    });
+    };
 
     if (oldState && oldState.status !== payment.status) {
       await emitDomainEvent(
@@ -279,8 +280,20 @@ export async function updateMonthlyPayment(
       );
     }
 
-    return updatedPayment;
+    return { result: updatedPayment, auditArgs };
   });
+
+  // Best-effort audit AFTER the tx commits. The outbox write above remains
+  // atomic with the payment mutation, while audit can only describe a change
+  // that the database has confirmed.
+  try {
+    await logAuditAction(auditArgs);
+  } catch (error) {
+    logger.error('Audit log failed (non-critical)', {
+      paymentId: result.id,
+      error: toSafeErrorLog(error),
+    });
+  }
 
   return result;
 }
