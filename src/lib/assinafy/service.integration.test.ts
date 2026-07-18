@@ -367,7 +367,11 @@ describe.skipIf(!hasTestEnv)('assinafy service integration (real PG)', () => {
       await barrier.release();
 
       const results = await Promise.all([first, second]);
-      expect(results.every((result) => result.status === 'processed')).toBe(true);
+      const resultStatuses = results.map((result) => result.status);
+      expect(resultStatuses).toContain('processed');
+      expect(resultStatuses.every((status) => status === 'processed' || status === 'ignored')).toBe(
+        true,
+      );
 
       const events = await db
         .select({ payload: domainEvents.payload })
@@ -379,10 +383,78 @@ describe.skipIf(!hasTestEnv)('assinafy service integration (real PG)', () => {
           ),
         )
         .orderBy(asc(domainEvents.id));
-      expect(events).toHaveLength(2);
-      const firstPayload = events[0].payload as { status: string };
-      const secondPayload = events[1].payload as { previousStatus?: string };
-      expect(secondPayload.previousStatus).toBe(firstPayload.status);
+      const [stored] = await db
+        .select({ assinafyStatus: oficios.assinafyStatus })
+        .from(oficios)
+        .where(eq(oficios.id, fixture.id));
+      const nonces = await db
+        .select({ signature: integrationSignatureNonces.signature })
+        .from(integrationSignatureNonces)
+        .where(
+          inArray(integrationSignatureNonces.signature, [
+            String(firstEvent.id),
+            String(secondEvent.id),
+          ]),
+        );
+      const emittedStatuses = events.map((event) => (event.payload as { status: string }).status);
+
+      expect(stored.assinafyStatus).toBe('certificated');
+      expect(nonces).toHaveLength(2);
+      expect([['certificated'], ['partially_signed', 'certificated']]).toContainEqual(
+        emittedStatuses,
+      );
+
+      const notificationRows = await db
+        .select({ dedupeKey: notifications.dedupeKey })
+        .from(notifications)
+        .where(and(eq(notifications.entityType, 'oficio'), eq(notifications.entityId, fixture.id)));
+      const notifiedStatuses = new Set(
+        notificationRows.map((notification) => notification.dedupeKey?.split(':').at(-1)),
+      );
+      expect(notifiedStatuses).toEqual(new Set(emittedStatuses));
+    });
+  });
+
+  it('keeps a certificated document monotonic when a distinct late signer event arrives', async () => {
+    const fixture = await createOficio('pending_signature');
+    const readyEvent = makeEvent(fixture.documentId, 'document_ready');
+    const lateSignerEvent = makeEvent(fixture.documentId, 'signer_signed_document');
+
+    await withStableAdmins(barrierSql, fixture.id, async () => {
+      await expect(handleWebhookEvent(readyEvent)).resolves.toEqual(
+        expect.objectContaining({ status: 'processed' }),
+      );
+      await expect(handleWebhookEvent(lateSignerEvent)).resolves.toEqual({ status: 'ignored' });
+
+      const [stored] = await db
+        .select({ assinafyStatus: oficios.assinafyStatus })
+        .from(oficios)
+        .where(eq(oficios.id, fixture.id));
+      const events = await db
+        .select({ payload: domainEvents.payload })
+        .from(domainEvents)
+        .where(
+          and(
+            eq(domainEvents.entityType, 'official_letter'),
+            eq(domainEvents.entityId, fixture.id),
+          ),
+        )
+        .orderBy(asc(domainEvents.id));
+      const nonces = await db
+        .select({ signature: integrationSignatureNonces.signature })
+        .from(integrationSignatureNonces)
+        .where(
+          inArray(integrationSignatureNonces.signature, [
+            String(readyEvent.id),
+            String(lateSignerEvent.id),
+          ]),
+        );
+
+      expect(stored.assinafyStatus).toBe('certificated');
+      expect(events.map((event) => (event.payload as { status: string }).status)).toEqual([
+        'certificated',
+      ]);
+      expect(nonces).toHaveLength(2);
     });
   });
 

@@ -1,7 +1,7 @@
 import { db, type DbExecutor } from '@/lib/db';
 import { oficios } from '@/lib/db/schema/oficios';
 import { and, eq, inArray, isNull, lt } from 'drizzle-orm';
-import type { AssinafyStatusPatch } from './types';
+import type { AssinafyDocumentStatusValue, AssinafyStatusPatch } from './types';
 
 export async function findOficioByAssinafyDocumentId(documentId: string, tx: DbExecutor = db) {
   const [result] = await tx
@@ -14,14 +14,14 @@ export async function findOficioByAssinafyDocumentId(documentId: string, tx: DbE
 
 export async function updateAssinafyStatus(
   oficioId: number,
-  status: string,
+  status: AssinafyDocumentStatusValue,
   additionalFields?: AssinafyStatusPatch,
   tx: DbExecutor = db,
 ) {
   const [result] = await tx
     .update(oficios)
     .set({
-      assinafyStatus: status as typeof oficios.$inferSelect.assinafyStatus,
+      assinafyStatus: status,
       ...additionalFields,
       updatedAt: new Date(),
     })

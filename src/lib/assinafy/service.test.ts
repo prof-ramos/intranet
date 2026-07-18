@@ -84,7 +84,7 @@ const MOCK_OFICIO = {
   recipient: 'Test recipient',
   year: 2026,
   sequence: 1,
-  assinafyStatus: null,
+  assinafyStatus: 'pending_signature',
   status: 'gerado',
 };
 
@@ -180,8 +180,62 @@ describe('assinafy/service', () => {
     });
 
     await expect(handleWebhookEvent(BASE_EVENT)).resolves.toEqual({ status: 'ignored' });
+    expect(mockInsert).toHaveBeenCalledOnce();
     expect(mockUpdateAssinafyStatus).not.toHaveBeenCalled();
     expect(mockEmitDomainEvent).not.toHaveBeenCalled();
+    expect(mockCreateNotificationsBatch).not.toHaveBeenCalled();
+    expect(mockLogAuditAction).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['certificated', 'signer_signed_document'],
+    ['certificated', 'document_signed'],
+    ['rejected_by_signer', 'document_ready'],
+    ['rejected_by_user', 'document_ready'],
+    ['expired', 'document_ready'],
+    ['failed', 'document_ready'],
+  ] as const)('ignores stale %s -> %s callbacks without effects', async (current, eventName) => {
+    mockAdminRows.current = [{ id: 5 }];
+    mockFindOficioForUpdate.mockResolvedValue({ ...MOCK_OFICIO, assinafyStatus: current });
+
+    await expect(handleWebhookEvent({ ...BASE_EVENT, event: eventName })).resolves.toEqual({
+      status: 'ignored',
+    });
+
+    expect(mockInsert).toHaveBeenCalledOnce();
+    expect(mockUpdateAssinafyStatus).not.toHaveBeenCalled();
+    expect(mockEmitDomainEvent).not.toHaveBeenCalled();
+    expect(mockCreateNotificationsBatch).not.toHaveBeenCalled();
+    expect(mockLogAuditAction).not.toHaveBeenCalled();
+  });
+
+  it('allows a direct partially signed -> certificated provider jump', async () => {
+    mockFindOficioForUpdate.mockResolvedValue({
+      ...MOCK_OFICIO,
+      assinafyStatus: 'partially_signed',
+    });
+
+    await expect(handleWebhookEvent({ ...BASE_EVENT, event: 'document_ready' })).resolves.toEqual(
+      expect.objectContaining({ status: 'processed' }),
+    );
+    expect(mockUpdateAssinafyStatus).toHaveBeenCalledWith(
+      1,
+      'certificated',
+      expect.objectContaining({ assinafySignedAt: expect.any(Date) }),
+      mockTx,
+    );
+  });
+
+  it('persists document expiry as its terminal status', async () => {
+    mockFindOficioForUpdate.mockResolvedValue({
+      ...MOCK_OFICIO,
+      assinafyStatus: 'pending_signature',
+    });
+
+    await expect(handleWebhookEvent({ ...BASE_EVENT, event: 'document_expired' })).resolves.toEqual(
+      expect.objectContaining({ status: 'processed' }),
+    );
+    expect(mockUpdateAssinafyStatus).toHaveBeenCalledWith(1, 'expired', {}, mockTx);
   });
 
   it('returns failed when a transactional effect rejects and does not audit', async () => {

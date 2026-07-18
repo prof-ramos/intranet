@@ -32,7 +32,7 @@ const {
       recipient: 'Synthetic recipient',
       year: 2026,
       sequence: 1,
-      assinafyStatus: null,
+      assinafyStatus: 'pending_signature',
       status: 'gerado',
     }),
     mockTransaction,

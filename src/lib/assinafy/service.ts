@@ -7,8 +7,13 @@ import { createNotificationsBatch } from '@/lib/notifications/repository';
 import { admins, integrationSignatureNonces } from '@/lib/db/schema';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { findOfficialLetterByAssinafyDocumentIdForUpdate } from '@/lib/oficios/repository';
-import type { AssinafyStatusPatch, AssinafyWebhookEvent } from './types';
+import type {
+  AssinafyDocumentStatusValue,
+  AssinafyStatusPatch,
+  AssinafyWebhookEvent,
+} from './types';
 import { updateAssinafyStatus } from './repository';
+import { classifyAssinafyTransition } from './transition-policy';
 
 const logger = createLogger('assinafy:service');
 
@@ -28,11 +33,11 @@ export type AssinafyWebhookResult =
   | { status: 'failed' }
   | { status: 'invalid' };
 
-const EVENT_STATUS_MAP: Record<string, string> = {
+const EVENT_STATUS_MAP: Readonly<Partial<Record<string, AssinafyDocumentStatusValue>>> = {
   signer_signed_document: 'partially_signed',
   document_signed: 'certificating',
   document_ready: 'certificated',
-  document_expired: 'failed',
+  document_expired: 'expired',
   document_cancelled: 'failed',
   signer_rejected_document: 'rejected_by_signer',
   user_rejected_document: 'rejected_by_user',
@@ -87,7 +92,7 @@ export async function handleWebhookEvent(
 
       const previousStatus = oficio.assinafyStatus;
 
-      if (previousStatus === mappedStatus) {
+      if (classifyAssinafyTransition(previousStatus, mappedStatus) !== 'advance') {
         return { result: { status: 'ignored' } as const, auditArgs: null };
       }
 
