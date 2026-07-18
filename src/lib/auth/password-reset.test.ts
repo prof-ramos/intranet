@@ -1,8 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { events, mockBcryptHash, mockLogger, mockSendEmail } = vi.hoisted(() => ({
+const { events, mockBcryptHash, mockEnv, mockLogger, mockSendEmail } = vi.hoisted(() => ({
   events: [] as string[],
   mockBcryptHash: vi.fn(),
+  mockEnv: {
+    ASOF_INTRANET_URL: 'https://intranet.asof.org.br',
+    MAILJET_API_KEY: 'key' as string | undefined,
+    MAILJET_SECRET_KEY: 'secret' as string | undefined,
+    MAILJET_SENDER_VALIDATED: true,
+    // Required by hashEmail (rate-limit key material) — test-only fixture, not a real secret.
+    ENCRYPTION_MASTER_KEY: 'test-master-key-32-bytes-long-xxxx',
+  },
   mockLogger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
   mockSendEmail: vi.fn(),
 }));
@@ -105,14 +113,7 @@ vi.mock('@/lib/db/retry', () => ({
 }));
 
 vi.mock('@/lib/env', () => ({
-  env: {
-    ASOF_INTRANET_URL: 'https://intranet.asof.org.br',
-    MAILJET_API_KEY: 'key',
-    MAILJET_SECRET_KEY: 'secret',
-    MAILJET_SENDER_VALIDATED: true,
-    // Required by hashEmail (rate-limit key material) — test-only fixture, not a real secret.
-    ENCRYPTION_MASTER_KEY: 'test-master-key-32-bytes-long-xxxx',
-  },
+  env: mockEnv,
 }));
 
 vi.mock('@/lib/email', () => ({
@@ -142,6 +143,9 @@ describe('password reset', () => {
     dbMock.insert.mockReturnValue(makeInsert());
     dbMock.delete.mockReturnValue(makeDelete('db:delete'));
     mockBcryptHash.mockResolvedValue('new-password-hash');
+    mockEnv.MAILJET_API_KEY = 'key';
+    mockEnv.MAILJET_SECRET_KEY = 'secret';
+    mockEnv.MAILJET_SENDER_VALIDATED = true;
     mockSendEmail.mockResolvedValue(undefined);
   });
 
@@ -234,6 +238,50 @@ describe('password reset', () => {
 
     expect(events).toEqual(['db:delete:cleanup', 'db:delete']);
     expect(dbMock.transaction).not.toHaveBeenCalled();
+  });
+
+  it('adds timing jitter when email delivery is not configured', async () => {
+    vi.useFakeTimers();
+    dbMock.select.mockReturnValue(
+      makeSelect([{ id: 7, name: 'Admin', email: 'admin@asof.local', isActive: true }]),
+    );
+    dbMock.insert.mockReturnValue(makeInsert([{ attempts: 1, id: 99 }]));
+    mockEnv.MAILJET_API_KEY = undefined;
+
+    const { requestPasswordReset } = await import('./password-reset');
+    let settled = false;
+    const promise = requestPasswordReset('admin@asof.local').then(() => {
+      settled = true;
+    });
+
+    await vi.advanceTimersByTimeAsync(800);
+
+    expect(settled).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(200);
+    await promise;
+  });
+
+  it('adds timing jitter when email delivery fails', async () => {
+    vi.useFakeTimers();
+    dbMock.select.mockReturnValue(
+      makeSelect([{ id: 7, name: 'Admin', email: 'admin@asof.local', isActive: true }]),
+    );
+    dbMock.insert.mockReturnValue(makeInsert([{ attempts: 1, id: 99 }]));
+    mockSendEmail.mockRejectedValue(new Error('mailjet unavailable'));
+
+    const { requestPasswordReset } = await import('./password-reset');
+    let settled = false;
+    const promise = requestPasswordReset('admin@asof.local').then(() => {
+      settled = true;
+    });
+
+    await vi.advanceTimersByTimeAsync(800);
+
+    expect(settled).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(200);
+    await promise;
   });
 
   it('denies password reset when rate-limit storage fails (fail-closed)', async () => {
