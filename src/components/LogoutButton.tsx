@@ -27,7 +27,7 @@ export function LogoutButton() {
           <p className="py-4">Deseja realmente sair do sistema?</p>
           <div className="modal-action">
             <form method="dialog">
-              <button className="inline-flex items-center justify-center rounded-[8px] text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:outline-none">
+              <button className="inline-flex h-11 items-center justify-center rounded-[8px] px-5 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2 focus-visible:outline-none">
                 Cancelar
               </button>
             </form>
