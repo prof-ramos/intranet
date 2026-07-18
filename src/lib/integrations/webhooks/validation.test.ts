@@ -89,6 +89,15 @@ describe('resolvePublicWebhookTarget', () => {
     expect(lookupMock).not.toHaveBeenCalled();
   });
 
+  it.each([
+    'https://[::]/webhook',
+    'https://[ff02::1]/webhook',
+    'https://[::127.0.0.1]/webhook',
+  ])('rejeita endereço IPv6 não público: %s', async (url) => {
+    await expect(isPublicWebhookUrl(url)).resolves.toBe(false);
+    expect(lookupMock).not.toHaveBeenCalled();
+  });
+
   it('rejeita NAT64 mesmo quando a entrada usa cauda IPv4 textual', async () => {
     await expect(
       isPublicWebhookUrl('https://[64:ff9b::192.0.2.33]/webhook'),

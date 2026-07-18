@@ -25,18 +25,25 @@ const PRIVATE_IPV4_RANGES = [
 
 function isPrivateIPv6(ip: string): boolean {
   const normalizedIp = ip.toLowerCase();
-  // ::1 loopback
-  if (normalizedIp === '::1') return true;
+  // ::/128 unspecified and ::1 loopback
+  if (normalizedIp === '::' || normalizedIp === '::1') return true;
   // fc00::/7 Unique Local Addresses (ULA)
   if (normalizedIp.startsWith('fc') || normalizedIp.startsWith('fd')) return true;
+  // ff00::/8 multicast
+  if (normalizedIp.startsWith('ff')) return true;
   // fe80::/10 link-local
   const firstHextet = Number.parseInt(normalizedIp.split(':', 1)[0], 16);
   if ((firstHextet & 0xffc0) === 0xfe80) return true;
   // 64:ff9b::/96 NAT64 / Well-Known Prefix
   if (normalizedIp.startsWith('64:ff9b')) return true;
-  // ::ffff:x (IPv4-mapped) — Node URL normalizes to hex form ::ffff:aabb:ccdd
-  if (normalizedIp.startsWith('::ffff:')) {
-    const embedded = normalizedIp.slice(7);
+  // IPv4-mapped/compatible — Node URL normalizes the IPv4 tail to hex hextets
+  const embeddedPrefix = normalizedIp.startsWith('::ffff:')
+    ? '::ffff:'
+    : normalizedIp.startsWith('::')
+      ? '::'
+      : null;
+  if (embeddedPrefix) {
+    const embedded = normalizedIp.slice(embeddedPrefix.length);
     // Hex-form like "7f00:1" from URL normalization
     if (/^[0-9a-f]{1,4}:[0-9a-f]{1,4}$/i.test(embedded)) {
       const parts = embedded.split(':');
