@@ -25,18 +25,109 @@ const recipient: EtiquetaRecipient = {
 };
 
 describe('formatter de etiquetas', () => {
-  it('formata postal com CEP e flags', () => {
-    const label = formatPostalLabel(recipient, { peo: true, ectOpenable: true });
-    expect(label.lines).toContain('Maria Silva');
-    expect(label.lines).toContain('Brasília/DF');
-    expect(label.lines).toContain('CEP 70170-900');
-    expect(label.lines).toContain('P.E.O.');
-    expect(label.lines).toContain('PODE SER ABERTO PELA ECT');
+  describe('formatPostalLabel', () => {
+    it('formata postal completo com CEP e flags', () => {
+      const label = formatPostalLabel(recipient, { peo: true, ectOpenable: true });
+      expect(label.lines).toEqual([
+        'Maria Silva',
+        'Rua das Flores, 100',
+        'Centro',
+        'Brasília/DF',
+        'CEP 70170-900',
+        'P.E.O.',
+        'PODE SER ABERTO PELA ECT',
+      ]);
+    });
+
+    it('omite campos opcionais ausentes', () => {
+      const label = formatPostalLabel({ id: '2', nome: 'João Souza', enderecoCompleto: 'Rua A' });
+      expect(label.lines).toEqual(['João Souza', 'Rua A']);
+    });
+
+    it('formata corretamente apenas com cidade ou apenas com uf', () => {
+      const labelCidade = formatPostalLabel({ id: '3', nome: 'Ana', cidade: 'Goiânia' });
+      expect(labelCidade.lines).toEqual(['Ana', 'Goiânia']);
+
+      const labelUf = formatPostalLabel({ id: '4', nome: 'Beto', uf: 'GO' });
+      expect(labelUf.lines).toEqual(['Beto', 'GO']);
+    });
+
+    it.each(['12345678', '12.345-678', '  12345678  '])(
+      'normaliza CEP com oito dígitos: %s',
+      (cep) => {
+        const label = formatPostalLabel({ id: '5', nome: 'Carlos', cep });
+        expect(label.lines).toEqual(['Carlos', 'CEP 12345-678']);
+      },
+    );
+
+    it.each([
+      ['1234567', 'CEP 1234567'],
+      ['123456789', 'CEP 123456789'],
+      ['invalid', 'CEP invalid'],
+    ])('mantém CEP malformado sem inventar dígitos: %s', (cep, expected) => {
+      const label = formatPostalLabel({ id: '5', nome: 'Carlos', cep });
+      expect(label.lines).toEqual(['Carlos', expected]);
+    });
+
+    it.each([null, undefined, '', '   ', 'null', 'undefined', 'NaN'])(
+      'omite CEP vazio ou sentinela: %s',
+      (cep) => {
+        const label = formatPostalLabel({ id: '5', nome: 'Carlos', cep });
+        expect(label.lines).toEqual(['Carlos']);
+      },
+    );
+
+    it('normaliza espaços, remove sentinelas e deduplica sem diferenciar maiúsculas', () => {
+      const label = formatPostalLabel({
+        id: '6',
+        nome: '  Diana   Souza  ',
+        enderecoCompleto: '  Rua   A  ',
+        complemento: 'rua a',
+        bairro: 'null',
+        cidade: 'undefined',
+        uf: 'NaN',
+      });
+      expect(label.lines).toEqual(['Diana Souza', 'Rua A']);
+    });
+
+    it('aplica flags individuais', () => {
+      const labelPeo = formatPostalLabel(recipient, { peo: true });
+      expect(labelPeo.lines).toContain('P.E.O.');
+      expect(labelPeo.lines).not.toContain('PODE SER ABERTO PELA ECT');
+
+      const labelEct = formatPostalLabel(recipient, { ectOpenable: true });
+      expect(labelEct.lines).not.toContain('P.E.O.');
+      expect(labelEct.lines).toContain('PODE SER ABERTO PELA ECT');
+
+      const labelNone = formatPostalLabel(recipient);
+      expect(labelNone.lines).not.toContain('P.E.O.');
+      expect(labelNone.lines).not.toContain('PODE SER ABERTO PELA ECT');
+    });
   });
 
-  it('formata mala diplomática sem exigir endereço', () => {
-    const label = formatMalaDiplomaticaLabel({ id: '2', nome: 'João Souza', lotacao: 'SERE' }, { peo: true });
-    expect(label.lines).toEqual(['João Souza', 'SERE', 'P.E.O.']);
+  describe('formatMalaDiplomaticaLabel', () => {
+    it('usa lotação quando não há posto e aplica flags', () => {
+      const label = formatMalaDiplomaticaLabel(
+        { id: '2', nome: 'João Souza', lotacao: 'SERE' },
+        { peo: true },
+      );
+      expect(label.lines).toEqual(['João Souza', 'SERE', 'P.E.O.']);
+    });
+
+    it('prioriza posto sobre lotação', () => {
+      const label = formatMalaDiplomaticaLabel({
+        id: '2',
+        nome: 'João Souza',
+        posto: 'Embaixada em Paris',
+        lotacao: 'SERE',
+      });
+      expect(label.lines).toEqual(['João Souza', 'Embaixada em Paris']);
+    });
+
+    it('omite a linha de local quando posto e lotação estão ausentes', () => {
+      const label = formatMalaDiplomaticaLabel({ id: '2', nome: 'João Souza' });
+      expect(label.lines).toEqual(['João Souza']);
+    });
   });
 
   it('formata campos customizados em ordem previsível', () => {
