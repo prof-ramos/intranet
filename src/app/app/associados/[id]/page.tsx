@@ -469,22 +469,26 @@ function PaymentHistorySection({ profile }: Omit<ProfileSectionProps, 'id'>) {
   );
 }
 
-function DependentsSection({ profile, id }: ProfileSectionProps) {
+function DependentsSection({
+  profile,
+  associateId,
+}: Omit<ProfileSectionProps, 'id'> & { associateId: number }) {
   const { dependents } = profile;
-  const associateId = parseInt(id, 10);
   return (
     <SectionCard id="dependentes" title={`Dependentes (${dependents.length})`}>
-      <DependentManager associateId={associateId!} items={dependents} />
+      <DependentManager associateId={associateId} items={dependents} />
     </SectionCard>
   );
 }
 
-function HealthAgreementsSection({ profile, id }: ProfileSectionProps) {
+function HealthAgreementsSection({
+  profile,
+  associateId,
+}: Omit<ProfileSectionProps, 'id'> & { associateId: number }) {
   const { healthAgreements } = profile;
-  const associateId = parseInt(id, 10);
   return (
     <SectionCard id="convenios" title={`Convênios (${healthAgreements.length})`}>
-      <HealthAgreementManager associateId={associateId!} items={healthAgreements} />
+      <HealthAgreementManager associateId={associateId} items={healthAgreements} />
     </SectionCard>
   );
 }
@@ -620,8 +624,8 @@ export default async function AssociadoPerfilPage({
           <AdministrativeSection profile={profile} id={id} />
           <AssociationSection profile={profile} />
           <PaymentHistorySection profile={profile} />
-          <DependentsSection profile={profile} id={id} />
-          <HealthAgreementsSection profile={profile} id={id} />
+          <DependentsSection profile={profile} associateId={associateId!} />
+          <HealthAgreementsSection profile={profile} associateId={associateId!} />
           <ObservationsSection profile={profile} id={id} />
           <ActivitiesSection profile={profile} />
         </div>
