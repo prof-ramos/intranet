@@ -3,8 +3,10 @@ import { auditReportDownload } from './audit';
 import { auditLogs } from '@/lib/db/schema';
 import type { ReportFilters } from '@/lib/reports/export-filters';
 
-const insertMock = vi.fn();
-const valuesMock = vi.fn();
+const { insertMock, valuesMock } = vi.hoisted(() => ({
+  insertMock: vi.fn(),
+  valuesMock: vi.fn(),
+}));
 
 vi.mock('@/lib/db', () => ({
   db: {
