@@ -35,7 +35,7 @@ import {
   paymentMethod as pmEnum,
 } from '@/lib/db/schema';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
-import { logAuditAction, logDataAccess } from '@/lib/audit/service';
+import { logAuditAction, logAuditBestEffort, logDataAccess } from '@/lib/audit/service';
 import { buildPiiPatch, decryptAssociatePii } from './pii-mapping';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { emptyToNull } from '@/lib/utils/strings';
@@ -344,16 +344,8 @@ function getChangedAuditFields(
 
 type AssociateAuditArgs = Parameters<typeof logAuditAction>[0];
 
-async function logAssociateAuditBestEffort(auditArgs: AssociateAuditArgs) {
-  try {
-    await logAuditAction(auditArgs);
-  } catch {
-    logger.warn('Audit log failed after committed associate mutation', {
-      action: auditArgs.action,
-      entityType: auditArgs.entityType,
-      entityId: auditArgs.entityId,
-    });
-  }
+function logAssociateAuditBestEffort(auditArgs: AssociateAuditArgs) {
+  return logAuditBestEffort(auditArgs, logger);
 }
 
 export async function updateAssociateData(
@@ -755,17 +747,13 @@ export async function createAssociateData(
 
   // Best-effort audit AFTER the tx commits. A failed audit INSERT must not abort the
   // mutation's tx (the audit executor poisons PG tx on failure). Default `db` isolates the audit.
-  try {
-    await logAuditAction({
-      adminId: actor.userId,
-      action: 'create',
-      entityType: 'associate',
-      entityId: id,
-      metadata: { source: 'manual_create' },
-    });
-  } catch {
-    // logAuditAction logs internally; swallow to protect the committed mutation.
-  }
+  await logAssociateAuditBestEffort({
+    adminId: actor.userId,
+    action: 'create',
+    entityType: 'associate',
+    entityId: id,
+    metadata: { source: 'manual_create' },
+  });
 
   return { id };
 }

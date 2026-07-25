@@ -1,6 +1,6 @@
 import * as repository from './repository';
 import { markOverduePaymentsForAudit } from './repository';
-import { logAuditAction } from '@/lib/audit/service';
+import { logAuditAction, logAuditBestEffort } from '@/lib/audit/service';
 import { db } from '@/lib/db';
 import { emitDomainEvent, emitDomainEventsBatch } from '@/lib/integrations/outbox';
 import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
@@ -13,7 +13,6 @@ import { auditLogs } from '@/lib/db/schema/audit';
 import { associates } from '@/lib/db/schema/associates';
 import { and, eq, sql } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
-import { toSafeErrorLog } from '@/lib/error-log';
 import { yearMonthObjectSchema } from '@/lib/validation/schemas';
 import { ConcurrencyConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 
@@ -286,14 +285,7 @@ export async function updateMonthlyPayment(
   // Best-effort audit AFTER the tx commits. The outbox write above remains
   // atomic with the payment mutation, while audit can only describe a change
   // that the database has confirmed.
-  try {
-    await logAuditAction(auditArgs);
-  } catch (error) {
-    logger.error('Audit log failed (non-critical)', {
-      paymentId: result.id,
-      error: toSafeErrorLog(error),
-    });
-  }
+  await logAuditBestEffort(auditArgs, logger);
 
   return result;
 }
@@ -392,11 +384,7 @@ export async function cancelMonthlyPayment(adminId: number, paymentId: number, r
 
   // Best-effort audit AFTER the tx commits. A failed audit INSERT must not abort the
   // mutation's tx (the audit executor poisons PG tx on failure). Default `db` isolates the audit.
-  try {
-    await logAuditAction(auditArgs);
-  } catch {
-    logger.error('Audit log failed (non-critical)', { paymentId });
-  }
+  await logAuditBestEffort(auditArgs, logger);
 
   return result;
 }

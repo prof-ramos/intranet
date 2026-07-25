@@ -44,7 +44,7 @@ vi.mock('./repository', () => ({
 }));
 
 vi.mock('@/lib/audit/service', () => ({
-  logAuditAction: vi.fn().mockResolvedValue(undefined),
+  logAuditBestEffort: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/lib/events', () => ({
@@ -161,12 +161,13 @@ describe('activities service', () => {
       tags: [],
       createdBy: 1,
     });
-    expect(audit.logAuditAction).toHaveBeenCalledWith(
+    expect(audit.logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'activity_created', entityType: 'activity' }),
+      expect.anything(),
     );
     // Sem `executor: tx` → auditoria usa default `db` (fora da tx). Garante
     // que falha de INSERT de auditoria não deixe a tx em estado aborted.
-    const callArgs = vi.mocked(audit.logAuditAction).mock.calls[0][0];
+    const callArgs = vi.mocked(audit.logAuditBestEffort).mock.calls[0][0];
     expect(callArgs.executor).toBeUndefined();
   });
 
@@ -208,13 +209,14 @@ describe('activities service', () => {
 
     await updateActivityService({ id: 8, actorId: 7, status: 'concluido' });
 
-    expect(audit.logAuditAction).toHaveBeenCalledWith(
+    expect(audit.logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'activity_updated', entityType: 'activity' }),
+      expect.anything(),
     );
     // Sem `executor: tx` → auditoria usa default `db` (fora da tx).
-    const callArgs = vi.mocked(audit.logAuditAction).mock.calls.find(
-      (call) => call[0].action === 'activity_updated',
-    )?.[0];
+    const callArgs = vi
+      .mocked(audit.logAuditBestEffort)
+      .mock.calls.find((call) => call[0].action === 'activity_updated')?.[0];
     expect(callArgs).toBeDefined();
     expect(callArgs?.executor).toBeUndefined();
   });
@@ -448,11 +450,12 @@ describe('activities service', () => {
         createdBy: 7,
       }),
     );
-    expect(audit.logAuditAction).toHaveBeenCalledWith(
+    expect(audit.logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'activity_updated',
         entityType: 'activity',
       }),
+      expect.anything(),
     );
     // Helper canônico de eventos outbox é invocado dentro da tx com o snapshot
     // anterior e o estado atualizado.
@@ -514,7 +517,7 @@ describe('activities service', () => {
       new Date('2026-05-01T00:00:00.000Z'),
       txMock,
     );
-    expect(audit.logAuditAction).toHaveBeenCalledWith(
+    expect(audit.logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({
         metadata: { reassignmentMessage: 'Assumir retorno com a diretoria' },
         changes: expect.objectContaining({
@@ -522,6 +525,7 @@ describe('activities service', () => {
           new: expect.objectContaining({ assigneeId: 12 }),
         }),
       }),
+      expect.anything(),
     );
   });
 

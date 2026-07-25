@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { oficios } from '@/lib/db/schema/oficios';
 import * as repository from './repository';
 import { type NewOfficialLetter, type OfficialLetter } from '@/lib/db/schema/oficios';
-import { logAuditAction } from '@/lib/audit/service';
+import { logAuditAction, logAuditBestEffort } from '@/lib/audit/service';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
 import { generateOfficialLetterPdf } from './pdf';
 import { cleanSignatoryName } from './utils';
@@ -19,16 +19,8 @@ const logger = createLogger('oficios:service');
 
 type OfficialLetterAuditArgs = Parameters<typeof logAuditAction>[0];
 
-async function logOfficialLetterAuditBestEffort(auditArgs: OfficialLetterAuditArgs) {
-  try {
-    await logAuditAction(auditArgs);
-  } catch {
-    logger.warn('Audit log failed after committed official letter mutation', {
-      action: auditArgs.action,
-      entityType: auditArgs.entityType,
-      entityId: auditArgs.entityId,
-    });
-  }
+function logOfficialLetterAuditBestEffort(auditArgs: OfficialLetterAuditArgs) {
+  return logAuditBestEffort(auditArgs, logger);
 }
 
 const OFFICIAL_LETTER_OPERATIONAL_STATUS = 'gerado' satisfies NewOfficialLetter['status'];

@@ -1,7 +1,7 @@
 import { db, type DbExecutor } from '@/lib/db';
 import { auditLogs, type NewAuditLog } from '@/lib/db/schema/audit';
 import { sanitizePiiValue } from '@/lib/sanitize-pii';
-import { createLogger } from '@/lib/logger';
+import { createLogger, type Logger } from '@/lib/logger';
 
 const logger = createLogger('audit');
 
@@ -42,6 +42,27 @@ export async function logAuditAction(options: LogAuditOptions): Promise<void> {
       error as Error,
     );
     // Não propaga o erro para não bloquear a operação principal
+  }
+}
+
+/**
+ * Runs `logAuditAction` after a mutation's transaction has already committed.
+ * `logAuditAction` swallows its own insert failures, but it still throws
+ * synchronously for an invalid `adminId` — this wrapper catches that case too,
+ * so a broken audit call never takes down an already-committed mutation.
+ */
+export async function logAuditBestEffort(
+  auditArgs: LogAuditOptions,
+  callerLogger: Logger = logger,
+): Promise<void> {
+  try {
+    await logAuditAction(auditArgs);
+  } catch {
+    callerLogger.warn('Audit log failed after committed mutation', {
+      action: auditArgs.action,
+      entityType: auditArgs.entityType,
+      entityId: auditArgs.entityId,
+    });
   }
 }
 
