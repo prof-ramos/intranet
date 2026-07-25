@@ -171,6 +171,50 @@ export interface ResetPasswordResult {
   emailDelivered: boolean;
 }
 
+// ---------------------------------------------------------------------------
+// toggleAdminActive — admin-initiated activation/deactivation
+// ---------------------------------------------------------------------------
+
+export interface ToggleAdminActiveResult {
+  name: string;
+  isActive: boolean;
+}
+
+export async function toggleAdminActive(
+  targetId: number,
+  actorId: number,
+): Promise<ToggleAdminActiveResult> {
+  const [target] = await retryTransientConnection(() =>
+    db
+      .select({ id: admins.id, name: admins.name, isActive: admins.isActive })
+      .from(admins)
+      .where(eq(admins.id, targetId))
+      .limit(1),
+  );
+
+  if (!target) {
+    throw new AdminNotFoundError();
+  }
+
+  const newState = !target.isActive;
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(admins)
+      .set({ isActive: newState, updatedAt: sql`now()` })
+      .where(eq(admins.id, targetId));
+
+    await tx.insert(auditLogs).values({
+      action: newState ? 'account_activated' : 'account_deactivated',
+      entityType: 'admin',
+      entityId: targetId,
+      performedBy: actorId,
+    });
+  });
+
+  return { name: target.name, isActive: newState };
+}
+
 export async function resetPassword(
   targetId: number,
   actorId: number,

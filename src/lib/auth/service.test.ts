@@ -260,4 +260,46 @@ describe('auth service', () => {
       await expect(resetPassword(11, 7)).rejects.toThrow(InactiveAdminError);
     });
   });
+
+  describe('toggleAdminActive', () => {
+    it('flips isActive, updates DB, and audits', async () => {
+      selectQueue.push([{ id: 12, name: 'Carlos', isActive: false }]);
+      mockInsertValues.mockResolvedValue(undefined);
+
+      const { toggleAdminActive } = await import('./service');
+      const result = await toggleAdminActive(12, 7);
+
+      expect(result).toEqual({ name: 'Carlos', isActive: true });
+      expect(mockUpdateSet).toHaveBeenCalledWith(expect.objectContaining({ isActive: true }));
+      expect(mockUpdateWhere).toHaveBeenCalled();
+      expect(mockInsertValues).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'account_activated',
+          entityType: 'admin',
+          entityId: 12,
+          performedBy: 7,
+        }),
+      );
+    });
+
+    it('deactivates an active admin and audits account_deactivated', async () => {
+      selectQueue.push([{ id: 13, name: 'Ana', isActive: true }]);
+      mockInsertValues.mockResolvedValue(undefined);
+
+      const { toggleAdminActive } = await import('./service');
+      const result = await toggleAdminActive(13, 7);
+
+      expect(result).toEqual({ name: 'Ana', isActive: false });
+      expect(mockInsertValues).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'account_deactivated', entityId: 13 }),
+      );
+    });
+
+    it('throws AdminNotFoundError when target does not exist', async () => {
+      selectQueue.push([]);
+
+      const { toggleAdminActive, AdminNotFoundError } = await import('./service');
+      await expect(toggleAdminActive(999, 7)).rejects.toThrow(AdminNotFoundError);
+    });
+  });
 });
