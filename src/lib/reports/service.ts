@@ -13,6 +13,14 @@ export interface ReportResult {
   rowCount: number;
 }
 
+async function auditBestEffort(logKind: string, fn: () => Promise<void>): Promise<void> {
+  try {
+    await fn();
+  } catch (error) {
+    logger.warn(`[report-service] failed to persist ${logKind}`, { error: toSafeErrorLog(error) });
+  }
+}
+
 export async function generateReport(
   userId: number,
   filters: ReportFilters,
@@ -21,25 +29,19 @@ export async function generateReport(
   const rows = await getAssociatesForReport(filters);
   const csv = generateCsv(rows, selectedKeys);
 
-  try {
-    await auditReportDownload(userId, filters, selectedKeys, rows.length);
-  } catch (error) {
-    logger.warn('[report-service] failed to persist audit log', { error: toSafeErrorLog(error) });
-  }
+  await auditBestEffort('audit log', () =>
+    auditReportDownload(userId, filters, selectedKeys, rows.length),
+  );
 
-  try {
-    await logDataAccess({
+  await auditBestEffort('data access log', () =>
+    logDataAccess({
       adminId: userId,
       action: 'export',
       entityType: 'associate',
       entityId: null,
       metadata: { format: 'csv', fieldCount: selectedKeys.length, rowCount: rows.length },
-    });
-  } catch (error) {
-    logger.warn('[report-service] failed to persist data access log', {
-      error: toSafeErrorLog(error),
-    });
-  }
+    }),
+  );
 
   return { csv, rowCount: rows.length };
 }

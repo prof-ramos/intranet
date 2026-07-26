@@ -4,16 +4,8 @@ const mockCreateNotification = vi.fn().mockResolvedValue({ id: 1 });
 const mockRevalidatePath = vi.fn();
 const mockSession =
   vi.fn<() => { userId: number; role: string; name: string; email: string } | null>();
-const mockSelect = vi.fn();
-const mockFrom = vi.fn();
-const mockWhere = vi.fn();
+const mockFindAdminRecipientIds = vi.fn();
 const mockCreateActivityService = vi.fn();
-
-vi.mock('@/lib/db', () => ({
-  db: {
-    select: (...args: unknown[]) => mockSelect(...args),
-  },
-}));
 
 vi.mock('@/lib/auth/require-auth', () => ({
   requireAuth: () => {
@@ -21,6 +13,10 @@ vi.mock('@/lib/auth/require-auth', () => ({
     if (!session) throw new Error('Unauthorized');
     return session;
   },
+}));
+
+vi.mock('@/lib/auth/service', () => ({
+  findAdminRecipientIds: (...args: unknown[]) => mockFindAdminRecipientIds(...args),
 }));
 
 vi.mock('@/lib/notifications/repository', () => ({
@@ -37,17 +33,11 @@ vi.mock('next/cache', () => ({
 
 import { requestDataDownload, requestAccountDeletion } from './actions';
 
-function setupSelectResult(rows: { id: number }[]) {
-  mockSelect.mockReturnValue({ from: mockFrom });
-  mockFrom.mockReturnValue({ where: mockWhere });
-  mockWhere.mockResolvedValue(rows);
-}
-
 describe('privacidade actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCreateActivityService.mockResolvedValue({ id: 42 });
-    setupSelectResult([{ id: 1 }, { id: 2 }]);
+    mockFindAdminRecipientIds.mockResolvedValue([1, 2]);
     mockSession.mockReturnValue({
       userId: 7,
       role: 'admin',
@@ -73,8 +63,7 @@ describe('privacidade actions', () => {
     it('notifies all admin/secretaria recipients except the actor', async () => {
       await requestDataDownload();
 
-      expect(mockSelect).toHaveBeenCalled();
-      expect(mockWhere).toHaveBeenCalled();
+      expect(mockFindAdminRecipientIds).toHaveBeenCalledWith(['admin', 'secretaria']);
       expect(mockCreateNotification).toHaveBeenCalledTimes(2);
       expect(mockCreateNotification).toHaveBeenNthCalledWith(
         1,

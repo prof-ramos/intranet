@@ -1,23 +1,13 @@
 'use server';
 
-import { db } from '@/lib/db';
-import { admins } from '@/lib/db/schema';
-import { inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { defineNoInputServerAction } from '@/lib/server-actions/define-form-action';
 import { createNotification } from '@/lib/notifications/repository';
 import { createActivityService } from '@/lib/activities/service';
-
-async function getAdminRecipientIds() {
-  const rows = await db
-    .select({ id: admins.id })
-    .from(admins)
-    .where(inArray(admins.role, ['admin', 'secretaria']));
-  return rows.map((r) => r.id);
-}
+import { findAdminRecipientIds } from '@/lib/auth/service';
 
 async function notifyAdmins(actorId: number, activityId: number, title: string, message: string) {
-  const recipientIds = await getAdminRecipientIds();
+  const recipientIds = await findAdminRecipientIds(['admin', 'secretaria']);
   await Promise.allSettled(
     recipientIds
       .filter((id) => id !== actorId)

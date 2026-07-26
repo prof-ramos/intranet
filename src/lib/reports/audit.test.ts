@@ -1,43 +1,32 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { auditReportDownload } from './audit';
-import { auditLogs } from '@/lib/db/schema';
 import type { ReportFilters } from '@/lib/reports/export-filters';
 
-const { insertMock, valuesMock } = vi.hoisted(() => ({
-  insertMock: vi.fn(),
-  valuesMock: vi.fn(),
+const { logAuditActionMock } = vi.hoisted(() => ({
+  logAuditActionMock: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('@/lib/db', () => ({
-  db: {
-    insert: (...args: unknown[]) => {
-      insertMock(...args);
-      return {
-        values: valuesMock,
-      };
-    },
-  },
+vi.mock('@/lib/audit/service', () => ({
+  logAuditAction: (...args: unknown[]) => logAuditActionMock(...args),
 }));
 
 describe('auditReportDownload', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    valuesMock.mockResolvedValue([{ id: 1 }]);
+    logAuditActionMock.mockResolvedValue(undefined);
   });
 
-  it('should insert an audit log for report download', async () => {
+  it('logs an audit action for report download', async () => {
     const filters = { status: 'active', type: 'associate' };
     const selectedKeys = ['id', 'name'];
 
     await auditReportDownload(123, filters as unknown as ReportFilters, selectedKeys, 100);
 
-    expect(insertMock).toHaveBeenCalledWith(auditLogs);
-    expect(valuesMock).toHaveBeenCalledWith({
+    expect(logAuditActionMock).toHaveBeenCalledWith({
+      adminId: 123,
       action: 'report_download',
       entityType: 'associate',
       entityId: null,
-      performedBy: 123,
-      changes: null,
       metadata: {
         format: 'csv',
         filters: ['status', 'type'],
@@ -47,19 +36,17 @@ describe('auditReportDownload', () => {
     });
   });
 
-  it('should handle empty filters gracefully', async () => {
+  it('handles empty filters gracefully', async () => {
     const filters = {};
     const selectedKeys = ['id'];
 
     await auditReportDownload(456, filters as unknown as ReportFilters, selectedKeys, 0);
 
-    expect(insertMock).toHaveBeenCalledWith(auditLogs);
-    expect(valuesMock).toHaveBeenCalledWith({
+    expect(logAuditActionMock).toHaveBeenCalledWith({
+      adminId: 456,
       action: 'report_download',
       entityType: 'associate',
       entityId: null,
-      performedBy: 456,
-      changes: null,
       metadata: {
         format: 'csv',
         filters: [],

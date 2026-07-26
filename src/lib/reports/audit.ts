@@ -1,4 +1,3 @@
-import { auditLogs } from '@/lib/db/schema';
 import type { ReportFilters } from '@/lib/reports/export-filters';
 
 export async function auditReportDownload(
@@ -8,14 +7,13 @@ export async function auditReportDownload(
   rowCount: number,
 ) {
   // Importacao tardia evita inicializacao do DB durante o build do Next.js.
-  const { db } = await import('@/lib/db');
+  const { logAuditAction } = await import('@/lib/audit/service');
 
-  await db.insert(auditLogs).values({
+  await logAuditAction({
+    adminId: userId,
     action: 'report_download',
     entityType: 'associate',
     entityId: null,
-    performedBy: userId,
-    changes: null,
     metadata: {
       format: 'csv',
       filters: Object.keys(filters),

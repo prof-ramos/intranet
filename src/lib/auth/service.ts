@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { db } from '@/lib/db';
-import { admins, auditLogs } from '@/lib/db/schema';
+import { adminRole, admins, auditLogs } from '@/lib/db/schema';
 import { retryTransientConnection } from '@/lib/db/retry';
 import { env } from '@/lib/env';
 import { sendEmail } from '@/lib/email';
@@ -213,6 +213,21 @@ export async function toggleAdminActive(
   });
 
   return { name: target.name, isActive: newState };
+}
+
+// ---------------------------------------------------------------------------
+// findAdminRecipientIds — active admin ids for a set of roles, used for
+// notification fan-out (e.g. LGPD requests, system alerts)
+// ---------------------------------------------------------------------------
+
+export async function findAdminRecipientIds(
+  roles: (typeof adminRole.enumValues)[number][],
+): Promise<number[]> {
+  const rows = await db
+    .select({ id: admins.id })
+    .from(admins)
+    .where(and(inArray(admins.role, roles), eq(admins.isActive, true)));
+  return rows.map((r) => r.id);
 }
 
 export async function resetPassword(

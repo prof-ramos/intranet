@@ -49,6 +49,7 @@ vi.mock('@/lib/db', () => ({
       from: vi.fn(() => ({
         where: vi.fn(() => ({
           limit: mockLimit,
+          then: (resolve: (value: unknown[]) => void) => resolve(selectQueue.shift() ?? []),
         })),
       })),
     })),
@@ -300,6 +301,26 @@ describe('auth service', () => {
 
       const { toggleAdminActive, AdminNotFoundError } = await import('./service');
       await expect(toggleAdminActive(999, 7)).rejects.toThrow(AdminNotFoundError);
+    });
+  });
+
+  describe('findAdminRecipientIds', () => {
+    it('returns active admin ids matching the given roles', async () => {
+      selectQueue.push([{ id: 1 }, { id: 2 }]);
+
+      const { findAdminRecipientIds } = await import('./service');
+      const result = await findAdminRecipientIds(['admin', 'secretaria']);
+
+      expect(result).toEqual([1, 2]);
+    });
+
+    it('returns an empty list when no admins match', async () => {
+      selectQueue.push([]);
+
+      const { findAdminRecipientIds } = await import('./service');
+      const result = await findAdminRecipientIds(['admin']);
+
+      expect(result).toEqual([]);
     });
   });
 });
