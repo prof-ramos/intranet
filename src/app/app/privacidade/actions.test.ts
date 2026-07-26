@@ -97,14 +97,14 @@ describe('privacidade actions', () => {
   });
 
   describe('requestAccountDeletion', () => {
-    it('creates activity with LGPD/Exclusão tags and urgente priority', async () => {
+    it('creates activity with LGPD/Exclusao tags (ASCII-safe) and urgente priority', async () => {
       await requestAccountDeletion();
 
       expect(mockCreateActivityService).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'Solicitação de Exclusão - Direito ao Esquecimento',
           priority: 'urgente',
-          tags: ['LGPD', 'Exclusão'],
+          tags: ['LGPD', 'Exclusao'],
           createdBy: 7,
         }),
       );

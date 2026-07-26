@@ -67,7 +67,7 @@ export const requestAccountDeletion = defineNoInputServerAction({
       assigneeId: null,
       associateId: null,
       dueDate: null,
-      tags: ['LGPD', 'Exclusão'],
+      tags: ['LGPD', 'Exclusao'],
       createdBy: session.userId,
     });
 
