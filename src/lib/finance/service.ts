@@ -4,14 +4,8 @@ import { logAuditAction, logAuditBestEffort } from '@/lib/audit/service';
 import { db } from '@/lib/db';
 import { emitDomainEvent, emitDomainEventsBatch } from '@/lib/integrations/outbox';
 import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
-import {
-  monthlyPayments,
-  type MonthlyPayment,
-  type NewMonthlyPayment,
-} from '@/lib/db/schema/finance';
+import { type MonthlyPayment, type NewMonthlyPayment } from '@/lib/db/schema/finance';
 import { auditLogs } from '@/lib/db/schema/audit';
-import { associates } from '@/lib/db/schema/associates';
-import { and, eq, sql } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
 import { yearMonthObjectSchema } from '@/lib/validation/schemas';
 import { ConcurrencyConflictError, NotFoundError, ValidationError } from '@/lib/errors';
@@ -164,19 +158,12 @@ export async function updateMonthlyPayment(
   expectedUpdatedAt?: string | null,
 ) {
   const { result, auditArgs } = await db.transaction(async (tx) => {
-    const existing = await tx
-      .select()
-      .from(monthlyPayments)
-      .where(
-        and(
-          eq(monthlyPayments.associateId, payment.associateId),
-          eq(monthlyPayments.year, payment.year),
-          eq(monthlyPayments.month, payment.month),
-        ),
-      )
-      .limit(1);
-
-    const current = existing[0] ?? null;
+    const current = await repository.findMonthlyPayment(
+      payment.associateId,
+      payment.year,
+      payment.month,
+      tx,
+    );
 
     if (current && current.status !== payment.status) {
       validateStatusTransition(current.status, payment.status);
@@ -198,34 +185,15 @@ export async function updateMonthlyPayment(
     const paidAt =
       payment.status === 'pago' ? (current?.status === 'pago' ? current.paidAt : new Date()) : null;
 
-    const upserted = await tx
-      .insert(monthlyPayments)
-      .values({
+    const updatedPayment = await repository.upsertMonthlyPayment(
+      {
         ...payment,
         paidAt,
         updatedBy: adminId,
-      })
-      .onConflictDoUpdate({
-        target: [monthlyPayments.associateId, monthlyPayments.year, monthlyPayments.month],
-        set: {
-          status: payment.status,
-          paymentMethod: payment.paymentMethod,
-          paidAt,
-          cancelledAt: null,
-          cancellationReason: null,
-          cancelledBy: null,
-          updatedBy: adminId,
-          updatedAt: sql`now()`,
-        },
-        // F-007: Include updated_at in the conflict predicate so concurrent writes
-        // with a stale expectedUpdatedAt do not silently overwrite newer state.
-        setWhere:
-          expectedUpdatedAt != null
-            ? sql`${monthlyPayments.updatedAt} = ${new Date(expectedUpdatedAt)}`
-            : undefined,
-      })
-      .returning();
-    const updatedPayment = upserted[0];
+      },
+      expectedUpdatedAt,
+      tx,
+    );
 
     if (!updatedPayment) {
       // setWhere predicate failed — another writer changed the row concurrently.
@@ -298,13 +266,7 @@ export async function cancelMonthlyPayment(adminId: number, paymentId: number, r
   const cancellationReason = validateCancellationReason(reason);
 
   const { result, auditArgs } = await db.transaction(async (tx) => {
-    const rows = await tx
-      .select()
-      .from(monthlyPayments)
-      .where(eq(monthlyPayments.id, paymentId))
-      .limit(1);
-
-    const current = rows[0] ?? null;
+    const current = await repository.findMonthlyPaymentById(paymentId, tx);
     if (!current) {
       throw new NotFoundError('Pagamento');
     }
@@ -314,23 +276,16 @@ export async function cancelMonthlyPayment(adminId: number, paymentId: number, r
 
     const cancelledAt = new Date();
     const oldState = getPaymentAuditState(current);
-    const [updatedPayment] = await tx
-      .update(monthlyPayments)
-      .set({
-        status: 'cancelado',
-        paidAt: null,
-        cancelledAt,
-        cancellationReason,
-        cancelledBy: adminId,
-        updatedBy: adminId,
-        updatedAt: sql`now()`,
-      })
-      // F-007: Atomic conditional update — only succeed if the row is still non-cancelled.
-      // Prevents a double-cancel race where two concurrent requests both read status != 'cancelado'.
-      .where(and(eq(monthlyPayments.id, paymentId), sql`${monthlyPayments.status} != 'cancelado'`))
-      .returning();
+    const updatedPayment = await repository.cancelMonthlyPaymentRow(
+      paymentId,
+      adminId,
+      cancellationReason,
+      cancelledAt,
+      tx,
+    );
 
     if (!updatedPayment) {
+      // F-007: another writer changed the row concurrently between the read above and this update.
       throw new ValidationError('Pagamento já cancelado.');
     }
 
@@ -394,33 +349,16 @@ export async function initializeMonth(adminId: number, year: number, month: numb
 
   const count = await db.transaction(async (tx) => {
     // Read and write in the same transaction to prevent TOCTOU races
-    const rows = await tx
-      .select({
-        associateId: associates.id,
-        defaultPaymentMethod: associates.paymentMethod,
-        paymentId: monthlyPayments.id,
-      })
-      .from(associates)
-      .leftJoin(
-        monthlyPayments,
-        and(
-          eq(associates.id, monthlyPayments.associateId),
-          eq(monthlyPayments.year, year),
-          eq(monthlyPayments.month, month),
-        ),
-      )
-      .where(eq(associates.associationStatus, 'associado'));
+    const missing = await repository.findAssociatesMissingPaymentForMonth(year, month, tx);
 
-    const updates: NewMonthlyPayment[] = rows
-      .filter((r) => !r.paymentId)
-      .map((r) => ({
-        associateId: r.associateId,
-        year,
-        month,
-        status: r.defaultPaymentMethod === 'folha' ? 'pago' : 'pendente',
-        paymentMethod: r.defaultPaymentMethod,
-        updatedBy: adminId,
-      }));
+    const updates: NewMonthlyPayment[] = missing.map((r) => ({
+      associateId: r.associateId,
+      year,
+      month,
+      status: r.defaultPaymentMethod === 'folha' ? 'pago' : 'pendente',
+      paymentMethod: r.defaultPaymentMethod,
+      updatedBy: adminId,
+    }));
 
     const inserted =
       updates.length > 0 ? await repository.insertMonthlyPaymentsIfMissing(updates, tx) : [];
