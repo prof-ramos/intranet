@@ -1,5 +1,6 @@
-import { formatAssociateDate, getAssociateStatusLabel } from '@/lib/associates/service';
+import { formatAssociateDate } from '@/lib/associates/service';
 import { hairline } from '@/lib/ui/tokens';
+import { buildAssociateProfileSections, type ProfileFieldSection } from './profile-sections';
 import {
   BooleanIcon,
   ProfileEditLink,
@@ -8,166 +9,31 @@ import {
   type ProfileSectionProps,
 } from './ProfileUi';
 
-const sexLabels: Record<string, string> = {
-  M: 'Masculino',
-  F: 'Feminino',
-};
+const SECTIONS_WITH_EDIT_LINK = new Set(['identificacao', 'endereco', 'administrativo']);
 
-const maritalStatusLabels: Record<string, string> = {
-  solteiro: 'Solteiro(a)',
-  casado: 'Casado(a)',
-  divorciado: 'Divorciado(a)',
-  viuvo: 'Viúvo(a)',
-  separado: 'Separado(a)',
-  outros: 'Outros',
-};
-
-const missionTypeLabels: Record<string, string> = {
-  permanente: 'Permanente',
-  transitoria: 'Transitória',
-};
-
-const careerOriginLabels: Record<string, string> = {
-  brasil: 'Brasil',
-  exterior: 'Exterior',
-  outros_orgaos: 'Outros Órgãos',
-};
-
-const paymentMethodLabels: Record<string, string> = {
-  folha: 'Folha de pagamento',
-  boleto: 'Boleto',
-  pix: 'Pix',
-  transferencia: 'Transferência',
-  outros: 'Outros',
-};
-
-function IdentificationSection({ profile, id }: ProfileSectionProps) {
-  const { associate } = profile;
-
+function FieldSectionCard({ section, id }: { section: ProfileFieldSection; id: string }) {
   return (
     <ProfileSectionCard
-      id="identificacao"
-      title="Identificação"
-      action={<ProfileEditLink href={`/app/associados/${id}/editar`} />}
+      id={section.id}
+      title={section.title}
+      action={
+        SECTIONS_WITH_EDIT_LINK.has(section.id) ? (
+          <ProfileEditLink href={`/app/associados/${id}/editar`} />
+        ) : undefined
+      }
     >
       <dl className="m-0">
-        <ProfileRow label="Nome completo" value={associate.fullName} />
-        <ProfileRow label="CPF" value={associate.cpf} mono />
-        <ProfileRow label="RG" value={associate.rg} mono />
-        {associate.rg && (
-          <>
-            <ProfileRow label="Órgão Expedidor" value={associate.rgIssuer} />
-            <ProfileRow label="UF RG" value={associate.rgState} />
+        {section.rows.map((row) =>
+          row.kind === 'boolean' ? (
             <ProfileRow
-              label="Data expedição RG"
-              value={formatAssociateDate(associate.rgExpeditionDate)}
+              key={row.label}
+              label={row.label}
+              value={<BooleanIcon value={row.value} />}
             />
-          </>
+          ) : (
+            <ProfileRow key={row.label} label={row.label} value={row.value} mono={row.mono} />
+          ),
         )}
-        <ProfileRow label="SIAPE" value={associate.siape} mono />
-        <ProfileRow label="Sexo" value={associate.sex ? sexLabels[associate.sex] : null} />
-        <ProfileRow
-          label="Estado civil"
-          value={associate.maritalStatus ? maritalStatusLabels[associate.maritalStatus] : null}
-        />
-        <ProfileRow label="Data de nascimento" value={formatAssociateDate(associate.birthDate)} />
-        <ProfileRow label="Naturalidade" value={associate.birthCity} />
-        {associate.birthCity && <ProfileRow label="UF Naturalidade" value={associate.birthState} />}
-        <ProfileRow label="E-mail principal" value={associate.primaryEmail} />
-        <ProfileRow label="E-mail alternativo" value={associate.secondaryEmail} />
-        <ProfileRow label="Telefone" value={associate.phone} mono />
-        <ProfileRow label="WhatsApp" value={associate.whatsapp} mono />
-      </dl>
-    </ProfileSectionCard>
-  );
-}
-
-function AddressSection({ profile, id }: ProfileSectionProps) {
-  const { associate, location } = profile;
-
-  return (
-    <ProfileSectionCard
-      id="endereco"
-      title="Endereço"
-      action={<ProfileEditLink href={`/app/associados/${id}/editar`} />}
-    >
-      <dl className="m-0">
-        <ProfileRow label="Endereço" value={associate.address} />
-        <ProfileRow label="Bairro" value={associate.neighborhood} />
-        <ProfileRow label="Cidade / País" value={location} />
-        <ProfileRow label="Estado" value={associate.addressState} />
-        <ProfileRow label="CEP" value={associate.zipCode} mono />
-      </dl>
-    </ProfileSectionCard>
-  );
-}
-
-function ProfessionalDataSection({ profile }: Omit<ProfileSectionProps, 'id'>) {
-  const { associate } = profile;
-
-  return (
-    <ProfileSectionCard id="dados-profissionais" title="Dados Profissionais">
-      <dl className="m-0">
-        <ProfileRow
-          label="Situação funcional"
-          value={getAssociateStatusLabel(associate.functionalStatus)}
-        />
-        <ProfileRow
-          label="Tipo de missão"
-          value={associate.missionType ? missionTypeLabels[associate.missionType] : null}
-        />
-        <ProfileRow
-          label="Origem de carreira"
-          value={associate.careerOrigin ? careerOriginLabels[associate.careerOrigin] : null}
-        />
-        <ProfileRow label="Classe / Padrão" value={associate.classPattern} />
-        <ProfileRow label="Lotação" value={associate.assignment} />
-        <ProfileRow
-          label="Início da lotação"
-          value={formatAssociateDate(associate.assignmentStartDate)}
-        />
-        <ProfileRow label="Data de admissão" value={formatAssociateDate(associate.admissionDate)} />
-        <ProfileRow label="Data de posse" value={formatAssociateDate(associate.inaugurationDate)} />
-        <ProfileRow
-          label="Data de aposentadoria"
-          value={formatAssociateDate(associate.retirementDate)}
-        />
-        <ProfileRow label="Data de licença" value={formatAssociateDate(associate.leaveDate)} />
-        <ProfileRow
-          label="Data de cancelamento do vínculo ASOF"
-          value={formatAssociateDate(associate.cancellationDate)}
-        />
-      </dl>
-    </ProfileSectionCard>
-  );
-}
-
-function AdministrativeSection({ profile, id }: ProfileSectionProps) {
-  const { associate } = profile;
-
-  return (
-    <ProfileSectionCard
-      id="administrativo"
-      title="Administrativo"
-      action={<ProfileEditLink href={`/app/associados/${id}/editar`} />}
-    >
-      <dl className="m-0">
-        <ProfileRow label="Categoria" value={associate.associationCategory} />
-        <ProfileRow label="Data de adesão à ASOF" value={formatAssociateDate(associate.joinedAt)} />
-        <ProfileRow
-          label="Vínculo ASOF"
-          value={getAssociateStatusLabel(associate.associationStatus)}
-        />
-        <ProfileRow
-          label="Contribuição"
-          value={getAssociateStatusLabel(associate.contributionStatus)}
-        />
-        <ProfileRow
-          label="Método de pagamento"
-          value={associate.paymentMethod ? paymentMethodLabels[associate.paymentMethod] : null}
-        />
-        <ProfileRow label="Membro CEOC" value={<BooleanIcon value={associate.ceocMember} />} />
-        <ProfileRow label="Membro CAOC" value={<BooleanIcon value={associate.caocMember} />} />
       </dl>
     </ProfileSectionCard>
   );
@@ -227,12 +93,13 @@ function AssociationSection({ profile }: Omit<ProfileSectionProps, 'id'>) {
 }
 
 export function AssociateProfileDetails(props: ProfileSectionProps) {
+  const sections = buildAssociateProfileSections(props.profile);
+
   return (
     <>
-      <IdentificationSection {...props} />
-      <AddressSection {...props} />
-      <ProfessionalDataSection profile={props.profile} />
-      <AdministrativeSection {...props} />
+      {sections.map((section) => (
+        <FieldSectionCard key={section.id} section={section} id={props.id} />
+      ))}
       <AssociationSection profile={props.profile} />
     </>
   );
