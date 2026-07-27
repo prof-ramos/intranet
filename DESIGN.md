@@ -427,6 +427,10 @@ Use a 4px base rhythm. Most operational clusters should use 12px, 16px, 20px, or
 
 Forms should keep labels close to fields, group related choices into bordered panels, and reserve the strongest button for the final submit action. Side panels and modals should appear as task surfaces, not marketing cards.
 
+### Print output
+
+`/app/app/layout.tsx` hides the navigation rail and top bar with `print:hidden` rather than giving printable routes (e.g. `/app/associados/[id]/imprimir`) a dedicated layout. This is a deliberate, repo-wide decision, not an accident: Next.js layouts nest strictly, so a route can only skip an ancestor layout by moving every sibling route into a route group — disproportionate blast radius for one print view in a production app. The trade-off is that `print:hidden` applies to any `/app/*` page printed directly, not only the ficha; that is accepted scope, not a bug.
+
 ## Elevation & Depth
 
 Depth is restrained. Hierarchy comes primarily from tonal layers, borders, and spacing. Shadows are soft and navy-tinted when used, but most cards should rely on a 1px blue-gray border rather than obvious elevation.
