@@ -8,7 +8,7 @@ import {
 } from '@/lib/juridico/status';
 import { updateConsultationStatusFromForm, addNote } from '@/app/app/juridico/actions';
 import { formatDate, daysSince } from '@/lib/utils/date';
-import { ArrowLeft, Clock, FileText, MessageSquare, Send, User } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Clock, FileText, MessageSquare, Send, User } from 'lucide-react';
 import { hairline, focusRingClass } from '@/lib/ui/tokens';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 import { requireEntityById } from '@/lib/routing/require-entity';
@@ -59,12 +59,13 @@ export default async function ConsultaDetalhePage({ params }: { params: Promise<
           <div className="rounded-[16px] bg-white p-5" style={{ border: `1px solid ${hairline}` }}>
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getLegalConsultationStatusBadgeClass(consultation.status)}`}
+                className={`inline-flex items-center rounded-[4px] px-2.5 py-1 text-xs font-semibold tracking-[-0.01em] ${getLegalConsultationStatusBadgeClass(consultation.status)}`}
               >
                 {getLegalConsultationStatusLabel(consultation.status)}
               </span>
               {stale !== null && stale > 7 && (
-                <span className="inline-flex items-center rounded-full bg-[#fef3c7] px-2.5 py-0.5 text-xs font-medium text-[#a16207]">
+                <span className="inline-flex items-center gap-1.5 rounded-[4px] border border-l-[3px] border-amber-200 border-l-amber-500 bg-white px-2.5 py-1 text-xs font-semibold text-amber-800 shadow-[0_1px_2px_rgba(4,9,32,0.06)]">
+                  <AlertTriangle size={12} aria-hidden="true" />
                   Sem atualização há {stale} dias
                 </span>
               )}
@@ -109,11 +110,20 @@ export default async function ConsultaDetalhePage({ params }: { params: Promise<
             {notes.length === 0 ? (
               <p className="text-sm text-[rgba(13,31,60,0.60)]">Nenhuma interação registrada.</p>
             ) : (
-              <ul className="flex flex-col gap-4">
-                {notes.map((note) => (
-                  <li key={note.id} className="grid grid-cols-[32px_1fr] gap-3">
+              <ul className="flex flex-col">
+                {notes.map((note, index) => (
+                  <li
+                    key={note.id}
+                    className="relative grid grid-cols-[32px_1fr] gap-3 pb-5 last:pb-0"
+                  >
+                    {index < notes.length - 1 && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute top-8 left-4 -ml-px h-[calc(100%-1.25rem)] w-px bg-[rgba(4,9,32,0.08)]"
+                      />
+                    )}
                     <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white ${
+                      className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white ${
                         note.isEscritorioResponse ? 'bg-[#eab308]' : 'bg-[#040920]'
                       }`}
                     >

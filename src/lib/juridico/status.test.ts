@@ -40,14 +40,16 @@ describe('juridico/status', () => {
 
   describe('getLegalConsultationStatusBadgeClass', () => {
     it('returns badge class for each status', () => {
-      expect(getLegalConsultationStatusBadgeClass('aberta')).toContain('bg-slate');
-      expect(getLegalConsultationStatusBadgeClass('aguardando_escritorio')).toContain('bg-amber');
-      expect(getLegalConsultationStatusBadgeClass('respondida')).toContain('bg-emerald');
-      expect(getLegalConsultationStatusBadgeClass('arquivada')).toContain('bg-slate');
+      expect(getLegalConsultationStatusBadgeClass('aberta')).toContain('border-l-slate-400');
+      expect(getLegalConsultationStatusBadgeClass('aguardando_escritorio')).toContain(
+        'border-l-amber-500',
+      );
+      expect(getLegalConsultationStatusBadgeClass('respondida')).toContain('border-l-emerald-500');
+      expect(getLegalConsultationStatusBadgeClass('arquivada')).toContain('border-l-slate-300');
     });
 
     it('returns default class for unknown status', () => {
-      expect(getLegalConsultationStatusBadgeClass('unknown')).toContain('bg-slate');
+      expect(getLegalConsultationStatusBadgeClass('unknown')).toContain('border-l-slate-400');
     });
   });
 
