@@ -175,6 +175,7 @@ describe('activities service', () => {
     const repository = await import('./repository');
     const audit = await import('@/lib/audit/service');
     vi.mocked(repository.findActivityById).mockResolvedValue({
+      revision: 41,
       id: 8,
       title: 'Fechar ofício',
       description: null,
@@ -393,6 +394,7 @@ describe('activities service', () => {
     const audit = await import('@/lib/audit/service');
     const domainEvents = await import('./domain-events');
     vi.mocked(repository.findActivityById).mockResolvedValue({
+      revision: 42,
       id: 8,
       title: 'Fechar ofício',
       description: null,
@@ -441,7 +443,7 @@ describe('activities service', () => {
         priority: 'alta',
         dueDate: null,
       }),
-      new Date('2026-05-01T00:00:00.000Z'),
+      42,
       txMock,
     );
     expect(events.emitActivityCompleted).toHaveBeenCalledWith(
@@ -472,6 +474,7 @@ describe('activities service', () => {
     const repository = await import('./repository');
     const audit = await import('@/lib/audit/service');
     vi.mocked(repository.findActivityById).mockResolvedValue({
+      revision: 43,
       id: 9,
       title: 'Revisar documento',
       description: null,
@@ -514,7 +517,7 @@ describe('activities service', () => {
     expect(repository.updateActivityById).toHaveBeenCalledWith(
       9,
       expect.objectContaining({ assigneeId: 12 }),
-      new Date('2026-05-01T00:00:00.000Z'),
+      43,
       txMock,
     );
     expect(audit.logAuditBestEffort).toHaveBeenCalledWith(
@@ -533,6 +536,7 @@ describe('activities service', () => {
     const repository = await import('./repository');
     const events = await import('@/lib/events');
     vi.mocked(repository.findActivityById).mockResolvedValue({
+      revision: 44,
       id: 8,
       title: 'Fechar ofício',
       description: null,
@@ -590,6 +594,7 @@ describe('activities service', () => {
     const outbox = await import('@/lib/integrations/outbox');
     const webhooks = await import('@/lib/integrations/webhooks/service');
     vi.mocked(repository.findActivityById).mockResolvedValue({
+      revision: 45,
       id: 10,
       title: 'Conferir ata',
       description: null,

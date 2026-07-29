@@ -218,7 +218,7 @@ export async function updateActivityService(input: UpdateActivityInput) {
         assigneeId: nextAssigneeId,
         completedAt: nextCompletedAt,
       },
-      current.updatedAt,
+      current.revision,
       tx,
     );
 

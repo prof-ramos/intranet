@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, getTableColumns, sql } from 'drizzle-orm';
 import { db, type DbExecutor } from '@/lib/db';
 import { activities, admins, associates, auditLogs, type Activity } from '@/lib/db/schema';
 import type { BoardActivity, Priority, Status } from './types';
@@ -161,23 +161,37 @@ export async function insertActivity(
   return row;
 }
 
-export async function findActivityById(id: number, executor: DbExecutor = db): Promise<Activity | null> {
-  const [row] = await executor.select().from(activities).where(eq(activities.id, id)).limit(1);
+export type VersionedActivity = Activity & { revision: number };
+
+export async function findActivityById(
+  id: number,
+  executor: DbExecutor = db,
+): Promise<VersionedActivity | null> {
+  const [row] = await executor
+    .select({
+      ...getTableColumns(activities),
+      // `xmin` changes on every PostgreSQL row version and is therefore a
+      // precise compare-and-swap token, unlike the millisecond Date exposed by
+      // the JS driver.
+      revision: sql<number>`xmin::text::bigint`,
+    })
+    .from(activities)
+    .where(eq(activities.id, id))
+    .limit(1);
   return row ?? null;
 }
 
 export async function updateActivityById(
   id: number,
   patch: Partial<Pick<Activity, 'status' | 'priority' | 'dueDate' | 'completedAt' | 'assigneeId'>>,
-  expectedUpdatedAt?: Date | null,
+  expectedRevision?: number,
   executor: DbExecutor = db,
 ): Promise<Activity | null> {
   let whereClause = eq(activities.id, id);
-  if (expectedUpdatedAt) {
-    const expectedIso = expectedUpdatedAt.toISOString();
+  if (expectedRevision !== undefined) {
     const combined = and(
       eq(activities.id, id),
-      sql`${activities.updatedAt} >= ${expectedIso}::timestamptz AND ${activities.updatedAt} < (${expectedIso}::timestamptz + interval '1 millisecond')`,
+      sql`xmin = ${expectedRevision}::text::xid`,
     );
     if (combined) {
       whereClause = combined;
