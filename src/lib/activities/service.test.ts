@@ -44,7 +44,7 @@ vi.mock('./repository', () => ({
 }));
 
 vi.mock('@/lib/audit/service', () => ({
-  logAuditAction: vi.fn().mockResolvedValue(undefined),
+  logAuditBestEffort: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/lib/events', () => ({
@@ -161,12 +161,13 @@ describe('activities service', () => {
       tags: [],
       createdBy: 1,
     });
-    expect(audit.logAuditAction).toHaveBeenCalledWith(
+    expect(audit.logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'activity_created', entityType: 'activity' }),
+      expect.anything(),
     );
     // Sem `executor: tx` → auditoria usa default `db` (fora da tx). Garante
     // que falha de INSERT de auditoria não deixe a tx em estado aborted.
-    const callArgs = vi.mocked(audit.logAuditAction).mock.calls[0][0];
+    const callArgs = vi.mocked(audit.logAuditBestEffort).mock.calls[0][0];
     expect(callArgs.executor).toBeUndefined();
   });
 
@@ -174,6 +175,7 @@ describe('activities service', () => {
     const repository = await import('./repository');
     const audit = await import('@/lib/audit/service');
     vi.mocked(repository.findActivityById).mockResolvedValue({
+      revision: 41,
       id: 8,
       title: 'Fechar ofício',
       description: null,
@@ -208,13 +210,14 @@ describe('activities service', () => {
 
     await updateActivityService({ id: 8, actorId: 7, status: 'concluido' });
 
-    expect(audit.logAuditAction).toHaveBeenCalledWith(
+    expect(audit.logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'activity_updated', entityType: 'activity' }),
+      expect.anything(),
     );
     // Sem `executor: tx` → auditoria usa default `db` (fora da tx).
-    const callArgs = vi.mocked(audit.logAuditAction).mock.calls.find(
-      (call) => call[0].action === 'activity_updated',
-    )?.[0];
+    const callArgs = vi
+      .mocked(audit.logAuditBestEffort)
+      .mock.calls.find((call) => call[0].action === 'activity_updated')?.[0];
     expect(callArgs).toBeDefined();
     expect(callArgs?.executor).toBeUndefined();
   });
@@ -391,6 +394,7 @@ describe('activities service', () => {
     const audit = await import('@/lib/audit/service');
     const domainEvents = await import('./domain-events');
     vi.mocked(repository.findActivityById).mockResolvedValue({
+      revision: 42,
       id: 8,
       title: 'Fechar ofício',
       description: null,
@@ -439,7 +443,7 @@ describe('activities service', () => {
         priority: 'alta',
         dueDate: null,
       }),
-      new Date('2026-05-01T00:00:00.000Z'),
+      42,
       txMock,
     );
     expect(events.emitActivityCompleted).toHaveBeenCalledWith(
@@ -448,11 +452,12 @@ describe('activities service', () => {
         createdBy: 7,
       }),
     );
-    expect(audit.logAuditAction).toHaveBeenCalledWith(
+    expect(audit.logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'activity_updated',
         entityType: 'activity',
       }),
+      expect.anything(),
     );
     // Helper canônico de eventos outbox é invocado dentro da tx com o snapshot
     // anterior e o estado atualizado.
@@ -469,6 +474,7 @@ describe('activities service', () => {
     const repository = await import('./repository');
     const audit = await import('@/lib/audit/service');
     vi.mocked(repository.findActivityById).mockResolvedValue({
+      revision: 43,
       id: 9,
       title: 'Revisar documento',
       description: null,
@@ -511,10 +517,10 @@ describe('activities service', () => {
     expect(repository.updateActivityById).toHaveBeenCalledWith(
       9,
       expect.objectContaining({ assigneeId: 12 }),
-      new Date('2026-05-01T00:00:00.000Z'),
+      43,
       txMock,
     );
-    expect(audit.logAuditAction).toHaveBeenCalledWith(
+    expect(audit.logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({
         metadata: { reassignmentMessage: 'Assumir retorno com a diretoria' },
         changes: expect.objectContaining({
@@ -522,6 +528,7 @@ describe('activities service', () => {
           new: expect.objectContaining({ assigneeId: 12 }),
         }),
       }),
+      expect.anything(),
     );
   });
 
@@ -529,6 +536,7 @@ describe('activities service', () => {
     const repository = await import('./repository');
     const events = await import('@/lib/events');
     vi.mocked(repository.findActivityById).mockResolvedValue({
+      revision: 44,
       id: 8,
       title: 'Fechar ofício',
       description: null,
@@ -586,6 +594,7 @@ describe('activities service', () => {
     const outbox = await import('@/lib/integrations/outbox');
     const webhooks = await import('@/lib/integrations/webhooks/service');
     vi.mocked(repository.findActivityById).mockResolvedValue({
+      revision: 45,
       id: 10,
       title: 'Conferir ata',
       description: null,

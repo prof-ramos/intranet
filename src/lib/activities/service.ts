@@ -2,7 +2,7 @@ import { isActivityPriority, isActivityStatus } from './status';
 import type { Priority, Status } from './types';
 import { deriveCompletedAt } from './transformations';
 import { findActivityById, insertActivity, updateActivityById } from './repository';
-import { logAuditAction } from '@/lib/audit/service';
+import { logAuditBestEffort } from '@/lib/audit/service';
 import { emitActivityAssigned, emitActivityCompleted } from '@/lib/events';
 import { emitActivityDomainEvents, toIsoDate } from './domain-events';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
@@ -90,7 +90,8 @@ export async function createActivityService(input: CreateActivityInput) {
   // (padrão majoritário do repo — cf. `oficios/service.ts` create/update).
   // Tradeoff aceito: se a tx rollbackar, o registro de auditoria já commitado
   // vira órfão (audit de uma ação que não persistiu) — mesmo tradeoff do
-  // precedent. `logAuditAction` engole erros internamente, então não propaga.
+  // precedent. `logAuditBestEffort` engole erros (inclusive adminId inválido),
+  // então não propaga.
   const { row: created, eventId } = await db.transaction(async (tx) => {
     const row = await insertActivity(
       {
@@ -131,26 +132,29 @@ export async function createActivityService(input: CreateActivityInput) {
   });
 
   // Auditoria best-effort APÓS commit (fora da tx, default `db`). Falha de
-  // INSERT não aborta a mutação já commitada — `logAuditAction` engole o erro
-  // internamente (logger.error apenas).
-  await logAuditAction({
-    adminId: input.createdBy,
-    action: 'activity_created',
-    entityType: 'activity',
-    entityId: created.id,
-    changes: {
-      old: {},
-      new: {
-        title: created.title,
-        status: created.status,
-        priority: created.priority,
-        assigneeId: created.assigneeId,
-        associateId: created.associateId,
-        dueDate: created.dueDate,
-        tags: created.tags ?? [],
+  // INSERT não aborta a mutação já commitada — `logAuditBestEffort` engole o
+  // erro internamente (logger.warn apenas).
+  await logAuditBestEffort(
+    {
+      adminId: input.createdBy,
+      action: 'activity_created',
+      entityType: 'activity',
+      entityId: created.id,
+      changes: {
+        old: {},
+        new: {
+          title: created.title,
+          status: created.status,
+          priority: created.priority,
+          assigneeId: created.assigneeId,
+          associateId: created.associateId,
+          dueDate: created.dueDate,
+          tags: created.tags ?? [],
+        },
       },
     },
-  });
+    logger,
+  );
 
   // Dispatch inline fire-and-forget APÓS commit (fora da tx). Detached da
   // request: NÃO aguarda a entrega HTTP (10s/subscription) — a mutação já
@@ -214,7 +218,7 @@ export async function updateActivityService(input: UpdateActivityInput) {
         assigneeId: nextAssigneeId,
         completedAt: nextCompletedAt,
       },
-      current.updatedAt,
+      current.revision,
       tx,
     );
 
@@ -238,33 +242,36 @@ export async function updateActivityService(input: UpdateActivityInput) {
   });
 
   // Auditoria best-effort APÓS commit (fora da tx, default `db`). Falha de
-  // INSERT não aborta a mutação já commitada — `logAuditAction` engole o erro
-  // internamente (logger.error apenas).
-  await logAuditAction({
-    adminId: input.actorId,
-    action: 'activity_updated',
-    entityType: 'activity',
-    entityId: input.id,
-    changes: {
-      old: {
-        status: current.status,
-        priority: current.priority,
-        dueDate: current.dueDate,
-        assigneeId: current.assigneeId,
-        completedAt: current.completedAt?.toISOString() ?? null,
+  // INSERT não aborta a mutação já commitada — `logAuditBestEffort` engole o
+  // erro internamente (logger.warn apenas).
+  await logAuditBestEffort(
+    {
+      adminId: input.actorId,
+      action: 'activity_updated',
+      entityType: 'activity',
+      entityId: input.id,
+      changes: {
+        old: {
+          status: current.status,
+          priority: current.priority,
+          dueDate: current.dueDate,
+          assigneeId: current.assigneeId,
+          completedAt: current.completedAt?.toISOString() ?? null,
+        },
+        new: {
+          status: updated.status,
+          priority: updated.priority,
+          dueDate: updated.dueDate,
+          assigneeId: updated.assigneeId,
+          completedAt: updated.completedAt?.toISOString() ?? null,
+        },
       },
-      new: {
-        status: updated.status,
-        priority: updated.priority,
-        dueDate: updated.dueDate,
-        assigneeId: updated.assigneeId,
-        completedAt: updated.completedAt?.toISOString() ?? null,
-      },
+      metadata: input.reassignmentMessage?.trim()
+        ? { reassignmentMessage: input.reassignmentMessage.trim() }
+        : undefined,
     },
-    metadata: input.reassignmentMessage?.trim()
-      ? { reassignmentMessage: input.reassignmentMessage.trim() }
-      : undefined,
-  });
+    logger,
+  );
 
   // Notificações in-app (sino) — best-effort, FORA da tx. Falha não rollbacka
   // a mutação nem derruba a requisição. A guarda de auto-atribuição interna de

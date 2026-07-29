@@ -5,7 +5,7 @@ import { GET } from './route';
 const requireRoleMock = vi.fn();
 const findOfficialLetterByIdMock = vi.fn();
 const generateOfficialLetterPdfMock = vi.fn();
-const logAuditActionMock = vi.fn();
+const logAuditBestEffortMock = vi.fn();
 
 vi.mock('@/lib/auth/authorization', () => ({
   requireRole: (...args: unknown[]) => requireRoleMock(...args),
@@ -20,7 +20,7 @@ vi.mock('@/lib/oficios/pdf', () => ({
 }));
 
 vi.mock('@/lib/audit/service', () => ({
-  logAuditAction: (...args: unknown[]) => logAuditActionMock(...args),
+  logAuditBestEffort: (...args: unknown[]) => logAuditBestEffortMock(...args),
 }));
 
 describe('oficio pdf download route', () => {
@@ -32,7 +32,7 @@ describe('oficio pdf download route', () => {
       number: 'Ofício nº 001/2026-ASOF',
     });
     generateOfficialLetterPdfMock.mockResolvedValue(new Uint8Array([1, 2, 3]));
-    logAuditActionMock.mockResolvedValue(undefined);
+    logAuditBestEffortMock.mockResolvedValue(undefined);
   });
 
   it('returns 400 for invalid ids', async () => {
@@ -61,13 +61,14 @@ describe('oficio pdf download route', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('Content-Type')).toBe('application/pdf');
     expect(response.headers.get('Content-Disposition')).toContain('Of_cio_n__001_2026-ASOF.pdf');
-    expect(logAuditActionMock).toHaveBeenCalledWith(
+    expect(logAuditBestEffortMock).toHaveBeenCalledWith(
       expect.objectContaining({
         adminId: 7,
         action: 'official_letter_downloaded',
         entityType: 'official_letter',
         entityId: 1,
       }),
+      expect.anything(),
     );
   });
 

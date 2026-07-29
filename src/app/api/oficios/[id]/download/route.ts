@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireRole } from '@/lib/auth/authorization';
 import { findOfficialLetterById } from '@/lib/oficios/repository';
 import { generateOfficialLetterPdf } from '@/lib/oficios/pdf';
-import { logAuditAction } from '@/lib/audit/service';
+import { logAuditBestEffort } from '@/lib/audit/service';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 import { parsePositiveIntParam } from '@/lib/routing/params';
@@ -39,17 +39,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return new NextResponse('Erro ao gerar PDF', { status: 500 });
   }
 
-  try {
-    await logAuditAction({
+  await logAuditBestEffort(
+    {
       adminId: user.userId,
       action: 'official_letter_downloaded',
       entityType: 'official_letter',
       entityId: oficio.id,
       metadata: { number: oficio.number },
-    });
-  } catch {
-    // Audit logging failure should not block the download
-  }
+    },
+    logger,
+  );
 
   return new NextResponse(new Uint8Array(pdfBytes).buffer, {
     headers: {

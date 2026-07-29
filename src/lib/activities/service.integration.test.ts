@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { activities, admins, auditLogs, domainEvents } from '@/lib/db/schema';
+import { findActivityById, updateActivityById } from './repository';
 import { createActivityService, updateActivityService } from './service';
 
 const runId = `${Date.now()}-${process.pid}`;
@@ -120,5 +121,35 @@ describe('activities service integration', () => {
 
     expect(persisted.status).toBe('a_fazer');
     expect(events).toEqual([]);
+  });
+
+  it('rejects a stale PostgreSQL row revision even when updates happen in the same millisecond', async () => {
+    const [fixture] = await db
+      .insert(activities)
+      .values({
+        title: `Atividade para concorrência ${runId}`,
+        status: 'a_fazer',
+        priority: 'normal',
+        createdBy: requireAdminId(),
+      })
+      .returning();
+    activityIds.push(fixture.id);
+
+    const snapshot = await findActivityById(fixture.id);
+    expect(snapshot).not.toBeNull();
+
+    const first = await updateActivityById(
+      fixture.id,
+      { priority: 'alta' },
+      snapshot?.revision,
+    );
+    const stale = await updateActivityById(
+      fixture.id,
+      { priority: 'urgente' },
+      snapshot?.revision,
+    );
+
+    expect(first?.priority).toBe('alta');
+    expect(stale).toBeNull();
   });
 });

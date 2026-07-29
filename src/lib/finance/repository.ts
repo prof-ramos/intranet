@@ -80,8 +80,13 @@ export interface MonthlyPaymentsAggregates {
   paymentRecords: number;
 }
 
-export async function findMonthlyPayment(associateId: number, year: number, month: number) {
-  const rows = await db
+export async function findMonthlyPayment(
+  associateId: number,
+  year: number,
+  month: number,
+  executor: DbExecutor = db,
+) {
+  const rows = await executor
     .select()
     .from(monthlyPayments)
     .where(
@@ -95,8 +100,36 @@ export async function findMonthlyPayment(associateId: number, year: number, mont
   return rows[0] ?? null;
 }
 
-export async function upsertMonthlyPayment(payment: NewMonthlyPayment, executor: DbExecutor = db) {
-  return executor
+export async function findMonthlyPaymentById(paymentId: number, executor: DbExecutor = db) {
+  const rows = await executor
+    .select()
+    .from(monthlyPayments)
+    .where(eq(monthlyPayments.id, paymentId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/**
+ * Upserts a monthly payment, clearing cancellation fields on every write —
+ * cancellation is a separate flow (see `cancelMonthlyPayment`) that this path
+ * must not leave in an inconsistent partial state.
+ *
+ * When `expectedUpdatedAt` is provided, the update only applies if the row's
+ * `updated_at` still matches (F-007 optimistic concurrency check). A stale
+ * caller gets back `undefined` instead of silently overwriting newer state.
+ *
+ * The comparison truncates `updated_at` to millisecond precision because the
+ * column is `timestamptz` (microsecond precision in Postgres) while
+ * `expectedUpdatedAt` round-trips through a JS `Date`/`toISOString()`, which
+ * only carries milliseconds — an untruncated comparison would never match
+ * and every conditional update would be rejected as a false conflict.
+ */
+export async function upsertMonthlyPayment(
+  payment: NewMonthlyPayment,
+  expectedUpdatedAt?: string | null,
+  executor: DbExecutor = db,
+) {
+  const [updated] = await executor
     .insert(monthlyPayments)
     .values(payment)
     .onConflictDoUpdate({
@@ -105,14 +138,47 @@ export async function upsertMonthlyPayment(payment: NewMonthlyPayment, executor:
         status: payment.status,
         paymentMethod: payment.paymentMethod,
         paidAt: payment.paidAt,
-        cancelledAt: payment.cancelledAt ?? null,
-        cancellationReason: payment.cancellationReason ?? null,
-        cancelledBy: payment.cancelledBy ?? null,
+        cancelledAt: null,
+        cancellationReason: null,
+        cancelledBy: null,
         updatedBy: payment.updatedBy,
         updatedAt: sql`now()`,
       },
+      setWhere:
+        expectedUpdatedAt != null
+          ? sql`date_trunc('milliseconds', ${monthlyPayments.updatedAt}) = ${new Date(expectedUpdatedAt).toISOString()}`
+          : undefined,
     })
     .returning();
+  return updated;
+}
+
+/**
+ * Atomic conditional cancellation — only succeeds if the row is still
+ * non-cancelled, preventing a double-cancel race where two concurrent
+ * requests both read status != 'cancelado'.
+ */
+export async function cancelMonthlyPaymentRow(
+  paymentId: number,
+  adminId: number,
+  cancellationReason: string,
+  cancelledAt: Date,
+  executor: DbExecutor = db,
+) {
+  const [updated] = await executor
+    .update(monthlyPayments)
+    .set({
+      status: 'cancelado',
+      paidAt: null,
+      cancelledAt,
+      cancellationReason,
+      cancelledBy: adminId,
+      updatedBy: adminId,
+      updatedAt: sql`now()`,
+    })
+    .where(and(eq(monthlyPayments.id, paymentId), sql`${monthlyPayments.status} != 'cancelado'`))
+    .returning();
+  return updated;
 }
 
 export async function insertMonthlyPaymentsIfMissing(
@@ -121,6 +187,38 @@ export async function insertMonthlyPaymentsIfMissing(
 ) {
   if (payments.length === 0) return [];
   return executor.insert(monthlyPayments).values(payments).onConflictDoNothing().returning();
+}
+
+export interface AssociateMissingPayment {
+  associateId: number;
+  defaultPaymentMethod: NewMonthlyPayment['paymentMethod'];
+}
+
+export async function findAssociatesMissingPaymentForMonth(
+  year: number,
+  month: number,
+  executor: DbExecutor = db,
+): Promise<AssociateMissingPayment[]> {
+  const rows = await executor
+    .select({
+      associateId: associates.id,
+      defaultPaymentMethod: associates.paymentMethod,
+      paymentId: monthlyPayments.id,
+    })
+    .from(associates)
+    .leftJoin(
+      monthlyPayments,
+      and(
+        eq(associates.id, monthlyPayments.associateId),
+        eq(monthlyPayments.year, year),
+        eq(monthlyPayments.month, month),
+      ),
+    )
+    .where(eq(associates.associationStatus, 'associado'));
+
+  return rows
+    .filter((r) => !r.paymentId)
+    .map((r) => ({ associateId: r.associateId, defaultPaymentMethod: r.defaultPaymentMethod }));
 }
 
 export interface OverduePaymentTransition {

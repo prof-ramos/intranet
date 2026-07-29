@@ -4,12 +4,10 @@ import { revalidatePath } from 'next/cache';
 import { defineFormStateAction } from '@/lib/server-actions/define-form-action';
 import {
   resetPassword,
+  toggleAdminActive,
   AdminNotFoundError,
   InactiveAdminError,
 } from '@/lib/auth/service';
-import { db } from '@/lib/db';
-import { admins, auditLogs } from '@/lib/db/schema';
-import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 const adminIdSchema = z.object({ userId: z.string().default('') });
@@ -86,42 +84,21 @@ export const toggleUserActive = defineFormStateAction({
       return { success: false, message: 'Não é possível desativar sua própria conta.' };
     }
 
-    const [target] = await db
-      .select({
-        id: admins.id,
-        name: admins.name,
-        email: admins.email,
-        role: admins.role,
-        isActive: admins.isActive,
-      })
-      .from(admins)
-      .where(eq(admins.id, targetId))
-      .limit(1);
+    try {
+      const target = await toggleAdminActive(targetId, actor.userId);
 
-    if (!target) {
-      return { success: false, message: 'Usuário não encontrado.' };
+      revalidatePath('/app/config/usuarios');
+
+      return {
+        success: true,
+        message: `Usuário ${target.name} foi ${target.isActive ? 'ativado' : 'desativado'} com sucesso.`,
+      };
+    } catch (error) {
+      if (error instanceof AdminNotFoundError) {
+        return { success: false, message: 'Usuário não encontrado.' };
+      }
+      throw error;
     }
-
-    const newState = !target.isActive;
-
-    await db
-      .update(admins)
-      .set({ isActive: newState, updatedAt: sql`now()` })
-      .where(eq(admins.id, targetId));
-
-    await db.insert(auditLogs).values({
-      action: newState ? 'account_activated' : 'account_deactivated',
-      entityType: 'admin',
-      entityId: targetId,
-      performedBy: actor.userId,
-    });
-
-    revalidatePath('/app/config/usuarios');
-
-    return {
-      success: true,
-      message: `Usuário ${target.name} foi ${newState ? 'ativado' : 'desativado'} com sucesso.`,
-    };
   },
   onError: (error): ResetUserPasswordResult => ({
     success: false,

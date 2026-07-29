@@ -9,7 +9,7 @@ const {
   mockEmitDomainEvent,
   mockFindOficioForUpdate,
   mockInsert,
-  mockLogAuditAction,
+  mockLogAuditBestEffort,
   mockLogger,
   mockReturning,
   mockTransaction,
@@ -40,7 +40,7 @@ const {
     mockEmitDomainEvent: vi.fn(),
     mockFindOficioForUpdate: vi.fn(),
     mockInsert,
-    mockLogAuditAction: vi.fn(),
+    mockLogAuditBestEffort: vi.fn(),
     mockLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
     mockReturning,
     mockTransaction,
@@ -58,7 +58,7 @@ vi.mock('@/lib/oficios/repository', () => ({
 
 vi.mock('./repository', () => ({ updateAssinafyStatus: mockUpdateAssinafyStatus }));
 
-vi.mock('@/lib/audit/service', () => ({ logAuditAction: mockLogAuditAction }));
+vi.mock('@/lib/audit/service', () => ({ logAuditBestEffort: mockLogAuditBestEffort }));
 vi.mock('@/lib/integrations/outbox', () => ({ emitDomainEvent: mockEmitDomainEvent }));
 vi.mock('@/lib/notifications/repository', () => ({
   createNotificationsBatch: mockCreateNotificationsBatch,
@@ -97,7 +97,7 @@ describe('assinafy/service', () => {
     mockUpdateAssinafyStatus.mockResolvedValue({ id: 1 });
     mockEmitDomainEvent.mockResolvedValue({ id: 10 });
     mockCreateNotificationsBatch.mockResolvedValue([]);
-    mockLogAuditAction.mockResolvedValue(undefined);
+    mockLogAuditBestEffort.mockResolvedValue(undefined);
   });
 
   it('claims the nonce first and commits all effects with the same transaction executor', async () => {
@@ -139,7 +139,7 @@ describe('assinafy/service', () => {
     expect(mockUpdateAssinafyStatus).not.toHaveBeenCalled();
     expect(mockEmitDomainEvent).not.toHaveBeenCalled();
     expect(mockCreateNotificationsBatch).not.toHaveBeenCalled();
-    expect(mockLogAuditAction).not.toHaveBeenCalled();
+    expect(mockLogAuditBestEffort).not.toHaveBeenCalled();
   });
 
   it.each([undefined, null, '', '1', 0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
@@ -184,7 +184,7 @@ describe('assinafy/service', () => {
     expect(mockUpdateAssinafyStatus).not.toHaveBeenCalled();
     expect(mockEmitDomainEvent).not.toHaveBeenCalled();
     expect(mockCreateNotificationsBatch).not.toHaveBeenCalled();
-    expect(mockLogAuditAction).not.toHaveBeenCalled();
+    expect(mockLogAuditBestEffort).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -206,7 +206,7 @@ describe('assinafy/service', () => {
     expect(mockUpdateAssinafyStatus).not.toHaveBeenCalled();
     expect(mockEmitDomainEvent).not.toHaveBeenCalled();
     expect(mockCreateNotificationsBatch).not.toHaveBeenCalled();
-    expect(mockLogAuditAction).not.toHaveBeenCalled();
+    expect(mockLogAuditBestEffort).not.toHaveBeenCalled();
   });
 
   it('allows a direct partially signed -> certificated provider jump', async () => {
@@ -244,7 +244,7 @@ describe('assinafy/service', () => {
 
     await expect(handleWebhookEvent(BASE_EVENT)).resolves.toEqual({ status: 'failed' });
 
-    expect(mockLogAuditAction).not.toHaveBeenCalled();
+    expect(mockLogAuditBestEffort).not.toHaveBeenCalled();
     expect(mockLogger.error).toHaveBeenCalledWith('Failed to process Assinafy webhook', {
       event: BASE_EVENT.event,
     });
@@ -256,25 +256,18 @@ describe('assinafy/service', () => {
     const result = await handleWebhookEvent(BASE_EVENT);
 
     expect(result.status).toBe('processed');
-    expect(mockLogAuditAction).toHaveBeenCalledWith(
+    expect(mockLogAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({
         adminId: null,
         action: 'official_letter_status_changed',
         entityType: 'official_letter',
         entityId: 1,
       }),
+      expect.anything(),
     );
-    expect(mockLogAuditAction.mock.calls[0][0]).not.toHaveProperty('executor');
+    expect(mockLogAuditBestEffort.mock.calls[0][0]).not.toHaveProperty('executor');
     expect(mockTransaction.mock.invocationCallOrder[0]).toBeLessThan(
-      mockLogAuditAction.mock.invocationCallOrder[0],
-    );
-  });
-
-  it('keeps the processed result when best-effort audit rejects', async () => {
-    mockLogAuditAction.mockRejectedValueOnce(new Error('audit unavailable'));
-
-    await expect(handleWebhookEvent(BASE_EVENT)).resolves.toEqual(
-      expect.objectContaining({ status: 'processed', entityId: 1 }),
+      mockLogAuditBestEffort.mock.invocationCallOrder[0],
     );
   });
 

@@ -8,7 +8,7 @@ import {
   sendForSignature,
 } from './service';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
-import { logAuditAction } from '@/lib/audit/service';
+import { logAuditBestEffort } from '@/lib/audit/service';
 import type { NewOfficialLetter, OfficialLetter } from '@/lib/db/schema/oficios';
 
 const transactionMock = vi.hoisted(() => ({ tx: { __tx: true } }));
@@ -68,7 +68,7 @@ vi.mock('./repository', () => ({
 }));
 
 vi.mock('@/lib/audit/service', () => ({
-  logAuditAction: vi.fn(),
+  logAuditBestEffort: vi.fn(),
 }));
 
 vi.mock('@/lib/integrations/outbox', () => ({
@@ -138,7 +138,7 @@ describe('oficios service', () => {
     serviceMocks.dbTransaction.mockImplementation(
       async (callback: (tx: unknown) => Promise<unknown>) => callback(transactionMock.tx),
     );
-    vi.mocked(logAuditAction).mockResolvedValue(undefined);
+    vi.mocked(logAuditBestEffort).mockResolvedValue(undefined);
 
     process.env.ASSINAFY_API_KEY = 'test-api-key';
     process.env.ASSINAFY_ACCOUNT_ID = 'test-account-id';
@@ -305,18 +305,19 @@ describe('oficios service', () => {
     );
 
     await vi.waitFor(() => expect(callbackFinished).toBe(true));
-    expect(logAuditAction).not.toHaveBeenCalled();
+    expect(logAuditBestEffort).not.toHaveBeenCalled();
     releaseCommit();
     await expect(savePromise).resolves.toEqual(expect.objectContaining({ id: 12 }));
-    expect(logAuditAction).toHaveBeenCalledWith(
+    expect(logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({
         adminId: 7,
         action: 'official_letter_created',
         entityType: 'official_letter',
         entityId: 12,
       }),
+      expect.anything(),
     );
-    expect(vi.mocked(logAuditAction).mock.calls[0]![0].executor).toBeUndefined();
+    expect(vi.mocked(logAuditBestEffort).mock.calls[0]![0].executor).toBeUndefined();
   });
 
   it('does not audit a create when the transactional outbox write fails', async () => {
@@ -342,7 +343,7 @@ describe('oficios service', () => {
         1,
       ),
     ).rejects.toThrow('outbox failed');
-    expect(logAuditAction).not.toHaveBeenCalled();
+    expect(logAuditBestEffort).not.toHaveBeenCalled();
   });
 
   it('emits a published event when an existing draft transitions to gerado', async () => {
@@ -372,13 +373,14 @@ describe('oficios service', () => {
       }),
       transactionMock.tx,
     );
-    expect(logAuditAction).toHaveBeenCalledWith(
+    expect(logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'official_letter_updated',
         entityId: 12,
       }),
+      expect.anything(),
     );
-    expect(vi.mocked(logAuditAction).mock.calls[0]![0].executor).toBeUndefined();
+    expect(vi.mocked(logAuditBestEffort).mock.calls[0]![0].executor).toBeUndefined();
   });
 
   it('does not audit an update when the repository fails', async () => {
@@ -389,7 +391,7 @@ describe('oficios service', () => {
     await expect(updateOfficialLetter(12, { subject: 'Novo assunto' }, 1)).rejects.toThrow(
       'update failed',
     );
-    expect(logAuditAction).not.toHaveBeenCalled();
+    expect(logAuditBestEffort).not.toHaveBeenCalled();
   });
 
   it('cancels an official letter and logs audit action', async () => {
@@ -405,38 +407,14 @@ describe('oficios service', () => {
     const result = await cancelOfficialLetter(12, 1);
 
     expect(result.status).toBe('cancelado');
-    expect(audit.logAuditAction).toHaveBeenCalledWith(
+    expect(audit.logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'official_letter_cancelled',
         entityId: 12,
       }),
+      expect.anything(),
     );
-    expect(vi.mocked(logAuditAction).mock.calls[0]![0].executor).toBeUndefined();
-  });
-
-  it('preserves a committed cancellation and warns safely when audit rejects', async () => {
-    const repository = await import('./repository');
-    vi.mocked(repository.findOfficialLetterById).mockResolvedValue(BASE_OFFICIAL_LETTER);
-    vi.mocked(repository.cancelOfficialLetter).mockResolvedValue({
-      ...BASE_OFFICIAL_LETTER,
-      status: 'cancelado',
-    });
-    vi.mocked(logAuditAction).mockRejectedValueOnce(new Error('recipient secret leaked'));
-
-    await expect(cancelOfficialLetter(12, 1)).resolves.toEqual(
-      expect.objectContaining({ status: 'cancelado' }),
-    );
-    expect(serviceMocks.loggerWarn).toHaveBeenCalledWith(
-      'Audit log failed after committed official letter mutation',
-      {
-        action: 'official_letter_cancelled',
-        entityType: 'official_letter',
-        entityId: 12,
-      },
-    );
-    expect(JSON.stringify(serviceMocks.loggerWarn.mock.calls)).not.toContain(
-      'recipient secret leaked',
-    );
+    expect(vi.mocked(logAuditBestEffort).mock.calls[0]![0].executor).toBeUndefined();
   });
 
   it('throws when cancelling a non-existent letter', async () => {
@@ -456,7 +434,7 @@ describe('oficios service', () => {
     await expect(cancelOfficialLetter(12, 1)).rejects.toThrow(
       'Ofício não pode ser cancelado enquanto o envio está em andamento.',
     );
-    expect(logAuditAction).not.toHaveBeenCalled();
+    expect(logAuditBestEffort).not.toHaveBeenCalled();
   });
 
   describe('markAssinafySubmissionInterrupted', () => {
@@ -476,12 +454,13 @@ describe('oficios service', () => {
         transactionMock.tx,
       );
       expect(result.assinafyStatus).toBe('failed');
-      expect(logAuditAction).toHaveBeenCalledWith(
+      expect(logAuditBestEffort).toHaveBeenCalledWith(
         expect.objectContaining({
           adminId: 7,
           action: 'official_letter_assinafy_submission_interrupted',
           entityId: 12,
         }),
+        expect.anything(),
       );
     });
 
@@ -494,7 +473,7 @@ describe('oficios service', () => {
       assinafyMocks.mockFailStaleSubmission.mockResolvedValue(null);
 
       await expect(markAssinafySubmissionInterrupted(12, 7)).rejects.toThrow('Aguarde 10 minutos');
-      expect(logAuditAction).not.toHaveBeenCalled();
+      expect(logAuditBestEffort).not.toHaveBeenCalled();
     });
   });
 
@@ -579,15 +558,16 @@ describe('oficios service', () => {
 
       await sendForSignature(OFICIO_ID, SIGNER_EMAIL, USER_ID);
 
-      expect(audit.logAuditAction).toHaveBeenCalledWith(
+      expect(audit.logAuditBestEffort).toHaveBeenCalledWith(
         expect.objectContaining({
           adminId: USER_ID,
           action: 'official_letter_sent_for_signature',
           entityType: 'official_letter',
           entityId: OFICIO_ID,
         }),
+        expect.anything(),
       );
-      const auditCall = vi.mocked(audit.logAuditAction).mock.calls.at(-1)![0];
+      const auditCall = vi.mocked(audit.logAuditBestEffort).mock.calls.at(-1)![0];
       expect(auditCall.executor).toBeUndefined();
     });
 

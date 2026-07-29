@@ -34,6 +34,27 @@ export function normalizeConsultationsPagination(page: number, pageSize: number)
   return normalizePagination(page, pageSize);
 }
 
+/**
+ * Retorna o maior sequencial já usado em números internos `JUR-{year}-{seq}`
+ * para o ano informado, ou 0 se nenhum existir. Usado para gerar o próximo
+ * número interno sequencial.
+ */
+export async function findMaxInternalNumberSequence(
+  year: number,
+  executor: DbExecutor = db,
+): Promise<number> {
+  const likePattern = `JUR-${year}-%`;
+  const regexPattern = `JUR-${year}-([0-9]+)`;
+  const [result] = await executor
+    .select({
+      max: sql<string>`max(substring(${legalConsultations.internalNumber} from ${regexPattern})::integer)`,
+    })
+    .from(legalConsultations)
+    .where(sql`${legalConsultations.internalNumber} like ${likePattern}`);
+
+  return Number(result?.max) || 0;
+}
+
 export async function countConsultationsByStatus(
   status: (typeof legalConsultationStatus.enumValues)[number],
 ): Promise<number> {

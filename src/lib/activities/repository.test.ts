@@ -178,8 +178,8 @@ describe('activities repository', () => {
 
   describe('findActivityById', () => {
     it('returns a single activity or null', async () => {
-      dbMock.setSelectResult([MOCK_ACTIVITY]);
-      await expect(findActivityById(1)).resolves.toEqual(MOCK_ACTIVITY);
+      dbMock.setSelectResult([{ ...MOCK_ACTIVITY, revision: 42 }]);
+      await expect(findActivityById(1)).resolves.toEqual({ ...MOCK_ACTIVITY, revision: 42 });
 
       dbMock.setSelectResult([]);
       await expect(findActivityById(2)).resolves.toBeNull();
@@ -190,11 +190,12 @@ describe('activities repository', () => {
     it('updates the activity and returns the updated row', async () => {
       dbMock.setInsertResult([{ ...MOCK_ACTIVITY, status: 'concluido' }]);
 
-      const result = await updateActivityById(1, { status: 'concluido' as any });
+      const result = await updateActivityById(1, { status: 'concluido' as any }, 42);
 
       expect(result).toEqual({ ...MOCK_ACTIVITY, status: 'concluido' });
       expect(dbMock.update).toHaveBeenCalled();
       expect(dbMock._updateChain.set).toHaveBeenCalled();
+      expect(dbMock._updateChain.where).toHaveBeenCalledWith(expect.anything());
       expect(dbMock._updateChain.returning).toHaveBeenCalled();
     });
   });

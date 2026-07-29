@@ -2,30 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetUserPassword, toggleUserActive } from './actions';
 import { temporaryPasswordEmailHtml } from '@/lib/email/templates';
 
-const {
-  requireRoleMock,
-  resetPasswordMock,
-  revalidatePathMock,
-  selectQueue,
-  insertQueue,
-  mockLimit,
-  mockInsertValues,
-  mockUpdateWhere,
-  loggerErrorMock,
-} = vi.hoisted(() => ({
-  requireRoleMock: vi.fn(),
-  resetPasswordMock: vi.fn(),
-  revalidatePathMock: vi.fn(),
-  loggerErrorMock: vi.fn(),
-  selectQueue: [] as unknown[][],
-  insertQueue: [] as unknown[],
-  mockLimit: vi.fn(async () => selectQueue.shift() ?? []),
-  mockInsertValues: vi.fn(() => insertQueue.shift()),
-  mockUpdateWhere: vi.fn().mockResolvedValue(undefined),
-}));
+const { requireRoleMock, resetPasswordMock, toggleAdminActiveMock, revalidatePathMock } =
+  vi.hoisted(() => ({
+    requireRoleMock: vi.fn(),
+    resetPasswordMock: vi.fn(),
+    toggleAdminActiveMock: vi.fn(),
+    revalidatePathMock: vi.fn(),
+  }));
 
 vi.mock('@/lib/auth/service', () => ({
   resetPassword: (...args: unknown[]) => resetPasswordMock(...args),
+  toggleAdminActive: (...args: unknown[]) => toggleAdminActiveMock(...args),
   AdminNotFoundError: class AdminNotFoundError extends Error {
     constructor() {
       super('Admin não encontrado.');
@@ -44,65 +31,16 @@ vi.mock('@/lib/auth/authorization', () => ({
   requireRole: (...args: unknown[]) => requireRoleMock(...args),
 }));
 
-vi.mock('@/lib/logger', () => ({
-  createLogger: () => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: loggerErrorMock,
-    debug: vi.fn(),
-  }),
-}));
-
-vi.mock('@/lib/error-log', () => ({
-  toSafeErrorLog: (err: unknown) => {
-    if (!(err instanceof Error)) {
-      return { kind: 'non_error_thrown' };
-    }
-
-    const errorWithMetadata = err as Error & { code?: unknown; status?: unknown };
-    return {
-      kind: 'error',
-      name: err.name,
-      code: typeof errorWithMetadata.code === 'string' ? errorWithMetadata.code : undefined,
-      status: typeof errorWithMetadata.status === 'number' ? errorWithMetadata.status : undefined,
-    };
-  },
-}));
-
 vi.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => revalidatePathMock(...args),
-}));
-
-vi.mock('@/lib/db', () => ({
-  db: {
-    select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        where: vi.fn(() => ({
-          limit: mockLimit,
-        })),
-      })),
-    })),
-    update: vi.fn(() => ({
-      set: vi.fn(() => ({
-        where: mockUpdateWhere,
-      })),
-    })),
-    insert: vi.fn(() => ({
-      values: mockInsertValues,
-    })),
-  },
 }));
 
 describe('config usuarios actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    selectQueue.length = 0;
-    insertQueue.length = 0;
     requireRoleMock.mockResolvedValue({ userId: 7 });
     resetPasswordMock.mockResolvedValue({ tempPassword: 'Temp123!', emailDelivered: false });
-    mockLimit.mockImplementation(async () => selectQueue.shift() ?? []);
-    mockInsertValues.mockImplementation(() => insertQueue.shift());
-    mockUpdateWhere.mockResolvedValue(undefined);
+    toggleAdminActiveMock.mockResolvedValue({ name: 'Carlos', isActive: true });
   });
 
   it('generates a local temporary password, audits, and revalidates', async () => {
@@ -164,7 +102,7 @@ describe('config usuarios actions', () => {
     });
 
     expect(resetPasswordMock).not.toHaveBeenCalled();
-    expect(mockUpdateWhere).not.toHaveBeenCalled();
+    expect(toggleAdminActiveMock).not.toHaveBeenCalled();
   });
 
   it('rejects password reset for inactive users', async () => {
@@ -192,20 +130,11 @@ describe('config usuarios actions', () => {
       success: false,
       message: 'Não é possível desativar sua própria conta.',
     });
-    expect(mockUpdateWhere).not.toHaveBeenCalled();
+    expect(toggleAdminActiveMock).not.toHaveBeenCalled();
   });
 
   it('toggles a target user active flag, audits, and revalidates', async () => {
-    selectQueue.push([
-      {
-        id: 12,
-        name: 'Carlos',
-        email: 'carlos@asof.local',
-        role: 'diretoria',
-        isActive: false,
-      },
-    ]);
-    insertQueue.push(undefined);
+    toggleAdminActiveMock.mockResolvedValue({ name: 'Carlos', isActive: true });
 
     const formData = new FormData();
     formData.set('userId', '12');
@@ -216,16 +145,23 @@ describe('config usuarios actions', () => {
       success: true,
       message: 'Usuário Carlos foi ativado com sucesso.',
     });
-    expect(mockUpdateWhere).toHaveBeenCalledTimes(1);
-    expect(mockInsertValues).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: 'account_activated',
-        entityType: 'admin',
-        entityId: 12,
-        performedBy: 7,
-      }),
-    );
+    expect(toggleAdminActiveMock).toHaveBeenCalledWith(12, 7);
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/usuarios');
+  });
+
+  it('reports user not found when toggling a nonexistent user', async () => {
+    const { AdminNotFoundError } = await import('@/lib/auth/service');
+    toggleAdminActiveMock.mockRejectedValueOnce(new AdminNotFoundError());
+
+    const formData = new FormData();
+    formData.set('userId', '999');
+
+    const result = await toggleUserActive(null, formData);
+
+    expect(result).toEqual({
+      success: false,
+      message: 'Usuário não encontrado.',
+    });
   });
 
   it('escapes temporary password in email HTML', () => {
