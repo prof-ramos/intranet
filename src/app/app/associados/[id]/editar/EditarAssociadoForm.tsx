@@ -11,35 +11,12 @@ import {
 import { focusRingClass } from '@/lib/ui/tokens';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
+import type { EditAssociateDTO } from '@/lib/associates/service';
 
 const logger = createLogger('associados:edit-form');
 
-type NullableAssociateFields = {
-  [Key in keyof Omit<
-    AssociateFormValues,
-    | 'fullName'
-    | 'associationStatus'
-    | 'contributionStatus'
-    | 'paymentMethod'
-    | 'ceocMember'
-    | 'caocMember'
-    | 'internalNotes'
-  >]: string | null;
-};
-
-interface Associate extends NullableAssociateFields {
-  id: number;
-  fullName: string;
-  associationStatus: string;
-  contributionStatus: string;
-  paymentMethod: string;
-  ceocMember: boolean | null;
-  caocMember: boolean | null;
-  internalNotes?: string | null;
-}
-
 interface Props {
-  associate: Associate;
+  associate: EditAssociateDTO;
   canEditInternalNotes: boolean;
 }
 
@@ -47,7 +24,7 @@ function toDateInputValue(value: string | null | undefined): string {
   return value ? value.slice(0, 10) : '';
 }
 
-function toFormValues(associate: Associate): AssociateFormValues {
+function toFormValues(associate: EditAssociateDTO): AssociateFormValues {
   return {
     fullName: associate.fullName,
     cpf: associate.cpf ?? '',

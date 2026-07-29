@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ASSOCIATE_FIELDS, getExportableFields } from './field-registry';
+import { ASSOCIATE_FIELDS, getAssociateEnumOptions, getExportableFields } from './field-registry';
 import { updateAssociateSchema } from '@/lib/validation/schemas';
 
 const schemaKeys = Object.keys(updateAssociateSchema.shape).filter((key) => key !== 'id');
@@ -38,5 +38,23 @@ describe('getExportableFields', () => {
 
   it('includes rgExpeditionDate', () => {
     expect(getExportableFields().some((field) => field.key === 'rgExpeditionDate')).toBe(true);
+  });
+});
+
+describe('getAssociateEnumOptions', () => {
+  it('exposes the canonical values and labels for form enum fields', () => {
+    expect(getAssociateEnumOptions('functionalStatus')).toEqual([
+      { value: 'ativo', label: 'Ativo' },
+      { value: 'aposentado', label: 'Aposentado' },
+      { value: 'cedido', label: 'Cedido' },
+      { value: 'em_licenca', label: 'Em licença' },
+    ]);
+    expect(getAssociateEnumOptions('paymentMethod')).toEqual([
+      { value: 'folha', label: 'Folha de pagamento' },
+      { value: 'boleto', label: 'Boleto' },
+      { value: 'pix', label: 'Pix' },
+      { value: 'transferencia', label: 'Transferência' },
+      { value: 'outros', label: 'Outros' },
+    ]);
   });
 });

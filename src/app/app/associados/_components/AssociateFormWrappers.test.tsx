@@ -40,6 +40,8 @@ type EditAssociate = ComponentProps<typeof EditarAssociadoForm>['associate'];
 const editAssociate: EditAssociate = {
   ...createAssociateFormValues,
   id: 42,
+  canEditInternalNotes: true,
+  numberOfDependents: 0,
 };
 
 function renderedForm(): HTMLFormElement {
@@ -50,6 +52,12 @@ function renderedForm(): HTMLFormElement {
 
 function entriesWithout(data: FormData, omittedNames: string[]) {
   return [...data.entries()].filter(([name]) => !omittedNames.includes(name));
+}
+
+function optionEntries(name: string) {
+  const select = renderedForm().elements.namedItem(name);
+  if (!(select instanceof HTMLSelectElement)) throw new Error(`Select ${name} not rendered`);
+  return [...select.options].map((option) => [option.value, option.text]);
 }
 
 afterEach(cleanup);
@@ -105,5 +113,37 @@ describe('associate form wrappers', () => {
       entriesWithout(editData, ['id']),
     );
     expect(editData.get('id')).toBe('42');
+  });
+
+  it('preserves enum values, labels, and mode-specific default order', () => {
+    const { unmount } = render(<CriarAssociadoForm canEditInternalNotes />);
+
+    expect(optionEntries('sex')).toEqual([
+      ['', 'Selecione...'],
+      ['M', 'Masculino'],
+      ['F', 'Feminino'],
+    ]);
+    expect(optionEntries('associationStatus')).toEqual([
+      ['nao_associado', 'Não associado'],
+      ['associado', 'Associado'],
+    ]);
+    expect(optionEntries('contributionStatus')).toEqual([
+      ['inadimplente', 'Inadimplente'],
+      ['em_dia', 'Em dia'],
+    ]);
+
+    unmount();
+    render(<EditarAssociadoForm associate={editAssociate} canEditInternalNotes />);
+
+    expect(optionEntries('associationStatus')).toEqual([
+      ['', 'Selecione...'],
+      ['associado', 'Associado'],
+      ['nao_associado', 'Não associado'],
+    ]);
+    expect(optionEntries('contributionStatus')).toEqual([
+      ['', 'Selecione...'],
+      ['em_dia', 'Em dia'],
+      ['inadimplente', 'Inadimplente'],
+    ]);
   });
 });
