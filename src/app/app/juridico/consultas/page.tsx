@@ -172,6 +172,7 @@ export default async function ConsultasPage({
                         {slaOverdue ? (
                           <span className="inline-flex items-center gap-1.5 font-semibold text-[#b91c1c]">
                             <AlertTriangle size={13} aria-hidden="true" />
+                            <span className="sr-only">SLA atrasado: </span>
                             {formatDate(row.slaDueDate)}
                           </span>
                         ) : (
