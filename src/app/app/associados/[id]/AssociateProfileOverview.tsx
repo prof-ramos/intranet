@@ -42,12 +42,14 @@ export function AssociateProfileOverview({ profile, id }: ProfileSectionProps) {
             </div>
           </div>
           <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
-            <button
-              type="button"
+            <Link
+              href={`/app/associados/${id}/imprimir`}
+              target="_blank"
+              rel="noopener noreferrer"
               className={`inline-flex h-11 items-center justify-center gap-2 rounded-[8px] border border-[rgba(4,9,32,0.15)] bg-white px-4 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] lg:h-10 lg:min-h-10 ${focusRingClass}`}
             >
               Imprimir ficha
-            </button>
+            </Link>
             <Link
               href={`/app/associados/${id}/editar`}
               className={`inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-10 lg:min-h-10 ${focusRingClass}`}

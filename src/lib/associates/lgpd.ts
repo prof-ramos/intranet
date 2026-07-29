@@ -1,5 +1,6 @@
 import type { Associate } from '@/lib/db/schema/associates';
 import type { AuthRole } from '@/lib/auth/config';
+import { getExportableFields } from './field-registry';
 
 // LGPD field classification for associate data
 export const SENSITIVE_FIELDS: Set<keyof Associate> = new Set([
@@ -148,47 +149,15 @@ export interface AnnotatedField {
   sensitivity: Sensitivity;
 }
 
-export const ASSOCIATE_EXPORT_FIELDS: AnnotatedField[] = [
-  { key: 'fullName', label: 'Nome', sensitivity: 'public' },
-  { key: 'sex', label: 'Sexo', sensitivity: 'public' },
-  { key: 'maritalStatus', label: 'Estado Civil', sensitivity: 'public' },
-  { key: 'birthDate', label: 'Data de Nascimento', sensitivity: 'sensitive' },
-  { key: 'birthCity', label: 'Naturalidade', sensitivity: 'public' },
-  { key: 'birthState', label: 'UF Naturalidade', sensitivity: 'public' },
-  { key: 'cpf', label: 'CPF', sensitivity: 'sensitive' },
-  { key: 'rg', label: 'RG', sensitivity: 'sensitive' },
-  { key: 'rgIssuer', label: 'Órgão Expedidor RG', sensitivity: 'public' },
-  { key: 'rgState', label: 'UF RG', sensitivity: 'public' },
-  { key: 'primaryEmail', label: 'E-mail', sensitivity: 'sensitive' },
-  { key: 'secondaryEmail', label: 'E-mail Secundário', sensitivity: 'sensitive' },
-  { key: 'phone', label: 'Telefone', sensitivity: 'sensitive' },
-  { key: 'whatsapp', label: 'Celular/WhatsApp', sensitivity: 'sensitive' },
-  { key: 'address', label: 'Endereço', sensitivity: 'sensitive' },
-  { key: 'neighborhood', label: 'Bairro', sensitivity: 'sensitive' },
-  { key: 'addressState', label: 'UF Endereço', sensitivity: 'public' },
-  { key: 'zipCode', label: 'CEP', sensitivity: 'sensitive' },
-  { key: 'locationCity', label: 'Cidade', sensitivity: 'public' },
-  { key: 'locationCountry', label: 'País', sensitivity: 'public' },
-  { key: 'siape', label: 'Matrícula SIAPE', sensitivity: 'sensitive' },
-  { key: 'assignment', label: 'Lotação', sensitivity: 'public' },
-  { key: 'assignmentStartDate', label: 'Data da Lotação', sensitivity: 'public' },
-  { key: 'classPattern', label: 'Classe e Padrão', sensitivity: 'public' },
-  { key: 'functionalStatus', label: 'Situação Funcional', sensitivity: 'public' },
-  { key: 'associationStatus', label: 'Vínculo ASOF', sensitivity: 'public' },
-  { key: 'contributionStatus', label: 'Contribuição', sensitivity: 'public' },
-  { key: 'joinedAt', label: 'Data de Adesão', sensitivity: 'public' },
-  { key: 'associationCategory', label: 'Categoria', sensitivity: 'public' },
-  { key: 'missionType', label: 'Tipo de Missão', sensitivity: 'public' },
-  { key: 'careerOrigin', label: 'Origem de Carreira', sensitivity: 'public' },
-  { key: 'admissionDate', label: 'Data de Admissão', sensitivity: 'public' },
-  { key: 'inaugurationDate', label: 'Data de Posse', sensitivity: 'public' },
-  { key: 'retirementDate', label: 'Data de Aposentadoria', sensitivity: 'public' },
-  { key: 'leaveDate', label: 'Data de Licença', sensitivity: 'public' },
-  { key: 'cancellationDate', label: 'Data de Cancelamento do Vínculo ASOF', sensitivity: 'public' },
-  { key: 'paymentMethod', label: 'Forma de Pagamento', sensitivity: 'public' },
-  { key: 'ceocMember', label: 'Membro CEOC', sensitivity: 'public' },
-  { key: 'caocMember', label: 'Membro CAOC', sensitivity: 'public' },
-];
+/**
+ * Derived from `field-registry.ts`'s `exportEligible` flag — exclusion (e.g.
+ * `internalNotes`) is registry data, not an omission from this list.
+ */
+export const ASSOCIATE_EXPORT_FIELDS: AnnotatedField[] = getExportableFields().map((field) => ({
+  key: field.key,
+  label: field.label,
+  sensitivity: field.sensitivity,
+}));
 
 /** Filters export fields by role. Admin/diretoria see everything; secretaria sees only public fields. */
 export function filterExportFieldsByRole(fields: AnnotatedField[], role: Role): AnnotatedField[] {
