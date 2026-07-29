@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   formatAssociateDate,
   getAssociateProfile,
+  getAssociateProfileForPrint,
   initialsFromName,
   yearsSinceDate,
 } from '@/lib/associates/profile';
@@ -14,6 +15,7 @@ const mockFindHealthAgreementsByAssociateId = vi.fn();
 const mockGetAssociateAuditHistory = vi.fn();
 const mockGetPaymentHistoryForAssociate = vi.fn();
 const mockGetConsultationsByAssociate = vi.fn();
+const mockLogDataAccess = vi.fn();
 
 vi.mock('./repository', () => ({
   findAssociateById: (...args: unknown[]) => mockFindAssociateById(...args),
@@ -25,6 +27,10 @@ vi.mock('./repository', () => ({
 
 vi.mock('@/lib/audit/queries', () => ({
   getAssociateAuditHistory: (...args: unknown[]) => mockGetAssociateAuditHistory(...args),
+}));
+
+vi.mock('@/lib/audit/service', () => ({
+  logDataAccess: (...args: unknown[]) => mockLogDataAccess(...args),
 }));
 
 vi.mock('@/lib/finance/repository', () => ({
@@ -175,5 +181,51 @@ describe('getAssociateProfile', () => {
     });
     expect(result!.showSensitive).toBe(true);
     expect(result!.consultationCount).toBe(1);
+  });
+});
+
+describe('getAssociateProfileForPrint', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFindLinkedActivities.mockResolvedValue([]);
+    mockGetAssociateAuditHistory.mockResolvedValue([]);
+    mockGetPaymentHistoryForAssociate.mockResolvedValue([]);
+    mockGetConsultationsByAssociate.mockResolvedValue([]);
+    mockFindDependentsByAssociateId.mockResolvedValue([]);
+    mockFindHealthAgreementsByAssociateId.mockResolvedValue([]);
+  });
+
+  it('records a printable ficha as an LGPD data export', async () => {
+    mockFindAssociateById.mockResolvedValue({
+      id: 1,
+      fullName: 'Alice',
+      assignment: null,
+      locationCity: null,
+      locationCountry: null,
+      associationStatus: 'associado',
+      functionalStatus: 'ativo',
+      associationCategory: null,
+      joinedAt: null,
+      assignmentStartDate: null,
+      updatedAt: '2024-01-01',
+    });
+
+    const result = await getAssociateProfileForPrint(1, 'admin', 42);
+
+    expect(result).not.toBeNull();
+    expect(mockLogDataAccess).toHaveBeenCalledWith({
+      adminId: 42,
+      action: 'export',
+      entityType: 'associate',
+      entityId: 1,
+      metadata: { accessType: 'printable_ficha' },
+    });
+  });
+
+  it('does not record an export when the official does not exist', async () => {
+    mockFindAssociateById.mockResolvedValue(null);
+
+    await expect(getAssociateProfileForPrint(999, 'admin', 42)).resolves.toBeNull();
+    expect(mockLogDataAccess).not.toHaveBeenCalled();
   });
 });

@@ -7,6 +7,7 @@ import {
   findHealthAgreementsByAssociateId,
 } from './repository';
 import { getAssociateAuditHistory } from '@/lib/audit/queries';
+import { logDataAccess } from '@/lib/audit/service';
 import { getPaymentHistoryForAssociate, type PaymentHistoryItem } from '@/lib/finance/repository';
 import { getConsultationsByAssociate } from '@/lib/juridico/repository';
 import { formatLongDate, yearsSinceDate } from '@/lib/utils/date';
@@ -207,4 +208,27 @@ export async function getAssociateProfile(
     paymentHistory,
     consultationCount: consultations.length,
   };
+}
+
+/**
+ * Loads the profile used to generate the printable ficha and records the
+ * unmasked PII export required by the LGPD access trail.
+ */
+export async function getAssociateProfileForPrint(
+  associateId: number,
+  role: Role,
+  adminId: number,
+): Promise<AssociateProfileViewModel | null> {
+  const profile = await getAssociateProfile(associateId, role);
+  if (!profile) return null;
+
+  await logDataAccess({
+    adminId,
+    action: 'export',
+    entityType: 'associate',
+    entityId: associateId,
+    metadata: { accessType: 'printable_ficha' },
+  });
+
+  return profile;
 }

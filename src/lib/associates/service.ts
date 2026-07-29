@@ -86,6 +86,7 @@ function assertRequiredEnum<T extends string>(
 
 export {
   getAssociateProfile,
+  getAssociateProfileForPrint,
   formatAssociateDate,
   yearsSinceDate,
   initialsFromName,
