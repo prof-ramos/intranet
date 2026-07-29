@@ -3,7 +3,8 @@
 Plano operacional para tratar os candidatos 2 a 5 de
 `architecture-review-2026.html`. Registro arquivado — `architecture-review-2026.html`
 e `docs/development/codex-worktrees-and-automations.md` (referenciados originalmente)
-não existem mais no repositório; todos os candidatos abaixo já estão implementados.
+não existem mais no repositório. O quadro abaixo preserva o estado final de cada
+candidato; o candidato 3 foi implementado apenas no escopo seguro descrito aqui.
 
 ## Estado
 
@@ -65,7 +66,7 @@ Mudanca aplicada:
 Os actions publicos de auth continuam com validacao propria porque convertem
 falhas em redirects especificos, nao em `throw new Error(...)`.
 
-Swarm opcional restante:
+Trabalho que permaneceu fora do escopo seguro:
 
 | Agente             | Escopo                                                                                                                  |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------- |

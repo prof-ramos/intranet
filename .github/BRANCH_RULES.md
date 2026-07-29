@@ -11,6 +11,8 @@
 | `chore/`    | Manutenção (deps, config)                             | `chore/update-next`          |
 | `docs/`     | Documentação                                          | `docs/add-branch-rules`      |
 | `test/`     | Adição ou correção de testes                          | `test/auth-rate-limit`       |
+| `advisor/`  | Execução de plano numerado por advisor                | `advisor/057-operational-hygiene` |
+| `codex/`    | Execução de plano numerado pelo Codex                 | `codex/060-read-only-production-smoke` |
 | `jules-`    | Branch criada pelo Google Jules após aprovação humana | `jules-1234567890-abcd`      |
 
 ## Commits

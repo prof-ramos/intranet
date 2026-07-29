@@ -46,7 +46,6 @@ Documentation directory covering architecture decisions, design guidelines, comp
 
 - ADRs use a title line followed by Status, Context, Decision, Consequences.
 - Screenshots in `design/screenshots/` are named `[page]-[state].png`.
-- FABRICA process docs outline the feature delivery workflow with review gates.
 
 ## Dependencies
 

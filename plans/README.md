@@ -6,5 +6,7 @@ in the linked GitHub issue (`prof-ramos/intranet`). Do not add new plans here;
 create an issue instead.
 
 Not to be confused with `advisor-plans/` at the repo root — that directory
-reuses the same 001+ numbering for a separate, currently active advisor/executor
-run. This `plans/` directory is fully archived and closed.
+reuses the same 001+ numbering for a separate advisor/executor ledger. It keeps
+plan files only while their work remains active and removes completed files
+after merge; its README preserves both active and historical status. This
+`plans/` directory is fully archived and closed.
