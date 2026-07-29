@@ -1,0 +1,76 @@
+name: Issue Triage Shadow
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+  issue_comment:
+    types: [created, edited]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue existente para reprocessar em shadow
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: issue-triage-${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: false
+
+jobs:
+  triage:
+    name: Structured analysis
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.issue.pull_request == null }}
+    runs-on: [self-hosted, Linux, ARM64, tio-abraao-triage]
+    timeout-minutes: 10
+    env:
+      CODEX_BINARY: /usr/local/bin/codex
+      CONTROL_PLANE_COMMIT: 45feb6fa5bf090c75fef809ce39be83436999d47
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TIO_ABRAAO_HOME: /home/ubuntu/tio-abraao-releases/45feb6fa5bf090c75fef809ce39be83436999d47
+      TIO_ABRAAO_OUTPUT_DIR: ${{ runner.temp }}/tio-abraao-triage
+      TIO_ABRAAO_STATE_DIR: /home/ubuntu/.local/state/tio-abraao/issue-triage
+    steps:
+      - name: Verify pinned control-plane executor
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x "$CODEX_BINARY"
+          test -r "$TIO_ABRAAO_HOME/scripts/run-actions-triage.js"
+          test "$(tr -d '\n' < "$TIO_ABRAAO_HOME/DEPLOYED_COMMIT")" = "$CONTROL_PLANE_COMMIT"
+
+      - name: Materialize manual event
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        shell: bash
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          REPOSITORY: ${{ github.repository }}
+          REQUESTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("node:fs");
+            fs.writeFileSync(process.env.RUNNER_TEMP + "/manual-event.json", JSON.stringify({
+              repository: { full_name: process.env.REPOSITORY },
+              issue: { number: Number(process.env.ISSUE_NUMBER) },
+              sender: { login: process.env.REQUESTOR, type: "User" }
+            }));
+          '
+          echo "GITHUB_EVENT_PATH=$RUNNER_TEMP/manual-event.json" >> "$GITHUB_ENV"
+
+      - name: Analyze issue in shadow
+        id: triage
+        shell: bash
+        run: node "$TIO_ABRAAO_HOME/scripts/run-actions-triage.js"
+
+      - name: Upload shadow evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: issue-triage-${{ github.event.issue.number || inputs.issue_number }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/tio-abraao-triage
+          if-no-files-found: error
+          retention-days: 30
