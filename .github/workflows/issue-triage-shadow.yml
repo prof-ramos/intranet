@@ -59,12 +59,20 @@ jobs:
               sender: { login: process.env.REQUESTOR, type: "User" }
             }));
           '
-          echo "GITHUB_EVENT_PATH=$RUNNER_TEMP/manual-event.json" >> "$GITHUB_ENV"
 
       - name: Analyze issue in shadow
         id: triage
         shell: bash
-        run: node "$TIO_ABRAAO_HOME/scripts/run-actions-triage.js"
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            GITHUB_EVENT_PATH="$RUNNER_TEMP/manual-event.json" \
+              node "$TIO_ABRAAO_HOME/scripts/run-actions-triage.js"
+          else
+            node "$TIO_ABRAAO_HOME/scripts/run-actions-triage.js"
+          fi
 
       - name: Upload shadow evidence
         if: ${{ always() }}
