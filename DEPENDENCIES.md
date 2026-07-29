@@ -1,6 +1,6 @@
 # Dependencias
 
-Atualizado em 2026-06-14. Inclui mudancas pos-go-live: refatoracao de atividades, mensalidades bulk upsert, validacao de server actions, error boundaries, Assinafy.
+Atualizado em 2026-07-18. Versões conferidas contra `package.json` atual (Next.js 16.2.6, React 19.2.6, drizzle-orm 0.45.2, Vitest 4.1.8).
 
 ## Stack Mantido
 

@@ -11,6 +11,8 @@
 | `chore/`    | Manutenção (deps, config)                             | `chore/update-next`          |
 | `docs/`     | Documentação                                          | `docs/add-branch-rules`      |
 | `test/`     | Adição ou correção de testes                          | `test/auth-rate-limit`       |
+| `advisor/`  | Execução de plano numerado por advisor                | `advisor/057-operational-hygiene` |
+| `codex/`    | Execução de plano numerado pelo Codex                 | `codex/060-read-only-production-smoke` |
 | `jules-`    | Branch criada pelo Google Jules após aprovação humana | `jules-1234567890-abcd`      |
 
 ## Commits
@@ -30,28 +32,20 @@ test(auth): adiciona testes de rate limiting
 
 ## Fluxo
 
-### Commit direto em main (apenas para solo dev)
+`main` é protegido (`enforce_admins` habilitado) e rejeita push direto mesmo de conta admin — toda mudança, inclusive typos e ajustes pequenos, precisa de PR. Não existe caminho de "commit direto em main", nem para dev solo nem para hotfix.
 
-Para mudancas pequenas e de baixo risco: bug fixes simples, typos, ajustes de CSS, atualizacao de docs.
+### Pull Request (todo tipo de mudança, incluindo hotfix)
 
-**Sempre executar antes do push:**
+1. Criar branch a partir de main: `git checkout -b feat/descricao` (ou `hotfix/descricao` para urgências)
+2. Desenvolver e commitar
+3. Abrir PR contra main
+4. **Squash merge** ao aprovar, com os checks obrigatórios verdes
+
+**Sempre executar antes de abrir o PR:**
 
 ```bash
 npm run pr:check
 ```
-
-### Pull Request (recomendado para features e refactors)
-
-1. Criar branch a partir de main: `git checkout -b feat/descricao`
-2. Desenvolver e commitar
-3. Abrir PR contra main
-4. **Squash merge** ao aprovar
-
-### Hotfix
-
-1. Branch `hotfix/descricao` a partir de main
-2. Corrigir e testar
-3. Commit direto em main (urgente) ou PR se nao for urgente
 
 ## Protecao de branch
 
@@ -66,6 +60,7 @@ npm run pr:check
 
 ## Nunca fazer
 
+- Tentar commit/push direto em main (bloqueado pela proteção de branch, inclusive para admin)
 - Force-push em main
 - Commits com segredos/credenciais
 - Merge de PR com testes ou build falhando

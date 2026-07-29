@@ -151,7 +151,7 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 
 ### Testing
 
-- Unitários: Vitest, `src/**/*.test.{ts,tsx}`. Suite atual: 1500+ testes.
+- Unitários: Vitest, `src/**/*.test.{ts,tsx}`. Suite atual: 1879 testes.
 - Integração: `vitest.integration.config.ts` contra PostgreSQL real (banco dedicado, ex: `asof_intranet_test`). Dev local padrão usa `asof_intranet`; clones com PII real são exceção restrita conforme `docs/environments.md`.
 - E2E: Playwright, `http://127.0.0.1:3001` (não 3000), database `asof_test` criado por `e2e/global-setup.ts`.
 - `npm run test:db` — schema contract contra PostgreSQL ao vivo (valida tables, columns, enums, indexes, extensions e alinhamento de migrations). **Importante:** ao mudar qualquer schema Drizzle ou migração SQL, atualizar também `src/lib/db/schema.integration.test.ts` (expectedColumns, expectedEnums, expectedIndexes). Enums do banco usam valores em português (ex: `activity_priority: ['baixa', 'normal', 'alta', 'urgente']`), nunca assumir valores em inglês.
