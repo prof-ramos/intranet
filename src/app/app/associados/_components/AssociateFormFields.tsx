@@ -1,73 +1,44 @@
 import type { HTMLInputTypeAttribute, ReactNode } from 'react';
+import { getAssociateEnumOptions, type AssociateEnumOption } from '@/lib/associates/field-registry';
 
 export const associateInputStyle = 'input input-bordered w-full';
 const selectStyle = 'select select-bordered w-full';
 const textareaStyle = 'textarea textarea-bordered w-full';
 const sectionStyle = 'mb-6 rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-5 sm:p-7';
 
-interface Option {
-  value: string;
-  label: string;
-}
+type Option = AssociateEnumOption;
 
-const sexOptions: Option[] = [
-  { value: '', label: 'Selecione...' },
-  { value: 'M', label: 'Masculino' },
-  { value: 'F', label: 'Feminino' },
+const emptyOption: Option = { value: '', label: 'Selecione...' };
+const withEmptyOption = (options: readonly AssociateEnumOption[]): Option[] => [
+  emptyOption,
+  ...options,
 ];
-const maritalStatusOptions: Option[] = [
-  { value: '', label: 'Selecione...' },
-  { value: 'solteiro', label: 'Solteiro(a)' },
-  { value: 'casado', label: 'Casado(a)' },
-  { value: 'divorciado', label: 'Divorciado(a)' },
-  { value: 'viuvo', label: 'Viúvo(a)' },
-  { value: 'separado', label: 'Separado(a)' },
-  { value: 'outros', label: 'Outros' },
+const withDefaultFirst = <T extends readonly AssociateEnumOption[]>(
+  options: T,
+  defaultValue: T[number]['value'],
+): Option[] => [
+  ...options.filter((option) => option.value === defaultValue),
+  ...options.filter((option) => option.value !== defaultValue),
 ];
-const missionTypeOptions: Option[] = [
-  { value: '', label: 'Selecione...' },
-  { value: 'permanente', label: 'Permanente' },
-  { value: 'transitoria', label: 'Transitória' },
-];
-const careerOriginOptions: Option[] = [
-  { value: '', label: 'Selecione...' },
-  { value: 'brasil', label: 'Brasil' },
-  { value: 'exterior', label: 'Exterior' },
-  { value: 'outros_orgaos', label: 'Outros Órgãos' },
-];
-const paymentMethodOptions: Option[] = [
-  { value: '', label: 'Selecione...' },
-  { value: 'folha', label: 'Folha de pagamento' },
-  { value: 'boleto', label: 'Boleto' },
-  { value: 'pix', label: 'Pix' },
-  { value: 'transferencia', label: 'Transferência' },
-  { value: 'outros', label: 'Outros' },
-];
-const functionalStatusOptions: Option[] = [
-  { value: '', label: 'Selecione...' },
-  { value: 'ativo', label: 'Ativo' },
-  { value: 'aposentado', label: 'Aposentado' },
-  { value: 'cedido', label: 'Cedido' },
-  { value: 'em_licenca', label: 'Em licença' },
-];
-const createAssociationStatusOptions: Option[] = [
-  { value: 'nao_associado', label: 'Não associado' },
-  { value: 'associado', label: 'Associado' },
-];
-const editAssociationStatusOptions: Option[] = [
-  { value: '', label: 'Selecione...' },
-  { value: 'associado', label: 'Associado' },
-  { value: 'nao_associado', label: 'Não associado' },
-];
-const createContributionStatusOptions: Option[] = [
-  { value: 'inadimplente', label: 'Inadimplente' },
-  { value: 'em_dia', label: 'Em dia' },
-];
-const editContributionStatusOptions: Option[] = [
-  { value: '', label: 'Selecione...' },
-  { value: 'em_dia', label: 'Em dia' },
-  { value: 'inadimplente', label: 'Inadimplente' },
-];
+
+const sexOptions = withEmptyOption(getAssociateEnumOptions('sex'));
+const maritalStatusOptions = withEmptyOption(getAssociateEnumOptions('maritalStatus'));
+const missionTypeOptions = withEmptyOption(getAssociateEnumOptions('missionType'));
+const careerOriginOptions = withEmptyOption(getAssociateEnumOptions('careerOrigin'));
+const paymentMethodOptions = withEmptyOption(getAssociateEnumOptions('paymentMethod'));
+const functionalStatusOptions = withEmptyOption(getAssociateEnumOptions('functionalStatus'));
+const createAssociationStatusOptions = withDefaultFirst(
+  getAssociateEnumOptions('associationStatus'),
+  'nao_associado',
+);
+const editAssociationStatusOptions = withEmptyOption(getAssociateEnumOptions('associationStatus'));
+const createContributionStatusOptions = withDefaultFirst(
+  getAssociateEnumOptions('contributionStatus'),
+  'inadimplente',
+);
+const editContributionStatusOptions = withEmptyOption(
+  getAssociateEnumOptions('contributionStatus'),
+);
 
 export interface AssociateFormValues {
   fullName: string;

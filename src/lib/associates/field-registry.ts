@@ -15,6 +15,64 @@ export interface AssociateFieldDefinition {
   exportEligible: boolean;
 }
 
+export interface AssociateEnumOption {
+  value: string;
+  label: string;
+}
+
+export const ASSOCIATE_ENUM_OPTIONS = {
+  sex: [
+    { value: 'M', label: 'Masculino' },
+    { value: 'F', label: 'Feminino' },
+  ],
+  maritalStatus: [
+    { value: 'solteiro', label: 'Solteiro(a)' },
+    { value: 'casado', label: 'Casado(a)' },
+    { value: 'divorciado', label: 'Divorciado(a)' },
+    { value: 'viuvo', label: 'Viúvo(a)' },
+    { value: 'separado', label: 'Separado(a)' },
+    { value: 'outros', label: 'Outros' },
+  ],
+  missionType: [
+    { value: 'permanente', label: 'Permanente' },
+    { value: 'transitoria', label: 'Transitória' },
+  ],
+  careerOrigin: [
+    { value: 'brasil', label: 'Brasil' },
+    { value: 'exterior', label: 'Exterior' },
+    { value: 'outros_orgaos', label: 'Outros Órgãos' },
+  ],
+  paymentMethod: [
+    { value: 'folha', label: 'Folha de pagamento' },
+    { value: 'boleto', label: 'Boleto' },
+    { value: 'pix', label: 'Pix' },
+    { value: 'transferencia', label: 'Transferência' },
+    { value: 'outros', label: 'Outros' },
+  ],
+  functionalStatus: [
+    { value: 'ativo', label: 'Ativo' },
+    { value: 'aposentado', label: 'Aposentado' },
+    { value: 'cedido', label: 'Cedido' },
+    { value: 'em_licenca', label: 'Em licença' },
+  ],
+  associationStatus: [
+    { value: 'associado', label: 'Associado' },
+    { value: 'nao_associado', label: 'Não associado' },
+  ],
+  contributionStatus: [
+    { value: 'em_dia', label: 'Em dia' },
+    { value: 'inadimplente', label: 'Inadimplente' },
+  ],
+} as const satisfies Record<string, readonly AssociateEnumOption[]>;
+
+export type AssociateEnumFieldKey = keyof typeof ASSOCIATE_ENUM_OPTIONS;
+
+export function getAssociateEnumOptions<K extends AssociateEnumFieldKey>(
+  key: K,
+): (typeof ASSOCIATE_ENUM_OPTIONS)[K] {
+  return ASSOCIATE_ENUM_OPTIONS[key];
+}
+
 export const ASSOCIATE_FIELDS: AssociateFieldDefinition[] = [
   { key: 'fullName', label: 'Nome', sensitivity: 'public', kind: 'text', exportEligible: true },
   { key: 'sex', label: 'Sexo', sensitivity: 'public', kind: 'enum', exportEligible: true },
