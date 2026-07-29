@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { db } from '@/lib/db';
-import { admins, auditLogs } from '@/lib/db/schema';
+import { adminRole, admins, auditLogs } from '@/lib/db/schema';
 import { retryTransientConnection } from '@/lib/db/retry';
 import { env } from '@/lib/env';
 import { sendEmail } from '@/lib/email';
@@ -169,6 +169,65 @@ export async function changePassword(
 export interface ResetPasswordResult {
   tempPassword: string;
   emailDelivered: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// toggleAdminActive — admin-initiated activation/deactivation
+// ---------------------------------------------------------------------------
+
+export interface ToggleAdminActiveResult {
+  name: string;
+  isActive: boolean;
+}
+
+export async function toggleAdminActive(
+  targetId: number,
+  actorId: number,
+): Promise<ToggleAdminActiveResult> {
+  const [target] = await retryTransientConnection(() =>
+    db
+      .select({ id: admins.id, name: admins.name, isActive: admins.isActive })
+      .from(admins)
+      .where(eq(admins.id, targetId))
+      .limit(1),
+  );
+
+  if (!target) {
+    throw new AdminNotFoundError();
+  }
+
+  const newState = !target.isActive;
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(admins)
+      .set({ isActive: newState, updatedAt: sql`now()` })
+      .where(eq(admins.id, targetId));
+
+    await tx.insert(auditLogs).values({
+      action: newState ? 'account_activated' : 'account_deactivated',
+      entityType: 'admin',
+      entityId: targetId,
+      performedBy: actorId,
+    });
+  });
+
+  return { name: target.name, isActive: newState };
+}
+
+// ---------------------------------------------------------------------------
+// findAdminRecipientIds — active admin ids for a set of roles, used for
+// notification fan-out (e.g. LGPD requests, system alerts)
+// ---------------------------------------------------------------------------
+
+export async function findAdminRecipientIds(
+  roles: (typeof adminRole.enumValues)[number][],
+): Promise<number[]> {
+  const rows = await db
+    .select({ id: admins.id })
+    .from(admins)
+    .where(and(inArray(admins.role, roles), eq(admins.isActive, true)));
+  return rows.map((r) => r.id);
 }
 
 export async function resetPassword(

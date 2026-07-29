@@ -17,10 +17,12 @@ import {
 import { Download, Trash2, ShieldAlert } from 'lucide-react';
 
 const wrappedRequestDataDownload = async (_formData: FormData) => {
+  'use server';
   await requestDataDownload();
 };
 
 const wrappedRequestAccountDeletion = async (_formData: FormData) => {
+  'use server';
   await requestAccountDeletion();
 };
 
@@ -34,7 +36,10 @@ export default async function PrivacidadePage() {
   return (
     <main className="mx-auto flex w-full max-w-[800px] flex-1 flex-col px-5 py-7 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
       <div className="mb-8">
-        <h1 className="font-serif text-3xl leading-none font-bold md:text-4xl" style={{ color: textPrimary }}>
+        <h1
+          className="font-serif text-3xl leading-none font-bold md:text-4xl"
+          style={{ color: textPrimary }}
+        >
           Privacidade e Transparência
         </h1>
         <p className="mt-3" style={{ color: textMuted }}>
@@ -42,13 +47,18 @@ export default async function PrivacidadePage() {
         </p>
       </div>
 
-      <section className="mb-10 rounded-xl border bg-white p-6 shadow-sm sm:p-8" style={{ borderColor: hairline }}>
-        <h2 className="mb-4 text-xl font-bold" style={{ color: textPrimary }}>Direito de Acesso e Portabilidade</h2>
+      <section
+        className="mb-10 rounded-xl border bg-white p-6 shadow-sm sm:p-8"
+        style={{ borderColor: hairline }}
+      >
+        <h2 className="mb-4 text-xl font-bold" style={{ color: textPrimary }}>
+          Direito de Acesso e Portabilidade
+        </h2>
         <p className="mb-6 text-sm leading-relaxed" style={{ color: textMuted }}>
           Você tem o direito de solicitar uma cópia de todos os seus dados pessoais e transacionais
           armazenados pela ASOF. Ao solicitar, a Secretaria irá compilar um relatório estruturado
-          contendo suas informações cadastrais, histórico de contribuições e demais registros vinculados
-          ao seu titular, e os enviará para o seu e-mail cadastrado.
+          contendo suas informações cadastrais, histórico de contribuições e demais registros
+          vinculados ao seu titular, e os enviará para o seu e-mail cadastrado.
         </p>
         <form action={wrappedRequestDataDownload}>
           <button
@@ -71,12 +81,12 @@ export default async function PrivacidadePage() {
           <h2 className="text-xl font-bold">Direito ao Esquecimento</h2>
         </div>
         <p className="mb-4 text-sm leading-relaxed" style={{ color: textMuted }}>
-          Você tem o direito de solicitar a exclusão ou anonimização permanente da sua conta e de seus
-          dados sensíveis. No entanto, este direito não é absoluto.
+          Você tem o direito de solicitar a exclusão ou anonimização permanente da sua conta e de
+          seus dados sensíveis. No entanto, este direito não é absoluto.
         </p>
 
         <div
-          className="mb-6 rounded-md p-4 text-sm border"
+          className="mb-6 rounded-md border p-4 text-sm"
           style={{
             backgroundColor: alertDangerNoteBg,
             color: alertDangerNoteText,
@@ -86,14 +96,14 @@ export default async function PrivacidadePage() {
           <strong>Atenção ao Estatuto Social (Art. 14):</strong> Sua solicitação será analisada pela
           Secretaria. A desfiliação e o apagamento dos dados só podem ser efetuados caso você{' '}
           <strong>não possua débitos ou processos em andamento</strong> com a Associação. A ASOF
-          reserva-se o direito de manter os dados (LGPD Art. 16) necessários ao exercício regular
-          em processos judiciais ou financeiros.
+          reserva-se o direito de manter os dados (LGPD Art. 16) necessários ao exercício regular em
+          processos judiciais ou financeiros.
         </div>
 
         <form action={wrappedRequestAccountDeletion}>
           <button
             type="submit"
-            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border bg-white px-5 text-sm font-semibold transition-colors hover:bg-[#fef2f2] hover:border-[#f87171] ${focusRingClass}`}
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border bg-white px-5 text-sm font-semibold transition-colors hover:border-[#f87171] hover:bg-[#fef2f2] ${focusRingClass}`}
             style={{
               color: alertDangerText,
               borderColor: alertDangerButtonBorder,

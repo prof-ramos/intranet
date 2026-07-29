@@ -37,7 +37,7 @@ Executar limpeza de governança alinhada ao ADR 016 e à matriz oficial
 segurança:
 
 1. **Resetar `vercel-dev` para `main`** via `neonctl branches reset vercel-dev
-   --parent` — descarta o estado pré-reset ilegível e alinha o branch ao `main`
+--parent` — descarta o estado pré-reset ilegível e alinha o branch ao `main`
    limpo. O branch é **mantido** (não excluído): o Free Tier scale-to-zero torna
    branches idle baratos, e `vercel-dev` permanece o slot "Dev realista
    restrito" da matriz para reuso futuro após a importação oficial pré-go-live,
@@ -69,6 +69,13 @@ pendentes, por ordem de urgência:
   `ep-empty-cake-ac26vl6w` com credenciais próprias distintas.
 
 ## Estado Resultante
+
+> **Nota (2026-07-18):** o snapshot abaixo é de 2026-06-18 e não é mais atual —
+> em 2026-07-18 o projeto tinha 10/10 branches (o limite do Free Tier), o que
+> chegou a bloquear provisionamento de preview no Vercel até a higiene do
+> Plano 057 liberar espaço. Ver `TODO-PROD.md` (seção "Higiene operacional —
+> Plano 057") para o inventário e a contagem atuais; nenhum novo ADR formalizou
+> o estado pós-057 até o momento.
 
 Após a limpeza, `intranet-db` tem 3 branches (dentro do limite Free Tier de
 10/projeto):

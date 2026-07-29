@@ -7,7 +7,7 @@ import {
 } from './service';
 import { emitDomainEvent, emitDomainEventsBatch } from '@/lib/integrations/outbox';
 import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
-import { logAuditAction } from '@/lib/audit/service';
+import { logAuditBestEffort } from '@/lib/audit/service';
 import { db } from '@/lib/db';
 
 const transactionMock = vi.hoisted(() => ({
@@ -33,7 +33,7 @@ vi.mock('@/lib/db', () => ({
 }));
 
 vi.mock('@/lib/audit/service', () => ({
-  logAuditAction: vi.fn(),
+  logAuditBestEffort: vi.fn(),
 }));
 
 vi.mock('@/lib/integrations/outbox', () => ({
@@ -113,8 +113,8 @@ describe('finance service', () => {
 
     expect(count).toBe(1);
     expect(transactionMock.tx.update).toHaveBeenCalled();
-    // Bulk insert replaces N sequential logAuditAction calls
-    expect(logAuditAction).not.toHaveBeenCalled();
+    // Bulk insert replaces N sequential logAuditBestEffort calls
+    expect(logAuditBestEffort).not.toHaveBeenCalled();
     expect(transactionMock.tx.insert).toHaveBeenCalledWith(expect.anything());
     // Outbox invariant: emitDomainEventsBatch MUST be called with the tx
     // sentinel and the correct array of events — so the event rows commit (or
@@ -169,7 +169,7 @@ describe('finance service', () => {
       paymentMethod: 'boleto',
     });
 
-    expect(logAuditAction).toHaveBeenCalledWith(
+    expect(logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({
         adminId: 1,
         action: 'update',
@@ -193,8 +193,9 @@ describe('finance service', () => {
           month: 5,
         },
       }),
+      expect.anything(),
     );
-    expect(JSON.stringify(vi.mocked(logAuditAction).mock.calls[0][0])).not.toMatch(
+    expect(JSON.stringify(vi.mocked(logAuditBestEffort).mock.calls[0][0])).not.toMatch(
       /cpf|siape|address/i,
     );
     expect(emitDomainEvent).toHaveBeenCalledWith(
@@ -241,7 +242,7 @@ describe('finance service', () => {
     ).rejects.toThrow('outbox unavailable');
 
     expect(effects).toEqual(['outbox']);
-    expect(logAuditAction).not.toHaveBeenCalled();
+    expect(logAuditBestEffort).not.toHaveBeenCalled();
   });
 
   it('audits a payment update only after its transaction commits', async () => {
@@ -255,7 +256,7 @@ describe('finance service', () => {
       effects.push('outbox');
       return { id: 4242 } as never;
     });
-    vi.mocked(logAuditAction).mockImplementationOnce(async () => {
+    vi.mocked(logAuditBestEffort).mockImplementationOnce(async () => {
       effects.push('audit');
     });
 
@@ -268,23 +269,6 @@ describe('finance service', () => {
     });
 
     expect(effects).toEqual(['outbox', 'commit', 'audit']);
-  });
-
-  it('returns the committed payment when post-commit audit unexpectedly rejects', async () => {
-    vi.mocked(logAuditAction).mockRejectedValueOnce(new Error('audit adapter rejected'));
-
-    await expect(
-      updateMonthlyPayment(1, {
-        associateId: 10,
-        year: 2026,
-        month: 5,
-        status: 'pago',
-        paymentMethod: 'boleto',
-      }),
-    ).resolves.toEqual({ id: 5 });
-
-    expect(emitDomainEvent).toHaveBeenCalledWith(expect.anything(), transactionMock.tx);
-    expect(logAuditAction).toHaveBeenCalledOnce();
   });
 
   it('preserves paidAt when re-updating an already-pago payment', async () => {
@@ -324,13 +308,14 @@ describe('finance service', () => {
     });
 
     // The audit should show the old paidAt is preserved, not replaced with now()
-    expect(logAuditAction).toHaveBeenCalledWith(
+    expect(logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({
         changes: expect.objectContaining({
           old: expect.objectContaining({ paidAt: originalPaidAt }),
           new: expect.objectContaining({ paidAt: originalPaidAt }),
         }),
       }),
+      expect.anything(),
     );
   });
 
@@ -343,7 +328,7 @@ describe('finance service', () => {
       paymentMethod: 'boleto',
     });
 
-    expect(logAuditAction).toHaveBeenCalledWith(
+    expect(logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'update',
         metadata: {
@@ -352,6 +337,7 @@ describe('finance service', () => {
           month: 5,
         },
       }),
+      expect.anything(),
     );
     expect(emitDomainEvent).not.toHaveBeenCalled();
   });
@@ -377,7 +363,7 @@ describe('finance service', () => {
       paymentMethod: 'boleto',
     });
 
-    expect(logAuditAction).toHaveBeenCalledWith(
+    expect(logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'update',
         changes: expect.objectContaining({
@@ -392,6 +378,7 @@ describe('finance service', () => {
           month: 5,
         },
       }),
+      expect.anything(),
     );
     expect(emitDomainEvent).not.toHaveBeenCalled();
   });
@@ -431,7 +418,7 @@ describe('finance service', () => {
         updatedBy: 1,
       }),
     );
-    expect(logAuditAction).toHaveBeenCalledWith(
+    expect(logAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({
         adminId: 1,
         action: 'cancel',
@@ -462,8 +449,9 @@ describe('finance service', () => {
           cancellationReason: 'Lançamento em duplicidade',
         },
       }),
+      expect.anything(),
     );
-    const cancelAuditCall = vi.mocked(logAuditAction).mock.calls.at(-1)![0];
+    const cancelAuditCall = vi.mocked(logAuditBestEffort).mock.calls.at(-1)![0];
     expect(cancelAuditCall.executor).toBeUndefined();
     expect(emitDomainEvent).toHaveBeenCalledWith(
       expect.objectContaining({

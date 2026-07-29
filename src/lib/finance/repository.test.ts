@@ -2,7 +2,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { SQL } from 'drizzle-orm';
 import {
+  cancelMonthlyPaymentRow,
+  findAssociatesMissingPaymentForMonth,
   findMonthlyPayment,
+  findMonthlyPaymentById,
   getAssociatesWithPayments,
   markOverduePaymentsForAudit,
   upsertMonthlyPayment,
@@ -105,12 +108,73 @@ describe('finance repository', () => {
     });
   });
 
+  describe('findMonthlyPaymentById', () => {
+    it('returns payment when found', async () => {
+      dbMock.setSelectResult([MOCK_PAYMENT]);
+      const result = await findMonthlyPaymentById(1);
+      expect(result).toEqual(MOCK_PAYMENT);
+    });
+
+    it('returns null when not found', async () => {
+      dbMock.setSelectResult([]);
+      const result = await findMonthlyPaymentById(999);
+      expect(result).toBeNull();
+    });
+  });
+
   describe('upsertMonthlyPayment', () => {
-    it('calls insert with onConflictDoUpdate', async () => {
+    it('calls insert with onConflictDoUpdate and returns the row', async () => {
       dbMock.setInsertResult([MOCK_PAYMENT]);
-      await upsertMonthlyPayment(MOCK_PAYMENT as any);
+      const result = await upsertMonthlyPayment(MOCK_PAYMENT as any);
       expect(dbMock.insert).toHaveBeenCalled();
       expect(dbMock._insertChain.onConflictDoUpdate).toHaveBeenCalled();
+      expect(result).toEqual(MOCK_PAYMENT);
+    });
+
+    it('sets the setWhere concurrency predicate when expectedUpdatedAt is provided', async () => {
+      dbMock.setInsertResult([MOCK_PAYMENT]);
+      await upsertMonthlyPayment(MOCK_PAYMENT as any, '2026-05-10T00:00:00.000Z');
+      const call = dbMock._insertChain.onConflictDoUpdate.mock.calls.at(-1)?.[0];
+      expect(call.setWhere).toBeDefined();
+    });
+
+    it('returns undefined when the conflict update yields no row (stale expectedUpdatedAt)', async () => {
+      dbMock.setInsertResult([]);
+      const result = await upsertMonthlyPayment(MOCK_PAYMENT as any, '2020-01-01T00:00:00.000Z');
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('cancelMonthlyPaymentRow', () => {
+    it('updates the row to cancelado and returns it', async () => {
+      const cancelled = { ...MOCK_PAYMENT, status: 'cancelado' };
+      dbMock.setUpdateResult([cancelled]);
+
+      const result = await cancelMonthlyPaymentRow(1, 7, 'Duplicado', new Date('2026-05-21'));
+
+      expect(result).toEqual(cancelled);
+      expect(dbMock._updateChain.set).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'cancelado', cancelledBy: 7 }),
+      );
+    });
+
+    it('returns undefined when the row is already cancelled (concurrent race)', async () => {
+      dbMock.setUpdateResult([]);
+      const result = await cancelMonthlyPaymentRow(1, 7, 'Duplicado', new Date('2026-05-21'));
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('findAssociatesMissingPaymentForMonth', () => {
+    it('filters out associates that already have a payment row for the month', async () => {
+      dbMock.setSelectResult([
+        { associateId: 1, defaultPaymentMethod: 'folha', paymentId: null },
+        { associateId: 2, defaultPaymentMethod: 'boleto', paymentId: 55 },
+      ]);
+
+      const result = await findAssociatesMissingPaymentForMonth(2026, 5);
+
+      expect(result).toEqual([{ associateId: 1, defaultPaymentMethod: 'folha' }]);
     });
   });
 

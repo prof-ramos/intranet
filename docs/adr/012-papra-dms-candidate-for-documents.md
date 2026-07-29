@@ -1,6 +1,6 @@
 # ADR 012: Papra Como Candidato A DMS Externo Para Documentos
 
-Status: accepted
+Status: accepted (emendado em 2026-07-18 — decisão de não seguir com o Papra registrada em `TODO-PROD.md` em 2026-07-08; a POC descrita abaixo não foi executada e não deve ser reaberta como gate de go-live)
 Data: 2026-05-29
 
 ## Contexto

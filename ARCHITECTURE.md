@@ -1,6 +1,6 @@
 # Arquitetura
 
-Atualizado em 2026-06-14 para refletir refatoração de atividades, bulk upsert de mensalidades, validação de server actions e correções de segurança.
+Atualizado em 2026-07-18 para refletir a higiene operacional do Plano 057, contenção do smoke de produção (Plano 060) e reconciliação de identidades duplicadas de associados (Plano 064).
 
 ## Visao Geral
 
@@ -21,6 +21,7 @@ A intranet ASOF e uma aplicacao Next.js 16.2.6 App Router, server-side, com Driz
 ## Modulo Email Triage
 
 ### Fluxo
+
 1. **Gmail API** — busca emails nao lidos de `controller@asof.org.br`
 2. **Extracao** — HTML-to-text, decodificacao Base64, anexos
 3. **Gemini AI** — classifica categoria, extrai prazos, resume demandas e organiza evidencias operacionais
@@ -29,6 +30,7 @@ A intranet ASOF e uma aplicacao Next.js 16.2.6 App Router, server-side, com Driz
 6. **Labeling** — marca email como triado no Gmail
 
 ### Componentes
+
 - `src/lib/email-triage/schema.ts` — Zod schemas e tipos
 - `src/lib/email-triage/status.ts` — labels, badges, filtros (13 status)
 - `src/lib/email-triage/search-params.ts` — parser de filtros da UI
@@ -42,27 +44,29 @@ A intranet ASOF e uma aplicacao Next.js 16.2.6 App Router, server-side, com Driz
 - `src/app/api/v1/email-triage/process/route.ts` — API endpoint (cron)
 
 ### Status
-| Status | Descricao |
-|--------|-----------|
-| `novo` | Recem-chegado, nao processado |
-| `analisado` | Processado pela IA, sem validacao pendente |
-| `aguardando_validacao` | Triagem exige revisao operacional excepcional |
-| `validado` | Validado por admin |
-| `em_andamento` | Sendo trabalhado |
-| `concluido` | Finalizado |
-| `vencido` | Prazo expirado (automatizado) |
-| `arquivado` | Arquivado |
-| `erro_validacao_ia` | Falha na validacao da IA |
-| `erro_processamento_anexo` | Falha no processamento |
-| `aguardando_reprocessamento` | Aguardando nova tentativa |
-| `descartado_por_irrelevancia` | Marcado como irrelevante |
-| `pendente_validacao_lgpd` | Pendente de revisao LGPD |
+
+| Status                        | Descricao                                     |
+| ----------------------------- | --------------------------------------------- |
+| `novo`                        | Recem-chegado, nao processado                 |
+| `analisado`                   | Processado pela IA, sem validacao pendente    |
+| `aguardando_validacao`        | Triagem exige revisao operacional excepcional |
+| `validado`                    | Validado por admin                            |
+| `em_andamento`                | Sendo trabalhado                              |
+| `concluido`                   | Finalizado                                    |
+| `vencido`                     | Prazo expirado (automatizado)                 |
+| `arquivado`                   | Arquivado                                     |
+| `erro_validacao_ia`           | Falha na validacao da IA                      |
+| `erro_processamento_anexo`    | Falha no processamento                        |
+| `aguardando_reprocessamento`  | Aguardando nova tentativa                     |
+| `descartado_por_irrelevancia` | Marcado como irrelevante                      |
+| `pendente_validacao_lgpd`     | Pendente de revisao LGPD                      |
 
 ---
 
 ## Modulo Assinafy (Assinatura Digital)
 
 ### Fluxo
+
 1. **Envio para Assinatura** — Admin seleciona ofício (status `gerado` ou `rascunho`), informa email do signatário
 2. **Geração PDF** — PDF gerado on-the-fly com fontes Carlito (ABNT) e embutimento completo
 3. **Upload Assinafy** — Documento enviado via API Assinafy (`uploadDocument`)
@@ -73,6 +77,7 @@ A intranet ASOF e uma aplicacao Next.js 16.2.6 App Router, server-side, com Driz
 8. **Processamento Webhook** — Dentro de transação: atualiza ofício, loga auditoria, emite domain event, notifica admins
 
 ### Componentes
+
 - `src/lib/assinafy/client.ts` — Cliente HTTP com extração defensiva de payload e recuperação de signatários
 - `src/lib/assinafy/types.ts` — Enums `AssinafyDocumentStatus` (11 estados), tipos de webhook
 - `src/lib/assinafy/repository.ts` — `findOficioByAssinafyDocumentId`, `updateAssinafyStatus`, `updateAssinafyFields`
@@ -82,30 +87,33 @@ A intranet ASOF e uma aplicacao Next.js 16.2.6 App Router, server-side, com Driz
 - `src/app/app/secretaria/oficios/_components/OficiosTable.tsx` — Botão "Enviar para Assinatura" + badge "Abrir página de assinatura"
 
 ### Status Assinafy (enum `assinafy_document_status`)
-| Status | Descricao |
-|--------|-----------|
-| `pending` | Aguardando processamento |
-| `uploaded` | Documento carregado |
-| `pending_signature` | Aguardando assinatura |
-| `partially_signed` | Parcialmente assinado |
-| `signed` | Assinado |
-| `rejected` | Rejeitado |
-| `expired` | Expirado |
-| `cancelled` | Cancelado |
-| `failed` | Falha |
-| `certificated` | Certificado |
-| `ready` | Pronto |
+
+| Status              | Descricao                |
+| ------------------- | ------------------------ |
+| `pending`           | Aguardando processamento |
+| `uploaded`          | Documento carregado      |
+| `pending_signature` | Aguardando assinatura    |
+| `partially_signed`  | Parcialmente assinado    |
+| `signed`            | Assinado                 |
+| `rejected`          | Rejeitado                |
+| `expired`           | Expirado                 |
+| `cancelled`         | Cancelado                |
+| `failed`            | Falha                    |
+| `certificated`      | Certificado              |
+| `ready`             | Pronto                   |
 
 ### Regras de Negocio
+
 - Apenas ofícios com status `gerado` ou `rascunho` podem ser enviados
 - `rascunho` transiciona automaticamente para `gerado` ao enviar
 - Guarda de idempotência: `assinafyDocumentId === null` antes de qualquer chamada API
 - Guarda "Assinafy não configurado": verifica env vars antes de chamadas
 - Webhook é idempotente: mesmo status = early return
 - Notificação criada para todos admins ativos dentro da mesma transação
-- `assinafy_signing_url` persistida para badge "Abrir página de assinatura" (target=_blank)
+- `assinafy_signing_url` persistida para badge "Abrir página de assinatura" (target=\_blank)
 
 ### Regras de Negocio
+
 - Todos veem a list page (`requireAuth()`)
 - Só `admin` altera status, observações e prazos (`requireRole(['admin'])`)
 - `vencido` é automático: `processBatch()` marca emails com prazo expirado.
@@ -156,6 +164,7 @@ O baseline nao depende de roles, policies, publications ou recursos de plataform
 Notificacoes sao registros persistidos. O cliente carrega via Server Actions e atualiza periodicamente. Entrega em tempo real nao faz parte do caminho critico do go-live.
 
 Tipos de notificação:
+
 - `email_triage_pending` — triagem exige revisao operacional
 - `oficio.status_changed` — status de ofício alterado via webhook Assinafy (notifica todos admins ativos)
 - `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning` — existentes

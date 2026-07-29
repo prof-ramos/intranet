@@ -35,7 +35,7 @@ import {
   paymentMethod as pmEnum,
 } from '@/lib/db/schema';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
-import { logAuditAction, logDataAccess } from '@/lib/audit/service';
+import { logAuditAction, logAuditBestEffort, logDataAccess } from '@/lib/audit/service';
 import { buildPiiPatch, decryptAssociatePii } from './pii-mapping';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { emptyToNull } from '@/lib/utils/strings';
@@ -61,6 +61,28 @@ const isMsEnum = (v: string): v is MsEnum => msEnum.enumValues.includes(v as MsE
 const isMtEnum = (v: string): v is MtEnum => mtEnum.enumValues.includes(v as MtEnum);
 const isCoEnum = (v: string): v is CoEnum => coEnum.enumValues.includes(v as CoEnum);
 const isPmEnum = (v: string): v is PmEnum => pmEnum.enumValues.includes(v as PmEnum);
+
+function assertNullableEnum<T extends string>(
+  value: string | null,
+  isEnum: (v: string) => v is T,
+  message: string,
+): T | null {
+  if (value !== null && !isEnum(value)) {
+    throw new ValidationError(message);
+  }
+  return value as T | null;
+}
+
+function assertRequiredEnum<T extends string>(
+  value: string | null,
+  isEnum: (v: string) => v is T,
+  message: string,
+): T {
+  if (value === null || !isEnum(value)) {
+    throw new ValidationError(message);
+  }
+  return value;
+}
 
 export {
   getAssociateProfile,
@@ -344,16 +366,8 @@ function getChangedAuditFields(
 
 type AssociateAuditArgs = Parameters<typeof logAuditAction>[0];
 
-async function logAssociateAuditBestEffort(auditArgs: AssociateAuditArgs) {
-  try {
-    await logAuditAction(auditArgs);
-  } catch {
-    logger.warn('Audit log failed after committed associate mutation', {
-      action: auditArgs.action,
-      entityType: auditArgs.entityType,
-      entityId: auditArgs.entityId,
-    });
-  }
+function logAssociateAuditBestEffort(auditArgs: AssociateAuditArgs) {
+  return logAuditBestEffort(auditArgs, logger);
 }
 
 export async function updateAssociateData(
@@ -410,54 +424,59 @@ export async function updateAssociateData(
   }
 
   if (input.functionalStatus !== undefined) {
-    if (input.functionalStatus !== null && !isFsEnum(input.functionalStatus)) {
-      throw new ValidationError('Situação funcional inválida.');
-    }
-    values.functionalStatus = input.functionalStatus as FsEnum | null;
+    values.functionalStatus = assertNullableEnum(
+      input.functionalStatus,
+      isFsEnum,
+      'Situação funcional inválida.',
+    );
   }
   if (input.associationStatus !== undefined) {
-    if (input.associationStatus === null || !isAsEnum(input.associationStatus)) {
-      throw new ValidationError('Vínculo ASOF inválido.');
-    }
-    values.associationStatus = input.associationStatus;
+    values.associationStatus = assertRequiredEnum(
+      input.associationStatus,
+      isAsEnum,
+      'Vínculo ASOF inválido.',
+    );
   }
   if (input.contributionStatus !== undefined) {
-    if (input.contributionStatus === null || !isCsEnum(input.contributionStatus)) {
-      throw new ValidationError('Status de contribuição inválido.');
-    }
-    values.contributionStatus = input.contributionStatus;
+    values.contributionStatus = assertRequiredEnum(
+      input.contributionStatus,
+      isCsEnum,
+      'Status de contribuição inválido.',
+    );
   }
   if (input.sex !== undefined) {
-    if (input.sex !== null && !isSexEnum(input.sex)) {
-      throw new ValidationError('Sexo inválido.');
-    }
-    values.sex = input.sex as SexEnum | null;
+    values.sex = assertNullableEnum(input.sex, isSexEnum, 'Sexo inválido.');
   }
   if (input.maritalStatus !== undefined) {
-    if (input.maritalStatus !== null && !isMsEnum(input.maritalStatus)) {
-      throw new ValidationError('Estado civil inválido.');
-    }
-    values.maritalStatus = input.maritalStatus as MsEnum | null;
+    values.maritalStatus = assertNullableEnum(
+      input.maritalStatus,
+      isMsEnum,
+      'Estado civil inválido.',
+    );
   }
   if (input.missionType !== undefined) {
-    if (input.missionType !== null && !isMtEnum(input.missionType)) {
-      throw new ValidationError('Tipo de missão inválido.');
-    }
-    values.missionType = input.missionType as MtEnum | null;
+    values.missionType = assertNullableEnum(
+      input.missionType,
+      isMtEnum,
+      'Tipo de missão inválido.',
+    );
   }
   if (input.careerOrigin !== undefined) {
-    if (input.careerOrigin !== null && !isCoEnum(input.careerOrigin)) {
-      throw new ValidationError('Origem de carreira inválida.');
-    }
-    values.careerOrigin = input.careerOrigin as CoEnum | null;
+    values.careerOrigin = assertNullableEnum(
+      input.careerOrigin,
+      isCoEnum,
+      'Origem de carreira inválida.',
+    );
   }
   if (input.paymentMethod !== undefined) {
     if (input.paymentMethod === null) {
       // Column is NOT NULL with default 'folha' — skip update to preserve existing value
-    } else if (!isPmEnum(input.paymentMethod)) {
-      throw new ValidationError('Método de pagamento inválido.');
     } else {
-      values.paymentMethod = input.paymentMethod;
+      values.paymentMethod = assertRequiredEnum(
+        input.paymentMethod,
+        isPmEnum,
+        'Método de pagamento inválido.',
+      );
     }
   }
   if (input.internalNotes !== undefined) values.internalNotes = input.internalNotes;
@@ -638,39 +657,42 @@ export async function createAssociateData(
 ): Promise<{ id: number }> {
   assertMutationActor(actor);
   const input = applyInternalNotesPolicy(rawInput, actor);
-  const functionalStatus = emptyToNull(input.functionalStatus);
-  const sex = emptyToNull(input.sex);
-  const maritalStatus = emptyToNull(input.maritalStatus);
-  const missionType = emptyToNull(input.missionType);
-  const careerOrigin = emptyToNull(input.careerOrigin);
-  const paymentMethodRaw = emptyToNull(input.paymentMethod);
-  const associationStatus = input.associationStatus ?? 'nao_associado';
-  const contributionStatus = input.contributionStatus ?? 'inadimplente';
-
-  if (functionalStatus !== null && !isFsEnum(functionalStatus)) {
-    throw new ValidationError('Situação funcional inválida.');
-  }
-  if (!isAsEnum(associationStatus)) {
-    throw new ValidationError('Vínculo ASOF inválido.');
-  }
-  if (!isCsEnum(contributionStatus)) {
-    throw new ValidationError('Status de contribuição inválido.');
-  }
-  if (sex !== null && !isSexEnum(sex)) {
-    throw new ValidationError('Sexo inválido.');
-  }
-  if (maritalStatus !== null && !isMsEnum(maritalStatus)) {
-    throw new ValidationError('Estado civil inválido.');
-  }
-  if (missionType !== null && !isMtEnum(missionType)) {
-    throw new ValidationError('Tipo de missão inválido.');
-  }
-  if (careerOrigin !== null && !isCoEnum(careerOrigin)) {
-    throw new ValidationError('Origem de carreira inválida.');
-  }
-  if (paymentMethodRaw !== null && !isPmEnum(paymentMethodRaw)) {
-    throw new ValidationError('Método de pagamento inválido.');
-  }
+  const functionalStatus = assertNullableEnum(
+    emptyToNull(input.functionalStatus),
+    isFsEnum,
+    'Situação funcional inválida.',
+  );
+  const sex = assertNullableEnum(emptyToNull(input.sex), isSexEnum, 'Sexo inválido.');
+  const maritalStatus = assertNullableEnum(
+    emptyToNull(input.maritalStatus),
+    isMsEnum,
+    'Estado civil inválido.',
+  );
+  const missionType = assertNullableEnum(
+    emptyToNull(input.missionType),
+    isMtEnum,
+    'Tipo de missão inválido.',
+  );
+  const careerOrigin = assertNullableEnum(
+    emptyToNull(input.careerOrigin),
+    isCoEnum,
+    'Origem de carreira inválida.',
+  );
+  const paymentMethodRaw = assertNullableEnum(
+    emptyToNull(input.paymentMethod),
+    isPmEnum,
+    'Método de pagamento inválido.',
+  );
+  const associationStatus = assertRequiredEnum(
+    input.associationStatus ?? 'nao_associado',
+    isAsEnum,
+    'Vínculo ASOF inválido.',
+  );
+  const contributionStatus = assertRequiredEnum(
+    input.contributionStatus ?? 'inadimplente',
+    isCsEnum,
+    'Status de contribuição inválido.',
+  );
 
   // emptyToNull: forms send blank inputs as ''; hashing '' would collide across creates.
   const piiPatch = buildPiiPatch({
@@ -736,14 +758,14 @@ export async function createAssociateData(
       numberOfDependents:
         dependents.length > 0 ? dependents.length : (input.numberOfDependents ?? null),
       ...piiPatch,
-      functionalStatus: functionalStatus as FsEnum | null,
-      associationStatus: associationStatus as AsEnum,
-      contributionStatus: contributionStatus as CsEnum,
-      paymentMethod: (paymentMethodRaw ?? 'folha') as PmEnum,
-      sex: sex as SexEnum | null,
-      maritalStatus: maritalStatus as MsEnum | null,
-      missionType: missionType as MtEnum | null,
-      careerOrigin: careerOrigin as CoEnum | null,
+      functionalStatus,
+      associationStatus,
+      contributionStatus,
+      paymentMethod: paymentMethodRaw ?? 'folha',
+      sex,
+      maritalStatus,
+      missionType,
+      careerOrigin,
       internalNotes: input.internalNotes ?? null,
     };
 
@@ -755,17 +777,13 @@ export async function createAssociateData(
 
   // Best-effort audit AFTER the tx commits. A failed audit INSERT must not abort the
   // mutation's tx (the audit executor poisons PG tx on failure). Default `db` isolates the audit.
-  try {
-    await logAuditAction({
-      adminId: actor.userId,
-      action: 'create',
-      entityType: 'associate',
-      entityId: id,
-      metadata: { source: 'manual_create' },
-    });
-  } catch {
-    // logAuditAction logs internally; swallow to protect the committed mutation.
-  }
+  await logAssociateAuditBestEffort({
+    adminId: actor.userId,
+    action: 'create',
+    entityType: 'associate',
+    entityId: id,
+    metadata: { source: 'manual_create' },
+  });
 
   return { id };
 }

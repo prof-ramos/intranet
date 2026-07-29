@@ -46,7 +46,7 @@ vi.mock('@/lib/oficios/repository', () => ({
   findOfficialLetterByAssinafyDocumentIdForUpdate: mockFindOficioForUpdate,
 }));
 vi.mock('./repository', () => ({ updateAssinafyStatus: mockUpdateAssinafyStatus }));
-vi.mock('@/lib/audit/service', () => ({ logAuditAction: vi.fn() }));
+vi.mock('@/lib/audit/service', () => ({ logAuditBestEffort: vi.fn() }));
 vi.mock('@/lib/integrations/outbox', () => ({ emitDomainEvent: vi.fn() }));
 vi.mock('@/lib/notifications/repository', () => ({
   createNotificationsBatch: mockCreateNotificationsBatch,

@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import { logAuditAction } from '@/lib/audit/service';
+import { logAuditBestEffort } from '@/lib/audit/service';
 import { createLogger } from '@/lib/logger';
 import { createNotificationsBatch } from '@/lib/notifications/repository';
 import { admins, integrationSignatureNonces } from '@/lib/db/schema';
@@ -197,11 +197,7 @@ export async function handleWebhookEvent(
     // INSERT must not abort the mutation's tx (passing tx as the audit executor poisons
     // the PG tx on failure). Default `db` isolates the audit to its own connection.
     if (result.status === 'processed' && auditArgs) {
-      try {
-        await logAuditAction(auditArgs);
-      } catch {
-        logger.error('Audit log failed (non-critical)', { entityId: auditArgs.entityId });
-      }
+      await logAuditBestEffort(auditArgs, logger);
     }
 
     return result;

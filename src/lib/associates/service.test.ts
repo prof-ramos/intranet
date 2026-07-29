@@ -19,7 +19,7 @@ const mockUpdateAssociateById = vi.fn();
 const mockEmitDomainEvent = vi.fn();
 const mockTransaction = vi.fn();
 const mockLogDataAccess = vi.fn();
-const mockLogAuditAction = vi.fn();
+const mockLogAuditBestEffort = vi.fn();
 const mockLoggerWarn = vi.fn();
 const mockCreateDependent = vi.fn();
 const mockUpdateDependentById = vi.fn();
@@ -57,7 +57,7 @@ vi.mock('@/lib/integrations/outbox', () => ({
 
 vi.mock('@/lib/audit/service', () => ({
   logDataAccess: (...args: unknown[]) => mockLogDataAccess(...args),
-  logAuditAction: (...args: unknown[]) => mockLogAuditAction(...args),
+  logAuditBestEffort: (...args: unknown[]) => mockLogAuditBestEffort(...args),
 }));
 
 vi.mock('@/lib/logger', () => ({
@@ -195,7 +195,7 @@ describe('getAssociateForEdit', () => {
 describe('updateAssociateData', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockLogAuditAction.mockResolvedValue(undefined);
+    mockLogAuditBestEffort.mockResolvedValue(undefined);
     mockTransaction.mockImplementation((callback) => callback({ tx: true }));
     mockFindAssociateById.mockResolvedValue({
       ...baseAssociate,
@@ -309,13 +309,16 @@ describe('updateAssociateData', () => {
   it('audits a committed common-field change using only canonical field names', async () => {
     await updateAssociateData({ id: 1, fullName: 'Alice Silva' }, adminActor);
 
-    expect(mockLogAuditAction).toHaveBeenCalledWith({
-      adminId: 7,
-      action: 'associate_updated',
-      entityType: 'associate',
-      entityId: 1,
-      metadata: { changedFields: ['fullName'] },
-    });
+    expect(mockLogAuditBestEffort).toHaveBeenCalledWith(
+      {
+        adminId: 7,
+        action: 'associate_updated',
+        entityType: 'associate',
+        entityId: 1,
+        metadata: { changedFields: ['fullName'] },
+      },
+      expect.anything(),
+    );
   });
 
   it('does not decrypt stored PII for an update containing only common fields', async () => {
@@ -329,13 +332,16 @@ describe('updateAssociateData', () => {
       updateAssociateData({ id: 1, fullName: 'Alice Silva' }, adminActor),
     ).resolves.toBeUndefined();
     expect(mockUpdateAssociateById).toHaveBeenCalled();
-    expect(mockLogAuditAction).toHaveBeenCalledWith({
-      adminId: 7,
-      action: 'associate_updated',
-      entityType: 'associate',
-      entityId: 1,
-      metadata: { changedFields: ['fullName'] },
-    });
+    expect(mockLogAuditBestEffort).toHaveBeenCalledWith(
+      {
+        adminId: 7,
+        action: 'associate_updated',
+        entityType: 'associate',
+        entityId: 1,
+        metadata: { changedFields: ['fullName'] },
+      },
+      expect.anything(),
+    );
   });
 
   it('audits PII changes by canonical names without values or storage-field names', async () => {
@@ -349,7 +355,7 @@ describe('updateAssociateData', () => {
       adminActor,
     );
 
-    const auditArgs = mockLogAuditAction.mock.calls[0]![0];
+    const auditArgs = mockLogAuditBestEffort.mock.calls[0]![0];
     expect(auditArgs).toEqual({
       adminId: 7,
       action: 'associate_updated',
@@ -381,19 +387,22 @@ describe('updateAssociateData', () => {
       ),
     ).resolves.toBeUndefined();
     expect(mockUpdateAssociateById).toHaveBeenCalled();
-    expect(mockLogAuditAction).toHaveBeenCalledWith({
-      adminId: 7,
-      action: 'associate_updated',
-      entityType: 'associate',
-      entityId: 1,
-      metadata: { changedFields: ['primaryEmail'] },
-    });
+    expect(mockLogAuditBestEffort).toHaveBeenCalledWith(
+      {
+        adminId: 7,
+        action: 'associate_updated',
+        entityType: 'associate',
+        entityId: 1,
+        metadata: { changedFields: ['primaryEmail'] },
+      },
+      expect.anything(),
+    );
   });
 
   it('does not audit or emit an event for a proven no-op update', async () => {
     await updateAssociateData({ id: 1, fullName: 'Alice' }, adminActor);
 
-    expect(mockLogAuditAction).not.toHaveBeenCalled();
+    expect(mockLogAuditBestEffort).not.toHaveBeenCalled();
     expect(mockEmitDomainEvent).not.toHaveBeenCalled();
   });
 
@@ -412,11 +421,11 @@ describe('updateAssociateData', () => {
 
     const updatePromise = updateAssociateData({ id: 1, fullName: 'Alice Silva' }, adminActor);
     await vi.waitFor(() => expect(transactionCallbackFinished).toBe(true));
-    expect(mockLogAuditAction).not.toHaveBeenCalled();
+    expect(mockLogAuditBestEffort).not.toHaveBeenCalled();
 
     releaseCommit();
     await updatePromise;
-    expect(mockLogAuditAction).toHaveBeenCalledOnce();
+    expect(mockLogAuditBestEffort).toHaveBeenCalledOnce();
   });
 
   it('does not audit when the transactional outbox write fails', async () => {
@@ -425,24 +434,7 @@ describe('updateAssociateData', () => {
     await expect(
       updateAssociateData({ id: 1, fullName: 'Alice Silva' }, adminActor),
     ).rejects.toThrow('outbox failed');
-    expect(mockLogAuditAction).not.toHaveBeenCalled();
-  });
-
-  it('keeps the committed result and emits a sanitized warning when audit rejects', async () => {
-    mockLogAuditAction.mockRejectedValueOnce(new Error('sensitive database failure'));
-
-    await expect(
-      updateAssociateData({ id: 1, fullName: 'Alice Silva' }, adminActor),
-    ).resolves.toBeUndefined();
-    expect(mockLoggerWarn).toHaveBeenCalledWith(
-      'Audit log failed after committed associate mutation',
-      {
-        action: 'associate_updated',
-        entityType: 'associate',
-        entityId: 1,
-      },
-    );
-    expect(JSON.stringify(mockLoggerWarn.mock.calls)).not.toContain('sensitive database failure');
+    expect(mockLogAuditBestEffort).not.toHaveBeenCalled();
   });
 
   it('enforces internal-notes authorization inside the domain module', async () => {
@@ -472,7 +464,7 @@ describe('updateAssociateData', () => {
 describe('associate child mutation services', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockLogAuditAction.mockResolvedValue(undefined);
+    mockLogAuditBestEffort.mockResolvedValue(undefined);
     mockCreateDependent.mockResolvedValue({ id: 11, name: 'Não auditar', relationship: 'filho' });
     mockCreateHealthAgreement.mockResolvedValue({
       id: 21,
@@ -490,7 +482,7 @@ describe('associate child mutation services', () => {
     await updateAssociateDependent(11, { name: 'Outro nome' }, 42, 5);
     await deleteAssociateDependent(11, 42, 5);
 
-    expect(mockLogAuditAction.mock.calls.map(([args]) => args)).toEqual([
+    expect(mockLogAuditBestEffort.mock.calls.map(([args]) => args)).toEqual([
       {
         adminId: 5,
         action: 'associate_dependent_created',
@@ -513,7 +505,7 @@ describe('associate child mutation services', () => {
         metadata: { dependentId: 11 },
       },
     ]);
-    const serialized = JSON.stringify(mockLogAuditAction.mock.calls);
+    const serialized = JSON.stringify(mockLogAuditBestEffort.mock.calls);
     expect(serialized).not.toContain('Nome não auditável');
     expect(serialized).not.toContain('Outro nome');
     expect(serialized).not.toContain('dependentName');
@@ -524,7 +516,7 @@ describe('associate child mutation services', () => {
     await updateAssociateHealthAgreement(21, { provider: 'Outro plano' }, 42, 5);
     await deleteAssociateHealthAgreement(21, 42, 5);
 
-    expect(mockLogAuditAction.mock.calls.map(([args]) => args)).toEqual([
+    expect(mockLogAuditBestEffort.mock.calls.map(([args]) => args)).toEqual([
       {
         adminId: 5,
         action: 'associate_health_agreement_created',
@@ -547,7 +539,7 @@ describe('associate child mutation services', () => {
         metadata: { healthAgreementId: 21 },
       },
     ]);
-    const serialized = JSON.stringify(mockLogAuditAction.mock.calls);
+    const serialized = JSON.stringify(mockLogAuditBestEffort.mock.calls);
     expect(serialized).not.toContain('Plano secreto');
     expect(serialized).not.toContain('Outro plano');
     expect(serialized).not.toContain('provider');
@@ -559,29 +551,14 @@ describe('associate child mutation services', () => {
     await expect(updateAssociateDependent(11, { name: 'Nome' }, 42, 5)).rejects.toThrow(
       'repository failed',
     );
-    expect(mockLogAuditAction).not.toHaveBeenCalled();
+    expect(mockLogAuditBestEffort).not.toHaveBeenCalled();
   });
 
   it('does not audit a health agreement mutation when the repository fails', async () => {
     mockDeleteHealthAgreementById.mockRejectedValueOnce(new Error('repository failed'));
 
     await expect(deleteAssociateHealthAgreement(21, 42, 5)).rejects.toThrow('repository failed');
-    expect(mockLogAuditAction).not.toHaveBeenCalled();
-  });
-
-  it('does not turn a committed child mutation into failure when audit rejects', async () => {
-    mockLogAuditAction.mockRejectedValueOnce(new Error('audit unavailable'));
-
-    await expect(deleteAssociateDependent(11, 42, 5)).resolves.toBeUndefined();
-    expect(mockLoggerWarn).toHaveBeenCalledWith(
-      'Audit log failed after committed associate mutation',
-      {
-        action: 'associate_dependent_deleted',
-        entityType: 'associate',
-        entityId: 42,
-      },
-    );
-    expect(JSON.stringify(mockLoggerWarn.mock.calls)).not.toContain('audit unavailable');
+    expect(mockLogAuditBestEffort).not.toHaveBeenCalled();
   });
 });
 
@@ -617,15 +594,16 @@ describe('createAssociateData', () => {
     const result = await createAssociateData({ fullName: 'Novo Oficial' }, adminActor);
 
     expect(result).toEqual({ id: 42 });
-    expect(mockLogAuditAction).toHaveBeenCalledWith(
+    expect(mockLogAuditBestEffort).toHaveBeenCalledWith(
       expect.objectContaining({
         adminId: 7,
         action: 'create',
         entityType: 'associate',
         entityId: 42,
       }),
+      expect.anything(),
     );
-    const auditCall = mockLogAuditAction.mock.calls.at(-1)![0];
+    const auditCall = mockLogAuditBestEffort.mock.calls.at(-1)![0];
     expect(auditCall.executor).toBeUndefined();
   });
 

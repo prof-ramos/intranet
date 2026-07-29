@@ -5,6 +5,7 @@ import {
   updateConsultationStatusService,
 } from './service';
 import {
+  findMaxInternalNumberSequence,
   getConsultationById,
   insertNote,
   touchConsultationInteraction,
@@ -26,6 +27,7 @@ vi.mock('@/lib/db', () => ({
 }));
 
 vi.mock('./repository', () => ({
+  findMaxInternalNumberSequence: vi.fn().mockResolvedValue(0),
   getConsultationById: vi.fn(),
   insertConsultation: vi.fn(),
   insertNote: vi.fn(),
@@ -43,8 +45,8 @@ describe('juridico service', () => {
     // Restore db.transaction to the default callback-invoking implementation
     // so retry-exhaust tests that override it don't pollute subsequent tests.
     const { db } = await import('@/lib/db');
-    vi.mocked(db.transaction).mockImplementation(
-      async (...args: unknown[]) => (args[0] as (tx: typeof transactionMock.tx) => Promise<unknown>)(transactionMock.tx),
+    vi.mocked(db.transaction).mockImplementation(async (...args: unknown[]) =>
+      (args[0] as (tx: typeof transactionMock.tx) => Promise<unknown>)(transactionMock.tx),
     );
   });
 
@@ -117,19 +119,29 @@ describe('juridico service', () => {
 
   describe('generateInternalNumber retry exhaust', () => {
     it('uses the São Paulo civil year around the UTC year boundary', async () => {
-      const executor = {
-        select: () => ({
-          from: () => ({ where: async () => [{ max: null }] }),
-        }),
-      } as unknown as DbExecutor;
+      vi.mocked(findMaxInternalNumberSequence).mockResolvedValue(0);
+      const executor = {} as unknown as DbExecutor;
       const { generateInternalNumber } = await import('./service');
 
       await expect(
         generateInternalNumber(executor, new Date('2026-01-01T01:00:00.000Z')),
       ).resolves.toBe('JUR-2025-001');
+      expect(findMaxInternalNumberSequence).toHaveBeenCalledWith(2025, executor);
+
       await expect(
         generateInternalNumber(executor, new Date('2026-01-01T04:00:00.000Z')),
       ).resolves.toBe('JUR-2026-001');
+      expect(findMaxInternalNumberSequence).toHaveBeenCalledWith(2026, executor);
+    });
+
+    it('increments past the current max sequence for the year', async () => {
+      vi.mocked(findMaxInternalNumberSequence).mockResolvedValue(41);
+      const executor = {} as unknown as DbExecutor;
+      const { generateInternalNumber } = await import('./service');
+
+      await expect(
+        generateInternalNumber(executor, new Date('2026-05-13T12:00:00.000Z')),
+      ).resolves.toBe('JUR-2026-042');
     });
 
     it('throws after MAX_RETRIES attempts on unique constraint violation', async () => {
@@ -138,9 +150,9 @@ describe('juridico service', () => {
 
       vi.mocked(db.transaction).mockRejectedValue(uniqueError);
 
-      await expect(
-        (await import('./service')).generateInternalNumber(),
-      ).rejects.toThrow('unique constraint violation');
+      await expect((await import('./service')).generateInternalNumber()).rejects.toThrow(
+        'unique constraint violation',
+      );
 
       // MAX_RETRIES is 3 — transaction must be attempted exactly 3 times
       expect(db.transaction).toHaveBeenCalledTimes(3);
@@ -152,9 +164,9 @@ describe('juridico service', () => {
 
       vi.mocked(db.transaction).mockRejectedValue(genericError);
 
-      await expect(
-        (await import('./service')).generateInternalNumber(),
-      ).rejects.toThrow('connection refused');
+      await expect((await import('./service')).generateInternalNumber()).rejects.toThrow(
+        'connection refused',
+      );
 
       expect(db.transaction).toHaveBeenCalledTimes(1);
     });

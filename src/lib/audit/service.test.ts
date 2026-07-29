@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Logger } from '@/lib/logger';
-import { logAuditAction, logDataAccess } from './service';
+import { logAuditAction, logAuditBestEffort, logDataAccess } from './service';
 
 // Use vi.hoisted to ensure mockInsert is available when vi.mock callbacks run
 const { mockInsert, mockValues } = vi.hoisted(() => ({
@@ -148,6 +148,51 @@ describe('logAuditAction', () => {
       expect.any(Error),
     );
     consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('logAuditBestEffort', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockInsert.mockReturnValue({ values: mockValues });
+  });
+
+  it('inserts the audit record when adminId is valid', async () => {
+    await logAuditBestEffort({
+      adminId: 1,
+      action: 'official_letter_cancelled',
+      entityType: 'official_letter',
+      entityId: 12,
+    });
+
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'official_letter_cancelled', entityId: 12 }),
+    );
+  });
+
+  it('swallows a synchronously-thrown invalid adminId and warns without leaking payload', async () => {
+    const warn = vi.fn();
+
+    await expect(
+      logAuditBestEffort(
+        {
+          adminId: -1,
+          action: 'official_letter_cancelled',
+          entityType: 'official_letter',
+          entityId: 12,
+          metadata: { recipient: 'secret recipient name' },
+        },
+        { warn } as never,
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(warn).toHaveBeenCalledWith('Audit log failed after committed mutation', {
+      action: 'official_letter_cancelled',
+      entityType: 'official_letter',
+      entityId: 12,
+    });
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('secret recipient name');
+    expect(mockInsert).not.toHaveBeenCalled();
   });
 });
 

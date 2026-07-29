@@ -1,6 +1,6 @@
 # ADR 009: Smoke De Go-Live Direto Em Producao, Em Janela Controlada
 
-Status: accepted
+Status: accepted (emendado em 2026-07-18 — o Plano 060/PR #400 substituiu a janela manual única aqui descrita por um job CI recorrente, read-only por padrão em todo push a `main`, com os cenários mutantes atrás de `workflow_dispatch` explícito; ver `docs/runbook.md` e `TODO-PROD.md` para o contrato atual)
 Data: 2026-05-26
 
 ## Contexto

@@ -133,6 +133,47 @@ describe('finance service integration', () => {
     expect(JSON.stringify(audits[0])).not.toMatch(/cpf|siape|address/i);
   });
 
+  it('applies the update when expectedUpdatedAt matches the current row (F-007 happy path)', async () => {
+    // Regression test: `updated_at` is a microsecond-precision timestamptz, but
+    // any caller deriving `expectedUpdatedAt` from a JS Date/toISOString() (as
+    // every real caller does) only carries millisecond precision. Before the
+    // setWhere predicate truncated the column to milliseconds, this exact,
+    // legitimate, non-stale value would be rejected as a false conflict on
+    // every single call.
+    const [fixture] = await db
+      .insert(monthlyPayments)
+      .values({
+        associateId: requireAssociateId(),
+        year: 2098,
+        month: 4,
+        status: 'pendente',
+        paymentMethod: 'pix',
+        updatedBy: requireAdminId(),
+      })
+      .returning();
+    paymentIds.push(fixture.id);
+
+    const updated = await updateMonthlyPayment(
+      requireAdminId(),
+      {
+        associateId: requireAssociateId(),
+        year: fixture.year,
+        month: fixture.month,
+        status: 'pago',
+        paymentMethod: 'pix',
+      },
+      fixture.updatedAt.toISOString(),
+    );
+
+    expect(updated.status).toBe('pago');
+
+    const [persisted] = await db
+      .select()
+      .from(monthlyPayments)
+      .where(eq(monthlyPayments.id, fixture.id));
+    expect(persisted.status).toBe('pago');
+  });
+
   it('rolls back both a payment mutation and its outbox event', async () => {
     let rolledBackPaymentId = 0;
 

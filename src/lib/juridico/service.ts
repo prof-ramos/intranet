@@ -1,9 +1,8 @@
 import { db } from '@/lib/db';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
-import { legalConsultations } from '@/lib/db/schema';
-import { sql } from 'drizzle-orm';
 import type { DbExecutor } from '@/lib/db';
 import {
+  findMaxInternalNumberSequence,
   insertConsultation,
   insertNote,
   touchConsultationInteraction,
@@ -33,17 +32,8 @@ export async function generateInternalNumber(
   const year = getBusinessDateParts(now).year;
 
   async function nextNumber(tx: DbExecutor): Promise<string> {
-    const likePattern = `JUR-${year}-%`;
-    const regexPattern = `JUR-${year}-([0-9]+)`;
-    const [result] = await tx
-      .select({
-        max: sql<string>`max(substring(${legalConsultations.internalNumber} from ${regexPattern})::integer)`,
-      })
-      .from(legalConsultations)
-      .where(sql`${legalConsultations.internalNumber} like ${likePattern}`);
-
-    const nextNum = (Number(result?.max) || 0) + 1;
-    return `JUR-${year}-${String(nextNum).padStart(3, '0')}`;
+    const maxSequence = await findMaxInternalNumberSequence(year, tx);
+    return `JUR-${year}-${String(maxSequence + 1).padStart(3, '0')}`;
   }
 
   if (executor) {
@@ -100,11 +90,13 @@ export async function createConsultationService(input: CreateConsultationInput) 
     try {
       return await db.transaction(async (tx) => {
         const internalNumber = await generateInternalNumber(tx);
-        const slaDueDate = input.slaDueDate ?? (() => {
-          const d = new Date();
-          d.setDate(d.getDate() + input.slaDays);
-          return d;
-        })();
+        const slaDueDate =
+          input.slaDueDate ??
+          (() => {
+            const d = new Date();
+            d.setDate(d.getDate() + input.slaDays);
+            return d;
+          })();
 
         const inserted = await insertConsultation(
           {

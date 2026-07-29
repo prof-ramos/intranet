@@ -2,6 +2,10 @@
 
 Este documento descreve a jornada do administrador ao interagir com o módulo financeiro baseado no schema de `monthly_payments`.
 
+Este é o contrato técnico canônico da jornada: somente `admin` e `diretoria`
+acessam o módulo, e toda mutação financeira deve preservar o registro de
+auditoria sem incluir CPF, SIAPE completo ou dados bancários.
+
 ## Atores
 
 - **Administrador Financeiro**: Membro da equipe administrativa ou diretoria com permissões para gerenciar pagamentos.

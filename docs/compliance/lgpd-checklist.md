@@ -1,6 +1,6 @@
 # Checklist LGPD-ready
 
-Versao: 2026-06-07
+Versao: 2026-07-18
 
 Escopo: intranet ASOF com Next.js, PostgreSQL gerenciado, auth server-side propria e Mailjet para email transacional.
 
@@ -21,10 +21,10 @@ Escopo: intranet ASOF com Next.js, PostgreSQL gerenciado, auth server-side propr
 
 - [ ] ROPA formal com finalidade, base legal, categorias de dados e operadores.
 - [ ] Politica de privacidade publicada.
-- [ ] Canal de contato do encarregado/DPO.
+- [ ] Canal de contato do encarregado/DPO. (ADR 011 já registra canal único de incidente e papel LGPD/DPO acumulado pela Diretoria até formalização — falta publicar isso como canal formal ao titular, fora do escopo do ADR.)
 - [ ] Processo para direitos do titular.
 - [ ] Politica de retencao e descarte por categoria de dado, incluindo retenção e descarte de backups do PostgreSQL gerenciado (documentando prazos, responsáveis e procedimentos de deleção segura para backups, com verificação e auditoria).
-- [ ] Plano de resposta a incidentes.
+- [ ] Plano de resposta a incidentes. (ADR 011 registra owners e canal único de incidente; falta o plano de resposta formal em si.)
 - [ ] Lista de operadores/suboperadores: Vercel, provider PostgreSQL gerenciado, Mailjet e storage de objetos quando escolhido.
 - [ ] **BLOQUEANTE:** Revisao de transferencia internacional e contratos/DPA dos operadores (especialmente o provider do PostgreSQL).
 
