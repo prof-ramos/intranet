@@ -109,12 +109,6 @@ export function PrintableFicha({ profile }: { profile: AssociateProfile }) {
         )}
       </PrintSection>
 
-      <PrintSection title="Observações Internas">
-        <p className="m-0 text-[11px] whitespace-pre-wrap">
-          {associate.internalNotes || 'Nenhuma observação interna registrada.'}
-        </p>
-      </PrintSection>
-
       <footer className="mt-8 border-t border-black/30 pt-2 text-[9px] text-black/50">
         Documento de uso interno da ASOF — não substitui certidões oficiais.
       </footer>

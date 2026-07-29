@@ -1,4 +1,4 @@
-import { getAssociateProfile } from '@/lib/associates/service';
+import { getAssociateProfileForPrint } from '@/lib/associates/service';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 import { requireEntityById } from '@/lib/routing/require-entity';
@@ -10,7 +10,7 @@ export default async function ImprimirFichaPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const associateId = parsePositiveIntParam(id);
   const profile = await requireEntityById(associateId, (associateId) =>
-    getAssociateProfile(associateId, user.role),
+    getAssociateProfileForPrint(associateId, user.role, user.userId),
   );
 
   return (
