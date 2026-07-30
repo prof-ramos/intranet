@@ -4,6 +4,7 @@ import { focusRingClass } from '@/lib/ui/tokens';
 import { Calendar, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { DashboardActivitiesOverview } from './_dashboard/DashboardActivitiesOverview';
+import { DashboardDispatchStrip } from './_dashboard/DashboardDispatchStrip';
 import { DashboardIndicators } from './_dashboard/DashboardIndicators';
 import { DashboardSidebar } from './_dashboard/DashboardSidebar';
 import { formatBusinessDate } from '@/lib/utils/date';
@@ -42,13 +43,14 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      <DashboardDispatchStrip urgentActivities={data.urgentActivities} />
+
       <DashboardIndicators stripe={data.stripe} inadimplentesCount={data.inadimplentesCount} />
 
       <section className="grid items-start gap-7 xl:grid-cols-[minmax(0,1fr)_280px]">
         <DashboardActivitiesOverview statusColumns={data.statusColumns} />
         <DashboardSidebar
           topRegions={data.topRegions}
-          urgentActivities={data.urgentActivities}
           birthdaysThisMonth={data.birthdaysThisMonth}
           user={sidebarUser}
         />

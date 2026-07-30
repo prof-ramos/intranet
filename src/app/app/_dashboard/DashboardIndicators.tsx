@@ -9,8 +9,9 @@ interface DashboardIndicatorsProps {
 
 function StripeCard({ item }: { item: DashboardStripeItem }) {
   return (
-    <div
-      className="min-h-[104px] rounded-[16px] bg-white p-5 shadow-none"
+    <Link
+      href={item.href}
+      className="block min-h-[104px] rounded-[16px] bg-white p-5 shadow-none transition-colors hover:bg-[rgba(4,9,32,0.02)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#76AEEA] focus-visible:ring-offset-2"
       style={{ border: `1px solid ${hairline}`, borderTop: `3px solid ${skyBlue}` }}
     >
       {item.segments ? (
@@ -51,7 +52,7 @@ function StripeCard({ item }: { item: DashboardStripeItem }) {
           </div>
         </>
       )}
-    </div>
+    </Link>
   );
 }
 
@@ -60,6 +61,7 @@ export function DashboardIndicators({ stripe, inadimplentesCount }: DashboardInd
     id: 'inadimplentes',
     value: String(inadimplentesCount),
     label: 'Inadimplentes',
+    href: '/app/associados?contributionStatus=inadimplente',
     tone: inadimplentesCount > 0 ? 'neg' : undefined,
   };
 
@@ -71,24 +73,7 @@ export function DashboardIndicators({ stripe, inadimplentesCount }: DashboardInd
       {stripe.map((item) => (
         <StripeCard key={item.id} item={item} />
       ))}
-      <Link
-        href="/app/associados?contributionStatus=inadimplente"
-        className="block min-h-[104px] rounded-[16px] bg-white p-5 shadow-none transition-colors hover:bg-[rgba(4,9,32,0.02)]"
-        style={{ border: `1px solid ${hairline}`, borderTop: `3px solid ${skyBlue}` }}
-      >
-        <div
-          className="text-[11px] leading-tight font-bold tracking-[0.1em] uppercase"
-          style={{ color: textMuted }}
-        >
-          {inadimplentesItem.label}
-        </div>
-        <div
-          className="mt-3 font-sans text-[30px] leading-none font-bold tabular-nums"
-          style={{ color: inadimplentesCount > 0 ? dangerText : textPrimary }}
-        >
-          {inadimplentesItem.value}
-        </div>
-      </Link>
+      <StripeCard item={inadimplentesItem} />
     </section>
   );
 }

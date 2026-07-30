@@ -15,6 +15,7 @@ export const navy = '#040920';
 export const primaryContainerHover = '#0d3260';
 export const primaryContainerActive = '#123d73';
 export const skyBlue = '#76AEEA';
+export const linkText = '#0d3260';
 export const canvas = '#f8fafc';
 export const white = '#ffffff';
 export const borderMuted = '#c9d2df';

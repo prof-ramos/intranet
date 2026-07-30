@@ -78,7 +78,13 @@ describe('getDashboardViewModel', () => {
     ]);
     queriesMock.getBirthdaysThisMonth.mockResolvedValue([]);
     queriesMock.getUrgentActivities.mockResolvedValue([
-      { id: 1, title: 'Cobrar retorno', priority: 'urgente', dueDate: '2026-05-20' },
+      {
+        id: 1,
+        title: 'Cobrar retorno',
+        priority: 'urgente',
+        dueDate: '2026-05-20',
+        assigneeName: 'Ana Silva',
+      },
     ]);
     queriesMock.getKanbanCards.mockResolvedValue([
       {
@@ -122,6 +128,9 @@ describe('getDashboardViewModel', () => {
       ]),
     );
     expect(viewModel.stripe.find((item) => item.id === 'pending-migration')).toBeUndefined();
+    expect(viewModel.stripe.find((item) => item.id === 'active-associates')?.href).toBe(
+      '/app/associados?associationStatus=associado',
+    );
   });
 
   it('calculates topRegions pct relative to total active associates', async () => {
@@ -132,6 +141,14 @@ describe('getDashboardViewModel', () => {
       { country: 'Brasil', total: 381, pct: 50 },
       { country: 'Estados Unidos', total: 25, pct: 3 },
       { country: 'França', total: 15, pct: 2 },
+    ]);
+  });
+
+  it('includes the assignee in urgent activities for the dispatch strip', async () => {
+    const viewModel = await getDashboardViewModel();
+
+    expect(viewModel.urgentActivities).toEqual([
+      expect.objectContaining({ id: 1, assigneeName: 'Ana Silva' }),
     ]);
   });
 
