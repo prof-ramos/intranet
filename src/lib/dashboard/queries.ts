@@ -3,7 +3,7 @@ import {
   isDomesticCountrySql,
   normalizedCountryLabelSql,
 } from '@/lib/associates/location-country';
-import { activities, associates, assignments } from '@/lib/db/schema';
+import { activities, admins, associates, assignments } from '@/lib/db/schema';
 import { and, asc, count, countDistinct, desc, eq, ne, sql } from 'drizzle-orm';
 import { withCache } from '@/lib/cache/with-cache';
 
@@ -152,6 +152,7 @@ export interface UrgentActivity {
   status: string;
   priority: string;
   dueDate: string | null;
+  assigneeName: string | null;
 }
 
 const _getUrgentActivities = withCache({
@@ -163,8 +164,10 @@ const _getUrgentActivities = withCache({
         status: activities.status,
         priority: activities.priority,
         dueDate: activities.dueDate,
+        assigneeName: admins.name,
       })
       .from(activities)
+      .leftJoin(admins, eq(activities.assigneeId, admins.id))
       .where(and(ne(activities.status, 'concluido'), sql`${activities.dueDate} < now()`))
       .orderBy(activities.dueDate)
       .limit(limit),

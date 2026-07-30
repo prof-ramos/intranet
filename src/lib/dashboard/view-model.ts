@@ -23,6 +23,7 @@ export interface DashboardStripeItem {
   id: string;
   value: string;
   label: string;
+  href: string;
   tone?: 'neg' | 'pos';
   segments?: {
     id: string;
@@ -58,6 +59,7 @@ export interface DashboardUrgentActivity {
   title: string;
   priority: string;
   dueDate: string | null;
+  assigneeName: string | null;
 }
 
 export interface DashboardViewModel {
@@ -128,11 +130,13 @@ export async function getDashboardViewModel(): Promise<DashboardViewModel> {
         id: 'active-associates',
         value: activeAssociates.toLocaleString('pt-BR'),
         label: 'associados ativos',
+        href: '/app/associados?associationStatus=associado',
       },
       {
         id: 'associates-location',
         value: '',
         label: 'distribuição de associados',
+        href: '/app/associados?associationStatus=associado',
         segments: [
           {
             id: 'associates-brasil',
@@ -146,17 +150,24 @@ export async function getDashboardViewModel(): Promise<DashboardViewModel> {
           },
         ],
       },
-      { id: 'open-activities', value: String(openActivities), label: 'atividades em aberto' },
+      {
+        id: 'open-activities',
+        value: String(openActivities),
+        label: 'atividades em aberto',
+        href: '/app/atividades',
+      },
       {
         id: 'overdue-activities',
         value: String(overdueActivities),
         label: 'atrasadas',
+        href: '/app/atividades?dueLate=1',
         tone: 'neg',
       },
       {
         id: 'contribution-rate',
         value: `${contributionRate}%`,
         label: 'contribuições em dia',
+        href: '/app/associados?associationStatus=associado&contributionStatus=em_dia',
         tone: 'pos',
       },
     ],
@@ -171,6 +182,7 @@ export async function getDashboardViewModel(): Promise<DashboardViewModel> {
       title: activity.title,
       priority: activity.priority,
       dueDate: activity.dueDate,
+      assigneeName: activity.assigneeName,
     })),
     birthdaysThisMonth: birthdaysThisMonth.map(toDashboardBirthdayItem),
     inadimplentesCount,
