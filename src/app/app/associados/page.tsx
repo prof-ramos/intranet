@@ -18,8 +18,7 @@ export default async function AssociadosPage({
     show?: string;
   }>;
 }) {
-  const user = await requireAuth();
-  const rawSearchParams = await searchParams;
+  const [user, rawSearchParams] = await Promise.all([requireAuth(), searchParams]);
   const { q } = parseAssociatesSearchParams(rawSearchParams);
   const canCreateOfficial = user.role === 'admin' || user.role === 'secretaria';
   const hasSearch = q.length >= MIN_SEARCH_CHARS;
@@ -28,7 +27,9 @@ export default async function AssociadosPage({
   const { rows, total } = hasSearch
     ? await getAssociatesListPage(1, showAll ? MAX_SHOW_ALL : PAGE_SIZE, q, undefined, 'name')
     : { rows: [], total: 0 };
-  const currentListUrl = q ? `/app/associados?${new URLSearchParams({ q }).toString()}` : '/app/associados';
+  const currentListUrl = q
+    ? `/app/associados?${new URLSearchParams({ q }).toString()}`
+    : '/app/associados';
   const showAllHref = `/app/associados?${new URLSearchParams({ q, show: 'all' }).toString()}`;
 
   return (
@@ -73,7 +74,8 @@ export default async function AssociadosPage({
           ) : total === 0 ? (
             <div className="rounded-[8px] border border-[rgba(4,9,32,0.08)] bg-white p-8 text-center">
               <h2 className="text-lg font-semibold">
-                Nenhum oficial encontrado para <span className="break-words">&#8220;{q}&#8221;</span>
+                Nenhum oficial encontrado para{' '}
+                <span className="break-words">&#8220;{q}&#8221;</span>
               </h2>
               <p className="mt-2 text-sm" style={{ color: textMuted }}>
                 Tente termos diferentes ou verifique a ortografia.
@@ -92,7 +94,9 @@ export default async function AssociadosPage({
             <div className="space-y-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm" style={{ color: textMuted }}>
-                  {rows.length >= total ? `${total} resultado${total === 1 ? '' : 's'}` : `${rows.length} de ${total} resultado${total === 1 ? '' : 's'}`}
+                  {rows.length >= total
+                    ? `${total} resultado${total === 1 ? '' : 's'}`
+                    : `${rows.length} de ${total} resultado${total === 1 ? '' : 's'}`}
                 </p>
                 {!showAll && total > PAGE_SIZE && (
                   <Link

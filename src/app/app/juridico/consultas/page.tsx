@@ -20,8 +20,8 @@ export default async function ConsultasPage({
 }: {
   searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 }) {
-  await requireAuth();
-  const currentFilters = parseJuridicoConsultationsSearchParams(await searchParams);
+  const [_, rawSearchParams] = await Promise.all([requireAuth(), searchParams]);
+  const currentFilters = parseJuridicoConsultationsSearchParams(rawSearchParams);
   const { q, status, page } = currentFilters;
 
   const { rows, total } = await getConsultationsPaginated(page, PAGE_SIZE, {
@@ -68,7 +68,7 @@ export default async function ConsultasPage({
             type="search"
             name="q"
             defaultValue={q ?? ''}
-            placeholder="Buscar por título ou número..."
+            placeholder="Buscar por título ou número…"
             className={`h-10 w-full max-w-md rounded-[8px] border border-[#e2e8f0] bg-white pr-3 pl-9 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] ${focusRingClass}`}
           />
           {status && <input type="hidden" name="status" value={status} />}

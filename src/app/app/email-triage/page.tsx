@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { requireAuth } from '@/lib/auth/require-auth';
-import { getTriagesPaginated, countTriagesAguardandoValidacao, countTriagesVencidas, countTriagesAltoRisco } from '@/lib/email-triage/repository';
+import {
+  getTriagesPaginated,
+  countTriagesAguardandoValidacao,
+  countTriagesVencidas,
+  countTriagesAltoRisco,
+} from '@/lib/email-triage/repository';
 import { parseEmailTriageSearchParams } from '@/lib/email-triage/search-params';
 import { formatDate, daysSince } from '@/lib/utils/date';
 import {
@@ -14,7 +19,11 @@ import {
   EMAIL_TRIAGE_CATEGORIA_FILTER_OPTIONS,
   EMAIL_TRIAGE_RISCO_FILTER_OPTIONS,
 } from '@/lib/email-triage/status';
-import type { EmailTriageStatus, EmailTriageCategoria, EmailTriageRisco } from '@/lib/email-triage/status';
+import type {
+  EmailTriageStatus,
+  EmailTriageCategoria,
+  EmailTriageRisco,
+} from '@/lib/email-triage/status';
 import { ArrowLeft, Search } from 'lucide-react';
 import { hairline, focusRingClass } from '@/lib/ui/tokens';
 import { calculatePaginationBounds } from '@/lib/pagination';
@@ -115,18 +124,22 @@ export default async function EmailTriagePage({
             type="search"
             name="q"
             defaultValue={filters.q ?? ''}
-            placeholder="Buscar por assunto ou remetente..."
+            placeholder="Buscar por assunto ou remetente…"
             className={`h-10 w-full max-w-md rounded-[8px] border border-[#e2e8f0] bg-white pr-3 pl-9 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] ${focusRingClass}`}
           />
           {filters.status && <input type="hidden" name="status" value={filters.status} />}
           {filters.categoria && <input type="hidden" name="categoria" value={filters.categoria} />}
-          {filters.nivelRisco && <input type="hidden" name="nivelRisco" value={filters.nivelRisco} />}
+          {filters.nivelRisco && (
+            <input type="hidden" name="nivelRisco" value={filters.nivelRisco} />
+          )}
         </form>
 
         <form className="flex gap-2" method="get">
           {filters.q && <input type="hidden" name="q" value={filters.q} />}
           {filters.categoria && <input type="hidden" name="categoria" value={filters.categoria} />}
-          {filters.nivelRisco && <input type="hidden" name="nivelRisco" value={filters.nivelRisco} />}
+          {filters.nivelRisco && (
+            <input type="hidden" name="nivelRisco" value={filters.nivelRisco} />
+          )}
           <StatusFilter defaultValue={filters.status ?? ''}>
             {EMAIL_TRIAGE_STATUS_FILTER_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -139,7 +152,9 @@ export default async function EmailTriagePage({
         <form className="flex gap-2" method="get">
           {filters.q && <input type="hidden" name="q" value={filters.q} />}
           {filters.status && <input type="hidden" name="status" value={filters.status} />}
-          {filters.nivelRisco && <input type="hidden" name="nivelRisco" value={filters.nivelRisco} />}
+          {filters.nivelRisco && (
+            <input type="hidden" name="nivelRisco" value={filters.nivelRisco} />
+          )}
           <StatusFilter defaultValue={filters.categoria ?? ''} name="categoria">
             {EMAIL_TRIAGE_CATEGORIA_FILTER_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -194,9 +209,7 @@ export default async function EmailTriagePage({
               ) : (
                 rows.map((row) => {
                   const overdueDays =
-                    row.status === 'vencido' && row.prazoData
-                      ? daysSince(row.prazoData)
-                      : null;
+                    row.status === 'vencido' && row.prazoData ? daysSince(row.prazoData) : null;
                   return (
                     <tr
                       key={row.id}
@@ -210,9 +223,7 @@ export default async function EmailTriagePage({
                           {row.subject}
                         </Link>
                       </td>
-                      <td className="max-w-[200px] truncate px-4 py-3 text-sm">
-                        {row.sender}
-                      </td>
+                      <td className="max-w-[200px] truncate px-4 py-3 text-sm">{row.sender}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getCategoriaBadgeClass(row.categoria)}`}

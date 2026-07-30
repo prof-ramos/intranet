@@ -156,7 +156,7 @@ export default async function ConsultaDetalhePage({ params }: { params: Promise<
                 name="content"
                 rows={3}
                 required
-                placeholder="Descreva a interação..."
+                placeholder="Descreva a interação…"
                 className={`w-full rounded-[8px] border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] ${focusRingClass}`}
               />
 
