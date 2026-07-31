@@ -9,7 +9,8 @@ import { DashboardSidebar } from './_dashboard/DashboardSidebar';
 import { formatBusinessDate } from '@/lib/utils/date';
 
 export default async function DashboardPage() {
-  const [user, data] = await Promise.all([requireAuth(), getDashboardViewModel()]);
+  const user = await requireAuth();
+  const data = await getDashboardViewModel();
   const sidebarUser = { name: user.name, role: user.role };
 
   const today = formatBusinessDate();

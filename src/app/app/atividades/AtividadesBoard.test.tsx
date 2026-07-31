@@ -149,6 +149,31 @@ describe('AtividadesBoard quick add', () => {
     });
   });
 
+  it('prevents a duplicate quick add while creation is pending', async () => {
+    actionMocks.createQuickActivityAction.mockReturnValueOnce(new Promise(() => {}));
+    render(
+      <AtividadesBoard
+        initialActivities={[]}
+        people={[{ id: 1, name: 'Dev', role: 'admin' }]}
+        associates={[]}
+        currentUser={{ id: 1, name: 'Dev', role: 'admin' }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Título da nova atividade' }), {
+      target: { value: 'TESTE' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar' }));
+
+    await waitFor(() =>
+      expect((screen.getByRole('button', { name: 'Salvando...' }) as HTMLButtonElement).disabled).toBe(
+        true,
+      ),
+    );
+    expect(actionMocks.createQuickActivityAction).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps the editor open with its title when creation fails', async () => {
     actionMocks.createQuickActivityAction.mockRejectedValueOnce(new Error('Falha de criação'));
     render(
