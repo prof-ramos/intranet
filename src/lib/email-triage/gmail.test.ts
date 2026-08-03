@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { getHeader, getGmailAccessToken, type GmailMessage } from './gmail';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { getHeader, getGmailAccessToken, getMessage, type GmailMessage } from './gmail';
 
 describe('getGmailAccessToken', () => {
   const originalEnv = process.env;
@@ -68,3 +68,39 @@ describe('getHeader', () => {
   });
 });
 
+describe('getMessage', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('rejects a full Gmail response that exceeds the byte budget before parsing it', async () => {
+    const oversizedMessage = JSON.stringify({
+      id: 'message-1',
+      payload: {},
+      padding: 'x'.repeat(2 * 1024 * 1024),
+    });
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(oversizedMessage, {
+        status: 200,
+        headers: { 'content-length': String(Buffer.byteLength(oversizedMessage)) },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getMessage('access-token', 'message-1')).rejects.toThrow(
+      'Gmail message response exceeds the allowed size.',
+    );
+  });
+
+  it('enforces the byte budget when Gmail omits Content-Length', async () => {
+    const responseBody = `{"id":"message-1","payload":{}}${' '.repeat(2 * 1024 * 1024)}`;
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(responseBody, { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getMessage('access-token', 'message-1')).rejects.toThrow(
+      'Gmail message response exceeds the allowed size.',
+    );
+  });
+});
