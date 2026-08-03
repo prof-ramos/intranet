@@ -189,6 +189,31 @@ describe('atividades actions', () => {
     expect(createActivityServiceMock).not.toHaveBeenCalled();
   });
 
+  it('rejects oversized activity text and tag collections before persistence', async () => {
+    const oversizedDescription = new FormData();
+    oversizedDescription.set('title', 'Nova atividade');
+    oversizedDescription.set('description', 'x'.repeat(10_001));
+
+    await expect(createActivity(oversizedDescription)).rejects.toThrow('descrição');
+
+    const tooManyTags = new FormData();
+    tooManyTags.set('title', 'Nova atividade');
+    tooManyTags.set('tags', JSON.stringify(Array.from({ length: 21 }, (_, index) => `tag-${index}`)));
+
+    await expect(createActivity(tooManyTags)).rejects.toThrow('tags');
+
+    await expect(
+      createQuickActivityAction({ title: 'x'.repeat(256), status: 'a_fazer' }),
+    ).rejects.toThrow('título');
+
+    await expect(
+      updateActivityAction({ id: 99, reassignmentMessage: 'x'.repeat(2_001) }),
+    ).rejects.toThrow('mensagem');
+
+    expect(createActivityServiceMock).not.toHaveBeenCalled();
+    expect(updateActivityServiceMock).not.toHaveBeenCalled();
+  });
+
   it('updates an activity through the server action and revalidates the board', async () => {
     const result = await updateActivityAction({
       id: 99,

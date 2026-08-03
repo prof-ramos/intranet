@@ -7,6 +7,8 @@ import {
   parseJsonWebhook,
   requireSecretHeader,
 } from '@/lib/integrations/webhook-handler';
+import { consumeIpRateLimit } from '@/lib/rate-limit';
+import { getTrustedClientIp } from '@/lib/ip';
 
 const logger = createLogger('assinafy:webhook');
 
@@ -30,7 +32,16 @@ export const POST = createWebhookHandler<AssinafyWebhookEvent>({
       },
     }),
   parse: parseJsonWebhook,
-  handle: async (event) => {
+  handle: async (event, { request }) => {
+    const rateLimit = await consumeIpRateLimit(
+      getTrustedClientIp(request.headers),
+      'assinafy_webhook',
+      { windowMs: 60_000, maxRequests: 60 },
+    );
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     // Validate required fields
     if (!event.event || !event.object?.id) {
       logger.warn('Missing required fields in webhook event', { event: event.event });

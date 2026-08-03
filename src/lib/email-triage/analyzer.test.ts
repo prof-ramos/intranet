@@ -8,6 +8,7 @@ import {
   analyzeEmail,
 } from './analyzer';
 import type { EmailPayload, AttachmentSummary } from './schema';
+import type { GmailMessage } from './gmail';
 import redactionInputs from './__fixtures__/redaction-inputs.json';
 import sampleMessage from './__fixtures__/sample-message.json';
 import multipartEmail from './__fixtures__/multipart-email.json';
@@ -250,6 +251,44 @@ describe('extractTextAndAttachments', () => {
     expect(result.attachments).toHaveLength(1);
     expect(result.attachments[0].textExcerpt).not.toContain('123.456.789-00');
     expect(result.attachments[0].textExcerpt).toContain('[cpf-redacted]');
+  });
+
+  it('rejects excessive MIME nesting, part counts, and encoded body size', () => {
+    let nested: Record<string, unknown> = { mimeType: 'text/plain', body: {} };
+    for (let index = 0; index < 11; index += 1) {
+      nested = { mimeType: 'multipart/mixed', parts: [nested] };
+    }
+    expect(() => extractTextAndAttachments({ payload: nested } as GmailMessage)).toThrow(
+      'Email MIME nesting exceeds the allowed depth.',
+    );
+
+    expect(() =>
+      extractTextAndAttachments({
+        payload: {
+          mimeType: 'multipart/mixed',
+          parts: Array.from({ length: 101 }, () => ({ mimeType: 'text/plain', body: {} })),
+        },
+      } as GmailMessage),
+    ).toThrow('Email MIME part count exceeds the allowed limit.');
+
+    expect(() =>
+      extractTextAndAttachments({
+        payload: { mimeType: 'text/plain', body: { data: 'a'.repeat(350 * 1024 + 1) } },
+      } as GmailMessage),
+    ).toThrow('Email MIME part exceeds the allowed size.');
+
+    expect(() =>
+      extractTextAndAttachments({
+        payload: {
+          mimeType: 'multipart/mixed',
+          parts: Array.from({ length: 26 }, (_, index) => ({
+            filename: `anexo-${index}.txt`,
+            mimeType: 'text/plain',
+            body: {},
+          })),
+        },
+      }),
+    ).toThrow('Email attachment count exceeds the allowed limit.');
   });
 });
 

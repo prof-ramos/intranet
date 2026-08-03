@@ -84,6 +84,9 @@ export async function requestPasswordReset(email: string): Promise<void> {
     await retryTransientConnection(() =>
       db.delete(passwordResetTokens).where(lt(passwordResetTokens.expiresAt, new Date())),
     );
+    await retryTransientConnection(() =>
+      db.delete(passwordResetAttempts).where(lt(passwordResetAttempts.expiresAt, new Date())),
+    );
   } catch {
     // Falha silenciosa — não bloqueia o fluxo principal
   }
@@ -255,6 +258,14 @@ export async function validateResetToken(token: string): Promise<ValidateResetTo
 
 export async function consumeResetToken(token: string, newPassword: string): Promise<void> {
   const tokenHashed = hashToken(token);
+
+  // Rejeita tokens inválidos antes do bcrypt para que valores arbitrários enviados
+  // ao endpoint público não consumam CPU. A atualização transacional abaixo continua
+  // sendo a fonte de verdade e cobre corrida entre esta leitura e o consumo.
+  const validation = await validateResetToken(token);
+  if (!validation.valid) {
+    throw new InvalidResetTokenError();
+  }
 
   // Hash da nova senha (operação lenta — fora da transação)
   const passwordHash = await bcrypt.hash(newPassword, 12);

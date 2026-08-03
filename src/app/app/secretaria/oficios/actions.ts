@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 import { isDomainError } from '@/lib/errors';
+import { consumeIpRateLimit } from '@/lib/rate-limit';
 
 const logger = createLogger('oficios:actions');
 
@@ -67,6 +68,7 @@ export const getOfficialLetterAction = defineServerAction({
 export const generateAiTextAction = defineServerAction({
   auth: ALLOWED_ROLES,
   schema: generateOfficialLetterTextSchema,
+  rateLimit: { key: 'ai_generate_official_letter', windowMs: 60_000, maxRequests: 5 },
   service: async (params: {
     recipient: string;
     recipientRole: string;
@@ -75,7 +77,18 @@ export const generateAiTextAction = defineServerAction({
     signatory: string;
     signatoryRole: string;
     instruction: string;
-  }) => {
+  }, user) => {
+    const rateLimitOptions = { windowMs: 60_000, maxRequests: 5 };
+    const [accountBudget, globalBudget] = await Promise.all([
+      consumeIpRateLimit(`account:${user.userId}`, 'ai_generate_official_letter', rateLimitOptions),
+      consumeIpRateLimit('global', 'ai_generate_official_letter', {
+        windowMs: 60_000,
+        maxRequests: 100,
+      }),
+    ]);
+    if (!accountBudget.allowed || !globalBudget.allowed) {
+      return { success: false, error: 'Muitas solicitações de IA. Aguarde um momento.' };
+    }
     if (!(await isGeminiConfigured())) {
       return {
         success: false,

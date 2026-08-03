@@ -294,4 +294,22 @@ describe('assinafy/service', () => {
     );
     expect(JSON.stringify(result)).not.toContain('provider detail');
   });
+
+  it('bounds provider failure details before persistence and audit logging', async () => {
+    const event = {
+      ...BASE_EVENT,
+      event: 'document_processing_failed',
+      payload: { error_message: 'x'.repeat(1_000) },
+    };
+
+    await handleWebhookEvent(event);
+
+    expect(mockUpdateAssinafyStatus).toHaveBeenCalledWith(
+      1,
+      'failed',
+      { assinafyError: 'x'.repeat(500) },
+      mockTx,
+    );
+    expect(JSON.stringify(mockLogAuditBestEffort.mock.calls)).not.toContain('x'.repeat(501));
+  });
 });

@@ -2,9 +2,7 @@ name: Issue Triage Shadow
 
 on:
   issues:
-    types: [opened, edited, reopened]
-  issue_comment:
-    types: [created, edited]
+    types: [labeled]
   workflow_dispatch:
     inputs:
       issue_number:
@@ -23,7 +21,7 @@ concurrency:
 jobs:
   triage:
     name: Structured analysis
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.issue.pull_request == null }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.issue.pull_request == null && github.event.label.name == 'ready-for-agent') }}
     runs-on: [self-hosted, Linux, ARM64, tio-abraao-triage]
     timeout-minutes: 10
     env:

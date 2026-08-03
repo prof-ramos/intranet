@@ -66,6 +66,15 @@ describe('AssinafyClient', () => {
       const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
       await expect(client.uploadDocument(Buffer.from('x'), 'f.pdf')).rejects.toThrow('Invalid file');
     });
+
+    it('rejects an oversized provider response before JSON parsing', async () => {
+      fetchSpy.mockResolvedValueOnce(new Response('x'.repeat(256 * 1024 + 1), { status: 200 }));
+
+      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
+      await expect(client.uploadDocument(Buffer.from('x'), 'f.pdf')).rejects.toThrow(
+        'Response body exceeds the allowed size.',
+      );
+    });
   });
 
   describe('createSigner', () => {

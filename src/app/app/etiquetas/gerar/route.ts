@@ -4,12 +4,23 @@ import { toSafeErrorLog } from '@/lib/error-log';
 import { generateEtiquetasFromRecipients, etiquetaRouteRequestSchema } from '@/lib/etiquetas';
 import { getEtiquetaRecipientsByIds } from '@/lib/etiquetas/associates';
 import { requireRole } from '@/lib/auth/authorization';
+import { logDataAccess } from '@/lib/audit/service';
+import { consumeIpRateLimit } from '@/lib/rate-limit';
+import { getTrustedClientIp } from '@/lib/ip';
 
 const logger = createLogger('etiquetas:pimaco');
 
 export async function POST(req: NextRequest) {
   try {
-    await requireRole(['admin', 'diretoria', 'secretaria']);
+    const user = await requireRole(['admin', 'diretoria', 'secretaria']);
+    const rateLimitOptions = { windowMs: 60_000, maxRequests: 3 };
+    const [ipRateLimit, accountRateLimit] = await Promise.all([
+      consumeIpRateLimit(getTrustedClientIp(req.headers), 'etiquetas_pdf', rateLimitOptions),
+      consumeIpRateLimit(`account:${user.userId}`, 'etiquetas_pdf', rateLimitOptions),
+    ]);
+    if (!ipRateLimit.allowed || !accountRateLimit.allowed) {
+      return NextResponse.json({ error: 'Muitas requisições. Aguarde um momento.' }, { status: 429 });
+    }
     const body = await req.json();
     const parsed = etiquetaRouteRequestSchema.safeParse(body);
 
@@ -35,6 +46,18 @@ export async function POST(req: NextRequest) {
       offsetXmm: parsed.data.offsetXmm,
       offsetYmm: parsed.data.offsetYmm,
       debug: parsed.data.debug,
+    });
+
+    await logDataAccess({
+      adminId: user.userId,
+      action: 'export',
+      entityType: 'associate',
+      metadata: {
+        format: 'pdf_labels',
+        recipientCount: recipients.length,
+        templateCode: parsed.data.templateCode,
+        selectedFields: parsed.data.selectedFields ?? null,
+      },
     });
 
     return new NextResponse(Buffer.from(pdfBytes), {

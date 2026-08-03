@@ -5,6 +5,7 @@
 // See #255 / plan 017.
 
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { requireAuth } from '@/lib/auth/require-auth';
 import { destroySession } from '@/lib/auth/session';
 import { validateNewPassword } from '@/lib/auth/password';
@@ -17,6 +18,8 @@ import { firstZodError } from '@/lib/server-actions/utils';
 import { changePasswordSchema } from '@/lib/validation/schemas';
 import { ensureError, toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
+import { consumeIpRateLimit } from '@/lib/rate-limit';
+import { getTrustedClientIp } from '@/lib/ip';
 
 const logger = createLogger('auth:change-password');
 
@@ -46,6 +49,26 @@ export async function changePassword(formData: FormData) {
 
   if (!user.email) {
     changePasswordError('Sessão inválida.');
+  }
+
+  const requestHeaders = await headers();
+  const rateLimitOptions = { windowMs: 15 * 60_000, maxRequests: 5 };
+  const [ipRateLimit, accountRateLimit] = await Promise.all([
+    consumeIpRateLimit(
+      getTrustedClientIp(requestHeaders),
+      'change_password_current_password',
+      rateLimitOptions,
+    ),
+    // The rate-limit store accepts an opaque key. A per-account budget prevents
+    // a stolen session from bypassing the control simply by rotating source IPs.
+    consumeIpRateLimit(
+      `account:${user.userId}`,
+      'change_password_current_password',
+      rateLimitOptions,
+    ),
+  ]);
+  if (!ipRateLimit.allowed || !accountRateLimit.allowed) {
+    changePasswordError('Muitas tentativas. Aguarde alguns minutos.');
   }
 
   try {

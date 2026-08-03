@@ -154,6 +154,9 @@ describe('password reset', () => {
   });
 
   it('consumes a reset token before updating the password', async () => {
+    dbMock.select.mockReturnValue(
+      makeSelect([{ id: 5, adminId: 7, expiresAt: new Date(Date.now() + 60_000), usedAt: null }]),
+    );
     txUpdateReturningRows.push([{ id: 5, adminId: 7 }]);
 
     const { consumeResetToken } = await import('./password-reset');
@@ -169,6 +172,9 @@ describe('password reset', () => {
   });
 
   it('does not update the password when atomic token consumption fails', async () => {
+    dbMock.select.mockReturnValue(
+      makeSelect([{ id: 5, adminId: 7, expiresAt: new Date(Date.now() + 60_000), usedAt: null }]),
+    );
     txUpdateReturningRows.push([]);
 
     const { consumeResetToken, InvalidResetTokenError } = await import('./password-reset');
@@ -178,6 +184,17 @@ describe('password reset', () => {
     );
     expect(events).toEqual(['tx:start', 'tx:consume-token']);
     expect(txAdminUpdateWhere).not.toHaveBeenCalled();
+  });
+
+  it('rejects an invalid token before running the expensive password hash', async () => {
+    const { consumeResetToken, InvalidResetTokenError } = await import('./password-reset');
+
+    await expect(consumeResetToken('invalid-token', 'new-password')).rejects.toThrow(
+      InvalidResetTokenError,
+    );
+
+    expect(mockBcryptHash).not.toHaveBeenCalled();
+    expect(dbMock.transaction).not.toHaveBeenCalled();
   });
 
   it('revokes older reset tokens only after the new email is delivered', async () => {
@@ -207,6 +224,7 @@ describe('password reset', () => {
 
     expect(events).toEqual([
       'db:delete:cleanup',
+      'db:delete',
       'email:sent',
       'tx:start',
       'tx:delete-old-tokens',
@@ -236,7 +254,7 @@ describe('password reset', () => {
     await vi.advanceTimersByTimeAsync(1200);
     await promise;
 
-    expect(events).toEqual(['db:delete:cleanup', 'db:delete']);
+    expect(events).toEqual(['db:delete:cleanup', 'db:delete', 'db:delete']);
     expect(dbMock.transaction).not.toHaveBeenCalled();
   });
 

@@ -69,6 +69,16 @@ export async function login(formData: FormData) {
     redirect('/login?error=rate-limit');
   }
 
+  try {
+    await loginRateLimiter.cleanup();
+  } catch (error) {
+    logger.warn(
+      '[Login] Rate-limit cleanup failed; continuing with bounded IP protection.',
+      { error: toSafeErrorLog(error) },
+      ensureError(error),
+    );
+  }
+
   let rateLimitAllowed = false;
   try {
     const rateLimit = await loginRateLimiter.consume(email);

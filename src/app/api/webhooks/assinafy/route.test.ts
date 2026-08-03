@@ -1,13 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET, POST } from './route';
 
-const { mockHandleWebhookEvent, mockLogger } = vi.hoisted(() => ({
+const { mockHandleWebhookEvent, mockLogger, mockConsumeIpRateLimit } = vi.hoisted(() => ({
   mockHandleWebhookEvent: vi.fn(),
   mockLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+  mockConsumeIpRateLimit: vi.fn(),
 }));
 
 vi.mock('@/lib/assinafy/service', () => ({ handleWebhookEvent: mockHandleWebhookEvent }));
 vi.mock('@/lib/logger', () => ({ createLogger: () => mockLogger }));
+vi.mock('@/lib/rate-limit', () => ({
+  consumeIpRateLimit: (...args: unknown[]) => mockConsumeIpRateLimit(...args),
+}));
+vi.mock('@/lib/ip', () => ({ getTrustedClientIp: vi.fn(() => '127.0.0.1') }));
 
 const VALID_SECRET = 'test-webhook-secret-32chars-long!!';
 
@@ -54,6 +59,7 @@ describe('POST /api/webhooks/assinafy', () => {
       actorId: null,
       changedFields: ['assinafyStatus'],
     });
+    mockConsumeIpRateLimit.mockResolvedValue({ allowed: true });
   });
 
   it('returns 503 when ASSINAFY_WEBHOOK_SECRET is not set', async () => {
@@ -162,6 +168,15 @@ describe('POST /api/webhooks/assinafy', () => {
 
     const res = await POST(req);
     expect(res.status).toBe(400);
+    expect(mockHandleWebhookEvent).not.toHaveBeenCalled();
+  });
+
+  it('rate limits authenticated webhook events before database handling', async () => {
+    mockConsumeIpRateLimit.mockResolvedValue({ allowed: false });
+
+    const res = await POST(makeRequest(makeEvent(), VALID_SECRET));
+
+    expect(res.status).toBe(429);
     expect(mockHandleWebhookEvent).not.toHaveBeenCalled();
   });
 });

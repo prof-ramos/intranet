@@ -41,16 +41,11 @@ describe('sendPinnedWebhook', () => {
   });
 
   it('mantém a URL original e limita o lookup aos endereços aprovados', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      type: 'basic',
-      text: () => Promise.resolve('OK'),
-    });
+    fetchMock.mockResolvedValue(new Response('OK', { status: 200 }));
 
     await expect(
       sendPinnedWebhook(target, { method: 'POST', redirect: 'manual', body: '{}' }),
-    ).resolves.toEqual({ ok: true, status: 200, type: 'basic', body: 'OK' });
+    ).resolves.toEqual({ ok: true, status: 200, type: 'default', body: 'OK' });
 
     expect(fetchMock).toHaveBeenCalledWith(
       'https://hooks.example.com/webhook',
@@ -106,6 +101,15 @@ describe('sendPinnedWebhook', () => {
     await expect(
       sendPinnedWebhook(target, { method: 'POST', signal: AbortSignal.abort() }),
     ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(agentCloseMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancela uma resposta de assinante que ultrapassa o limite de bytes', async () => {
+    fetchMock.mockResolvedValue(new Response('x'.repeat(64 * 1024 + 1), { status: 200 }));
+
+    await expect(sendPinnedWebhook(target, { method: 'POST' })).rejects.toThrow(
+      'Webhook response exceeds the allowed size.',
+    );
     expect(agentCloseMock).toHaveBeenCalledTimes(1);
   });
 });

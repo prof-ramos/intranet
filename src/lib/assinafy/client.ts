@@ -35,6 +35,43 @@ export interface AssignmentOptions {
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_BASE_URL = 'https://sandbox.assinafy.com.br/v1';
+const MAX_RESPONSE_BODY_BYTES = 256 * 1024;
+
+async function readResponseTextWithinLimit(response: Response): Promise<string> {
+  const declaredLength = response.headers.get('content-length');
+  if (declaredLength && Number(declaredLength) > MAX_RESPONSE_BODY_BYTES) {
+    await response.body?.cancel().catch(() => {});
+    throw new AssinafyError('Response body exceeds the allowed size.');
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) return '';
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_RESPONSE_BODY_BYTES) {
+        await reader.cancel().catch(() => {});
+        throw new AssinafyError('Response body exceeds the allowed size.');
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const result = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(result);
+}
 
 export class AssinafyClient {
   public readonly baseUrl: string;
@@ -79,11 +116,21 @@ export class AssinafyClient {
       clearTimeout(timeout);
     }
 
+    let text: string;
+    try {
+      text = await readResponseTextWithinLimit(response);
+    } catch (error) {
+      if (error instanceof AssinafyError) throw error;
+      throw new AssinafyError(
+        `Unable to read response (${response.status}).`,
+        response.status,
+      );
+    }
+
     let body: unknown;
     try {
-      body = await response.json();
+      body = JSON.parse(text);
     } catch {
-      const text = await response.text().catch(() => '');
       logger.error('Non-JSON response from Assinafy', { path, status: response.status, body: text.slice(0, 200) });
       throw new AssinafyError(
         `Non-JSON response (${response.status}): ${text.slice(0, 100)}`,
