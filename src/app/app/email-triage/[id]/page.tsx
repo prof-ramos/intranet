@@ -36,8 +36,7 @@ export default async function TriageDetalhePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAuth();
-  const { id } = await params;
+  const [_, { id }] = await Promise.all([requireAuth(), params]);
   const triageId = parsePositiveIntParam(id);
   const triage = await requireEntityById(triageId, (id) => getTriageById(id));
 

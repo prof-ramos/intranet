@@ -15,8 +15,7 @@ import { requireEntityById } from '@/lib/routing/require-entity';
 import { StatusUpdater } from './StatusUpdater';
 
 export default async function ConsultaDetalhePage({ params }: { params: Promise<{ id: string }> }) {
-  await requireAuth();
-  const { id } = await params;
+  const [_, { id }] = await Promise.all([requireAuth(), params]);
   const consultationId = parsePositiveIntParam(id);
   const consultation = await requireEntityById(consultationId, (id) => getConsultationById(id));
 

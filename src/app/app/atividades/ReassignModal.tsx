@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useEscapeKey } from '@/hooks/use-escape-key';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 import { focusRingClass } from '@/lib/ui/tokens';
@@ -29,7 +29,7 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
   // Apenas o primeiro candidato válido, ou null
   const [toUserId, setToUserId] = useState<number | null>(candidates[0]?.id ?? null);
   const [message, setMessage] = useState('');
-  const [isPending, setIsPending] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
   useEscapeKey(onClose);
@@ -107,8 +107,9 @@ export function ReassignModal({ activity, people, onClose, onSubmit }: ReassignM
             type="button"
             onClick={() => {
               if (toUserId === null || isPending) return;
-              setIsPending(true);
-              void onSubmit(toUserId, message).finally(() => setIsPending(false));
+              startTransition(async () => {
+                await onSubmit(toUserId, message);
+              });
             }}
             className={`inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] lg:h-8 ${focusRingClass}`}
             disabled={isPending || toUserId === null || !candidates.some((c) => c.id === toUserId)}

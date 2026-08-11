@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus } from 'lucide-react';
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState, useTransition } from 'react';
 import {
   borderMuted,
   buttonPrimaryText,
@@ -23,7 +23,7 @@ export const QuickAdd = memo(function QuickAdd({
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
-  const [isPending, setIsPending] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -33,16 +33,15 @@ export const QuickAdd = memo(function QuickAdd({
   async function submit() {
     const trimmed = title.trim();
     if (!trimmed || isPending) return;
-    setIsPending(true);
-    try {
-      await onAdd(trimmed, columnKey);
-      setTitle('');
-      setOpen(false);
-    } catch {
-      // Parent surface renders the error feedback; keep the editor open for retry.
-    } finally {
-      setIsPending(false);
-    }
+    startTransition(async () => {
+      try {
+        await onAdd(trimmed, columnKey);
+        setTitle('');
+        setOpen(false);
+      } catch {
+        // Parent surface renders the error feedback; keep the editor open for retry.
+      }
+    });
   }
 
   if (!open) {

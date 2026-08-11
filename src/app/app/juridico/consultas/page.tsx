@@ -20,8 +20,8 @@ export default async function ConsultasPage({
 }: {
   searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 }) {
-  await requireAuth();
-  const currentFilters = parseJuridicoConsultationsSearchParams(await searchParams);
+  const [_, rawSearchParams] = await Promise.all([requireAuth(), searchParams]);
+  const currentFilters = parseJuridicoConsultationsSearchParams(rawSearchParams);
   const { q, status, page } = currentFilters;
 
   const { rows, total } = await getConsultationsPaginated(page, PAGE_SIZE, {
