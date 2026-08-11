@@ -7,6 +7,7 @@ import { GeminiError } from '@/lib/ai/errors';
 const headersMock = vi.fn();
 const consumeIpRateLimitMock = vi.fn();
 const requireAuthMock = vi.fn();
+const requireRoleMock = vi.fn();
 const isGeminiConfiguredMock = vi.fn();
 const generateEmailContentMock = vi.fn();
 
@@ -27,7 +28,7 @@ vi.mock('@/lib/auth/require-auth', () => ({
 }));
 
 vi.mock('@/lib/auth/authorization', () => ({
-  requireRole: vi.fn(),
+  requireRole: (...args: unknown[]) => requireRoleMock(...args),
 }));
 
 vi.mock('next/cache', () => ({
@@ -50,6 +51,7 @@ beforeEach(() => {
   headersMock.mockResolvedValue(new Headers());
   consumeIpRateLimitMock.mockResolvedValue({ allowed: true });
   requireAuthMock.mockResolvedValue({ userId: 1, role: 'secretaria' });
+  requireRoleMock.mockResolvedValue({ userId: 1, role: 'secretaria' });
   isGeminiConfiguredMock.mockResolvedValue(true);
   generateEmailContentMock.mockResolvedValue({
     subject: 'Assunto gerado',
@@ -119,6 +121,14 @@ describe('generateEmailAction', () => {
     await expect(generateEmailAction('convite', 'Conteúdo do convite')).rejects.toThrow(
       'Muitas requisições',
     );
+    expect(generateEmailContentMock).not.toHaveBeenCalled();
+  });
+
+  it('requires the same admin or secretaria role as the page', async () => {
+    requireRoleMock.mockRejectedValue(new Error('Sem permissão.'));
+
+    await expect(generateEmailAction('newsletter', 'Conteúdo')).rejects.toThrow('Sem permissão.');
+    expect(requireRoleMock).toHaveBeenCalledWith(['admin', 'secretaria']);
     expect(generateEmailContentMock).not.toHaveBeenCalled();
   });
 });

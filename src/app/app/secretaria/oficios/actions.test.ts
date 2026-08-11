@@ -12,6 +12,7 @@ import {
 const {
   requireRoleMock,
   requireAuthMock,
+  consumeIpRateLimitMock,
   findOfficialLettersMock,
   findOfficialLetterByIdMock,
   generateOfficialLetterContentMock,
@@ -26,6 +27,7 @@ const {
 } = vi.hoisted(() => ({
   requireRoleMock: vi.fn(),
   requireAuthMock: vi.fn(),
+  consumeIpRateLimitMock: vi.fn(),
   findOfficialLettersMock: vi.fn(),
   findOfficialLetterByIdMock: vi.fn(),
   generateOfficialLetterContentMock: vi.fn(),
@@ -48,7 +50,7 @@ vi.mock('@/lib/auth/require-auth', () => ({
 }));
 
 vi.mock('@/lib/rate-limit', () => ({
-  consumeIpRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
+  consumeIpRateLimit: (...args: unknown[]) => consumeIpRateLimitMock(...args),
 }));
 
 vi.mock('@/lib/ip', () => ({
@@ -102,6 +104,7 @@ describe('secretaria oficios actions', () => {
     vi.clearAllMocks();
     requireRoleMock.mockResolvedValue({ userId: 7 });
     requireAuthMock.mockResolvedValue({ userId: 7, role: 'admin', name: 'Admin' });
+    consumeIpRateLimitMock.mockResolvedValue({ allowed: true });
     findOfficialLettersMock.mockResolvedValue([]);
     findOfficialLetterByIdMock.mockResolvedValue(null);
     generateOfficialLetterContentMock.mockResolvedValue('texto gerado');
@@ -126,6 +129,39 @@ describe('secretaria oficios actions', () => {
     });
 
     expect(result).toEqual({ success: true, text: 'texto gerado' });
+    expect(consumeIpRateLimitMock).toHaveBeenCalledWith(
+      '127.0.0.1',
+      'ai_generate_official_letter',
+      { windowMs: 60_000, maxRequests: 5 },
+    );
+    expect(consumeIpRateLimitMock).toHaveBeenCalledWith(
+      'account:7',
+      'ai_generate_official_letter',
+      { windowMs: 60_000, maxRequests: 5 },
+    );
+  });
+
+  it('does not call Gemini when the account or global AI budget is exhausted', async () => {
+    consumeIpRateLimitMock
+      .mockResolvedValueOnce({ allowed: true })
+      .mockResolvedValueOnce({ allowed: false })
+      .mockResolvedValueOnce({ allowed: true });
+
+    const result = await generateAiTextAction({
+      recipient: 'Maria',
+      recipientRole: 'Presidente',
+      subject: 'Assunto',
+      itamaratySector: 'SGP',
+      signatory: 'João Silva',
+      signatoryRole: 'Diretor',
+      instruction: 'Escreva um ofício',
+    });
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Muitas solicitações de IA. Aguarde um momento.',
+    });
+    expect(generateOfficialLetterContentMock).not.toHaveBeenCalled();
   });
 
   it('returns disabled error when Gemini key is not configured', async () => {

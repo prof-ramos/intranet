@@ -14,6 +14,11 @@ import { ACTIVITY_PRIORITIES, ACTIVITY_STATUSES } from '@/lib/activities/types';
 import { z } from 'zod';
 
 const ACTIVITY_AREA_KEYS = AREAS.map((area) => area.key);
+const MAX_ACTIVITY_TITLE_LENGTH = 255;
+const MAX_ACTIVITY_DESCRIPTION_LENGTH = 10_000;
+const MAX_ACTIVITY_TAGS = 20;
+const MAX_ACTIVITY_TAG_LENGTH = 64;
+const MAX_REASSIGNMENT_MESSAGE_LENGTH = 2_000;
 
 function optionalPositiveIdSchema(message: string) {
   return z
@@ -38,9 +43,10 @@ const createActivitySchema = z.object({
   title: z
     .string()
     .refine((value) => value.trim().length > 0, 'O título da atividade é obrigatório.')
-    .refine((value) => value.length <= 255, 'O título não pode exceder 255 caracteres.'),
+    .max(MAX_ACTIVITY_TITLE_LENGTH, 'O título não pode exceder 255 caracteres.'),
   description: z
     .string()
+    .max(MAX_ACTIVITY_DESCRIPTION_LENGTH, 'A descrição não pode exceder 10.000 caracteres.')
     .optional()
     .transform((value) => value ?? null),
   status: z.enum(ACTIVITY_STATUSES).default('a_fazer'),
@@ -55,14 +61,24 @@ const createActivitySchema = z.object({
       (value) => value === null || !Number.isNaN(Date.parse(value)),
       'Data de vencimento inválida.',
     ),
-  area: z.string().optional(),
+  area: z.string().max(100, 'A área não pode exceder 100 caracteres.').optional(),
   tags: z
     .string()
+    .max(2_048, 'A lista de tags é muito extensa.')
     .default('[]')
-    .transform((value) => parseTags(value)),
+    .transform((value) => parseTags(value))
+    .refine((tags) => tags.length <= MAX_ACTIVITY_TAGS, 'A atividade pode ter no máximo 20 tags.')
+    .refine(
+      (tags) => tags.every((tag) => tag.length <= MAX_ACTIVITY_TAG_LENGTH),
+      'Cada tag pode ter no máximo 64 caracteres.',
+    ),
 });
 const quickActivitySchema = z.object({
-  title: z.string().trim().min(1, 'O título da atividade é obrigatório.'),
+  title: z
+    .string()
+    .trim()
+    .min(1, 'O título da atividade é obrigatório.')
+    .max(MAX_ACTIVITY_TITLE_LENGTH, 'O título não pode exceder 255 caracteres.'),
   status: z.enum(ACTIVITY_STATUSES, { message: 'Status de atividade inválido.' }),
 });
 const updateActivitySchema = z.object({
@@ -80,7 +96,11 @@ const updateActivitySchema = z.object({
       'Data de vencimento inválida.',
     ),
   assigneeId: z.number().int().positive().nullable().optional(),
-  reassignmentMessage: z.string().nullable().optional(),
+  reassignmentMessage: z
+    .string()
+    .max(MAX_REASSIGNMENT_MESSAGE_LENGTH, 'A mensagem de reatribuição não pode exceder 2.000 caracteres.')
+    .nullable()
+    .optional(),
 });
 const activityIdSchema = z.number().int().positive('Atividade inválida.');
 

@@ -202,16 +202,41 @@ export function buildPersistedExcerpt(bodyText: string): string {
 export function extractTextAndAttachments(
   message: GmailMessage,
 ): { text: string; attachments: AttachmentInfo[] } {
+  const MAX_MIME_PARTS = 100;
+  const MAX_ATTACHMENTS = 25;
+  const MAX_MIME_DEPTH = 10;
+  const MAX_PART_ENCODED_BYTES = 350 * 1024;
+  const MAX_TOTAL_DECODED_BYTES = 1024 * 1024;
   const textParts: string[] = [];
   const attachments: AttachmentInfo[] = [];
+  let partCount = 0;
+  let totalDecodedBytes = 0;
 
-  function walk(part: GmailMessagePart): void {
+  function walk(part: GmailMessagePart, depth: number): void {
+    if (depth > MAX_MIME_DEPTH) {
+      throw new Error('Email MIME nesting exceeds the allowed depth.');
+    }
+    partCount += 1;
+    if (partCount > MAX_MIME_PARTS) {
+      throw new Error('Email MIME part count exceeds the allowed limit.');
+    }
     const body = part.body ?? {};
     const mimeType = part.mimeType ?? null;
     const filename = part.filename ?? '';
-    const data = decodeBase64Url(body.data ?? null);
+    const encodedBody = body.data ?? null;
+    if (encodedBody && encodedBody.length > MAX_PART_ENCODED_BYTES) {
+      throw new Error('Email MIME part exceeds the allowed size.');
+    }
+    const data = decodeBase64Url(encodedBody);
+    totalDecodedBytes += data.length;
+    if (totalDecodedBytes > MAX_TOTAL_DECODED_BYTES) {
+      throw new Error('Email decoded content exceeds the allowed size.');
+    }
 
     if (filename) {
+      if (attachments.length >= MAX_ATTACHMENTS) {
+        throw new Error('Email attachment count exceeds the allowed limit.');
+      }
       const sha256 =
         data.length > 0
           ? createHash('sha256').update(data).digest('hex')
@@ -241,12 +266,12 @@ export function extractTextAndAttachments(
 
     const children = part.parts ?? [];
     for (const child of children) {
-      walk(child);
+      walk(child, depth + 1);
     }
   }
 
   if (message.payload) {
-    walk(message.payload);
+    walk(message.payload, 0);
   }
 
   const text = textParts.join('\n\n').trim();

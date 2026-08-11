@@ -19,6 +19,7 @@ const logger = createLogger('assinafy:service');
 
 const ASSINAFY_NONCE_KEY = 'assinafy';
 const WEBHOOK_NONCE_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_ASSINAFY_ERROR_DETAIL_LENGTH = 500;
 
 export type AssinafyWebhookResult =
   | {
@@ -62,6 +63,11 @@ function isValidEventId(eventId: unknown): eventId is number {
   return typeof eventId === 'number' && Number.isSafeInteger(eventId) && eventId > 0;
 }
 
+function boundedProviderErrorDetail(value: unknown, fallback: string): string {
+  const detail = typeof value === 'string' ? value : fallback;
+  return detail.slice(0, MAX_ASSINAFY_ERROR_DETAIL_LENGTH);
+}
+
 export async function handleWebhookEvent(
   event: AssinafyWebhookEvent,
 ): Promise<AssinafyWebhookResult> {
@@ -103,14 +109,16 @@ export async function handleWebhookEvent(
       }
 
       if (eventName === 'signer_rejected_document') {
-        additionalFields.assinafyError = String(
-          event.payload.decline_reason ?? 'Rejeitado pelo signatário',
+        additionalFields.assinafyError = boundedProviderErrorDetail(
+          event.payload.decline_reason,
+          'Rejeitado pelo signatário',
         );
       }
 
       if (eventName === 'document_processing_failed') {
-        additionalFields.assinafyError = String(
-          event.payload.error_message ?? 'Erro no processamento',
+        additionalFields.assinafyError = boundedProviderErrorDetail(
+          event.payload.error_message,
+          'Erro no processamento',
         );
       }
 

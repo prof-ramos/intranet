@@ -6,6 +6,7 @@ const mockSession =
   vi.fn<() => { userId: number; role: string; name: string; email: string } | null>();
 const mockFindAdminRecipientIds = vi.fn();
 const mockCreateActivityService = vi.fn();
+const mockConsumeIpRateLimit = vi.fn();
 
 vi.mock('@/lib/auth/require-auth', () => ({
   requireAuth: () => {
@@ -31,6 +32,12 @@ vi.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
 }));
 
+vi.mock('next/headers', () => ({ headers: vi.fn().mockResolvedValue(new Headers()) }));
+vi.mock('@/lib/ip', () => ({ getTrustedClientIp: vi.fn(() => '127.0.0.1') }));
+vi.mock('@/lib/rate-limit', () => ({
+  consumeIpRateLimit: (...args: unknown[]) => mockConsumeIpRateLimit(...args),
+}));
+
 import { requestDataDownload, requestAccountDeletion } from './actions';
 
 describe('privacidade actions', () => {
@@ -38,6 +45,7 @@ describe('privacidade actions', () => {
     vi.clearAllMocks();
     mockCreateActivityService.mockResolvedValue({ id: 42 });
     mockFindAdminRecipientIds.mockResolvedValue([1, 2]);
+    mockConsumeIpRateLimit.mockResolvedValue({ allowed: true });
     mockSession.mockReturnValue({
       userId: 7,
       role: 'admin',
@@ -74,6 +82,7 @@ describe('privacidade actions', () => {
           userId: 1,
           actorId: 7,
           entityId: 42,
+          dedupeKey: 'lgpd_request:7:data_download:1',
         }),
       );
       expect(mockCreateNotification).toHaveBeenNthCalledWith(
@@ -85,6 +94,7 @@ describe('privacidade actions', () => {
           userId: 2,
           actorId: 7,
           entityId: 42,
+          dedupeKey: 'lgpd_request:7:data_download:2',
         }),
       );
     });
@@ -123,6 +133,7 @@ describe('privacidade actions', () => {
           userId: 1,
           actorId: 7,
           entityId: 42,
+          dedupeKey: 'lgpd_request:7:account_deletion:1',
         }),
       );
       expect(mockCreateNotification).toHaveBeenNthCalledWith(
@@ -134,6 +145,7 @@ describe('privacidade actions', () => {
           userId: 2,
           actorId: 7,
           entityId: 42,
+          dedupeKey: 'lgpd_request:7:account_deletion:2',
         }),
       );
     });
@@ -158,6 +170,16 @@ describe('privacidade actions', () => {
 
       await expect(requestAccountDeletion()).rejects.toThrow('Unauthorized');
       expect(mockCreateActivityService).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('rate limiting', () => {
+    it('blocks repeat LGPD requests before creating persistent work', async () => {
+      mockConsumeIpRateLimit.mockResolvedValue({ allowed: false });
+
+      await expect(requestDataDownload()).rejects.toThrow('Muitas requisições');
+      expect(mockCreateActivityService).not.toHaveBeenCalled();
+      expect(mockCreateNotification).not.toHaveBeenCalled();
     });
   });
 });

@@ -4,6 +4,7 @@ import { changePassword } from '@/app/change-password/actions';
 
 const mockChangePasswordService = vi.fn();
 const mockDestroySession = vi.fn();
+const consumeIpRateLimitMock = vi.fn();
 
 vi.mock('@/lib/auth/service', () => ({
   changePassword: (...args: unknown[]) => mockChangePasswordService(...args),
@@ -31,6 +32,18 @@ vi.mock('@/lib/auth/session', () => ({
   destroySession: (...args: unknown[]) => mockDestroySession(...args),
 }));
 
+vi.mock('next/headers', () => ({
+  headers: vi.fn().mockResolvedValue(new Headers()),
+}));
+
+vi.mock('@/lib/ip', () => ({
+  getTrustedClientIp: vi.fn(() => '127.0.0.1'),
+}));
+
+vi.mock('@/lib/rate-limit', () => ({
+  consumeIpRateLimit: (...args: unknown[]) => consumeIpRateLimitMock(...args),
+}));
+
 vi.mock('next/navigation', () => ({
   redirect: vi.fn((path: string) => {
     throw new Error(`NEXT_REDIRECT:${path}`);
@@ -49,6 +62,7 @@ describe('change password action', () => {
     });
     mockChangePasswordService.mockResolvedValue(undefined);
     mockDestroySession.mockResolvedValue(undefined);
+    consumeIpRateLimitMock.mockResolvedValue({ allowed: true });
   });
 
   function buildFormData(
@@ -145,6 +159,16 @@ describe('change password action', () => {
     await expect(changePassword(buildFormData())).rejects.toThrow(
       'NEXT_REDIRECT:/change-password?error=Senha%20atual%20inv%C3%A1lida.',
     );
+  });
+
+  it('rate limits current-password verification before bcrypt is reached', async () => {
+    consumeIpRateLimitMock.mockResolvedValue({ allowed: false });
+
+    await expect(changePassword(buildFormData())).rejects.toThrow(
+      'NEXT_REDIRECT:/change-password?error=Muitas%20tentativas.',
+    );
+
+    expect(mockChangePasswordService).not.toHaveBeenCalled();
   });
 
   it('redirects with an error when the database write fails', async () => {

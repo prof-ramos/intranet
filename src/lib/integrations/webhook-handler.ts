@@ -1,5 +1,40 @@
 import { safeCompare } from '@/lib/crypto/safe-compare';
 
+const MAX_JSON_WEBHOOK_BODY_BYTES = 128 * 1024;
+
+async function readRequestTextWithinLimit(request: Request): Promise<string> {
+  const declaredLength = request.headers.get('content-length');
+  if (declaredLength && Number(declaredLength) > MAX_JSON_WEBHOOK_BODY_BYTES) {
+    throw new Error('Webhook payload exceeds the allowed size.');
+  }
+
+  const reader = request.body?.getReader();
+  if (!reader) return '';
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_JSON_WEBHOOK_BODY_BYTES) {
+        await reader.cancel().catch(() => {});
+        throw new Error('Webhook payload exceeds the allowed size.');
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
+}
+
 type WebhookAuthResult<TAuth> = { ok: true; context: TAuth } | { ok: false; response: Response };
 
 export interface WebhookHandlerOptions<TPayload, TAuth = undefined> {
@@ -52,7 +87,7 @@ export function createWebhookHandler<TPayload, TAuth = undefined>(
 }
 
 export async function parseJsonWebhook<TPayload>(request: Request): Promise<TPayload> {
-  return request.json() as Promise<TPayload>;
+  return JSON.parse(await readRequestTextWithinLimit(request)) as TPayload;
 }
 
 export function requireSecretHeader(options: {

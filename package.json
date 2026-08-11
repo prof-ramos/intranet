@@ -59,7 +59,7 @@
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.16.0",
     "mailparser": "^3.9.9",
-    "next": "16.2.6",
+    "next": "16.2.12",
     "pdf-lib": "^1.17.1",
     "postgres": "^3.4.9",
     "react": "^19.2.6",
@@ -70,7 +70,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@next/bundle-analyzer": "^16.2.6",
+    "@next/bundle-analyzer": "^16.2.12",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4.3.0",
     "@testing-library/jest-dom": "^6.9.1",
@@ -82,7 +82,7 @@
     "@vitest/coverage-v8": "^4.1.7",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
-    "eslint-config-next": "16.2.6",
+    "eslint-config-next": "16.2.12",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "jsdom": "^29.1.1",

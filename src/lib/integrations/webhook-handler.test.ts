@@ -118,6 +118,15 @@ describe('createWebhookHandler', () => {
   });
 });
 
+describe('parseJsonWebhook', () => {
+  it('rejects a payload larger than the streaming body limit', async () => {
+    const oversized = JSON.stringify({ payload: 'x'.repeat(128 * 1024) });
+    const request = new Request('http://localhost/webhook', { method: 'POST', body: oversized });
+
+    await expect(parseJsonWebhook(request)).rejects.toThrow('Webhook payload exceeds the allowed size.');
+  });
+});
+
 describe('requireSecretHeader', () => {
   it('rejects missing configured secret', () => {
     const result = requireSecretHeader({

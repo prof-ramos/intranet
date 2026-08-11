@@ -17,6 +17,7 @@ const TRIAGED_LABEL_NAME = 'asof-triaged';
 const DEFAULT_QUERY = 'to:controller@asof.org.br -label:asof-triaged';
 const MAX_RETRIES = 3;
 const INITIAL_BACKOFF_MS = 1000;
+const MAX_GMAIL_MESSAGE_RESPONSE_BYTES = 2 * 1024 * 1024;
 
 // ─── Gmail message header helper ────────────────────────────────────────
 
@@ -121,6 +122,42 @@ async function fetchWithRetry(
   }
 
   throw lastError ?? new Error('Gmail API request failed after retries.');
+}
+
+async function readGmailMessageJson(response: Response): Promise<GmailMessage> {
+  const declaredLength = response.headers.get('content-length');
+  if (declaredLength && Number(declaredLength) > MAX_GMAIL_MESSAGE_RESPONSE_BYTES) {
+    await response.body?.cancel().catch(() => {});
+    throw new Error('Gmail message response exceeds the allowed size.');
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) return {};
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_GMAIL_MESSAGE_RESPONSE_BYTES) {
+        await reader.cancel().catch(() => {});
+        throw new Error('Gmail message response exceeds the allowed size.');
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return JSON.parse(new TextDecoder().decode(bytes)) as GmailMessage;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -311,7 +348,7 @@ export async function getMessage(
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
-  const message = await response.json();
+  const message = await readGmailMessageJson(response);
 
   if (!message.id) {
     log.error('Gmail API returned invalid message object — no id.', {

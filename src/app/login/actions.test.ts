@@ -30,11 +30,13 @@ vi.mock('@/lib/auth/session', () => ({
 
 const mockConsume = vi.fn(async () => ({ allowed: true }));
 const mockReset = vi.fn(async () => ({}));
+const mockCleanup = vi.fn(async () => ({}));
 
 vi.mock('@/lib/auth/login-rate-limit', () => ({
   loginRateLimiter: {
     consume: mockConsume,
     reset: mockReset,
+    cleanup: mockCleanup,
   },
 }));
 

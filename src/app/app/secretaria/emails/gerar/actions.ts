@@ -20,7 +20,7 @@ export type GenerateEmailResult =
   | { success: false; error: string };
 
 const _generateEmailAction = defineServerAction({
-  auth: 'any',
+  auth: ['admin', 'secretaria'],
   schema: z.object({
     emailType: z.string(),
     prompt: z.string(),

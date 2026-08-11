@@ -6,6 +6,8 @@ import type {
   ValidatedWebhookTarget,
 } from '@/lib/integrations/webhooks/validation';
 
+const MAX_WEBHOOK_RESPONSE_BYTES = 64 * 1024;
+
 export interface PinnedWebhookResponse {
   ok: boolean;
   status: number;
@@ -32,6 +34,43 @@ function createPinnedLookup(addresses: ValidatedWebhookAddress[]): LookupFunctio
     const [first] = selected;
     callback(null, first.address, first.family);
   }) as LookupFunction;
+}
+
+async function readResponseTextWithinLimit(response: {
+  headers: { get(name: string): string | null };
+  body: ReadableStream<Uint8Array> | null;
+}): Promise<string> {
+  const declaredLength = response.headers.get('content-length');
+  if (declaredLength && Number(declaredLength) > MAX_WEBHOOK_RESPONSE_BYTES) {
+    await response.body?.cancel().catch(() => {});
+    throw new Error('Webhook response exceeds the allowed size.');
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) return '';
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_WEBHOOK_RESPONSE_BYTES) {
+        await reader.cancel().catch(() => {});
+        throw new Error('Webhook response exceeds the allowed size.');
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
 }
 
 export async function sendPinnedWebhook(
@@ -67,7 +106,9 @@ export async function sendPinnedWebhook(
       ok: response.ok,
       status: response.status,
       type: response.type,
-      body: await response.text(),
+      body: await readResponseTextWithinLimit(
+        response as unknown as Parameters<typeof readResponseTextWithinLimit>[0],
+      ),
     };
   } finally {
     await dispatcher.close();
