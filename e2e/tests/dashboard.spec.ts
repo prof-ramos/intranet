@@ -44,15 +44,15 @@ test.describe('Dashboard', () => {
 
     await page.getByRole('link', { name: /associados ativos/i }).click();
     await expect(page).toHaveURL(/associationStatus=associado/);
-    await expect(page.getByText('João da Silva', { exact: true })).toBeVisible();
-    await expect(page.getByText('Maria Oliveira', { exact: true })).toBeVisible();
-    await expect(page.getByText('EDSON MARCOS VALENTE', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Embaixada em Paris', { exact: true })).toBeVisible();
+    await expect(page.getByText('Consulado em Nova York', { exact: true })).toBeVisible();
+    await expect(page.getByText('São Francisco - Consulado-Geral', { exact: true })).toHaveCount(0);
 
     await page.goto('/app');
     await page.getByRole('link', { name: /associados exterior/i }).click();
     await expect(page).toHaveURL(/associationStatus=associado.*location=exterior/);
-    await expect(page.getByText('João da Silva', { exact: true })).toBeVisible();
-    await expect(page.getByText('Maria Oliveira', { exact: true })).toBeVisible();
+    await expect(page.getByText('Embaixada em Paris', { exact: true })).toBeVisible();
+    await expect(page.getByText('Consulado em Nova York', { exact: true })).toBeVisible();
 
     await page.goto('/app');
     await page.getByRole('link', { name: /atividades em aberto/i }).click();
