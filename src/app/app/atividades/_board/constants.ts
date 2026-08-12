@@ -24,4 +24,5 @@ export const defaultFilters: Filters = {
   associate: '',
   dueWeek: false,
   dueLate: false,
+  openOnly: false,
 };

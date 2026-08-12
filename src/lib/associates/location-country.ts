@@ -179,6 +179,16 @@ export function isExteriorCountrySql(column: SQLWrapper): SQL {
   return sql`not ${isDomesticCountrySql(column)}`;
 }
 
+export function assignmentLocationTypeSql(
+  assignmentTypeColumn: SQLWrapper,
+  countryColumn: SQLWrapper,
+): SQL<'nacional' | 'exterior'> {
+  return sql`coalesce(
+    ${assignmentTypeColumn}::text,
+    case when ${isDomesticCountrySql(countryColumn)} then 'nacional' else 'exterior' end
+  )`;
+}
+
 /**
  * Builds a SQL expression that applies Portuguese title case to a column value.
  * Uses chained `replace()` calls instead of `regexp_replace` with backreferences,

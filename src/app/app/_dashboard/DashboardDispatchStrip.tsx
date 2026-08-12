@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { AlertTriangle, ArrowRight } from 'lucide-react';
 import {
   dangerText,
+  desktopDenseControlClass,
   focusRingClass,
   hairline,
   linkText,
@@ -10,10 +11,7 @@ import {
   textMuted,
   textSubtle,
 } from '@/lib/ui/tokens';
-import {
-  formatDashboardDueDate,
-  type DashboardUrgentActivity,
-} from '@/lib/dashboard/view-model';
+import { formatDashboardDueDate, type DashboardUrgentActivity } from '@/lib/dashboard/view-model';
 
 interface DashboardDispatchStripProps {
   urgentActivities: DashboardUrgentActivity[];
@@ -30,7 +28,10 @@ export function DashboardDispatchStrip({ urgentActivities }: DashboardDispatchSt
         <div className="flex items-center gap-2">
           <AlertTriangle size={20} style={{ color: dangerText }} aria-hidden="true" />
           <div>
-            <p className="text-[11px] font-bold tracking-[0.1em] uppercase" style={{ color: dangerText }}>
+            <p
+              className="text-[11px] font-bold tracking-[0.1em] uppercase"
+              style={{ color: dangerText }}
+            >
               Despacho do dia
             </p>
             <h2 id="dispatch-heading" className="mt-1 font-serif text-xl leading-tight font-bold">
@@ -40,7 +41,7 @@ export function DashboardDispatchStrip({ urgentActivities }: DashboardDispatchSt
         </div>
         <Link
           href="/app/atividades?dueLate=1"
-          className={`inline-flex min-h-11 items-center gap-1.5 rounded-[8px] px-2 text-sm font-semibold hover:underline lg:min-h-8 ${focusRingClass}`}
+          className={`inline-flex items-center gap-1.5 rounded-[8px] px-2 text-sm font-semibold hover:underline ${desktopDenseControlClass} ${focusRingClass}`}
           style={{ color: linkText }}
         >
           Ver atrasadas <ArrowRight size={14} aria-hidden="true" />
@@ -67,8 +68,13 @@ export function DashboardDispatchStrip({ urgentActivities }: DashboardDispatchSt
                   <p className="text-sm leading-snug font-semibold [overflow-wrap:anywhere]">
                     {activity.title}
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs" style={{ color: textMuted }}>
-                    <span style={{ color: priority.fg }}>{priority.label ?? activity.priority}</span>
+                  <div
+                    className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs"
+                    style={{ color: textMuted }}
+                  >
+                    <span style={{ color: priority.fg }}>
+                      {priority.label ?? activity.priority}
+                    </span>
                     <span>Responsável: {activity.assigneeName ?? 'Sem responsável'}</span>
                     {dueDate && <span>Venceu em {dueDate}</span>}
                   </div>

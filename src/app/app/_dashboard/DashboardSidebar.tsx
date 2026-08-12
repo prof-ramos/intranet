@@ -1,12 +1,5 @@
 import { Cake, Globe } from 'lucide-react';
-import {
-  hairline,
-  progressBg,
-  progressFg,
-  skyBlue,
-  textMuted,
-  textSubtle,
-} from '@/lib/ui/tokens';
+import { hairline, progressBg, progressFg, skyBlue, textMuted, textSubtle } from '@/lib/ui/tokens';
 import { type BirthdayItem, type DashboardTopRegion } from '@/lib/dashboard/view-model';
 import type { AuthRole } from '@/lib/auth/config';
 
@@ -19,11 +12,7 @@ interface DashboardSidebarProps {
   };
 }
 
-export function DashboardSidebar({
-  topRegions,
-  birthdaysThisMonth,
-  user,
-}: DashboardSidebarProps) {
+export function DashboardSidebar({ topRegions, birthdaysThisMonth, user }: DashboardSidebarProps) {
   return (
     <aside className="flex w-full min-w-0 flex-col gap-5">
       <div className="rounded-[16px] bg-white p-5" style={{ border: `1px solid ${hairline}` }}>

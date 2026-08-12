@@ -1,6 +1,10 @@
 import { requireAuth } from '@/lib/auth/require-auth';
 import { getAssociatesListPage } from '@/lib/associates/service';
-import { parseAssociatesSearchParams, MIN_SEARCH_CHARS } from '@/lib/associates/search-params';
+import {
+  buildAssociatesSearchParams,
+  parseAssociatesSearchParams,
+  MIN_SEARCH_CHARS,
+} from '@/lib/associates/search-params';
 import { AssociatesTable } from './components/AssociatesTable';
 import { OfficialsSearchBox } from './components/OfficialsSearchBox';
 import { Plus } from 'lucide-react';
@@ -16,21 +20,36 @@ export default async function AssociadosPage({
   searchParams: Promise<{
     q?: string;
     show?: string;
+    searchBy?: string;
+    contributionStatus?: string;
+    functionalStatus?: string;
+    associationStatus?: string;
+    location?: string;
   }>;
 }) {
   const [user, rawSearchParams] = await Promise.all([requireAuth(), searchParams]);
-  const { q } = parseAssociatesSearchParams(rawSearchParams);
+  const parsed = parseAssociatesSearchParams(rawSearchParams);
+  const { q, searchBy, contributionStatus, functionalStatus, associationStatus, location } = parsed;
   const canCreateOfficial = user.role === 'admin' || user.role === 'secretaria';
   const hasSearch = q.length >= MIN_SEARCH_CHARS;
+  const filters = { contributionStatus, functionalStatus, associationStatus, location };
+  const hasFilters = Object.values(filters).some(Boolean);
+  const hasListRequest = hasSearch || hasFilters;
   const showAll = rawSearchParams.show === 'all';
 
-  const { rows, total } = hasSearch
-    ? await getAssociatesListPage(1, showAll ? MAX_SHOW_ALL : PAGE_SIZE, q, undefined, 'name')
+  const { rows, total } = hasListRequest
+    ? await getAssociatesListPage(
+        1,
+        showAll ? MAX_SHOW_ALL : PAGE_SIZE,
+        hasSearch ? q : undefined,
+        filters,
+        searchBy,
+      )
     : { rows: [], total: 0 };
-  const currentListUrl = q
-    ? `/app/associados?${new URLSearchParams({ q }).toString()}`
-    : '/app/associados';
-  const showAllHref = `/app/associados?${new URLSearchParams({ q, show: 'all' }).toString()}`;
+  const listParams = new URLSearchParams(buildAssociatesSearchParams(parsed, {}));
+  const currentListUrl = listParams.size > 0 ? `/app/associados?${listParams}` : '/app/associados';
+  listParams.set('show', 'all');
+  const showAllHref = `/app/associados?${listParams}`;
 
   return (
     <div>
@@ -59,13 +78,13 @@ export default async function AssociadosPage({
         </section>
 
         <section aria-live="polite">
-          {!q ? (
+          {!hasListRequest ? (
             <div className="rounded-[8px] border border-[rgba(4,9,32,0.08)] bg-white p-8 text-center">
               <p className="text-sm" style={{ color: textMuted }}>
                 Busque pelo nome ou parte do nome de um oficial.
               </p>
             </div>
-          ) : !hasSearch ? (
+          ) : q && !hasSearch ? (
             <div className="rounded-[8px] border border-[rgba(4,9,32,0.08)] bg-white p-8 text-center">
               <p className="text-sm" style={{ color: textMuted }}>
                 Digite pelo menos {MIN_SEARCH_CHARS} caracteres para buscar.
@@ -74,8 +93,14 @@ export default async function AssociadosPage({
           ) : total === 0 ? (
             <div className="rounded-[8px] border border-[rgba(4,9,32,0.08)] bg-white p-8 text-center">
               <h2 className="text-lg font-semibold">
-                Nenhum oficial encontrado para{' '}
-                <span className="break-words">&#8220;{q}&#8221;</span>
+                {q ? (
+                  <>
+                    Nenhum oficial encontrado para{' '}
+                    <span className="break-words">&#8220;{q}&#8221;</span>
+                  </>
+                ) : (
+                  'Nenhum oficial encontrado para os filtros selecionados.'
+                )}
               </h2>
               <p className="mt-2 text-sm" style={{ color: textMuted }}>
                 Tente termos diferentes ou verifique a ortografia.

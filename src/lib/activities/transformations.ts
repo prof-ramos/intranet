@@ -55,6 +55,7 @@ export function filterActivities(
       const offset = activity.dueOffset;
       if (offset == null || offset >= 0 || activity.status === 'concluido') return false;
     }
+    if (filters.openOnly && activity.status === 'concluido') return false;
     return true;
   });
 }

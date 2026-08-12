@@ -107,6 +107,31 @@ export async function findActivities(options: { limit?: number; offset?: number 
   return rows.sort(compareBoardRows);
 }
 
+export async function findActivityBoardRowById(id: number): Promise<ActivityBoardRow | null> {
+  const [row] = await db
+    .select({
+      id: activities.id,
+      title: activities.title,
+      description: activities.description,
+      status: activities.status,
+      priority: activities.priority,
+      dueDate: activities.dueDate,
+      completedAt: activities.completedAt,
+      assigneeId: activities.assigneeId,
+      assigneeName: admins.name,
+      associateId: activities.associateId,
+      associateName: associates.fullName,
+      tags: activities.tags,
+    })
+    .from(activities)
+    .leftJoin(admins, eq(activities.assigneeId, admins.id))
+    .leftJoin(associates, eq(activities.associateId, associates.id))
+    .where(eq(activities.id, id))
+    .limit(1);
+
+  return row ?? null;
+}
+
 export async function findActiveAdmins() {
   return db
     .select({
@@ -189,10 +214,7 @@ export async function updateActivityById(
 ): Promise<Activity | null> {
   let whereClause = eq(activities.id, id);
   if (expectedRevision !== undefined) {
-    const combined = and(
-      eq(activities.id, id),
-      sql`xmin = ${expectedRevision}::text::xid`,
-    );
+    const combined = and(eq(activities.id, id), sql`xmin = ${expectedRevision}::text::xid`);
     if (combined) {
       whereClause = combined;
     }

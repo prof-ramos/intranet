@@ -46,7 +46,8 @@ export const FilterBar = memo(function FilterBar({
     filters.priority ||
     filters.associate ||
     filters.dueWeek ||
-    filters.dueLate;
+    filters.dueLate ||
+    filters.openOnly;
 
   const chipClass = [
     'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-xs font-semibold transition',
@@ -183,6 +184,16 @@ export const FilterBar = memo(function FilterBar({
         <span className="h-2 w-2 rounded-full bg-current" aria-hidden="true" />
         Atrasadas
       </button>
+      {filters.openOnly && (
+        <button
+          type="button"
+          onClick={() => setFilters({ ...filters, openOnly: false })}
+          className={chipClass}
+          style={{ borderColor: navy, background: navy, color: buttonPrimaryText }}
+        >
+          Em aberto
+        </button>
+      )}
 
       <div
         className="inline-flex min-h-11 overflow-hidden rounded-[8px] border bg-white lg:min-h-8"

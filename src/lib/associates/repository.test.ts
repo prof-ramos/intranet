@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { findAssociatesPaginated, findAssociatesPaginatedCursor, findAssociateById, updateAssociateById } from './repository';
+import {
+  findAssociatesPaginated,
+  findAssociatesPaginatedCursor,
+  findAssociateById,
+  updateAssociateById,
+} from './repository';
 
 const { mockSelect, mockUpdate } = vi.hoisted(() => ({
   mockSelect: vi.fn(),
@@ -16,6 +21,8 @@ type MockAssociateRow = {
   functionalStatus: string | null;
   associationStatus: string;
   contributionStatus: string | null;
+  locationCountry?: string | null;
+  assignmentType?: 'nacional' | 'exterior';
 };
 
 type RowPredicate = (row: MockAssociateRow) => boolean;
@@ -38,18 +45,23 @@ vi.mock('drizzle-orm', () => ({
   }),
   asc: vi.fn((column: unknown) => ({ op: 'asc', column })),
   count: vi.fn(() => ({ op: 'count' })),
-  eq: vi.fn((column: keyof MockAssociateRow, value: unknown) => {
+  eq: vi.fn((column: keyof MockAssociateRow | RowPredicate, value: unknown) => {
+    if (typeof column === 'function') {
+      return (row: MockAssociateRow) => column(row) === value;
+    }
     return (row: MockAssociateRow) => row[column] === value;
   }),
   sql: vi.fn((_strings: TemplateStringsArray, ...values: unknown[]) => {
     const sqlText = Array.from(_strings).join('');
-    const patternValue = values.findLast((value) => typeof value === 'string' && value.includes('%'));
+    const patternValue = values.findLast(
+      (value) => typeof value === 'string' && value.includes('%'),
+    );
 
     if (!patternValue && sqlText.includes(' OR ')) {
       const cursorFullName = String(values[1] ?? '');
       const cursorId = Number(values[5] ?? 0);
-      return (row: MockAssociateRow) => row.fullName > cursorFullName
-        || (row.fullName === cursorFullName && row.id > cursorId);
+      return (row: MockAssociateRow) =>
+        row.fullName > cursorFullName || (row.fullName === cursorFullName && row.id > cursorId);
     }
 
     const pattern = String(patternValue ?? '');
@@ -81,6 +93,11 @@ vi.mock('@/lib/db/schema', () => ({
     functionalStatus: 'functionalStatus',
     associationStatus: 'associationStatus',
     contributionStatus: 'contributionStatus',
+    locationCountry: 'locationCountry',
+  },
+  assignments: {
+    name: 'assignment',
+    type: 'assignmentType',
   },
   functionalStatus: { enumValues: ['ativo', 'aposentado', 'cedido', 'em_licenca'] },
   associationStatus: { enumValues: ['associado', 'nao_associado'] },
@@ -99,6 +116,14 @@ vi.mock('@/lib/crypto/pii', () => ({
   piiBlindIndex: vi.fn((value: string) => `hash-${value}`),
 }));
 
+vi.mock('./location-country', () => ({
+  assignmentLocationTypeSql: () => (row: MockAssociateRow) =>
+    row.assignmentType ??
+    (!row.locationCountry || ['brasil', 'brazil'].includes(row.locationCountry.toLowerCase())
+      ? 'nacional'
+      : 'exterior'),
+}));
+
 // withCache envolve findAssociatesPaginated em unstable_cache; nos testes
 // unitários o mock passa a função adiante sem cachear, preservando o
 // comportamento esperado pelos mocks de `db` abaixo.
@@ -110,7 +135,11 @@ vi.mock('next/cache', () => ({
 
 vi.mock('./search-params', () => ({
   buildAssociateNameSearchPattern: (q: string) => `%${q}%`,
-  normalizeAssociateNameForSearch: (raw: string) => raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(),
+  normalizeAssociateNameForSearch: (raw: string) =>
+    raw
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase(),
   normalizeCpfForSearch: (raw: string) => raw.replace(/\D/g, ''),
   normalizeSiapeForSearch: (raw: string) => raw.replace(/\D/g, ''),
 }));
@@ -122,15 +151,18 @@ function listRowsQuery(rows: MockAssociateRow[]) {
     },
   };
   query.from = vi.fn().mockReturnValue(query);
+  query.leftJoin = vi.fn().mockReturnValue(query);
   query.where = vi.fn((predicate?: RowPredicate) => {
     query.filteredRows = predicate ? rows.filter(predicate) : rows;
     return query;
   });
   query.orderBy = vi.fn().mockImplementation(() => {
-    query.filteredRows = [...((query.filteredRows as MockAssociateRow[]) ?? rows)].sort((left, right) => {
-      const byName = left.fullName.localeCompare(right.fullName, 'pt-BR');
-      return byName === 0 ? left.id - right.id : byName;
-    });
+    query.filteredRows = [...((query.filteredRows as MockAssociateRow[]) ?? rows)].sort(
+      (left, right) => {
+        const byName = left.fullName.localeCompare(right.fullName, 'pt-BR');
+        return byName === 0 ? left.id - right.id : byName;
+      },
+    );
     return query;
   });
   query.limit = vi.fn().mockReturnValue(query);
@@ -141,6 +173,7 @@ function listRowsQuery(rows: MockAssociateRow[]) {
 function countQuery(rows: MockAssociateRow[]) {
   const query: Record<string, unknown> = {};
   query.from = vi.fn().mockReturnValue(query);
+  query.leftJoin = vi.fn().mockReturnValue(query);
   query.where = vi.fn((predicate?: RowPredicate) => [
     { total: predicate ? rows.filter(predicate).length : rows.length },
   ]);
@@ -150,7 +183,9 @@ function countQuery(rows: MockAssociateRow[]) {
 function preparePaginatedQueries(rows: MockAssociateRow[]) {
   associateRows = rows;
   mockSelect.mockReset();
-  mockSelect.mockReturnValueOnce(listRowsQuery(associateRows)).mockReturnValueOnce(countQuery(associateRows));
+  mockSelect
+    .mockReturnValueOnce(listRowsQuery(associateRows))
+    .mockReturnValueOnce(countQuery(associateRows));
 }
 
 function prepareCursorQuery(rows: MockAssociateRow[]) {
@@ -168,6 +203,7 @@ const officers = [
     functionalStatus: 'ativo',
     associationStatus: 'associado',
     contributionStatus: 'em_dia',
+    locationCountry: 'Brasil',
   },
   {
     id: 2,
@@ -177,6 +213,8 @@ const officers = [
     functionalStatus: 'aposentado',
     associationStatus: 'nao_associado',
     contributionStatus: 'inadimplente',
+    locationCountry: 'França',
+    assignmentType: 'nacional',
   },
   {
     id: 3,
@@ -186,6 +224,8 @@ const officers = [
     functionalStatus: 'ativo',
     associationStatus: 'nao_associado',
     contributionStatus: 'em_dia',
+    locationCountry: null,
+    assignmentType: 'exterior',
   },
 ] satisfies MockAssociateRow[];
 
@@ -243,6 +283,18 @@ describe('associates repository', () => {
     expect(result.total).toBe(1);
     expect(result.rows.map((row) => row.fullName)).toEqual(['João Oliveira']);
   });
+
+  it('filters the dashboard geographic scopes', async () => {
+    const domestic = await findAssociatesPaginated(1, 20, undefined, { location: 'brasil' });
+    expect(domestic.rows.map((row) => row.fullName)).toEqual([
+      'Edson Diniz',
+      'Paulo Edson Medeiros de Albuquerque',
+    ]);
+
+    preparePaginatedQueries(officers);
+    const exterior = await findAssociatesPaginated(1, 20, undefined, { location: 'exterior' });
+    expect(exterior.rows.map((row) => row.fullName)).toEqual(['João Oliveira']);
+  });
 });
 
 describe('findAssociatesPaginatedCursor', () => {
@@ -261,7 +313,13 @@ describe('findAssociatesPaginatedCursor', () => {
 
   it('returns empty page when no rows match', async () => {
     prepareCursorQuery([]);
-    const result = await findAssociatesPaginatedCursor(20, null, 'NOMENAOEXISTE', undefined, 'name');
+    const result = await findAssociatesPaginatedCursor(
+      20,
+      null,
+      'NOMENAOEXISTE',
+      undefined,
+      'name',
+    );
 
     expect(result.rows).toHaveLength(0);
     expect(result.nextCursor).toBeNull();
@@ -282,14 +340,26 @@ describe('findAssociatesPaginatedCursor', () => {
     expect(first.nextCursor).not.toBeNull();
 
     prepareCursorQuery(officers);
-    const second = await findAssociatesPaginatedCursor(2, first.nextCursor!, undefined, undefined, 'name');
+    const second = await findAssociatesPaginatedCursor(
+      2,
+      first.nextCursor!,
+      undefined,
+      undefined,
+      'name',
+    );
     expect(second.rows).toHaveLength(1);
     expect(second.nextCursor).toBeNull();
   });
 
   it('performs exact CPF lookup and ignores cursor', async () => {
     prepareCursorQuery(officers);
-    const result = await findAssociatesPaginatedCursor(20, null, '123.456.789-00', undefined, 'cpf');
+    const result = await findAssociatesPaginatedCursor(
+      20,
+      null,
+      '123.456.789-00',
+      undefined,
+      'cpf',
+    );
 
     expect(result.rows).toHaveLength(0);
     expect(result.nextCursor).toBeNull();

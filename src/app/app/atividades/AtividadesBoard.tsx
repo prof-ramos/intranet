@@ -107,9 +107,9 @@ export function AtividadesBoard({
   );
 
   useEffect(() => {
-    const url = buildBoardUrl(pathname, new URLSearchParams(), null, filters);
+    const url = buildBoardUrl(pathname, new URLSearchParams(), drawerId, filters);
     router.replace(url, { scroll: false });
-  }, [filters, pathname, router]);
+  }, [drawerId, filters, pathname, router]);
 
   async function loadDrawerTimeline(activityId: number) {
     try {

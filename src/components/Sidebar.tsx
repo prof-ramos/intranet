@@ -3,7 +3,6 @@ import Link from 'next/link';
 import {
   DollarSign,
   FileSpreadsheet,
-
   Kanban,
   LayoutDashboard,
   Mail,
@@ -28,6 +27,9 @@ interface SidebarProps {
     role: AuthRole;
   };
 }
+
+const navSectionLabelClass =
+  'px-9 pb-1 text-[10px] font-bold tracking-[0.12em] text-white/45 uppercase';
 
 export function Sidebar({ user }: SidebarProps) {
   return (
@@ -67,24 +69,34 @@ export function Sidebar({ user }: SidebarProps) {
       {/* Nav */}
       <nav className="flex flex-1 flex-col py-2" aria-label="Navegação principal">
         <div role="group" aria-labelledby="nav-operacao">
-          <p id="nav-operacao" className="px-9 pt-4 pb-1 text-[10px] font-bold tracking-[0.12em] text-white/45 uppercase">
+          <p id="nav-operacao" className={`${navSectionLabelClass} pt-4`}>
             Operação
           </p>
-          <NavLink href="/app" icon={<LayoutDashboard size={20} />}>Dashboard</NavLink>
-          <NavLink href="/app/atividades" icon={<Kanban size={20} />}>Atividades</NavLink>
-          <NavLink href="/app/email-triage" icon={<Mail size={20} />}>Triagem de E-mails</NavLink>
-          <NavLink href="/app/juridico" icon={<Scale size={20} />}>Jurídico</NavLink>
+          <NavLink href="/app" icon={<LayoutDashboard size={20} />}>
+            Dashboard
+          </NavLink>
+          <NavLink href="/app/atividades" icon={<Kanban size={20} />}>
+            Atividades
+          </NavLink>
+          <NavLink href="/app/email-triage" icon={<Mail size={20} />}>
+            Triagem de E-mails
+          </NavLink>
+          <NavLink href="/app/juridico" icon={<Scale size={20} />}>
+            Jurídico
+          </NavLink>
         </div>
 
         <div role="group" aria-labelledby="nav-cadastro">
-          <p id="nav-cadastro" className="px-9 pt-5 pb-1 text-[10px] font-bold tracking-[0.12em] text-white/45 uppercase">
+          <p id="nav-cadastro" className={`${navSectionLabelClass} pt-5`}>
             Cadastro
           </p>
-          <NavLink href="/app/associados" icon={<Users size={20} />}>Oficiais</NavLink>
+          <NavLink href="/app/associados" icon={<Users size={20} />}>
+            Oficiais
+          </NavLink>
         </div>
 
         <div role="group" aria-labelledby="nav-gestao">
-          <p id="nav-gestao" className="px-9 pt-5 pb-1 text-[10px] font-bold tracking-[0.12em] text-white/45 uppercase">
+          <p id="nav-gestao" className={`${navSectionLabelClass} pt-5`}>
             Gestão
           </p>
           <NavGroup
@@ -92,9 +104,19 @@ export function Sidebar({ user }: SidebarProps) {
             icon={<FileSpreadsheet size={20} />}
             label="Secretaria"
             items={[
-              { href: '/app/secretaria/oficios', label: 'Ofícios', icon: <FileSpreadsheet size={18} /> },
+              {
+                href: '/app/secretaria/oficios',
+                label: 'Ofícios',
+                icon: <FileSpreadsheet size={18} />,
+              },
               ...(user.role !== 'diretoria'
-                ? [{ href: '/app/secretaria/emails/gerar', label: 'E-mails com IA', icon: <Mail size={18} /> }]
+                ? [
+                    {
+                      href: '/app/secretaria/emails/gerar',
+                      label: 'E-mails com IA',
+                      icon: <Mail size={18} />,
+                    },
+                  ]
                 : []),
             ]}
           />
@@ -103,13 +125,23 @@ export function Sidebar({ user }: SidebarProps) {
               basePath="/app/financeiro"
               icon={<DollarSign size={20} />}
               label="Financeiro"
-              items={[{ href: '/app/financeiro/mensalidades', label: 'Mensalidades', icon: <Receipt size={18} /> }]}
+              items={[
+                {
+                  href: '/app/financeiro/mensalidades',
+                  label: 'Mensalidades',
+                  icon: <Receipt size={18} />,
+                },
+              ]}
             />
           )}
           {user.role !== 'secretaria' && (
-            <NavLink href="/app/associados/relatorio" icon={<FileSpreadsheet size={20} />}>Relatórios</NavLink>
+            <NavLink href="/app/associados/relatorio" icon={<FileSpreadsheet size={20} />}>
+              Relatórios
+            </NavLink>
           )}
-          <NavLink href="/app/privacidade" icon={<Shield size={20} />}>Privacidade</NavLink>
+          <NavLink href="/app/privacidade" icon={<Shield size={20} />}>
+            Privacidade
+          </NavLink>
           {user.role !== 'secretaria' && (
             <NavGroup
               basePath="/app/config"
@@ -118,8 +150,16 @@ export function Sidebar({ user }: SidebarProps) {
               items={[
                 { href: '/app/config/usuarios', label: 'Usuários', icon: <Shield size={18} /> },
                 { href: '/app/config/lotacoes', label: 'Lotações', icon: <MapPin size={18} /> },
-                { href: '/app/config/auditoria', label: 'Auditoria', icon: <ShieldCheck size={18} /> },
-                { href: '/app/config/integracoes/webhooks', label: 'Integrações', icon: <Webhook size={18} /> },
+                {
+                  href: '/app/config/auditoria',
+                  label: 'Auditoria',
+                  icon: <ShieldCheck size={18} />,
+                },
+                {
+                  href: '/app/config/integracoes/webhooks',
+                  label: 'Integrações',
+                  icon: <Webhook size={18} />,
+                },
               ]}
             />
           )}
