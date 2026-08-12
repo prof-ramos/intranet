@@ -1,5 +1,5 @@
 import { closeDb, db, truncateAll } from '../e2e/helpers/db';
-import { admins, associates, monthlyPayments, oficios } from '@/lib/db/schema';
+import { activities, admins, associates, monthlyPayments, oficios } from '@/lib/db/schema';
 import bcrypt from 'bcryptjs';
 import {
   E2E_ADMIN_PASSWORD,
@@ -174,6 +174,28 @@ async function main() {
     },
   ]);
 
+  await db.insert(activities).values([
+    {
+      title: 'Revisar pendência vencida E2E',
+      description: 'Atividade usada para validar a retomada operacional pelo dashboard.',
+      status: 'a_fazer',
+      priority: 'urgente',
+      assigneeId: adminId,
+      associateId: maria.id,
+      dueDate: '2026-01-10T12:00:00.000Z',
+      tags: ['e2e'],
+      createdBy: adminId,
+    },
+    {
+      title: 'Atividade concluída E2E',
+      status: 'concluido',
+      priority: 'normal',
+      completedAt: new Date('2026-01-05T12:00:00.000Z'),
+      tags: ['e2e'],
+      createdBy: adminId,
+    },
+  ]);
+
   await db.insert(oficios).values([
     makeOficio(adminId, {
       subject: 'Solicitação de dados funcionais',
@@ -198,8 +220,10 @@ async function main() {
       subject: 'Audiência institucional',
       itamaratySector: 'DSE',
       closure: 'Respeitosamente,',
-      bodyRichText: 'Solicitamos audiência institucional para tratar de assuntos de interesse da ASOF.',
-      bodyPlainText: 'Solicitamos audiência institucional para tratar de assuntos de interesse da ASOF.',
+      bodyRichText:
+        'Solicitamos audiência institucional para tratar de assuntos de interesse da ASOF.',
+      bodyPlainText:
+        'Solicitamos audiência institucional para tratar de assuntos de interesse da ASOF.',
       status: 'rascunho',
     }),
     makeOficio(adminId, {

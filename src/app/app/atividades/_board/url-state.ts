@@ -22,6 +22,7 @@ export function parseFiltersFromUrl(searchParams: { get(name: string): string | 
   const associate = searchParams.get('associate');
   const dueWeek = searchParams.get('dueWeek');
   const dueLate = searchParams.get('dueLate');
+  const openOnly = searchParams.get('openOnly');
 
   return {
     scope:
@@ -37,6 +38,7 @@ export function parseFiltersFromUrl(searchParams: { get(name: string): string | 
     associate: associate ?? defaultFilters.associate,
     dueWeek: dueWeek === '1',
     dueLate: dueLate === '1',
+    openOnly: openOnly === '1',
   };
 }
 
@@ -49,6 +51,7 @@ export function serializeFiltersToUrl(filters: Filters): URLSearchParams {
   if (filters.associate) params.set('associate', filters.associate);
   if (filters.dueWeek) params.set('dueWeek', '1');
   if (filters.dueLate) params.set('dueLate', '1');
+  if (filters.openOnly) params.set('openOnly', '1');
 
   return params;
 }

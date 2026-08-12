@@ -56,6 +56,7 @@ export interface Filters {
   associate: string;
   dueWeek: boolean;
   dueLate: boolean;
+  openOnly: boolean;
 }
 
 export interface ActivitiesBoardData {

@@ -3,12 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const findActivitiesMock = vi.fn();
 const findActiveAdminsMock = vi.fn();
 const findActiveAssociatesMock = vi.fn();
+const findActivityBoardRowByIdMock = vi.fn();
 const mapActivityRowToBoardActivityMock = vi.fn();
 
 vi.mock('./repository', () => ({
   findActivities: (...args: unknown[]) => findActivitiesMock(...args),
   findActiveAdmins: (...args: unknown[]) => findActiveAdminsMock(...args),
   findActiveAssociates: (...args: unknown[]) => findActiveAssociatesMock(...args),
+  findActivityBoardRowById: (...args: unknown[]) => findActivityBoardRowByIdMock(...args),
   mapActivityRowToBoardActivity: (...args: unknown[]) => mapActivityRowToBoardActivityMock(...args),
 }));
 
@@ -20,6 +22,7 @@ describe('activities queries', () => {
     findActivitiesMock.mockResolvedValue([]);
     findActiveAdminsMock.mockResolvedValue([]);
     findActiveAssociatesMock.mockResolvedValue([]);
+    findActivityBoardRowByIdMock.mockResolvedValue(null);
     mapActivityRowToBoardActivityMock.mockImplementation((row: unknown) => row);
   });
 
@@ -87,5 +90,22 @@ describe('activities queries', () => {
       associates: [{ id: 20, name: 'Associado' }],
       currentUser: { id: 7, name: 'Sessao Atual', role: 'diretoria' },
     });
+  });
+
+  it('includes a deep-linked activity that is outside the board window', async () => {
+    findActivitiesMock.mockResolvedValue([{ id: 1, title: 'Recente' }]);
+    findActivityBoardRowByIdMock.mockResolvedValue({ id: 999, title: 'Vencida antiga' });
+    mapActivityRowToBoardActivityMock.mockImplementation((row: unknown) => row);
+
+    const result = await getActivitiesBoardData(
+      { userId: 7, name: 'Sessao Atual', role: 'admin' },
+      { openActivityId: 999 },
+    );
+
+    expect(findActivityBoardRowByIdMock).toHaveBeenCalledWith(999);
+    expect(result.initialActivities).toEqual([
+      { id: 1, title: 'Recente' },
+      { id: 999, title: 'Vencida antiga' },
+    ]);
   });
 });

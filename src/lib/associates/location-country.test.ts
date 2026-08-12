@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sql, type SQL } from 'drizzle-orm';
 import {
+  assignmentLocationTypeSql,
   isDomesticCountry,
   isDomesticCountrySql,
   isExteriorCountry,
@@ -112,6 +113,16 @@ describe('location-country helpers', () => {
   });
 
   describe('SQL expressions', () => {
+    it('prioritizes assignment type before falling back to country', () => {
+      const compiled = compileSql(
+        assignmentLocationTypeSql(sql.raw('assignment_type'), sql.raw('location_country')),
+      );
+
+      expect(compiled).toMatch(/coalesce\(\s*assignment_type::text/);
+      expect(compiled).toContain('location_country is null');
+      expect(compiled).toContain("then 'nacional' else 'exterior'");
+    });
+
     it('builds a nacional SQL predicate with null and all domestic aliases', () => {
       const compiled = compileSql(isDomesticCountrySql(sql.raw('location_country')));
 

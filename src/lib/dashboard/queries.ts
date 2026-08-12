@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import {
-  isDomesticCountrySql,
+  assignmentLocationTypeSql,
   normalizedCountryLabelSql,
 } from '@/lib/associates/location-country';
 import { activities, admins, associates, assignments } from '@/lib/db/schema';
@@ -40,13 +40,7 @@ export interface ActiveAssociatesByLocation {
 
 export const countActiveAssociatesByLocation = withCache({
   fn: async (): Promise<ActiveAssociatesByLocation> => {
-    const locationType = sql<string>`coalesce(
-      ${assignments.type}::text,
-      case when ${isDomesticCountrySql(associates.locationCountry)}
-        then 'nacional'
-        else 'exterior'
-      end
-    )`;
+    const locationType = assignmentLocationTypeSql(assignments.type, associates.locationCountry);
 
     const rows = await db
       .select({
@@ -70,7 +64,10 @@ export const countContributionsOkAssociates = withCache({
       .select({ count: count() })
       .from(associates)
       .where(
-        and(eq(associates.associationStatus, 'associado'), eq(associates.contributionStatus, 'em_dia')),
+        and(
+          eq(associates.associationStatus, 'associado'),
+          eq(associates.contributionStatus, 'em_dia'),
+        ),
       );
     return rows[0].count;
   },
@@ -177,7 +174,8 @@ const _getUrgentActivities = withCache({
   maxEntries: 10,
 });
 
-export const getUrgentActivities = (limit = 4): Promise<UrgentActivity[]> => _getUrgentActivities(limit);
+export const getUrgentActivities = (limit = 4): Promise<UrgentActivity[]> =>
+  _getUrgentActivities(limit);
 
 export interface BirthdayItem {
   id: number;
@@ -219,7 +217,8 @@ const _getBirthdaysThisMonth = withCache({
   maxEntries: 10,
 });
 
-export const getBirthdaysThisMonth = (limit = 10): Promise<BirthdayItem[]> => _getBirthdaysThisMonth(limit);
+export const getBirthdaysThisMonth = (limit = 10): Promise<BirthdayItem[]> =>
+  _getBirthdaysThisMonth(limit);
 
 export const countInadimplentesAssociates = withCache({
   fn: async (): Promise<number> => {

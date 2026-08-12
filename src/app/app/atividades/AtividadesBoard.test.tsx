@@ -10,12 +10,13 @@ const actionMocks = vi.hoisted(() => ({
   createQuickActivityAction: vi.fn(),
   routerReplace: vi.fn(),
   updateActivityAction: vi.fn(),
+  searchParams: new URLSearchParams(),
 }));
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/app/atividades',
   useRouter: () => ({ replace: actionMocks.routerReplace }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => actionMocks.searchParams,
 }));
 
 vi.mock('next/dynamic', () => ({ default: () => () => null }));
@@ -37,7 +38,7 @@ vi.mock('@hello-pangea/dnd', () => ({
 }));
 vi.mock('./actions', () => ({
   createQuickActivityAction: actionMocks.createQuickActivityAction,
-  getActivityTimelineAction: vi.fn(),
+  getActivityTimelineAction: vi.fn().mockResolvedValue([]),
   updateActivityAction: actionMocks.updateActivityAction,
 }));
 vi.mock('./_board/useBoardPreferences', () => ({
@@ -80,9 +81,45 @@ vi.mock('./_board/SummaryStrip', () => ({
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  actionMocks.searchParams = new URLSearchParams();
 });
 
 describe('AtividadesBoard quick add', () => {
+  it('preserves an activity deep link while synchronizing filters', async () => {
+    actionMocks.searchParams = new URLSearchParams('dueLate=1&open=7');
+    render(
+      <AtividadesBoard
+        initialActivities={[
+          {
+            id: 7,
+            title: 'Pendência vencida',
+            description: null,
+            status: 'a_fazer',
+            priority: 'urgente',
+            dueDate: '2026-01-01',
+            completedAt: null,
+            assigneeId: 1,
+            assigneeName: 'Dev',
+            associateId: null,
+            associateName: null,
+            tags: [],
+            dueOffset: -1,
+          },
+        ]}
+        people={[{ id: 1, name: 'Dev', role: 'admin' }]}
+        associates={[]}
+        currentUser={{ id: 1, name: 'Dev', role: 'admin' }}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(actionMocks.routerReplace).toHaveBeenCalledWith(
+        expect.stringMatching(/dueLate=1.*open=7|open=7.*dueLate=1/),
+        { scroll: false },
+      ),
+    );
+  });
+
   it('wires late filtering, drawer opening, and cancelled drag interactions', async () => {
     render(
       <AtividadesBoard
