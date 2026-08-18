@@ -17,7 +17,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       <input id="app-drawer" type="checkbox" className="drawer-toggle" aria-hidden="true" />
 
-      <div id="main-content" className="drawer-content flex min-h-screen flex-col bg-[#f8fafc]">
+      <div
+        id="main-content"
+        className="drawer-content flex min-h-screen min-w-0 flex-col bg-[#f8fafc]"
+      >
         {/*
           print:hidden here (and on drawer-side below) is a deliberate, repo-wide
           decision: every /app/* page prints without the navigation shell, not
@@ -26,7 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           dedicated print-only layout was rejected as disproportionate blast
           radius for this app shell; see DESIGN.md "Print output".
         */}
-        <header className="sticky top-0 z-30 flex min-h-14 items-center gap-3 border-b border-[rgba(4,9,32,0.05)] bg-white px-5 sm:px-8 print:hidden">
+        <header className="sticky top-0 z-30 flex min-h-14 min-w-0 items-center gap-3 border-b border-[rgba(4,9,32,0.05)] bg-white px-5 sm:px-8 print:hidden">
           <label
             htmlFor="app-drawer"
             aria-label="Abrir menu de navegação"

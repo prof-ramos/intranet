@@ -6,8 +6,8 @@ test.describe('Financeiro — Mensalidades', () => {
     await page.goto('/app/financeiro/mensalidades?year=2026&month=1');
     await expect(page.locator('h1')).toContainText('Controle de Mensalidades');
     await expect(page.locator('text=Total Associados')).toBeVisible();
-    await expect(page.locator('text=Pagos')).toBeVisible();
-    await expect(page.locator('text=Pendentes')).toBeVisible();
+    await expect(page.getByText('Pagos', { exact: true })).toBeVisible();
+    await expect(page.getByText('Pendentes', { exact: true })).toBeVisible();
   });
 
   test('shows active associates with payment data', async ({ page, loginAsAdmin }) => {
@@ -44,6 +44,19 @@ test.describe('Financeiro — Mensalidades', () => {
     await page.getByRole('button', { name: 'Pendente' }).first().click();
     await expect(page.locator('table')).toContainText('Maria Oliveira');
     await expect(page.locator('table')).not.toContainText('João da Silva');
+  });
+
+  test('clears active filters', async ({ page, loginAsAdmin }) => {
+    await loginAsAdmin();
+    await page.goto('/app/financeiro/mensalidades?year=2026&month=1');
+    await page.getByRole('button', { name: 'Pendente', exact: true }).first().click();
+    await expect(page.getByRole('button', { name: 'Limpar filtros' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Limpar filtros' }).click();
+    await expect(page).toHaveURL(/year=2026&month=1$/);
+    await expect(page.getByRole('button', { name: 'Limpar filtros' })).toHaveCount(0);
+    await expect(page.locator('table')).toContainText('João da Silva');
+    await expect(page.locator('table')).toContainText('Maria Oliveira');
   });
 
   test('method filter shows correct payments', async ({ page, loginAsAdmin }) => {
@@ -89,6 +102,57 @@ test.describe('Financeiro — Mensalidades', () => {
     await page.getByLabel('Mês anterior').click();
     await expect(page).toHaveURL(/year=2026&month=1/);
     await expect(page.getByText('Janeiro de 2026').first()).toBeVisible();
+  });
+
+  test('direct period picker navigates to the selected month', async ({ page, loginAsAdmin }) => {
+    await loginAsAdmin();
+    await page.goto('/app/financeiro/mensalidades?year=2026&month=1');
+    await page.getByLabel('Selecionar mês').fill('2026-02');
+    await expect(page).toHaveURL(/year=2026&month=2/);
+    await expect(page.getByText('Fevereiro de 2026').first()).toBeVisible();
+  });
+
+  test('pending search cannot restore the previous month', async ({ page, loginAsAdmin }) => {
+    await loginAsAdmin();
+    await page.goto('/app/financeiro/mensalidades?year=2026&month=1');
+
+    await page.fill('input[placeholder="Buscar por nome..."]', 'João');
+    await page.getByLabel('Selecionar mês').fill('2026-02');
+    await page.waitForTimeout(500);
+
+    await expect(page).toHaveURL(/year=2026&month=2/);
+    await expect(page).not.toHaveURL(/year=2026&month=1/);
+  });
+
+  test('mobile layout keeps the document within the viewport', async ({ page, loginAsAdmin }) => {
+    await loginAsAdmin();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/app/financeiro/mensalidades?year=2026&month=1');
+    const widths = await page.evaluate(() => ({
+      documentWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    }));
+    expect(widths.documentWidth).toBeLessThanOrEqual(widths.viewportWidth + 1);
+    await expect(page.getByText('Fila de conferência')).toBeVisible();
+  });
+
+  test('cancellation opens an audited dialog with reason validation', async ({
+    page,
+    loginAsAdmin,
+  }) => {
+    await loginAsAdmin();
+    await page.goto('/app/financeiro/mensalidades?year=2026&month=1');
+    await page
+      .getByRole('button', { name: /Cancelar mensalidade de/ })
+      .first()
+      .click();
+    await expect(page.getByRole('dialog', { name: 'Cancelar mensalidade' })).toBeVisible();
+    await page.getByRole('button', { name: 'Confirmar cancelamento' }).click();
+    await expect(page.getByRole('dialog').getByRole('alert')).toContainText(
+      'ao menos 3 caracteres',
+    );
+    await page.getByRole('button', { name: 'Manter registro' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   });
 
   test('shows initialize month banner for unseeded month', async ({ page, loginAsAdmin }) => {

@@ -76,6 +76,10 @@ export interface MonthlyPaymentsAggregates {
   cancelados: number;
   exterior: number;
   folha: number;
+  boleto: number;
+  pix: number;
+  transferencia: number;
+  outros: number;
   boletoPix: number;
   paymentRecords: number;
 }
@@ -360,6 +364,10 @@ export async function getAssociatesWithPayments(
       cancelados: sql<number>`count(*) filter (where ${monthlyPayments.status} = 'cancelado')`,
       exterior: sql<number>`count(*) filter (where ${isExteriorCountrySql(associates.locationCountry)})`,
       folha: sql<number>`count(*) filter (where ${effectiveMethod} = 'folha')`,
+      boleto: sql<number>`count(*) filter (where ${effectiveMethod} = 'boleto')`,
+      pix: sql<number>`count(*) filter (where ${effectiveMethod} = 'pix')`,
+      transferencia: sql<number>`count(*) filter (where ${effectiveMethod} = 'transferencia')`,
+      outros: sql<number>`count(*) filter (where ${effectiveMethod} = 'outros')`,
       boletoPix: sql<number>`count(*) filter (where ${effectiveMethod} in ('boleto', 'pix'))`,
       paymentRecords: sql<number>`count(${monthlyPayments.id})`,
     })
@@ -384,6 +392,10 @@ export async function getAssociatesWithPayments(
     cancelados: number(raw?.cancelados),
     exterior: number(raw?.exterior),
     folha: number(raw?.folha),
+    boleto: number(raw?.boleto),
+    pix: number(raw?.pix),
+    transferencia: number(raw?.transferencia),
+    outros: number(raw?.outros),
     boletoPix: number(raw?.boletoPix),
     paymentRecords: number(raw?.paymentRecords),
   };

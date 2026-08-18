@@ -347,7 +347,7 @@ export async function cancelMonthlyPayment(adminId: number, paymentId: number, r
 export async function initializeMonth(adminId: number, year: number, month: number) {
   validateYearMonth(year, month);
 
-  const count = await db.transaction(async (tx) => {
+  const counts = await db.transaction(async (tx) => {
     // Read and write in the same transaction to prevent TOCTOU races
     const missing = await repository.findAssociatesMissingPaymentForMonth(year, month, tx);
 
@@ -363,16 +363,22 @@ export async function initializeMonth(adminId: number, year: number, month: numb
     const inserted =
       updates.length > 0 ? await repository.insertMonthlyPaymentsIfMissing(updates, tx) : [];
 
+    const counts = {
+      created: inserted.length,
+      maintained: Math.max(0, missing.length - inserted.length),
+      rejected: 0,
+    };
+
     await logAuditAction({
       adminId,
       action: 'initialize_month',
       entityType: 'finance',
       entityId: null,
-      metadata: { year, month, count: inserted.length },
+      metadata: { year, month, ...counts },
     });
 
-    return inserted.length;
+    return counts;
   });
 
-  return count;
+  return counts;
 }

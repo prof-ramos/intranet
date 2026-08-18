@@ -1,11 +1,12 @@
 import { getMonthlyPaymentsData } from '@/lib/finance/queries';
 import MonthlyPaymentsTable from './MonthlyPaymentsTable';
-import { FinanceKPIs } from './FinanceKPIs';
-import { initializeMonthAction } from './actions';
-import { Calendar, ChevronLeft, ChevronRight, Play } from 'lucide-react';
+import { FinanceKPIs, FinancePaymentProfile } from './FinanceKPIs';
+import { InitializeMonthButton } from './InitializeMonthButton';
+import MonthNavigator from './MonthNavigator';
+import { CirclePlay } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { textMuted, navy, hairline, focusRingClass, skyBlue, infoBg, info } from '@/lib/ui/tokens';
+import { textMuted, navy, infoBg, info } from '@/lib/ui/tokens';
 import { requireRole } from '@/lib/auth/authorization';
 import {
   parseMonthlyPaymentsPageSearchParams,
@@ -24,21 +25,6 @@ interface PageProps {
   }>;
 }
 
-const monthNames = [
-  'Janeiro',
-  'Fevereiro',
-  'Março',
-  'Abril',
-  'Maio',
-  'Junho',
-  'Julho',
-  'Agosto',
-  'Setembro',
-  'Outubro',
-  'Novembro',
-  'Dezembro',
-];
-
 export default async function MensalidadesPage({ searchParams }: PageProps) {
   await requireRole(['admin', 'diretoria']);
 
@@ -47,7 +33,10 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
     month: currentMonth,
     filters: currentFilters,
   } = parseMonthlyPaymentsPageSearchParams(await searchParams);
-  const initializeCurrentMonthAction = initializeMonthAction.bind(null, currentYear, currentMonth);
+  const currentPeriodLabel = new Intl.DateTimeFormat('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(currentYear, currentMonth - 1, 1));
 
   const data = await getMonthlyPaymentsData(currentYear, currentMonth, {
     q: currentFilters.q,
@@ -67,33 +56,6 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
     redirect(`/app/financeiro/mensalidades?${params.toString()}`);
   }
 
-  // Helper for prev/next month
-  const getPrevMonth = () => {
-    let m = currentMonth - 1;
-    let y = currentYear;
-    if (m === 0) {
-      m = 12;
-      y -= 1;
-    }
-    const params = new URLSearchParams(buildMonthlyPaymentsSearchParams(currentFilters, {}));
-    params.set('year', y.toString());
-    params.set('month', m.toString());
-    return `/app/financeiro/mensalidades?${params.toString()}`;
-  };
-
-  const getNextMonth = () => {
-    let m = currentMonth + 1;
-    let y = currentYear;
-    if (m === 13) {
-      m = 1;
-      y += 1;
-    }
-    const params = new URLSearchParams(buildMonthlyPaymentsSearchParams(currentFilters, {}));
-    params.set('year', y.toString());
-    params.set('month', m.toString());
-    return `/app/financeiro/mensalidades?${params.toString()}`;
-  };
-
   const hasActiveFilters = !!(
     currentFilters.q ||
     currentFilters.status ||
@@ -109,86 +71,56 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
   const hasNoData = !hasActiveFilters && data.aggregates.paymentRecords === 0;
 
   return (
-    <main className="mx-auto w-full max-w-[1400px] px-5 py-7 sm:px-8 lg:px-10">
-      {/* Header */}
-      <div className="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+    <main className="mx-auto w-full max-w-[1400px] min-w-0 px-5 py-6 sm:px-8 lg:px-10 lg:py-8">
+      <div className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-[11px] tracking-[0.18em] uppercase" style={{ color: textMuted }}>
-            Financeiro · {monthNames[currentMonth - 1]} de {currentYear}
+          <p
+            className="text-[11px] font-semibold tracking-[0.18em] uppercase"
+            style={{ color: textMuted }}
+          >
+            Financeiro · fechamento mensal
           </p>
           <h1
-            className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]"
+            className="mt-2 font-serif text-[2.45rem] leading-[0.98] font-bold tracking-[-0.03em] md:text-[3.2rem]"
             style={{ color: navy }}
           >
             Controle de Mensalidades
           </h1>
+          <p className="mt-3 max-w-xl text-sm leading-6" style={{ color: textMuted }}>
+            Confira a situação dos associados e mantenha os registros do mês em dia.
+          </p>
         </div>
 
-        <div
-          className="inline-flex items-center gap-1 rounded-[10px] bg-white p-1.5"
-          style={{ border: `1px solid ${hairline}` }}
-        >
-          <Link
-            href={getPrevMonth()}
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-[8px] transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
-            style={{ color: textMuted }}
-            aria-label="Mês anterior"
-          >
-            <ChevronLeft size={18} aria-hidden="true" />
-          </Link>
-
-          <div
-            className="flex items-center gap-2 px-4 text-sm font-semibold"
-            style={{ color: textMuted, minWidth: 180, justifyContent: 'center' }}
-          >
-            <Calendar size={16} style={{ color: skyBlue }} aria-hidden="true" />
-            <span>
-              {monthNames[currentMonth - 1]} de {currentYear}
-            </span>
-          </div>
-
-          <Link
-            href={getNextMonth()}
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-[8px] transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
-            style={{ color: textMuted }}
-            aria-label="Próximo mês"
-          >
-            <ChevronRight size={18} aria-hidden="true" />
-          </Link>
-        </div>
+        <MonthNavigator year={currentYear} month={currentMonth} currentFilters={currentFilters} />
       </div>
 
       {hasNoData && (
         <div
-          className="mb-6 flex items-center justify-between rounded-[10px] p-5"
+          className="mb-6 flex flex-col gap-4 rounded-[16px] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
           style={{ backgroundColor: infoBg, border: '1px solid #bfdbfe' }}
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-start gap-3">
             <div
-              className="flex h-10 w-10 items-center justify-center rounded-full"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px]"
               style={{ backgroundColor: '#dbeafe', color: info }}
             >
-              <Play size={20} aria-hidden="true" />
+              <CirclePlay size={20} aria-hidden="true" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold" style={{ color: '#1e3a8a' }}>
-                Mês não inicializado
+              <h3 className="text-sm font-bold" style={{ color: '#1e3a8a' }}>
+                Prepare o mês antes de lançar pagamentos
               </h3>
-              <p className="mt-0.5 text-xs" style={{ color: '#1d4ed8' }}>
-                Este mês ainda não possui registros de pagamento. Inicialize para gerar os registros
-                automáticos.
+              <p className="mt-1 max-w-2xl text-xs leading-5" style={{ color: '#1d4ed8' }}>
+                Mês não inicializado. Gere os registros automáticos para os associados ativos e
+                comece o acompanhamento.
               </p>
             </div>
           </div>
-          <form action={initializeCurrentMonthAction}>
-            <button
-              type="submit"
-              className={`inline-flex h-9 items-center justify-center gap-2 rounded-[8px] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
-              style={{ backgroundColor: navy }}
-            >
-              Inicializar Mês
-            </button>
-          </form>
+          <InitializeMonthButton
+            year={currentYear}
+            month={currentMonth}
+            periodLabel={currentPeriodLabel}
+          />
         </div>
       )}
 
@@ -222,6 +154,8 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
           Próxima
         </Link>
       </nav>
+
+      <FinancePaymentProfile aggregates={data.aggregates} />
     </main>
   );
 }
