@@ -29,7 +29,7 @@ describe('financeiro mensalidades actions', () => {
     requireRoleMock.mockResolvedValue({ userId: 7 });
     updateMonthlyPaymentMock.mockResolvedValue(undefined);
     cancelMonthlyPaymentMock.mockResolvedValue(undefined);
-    initializeMonthMock.mockResolvedValue(12);
+    initializeMonthMock.mockResolvedValue({ created: 12, maintained: 0, rejected: 0 });
   });
 
   it('updates payment and revalidates caches on success', async () => {
@@ -137,8 +137,9 @@ describe('financeiro mensalidades actions', () => {
   });
 
   it('initializes month and revalidates caches', async () => {
-    await initializeMonthAction(2026, 5);
+    const result = await initializeMonthAction(2026, 5);
 
+    expect(result).toEqual({ success: true, created: 12, maintained: 0, rejected: 0 });
     expect(initializeMonthMock).toHaveBeenCalledWith(7, 2026, 5);
     expect(revalidateTagMock).toHaveBeenCalledWith('finance-monthly-2026-5', 'max');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/financeiro/mensalidades');

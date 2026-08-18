@@ -11,7 +11,7 @@ import {
   textPrimary,
   textSecondary,
 } from '@/lib/ui/tokens';
-import { CheckCircle2, MapPin, Radio } from 'lucide-react';
+import { CheckCircle2, CreditCard, MapPin, Radio } from 'lucide-react';
 import { paymentStatusOrder, paymentStatusUi } from './payment-status-ui';
 
 interface FinanceKPIsProps {
@@ -31,7 +31,7 @@ export function FinanceKPIs({ aggregates }: FinanceKPIsProps) {
 
   return (
     <section
-      className="mb-5 overflow-hidden rounded-[12px] bg-white shadow-[0_1px_2px_rgba(4,9,32,0.04)]"
+      className="mb-5 overflow-hidden rounded-[16px] bg-white shadow-[0_1px_2px_rgba(4,9,32,0.04)]"
       style={{ border: `1px solid ${hairline}` }}
       aria-label="Fechamento mensal"
     >
@@ -144,16 +144,18 @@ export function FinanceKPIs({ aggregates }: FinanceKPIsProps) {
 }
 
 export function FinancePaymentProfile({ aggregates }: FinanceKPIsProps) {
-  const { total, exterior, folha, boletoPix } = aggregates;
+  const { total, exterior, folha, boleto, pix, transferencia, outros } = aggregates;
   const channels = [
     { label: 'Folha', value: folha, color: '#2d75b6', icon: CheckCircle2 },
-    { label: 'Boleto / PIX', value: boletoPix, color: '#6d4bb8', icon: Radio },
-    { label: 'Exterior', value: exterior, color: '#53657b', icon: MapPin },
+    { label: 'Boleto', value: boleto, color: '#6d4bb8', icon: CreditCard },
+    { label: 'PIX', value: pix, color: '#7c4d9e', icon: Radio },
+    { label: 'Transferência', value: transferencia, color: '#39756f', icon: CreditCard },
+    { label: 'Outros', value: outros, color: '#53657b', icon: CreditCard },
   ];
 
   return (
     <section
-      className="mt-6 rounded-[12px] bg-white px-5 py-5"
+      className="mt-6 rounded-[16px] bg-white px-5 py-5"
       style={{ border: `1px solid ${hairline}` }}
       aria-label="Perfil da cobrança"
     >
@@ -177,7 +179,7 @@ export function FinancePaymentProfile({ aggregates }: FinanceKPIsProps) {
         </div>
       </div>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-3">
+      <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {channels.map((channel) => (
           <div key={channel.label} className="border-t pt-3" style={{ borderColor: hairline }}>
             <div className="flex items-center justify-between gap-3 text-xs">
@@ -209,6 +211,13 @@ export function FinancePaymentProfile({ aggregates }: FinanceKPIsProps) {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="mt-5 flex items-center gap-2 border-t pt-4 text-xs" style={{ borderColor: hairline }}>
+        <MapPin size={13} style={{ color: textMuted }} aria-hidden="true" />
+        <span style={{ color: textSecondary }}>Associados no exterior</span>
+        <strong style={{ color: textPrimary }}>{exterior}</strong>
+        <span style={{ color: textMuted }}>({percentOf(exterior, total)}%)</span>
       </div>
     </section>
   );

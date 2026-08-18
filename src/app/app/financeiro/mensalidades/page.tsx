@@ -34,6 +34,10 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
     filters: currentFilters,
   } = parseMonthlyPaymentsPageSearchParams(await searchParams);
   const initializeCurrentMonthAction = initializeMonthAction.bind(null, currentYear, currentMonth);
+  const currentPeriodLabel = new Intl.DateTimeFormat('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(currentYear, currentMonth - 1, 1));
 
   const data = await getMonthlyPaymentsData(currentYear, currentMonth, {
     q: currentFilters.q,
@@ -93,7 +97,7 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
 
       {hasNoData && (
         <div
-          className="mb-6 flex flex-col gap-4 rounded-[14px] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+          className="mb-6 flex flex-col gap-4 rounded-[16px] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
           style={{ backgroundColor: infoBg, border: '1px solid #bfdbfe' }}
         >
           <div className="flex items-start gap-3">
@@ -120,7 +124,7 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
               style={{ backgroundColor: navy }}
             >
               <FileCheck2 size={16} aria-hidden="true" />
-              Inicializar Mês
+              Inicializar Mês ({currentPeriodLabel})
             </button>
           </form>
         </div>

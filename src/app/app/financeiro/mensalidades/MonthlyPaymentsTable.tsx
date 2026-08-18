@@ -333,6 +333,7 @@ export default function MonthlyPaymentsTable({
     { value: 'boleto', label: 'Boleto', icon: CreditCard },
     { value: 'pix', label: 'PIX', icon: CreditCard },
     { value: 'transferencia', label: 'Transf.', icon: CreditCard },
+    { value: 'outros', label: 'Outros', icon: CreditCard },
   ];
 
   const locationOptions = [
@@ -409,7 +410,7 @@ export default function MonthlyPaymentsTable({
   return (
     <div className="min-w-0 space-y-5">
       <section
-        className="rounded-[14px] bg-white p-4 sm:p-5"
+        className="rounded-[16px] bg-white p-4 sm:p-5"
         style={{ border: `1px solid ${hairline}` }}
         aria-label="Filtros de mensalidades"
       >
@@ -610,7 +611,7 @@ export default function MonthlyPaymentsTable({
 
       {/* Operational queue */}
       <section
-        className="min-w-0 overflow-hidden rounded-[12px] bg-white"
+        className="min-w-0 overflow-hidden rounded-[16px] bg-white"
         style={{ border: `1px solid ${hairline}` }}
       >
         <div
