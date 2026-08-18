@@ -60,6 +60,7 @@ describe('filterActivities', () => {
     query: '',
     assignee: '',
     priority: '',
+    status: '',
     associate: '',
     dueWeek: false,
     dueLate: false,

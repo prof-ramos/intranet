@@ -91,5 +91,18 @@ test.describe('Dashboard', () => {
     await page.goto('/app');
     await page.getByRole('link', { name: /inadimplentes/i }).click();
     await expect(page).toHaveURL(/associationStatus=associado.*contributionStatus=inadimplente/);
+
+    await page.goto('/app');
+    await page.getByRole('link', { name: /contribuições em dia/i }).click();
+    await expect(page).toHaveURL(/associationStatus=associado.*contributionStatus=em_dia/);
+
+    await page.goto('/app');
+    await page.getByRole('link', { name: /atrasadas/i }).click();
+    await expect(page).toHaveURL(/dueLate=1/);
+
+    await page.goto('/app');
+    await page.getByRole('link', { name: /Abrir atividades com status A fazer/i }).click();
+    await expect(page).toHaveURL(/status=a_fazer/);
+    await expect(page.getByText('Revisar pendência vencida E2E')).toBeVisible();
   });
 });

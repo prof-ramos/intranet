@@ -19,6 +19,7 @@ import {
 } from '@/lib/ui/tokens';
 import type { BoardAssociate, BoardPerson, Filters } from './types';
 import { defaultFilters } from './constants';
+import { ACTIVITY_STATUS_OPTIONS } from '@/lib/activities/status';
 
 function isPriorityFilter(value: string): value is Filters['priority'] {
   return value === '' || value in priorityStyles;
@@ -44,6 +45,7 @@ export const FilterBar = memo(function FilterBar({
     filters.query ||
     filters.assignee ||
     filters.priority ||
+    filters.status ||
     filters.associate ||
     filters.dueWeek ||
     filters.dueLate ||
@@ -113,6 +115,33 @@ export const FilterBar = memo(function FilterBar({
         {people.map((person) => (
           <option key={person.id} value={person.id}>
             {person.name}
+          </option>
+        ))}
+      </select>
+
+      <select
+        aria-label="Filtrar por status"
+        value={filters.status}
+        onChange={(event) => {
+          const status = event.target.value;
+          setFilters({
+            ...filters,
+            status: ACTIVITY_STATUS_OPTIONS.some((option) => option.value === status)
+              ? (status as Filters['status'])
+              : '',
+          });
+        }}
+        className={[
+          'rounded-[8px] border bg-white px-2 text-xs',
+          desktopDenseControlClass,
+          focusRingClass,
+        ].join(' ')}
+        style={{ borderColor: hairline }}
+      >
+        <option value="">Qualquer status</option>
+        {ACTIVITY_STATUS_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>

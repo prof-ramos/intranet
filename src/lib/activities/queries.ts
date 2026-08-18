@@ -1,5 +1,5 @@
 import type { AuthUser } from '@/lib/auth/config';
-import type { ActivitiesBoardData, BoardAssociate, BoardPerson } from './types';
+import type { ActivitiesBoardData, BoardAssociate, BoardPerson, Status } from './types';
 import {
   findActivities,
   findActivityBoardRowById,
@@ -47,6 +47,7 @@ export async function getActivitiesBoardData(
     openActivityId?: number | null;
     dueLate?: boolean;
     openOnly?: boolean;
+    status?: Status;
   } = {},
 ): Promise<ActivitiesBoardData> {
   const [activityRows, openedActivityRow, adminRows, associateRows] = await Promise.all([
@@ -55,6 +56,7 @@ export async function getActivitiesBoardData(
       offset: options.offset,
       dueLate: options.dueLate,
       openOnly: options.openOnly,
+      status: options.status,
     }),
     options.openActivityId
       ? findActivityBoardRowById(options.openActivityId)

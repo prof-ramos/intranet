@@ -21,6 +21,7 @@ export const defaultFilters: Filters = {
   query: '',
   assignee: '',
   priority: '',
+  status: '',
   associate: '',
   dueWeek: false,
   dueLate: false,

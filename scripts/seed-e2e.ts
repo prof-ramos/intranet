@@ -45,8 +45,8 @@ async function main() {
 
   const passwordHash = await bcrypt.hash(E2E_ADMIN_PASSWORD, 12);
 
-  const insertedAdmins = await db
-    .insert(admins)
+  await db.transaction(async (tx) => {
+    const insertedAdmins = await tx.insert(admins)
     .values([
       {
         name: 'Admin E2E',
@@ -77,8 +77,7 @@ async function main() {
 
   const adminId = insertedAdmins[0].id;
 
-  const insertedAssociates = await db
-    .insert(associates)
+  const insertedAssociates = await tx.insert(associates)
     .values([
       {
         fullName: 'João da Silva',
@@ -154,7 +153,7 @@ async function main() {
   const joao = insertedAssociates.find((a) => a.fullName === 'João da Silva')!;
   const maria = insertedAssociates.find((a) => a.fullName === 'Maria Oliveira')!;
 
-  await db.insert(monthlyPayments).values([
+  await tx.insert(monthlyPayments).values([
     {
       associateId: joao.id,
       year: 2026,
@@ -174,7 +173,7 @@ async function main() {
     },
   ]);
 
-  await db.insert(activities).values([
+  await tx.insert(activities).values([
     {
       title: 'Revisar pendência vencida E2E',
       description: 'Atividade usada para validar a retomada operacional pelo dashboard.',
@@ -196,7 +195,7 @@ async function main() {
     },
   ]);
 
-  await db.insert(oficios).values([
+  await tx.insert(oficios).values([
     makeOficio(adminId, {
       subject: 'Solicitação de dados funcionais',
       bodyRichText: 'Solicitamos a lista atualizada de associados lotados na Embaixada em Paris.',
@@ -263,6 +262,8 @@ async function main() {
       status: 'cancelado',
     }),
   ]);
+
+  });
 
   console.log('E2E seed complete.');
 }

@@ -75,16 +75,21 @@ export interface FindActivitiesOptions {
   offset?: number;
   dueLate?: boolean;
   openOnly?: boolean;
+  status?: Status;
 }
 
 export async function findActivities(options: FindActivitiesOptions = {}) {
   const limit = Math.min(Math.max(options.limit ?? DEFAULT_ACTIVITY_LIMIT, 1), MAX_ACTIVITY_LIMIT);
   const offset = Math.max(options.offset ?? 0, 0);
-  const operationalFilter = options.dueLate
-    ? and(ne(activities.status, 'concluido'), sql`${activities.dueDate} < CURRENT_DATE`)
-    : options.openOnly
-      ? ne(activities.status, 'concluido')
-      : undefined;
+  const conditions = [];
+  if (options.status) conditions.push(eq(activities.status, options.status));
+  if (options.dueLate) {
+    conditions.push(ne(activities.status, 'concluido'));
+    conditions.push(sql`${activities.dueDate} < CURRENT_TIMESTAMP`);
+  } else if (options.openOnly) {
+    conditions.push(ne(activities.status, 'concluido'));
+  }
+  const operationalFilter = conditions.length > 0 ? and(...conditions) : undefined;
 
   // The board is deliberately bounded. Keep open work ahead of completed work,
   // then select the most recently changed rows so a newly-created card cannot

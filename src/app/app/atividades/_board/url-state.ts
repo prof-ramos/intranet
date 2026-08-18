@@ -1,5 +1,6 @@
 import { parsePositiveIntParam } from '@/lib/routing/params';
 import { ACTIVITY_PRIORITIES } from '@/lib/activities/types';
+import { isActivityStatus } from '@/lib/activities/status';
 import { defaultFilters } from './constants';
 import type { Filters } from './types';
 
@@ -19,6 +20,7 @@ export function parseFiltersFromUrl(searchParams: { get(name: string): string | 
   const scope = searchParams.get('scope');
   const assignee = searchParams.get('assignee');
   const priority = searchParams.get('priority');
+  const status = searchParams.get('status');
   const associate = searchParams.get('associate');
   const dueWeek = searchParams.get('dueWeek');
   const dueLate = searchParams.get('dueLate');
@@ -35,6 +37,7 @@ export function parseFiltersFromUrl(searchParams: { get(name: string): string | 
       priority && VALID_PRIORITIES.includes(priority)
         ? (priority as Filters['priority'])
         : defaultFilters.priority,
+    status: status && isActivityStatus(status) ? status : defaultFilters.status,
     associate: associate ?? defaultFilters.associate,
     dueWeek: dueWeek === '1',
     dueLate: dueLate === '1',
@@ -48,6 +51,7 @@ export function serializeFiltersToUrl(filters: Filters): URLSearchParams {
   if (filters.scope !== defaultFilters.scope) params.set('scope', filters.scope);
   if (filters.assignee) params.set('assignee', filters.assignee);
   if (filters.priority) params.set('priority', filters.priority);
+  if (filters.status) params.set('status', filters.status);
   if (filters.associate) params.set('associate', filters.associate);
   if (filters.dueWeek) params.set('dueWeek', '1');
   if (filters.dueLate) params.set('dueLate', '1');
