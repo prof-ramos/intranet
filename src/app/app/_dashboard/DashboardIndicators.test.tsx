@@ -25,7 +25,7 @@ describe('DashboardIndicators', () => {
       '/app/atividades',
     );
     expect(screen.getByRole('link', { name: /inadimplentes/i }).getAttribute('href')).toBe(
-      '/app/associados?contributionStatus=inadimplente',
+      '/app/associados?associationStatus=associado&contributionStatus=inadimplente',
     );
   });
 

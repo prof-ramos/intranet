@@ -57,7 +57,12 @@ describe('activities queries', () => {
       { limit: 10, offset: 5 },
     );
 
-    expect(findActivitiesMock).toHaveBeenCalledWith({ limit: 10, offset: 5 });
+    expect(findActivitiesMock).toHaveBeenCalledWith({
+      limit: 10,
+      offset: 5,
+      dueLate: undefined,
+      openOnly: undefined,
+    });
     expect(result).toEqual({
       initialActivities: [{ id: 1, title: 'Mapeada' }],
       people: [
@@ -107,5 +112,19 @@ describe('activities queries', () => {
       { id: 1, title: 'Recente' },
       { id: 999, title: 'Vencida antiga' },
     ]);
+  });
+
+  it('forwards operational dashboard filters to the repository', async () => {
+    await getActivitiesBoardData(
+      { userId: 7, name: 'Sessao Atual', role: 'admin' },
+      { dueLate: true, openOnly: false },
+    );
+
+    expect(findActivitiesMock).toHaveBeenCalledWith({
+      limit: undefined,
+      offset: undefined,
+      dueLate: true,
+      openOnly: false,
+    });
   });
 });

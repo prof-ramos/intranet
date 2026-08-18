@@ -75,7 +75,7 @@ export function DashboardIndicators({ stripe, inadimplentesCount }: DashboardInd
     id: 'inadimplentes',
     value: String(inadimplentesCount),
     label: 'Inadimplentes',
-    href: '/app/associados?contributionStatus=inadimplente',
+    href: '/app/associados?associationStatus=associado&contributionStatus=inadimplente',
     tone: inadimplentesCount > 0 ? 'neg' : undefined,
   };
 

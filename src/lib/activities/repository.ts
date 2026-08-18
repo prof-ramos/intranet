@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, getTableColumns, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, getTableColumns, ne, sql } from 'drizzle-orm';
 import { db, type DbExecutor } from '@/lib/db';
 import { activities, admins, associates, auditLogs, type Activity } from '@/lib/db/schema';
 import type { BoardActivity, Priority, Status } from './types';
@@ -70,15 +70,27 @@ export function mapActivityRowToBoardActivity(activity: ActivityBoardRow): Board
   };
 }
 
-export async function findActivities(options: { limit?: number; offset?: number } = {}) {
+export interface FindActivitiesOptions {
+  limit?: number;
+  offset?: number;
+  dueLate?: boolean;
+  openOnly?: boolean;
+}
+
+export async function findActivities(options: FindActivitiesOptions = {}) {
   const limit = Math.min(Math.max(options.limit ?? DEFAULT_ACTIVITY_LIMIT, 1), MAX_ACTIVITY_LIMIT);
   const offset = Math.max(options.offset ?? 0, 0);
+  const operationalFilter = options.dueLate
+    ? and(ne(activities.status, 'concluido'), sql`${activities.dueDate} < CURRENT_DATE`)
+    : options.openOnly
+      ? ne(activities.status, 'concluido')
+      : undefined;
 
   // The board is deliberately bounded. Keep open work ahead of completed work,
   // then select the most recently changed rows so a newly-created card cannot
   // fall outside the window merely because older rows have the same board rank.
   // Sort the selected window back into board order before returning it to the UI.
-  const rows = await db
+  const query = db
     .select({
       id: activities.id,
       title: activities.title,
@@ -96,13 +108,18 @@ export async function findActivities(options: { limit?: number; offset?: number 
     .from(activities)
     .leftJoin(admins, eq(activities.assigneeId, admins.id))
     .leftJoin(associates, eq(activities.associateId, associates.id))
+    .where(operationalFilter)
     .orderBy(
       asc(sql`case when ${activities.status} = 'concluido' then 1 else 0 end`),
       desc(activities.updatedAt),
       desc(activities.id),
-    )
-    .limit(limit)
-    .offset(offset);
+    );
+
+  // Dashboard counters represent the complete operational queue. Apply those
+  // filters in SQL and do not truncate their result before it reaches the board.
+  const rows = operationalFilter
+    ? await query.offset(offset)
+    : await query.limit(limit).offset(offset);
 
   return rows.sort(compareBoardRows);
 }

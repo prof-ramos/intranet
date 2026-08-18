@@ -1,4 +1,15 @@
 import { test, expect } from '../fixtures';
+import type { Page } from '@playwright/test';
+
+async function expectNavigationSections(page: Page) {
+  const navigation = page.getByRole('navigation', { name: 'Navegação principal' });
+  await expect(navigation.locator('[role="group"] > p')).toHaveText([
+    'Operação',
+    'Cadastro',
+    'Gestão',
+  ]);
+  return navigation;
+}
 
 test.describe('Dashboard', () => {
   test('displays metrics for admin', async ({ page, loginAsAdmin }) => {
@@ -8,18 +19,35 @@ test.describe('Dashboard', () => {
     await expect(page.locator('text=associados ativos')).toBeVisible();
     await expect(page.locator('text=atividades em aberto')).toBeVisible();
     await expect(page.locator('text=Atividades em curso')).toBeVisible();
+
+    const navigation = await expectNavigationSections(page);
+    await expect(navigation.getByRole('button', { name: 'Financeiro' })).toBeVisible();
+    await expect(navigation.getByRole('link', { name: 'Relatórios' })).toBeVisible();
+    await expect(navigation.getByRole('button', { name: 'Configurações' })).toBeVisible();
+    await expect(navigation.getByText('E-mails com IA', { exact: true })).toHaveCount(1);
   });
 
   test('displays dashboard for diretoria', async ({ page, loginAsDiretoria }) => {
     await loginAsDiretoria();
     await page.goto('/app');
     await expect(page.locator('h1')).toContainText('Painel Administrativo');
+
+    const navigation = await expectNavigationSections(page);
+    await expect(navigation.getByRole('button', { name: 'Financeiro' })).toBeVisible();
+    await expect(navigation.getByRole('link', { name: 'Relatórios' })).toBeVisible();
+    await expect(navigation.getByRole('button', { name: 'Configurações' })).toBeVisible();
+    await expect(navigation.getByText('E-mails com IA', { exact: true })).toHaveCount(0);
   });
 
   test('displays dashboard for secretaria', async ({ page, loginAsSecretaria }) => {
     await loginAsSecretaria();
     await page.goto('/app');
     await expect(page.locator('h1')).toContainText('Painel Administrativo');
+
+    const navigation = await expectNavigationSections(page);
+    await expect(navigation.getByRole('button', { name: 'Financeiro' })).toHaveCount(0);
+    await expect(navigation.getByRole('link', { name: 'Relatórios' })).toHaveCount(0);
+    await expect(navigation.getByRole('button', { name: 'Configurações' })).toHaveCount(0);
   });
 
   test('opens the selected overdue activity from the dispatch strip', async ({
@@ -59,5 +87,9 @@ test.describe('Dashboard', () => {
     await expect(page).toHaveURL(/openOnly=1/);
     await expect(page.getByText('Revisar pendência vencida E2E')).toBeVisible();
     await expect(page.getByText('Atividade concluída E2E')).toHaveCount(0);
+
+    await page.goto('/app');
+    await page.getByRole('link', { name: /inadimplentes/i }).click();
+    await expect(page).toHaveURL(/associationStatus=associado.*contributionStatus=inadimplente/);
   });
 });

@@ -41,10 +41,21 @@ function buildPeopleList(
 
 export async function getActivitiesBoardData(
   user: Pick<AuthUser, 'userId' | 'name' | 'role'>,
-  options: { limit?: number; offset?: number; openActivityId?: number | null } = {},
+  options: {
+    limit?: number;
+    offset?: number;
+    openActivityId?: number | null;
+    dueLate?: boolean;
+    openOnly?: boolean;
+  } = {},
 ): Promise<ActivitiesBoardData> {
   const [activityRows, openedActivityRow, adminRows, associateRows] = await Promise.all([
-    findActivities({ limit: options.limit, offset: options.offset }),
+    findActivities({
+      limit: options.limit,
+      offset: options.offset,
+      dueLate: options.dueLate,
+      openOnly: options.openOnly,
+    }),
     options.openActivityId
       ? findActivityBoardRowById(options.openActivityId)
       : Promise.resolve(null),
