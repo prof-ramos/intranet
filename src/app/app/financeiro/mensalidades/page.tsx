@@ -1,12 +1,12 @@
 import { getMonthlyPaymentsData } from '@/lib/finance/queries';
 import MonthlyPaymentsTable from './MonthlyPaymentsTable';
 import { FinanceKPIs, FinancePaymentProfile } from './FinanceKPIs';
-import { initializeMonthAction } from './actions';
+import { InitializeMonthButton } from './InitializeMonthButton';
 import MonthNavigator from './MonthNavigator';
-import { CirclePlay, FileCheck2 } from 'lucide-react';
+import { CirclePlay } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { textMuted, navy, focusRingClass, infoBg, info } from '@/lib/ui/tokens';
+import { textMuted, navy, infoBg, info } from '@/lib/ui/tokens';
 import { requireRole } from '@/lib/auth/authorization';
 import {
   parseMonthlyPaymentsPageSearchParams,
@@ -33,7 +33,6 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
     month: currentMonth,
     filters: currentFilters,
   } = parseMonthlyPaymentsPageSearchParams(await searchParams);
-  const initializeCurrentMonthAction = initializeMonthAction.bind(null, currentYear, currentMonth);
   const currentPeriodLabel = new Intl.DateTimeFormat('pt-BR', {
     month: 'long',
     year: 'numeric',
@@ -117,16 +116,11 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
               </p>
             </div>
           </div>
-          <form action={initializeCurrentMonthAction}>
-            <button
-              type="submit"
-              className={`inline-flex h-10 items-center justify-center gap-2 rounded-[9px] px-4 text-sm font-bold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
-              style={{ backgroundColor: navy }}
-            >
-              <FileCheck2 size={16} aria-hidden="true" />
-              Inicializar Mês ({currentPeriodLabel})
-            </button>
-          </form>
+          <InitializeMonthButton
+            year={currentYear}
+            month={currentMonth}
+            periodLabel={currentPeriodLabel}
+          />
         </div>
       )}
 
