@@ -20,6 +20,7 @@ interface PageProps {
     q?: string;
     status?: string;
     method?: string;
+    origin?: string;
     location?: string;
     page?: string;
   }>;
@@ -42,6 +43,7 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
     q: currentFilters.q,
     status: currentFilters.status,
     method: currentFilters.method,
+    origin: currentFilters.origin,
     location: currentFilters.location,
     page: currentFilters.page,
     pageSize: 20,
@@ -60,6 +62,7 @@ export default async function MensalidadesPage({ searchParams }: PageProps) {
     currentFilters.q ||
     currentFilters.status ||
     currentFilters.method ||
+    currentFilters.origin ||
     currentFilters.location
   );
   const getPageHref = (page: number) => {

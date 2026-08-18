@@ -6,6 +6,7 @@ import {
   type MonthlyPayment,
   type NewMonthlyPayment,
 } from '@/lib/db/schema/finance';
+import { paymentOrigin } from '@/lib/db/schema/enums';
 import { associates } from '@/lib/db/schema/associates';
 import { and, asc, desc, eq, ilike, lt, or, sql } from 'drizzle-orm';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
@@ -18,6 +19,9 @@ export interface PaymentHistoryItem {
   month: number;
   status: string;
   paymentMethod: string | null;
+  origin: (typeof paymentOrigin.enumValues)[number];
+  amount: string | null;
+  notes: string | null;
   paidAt: Date | null;
   cancelledAt: Date | null;
   cancellationReason: string | null;
@@ -34,6 +38,9 @@ export async function getPaymentHistoryForAssociate(
       month: monthlyPayments.month,
       status: monthlyPayments.status,
       paymentMethod: monthlyPayments.paymentMethod,
+      origin: monthlyPayments.origin,
+      amount: monthlyPayments.amount,
+      notes: monthlyPayments.notes,
       paidAt: monthlyPayments.paidAt,
       cancelledAt: monthlyPayments.cancelledAt,
       cancellationReason: monthlyPayments.cancellationReason,
@@ -50,6 +57,9 @@ export async function getPaymentHistoryForAssociate(
     month: r.month,
     status: r.status,
     paymentMethod: r.paymentMethod ?? null,
+    origin: r.origin ?? 'outros',
+    amount: r.amount ?? null,
+    notes: r.notes ?? null,
     paidAt: r.paidAt ?? null,
     cancelledAt: r.cancelledAt ?? null,
     cancellationReason: r.cancellationReason ?? null,
@@ -62,6 +72,7 @@ export interface MonthlyPaymentsFilters {
   q?: string;
   status?: (typeof paymentStatus.enumValues)[number];
   method?: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros';
+  origin?: (typeof paymentOrigin.enumValues)[number];
   location?: 'brasil' | 'exterior';
   page?: number;
   pageSize?: number;
@@ -82,6 +93,12 @@ export interface MonthlyPaymentsAggregates {
   outros: number;
   boletoPix: number;
   paymentRecords: number;
+  /** Sum of non-cancelled received amounts, in BRL with two decimal places. */
+  valorRecebido: string;
+  sigepe: number;
+  itamaraty: number;
+  comprovante: number;
+  originOutros: number;
 }
 
 export async function findMonthlyPayment(
@@ -141,6 +158,9 @@ export async function upsertMonthlyPayment(
       set: {
         status: payment.status,
         paymentMethod: payment.paymentMethod,
+        amount: payment.amount,
+        origin: payment.origin,
+        notes: payment.notes,
         paidAt: payment.paidAt,
         cancelledAt: null,
         cancellationReason: null,
@@ -168,6 +188,7 @@ export async function cancelMonthlyPaymentRow(
   cancellationReason: string,
   cancelledAt: Date,
   executor: DbExecutor = db,
+  expectedUpdatedAt?: string | null,
 ) {
   const [updated] = await executor
     .update(monthlyPayments)
@@ -180,7 +201,15 @@ export async function cancelMonthlyPaymentRow(
       updatedBy: adminId,
       updatedAt: sql`now()`,
     })
-    .where(and(eq(monthlyPayments.id, paymentId), sql`${monthlyPayments.status} != 'cancelado'`))
+    .where(
+      and(
+        eq(monthlyPayments.id, paymentId),
+        sql`${monthlyPayments.status} != 'cancelado'`,
+        expectedUpdatedAt != null
+          ? sql`date_trunc('milliseconds', ${monthlyPayments.updatedAt}) = ${new Date(expectedUpdatedAt).toISOString()}`
+          : undefined,
+      ),
+    )
     .returning();
   return updated;
 }
@@ -317,6 +346,10 @@ export async function getAssociatesWithPayments(
     );
   }
 
+  if (filters?.origin) {
+    conditions.push(eq(monthlyPayments.origin, filters.origin));
+  }
+
   const joinCondition = and(
     eq(associates.id, monthlyPayments.associateId),
     eq(monthlyPayments.year, year),
@@ -339,6 +372,11 @@ export async function getAssociatesWithPayments(
       paymentId: monthlyPayments.id,
       paymentStatus: monthlyPayments.status,
       monthPaymentMethod: monthlyPayments.paymentMethod,
+      amount: monthlyPayments.amount,
+      origin: monthlyPayments.origin,
+      notes: monthlyPayments.notes,
+      paidAt: monthlyPayments.paidAt,
+      cancelledAt: monthlyPayments.cancelledAt,
       updatedAt: monthlyPayments.updatedAt,
     })
     .from(associates)
@@ -370,6 +408,11 @@ export async function getAssociatesWithPayments(
       outros: sql<number>`count(*) filter (where ${effectiveMethod} = 'outros')`,
       boletoPix: sql<number>`count(*) filter (where ${effectiveMethod} in ('boleto', 'pix'))`,
       paymentRecords: sql<number>`count(${monthlyPayments.id})`,
+      valorRecebido: sql<string>`coalesce(sum(${monthlyPayments.amount}) filter (where ${monthlyPayments.status} = 'pago' and ${monthlyPayments.cancelledAt} is null), 0)::numeric(12, 2)`,
+      sigepe: sql<number>`count(*) filter (where ${monthlyPayments.origin} = 'sigepe')`,
+      itamaraty: sql<number>`count(*) filter (where ${monthlyPayments.origin} = 'itamaraty')`,
+      comprovante: sql<number>`count(*) filter (where ${monthlyPayments.origin} = 'comprovante')`,
+      originOutros: sql<number>`count(*) filter (where ${monthlyPayments.origin} = 'outros')`,
     })
     .from(associates)
     .leftJoin(monthlyPayments, joinCondition)
@@ -398,6 +441,11 @@ export async function getAssociatesWithPayments(
     outros: number(raw?.outros),
     boletoPix: number(raw?.boletoPix),
     paymentRecords: number(raw?.paymentRecords),
+    valorRecebido: String(raw?.valorRecebido ?? '0.00'),
+    sigepe: number(raw?.sigepe),
+    itamaraty: number(raw?.itamaraty),
+    comprovante: number(raw?.comprovante),
+    originOutros: number(raw?.originOutros),
   };
   return { rows, total, aggregates, page, pageSize };
 }

@@ -383,6 +383,55 @@ describe('finance service', () => {
     expect(emitDomainEvent).not.toHaveBeenCalled();
   });
 
+  it('requires a positive amount when creating or completing a structured paid row', async () => {
+    const emptyLimit = vi.fn().mockResolvedValue([]);
+    transactionMock.tx.select = vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({ limit: emptyLimit })),
+      })),
+    }));
+
+    await expect(
+      updateMonthlyPayment(1, {
+        associateId: 10,
+        year: 2026,
+        month: 7,
+        status: 'pago',
+        paymentMethod: 'pix',
+      }),
+    ).rejects.toThrow('Informe um valor maior que zero');
+
+    emptyLimit.mockResolvedValue([
+      {
+        id: 7,
+        associateId: 10,
+        year: 2026,
+        month: 7,
+        status: 'pendente',
+        paymentMethod: 'pix',
+        amount: null,
+        origin: 'outros',
+        notes: null,
+        paidAt: null,
+        cancelledAt: null,
+        cancellationReason: null,
+        cancelledBy: null,
+        updatedAt: new Date('2026-05-13T00:00:00.000Z'),
+      },
+    ]);
+
+    await expect(
+      updateMonthlyPayment(1, {
+        associateId: 10,
+        year: 2026,
+        month: 7,
+        status: 'pago',
+        paymentMethod: 'pix',
+      }),
+    ).rejects.toThrow('Informe um valor maior que zero');
+    expect(transactionMock.tx.insert).not.toHaveBeenCalled();
+  });
+
   it('cancels a payment with before/after audit and domain event', async () => {
     const cancelledAt = new Date('2026-05-21T12:00:00.000Z');
     vi.useFakeTimers();

@@ -4,13 +4,113 @@ import { logAuditAction, logAuditBestEffort } from '@/lib/audit/service';
 import { db } from '@/lib/db';
 import { emitDomainEvent, emitDomainEventsBatch } from '@/lib/integrations/outbox';
 import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
-import { type MonthlyPayment, type NewMonthlyPayment } from '@/lib/db/schema/finance';
+import {
+  paymentStatus,
+  type MonthlyPayment,
+  type NewMonthlyPayment,
+} from '@/lib/db/schema/finance';
+import { paymentOrigin } from '@/lib/db/schema/enums';
 import { auditLogs } from '@/lib/db/schema/audit';
 import { createLogger } from '@/lib/logger';
 import { yearMonthObjectSchema } from '@/lib/validation/schemas';
 import { ConcurrencyConflictError, NotFoundError, ValidationError } from '@/lib/errors';
+import { BUSINESS_TIME_ZONE, businessDateOnly } from '@/lib/utils/date';
 
 const logger = createLogger('finance:service');
+
+export type PaymentOrigin = (typeof paymentOrigin.enumValues)[number];
+export type PaymentStatus = (typeof paymentStatus.enumValues)[number];
+
+const DECIMAL_AMOUNT_PATTERN = /^(?:0|[1-9]\d{0,9})(?:\.\d{1,2})?$/;
+const CIVIL_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Canonicalizes an amount without going through a JS number (which could lose
+ * cents) and rejects values outside numeric(12,2).
+ */
+export function validatePaymentAmount(value: string | number | null | undefined): string | null {
+  if (value == null || value === '') return null;
+  const normalized = typeof value === 'number' ? String(value) : value.trim().replace(',', '.');
+  if (!DECIMAL_AMOUNT_PATTERN.test(normalized)) {
+    throw new ValidationError('Valor deve ser um número BRL com até 2 casas decimais.');
+  }
+  const [integerPart, decimalPart = ''] = normalized.split('.');
+  const amountInCents =
+    BigInt(integerPart) * BigInt(100) + BigInt(decimalPart.padEnd(2, '0') || '0');
+  if (amountInCents <= BigInt(0)) {
+    throw new ValidationError('Valor deve ser maior que zero.');
+  }
+  return `${integerPart}.${decimalPart.padEnd(2, '0')}`;
+}
+
+export function validatePaymentNotes(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  const notes = value.trim();
+  if (notes.length > 2000) {
+    throw new ValidationError('Observações devem ter no máximo 2.000 caracteres.');
+  }
+  return notes || null;
+}
+
+function parseCivilDate(value: string): { year: number; month: number; day: number } {
+  if (!CIVIL_DATE_PATTERN.test(value)) {
+    throw new ValidationError('Data de pagamento deve estar no formato AAAA-MM-DD.');
+  }
+  const [year, month, day] = value.split('-').map(Number);
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  if (
+    candidate.getUTCFullYear() !== year ||
+    candidate.getUTCMonth() !== month - 1 ||
+    candidate.getUTCDate() !== day
+  ) {
+    throw new ValidationError('Data de pagamento inválida.');
+  }
+  return { year, month, day };
+}
+
+/**
+ * Converts an operator-entered civil date to midnight in America/Sao_Paulo.
+ * The date is stored as timestamptz, but callers never need to provide an
+ * hour or an offset. The offset is derived from Intl so this remains correct
+ * if the business timezone rules change again.
+ */
+export function civilDateToBusinessInstant(value: string): Date {
+  const { year, month, day } = parseCivilDate(value);
+  const utcMidnight = Date.UTC(year, month - 1, day);
+  const probe = new Date(utcMidnight);
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: BUSINESS_TIME_ZONE,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).formatToParts(probe);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((item) => item.type === type)?.value);
+  const localAsUtc = Date.UTC(
+    part('year'),
+    part('month') - 1,
+    part('day'),
+    part('hour'),
+    part('minute'),
+  );
+  const offsetMinutes = Math.round((localAsUtc - utcMidnight) / 60_000);
+  return new Date(utcMidnight - offsetMinutes * 60_000);
+}
+
+export function validatePaymentDate(
+  value: string | null | undefined,
+  now = new Date(),
+): Date | null {
+  if (value == null || value === '') return null;
+  const parsed = civilDateToBusinessInstant(value);
+  if (parsed.getTime() > now.getTime()) {
+    throw new ValidationError('Data de pagamento não pode ser futura.');
+  }
+  return parsed;
+}
 
 /**
  * Valid status transitions for monthly payments.
@@ -118,14 +218,21 @@ export async function autoMarkOverduePaymentsService(): Promise<number> {
   return count;
 }
 
-function getPaymentAuditState(payment: MonthlyPayment) {
-  return {
+function getPaymentAuditState(payment: MonthlyPayment, includeStructured = true) {
+  const state = {
     status: payment.status,
     paymentMethod: payment.paymentMethod,
-    paidAt: payment.paidAt,
-    cancelledAt: payment.cancelledAt,
-    cancellationReason: payment.cancellationReason,
-    cancelledBy: payment.cancelledBy,
+    paidAt: payment.paidAt ?? null,
+    cancelledAt: payment.cancelledAt ?? null,
+    cancellationReason: payment.cancellationReason ?? null,
+    cancelledBy: payment.cancelledBy ?? null,
+  };
+  if (!includeStructured) return state;
+  return {
+    ...state,
+    amount: payment.amount ?? null,
+    origin: payment.origin ?? 'outros',
+    notes: payment.notes ?? null,
   };
 }
 
@@ -150,7 +257,46 @@ export function validateYearMonth(year: number, month: number): void {
 export type MonthlyPaymentUpdateInput = Pick<
   MonthlyPayment,
   'associateId' | 'year' | 'month' | 'status' | 'paymentMethod'
->;
+> & {
+  /** Decimal BRL string. Optional preserves legacy status-only updates. */
+  amount?: string | number | null;
+  origin?: PaymentOrigin;
+  notes?: string | null;
+  /** Operator-facing civil date (YYYY-MM-DD), not an arbitrary timestamp. */
+  paidAt?: string | null;
+};
+
+function valuesDiffer(left: unknown, right: unknown): boolean {
+  if (left instanceof Date || right instanceof Date) {
+    const leftTime = left instanceof Date ? left.getTime() : null;
+    const rightTime = right instanceof Date ? right.getTime() : null;
+    return leftTime !== rightTime;
+  }
+  return left !== right;
+}
+
+function paymentStateChanged(
+  oldState: ReturnType<typeof getPaymentAuditState>,
+  nextState: ReturnType<typeof getPaymentAuditState>,
+): boolean {
+  const old = oldState as ReturnType<typeof getPaymentAuditState> & {
+    amount?: unknown;
+    origin?: unknown;
+    notes?: unknown;
+  };
+  const next = nextState as typeof old;
+  return (
+    valuesDiffer(old.status, next.status) ||
+    valuesDiffer(old.paymentMethod, next.paymentMethod) ||
+    valuesDiffer(old.amount, next.amount) ||
+    valuesDiffer(old.origin, next.origin) ||
+    valuesDiffer(old.notes, next.notes) ||
+    valuesDiffer(old.paidAt, next.paidAt) ||
+    valuesDiffer(old.cancelledAt, next.cancelledAt) ||
+    valuesDiffer(old.cancellationReason, next.cancellationReason) ||
+    valuesDiffer(old.cancelledBy, next.cancelledBy)
+  );
+}
 
 export async function updateMonthlyPayment(
   adminId: number,
@@ -178,16 +324,51 @@ export async function updateMonthlyPayment(
 
     const oldState = current ? getPaymentAuditState(current) : null;
 
+    const amountWasProvided = Object.hasOwn(payment, 'amount');
+    const structuredInputWasProvided =
+      amountWasProvided ||
+      Object.hasOwn(payment, 'origin') ||
+      Object.hasOwn(payment, 'notes') ||
+      Object.hasOwn(payment, 'paidAt');
+    const amount = amountWasProvided
+      ? validatePaymentAmount(payment.amount)
+      : (current?.amount ?? null);
+    const legacyRowWithoutStructuredAmount = current != null && !Object.hasOwn(current, 'amount');
+    if (
+      payment.status === 'pago' &&
+      amount === null &&
+      (!current || structuredInputWasProvided || !legacyRowWithoutStructuredAmount)
+    ) {
+      throw new ValidationError('Informe um valor maior que zero para um pagamento pago.');
+    }
+    const origin = payment.origin ?? current?.origin ?? 'outros';
+    const notes = Object.hasOwn(payment, 'notes')
+      ? validatePaymentNotes(payment.notes)
+      : (current?.notes ?? null);
+
     // Derive paidAt server-side for audit integrity:
     // - Transitioning TO 'pago': set to now()
     // - Already 'pago' staying 'pago': preserve existing paidAt
     // - Transitioning away from 'pago': clear
     const paidAt =
-      payment.status === 'pago' ? (current?.status === 'pago' ? current.paidAt : new Date()) : null;
+      payment.status === 'pago'
+        ? payment.paidAt
+          ? validatePaymentDate(payment.paidAt)
+          : current?.status === 'pago' && current.paidAt
+            ? current.paidAt
+            : civilDateToBusinessInstant(businessDateOnly())
+        : null;
+
+    if (payment.status === 'pago' && !paidAt) {
+      throw new ValidationError('Informe a data de pagamento.');
+    }
 
     const updatedPayment = await repository.upsertMonthlyPayment(
       {
         ...payment,
+        amount,
+        origin,
+        notes,
         paidAt,
         updatedBy: adminId,
       },
@@ -200,6 +381,17 @@ export async function updateMonthlyPayment(
       throw new ConcurrencyConflictError();
     }
 
+    const newState = getPaymentAuditState({
+      ...updatedPayment,
+      ...payment,
+      amount,
+      origin,
+      notes,
+      paidAt,
+      cancelledAt: null,
+      cancellationReason: null,
+      cancelledBy: null,
+    } as MonthlyPayment);
     const auditArgs = {
       adminId,
       action: 'update',
@@ -207,14 +399,7 @@ export async function updateMonthlyPayment(
       entityId: updatedPayment.id,
       changes: {
         old: oldState ?? {},
-        new: {
-          status: payment.status,
-          paymentMethod: payment.paymentMethod,
-          paidAt,
-          cancelledAt: null,
-          cancellationReason: null,
-          cancelledBy: null,
-        },
+        new: newState,
       },
       metadata: {
         associateId: payment.associateId,
@@ -223,7 +408,7 @@ export async function updateMonthlyPayment(
       },
     };
 
-    if (oldState && oldState.status !== payment.status) {
+    if (oldState && paymentStateChanged(oldState, newState)) {
       await emitDomainEvent(
         {
           type: 'monthly_payment.updated',
@@ -258,7 +443,12 @@ export async function updateMonthlyPayment(
   return result;
 }
 
-export async function cancelMonthlyPayment(adminId: number, paymentId: number, reason: string) {
+export async function cancelMonthlyPayment(
+  adminId: number,
+  paymentId: number,
+  reason: string,
+  expectedUpdatedAt?: string | null,
+) {
   if (!Number.isInteger(paymentId) || paymentId <= 0) {
     throw new ValidationError('Mensalidade inválida.');
   }
@@ -275,21 +465,28 @@ export async function cancelMonthlyPayment(adminId: number, paymentId: number, r
     }
 
     const cancelledAt = new Date();
-    const oldState = getPaymentAuditState(current);
+    const hasStructuredFields =
+      Object.hasOwn(current, 'amount') ||
+      Object.hasOwn(current, 'origin') ||
+      Object.hasOwn(current, 'notes');
+    const oldState = getPaymentAuditState(current, hasStructuredFields);
     const updatedPayment = await repository.cancelMonthlyPaymentRow(
       paymentId,
       adminId,
       cancellationReason,
       cancelledAt,
       tx,
+      expectedUpdatedAt,
     );
 
     if (!updatedPayment) {
       // F-007: another writer changed the row concurrently between the read above and this update.
-      throw new ValidationError('Pagamento já cancelado.');
+      throw new ConcurrencyConflictError(
+        'Pagamento foi alterado por outra pessoa. Recarregue a página.',
+      );
     }
 
-    const newState = getPaymentAuditState(updatedPayment);
+    const newState = getPaymentAuditState(updatedPayment, hasStructuredFields);
 
     // Outbox invariant: emitDomainEvent MUST stay inside the tx.
     await emitDomainEvent(

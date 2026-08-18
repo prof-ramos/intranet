@@ -54,6 +54,28 @@ código e/ou schema. Não inverter a ordem quando houver migration SQL nova.
    - [ ] Anotar no canal de incidente (ADR 011) se houve incidente ou rollback
    - [ ] Se migrate não era necessária, pular passo 3 explicitamente no registro
 
+### Smoke pós-merge — owner, evidência e alerta
+
+- A rotina canônica é o `push` em `main`: o job `Smoke Test — Production` só
+  começa depois de `build` e E2E verdes, valida o SHA completo no health
+  autenticado e executa com `SMOKE_ALLOW_MUTATIONS=false`.
+- O smoke pode ficar **skipped em PRs** por desenho e não deve ser adicionado
+  como check obrigatório da proteção de `main`. Em `main`, um skip causado por
+  falha ou cancelamento de `build`/E2E é incidente upstream; não é aprovação do
+  smoke.
+- Execução local é somente exceção controlada, com `SMOKE_EXPECTED_COMMIT_SHA`,
+  `SMOKE_ALLOW_MUTATIONS=false` e evidência equivalente do run. Nunca copiar
+  secrets para o repositório ou para logs.
+- Considerar alerta quando o smoke falhar, quando ficar inesperadamente skipped
+  após os pré-requisitos verdes, ou quando o health expuser SHA diferente do
+  deployment esperado. O owner técnico primário e o substituto da [ADR
+  011](./adr/011-incident-owners-day-one.md) devem ser avisados pelo canal
+  único de incidente; o owner monitora também as 48h seguintes.
+- Registrar no incidente: URL do run, SHA do commit, deployment/URL Vercel,
+  modo de mutação, cenário que falhou, causa provável e ação (forward-fix ou
+  rollback conforme ADR 010). Não incluir credenciais, PII ou payloads
+  sensíveis.
+
 ### Anti-padrões (não fazer)
 
 - Deploy e assumir que o schema Neon acompanhou sozinho

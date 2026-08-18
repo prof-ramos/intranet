@@ -109,6 +109,50 @@ describe('MonthlyPaymentsTable', () => {
     expect(mocks.refresh).toHaveBeenCalled();
   });
 
+  it('edits a structured payment through the canonical action contract', async () => {
+    render(<MonthlyPaymentsTable {...props} />);
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Editar lançamento de João da Silva' })[0],
+    );
+
+    expect(screen.getByRole('dialog', { name: 'Editar lançamento' })).toBeDefined();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Situação' }), {
+      target: { value: 'pago' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Valor recebido' }), {
+      target: { value: '123,45' },
+    });
+    fireEvent.change(screen.getByLabelText('Data do pagamento'), {
+      target: { value: '2026-08-10' },
+    });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Forma de pagamento' }), {
+      target: { value: 'pix' },
+    });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Origem do pagamento' }), {
+      target: { value: 'comprovante' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Observações' }), {
+      target: { value: 'Conferido' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar pagamento' }));
+
+    await waitFor(() =>
+      expect(mocks.updatePaymentAction).toHaveBeenCalledWith({
+        associateId: 7,
+        year: 2026,
+        month: 1,
+        status: 'pago',
+        paymentMethod: 'pix',
+        amount: 123.45,
+        paidAt: '2026-08-10',
+        origin: 'comprovante',
+        notes: 'Conferido',
+        expectedUpdatedAt: null,
+      }),
+    );
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
+  });
+
   it('clears the local search state when filters are cleared', () => {
     render(<MonthlyPaymentsTable {...props} currentFilters={{ q: 'João', page: 1 }} />);
     const searchInput = screen.getByRole('textbox', { name: 'Buscar associado por nome' });

@@ -42,12 +42,12 @@ de staging/dev/preview.
 - [x] Smoke test automatizado de producao implementado e validado (ADR 009):
   - Spec E2E Playwright (`e2e/smoke-prod.spec.ts`) cobre login, dashboard, associados, atividades, juridico, oficios, financeiro, auditoria, notificacoes e carregamento da pagina de reset de senha.
   - Todo run confirma no health autenticado que `deployment.gitCommitSha` e o SHA completo esperado antes dos demais testes.
-  - Push em `main` executa somente login, dashboard, financeiro, auditoria e notificacoes em modo read-only.
+  - Push em `main` executa seis cenários read-only: login/sessão + SHA do deployment, dashboard, financeiro, auditoria, notificações e página de reset de senha.
   - Escritas sao excepcionais: exigem `workflow_dispatch`, input `production_mutations=true` e marcadores `SMOKE_<run-id>_*`.
   - Conta dedicada de smoke: `smoke-admin@asof.local`, `role=admin`, `is_active=true`, `must_change_password=false`; senha gerenciada apenas por `SMOKE_ADMIN_PASSWORD` no GitHub Actions.
   - Pos-smoke mutante: executar manualmente o SQL run-scoped impresso pelo spec; entidades, notificacoes, `domain_events` e `webhook_deliveries` do run devem ficar zerados, com `audit_logs` preservado.
-  - CI/CD: o job protegido `Smoke Test — Production` roda read-only em push para `main`; dispatch manual tambem e read-only por default.
-  - Última execução validada: 2026-07-18, `Smoke Test — Production` aprovado no [CI run 29629899812](https://github.com/prof-ramos/intranet/actions/runs/29629899812).
+  - CI/CD: o job pós-merge `Smoke Test — Production` roda read-only em push para `main`; dispatch manual também é read-only por default e o job permanece skipped em PRs.
+  - Última execução validada: 2026-08-18, `Smoke Test — Production` aprovado no [CI run 32172046902](https://github.com/prof-ramos/intranet/actions/runs/32172046902), no SHA `1221a10eaeb15906f03844ef15a4030afca6d3a3`.
 - [x] Validar crons com `CRON_SECRET` antes de ativar operacao.
 - [x] Confirmar que previews/staging nao apontam para banco de producao — envs gerais de banco foram removidos do ambiente Preview no Vercel em 2026-05-26; restam apenas `SESSION_SECRET` em Preview e `GEMINI_API_KEY` restrita ao branch `feature/outbound-integrations-webhooks`.
 
@@ -177,5 +177,38 @@ continuam pertencendo ao inventario e a limpeza controlada do Plano 057._
   (`npx vitest run src/lib/associates/form-helpers.test.ts src/lib/associates/service.test.ts scripts/migrate-legacy-transforms.test.ts`).
   Contagem exata e suite completa (`lint`/`typecheck`/`test`/`test:db`/`build`)
   devem ser revalidadas na janela de PR — não reexecutadas integralmente aqui.
+
+### Validação pós-merge e encerramento de WIPs (2026-08-18)
+
+- **WIP do dashboard:** nove arquivos eram idênticos a `main` e seis versões
+  históricas continuavam recuperáveis em `39a57fc` ou `189b6bf`. Não havia
+  conteúdo único a reaplicar; reaplicar o WIP teria reintroduzido regressões.
+  Os 14 arquivos rastreados inventariados foram restaurados, o untracked
+  `payment-status-ui.ts` foi removido, e a worktree auxiliar
+  `intranet-main-merge` foi encerrada. A branch `codex/dashboard-operational-wip`
+  não existe mais.
+- **Branches absorvidas:** PR #419 foi incorporado em `main` no merge SHA
+  `1221a10eaeb15906f03844ef15a4030afca6d3a3`; a branch anterior apontava para
+  `25ef8425dfe7dec69878f6d7a70cf0116ad6e7dc` e foi removida. PR #413 (Jules)
+  também está mesclado; `6e2aa47` é ancestral de `d6ce190`, absorvido pelo
+  squash `af2fe6b`. Os SHAs permanecem recuperáveis por reflog/objetos Git.
+- **Estado do smoke:** o CI run `32172046902` passou no SHA completo acima;
+  seis cenários read-only passaram e quatro mutantes ficaram skipped. A janela
+  de observação operacional de 24–48 horas ainda deve ser acompanhada pelo
+  owner, sem executar mutações nem SQL de limpeza.
+- **Observação inicial do deployment:** Vercel reportou o deployment de produção
+  `dpl_4WPrYNKDgbW7iKHuYpyEAXCkAcsN` como `READY`, com alias
+  `intranet.asof.com.br`. Na janela inicial, os logs agregados mostraram 0
+  entradas de nível `error` e duas requisições anônimas `GET /api/v1/health`
+  com `401`, resposta esperada sem sessão. O login autenticado, o SHA e a
+  página de auditoria foram verificados pelo smoke; isso não substitui a
+  observação contínua de erros de login e auditoria por 24–48 horas. A janela
+  começou em `2026-08-18T18:37Z`; revisar no mínimo em `2026-08-19T18:37Z` e
+  encerrar somente após `2026-08-20T18:37Z`, se não houver alertas.
+- **E2E:** o setup passou a registrar as fases sem dados sensíveis. No run local
+  de 2026-08-18, foram medidos: warmup JIT 57,0 s, autenticação 6,2 s, servidor
+  pronto 3,8 s, migrations 1,1 s, seed 0,7 s e setup total 70,1 s. A suíte
+  completa passou 83/83 em 7,8 min; o cache de browsers está configurado no
+  E2E e no smoke. O timeout permanece em 25 min para E2E e 15 min para smoke.
 
 Este arquivo substitui as pendencias antigas de smoke de tempo real e reconciliacao de projetos de banco. Elas nao sao mais caminho de go-live.
