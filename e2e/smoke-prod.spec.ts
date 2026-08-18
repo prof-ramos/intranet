@@ -138,6 +138,17 @@ async function readDeploymentSha(page: Page): Promise<unknown> {
   return deployment.gitCommitSha;
 }
 
+function captureUnexpectedWriteMethods(page: Page): string[] {
+  const unexpectedWriteMethods: string[] = [];
+  page.on('request', (request) => {
+    const method = request.method();
+    if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+      unexpectedWriteMethods.push(method);
+    }
+  });
+  return unexpectedWriteMethods;
+}
+
 // ── Roteiro ─────────────────────────────────────────────────────────────────
 
 test.describe.configure({ mode: 'serial' });
@@ -164,14 +175,32 @@ test('1. Login e Sessão', async ({ page }) => {
 });
 
 // ── 2. Dashboard ────────────────────────────────────────────────────────────
-test('2. Dashboard', async ({ page }) => {
+test('2. Dashboard — links operacionais carregam sem escrita', async ({ page }) => {
   await loginAdmin(page);
+  const unexpectedWriteMethods = captureUnexpectedWriteMethods(page);
   await page.goto('/app');
 
-  await expect(page.locator('h1')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('heading', { name: 'Painel Administrativo' })).toBeVisible({
+    timeout: 15_000,
+  });
   // Ao menos um número de KPI carregado (não placeholder)
   await expect(page.locator('main').first()).not.toContainText('...', { timeout: 10_000 });
-  await expect(page.locator('main').first()).toBeVisible();
+
+  await expect(page.getByRole('link', { name: 'Ver atrasadas' })).toHaveAttribute(
+    'href',
+    '/app/atividades?dueLate=1',
+  );
+
+  const indicators = page.getByRole('region', { name: 'Indicadores' });
+  for (const href of [
+    '/app/atividades?openOnly=1',
+    '/app/atividades?dueLate=1',
+    '/app/associados?associationStatus=associado&contributionStatus=inadimplente',
+  ]) {
+    await expect(indicators.locator(`a[href="${href}"]`)).toBeVisible();
+  }
+
+  expect(unexpectedWriteMethods).toEqual([]);
 });
 
 // ── 3. Associados ───────────────────────────────────────────────────────────
@@ -316,14 +345,32 @@ mutatingTest('5. Jurídico — criar consulta e avançar status', async ({ page 
 });
 
 // ── 6. Financeiro ───────────────────────────────────────────────────────────
-test('6. Financeiro — mensalidades carregam', async ({ page }) => {
+test('6. Financeiro — mensalidades renderizam sem inicializar ou alterar pagamentos', async ({
+  page,
+}) => {
   await loginAdmin(page);
+  const unexpectedWriteMethods = captureUnexpectedWriteMethods(page);
   await page.goto('/app/financeiro/mensalidades');
-  await expect(page.locator('h1')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('heading', { name: 'Controle de Mensalidades' })).toBeVisible({
+    timeout: 15_000,
+  });
 
-  // Verificar KPIs ou tabela — NÃO inicializa mês (risco em produção)
-  const content = page.locator('table, [class*="kpi"], [class*="stat"], [class*="card"]');
-  await expect(content.first()).toBeVisible({ timeout: 15_000 });
+  // Somente leitura: valida o período, os agregados e a fila sem acionar controles de escrita.
+  await expect(page.getByLabel('Selecionar mês')).toHaveValue(/^\d{4}-\d{2}$/);
+  await expect(page.getByRole('region', { name: 'Fechamento mensal' })).toBeVisible();
+  await expect(page.getByRole('progressbar', { name: 'Taxa de pagamento' })).toHaveAttribute(
+    'aria-valuetext',
+    /^\d+% pagos$/,
+  );
+  await expect(page.getByRole('region', { name: 'Filtros de mensalidades' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Fila de conferência' })).toBeVisible();
+  await expect(page.getByText(/^\d+ exibidos$/)).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Perfil da cobrança' })).toBeVisible();
+
+  const renderedContent = await page.locator('main').innerText();
+  expect(renderedContent).not.toMatch(/\b(?:NaN|undefined)\b/);
+  expect(renderedContent).not.toContain('[object Object]');
+  expect(unexpectedWriteMethods).toEqual([]);
 });
 
 // ── 7. Ofícios ──────────────────────────────────────────────────────────────
