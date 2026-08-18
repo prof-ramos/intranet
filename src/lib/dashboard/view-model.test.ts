@@ -117,11 +117,13 @@ describe('getDashboardViewModel', () => {
               id: 'associates-brasil',
               value: '282',
               label: 'associados brasil',
+              href: '/app/associados?associationStatus=associado&location=brasil',
             },
             {
               id: 'associates-exterior',
               value: '481',
               label: 'associados exterior',
+              href: '/app/associados?associationStatus=associado&location=exterior',
             },
           ],
         }),
@@ -130,6 +132,9 @@ describe('getDashboardViewModel', () => {
     expect(viewModel.stripe.find((item) => item.id === 'pending-migration')).toBeUndefined();
     expect(viewModel.stripe.find((item) => item.id === 'active-associates')?.href).toBe(
       '/app/associados?associationStatus=associado',
+    );
+    expect(viewModel.stripe.find((item) => item.id === 'open-activities')?.href).toBe(
+      '/app/atividades?openOnly=1',
     );
   });
 

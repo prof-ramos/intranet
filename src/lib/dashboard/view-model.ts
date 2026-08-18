@@ -29,6 +29,7 @@ export interface DashboardStripeItem {
     id: string;
     value: string;
     label: string;
+    href: string;
   }[];
 }
 
@@ -142,11 +143,13 @@ export async function getDashboardViewModel(): Promise<DashboardViewModel> {
             id: 'associates-brasil',
             value: activeAssociatesByLocation.brasil.toLocaleString('pt-BR'),
             label: 'associados brasil',
+            href: '/app/associados?associationStatus=associado&location=brasil',
           },
           {
             id: 'associates-exterior',
             value: activeAssociatesByLocation.exterior.toLocaleString('pt-BR'),
             label: 'associados exterior',
+            href: '/app/associados?associationStatus=associado&location=exterior',
           },
         ],
       },
@@ -154,7 +157,7 @@ export async function getDashboardViewModel(): Promise<DashboardViewModel> {
         id: 'open-activities',
         value: String(openActivities),
         label: 'atividades em aberto',
-        href: '/app/atividades',
+        href: '/app/atividades?openOnly=1',
       },
       {
         id: 'overdue-activities',

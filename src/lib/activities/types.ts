@@ -53,9 +53,11 @@ export interface Filters {
   query: string;
   assignee: string;
   priority: '' | Priority;
+  status: '' | Status;
   associate: string;
   dueWeek: boolean;
   dueLate: boolean;
+  openOnly: boolean;
 }
 
 export interface ActivitiesBoardData {

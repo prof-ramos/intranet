@@ -59,6 +59,7 @@ export const associateSearchParamsSchema = z.object({
   contributionStatus: z.enum(contributionStatus.enumValues).optional(),
   functionalStatus: z.enum(functionalStatus.enumValues).optional(),
   associationStatus: z.enum(associationStatus.enumValues).optional(),
+  location: z.enum(['brasil', 'exterior']).optional(),
 });
 
 export const monthlyPaymentsSearchParamsSchema = z.object({
@@ -247,12 +248,16 @@ export const updateAssociateSchema = z.object({
     .optional(),
   ceocMember: z
     .union([z.boolean(), z.literal('true'), z.literal('false'), z.literal(''), z.null()])
-    .transform((v) => (v === '' ? null : v === 'true' ? true : v === 'false' ? false : v === null ? null : v))
+    .transform((v) =>
+      v === '' ? null : v === 'true' ? true : v === 'false' ? false : v === null ? null : v,
+    )
     .nullable()
     .default(null),
   caocMember: z
     .union([z.boolean(), z.literal('true'), z.literal('false'), z.literal(''), z.null()])
-    .transform((v) => (v === '' ? null : v === 'true' ? true : v === 'false' ? false : v === null ? null : v))
+    .transform((v) =>
+      v === '' ? null : v === 'true' ? true : v === 'false' ? false : v === null ? null : v,
+    )
     .nullable()
     .default(null),
   internalNotes: z.string().trim().nullable().optional(),
@@ -346,11 +351,16 @@ export const createConsultationSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório.').trim(),
   questionSummary: z.string().min(1, 'Resumo da pergunta é obrigatório.').trim(),
   questionFullText: z.string().trim().optional(),
-  associateId: z.string().nullable().optional().transform((v): number | undefined => {
-    if (!v) return undefined;
-    const n = parseInt(v, 10);
-    return Number.isNaN(n) ? undefined : n;
-  }).pipe(z.number().int().positive().optional()),
+  associateId: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((v): number | undefined => {
+      if (!v) return undefined;
+      const n = parseInt(v, 10);
+      return Number.isNaN(n) ? undefined : n;
+    })
+    .pipe(z.number().int().positive().optional()),
   slaDays: z.coerce.number().int().min(1).default(7),
 });
 
@@ -377,10 +387,7 @@ export const webhookSecretSchema = z
 
 export const webhookSubscriptionFormSchema = z.object({
   name: z.string().trim().min(2, 'Nome deve ter pelo menos 2 caracteres.').max(120),
-  targetUrl: z
-    .string()
-    .trim()
-    .url('URL de destino inválida.'),
+  targetUrl: z.string().trim().url('URL de destino inválida.'),
   subscribedEvents: z
     .array(z.enum(domainEventType.enumValues))
     .min(1, 'Selecione ao menos um evento.'),

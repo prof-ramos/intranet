@@ -12,6 +12,7 @@ import {
   missionType,
   careerOrigin,
   paymentMethod,
+  assignments,
 } from '@/lib/db/schema';
 import { eq, and, count, asc, sql } from 'drizzle-orm';
 import {
@@ -23,6 +24,7 @@ import {
 } from './search-params';
 import { piiBlindIndex } from '@/lib/crypto/pii';
 import { withCache } from '@/lib/cache/with-cache';
+import { assignmentLocationTypeSql } from './location-country';
 
 type FunctionalStatusEnum = (typeof functionalStatus.enumValues)[number];
 type AssociationStatusEnum = (typeof associationStatus.enumValues)[number];
@@ -80,6 +82,15 @@ export interface AssociatesFilters {
   contributionStatus?: 'em_dia' | 'inadimplente';
   functionalStatus?: 'ativo' | 'aposentado' | 'cedido' | 'em_licenca';
   associationStatus?: 'associado' | 'nao_associado';
+  location?: 'brasil' | 'exterior';
+}
+
+function locationCondition(location: AssociatesFilters['location']) {
+  if (!location) return undefined;
+  const locationType = assignmentLocationTypeSql(assignments.type, associates.locationCountry);
+  if (location === 'brasil') return eq(locationType, 'nacional');
+  if (location === 'exterior') return eq(locationType, 'exterior');
+  return undefined;
 }
 
 // TTL curto (30s) para a listagem paginada de associados. As mutations
@@ -98,9 +109,10 @@ async function findAssociatesPaginatedUncached(
 
   // Hash-based exact lookup for CPF/SIAPE — returns 0 or 1 results
   if ((searchBy === 'cpf' || searchBy === 'siape') && normalizedSearchQuery) {
-    const digits = searchBy === 'cpf'
-      ? normalizeCpfForSearch(normalizedSearchQuery)
-      : normalizeSiapeForSearch(normalizedSearchQuery);
+    const digits =
+      searchBy === 'cpf'
+        ? normalizeCpfForSearch(normalizedSearchQuery)
+        : normalizeSiapeForSearch(normalizedSearchQuery);
 
     if (!digits) {
       return { rows: [], total: 0 };
@@ -119,16 +131,22 @@ async function findAssociatesPaginatedUncached(
       filters?.associationStatus
         ? eq(associates.associationStatus, filters.associationStatus)
         : undefined,
+      locationCondition(filters?.location),
     );
 
     const [rows, [{ total }]] = await Promise.all([
       db
         .select(publicAssociateListColumns)
         .from(associates)
+        .leftJoin(assignments, eq(assignments.name, associates.assignment))
         .where(filterConditions)
         .limit(pageSize)
         .offset((page - 1) * pageSize),
-      db.select({ total: count() }).from(associates).where(filterConditions),
+      db
+        .select({ total: count() })
+        .from(associates)
+        .leftJoin(assignments, eq(assignments.name, associates.assignment))
+        .where(filterConditions),
     ]);
 
     return {
@@ -156,17 +174,23 @@ async function findAssociatesPaginatedUncached(
     filters?.associationStatus
       ? eq(associates.associationStatus, filters.associationStatus)
       : undefined,
+    locationCondition(filters?.location),
   );
 
   const [rows, [{ total }]] = await Promise.all([
     db
       .select(publicAssociateListColumns)
       .from(associates)
+      .leftJoin(assignments, eq(assignments.name, associates.assignment))
       .where(baseWhere)
       .orderBy(asc(associates.fullName), asc(associates.id))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
-    db.select({ total: count() }).from(associates).where(baseWhere),
+    db
+      .select({ total: count() })
+      .from(associates)
+      .leftJoin(assignments, eq(assignments.name, associates.assignment))
+      .where(baseWhere),
   ]);
 
   return {
@@ -192,15 +216,16 @@ export const findAssociatesPaginated = withCache({
     filters?: AssociatesFilters,
     searchBy?: AssociateSearchMode,
   ) => [
-      'associates-paginated',
-      String(page),
-      String(pageSize),
-      searchQuery?.trim() ?? '',
-      filters?.contributionStatus ?? '',
-      filters?.functionalStatus ?? '',
-      filters?.associationStatus ?? '',
-      searchBy ?? 'name',
-    ],
+    'associates-paginated',
+    String(page),
+    String(pageSize),
+    searchQuery?.trim() ?? '',
+    filters?.contributionStatus ?? '',
+    filters?.functionalStatus ?? '',
+    filters?.associationStatus ?? '',
+    filters?.location ?? '',
+    searchBy ?? 'name',
+  ],
   ttl: ASSOCIATES_LIST_TTL,
   tags: ['associates'],
 });
@@ -239,9 +264,10 @@ export async function findAssociatesPaginatedCursor(
 
   // CPF/SIAPE exact lookup: cursor is irrelevant; return single result
   if ((searchBy === 'cpf' || searchBy === 'siape') && normalizedSearchQuery) {
-    const digits = searchBy === 'cpf'
-      ? normalizeCpfForSearch(normalizedSearchQuery)
-      : normalizeSiapeForSearch(normalizedSearchQuery);
+    const digits =
+      searchBy === 'cpf'
+        ? normalizeCpfForSearch(normalizedSearchQuery)
+        : normalizeSiapeForSearch(normalizedSearchQuery);
 
     if (!digits) {
       return { rows: [], nextCursor: null };
@@ -260,11 +286,13 @@ export async function findAssociatesPaginatedCursor(
       filters?.associationStatus
         ? eq(associates.associationStatus, filters.associationStatus)
         : undefined,
+      locationCondition(filters?.location),
     );
 
     const rows = await db
       .select(publicAssociateListColumns)
       .from(associates)
+      .leftJoin(assignments, eq(assignments.name, associates.assignment))
       .where(filterConditions)
       .limit(pageSize);
 
@@ -293,6 +321,7 @@ export async function findAssociatesPaginatedCursor(
     filters?.associationStatus
       ? eq(associates.associationStatus, filters.associationStatus)
       : undefined,
+    locationCondition(filters?.location),
     decoded
       ? sql`(${associates.fullName} > ${decoded.fullName} OR (${associates.fullName} = ${decoded.fullName} AND ${associates.id} > ${decoded.id}))`
       : undefined,
@@ -301,6 +330,7 @@ export async function findAssociatesPaginatedCursor(
   const rows = await db
     .select(publicAssociateListColumns)
     .from(associates)
+    .leftJoin(assignments, eq(assignments.name, associates.assignment))
     .where(baseWhere)
     .orderBy(asc(associates.fullName), asc(associates.id))
     .limit(pageSize + 1);

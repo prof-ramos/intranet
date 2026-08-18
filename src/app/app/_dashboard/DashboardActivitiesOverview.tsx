@@ -42,8 +42,12 @@ export function DashboardActivitiesOverview({ statusColumns }: DashboardActiviti
             className="min-w-0 rounded-[16px] p-3"
             style={{ backgroundColor: surfaceMuted }}
           >
-            <div className="mb-3 flex min-h-8 items-center justify-between gap-3 px-1">
-              <div className="flex min-w-0 items-center gap-2">
+              <div className="mb-3 flex min-h-8 items-center justify-between gap-3 px-1">
+              <Link
+                href={`/app/atividades?status=${encodeURIComponent(column.status)}`}
+                className={`flex min-w-0 flex-1 items-center gap-2 rounded-[6px] px-1 py-1 hover:underline ${focusRingClass}`}
+                aria-label={`Abrir atividades com status ${column.label}`}
+              >
                 <span
                   className="h-2 w-2 shrink-0 rounded-[2px]"
                   style={{ backgroundColor: column.accent }}
@@ -52,10 +56,14 @@ export function DashboardActivitiesOverview({ statusColumns }: DashboardActiviti
                 <p className="truncate text-[11px] leading-tight font-bold tracking-[0.06em] uppercase">
                   {column.label}
                 </p>
-              </div>
-              <span className="text-xs font-semibold" style={{ color: textMuted }}>
+              </Link>
+              <Link
+                href={`/app/atividades?status=${encodeURIComponent(column.status)}`}
+                className={`rounded-[6px] px-1 py-1 text-xs font-semibold hover:underline ${focusRingClass}`}
+                aria-label={`${column.total} atividades com status ${column.label}`}
+              >
                 {column.total}
-              </span>
+              </Link>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -71,9 +79,10 @@ export function DashboardActivitiesOverview({ statusColumns }: DashboardActiviti
                   const dueDate = formatDashboardDueDate(card.dueDate);
                   const priorityStyle = priorityStyles[card.priority] ?? priorityStyles.normal;
                   return (
-                    <div
+                    <Link
                       key={card.id}
-                      className="rounded-[8px] bg-white p-3 shadow-[0_1px_0_rgba(4,9,32,0.04)]"
+                      href={`/app/atividades?status=${encodeURIComponent(column.status)}&open=${card.id}`}
+                      className={`block rounded-[8px] bg-white p-3 shadow-[0_1px_0_rgba(4,9,32,0.04)] hover:bg-[rgba(4,9,32,0.02)] ${focusRingClass}`}
                       style={{ border: `1px solid ${hairline}` }}
                     >
                       <p className="text-sm leading-snug font-semibold [overflow-wrap:anywhere]">
@@ -104,7 +113,7 @@ export function DashboardActivitiesOverview({ statusColumns }: DashboardActiviti
                           {card.associateLabel ?? 'Sem associado'}
                         </span>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })
               )}

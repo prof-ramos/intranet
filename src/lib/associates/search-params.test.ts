@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildAssociatesSearchParams,
   buildAssociateNameSearchPattern,
   parseAssociatesSearchParams,
   normalizeCpfForSearch,
@@ -8,10 +9,26 @@ import {
 
 describe('associates search params', () => {
   it('normalizes invalid page values to page 1', () => {
-    expect(parseAssociatesSearchParams({ page: 'abc' })).toEqual({ q: '', page: 1, searchBy: 'name' });
-    expect(parseAssociatesSearchParams({ page: '-3' })).toEqual({ q: '', page: 1, searchBy: 'name' });
-    expect(parseAssociatesSearchParams({ page: '0' })).toEqual({ q: '', page: 1, searchBy: 'name' });
-    expect(parseAssociatesSearchParams({ page: '2.5' })).toEqual({ q: '', page: 1, searchBy: 'name' });
+    expect(parseAssociatesSearchParams({ page: 'abc' })).toEqual({
+      q: '',
+      page: 1,
+      searchBy: 'name',
+    });
+    expect(parseAssociatesSearchParams({ page: '-3' })).toEqual({
+      q: '',
+      page: 1,
+      searchBy: 'name',
+    });
+    expect(parseAssociatesSearchParams({ page: '0' })).toEqual({
+      q: '',
+      page: 1,
+      searchBy: 'name',
+    });
+    expect(parseAssociatesSearchParams({ page: '2.5' })).toEqual({
+      q: '',
+      page: 1,
+      searchBy: 'name',
+    });
   });
 
   it('trims and limits search text', () => {
@@ -39,6 +56,28 @@ describe('associates search params', () => {
 
   it('defaults searchBy to name', () => {
     expect(parseAssociatesSearchParams({ q: 'test' }).searchBy).toBe('name');
+  });
+
+  it('preserves dashboard list filters including geographic scope', () => {
+    const parsed = parseAssociatesSearchParams({
+      associationStatus: 'associado',
+      contributionStatus: 'em_dia',
+      location: 'exterior',
+    });
+
+    expect(parsed).toEqual({
+      q: '',
+      page: 1,
+      searchBy: 'name',
+      associationStatus: 'associado',
+      contributionStatus: 'em_dia',
+      location: 'exterior',
+    });
+    expect(buildAssociatesSearchParams(parsed, {})).toEqual({
+      associationStatus: 'associado',
+      contributionStatus: 'em_dia',
+      location: 'exterior',
+    });
   });
 
   it('escapes wildcard characters for LIKE searches', () => {
