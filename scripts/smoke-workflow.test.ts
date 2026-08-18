@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
 const smokeJob = workflow.slice(workflow.indexOf('  smoke-prod:'), workflow.indexOf('\n  e2e:'));
+const e2eJob = workflow.slice(workflow.indexOf('  e2e:'));
 const smokeSpec = readFileSync('e2e/smoke-prod.spec.ts', 'utf8');
 
 describe('production smoke workflow contract', () => {
@@ -29,10 +30,34 @@ describe('production smoke workflow contract', () => {
     expect(smokeJob).not.toContain('DATABASE_MIGRATION_URL');
   });
 
+  it('gives E2E 25 minutes without extending the production smoke timeout', () => {
+    expect(e2eJob).toContain('timeout-minutes: 25');
+    expect(smokeJob).toContain('timeout-minutes: 15');
+  });
+
   it('keeps password reset read-only and limits writes to the four declared mutation tests', () => {
     expect(smokeSpec).toContain("test('10. Reset de Senha — página carrega sem disparar action'");
     expect(smokeSpec).not.toContain('SMOKE_RESET_EMAIL');
     expect(smokeSpec.match(/mutatingTest\('/g)).toHaveLength(4);
+  });
+
+  it('asserts that dashboard and mensalidades perform no write requests', () => {
+    const dashboardReadOnly = smokeSpec.slice(
+      smokeSpec.indexOf("test('2. Dashboard"),
+      smokeSpec.indexOf('// ── 3. Associados'),
+    );
+    const financeReadOnly = smokeSpec.slice(
+      smokeSpec.indexOf("test('6. Financeiro"),
+      smokeSpec.indexOf('// ── 7. Ofícios'),
+    );
+
+    for (const scenario of [dashboardReadOnly, financeReadOnly]) {
+      expect(scenario).toContain('captureUnexpectedWriteMethods(page)');
+      expect(scenario).toContain('expect(unexpectedWriteMethods).toEqual([])');
+      expect(scenario).not.toContain('.click(');
+    }
+    expect(financeReadOnly).not.toContain('initializeMonthAction');
+    expect(financeReadOnly).not.toContain('updatePaymentAction');
   });
 
   it('fails cleanup closed after removing entity-linked outbox records in FK-safe order', () => {
