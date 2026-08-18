@@ -57,7 +57,10 @@ test.describe('Dashboard', () => {
     await loginAsAdmin();
     await page.goto('/app');
 
-    await page.getByRole('link', { name: /Revisar pendência vencida E2E/i }).click();
+    await page
+      .locator('a[href*="dueLate=1"][href*="open="]')
+      .filter({ hasText: 'Revisar pendência vencida E2E' })
+      .click();
 
     await expect(page).toHaveURL(/\/app\/atividades\?.*dueLate=1.*open=\d+/);
     await expect(page.getByRole('dialog')).toContainText('Revisar pendência vencida E2E');
@@ -97,7 +100,7 @@ test.describe('Dashboard', () => {
     await expect(page).toHaveURL(/associationStatus=associado.*contributionStatus=em_dia/);
 
     await page.goto('/app');
-    await page.getByRole('link', { name: /atrasadas/i }).click();
+    await page.getByRole('link', { name: /^atrasadas \d+$/i }).click();
     await expect(page).toHaveURL(/dueLate=1/);
 
     await page.goto('/app');
