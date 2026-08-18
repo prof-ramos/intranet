@@ -1,14 +1,17 @@
 'use client';
 
 import { isDomesticCountry } from '@/lib/associates/location-country';
-import { useState, useMemo, useTransition, useCallback, useEffect } from 'react';
+import {
+  useState,
+  useMemo,
+  useTransition,
+  useCallback,
+  useEffect,
+  type CSSProperties,
+} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Search,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  Ban,
   XCircle,
   Globe,
   MapPin,
@@ -31,14 +34,17 @@ import {
   skyBlue,
   successBg,
   successText,
-  warningBg,
-  warningText,
   errorBg,
-  alertDangerBg,
   alertDangerText,
+  alertDangerNoteBorder,
   canvas,
   borderMuted,
+  dangerBorder,
+  desktopDenseControlClass,
   focusRingClass,
+  surfaceMuted,
+  success,
+  white,
 } from '@/lib/ui/tokens';
 import {
   buildMonthlyPaymentsSearchParams,
@@ -48,6 +54,12 @@ import {
   cancelPendingMonthlyPaymentsSearch,
   scheduleMonthlyPaymentsSearch,
 } from './navigation-coordinator';
+import {
+  editablePaymentStatuses,
+  paymentStatusOrder,
+  paymentStatusUi,
+  type PaymentStatus,
+} from './payment-status-ui';
 
 const logger = createLogger('monthly-payments-table');
 
@@ -71,23 +83,6 @@ interface MonthlyPaymentsTableProps {
   currentFilters: MonthlyPaymentsSearchParams;
 }
 
-const statusConfig: Record<
-  string,
-  { label: string; icon: typeof CheckCircle2; color: string; bg: string; dot: string }
-> = {
-  pago: { label: 'Pago', icon: CheckCircle2, color: successText, bg: successBg, dot: '#16a34a' },
-  pendente: { label: 'Pendente', icon: Clock, color: warningText, bg: warningBg, dot: '#d97706' },
-  atrasado: {
-    label: 'Atrasado',
-    icon: AlertCircle,
-    color: alertDangerText,
-    bg: alertDangerBg,
-    dot: '#dc2626',
-  },
-  isento: { label: 'Isento', icon: Ban, color: '#475569', bg: canvas, dot: '#64748b' },
-  cancelado: { label: 'Cancelado', icon: XCircle, color: '#7f1d1d', bg: '#fef2f2', dot: '#991b1b' },
-};
-
 const methodConfig: Record<string, { label: string; short: string; group: string }> = {
   folha: { label: 'Desconto em Folha', short: 'Folha', group: 'SIGEPE' },
   boleto: { label: 'Boleto', short: 'Boleto', group: 'Direto' },
@@ -101,12 +96,10 @@ const locationGroup = (country: string | null): 'brasil' | 'exterior' => {
 };
 
 type PaymentMethod = Payment['defaultPaymentMethod'];
-type PaymentStatus = NonNullable<Payment['paymentStatus']>;
-
 interface PaymentViewModel extends Payment {
   currentStatus: PaymentStatus;
   currentMethod: PaymentMethod;
-  statusCfg: (typeof statusConfig)[string];
+  statusCfg: (typeof paymentStatusUi)[PaymentStatus];
   methodCfg: (typeof methodConfig)[string];
   locGroup: 'brasil' | 'exterior';
 }
@@ -132,7 +125,7 @@ function getPaymentViewModel(payment: Payment): PaymentViewModel {
     ...payment,
     currentStatus,
     currentMethod,
-    statusCfg: statusConfig[currentStatus],
+    statusCfg: paymentStatusUi[currentStatus],
     methodCfg: methodConfig[currentMethod] ?? methodConfig.outros,
     locGroup: locationGroup(payment.locationCountry),
   };
@@ -325,13 +318,14 @@ export default function MonthlyPaymentsTable({
     }
   };
 
-  const statusOptions = [
-    { value: 'pago', label: 'Pago' },
-    { value: 'pendente', label: 'Pendente' },
-    { value: 'atrasado', label: 'Atrasado' },
-    { value: 'isento', label: 'Isento' },
-  ];
-  const statusFilterOptions = [...statusOptions, { value: 'cancelado', label: 'Cancelado' }];
+  const statusOptions = editablePaymentStatuses.map((status) => ({
+    value: status,
+    label: paymentStatusUi[status].label,
+  }));
+  const statusFilterOptions = paymentStatusOrder.map((status) => ({
+    value: status,
+    label: paymentStatusUi[status].label,
+  }));
 
   const methodOptions = [
     { value: 'all', label: 'Todos', icon: CreditCard },
@@ -351,8 +345,8 @@ export default function MonthlyPaymentsTable({
     if (payment.currentStatus === 'cancelado') {
       return (
         <span
-          className="inline-flex h-9 items-center rounded-[8px] bg-[#fef2f2] px-2.5 text-xs font-bold"
-          style={{ color: payment.statusCfg.color }}
+          className="inline-flex min-h-9 items-center rounded-[8px] px-2.5 text-xs font-bold"
+          style={{ color: payment.statusCfg.color, backgroundColor: payment.statusCfg.bg }}
         >
           Cancelado
         </span>
@@ -376,7 +370,7 @@ export default function MonthlyPaymentsTable({
               payment.updatedAt,
             )
           }
-          className={`h-9 rounded-[8px] border bg-white px-2 text-xs font-bold transition-colors ${focusRingClass}`}
+          className={`rounded-[8px] border bg-white px-2 text-xs font-bold transition-colors ${desktopDenseControlClass} ${focusRingClass}`}
           style={{ borderColor: borderMuted, color: payment.statusCfg.color }}
         >
           {statusOptions.map((option) => (
@@ -398,8 +392,14 @@ export default function MonthlyPaymentsTable({
           handleCancelPayment(payment.associateId, payment.paymentId, payment.fullName)
         }
         aria-label={`Cancelar mensalidade de ${payment.fullName}`}
-        className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-[8px] px-2.5 text-xs font-bold transition-colors hover:bg-[#fef2f2] disabled:cursor-not-allowed disabled:opacity-40 ${focusRingClass}`}
-        style={{ color: '#991b1b', border: '1px solid #fecaca' }}
+        className={`inline-flex items-center justify-center gap-1.5 rounded-[8px] px-2.5 text-xs font-bold transition-colors hover:bg-[var(--cancel-hover-bg)] disabled:cursor-not-allowed disabled:opacity-40 ${desktopDenseControlClass} ${focusRingClass}`}
+        style={
+          {
+            '--cancel-hover-bg': paymentStatusUi.cancelado.bg,
+            color: paymentStatusUi.cancelado.color,
+            border: `1px solid ${alertDangerNoteBorder}`,
+          } as CSSProperties
+        }
       >
         <XCircle size={14} aria-hidden="true" />
         <span>Cancelar</span>
@@ -455,7 +455,7 @@ export default function MonthlyPaymentsTable({
                   router.push(`/app/financeiro/mensalidades?year=${year}&month=${month}`),
                 );
               }}
-              className={`inline-flex h-10 items-center justify-center gap-1.5 self-start rounded-[8px] px-3 text-xs font-bold transition-colors hover:bg-[#f1f5f9] xl:self-end ${focusRingClass}`}
+              className={`inline-flex items-center justify-center gap-1.5 self-start rounded-[8px] px-3 text-xs font-bold transition-colors hover:bg-[rgba(4,9,32,0.04)] xl:self-end ${desktopDenseControlClass} ${focusRingClass}`}
               style={{ color: textMuted, border: `1px solid ${hairline}` }}
             >
               <RotateCcw size={14} aria-hidden="true" />
@@ -480,17 +480,17 @@ export default function MonthlyPaymentsTable({
                 type="button"
                 onClick={() => updateFilter('status', undefined)}
                 aria-pressed={statusFilter === 'all'}
-                className={`inline-flex h-8 items-center gap-1.5 rounded-[8px] px-3 text-xs font-bold transition-colors ${focusRingClass}`}
+                className={`inline-flex items-center gap-1.5 rounded-[8px] px-3 text-xs font-bold transition-colors ${desktopDenseControlClass} ${focusRingClass}`}
                 style={{
                   backgroundColor: statusFilter === 'all' ? navy : canvas,
-                  color: statusFilter === 'all' ? '#fff' : textMuted,
+                  color: statusFilter === 'all' ? white : textMuted,
                   border: `1px solid ${statusFilter === 'all' ? navy : hairline}`,
                 }}
               >
                 Todos
               </button>
               {statusFilterOptions.map((s) => {
-                const cfg = statusConfig[s.value];
+                const cfg = paymentStatusUi[s.value];
                 const active = statusFilter === s.value;
                 return (
                   <button
@@ -498,10 +498,10 @@ export default function MonthlyPaymentsTable({
                     key={s.value}
                     onClick={() => updateFilter('status', active ? undefined : s.value)}
                     aria-pressed={active}
-                    className={`inline-flex h-8 items-center gap-1.5 rounded-[8px] px-3 text-xs font-bold transition-colors ${focusRingClass}`}
+                    className={`inline-flex items-center gap-1.5 rounded-[8px] px-3 text-xs font-bold transition-colors ${desktopDenseControlClass} ${focusRingClass}`}
                     style={{
                       backgroundColor: active ? cfg.color : cfg.bg,
-                      color: active ? '#fff' : cfg.color,
+                      color: active ? white : cfg.color,
                       border: `1px solid ${active ? cfg.color : 'transparent'}`,
                     }}
                   >
@@ -529,10 +529,10 @@ export default function MonthlyPaymentsTable({
                     key={m.value}
                     onClick={() => updateFilter('method', active ? undefined : m.value)}
                     aria-pressed={active}
-                    className={`inline-flex h-8 items-center gap-1.5 rounded-[8px] px-2.5 text-xs font-bold transition-colors ${focusRingClass}`}
+                    className={`inline-flex items-center gap-1.5 rounded-[8px] px-2.5 text-xs font-bold transition-colors ${desktopDenseControlClass} ${focusRingClass}`}
                     style={{
                       backgroundColor: active ? navy : canvas,
-                      color: active ? '#fff' : textMuted,
+                      color: active ? white : textMuted,
                       border: `1px solid ${active ? navy : hairline}`,
                     }}
                   >
@@ -560,10 +560,10 @@ export default function MonthlyPaymentsTable({
                     key={l.value}
                     onClick={() => updateFilter('location', active ? undefined : l.value)}
                     aria-pressed={active}
-                    className={`inline-flex h-8 items-center gap-1.5 rounded-[8px] px-2.5 text-xs font-bold transition-colors ${focusRingClass}`}
+                    className={`inline-flex items-center gap-1.5 rounded-[8px] px-2.5 text-xs font-bold transition-colors ${desktopDenseControlClass} ${focusRingClass}`}
                     style={{
                       backgroundColor: active ? navy : canvas,
-                      color: active ? '#fff' : textMuted,
+                      color: active ? white : textMuted,
                       border: `1px solid ${active ? navy : hairline}`,
                     }}
                   >
@@ -592,7 +592,7 @@ export default function MonthlyPaymentsTable({
         <div
           role="status"
           className="rounded-[8px] px-4 py-3 text-sm font-medium"
-          style={{ backgroundColor: successBg, color: successText, border: `1px solid #86efac` }}
+          style={{ backgroundColor: successBg, color: successText, border: `1px solid ${success}` }}
         >
           {successMessage}
         </div>
@@ -602,7 +602,7 @@ export default function MonthlyPaymentsTable({
         <div
           role="alert"
           className="rounded-[8px] px-4 py-3 text-sm font-medium"
-          style={{ backgroundColor: errorBg, color: alertDangerText, border: `1px solid #fca5a5` }}
+          style={{ backgroundColor: errorBg, color: alertDangerText, border: `1px solid ${dangerBorder}` }}
         >
           {errorMessage}
         </div>
@@ -626,8 +626,8 @@ export default function MonthlyPaymentsTable({
             </p>
           </div>
           <span
-            className="self-start rounded-full bg-[#eef1f6] px-2.5 py-1 text-[11px] font-bold"
-            style={{ color: textMuted }}
+            className="self-start rounded-full px-2.5 py-1 text-[11px] font-bold"
+            style={{ color: textMuted, backgroundColor: surfaceMuted }}
           >
             {filteredPayments.length} exibidos
           </span>

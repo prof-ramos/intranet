@@ -68,6 +68,23 @@ describe('MonthlyPaymentsTable', () => {
     });
   });
 
+  it('uses dense responsive targets for mobile-safe operational controls', () => {
+    render(<MonthlyPaymentsTable {...props} />);
+
+    for (const statusSelect of screen.getAllByRole('combobox', {
+      name: 'Alterar status de João da Silva',
+    })) {
+      expect(statusSelect.className).toContain('min-h-11');
+      expect(statusSelect.className).toContain('lg:min-h-8');
+    }
+    for (const cancelButton of screen.getAllByRole('button', {
+      name: 'Cancelar mensalidade de João da Silva',
+    })) {
+      expect(cancelButton.className).toContain('min-h-11');
+      expect(cancelButton.className).toContain('lg:min-h-8');
+    }
+  });
+
   it('opens the audited cancellation dialog and submits the reason', async () => {
     render(<MonthlyPaymentsTable {...props} />);
     fireEvent.click(

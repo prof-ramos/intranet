@@ -1,8 +1,24 @@
 'use client';
 
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
-import { focusRingClass, navy, textMuted, textPrimary, textSecondary } from '@/lib/ui/tokens';
+import {
+  alertDangerBg,
+  alertDangerText,
+  borderMuted,
+  buttonOutlineHoverBg,
+  compactActionClass,
+  dangerBorder,
+  elevatedShadow,
+  focusRingClass,
+  mobileTouchTargetClass,
+  navy,
+  overlayScrim,
+  primaryContainerHover,
+  textMuted,
+  textPrimary,
+  textSecondary,
+} from '@/lib/ui/tokens';
 
 interface CancelPaymentDialogProps {
   associateName: string;
@@ -97,7 +113,8 @@ export default function CancelPaymentDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(4,9,32,0.42)] p-4"
+      className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+      style={{ backgroundColor: overlayScrim }}
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !isPending) onClose();
@@ -106,7 +123,8 @@ export default function CancelPaymentDialog({
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="w-full max-w-md rounded-[14px] bg-white p-5 shadow-[0_20px_50px_rgba(4,9,32,0.2)]"
+        className="w-full max-w-md rounded-[14px] bg-white p-5"
+        style={{ boxShadow: elevatedShadow }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="cancel-payment-title"
@@ -115,7 +133,10 @@ export default function CancelPaymentDialog({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[#fff1f2] text-[#b91c1c]">
+            <div
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px]"
+              style={{ backgroundColor: alertDangerBg, color: alertDangerText }}
+            >
               <AlertTriangle size={18} aria-hidden="true" />
             </div>
             <div>
@@ -140,7 +161,8 @@ export default function CancelPaymentDialog({
             type="button"
             onClick={onClose}
             disabled={isPending}
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-[8px] hover:bg-[#f1f5f9] disabled:opacity-40 ${focusRingClass}`}
+            className={`inline-flex items-center justify-center rounded-[8px] hover:bg-[var(--close-hover-bg)] disabled:opacity-40 ${compactActionClass} ${focusRingClass}`}
+            style={{ '--close-hover-bg': buttonOutlineHoverBg } as CSSProperties}
             aria-label="Fechar cancelamento"
           >
             <X size={18} aria-hidden="true" />
@@ -150,7 +172,8 @@ export default function CancelPaymentDialog({
         <form className="mt-5" onSubmit={handleSubmit}>
           {errorMessage && (
             <div
-              className="mb-4 rounded-[8px] bg-[#fff1f2] px-3 py-2.5 text-sm font-semibold text-[#b91c1c]"
+              className="mb-4 rounded-[8px] px-3 py-2.5 text-sm font-semibold"
+              style={{ backgroundColor: alertDangerBg, color: alertDangerText }}
               role="alert"
             >
               {errorMessage}
@@ -176,13 +199,18 @@ export default function CancelPaymentDialog({
             placeholder="Ex.: lançamento em duplicidade"
             disabled={isPending}
             className={`mt-2 w-full resize-none rounded-[9px] border bg-white px-3 py-2.5 text-sm ${focusRingClass}`}
-            style={{ borderColor: validationError ? '#fca5a5' : '#c9d2df', color: textPrimary }}
+            style={{ borderColor: validationError ? dangerBorder : borderMuted, color: textPrimary }}
             aria-invalid={Boolean(validationError)}
             aria-describedby={validationError ? 'cancel-payment-error' : undefined}
           />
           <div className="mt-1 flex justify-between gap-3 text-[11px]" style={{ color: textMuted }}>
             {validationError ? (
-              <span id="cancel-payment-error" role="alert" className="font-semibold text-[#b91c1c]">
+              <span
+                id="cancel-payment-error"
+                role="alert"
+                className="font-semibold"
+                style={{ color: alertDangerText }}
+              >
                 {validationError}
               </span>
             ) : (
@@ -196,16 +224,26 @@ export default function CancelPaymentDialog({
               type="button"
               onClick={onClose}
               disabled={isPending}
-              className={`inline-flex h-10 items-center justify-center rounded-[8px] px-4 text-sm font-bold hover:bg-[#f1f5f9] disabled:opacity-40 ${focusRingClass}`}
-              style={{ color: textMuted }}
+              className={`inline-flex items-center justify-center rounded-[8px] px-4 text-sm font-bold hover:bg-[var(--secondary-hover-bg)] disabled:opacity-40 ${mobileTouchTargetClass} ${focusRingClass}`}
+              style={
+                {
+                  '--secondary-hover-bg': buttonOutlineHoverBg,
+                  color: textMuted,
+                } as CSSProperties
+              }
             >
               Manter registro
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className={`inline-flex h-10 items-center justify-center rounded-[8px] px-4 text-sm font-bold text-white hover:bg-[#0d3260] disabled:cursor-wait disabled:opacity-60 ${focusRingClass}`}
-              style={{ backgroundColor: navy }}
+              className={`inline-flex items-center justify-center rounded-[8px] px-4 text-sm font-bold text-white hover:bg-[var(--primary-hover-bg)] disabled:cursor-wait disabled:opacity-60 ${mobileTouchTargetClass} ${focusRingClass}`}
+              style={
+                {
+                  '--primary-hover-bg': primaryContainerHover,
+                  backgroundColor: navy,
+                } as CSSProperties
+              }
             >
               {isPending ? 'Cancelando…' : 'Confirmar cancelamento'}
             </button>

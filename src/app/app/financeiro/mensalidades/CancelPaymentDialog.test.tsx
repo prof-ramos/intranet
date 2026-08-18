@@ -108,6 +108,26 @@ describe('CancelPaymentDialog', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  it('uses the responsive design-system targets for dialog actions', () => {
+    render(
+      <CancelPaymentDialog
+        associateName="João da Silva"
+        open
+        isPending={false}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Fechar cancelamento' }).className).toContain(
+      'min-h-10',
+    );
+    expect(screen.getByRole('button', { name: 'Manter registro' }).className).toContain('min-h-11');
+    expect(screen.getByRole('button', { name: 'Confirmar cancelamento' }).className).toContain(
+      'min-h-11',
+    );
+  });
+
   it('contains tab focus and restores the invoking control on close', async () => {
     const trigger = document.createElement('button');
     document.body.appendChild(trigger);

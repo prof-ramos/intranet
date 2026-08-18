@@ -2,20 +2,17 @@
 
 import type { MonthlyPaymentsAggregates } from '@/lib/finance/repository';
 import {
-  alertDangerBg,
-  alertDangerText,
   canvas,
   hairline,
   navy,
-  successBg,
+  surfaceMuted,
   successText,
   textMuted,
   textPrimary,
   textSecondary,
-  warningBg,
-  warningText,
 } from '@/lib/ui/tokens';
-import { AlertCircle, Ban, CheckCircle2, Clock3, MapPin, Radio, XCircle } from 'lucide-react';
+import { CheckCircle2, MapPin, Radio } from 'lucide-react';
+import { paymentStatusOrder, paymentStatusUi } from './payment-status-ui';
 
 interface FinanceKPIsProps {
   aggregates: MonthlyPaymentsAggregates;
@@ -24,41 +21,7 @@ interface FinanceKPIsProps {
 const percentOf = (value: number, total: number) =>
   total > 0 ? Math.round((value / total) * 100) : 0;
 
-const statusItems = [
-  {
-    key: 'pagos',
-    label: 'Pagos',
-    color: successText,
-    bg: successBg,
-    dot: '#16a34a',
-    icon: CheckCircle2,
-  },
-  {
-    key: 'pendentes',
-    label: 'Pendentes',
-    color: warningText,
-    bg: warningBg,
-    dot: '#d97706',
-    icon: Clock3,
-  },
-  {
-    key: 'atrasados',
-    label: 'Atrasados',
-    color: alertDangerText,
-    bg: alertDangerBg,
-    dot: '#dc2626',
-    icon: AlertCircle,
-  },
-  { key: 'isentos', label: 'Isentos', color: '#475569', bg: '#f1f5f9', dot: '#64748b', icon: Ban },
-  {
-    key: 'cancelados',
-    label: 'Cancelados',
-    color: '#7f1d1d',
-    bg: '#fef2f2',
-    dot: '#991b1b',
-    icon: XCircle,
-  },
-] as const;
+const statusItems = paymentStatusOrder.map((status) => paymentStatusUi[status]);
 
 export function FinanceKPIs({ aggregates }: FinanceKPIsProps) {
   const { total, pagos, pendentes, atrasados } = aggregates;
@@ -72,22 +35,40 @@ export function FinanceKPIs({ aggregates }: FinanceKPIsProps) {
       style={{ border: `1px solid ${hairline}` }}
       aria-label="Fechamento mensal"
     >
-      <div className="bg-[#040920] px-5 py-5 text-white sm:px-6">
+      <div
+        className="px-5 py-5 sm:px-6"
+        style={{ backgroundColor: canvas, borderBottom: `1px solid ${hairline}` }}
+      >
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[11px] font-bold tracking-[0.16em] text-[#9fc8f3] uppercase">
+            <p
+              className="text-[11px] font-bold tracking-[0.16em] uppercase"
+              style={{ color: textMuted }}
+            >
               Fechamento do mês
             </p>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-4xl font-bold tracking-[-0.05em]">{total}</span>
-              <span className="text-sm text-white/70">Total Associados</span>
+              <span
+                className="text-4xl font-bold tracking-[-0.05em]"
+                style={{ color: textPrimary }}
+              >
+                {total}
+              </span>
+              <span className="text-sm" style={{ color: textSecondary }}>
+                Total Associados
+              </span>
             </div>
           </div>
           <div className="sm:text-right">
-            <p className="text-[11px] font-bold tracking-[0.12em] text-white/60 uppercase">
+            <p
+              className="text-[11px] font-bold tracking-[0.12em] uppercase"
+              style={{ color: textMuted }}
+            >
               Taxa de pagamento
             </p>
-            <p className="mt-1 text-2xl font-bold text-[#b9e8ca]">{paidPercent}%</p>
+            <p className="mt-1 text-2xl font-bold" style={{ color: successText }}>
+              {paidPercent}%
+            </p>
           </div>
         </div>
 
@@ -100,13 +81,19 @@ export function FinanceKPIs({ aggregates }: FinanceKPIsProps) {
           aria-valuenow={Math.min(pagos, total)}
           aria-valuetext={`${paidPercent}% pagos`}
         >
-          <div className="h-2 overflow-hidden rounded-full bg-white/15">
+          <div
+            className="h-2 overflow-hidden rounded-full"
+            style={{ backgroundColor: surfaceMuted }}
+          >
             <div
-              className="h-full rounded-full bg-[#9fe0b5] transition-[width]"
-              style={{ width: `${paidPercent}%` }}
+              className="h-full rounded-full transition-[width]"
+              style={{ width: `${paidPercent}%`, backgroundColor: successText }}
             />
           </div>
-          <div className="mt-2 flex justify-between gap-4 text-[11px] font-medium text-white/65">
+          <div
+            className="mt-2 flex justify-between gap-4 text-[11px] font-medium"
+            style={{ color: textMuted }}
+          >
             <span>{pagos} pagos</span>
             <span>{actionCount} aguardando ação</span>
           </div>
@@ -118,16 +105,16 @@ export function FinanceKPIs({ aggregates }: FinanceKPIsProps) {
         style={{ borderColor: hairline }}
       >
         {statusItems.map((item) => {
-          const value = aggregates[item.key];
+          const value = aggregates[item.aggregateKey];
           return (
             <div
-              key={item.key}
+              key={item.aggregateKey}
               className="min-w-0 px-4 py-3.5"
               style={{ backgroundColor: item.bg }}
             >
               <div className="flex items-center gap-1.5" style={{ color: item.color }}>
                 <item.icon size={14} aria-hidden="true" />
-                <span className="text-[11px] font-bold">{item.label}</span>
+                <span className="text-[11px] font-bold">{item.aggregateLabel}</span>
               </div>
               <div className="mt-1 flex items-baseline gap-2">
                 <span className="text-xl font-bold" style={{ color: textPrimary }}>

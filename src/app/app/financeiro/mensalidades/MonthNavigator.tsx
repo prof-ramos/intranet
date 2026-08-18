@@ -10,9 +10,11 @@ import {
 } from '@/lib/finance/search-params';
 import {
   borderMuted,
+  compactActionClass,
   focusWithinClass,
   focusRingClass,
   hairline,
+  mobileTouchTargetClass,
   navy,
   skyBlue,
   textMuted,
@@ -71,7 +73,7 @@ export default function MonthNavigator({ year, month, currentFilters }: MonthNav
         <Link
           href={monthHref(previous.year, previous.month, currentFilters)}
           onClick={cancelPendingMonthlyPaymentsSearch}
-          className={`inline-flex h-10 w-10 items-center justify-center rounded-[8px] transition-colors hover:bg-[#f1f5f9] ${focusRingClass}`}
+          className={`inline-flex items-center justify-center rounded-[8px] transition-colors hover:bg-[#f1f5f9] ${compactActionClass} ${focusRingClass}`}
           style={{ color: textMuted }}
           aria-label="Mês anterior"
         >
@@ -79,7 +81,7 @@ export default function MonthNavigator({ year, month, currentFilters }: MonthNav
         </Link>
 
         <label
-          className={`relative inline-flex h-10 min-w-[178px] items-center justify-center gap-2 rounded-[8px] px-2 ${focusWithinClass}`}
+          className={`relative inline-flex min-w-[178px] items-center justify-center gap-2 rounded-[8px] px-2 ${mobileTouchTargetClass} ${focusWithinClass}`}
         >
           <Calendar size={16} style={{ color: skyBlue }} aria-hidden="true" />
           <span className="pointer-events-none text-sm font-bold" style={{ color: navy }}>
@@ -98,7 +100,7 @@ export default function MonthNavigator({ year, month, currentFilters }: MonthNav
         <Link
           href={monthHref(next.year, next.month, currentFilters)}
           onClick={cancelPendingMonthlyPaymentsSearch}
-          className={`inline-flex h-10 w-10 items-center justify-center rounded-[8px] transition-colors hover:bg-[#f1f5f9] ${focusRingClass}`}
+          className={`inline-flex items-center justify-center rounded-[8px] transition-colors hover:bg-[#f1f5f9] ${compactActionClass} ${focusRingClass}`}
           style={{ color: textMuted }}
           aria-label="Próximo mês"
         >
