@@ -11,7 +11,13 @@ describe('DashboardDispatchStrip', () => {
     render(
       <DashboardDispatchStrip
         urgentActivities={[
-          { id: 7, title: 'Cobrar retorno', priority: 'urgente', dueDate: '2026-05-20', assigneeName: null },
+          {
+            id: 7,
+            title: 'Cobrar retorno',
+            priority: 'urgente',
+            dueDate: '2026-05-20',
+            assigneeName: null,
+          },
         ]}
       />,
     );

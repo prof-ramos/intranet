@@ -33,13 +33,9 @@ export function OfficialsSearchBox({ initialQuery }: OfficialsSearchBoxProps) {
         return;
       }
 
-      // Keep this list in sync with parseAssociatesSearchParams when new filters are added.
       const params = new URLSearchParams(searchParams.toString());
       params.delete('page');
       params.delete('searchBy');
-      params.delete('contributionStatus');
-      params.delete('functionalStatus');
-      params.delete('associationStatus');
       params.delete('show');
 
       if (nextQuery.length >= MIN_SEARCH_CHARS) {
@@ -77,7 +73,7 @@ export function OfficialsSearchBox({ initialQuery }: OfficialsSearchBoxProps) {
           name="q"
           autoComplete="off"
           aria-busy={isPending}
-          className={`h-12 w-full rounded-[8px] border ${isPending ? 'border-[#76aeea]' : 'border-[rgba(4,9,32,0.12)]'} bg-white pr-12 pl-11 text-base outline-none transition-colors placeholder:text-[rgba(13,31,60,0.65)] hover:border-[rgba(4,9,32,0.24)] ${focusRingClass}`}
+          className={`h-12 w-full rounded-[8px] border ${isPending ? 'border-[#76aeea]' : 'border-[rgba(4,9,32,0.12)]'} bg-white pr-12 pl-11 text-base transition-colors outline-none placeholder:text-[rgba(13,31,60,0.65)] hover:border-[rgba(4,9,32,0.24)] ${focusRingClass}`}
           aria-describedby="official-search-help"
         />
         {value && (

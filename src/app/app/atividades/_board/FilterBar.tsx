@@ -19,6 +19,7 @@ import {
 } from '@/lib/ui/tokens';
 import type { BoardAssociate, BoardPerson, Filters } from './types';
 import { defaultFilters } from './constants';
+import { ACTIVITY_STATUS_OPTIONS } from '@/lib/activities/status';
 
 function isPriorityFilter(value: string): value is Filters['priority'] {
   return value === '' || value in priorityStyles;
@@ -44,9 +45,11 @@ export const FilterBar = memo(function FilterBar({
     filters.query ||
     filters.assignee ||
     filters.priority ||
+    filters.status ||
     filters.associate ||
     filters.dueWeek ||
-    filters.dueLate;
+    filters.dueLate ||
+    filters.openOnly;
 
   const chipClass = [
     'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-xs font-semibold transition',
@@ -112,6 +115,33 @@ export const FilterBar = memo(function FilterBar({
         {people.map((person) => (
           <option key={person.id} value={person.id}>
             {person.name}
+          </option>
+        ))}
+      </select>
+
+      <select
+        aria-label="Filtrar por status"
+        value={filters.status}
+        onChange={(event) => {
+          const status = event.target.value;
+          setFilters({
+            ...filters,
+            status: ACTIVITY_STATUS_OPTIONS.some((option) => option.value === status)
+              ? (status as Filters['status'])
+              : '',
+          });
+        }}
+        className={[
+          'rounded-[8px] border bg-white px-2 text-xs',
+          desktopDenseControlClass,
+          focusRingClass,
+        ].join(' ')}
+        style={{ borderColor: hairline }}
+      >
+        <option value="">Qualquer status</option>
+        {ACTIVITY_STATUS_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>
@@ -183,6 +213,16 @@ export const FilterBar = memo(function FilterBar({
         <span className="h-2 w-2 rounded-full bg-current" aria-hidden="true" />
         Atrasadas
       </button>
+      {filters.openOnly && (
+        <button
+          type="button"
+          onClick={() => setFilters({ ...filters, openOnly: false })}
+          className={chipClass}
+          style={{ borderColor: navy, background: navy, color: buttonPrimaryText }}
+        >
+          Em aberto
+        </button>
+      )}
 
       <div
         className="inline-flex min-h-11 overflow-hidden rounded-[8px] border bg-white lg:min-h-8"

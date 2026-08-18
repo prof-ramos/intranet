@@ -25,7 +25,44 @@ describe('DashboardIndicators', () => {
       '/app/atividades',
     );
     expect(screen.getByRole('link', { name: /inadimplentes/i }).getAttribute('href')).toBe(
-      '/app/associados?contributionStatus=inadimplente',
+      '/app/associados?associationStatus=associado&contributionStatus=inadimplente',
+    );
+  });
+
+  it('gives each geographic segment its own filtered destination', () => {
+    render(
+      <DashboardIndicators
+        inadimplentesCount={0}
+        stripe={[
+          {
+            id: 'location',
+            value: '',
+            label: 'Distribuição',
+            href: '/app/associados',
+            segments: [
+              {
+                id: 'brasil',
+                value: '3',
+                label: 'Associados Brasil',
+                href: '/app/associados?associationStatus=associado&location=brasil',
+              },
+              {
+                id: 'exterior',
+                value: '7',
+                label: 'Associados exterior',
+                href: '/app/associados?associationStatus=associado&location=exterior',
+              },
+            ],
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole('link', { name: /associados brasil/i }).getAttribute('href')).toBe(
+      '/app/associados?associationStatus=associado&location=brasil',
+    );
+    expect(screen.getByRole('link', { name: /associados exterior/i }).getAttribute('href')).toBe(
+      '/app/associados?associationStatus=associado&location=exterior',
     );
   });
 });

@@ -98,15 +98,17 @@ describe('activity board url state', () => {
     });
 
     it('parses boolean filters as 1/0', () => {
-      const result = parseFiltersFromUrl(new URLSearchParams('dueWeek=1&dueLate=1'));
+      const result = parseFiltersFromUrl(new URLSearchParams('dueWeek=1&dueLate=1&openOnly=1'));
       expect(result.dueWeek).toBe(true);
       expect(result.dueLate).toBe(true);
+      expect(result.openOnly).toBe(true);
     });
 
     it('defaults boolean filters to false when absent', () => {
       const result = parseFiltersFromUrl(new URLSearchParams());
       expect(result.dueWeek).toBe(false);
       expect(result.dueLate).toBe(false);
+      expect(result.openOnly).toBe(false);
     });
 
     it('parses string filters like assignee and associate', () => {
@@ -133,9 +135,15 @@ describe('activity board url state', () => {
     });
 
     it('serializes boolean filters as 1', () => {
-      const params = serializeFiltersToUrl({ ...defaultFilters, dueWeek: true, dueLate: true });
+      const params = serializeFiltersToUrl({
+        ...defaultFilters,
+        dueWeek: true,
+        dueLate: true,
+        openOnly: true,
+      });
       expect(params.get('dueWeek')).toBe('1');
       expect(params.get('dueLate')).toBe('1');
+      expect(params.get('openOnly')).toBe('1');
     });
 
     it('serializes priority and assignee', () => {

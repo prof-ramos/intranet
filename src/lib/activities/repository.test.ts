@@ -121,6 +121,17 @@ describe('activities repository', () => {
       expect(dbMock._selectChain.offset).toHaveBeenCalledWith(20);
     });
 
+    it.each([
+      ['overdue', { dueLate: true }],
+      ['open', { openOnly: true }],
+    ])('filters the complete %s queue before applying the board limit', async (_label, options) => {
+      await findActivities(options);
+
+      expect(dbMock._selectChain.where).toHaveBeenCalledWith(expect.anything());
+      expect(dbMock._selectChain.limit).not.toHaveBeenCalled();
+      expect(dbMock._selectChain.offset).toHaveBeenCalledWith(0);
+    });
+
     it('sorts the recent window into board order with newest cards as tie-breaker', async () => {
       dbMock.setSelectResult([
         { ...MOCK_ACTIVITY, id: 3, status: 'em_andamento', priority: 'urgente' },

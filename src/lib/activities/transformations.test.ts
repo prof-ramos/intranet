@@ -60,9 +60,11 @@ describe('filterActivities', () => {
     query: '',
     assignee: '',
     priority: '',
+    status: '',
     associate: '',
     dueWeek: false,
     dueLate: false,
+    openOnly: false,
   };
 
   it('returns all activities with default filters', () => {
@@ -141,6 +143,18 @@ describe('filterActivities', () => {
     const result = filterActivities(activities, { ...defaultFilters, associate: '20' }, 10);
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe(1);
+  });
+
+  it('filters the board to activities that are still open', () => {
+    const activities = [
+      makeActivity({ id: 1, status: 'a_fazer' }),
+      makeActivity({ id: 2, status: 'em_andamento' }),
+      makeActivity({ id: 3, status: 'concluido' }),
+    ];
+
+    const result = filterActivities(activities, { ...defaultFilters, openOnly: true }, 10);
+
+    expect(result.map((activity) => activity.id)).toEqual([1, 2]);
   });
 
   it('does not treat non-decimal filter ids as valid matches', () => {

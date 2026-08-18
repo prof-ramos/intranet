@@ -1,7 +1,8 @@
 import type { AuthUser } from '@/lib/auth/config';
-import type { ActivitiesBoardData, BoardAssociate, BoardPerson } from './types';
+import type { ActivitiesBoardData, BoardAssociate, BoardPerson, Status } from './types';
 import {
   findActivities,
+  findActivityBoardRowById,
   findActiveAdmins,
   findActiveAssociates,
   mapActivityRowToBoardActivity,
@@ -40,18 +41,38 @@ function buildPeopleList(
 
 export async function getActivitiesBoardData(
   user: Pick<AuthUser, 'userId' | 'name' | 'role'>,
-  options: { limit?: number; offset?: number } = {},
+  options: {
+    limit?: number;
+    offset?: number;
+    openActivityId?: number | null;
+    dueLate?: boolean;
+    openOnly?: boolean;
+    status?: Status;
+  } = {},
 ): Promise<ActivitiesBoardData> {
-  const [activityRows, adminRows, associateRows] = await Promise.all([
-    findActivities(options),
+  const [activityRows, openedActivityRow, adminRows, associateRows] = await Promise.all([
+    findActivities({
+      limit: options.limit,
+      offset: options.offset,
+      dueLate: options.dueLate,
+      openOnly: options.openOnly,
+      status: options.status,
+    }),
+    options.openActivityId
+      ? findActivityBoardRowById(options.openActivityId)
+      : Promise.resolve(null),
     findActiveAdmins(),
     findActiveAssociates(),
   ]);
+  const completeActivityRows =
+    openedActivityRow && !activityRows.some((activity) => activity.id === openedActivityRow.id)
+      ? [...activityRows, openedActivityRow]
+      : activityRows;
 
   const { currentUser, people } = buildPeopleList(user, adminRows);
 
   return {
-    initialActivities: activityRows.map(mapActivityRowToBoardActivity),
+    initialActivities: completeActivityRows.map(mapActivityRowToBoardActivity),
     people,
     associates: associateRows as BoardAssociate[],
     currentUser,

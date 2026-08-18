@@ -42,6 +42,7 @@ export function filterActivities(
       if (assigneeId !== null && activity.assigneeId !== assigneeId) return false;
     }
     if (filters.priority && activity.priority !== filters.priority) return false;
+    if (filters.status && activity.status !== filters.status) return false;
     if (filters.associate === '__any' && activity.associateId == null) return false;
     if (filters.associate && filters.associate !== '__any') {
       const associateId = parsePositiveIntParam(filters.associate);
@@ -55,6 +56,7 @@ export function filterActivities(
       const offset = activity.dueOffset;
       if (offset == null || offset >= 0 || activity.status === 'concluido') return false;
     }
+    if (filters.openOnly && activity.status === 'concluido') return false;
     return true;
   });
 }
