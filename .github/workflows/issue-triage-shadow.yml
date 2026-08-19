@@ -29,7 +29,6 @@ jobs:
       CONTROL_PLANE_COMMIT: 45feb6fa5bf090c75fef809ce39be83436999d47
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TIO_ABRAAO_HOME: /home/ubuntu/tio-abraao-releases/45feb6fa5bf090c75fef809ce39be83436999d47
-      TIO_ABRAAO_OUTPUT_DIR: ${{ runner.temp }}/tio-abraao-triage
       TIO_ABRAAO_STATE_DIR: /home/ubuntu/.local/state/tio-abraao/issue-triage
     steps:
       - name: Verify pinned control-plane executor
@@ -63,6 +62,7 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
+          TIO_ABRAAO_OUTPUT_DIR: ${{ runner.temp }}/tio-abraao-triage
         run: |
           set -euo pipefail
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
