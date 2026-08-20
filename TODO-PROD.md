@@ -47,7 +47,7 @@ de staging/dev/preview.
   - Conta dedicada de smoke: `smoke-admin@asof.local`, `role=admin`, `is_active=true`, `must_change_password=false`; senha gerenciada apenas por `SMOKE_ADMIN_PASSWORD` no GitHub Actions.
   - Pos-smoke mutante: executar manualmente o SQL run-scoped impresso pelo spec; entidades, notificacoes, `domain_events` e `webhook_deliveries` do run devem ficar zerados, com `audit_logs` preservado.
   - CI/CD: o job pós-merge `Smoke Test — Production` roda read-only em push para `main`; dispatch manual também é read-only por default e o job permanece skipped em PRs.
-  - Última execução validada: 2026-08-18, `Smoke Test — Production` aprovado no [CI run 32172046902](https://github.com/prof-ramos/intranet/actions/runs/32172046902), no SHA `1221a10eaeb15906f03844ef15a4030afca6d3a3`.
+  - Execuções recentes validadas: 2026-08-18, `Smoke Test — Production` aprovado no [CI run 32172046902](https://github.com/prof-ramos/intranet/actions/runs/32172046902), no SHA `1221a10eaeb15906f03844ef15a4030afca6d3a3`; e 2026-08-19, aprovado no [CI run 32215753730](https://github.com/prof-ramos/intranet/actions/runs/32215753730), no SHA `b827bc4ec96f86e2143f52a128bbf890f3c159e5`.
 - [x] Validar crons com `CRON_SECRET` antes de ativar operacao.
 - [x] Confirmar que previews/staging nao apontam para banco de producao — envs gerais de banco foram removidos do ambiente Preview no Vercel em 2026-05-26; restam apenas `SESSION_SECRET` em Preview e `GEMINI_API_KEY` restrita ao branch `feature/outbound-integrations-webhooks`.
 
@@ -205,6 +205,12 @@ continuam pertencendo ao inventario e a limpeza controlada do Plano 057._
   observação contínua de erros de login e auditoria por 24–48 horas. A janela
   começou em `2026-08-18T18:37Z`; revisar no mínimo em `2026-08-19T18:37Z` e
   encerrar somente após `2026-08-20T18:37Z`, se não houver alertas.
+- **Follow-up da observação:** o push de `main` no SHA `b827bc4ec96f86e2143f52a128bbf890f3c159e5`
+  gerou deployment Production com status `success` e CI completo verde, incluindo
+  o smoke read-only. Em `2026-08-20T10:37Z`, uma chamada anônima a
+  `/api/v1/health` respondeu `401` com `unauthorized`, comportamento esperado sem
+  sessão; isso não substitui a checagem final de logs de login/auditoria. A janela
+  permanece aberta até `2026-08-20T18:37Z`.
 - **E2E:** o setup passou a registrar as fases sem dados sensíveis. No run local
   de 2026-08-18, foram medidos: warmup JIT 57,0 s, autenticação 6,2 s, servidor
   pronto 3,8 s, migrations 1,1 s, seed 0,7 s e setup total 70,1 s. A suíte
