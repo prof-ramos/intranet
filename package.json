@@ -20,6 +20,7 @@
     "jules:audit": "node scripts/audit-jules.mjs",
     "pr:check": "bash scripts/check-pr-ready.sh",
     "docs:check": "node scripts/check-docs.mjs",
+    "storage:spike": "node --import tsx scripts/storage-spike.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "audit": "npm audit",
@@ -70,6 +71,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1114.0",
+    "@aws-sdk/s3-request-presigner": "^3.1114.0",
     "@next/bundle-analyzer": "^16.2.12",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4.3.0",
