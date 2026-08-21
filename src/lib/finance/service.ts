@@ -1,6 +1,6 @@
 import * as repository from './repository';
 import { markOverduePaymentsForAudit } from './repository';
-import { logAuditAction, logAuditBestEffort } from '@/lib/audit/service';
+import { logAuditAction } from '@/lib/audit/service';
 import { db } from '@/lib/db';
 import { emitDomainEvent, emitDomainEventsBatch } from '@/lib/integrations/outbox';
 import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
@@ -15,6 +15,7 @@ import { createLogger } from '@/lib/logger';
 import { yearMonthObjectSchema } from '@/lib/validation/schemas';
 import { ConcurrencyConflictError, NotFoundError, ValidationError } from '@/lib/errors';
 import { BUSINESS_TIME_ZONE, businessDateOnly } from '@/lib/utils/date';
+import { redactPiiString } from '@/lib/sanitize-pii';
 
 const logger = createLogger('finance:service');
 
@@ -23,6 +24,15 @@ export type PaymentStatus = (typeof paymentStatus.enumValues)[number];
 
 const DECIMAL_AMOUNT_PATTERN = /^(?:0|[1-9]\d{0,9})(?:\.\d{1,2})?$/;
 const CIVIL_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const SIAPE_TEXT_PATTERN = /\bSIAPE\s*[:#-]?\s*\d{5,12}\b/gi;
+const CREDENTIAL_TEXT_PATTERN = /\b(?:token|senha|password|secret)\s*[:=]?\s*\S+/gi;
+
+function sanitizeFinancialAuditText(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  return redactPiiString(value)
+    .replace(SIAPE_TEXT_PATTERN, '[siape]')
+    .replace(CREDENTIAL_TEXT_PATTERN, '[token]');
+}
 
 /**
  * Canonicalizes an amount without going through a JS number (which could lose
@@ -224,7 +234,7 @@ function getPaymentAuditState(payment: MonthlyPayment, includeStructured = true)
     paymentMethod: payment.paymentMethod,
     paidAt: payment.paidAt ?? null,
     cancelledAt: payment.cancelledAt ?? null,
-    cancellationReason: payment.cancellationReason ?? null,
+    cancellationReason: sanitizeFinancialAuditText(payment.cancellationReason),
     cancelledBy: payment.cancelledBy ?? null,
   };
   if (!includeStructured) return state;
@@ -232,7 +242,7 @@ function getPaymentAuditState(payment: MonthlyPayment, includeStructured = true)
     ...state,
     amount: payment.amount ?? null,
     origin: payment.origin ?? 'outros',
-    notes: payment.notes ?? null,
+    notes: sanitizeFinancialAuditText(payment.notes),
   };
 }
 
@@ -303,7 +313,7 @@ export async function updateMonthlyPayment(
   payment: MonthlyPaymentUpdateInput,
   expectedUpdatedAt?: string | null,
 ) {
-  const { result, auditArgs } = await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const current = await repository.findMonthlyPayment(
       payment.associateId,
       payment.year,
@@ -392,13 +402,13 @@ export async function updateMonthlyPayment(
       cancellationReason: null,
       cancelledBy: null,
     } as MonthlyPayment);
-    const auditArgs = {
+    await logAuditAction({
       adminId,
-      action: 'update',
+      action: current ? 'update' : 'create',
       entityType: 'monthly_payment' as const,
       entityId: updatedPayment.id,
       changes: {
-        old: oldState ?? {},
+        old: oldState,
         new: newState,
       },
       metadata: {
@@ -406,7 +416,8 @@ export async function updateMonthlyPayment(
         year: payment.year,
         month: payment.month,
       },
-    };
+      executor: tx,
+    });
 
     if (oldState && paymentStateChanged(oldState, newState)) {
       await emitDomainEvent(
@@ -432,15 +443,8 @@ export async function updateMonthlyPayment(
       );
     }
 
-    return { result: updatedPayment, auditArgs };
+    return updatedPayment;
   });
-
-  // Best-effort audit AFTER the tx commits. The outbox write above remains
-  // atomic with the payment mutation, while audit can only describe a change
-  // that the database has confirmed.
-  await logAuditBestEffort(auditArgs, logger);
-
-  return result;
 }
 
 export async function cancelMonthlyPayment(
@@ -455,7 +459,7 @@ export async function cancelMonthlyPayment(
 
   const cancellationReason = validateCancellationReason(reason);
 
-  const { result, auditArgs } = await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const current = await repository.findMonthlyPaymentById(paymentId, tx);
     if (!current) {
       throw new NotFoundError('Pagamento');
@@ -513,32 +517,26 @@ export async function cancelMonthlyPayment(
       tx,
     );
 
-    return {
-      result: updatedPayment,
-      auditArgs: {
-        adminId,
-        action: 'cancel',
-        entityType: 'monthly_payment' as const,
-        entityId: updatedPayment.id,
-        changes: {
-          old: oldState,
-          new: newState,
-        },
-        metadata: {
-          associateId: updatedPayment.associateId,
-          year: updatedPayment.year,
-          month: updatedPayment.month,
-          cancellationReason,
-        },
+    await logAuditAction({
+      adminId,
+      action: 'cancel',
+      entityType: 'monthly_payment',
+      entityId: updatedPayment.id,
+      changes: {
+        old: oldState,
+        new: newState,
       },
-    };
+      metadata: {
+        associateId: updatedPayment.associateId,
+        year: updatedPayment.year,
+        month: updatedPayment.month,
+        cancellationReason: sanitizeFinancialAuditText(cancellationReason),
+      },
+      executor: tx,
+    });
+
+    return updatedPayment;
   });
-
-  // Best-effort audit AFTER the tx commits. A failed audit INSERT must not abort the
-  // mutation's tx (the audit executor poisons PG tx on failure). Default `db` isolates the audit.
-  await logAuditBestEffort(auditArgs, logger);
-
-  return result;
 }
 
 export async function initializeMonth(adminId: number, year: number, month: number) {
@@ -571,7 +569,12 @@ export async function initializeMonth(adminId: number, year: number, month: numb
       action: 'initialize_month',
       entityType: 'finance',
       entityId: null,
-      metadata: { year, month, ...counts },
+      changes: {
+        old: null,
+        new: { year, month, ...counts },
+      },
+      metadata: { year, month },
+      executor: tx,
     });
 
     return counts;

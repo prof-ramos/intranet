@@ -14,9 +14,13 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
-vi.mock('@/lib/sanitize-pii', () => ({
-  sanitizePiiValue: vi.fn((val: unknown) => val),
-}));
+vi.mock('@/lib/sanitize-pii', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/sanitize-pii')>();
+  return {
+    ...actual,
+    sanitizePiiValue: vi.fn((val: unknown) => val),
+  };
+});
 
 import { sanitizePiiValue } from '@/lib/sanitize-pii';
 
@@ -148,6 +152,22 @@ describe('logAuditAction', () => {
       expect.any(Error),
     );
     consoleErrorSpy.mockRestore();
+  });
+
+  it('rethrows DB errors for a transactional executor so the mutation rolls back', async () => {
+    const failure = new Error('transactional audit failed');
+    const mockTx = {
+      insert: vi.fn().mockReturnValue({ values: vi.fn().mockRejectedValue(failure) }),
+    } as never;
+
+    await expect(
+      logAuditAction({
+        adminId: 1,
+        action: 'update',
+        entityType: 'monthly_payment',
+        executor: mockTx,
+      }),
+    ).rejects.toBe(failure);
   });
 });
 
