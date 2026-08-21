@@ -11,6 +11,7 @@ teste, validacao de crons e revisao minima de integracoes/API keys sem secrets.
 
 Higiene de secrets: [`operations/secrets-hygiene.md`](./operations/secrets-hygiene.md).  
 Plano de sunset de PII plaintext: [`operations/pii-plaintext-sunset.md`](./operations/pii-plaintext-sunset.md).
+Registro operacional pós-merge: [`operations/post-merge-smoke-observation.md`](./operations/post-merge-smoke-observation.md).
 
 ## 0. Checklist Único De Release (Deploy → Migrate → Smoke)
 
@@ -53,6 +54,17 @@ código e/ou schema. Não inverter a ordem quando houver migration SQL nova.
 6. **Encerramento**
    - [ ] Anotar no canal de incidente (ADR 011) se houve incidente ou rollback
    - [ ] Se migrate não era necessária, pular passo 3 explicitamente no registro
+
+### Observação pós-merge (24–48 h)
+
+Depois do smoke read-only, mantenha a janela de observação documentada no
+[registro operacional](./operations/post-merge-smoke-observation.md). Ela deve
+conter o SHA completo, deployment, run/job do CI, horário UTC, owners e
+limitações de acesso. O job de produção pode permanecer `skipped` em PRs draft
+ou em PRs onde o smoke foi intencionalmente excluído; isso não transforma o
+smoke em gate obrigatório de PR. O gate obrigatório é o smoke read-only após o
+merge em `main`, sempre com `SMOKE_ALLOW_MUTATIONS=false` salvo dispatch
+mutante autorizado em janela separada.
 
 ### Anti-padrões (não fazer)
 

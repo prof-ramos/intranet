@@ -50,9 +50,9 @@ async function waitForServerReady(pid: number) {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      const response = await fetch(`${E2E_BASE_URL}/login`, { 
+      const response = await fetch(`${E2E_BASE_URL}/login`, {
         redirect: 'manual',
-        signal: controller.signal
+        signal: controller.signal,
       });
       clearTimeout(timeoutId);
       if (response.status < 500) return;
@@ -105,20 +105,33 @@ async function warmupJitRoutes() {
     await page.click('button[type="submit"]');
     await page.waitForURL(`${E2E_BASE_URL}/app`, { timeout: 30_000 });
 
-    // Compile the associados list so subsequent list navigations are instant.
-    await page.goto(`${E2E_BASE_URL}/app/associados`, { timeout: 30_000 });
+    // Compile the filtered associados list so subsequent list navigations are
+    // instant. The list links to the profile first; the edit route is exposed
+    // from that profile (the listing no longer renders direct edit links).
+    await page.goto(`${E2E_BASE_URL}/app/associados?q=${encodeURIComponent('João')}`, {
+      timeout: 30_000,
+    });
 
-    // Find any edit href (link is opacity-0 but getAttribute works without visibility).
-    const editHref = await page
-      .locator('a[aria-label^="Editar"]')
+    const profileHref = await page
+      .locator('li:has-text("João da Silva") a[href^="/app/associados/"]')
       .first()
       .getAttribute('href')
       .catch(() => null);
-    if (editHref) {
-      // Direct goto compiles the [id]/editar route without needing hover.
-      await page.goto(`${E2E_BASE_URL}${editHref}`, { timeout: 60_000 });
+    if (profileHref) {
+      await page.goto(`${E2E_BASE_URL}${profileHref}`, { timeout: 60_000 });
+      const editHref = await page
+        .locator('a[href*="/editar"]')
+        .first()
+        .getAttribute('href')
+        .catch(() => null);
+      if (editHref) {
+        // Direct goto compiles the [id]/editar route without needing a hover.
+        await page.goto(`${E2E_BASE_URL}${editHref}`, { timeout: 60_000 });
+      } else {
+        console.warn('[warmupJitRoutes] Profile found but no edit link was rendered');
+      }
     } else {
-      console.warn('[warmupJitRoutes] No edit links found; /editar route not warmed');
+      console.warn('[warmupJitRoutes] João profile not found; /editar route not warmed');
     }
 
     // Compile the financeiro route used in other specs.
@@ -126,7 +139,7 @@ async function warmupJitRoutes() {
 
     // Compile the oficios route to prevent JIT timeout in assinafy tests.
     await page.goto(`${E2E_BASE_URL}/app/secretaria/oficios`, { timeout: 60_000 });
-    
+
     // Compile the oficios edit route to prevent JIT timeout in secretaria tests.
     await page.goto(`${E2E_BASE_URL}/app/secretaria/oficios/1/editar`, { timeout: 60_000 });
   } finally {
