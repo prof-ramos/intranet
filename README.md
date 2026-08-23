@@ -1,6 +1,8 @@
 > [!NOTE]
 > **Status do portfólio:** este é o repositório canônico ativo. Predecessor(es) arquivado(s): [asof_gemini](https://github.com/prof-ramos/asof_gemini), [new-intranet](https://github.com/prof-ramos/new-intranet), [gemini_intranet](https://github.com/prof-ramos/gemini_intranet), [v0-sistema-interno-web](https://github.com/prof-ramos/v0-sistema-interno-web) e [php-asof](https://github.com/prof-ramos/php-asof). Os históricos permanecem disponíveis somente para leitura.
-<!-- PORTFOLIO_STATUS: canonical; predecessors=asof_gemini+new-intranet+gemini_intranet+v0-sistema-interno-web+php-asof --># ASOF Intranet
+<!-- PORTFOLIO_STATUS: canonical; predecessors=asof_gemini+new-intranet+gemini_intranet+v0-sistema-interno-web+php-asof -->
+
+# ASOF Intranet
 
 Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia o cadastro de Oficiais de Chancelaria, associados ASOF, atividades administrativas e comunicações internas da diretoria.
 
