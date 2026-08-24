@@ -92,6 +92,7 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 - Use `npm` para este projeto; tem `package-lock.json`.
 - Para Python, use `uv`: `uv run`, `uv add`, `uv sync`.
 - Para GitHub CLI, `gh` está autorizado por default.
+- Sempre que possível, utilizar subagentes com o modelo Luna em esforço de raciocínio XHIGH (`gpt-5.6-luna`, `reasoning_effort=xhigh`) para subtarefas independentes.
 - Para Git, comandos que alteram o repositório (commit, push, branch -d, merge, reset) requerem aprovação explícita.
 - Use Context7 automaticamente para queries sobre bibliotecas/frameworks/APIs externas. Não confie no conhecimento de treinamento.
 - **Validation gates (use exatamente nesta ordem):** `npm run lint` → `npm run typecheck` → `npm run test` → `npm run test:db` → `npm run build`. Os agregadores `validate:quick` (lint+typecheck+test) e `validate:full` (+test:db+build) executam nessa ordem; `pr:check` adiciona `scope:check` e é o melhor gate único antes de abrir PR.

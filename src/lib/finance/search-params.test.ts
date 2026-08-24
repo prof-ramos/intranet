@@ -38,6 +38,11 @@ describe('parseMonthlyPaymentsSearchParams', () => {
     expect(result.page).toBe(2);
   });
 
+  it('accepts structured payment origin and drops unknown origins', () => {
+    expect(parseMonthlyPaymentsSearchParams({ origin: 'sigepe' }).origin).toBe('sigepe');
+    expect(parseMonthlyPaymentsSearchParams({ origin: 'bank-secret' }).origin).toBeUndefined();
+  });
+
   it('falls back to page 1 for invalid input', () => {
     const result = parseMonthlyPaymentsSearchParams({
       q: '',
@@ -68,6 +73,15 @@ describe('buildMonthlyPaymentsSearchParams', () => {
     expect(
       buildMonthlyPaymentsSearchParams({ q: '', status: 'pago', page: 4 }, { status: 'atrasado' }),
     ).toEqual({ status: 'atrasado' });
+  });
+
+  it('serializes origin and resets pagination when origin changes', () => {
+    expect(
+      buildMonthlyPaymentsSearchParams(
+        { q: '', page: 4, origin: 'sigepe' },
+        { origin: 'itamaraty' },
+      ),
+    ).toEqual({ origin: 'itamaraty' });
   });
   it('omits empty/default values', () => {
     const result = buildMonthlyPaymentsSearchParams(

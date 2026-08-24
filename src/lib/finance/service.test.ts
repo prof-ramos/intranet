@@ -2,12 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   autoMarkOverduePaymentsService,
   cancelMonthlyPayment,
+  initializeMonth,
   updateMonthlyPayment,
   validateStatusTransition,
 } from './service';
 import { emitDomainEvent, emitDomainEventsBatch } from '@/lib/integrations/outbox';
 import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
-import { logAuditBestEffort } from '@/lib/audit/service';
+import { logAuditAction, logAuditBestEffort } from '@/lib/audit/service';
 import { db } from '@/lib/db';
 
 const transactionMock = vi.hoisted(() => ({
@@ -33,6 +34,7 @@ vi.mock('@/lib/db', () => ({
 }));
 
 vi.mock('@/lib/audit/service', () => ({
+  logAuditAction: vi.fn(),
   logAuditBestEffort: vi.fn(),
 }));
 
@@ -106,6 +108,7 @@ describe('finance service', () => {
     vi.mocked(emitDomainEvent).mockResolvedValue({ id: 4242 } as never);
     vi.mocked(emitDomainEventsBatch).mockResolvedValue([{ id: 4242 }] as never);
     vi.mocked(dispatchDomainEventById).mockResolvedValue({ dispatched: true } as never);
+    vi.mocked(logAuditAction).mockResolvedValue(undefined);
   });
 
   it('audits and emits system domain events for automatic overdue transitions inside the tx', async () => {
@@ -169,7 +172,7 @@ describe('finance service', () => {
       paymentMethod: 'boleto',
     });
 
-    expect(logAuditBestEffort).toHaveBeenCalledWith(
+    expect(logAuditAction).toHaveBeenCalledWith(
       expect.objectContaining({
         adminId: 1,
         action: 'update',
@@ -192,10 +195,11 @@ describe('finance service', () => {
           year: 2026,
           month: 5,
         },
+        executor: transactionMock.tx,
       }),
-      expect.anything(),
     );
-    expect(JSON.stringify(vi.mocked(logAuditBestEffort).mock.calls[0][0])).not.toMatch(
+    expect(logAuditBestEffort).not.toHaveBeenCalled();
+    expect(JSON.stringify(vi.mocked(logAuditAction).mock.calls[0][0])).not.toMatch(
       /cpf|siape|address/i,
     );
     expect(emitDomainEvent).toHaveBeenCalledWith(
@@ -224,11 +228,11 @@ describe('finance service', () => {
     );
   });
 
-  it('does not audit a payment update when the outbox write fails', async () => {
+  it('rolls back a payment update when its transactional audit fails', async () => {
     const effects: string[] = [];
-    vi.mocked(emitDomainEvent).mockImplementationOnce(async () => {
-      effects.push('outbox');
-      throw new Error('outbox unavailable');
+    vi.mocked(logAuditAction).mockImplementationOnce(async () => {
+      effects.push('audit');
+      throw new Error('audit unavailable');
     });
 
     await expect(
@@ -239,13 +243,14 @@ describe('finance service', () => {
         status: 'pago',
         paymentMethod: 'boleto',
       }),
-    ).rejects.toThrow('outbox unavailable');
+    ).rejects.toThrow('audit unavailable');
 
-    expect(effects).toEqual(['outbox']);
+    expect(effects).toEqual(['audit']);
+    expect(emitDomainEvent).not.toHaveBeenCalled();
     expect(logAuditBestEffort).not.toHaveBeenCalled();
   });
 
-  it('audits a payment update only after its transaction commits', async () => {
+  it('audits a payment update inside its transaction before commit', async () => {
     const effects: string[] = [];
     vi.mocked(db.transaction).mockImplementationOnce(async (callback) => {
       const result = await callback(transactionMock.tx as never);
@@ -256,7 +261,7 @@ describe('finance service', () => {
       effects.push('outbox');
       return { id: 4242 } as never;
     });
-    vi.mocked(logAuditBestEffort).mockImplementationOnce(async () => {
+    vi.mocked(logAuditAction).mockImplementationOnce(async () => {
       effects.push('audit');
     });
 
@@ -268,7 +273,7 @@ describe('finance service', () => {
       paymentMethod: 'boleto',
     });
 
-    expect(effects).toEqual(['outbox', 'commit', 'audit']);
+    expect(effects).toEqual(['audit', 'outbox', 'commit']);
   });
 
   it('preserves paidAt when re-updating an already-pago payment', async () => {
@@ -308,14 +313,14 @@ describe('finance service', () => {
     });
 
     // The audit should show the old paidAt is preserved, not replaced with now()
-    expect(logAuditBestEffort).toHaveBeenCalledWith(
+    expect(logAuditAction).toHaveBeenCalledWith(
       expect.objectContaining({
         changes: expect.objectContaining({
           old: expect.objectContaining({ paidAt: originalPaidAt }),
           new: expect.objectContaining({ paidAt: originalPaidAt }),
         }),
+        executor: transactionMock.tx,
       }),
-      expect.anything(),
     );
   });
 
@@ -328,7 +333,7 @@ describe('finance service', () => {
       paymentMethod: 'boleto',
     });
 
-    expect(logAuditBestEffort).toHaveBeenCalledWith(
+    expect(logAuditAction).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'update',
         metadata: {
@@ -336,8 +341,8 @@ describe('finance service', () => {
           year: 2026,
           month: 5,
         },
+        executor: transactionMock.tx,
       }),
-      expect.anything(),
     );
     expect(emitDomainEvent).not.toHaveBeenCalled();
   });
@@ -363,11 +368,11 @@ describe('finance service', () => {
       paymentMethod: 'boleto',
     });
 
-    expect(logAuditBestEffort).toHaveBeenCalledWith(
+    expect(logAuditAction).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: 'update',
+        action: 'create',
         changes: expect.objectContaining({
-          old: {},
+          old: null,
           new: expect.objectContaining({
             status: 'pendente',
           }),
@@ -377,10 +382,59 @@ describe('finance service', () => {
           year: 2026,
           month: 5,
         },
+        executor: transactionMock.tx,
       }),
-      expect.anything(),
     );
     expect(emitDomainEvent).not.toHaveBeenCalled();
+  });
+
+  it('requires a positive amount when creating or completing a structured paid row', async () => {
+    const emptyLimit = vi.fn().mockResolvedValue([]);
+    transactionMock.tx.select = vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({ limit: emptyLimit })),
+      })),
+    }));
+
+    await expect(
+      updateMonthlyPayment(1, {
+        associateId: 10,
+        year: 2026,
+        month: 7,
+        status: 'pago',
+        paymentMethod: 'pix',
+      }),
+    ).rejects.toThrow('Informe um valor maior que zero');
+
+    emptyLimit.mockResolvedValue([
+      {
+        id: 7,
+        associateId: 10,
+        year: 2026,
+        month: 7,
+        status: 'pendente',
+        paymentMethod: 'pix',
+        amount: null,
+        origin: 'outros',
+        notes: null,
+        paidAt: null,
+        cancelledAt: null,
+        cancellationReason: null,
+        cancelledBy: null,
+        updatedAt: new Date('2026-05-13T00:00:00.000Z'),
+      },
+    ]);
+
+    await expect(
+      updateMonthlyPayment(1, {
+        associateId: 10,
+        year: 2026,
+        month: 7,
+        status: 'pago',
+        paymentMethod: 'pix',
+      }),
+    ).rejects.toThrow('Informe um valor maior que zero');
+    expect(transactionMock.tx.insert).not.toHaveBeenCalled();
   });
 
   it('cancels a payment with before/after audit and domain event', async () => {
@@ -418,7 +472,7 @@ describe('finance service', () => {
         updatedBy: 1,
       }),
     );
-    expect(logAuditBestEffort).toHaveBeenCalledWith(
+    expect(logAuditAction).toHaveBeenCalledWith(
       expect.objectContaining({
         adminId: 1,
         action: 'cancel',
@@ -448,11 +502,11 @@ describe('finance service', () => {
           month: 5,
           cancellationReason: 'Lançamento em duplicidade',
         },
+        executor: transactionMock.tx,
       }),
-      expect.anything(),
     );
-    const cancelAuditCall = vi.mocked(logAuditBestEffort).mock.calls.at(-1)![0];
-    expect(cancelAuditCall.executor).toBeUndefined();
+    const cancelAuditCall = vi.mocked(logAuditAction).mock.calls.at(-1)![0];
+    expect(cancelAuditCall.executor).toBe(transactionMock.tx);
     expect(emitDomainEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'monthly_payment.updated',
@@ -481,6 +535,103 @@ describe('finance service', () => {
       'Motivo de cancelamento obrigatório.',
     );
     expect(transactionMock.tx.update).not.toHaveBeenCalled();
+  });
+
+  it('redacts textual PII and credentials from audited notes and cancellation reasons', async () => {
+    const sensitive =
+      'CPF 123.456.789-01 SIAPE 1234567 email pessoa@example.com token segredo-supersecreto';
+    const cancelledAt = new Date('2026-05-21T12:00:00.000Z');
+    const updateReturning = vi.fn().mockResolvedValue([
+      {
+        id: 5,
+        associateId: 10,
+        year: 2026,
+        month: 5,
+        status: 'cancelado',
+        paymentMethod: 'boleto',
+        amount: '80.00',
+        origin: 'outros',
+        notes: sensitive,
+        paidAt: null,
+        cancelledAt,
+        cancellationReason: sensitive,
+        cancelledBy: 1,
+      },
+    ]);
+    transactionMock.tx.update = vi.fn(() => ({
+      set: vi.fn(() => ({ where: vi.fn(() => ({ returning: updateReturning })) })),
+    }));
+    transactionMock.tx.select = vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: vi.fn().mockResolvedValue([
+            {
+              id: 5,
+              associateId: 10,
+              year: 2026,
+              month: 5,
+              status: 'pago',
+              paymentMethod: 'boleto',
+              amount: '80.00',
+              origin: 'outros',
+              notes: sensitive,
+              paidAt: null,
+              cancelledAt: null,
+              cancellationReason: null,
+              cancelledBy: null,
+              updatedAt: new Date('2026-05-13T00:00:00.000Z'),
+            },
+          ]),
+        })),
+      })),
+    }));
+
+    await cancelMonthlyPayment(1, 5, sensitive);
+
+    const serializedAudit = JSON.stringify(vi.mocked(logAuditAction).mock.calls.at(-1)?.[0]);
+    expect(serializedAudit).not.toContain('123.456.789-01');
+    expect(serializedAudit).not.toContain('1234567');
+    expect(serializedAudit).not.toContain('pessoa@example.com');
+    expect(serializedAudit).not.toContain('segredo-supersecreto');
+    expect(serializedAudit).toContain('[cpf]');
+    expect(serializedAudit).toContain('[siape]');
+    expect(serializedAudit).toContain('[email]');
+    expect(serializedAudit).toContain('[token]');
+  });
+
+  it('audits month initialization as one transactional aggregate old/new record', async () => {
+    transactionMock.tx.select = vi.fn(() => ({
+      from: vi.fn(() => ({
+        leftJoin: vi.fn(() => ({
+          where: vi.fn().mockResolvedValue([
+            { associateId: 10, defaultPaymentMethod: 'folha', paymentId: null },
+            { associateId: 11, defaultPaymentMethod: 'pix', paymentId: null },
+          ]),
+        })),
+      })),
+    }));
+    const returning = vi.fn().mockResolvedValue([{ id: 50 }, { id: 51 }]);
+    const onConflictDoNothing = vi.fn(() => ({ returning }));
+    const values = vi.fn(() => ({ onConflictDoNothing }));
+    transactionMock.tx.insert = vi.fn(() => ({ values }));
+
+    const counts = await initializeMonth(1, 2026, 6);
+
+    expect(counts).toEqual({ created: 2, maintained: 0, rejected: 0 });
+    expect(logAuditAction).toHaveBeenCalledWith({
+      adminId: 1,
+      action: 'initialize_month',
+      entityType: 'finance',
+      entityId: null,
+      changes: {
+        old: null,
+        new: { year: 2026, month: 6, created: 2, maintained: 0, rejected: 0 },
+      },
+      metadata: { year: 2026, month: 6 },
+      executor: transactionMock.tx,
+    });
+    expect(emitDomainEvent).not.toHaveBeenCalled();
+    expect(emitDomainEventsBatch).not.toHaveBeenCalled();
   });
 });
 

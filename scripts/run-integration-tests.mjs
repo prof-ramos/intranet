@@ -20,6 +20,10 @@ const commands = [
     'run',
     '--config',
     path.join(projectRoot, 'vitest.integration.config.ts'),
+    // The dedicated database is shared by the 13 suites. Individual tests
+    // still exercise concurrency explicitly; serializing files prevents
+    // unrelated fixture cleanup/row-lock tests from blocking each other.
+    '--maxWorkers=1',
   ],
 ];
 
