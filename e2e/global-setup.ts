@@ -142,12 +142,34 @@ async function warmupJitRoutes() {
     const page = await context.newPage();
     await page.goto(`${E2E_BASE_URL}/app`);
 
-    // Compile the associados list so subsequent list navigations are instant.
-    await page.goto(`${E2E_BASE_URL}/app/associados`, { timeout: 30_000 });
+    // Compile the filtered associados list so subsequent list navigations are
+    // instant. The list links to the profile first; the edit route is exposed
+    // from that profile (the listing no longer renders direct edit links).
+    await page.goto(`${E2E_BASE_URL}/app/associados?q=${encodeURIComponent('João')}`, {
+      timeout: 30_000,
+    });
 
-    // The redesigned list has no direct edit link until a search/profile flow.
-    // Seeded João is deterministically associate id 1 in the fresh E2E DB.
-    await page.goto(`${E2E_BASE_URL}/app/associados/1/editar`, { timeout: 60_000 });
+    const profileHref = await page
+      .locator('li:has-text("João da Silva") a[href^="/app/associados/"]')
+      .first()
+      .getAttribute('href')
+      .catch(() => null);
+    if (profileHref) {
+      await page.goto(`${E2E_BASE_URL}${profileHref}`, { timeout: 60_000 });
+      const editHref = await page
+        .locator('a[href*="/editar"]')
+        .first()
+        .getAttribute('href')
+        .catch(() => null);
+      if (editHref) {
+        // Direct goto compiles the [id]/editar route without needing a hover.
+        await page.goto(`${E2E_BASE_URL}${editHref}`, { timeout: 60_000 });
+      } else {
+        console.warn('[warmupJitRoutes] Profile found but no edit link was rendered');
+      }
+    } else {
+      console.warn('[warmupJitRoutes] João profile not found; /editar route not warmed');
+    }
 
     // Compile the financeiro route used in other specs.
     await page.goto(`${E2E_BASE_URL}/app/financeiro/mensalidades`, { timeout: 60_000 });
