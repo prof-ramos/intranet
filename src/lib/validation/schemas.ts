@@ -11,7 +11,7 @@ import {
   missionType,
   careerOrigin,
 } from '@/lib/db/schema/associates';
-import { paymentMethod } from '@/lib/db/schema/enums';
+import { paymentMethod, paymentOrigin } from '@/lib/db/schema/enums';
 import { domainEventType } from '@/lib/db/schema/integrations';
 
 const emailSchema = z
@@ -66,6 +66,7 @@ export const monthlyPaymentsSearchParamsSchema = z.object({
   q: z.string().optional(),
   status: z.enum(paymentStatus.enumValues).optional(),
   method: z.enum(['folha', 'boleto', 'pix', 'transferencia', 'outros']).optional(),
+  origin: z.enum(paymentOrigin.enumValues).optional(),
   location: z.enum(['brasil', 'exterior']).optional(),
   page: z.coerce.number().int().min(1).default(1),
 });

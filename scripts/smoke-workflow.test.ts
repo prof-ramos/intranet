@@ -35,6 +35,18 @@ describe('production smoke workflow contract', () => {
     expect(smokeJob).toContain('timeout-minutes: 15');
   });
 
+  it('caches Playwright browsers in both E2E and production smoke jobs', () => {
+    const cacheStep = 'uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0';
+    const cachePath = 'path: ~/.cache/ms-playwright';
+    const cacheKey = "key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}";
+
+    for (const job of [e2eJob, smokeJob]) {
+      expect(job).toContain(cacheStep);
+      expect(job).toContain(cachePath);
+      expect(job).toContain(cacheKey);
+    }
+  });
+
   it('keeps password reset read-only and limits writes to the four declared mutation tests', () => {
     expect(smokeSpec).toContain("test('10. Reset de Senha — página carrega sem disparar action'");
     expect(smokeSpec).not.toContain('SMOKE_RESET_EMAIL');

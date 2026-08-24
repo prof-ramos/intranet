@@ -58,6 +58,33 @@ describe('financeiro mensalidades actions', () => {
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/financeiro/mensalidades');
   });
 
+  it('normalizes the editor paymentOrigin alias before calling the service', async () => {
+    await updatePaymentAction({
+      associateId: 10,
+      year: 2026,
+      month: 5,
+      status: 'pago',
+      paymentMethod: 'pix',
+      amount: 125.5,
+      paidAt: '2020-01-01',
+      paymentOrigin: 'sigepe',
+      notes: 'Conferido',
+      expectedUpdatedAt: null,
+    });
+
+    expect(updateMonthlyPaymentMock).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        amount: 125.5,
+        paidAt: '2020-01-01',
+        origin: 'sigepe',
+        notes: 'Conferido',
+      }),
+      null,
+    );
+    expect(updateMonthlyPaymentMock.mock.calls[0]?.[1]).not.toHaveProperty('paymentOrigin');
+  });
+
   it('returns a typed concurrency conflict result', async () => {
     updateMonthlyPaymentMock.mockRejectedValue(new Error('CONCURRENCY_CONFLICT'));
 

@@ -41,15 +41,20 @@ export async function logAuditAction(options: LogAuditOptions): Promise<void> {
       { adminId: options.adminId, action: options.action },
       error as Error,
     );
-    // Não propaga o erro para não bloquear a operação principal
+    // An explicit executor means the caller selected strict transactional
+    // durability: an audit failure must abort the surrounding mutation.
+    if (options.executor) {
+      throw error;
+    }
+    // Standalone calls retain the historical best-effort contract.
   }
 }
 
 /**
  * Runs `logAuditAction` after a mutation's transaction has already committed.
- * `logAuditAction` swallows its own insert failures, but it still throws
- * synchronously for an invalid `adminId` — this wrapper catches that case too,
- * so a broken audit call never takes down an already-committed mutation.
+ * This wrapper preserves best-effort behavior for callers that deliberately
+ * audit after commit. Transactional callers should use `logAuditAction` with
+ * an explicit executor instead.
  */
 export async function logAuditBestEffort(
   auditArgs: LogAuditOptions,

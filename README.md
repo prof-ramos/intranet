@@ -1,3 +1,8 @@
+> [!NOTE]
+> **Status do portfólio:** este é o repositório canônico ativo. Predecessor(es) arquivado(s): [asof_gemini](https://github.com/prof-ramos/asof_gemini), [new-intranet](https://github.com/prof-ramos/new-intranet), [gemini_intranet](https://github.com/prof-ramos/gemini_intranet), [v0-sistema-interno-web](https://github.com/prof-ramos/v0-sistema-interno-web) e [php-asof](https://github.com/prof-ramos/php-asof). Os históricos permanecem disponíveis somente para leitura.
+
+<!-- PORTFOLIO_STATUS: canonical; predecessors=asof_gemini+new-intranet+gemini_intranet+v0-sistema-interno-web+php-asof -->
+
 # ASOF Intranet
 
 Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia o cadastro de Oficiais de Chancelaria, associados ASOF, atividades administrativas e comunicações internas da diretoria.
@@ -18,17 +23,17 @@ Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de 
 
 ## Módulos principais
 
-| Módulo                    | Rota principal                 | Responsabilidade                                                                          |
-| ------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------- |
-| Dashboard                 | `/app`                         | Visão operacional de associados ASOF, atividades, jurídico e financeiro.                  |
-| Cadastro de Oficiais      | `/app/associados`              | Cadastro, perfil, lotação/posto, situação funcional, vínculo ASOF e contribuição.         |
-| Atividades                | `/app/atividades`              | Kanban administrativo com responsáveis, prioridades, prazos e vínculos com oficiais.      |
-| Jurídico                  | `/app/juridico`                | Consultas jurídicas, notas, SLA e histórico de atendimento.                               |
-| Triagem de E-mails        | `/app/email-triage`            | Controle operacional de prazos, demandas e evidências extraídas de e-mails.               |
-| Secretaria / Ofícios      | `/app/secretaria/oficios`      | Geração, edição, cancelamento e download de ofícios.                                      |
-| Financeiro / Mensalidades | `/app/financeiro/mensalidades` | Controle mensal de pagamentos e status de mensalidade.                                    |
-| Relatórios                | `/app/associados/relatorio`    | Exportação auditada de dados de oficiais para `admin` e `diretoria`.                      |
-| Configurações             | `/app/config`                  | Usuários, lotações, auditoria, API keys e webhooks outbound.                              |
+| Módulo                    | Rota principal                 | Responsabilidade                                                                     |
+| ------------------------- | ------------------------------ | ------------------------------------------------------------------------------------ |
+| Dashboard                 | `/app`                         | Visão operacional de associados ASOF, atividades, jurídico e financeiro.             |
+| Cadastro de Oficiais      | `/app/associados`              | Cadastro, perfil, lotação/posto, situação funcional, vínculo ASOF e contribuição.    |
+| Atividades                | `/app/atividades`              | Kanban administrativo com responsáveis, prioridades, prazos e vínculos com oficiais. |
+| Jurídico                  | `/app/juridico`                | Consultas jurídicas, notas, SLA e histórico de atendimento.                          |
+| Triagem de E-mails        | `/app/email-triage`            | Controle operacional de prazos, demandas e evidências extraídas de e-mails.          |
+| Secretaria / Ofícios      | `/app/secretaria/oficios`      | Geração, edição, cancelamento e download de ofícios.                                 |
+| Financeiro / Mensalidades | `/app/financeiro/mensalidades` | Controle mensal de pagamentos e status de mensalidade.                               |
+| Relatórios                | `/app/associados/relatorio`    | Exportação auditada de dados de oficiais para `admin` e `diretoria`.                 |
+| Configurações             | `/app/config`                  | Usuários, lotações, auditoria, API keys e webhooks outbound.                         |
 
 > Dados como CPF, SIAPE, email, endereço e dados funcionais são sensíveis pela LGPD. Use os helpers de sanitização/logging do projeto e não exponha esses dados em logs, erros ou payloads públicos.
 
@@ -363,15 +368,15 @@ cd intranet
 
 Os passos a seguir resumem conteúdo detalhado em outras seções — consulte-as para contexto completo:
 
-| Passo | Onde encontrar |
-|-------|---------------|
-| Requisitos (Node.js 20+, npm, PostgreSQL) | [Pré-requisitos](#pré-requisitos) |
-| Instalar dependências (`npm install`) | [Início rápido](#início-rápido) passo 1 |
-| Configurar variáveis de ambiente | [Variáveis de ambiente](#variáveis-de-ambiente) |
-| Preparar o banco (`createdb`, `db:migrate`, `db:seed:dev`) | [Banco de dados](#banco-de-dados) |
-| Executar em desenvolvimento (`npm run dev`) | [Início rápido](#início-rápido) passo 6 |
-| Rodar testes (`validate:quick`, `test:db`, `test:e2e`) | [Comandos > Qualidade e PR](#qualidade-e-pr) |
-| Build de produção (`npm run build`) | [Comandos > Desenvolvimento](#desenvolvimento) |
+| Passo                                                      | Onde encontrar                                  |
+| ---------------------------------------------------------- | ----------------------------------------------- |
+| Requisitos (Node.js 20+, npm, PostgreSQL)                  | [Pré-requisitos](#pré-requisitos)               |
+| Instalar dependências (`npm install`)                      | [Início rápido](#início-rápido) passo 1         |
+| Configurar variáveis de ambiente                           | [Variáveis de ambiente](#variáveis-de-ambiente) |
+| Preparar o banco (`createdb`, `db:migrate`, `db:seed:dev`) | [Banco de dados](#banco-de-dados)               |
+| Executar em desenvolvimento (`npm run dev`)                | [Início rápido](#início-rápido) passo 6         |
+| Rodar testes (`validate:quick`, `test:db`, `test:e2e`)     | [Comandos > Qualidade e PR](#qualidade-e-pr)    |
+| Build de produção (`npm run build`)                        | [Comandos > Desenvolvimento](#desenvolvimento)  |
 
 ### Restaurar variáveis de ambiente do 1Password (vault `Dev`)
 

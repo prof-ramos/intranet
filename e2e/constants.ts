@@ -19,6 +19,10 @@ export const E2E_USERS = {
   secretaria: { email: E2E_SECRETARIA_EMAIL, password: E2E_ADMIN_PASSWORD },
 } as const;
 
+export const E2E_AUTH_STATE_DIR = '.next-e2e/auth';
+export const E2E_AUTH_ROLES = ['admin', 'diretoria', 'secretaria'] as const;
+export type E2EAuthRole = (typeof E2E_AUTH_ROLES)[number];
+
 // --- Infrastructure ---
 export const E2E_BASE_URL = 'http://127.0.0.1:3001';
 export const E2E_SESSION_SECRET = 'e2e-session-secret-at-least-32-characters-long';

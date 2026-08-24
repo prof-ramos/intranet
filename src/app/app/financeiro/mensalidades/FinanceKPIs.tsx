@@ -11,7 +11,7 @@ import {
   textPrimary,
   textSecondary,
 } from '@/lib/ui/tokens';
-import { CheckCircle2, CreditCard, MapPin, Radio } from 'lucide-react';
+import { Banknote, CheckCircle2, CreditCard, MapPin, Radio } from 'lucide-react';
 import { paymentStatusOrder, paymentStatusUi } from './payment-status-ui';
 
 interface FinanceKPIsProps {
@@ -23,8 +23,14 @@ const percentOf = (value: number, total: number) =>
 
 const statusItems = paymentStatusOrder.map((status) => paymentStatusUi[status]);
 
+function formatBrl(value: number): string {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
 export function FinanceKPIs({ aggregates }: FinanceKPIsProps) {
   const { total, pagos, pendentes, atrasados } = aggregates;
+  const receivedAmount = Number(aggregates.valorRecebido);
+  const paymentRecords = aggregates.paymentRecords;
   const paidPercent = percentOf(pagos, total);
   const actionCount = pendentes + atrasados;
   const progressMax = Math.max(total, 1);
@@ -59,16 +65,29 @@ export function FinanceKPIs({ aggregates }: FinanceKPIsProps) {
               </span>
             </div>
           </div>
-          <div className="sm:text-right">
-            <p
-              className="text-[11px] font-bold tracking-[0.12em] uppercase"
-              style={{ color: textMuted }}
-            >
-              Taxa de pagamento
-            </p>
-            <p className="mt-1 text-2xl font-bold" style={{ color: successText }}>
-              {paidPercent}%
-            </p>
+          <div className="grid grid-cols-2 gap-5 sm:text-right">
+            <div>
+              <p
+                className="text-[11px] font-bold tracking-[0.12em] uppercase"
+                style={{ color: textMuted }}
+              >
+                Valor recebido
+              </p>
+              <p className="mt-1 text-2xl font-bold" style={{ color: textPrimary }}>
+                {formatBrl(receivedAmount)}
+              </p>
+            </div>
+            <div>
+              <p
+                className="text-[11px] font-bold tracking-[0.12em] uppercase"
+                style={{ color: textMuted }}
+              >
+                Taxa de pagamento
+              </p>
+              <p className="mt-1 text-2xl font-bold" style={{ color: successText }}>
+                {paidPercent}%
+              </p>
+            </div>
           </div>
         </div>
 
@@ -94,7 +113,7 @@ export function FinanceKPIs({ aggregates }: FinanceKPIsProps) {
             className="mt-2 flex justify-between gap-4 text-[11px] font-medium"
             style={{ color: textMuted }}
           >
-            <span>{pagos} pagos</span>
+            <span>{paymentRecords || pagos} pagamentos registrados</span>
             <span>{actionCount} aguardando ação</span>
           </div>
         </div>
@@ -151,6 +170,12 @@ export function FinancePaymentProfile({ aggregates }: FinanceKPIsProps) {
     { label: 'PIX', value: pix, color: '#7c4d9e', icon: Radio },
     { label: 'Transferência', value: transferencia, color: '#39756f', icon: CreditCard },
     { label: 'Outros', value: outros, color: '#53657b', icon: CreditCard },
+  ];
+  const origins = [
+    { label: 'SIGEPE', value: aggregates.sigepe, color: '#2d75b6' },
+    { label: 'Itamaraty', value: aggregates.itamaraty, color: '#39756f' },
+    { label: 'Comprovante', value: aggregates.comprovante, color: '#6d4bb8' },
+    { label: 'Outros', value: aggregates.originOutros, color: '#53657b' },
   ];
 
   return (
@@ -213,7 +238,51 @@ export function FinancePaymentProfile({ aggregates }: FinanceKPIsProps) {
         ))}
       </div>
 
-      <div className="mt-5 flex items-center gap-2 border-t pt-4 text-xs" style={{ borderColor: hairline }}>
+      <div className="mt-6 border-t pt-5" style={{ borderColor: hairline }}>
+        <div className="flex items-center gap-2">
+          <Banknote size={14} style={{ color: navy }} aria-hidden="true" />
+          <p
+            className="text-[11px] font-bold tracking-[0.14em] uppercase"
+            style={{ color: textMuted }}
+          >
+            Origem do pagamento
+          </p>
+        </div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {origins.map((origin) => (
+            <div key={origin.label} className="border-t pt-3" style={{ borderColor: hairline }}>
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="font-semibold" style={{ color: textSecondary }}>
+                  {origin.label}
+                </span>
+                <span className="font-bold" style={{ color: textPrimary }}>
+                  {origin.value}{' '}
+                  <span className="font-medium" style={{ color: textMuted }}>
+                    ({percentOf(origin.value, total)}%)
+                  </span>
+                </span>
+              </div>
+              <div
+                className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#eef1f6]"
+                aria-hidden="true"
+              >
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${percentOf(origin.value, total)}%`,
+                    backgroundColor: origin.color,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div
+        className="mt-5 flex items-center gap-2 border-t pt-4 text-xs"
+        style={{ borderColor: hairline }}
+      >
         <MapPin size={13} style={{ color: textMuted }} aria-hidden="true" />
         <span style={{ color: textSecondary }}>Associados no exterior</span>
         <strong style={{ color: textPrimary }}>{exterior}</strong>
