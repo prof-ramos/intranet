@@ -1,6 +1,5 @@
 'use client';
 
-import { isDomesticCountry } from '@/lib/associates/location-country';
 import {
   useState,
   useMemo,
@@ -55,80 +54,20 @@ import {
   scheduleMonthlyPaymentsSearch,
 } from './navigation-coordinator';
 import {
-  editablePaymentStatuses,
-  paymentStatusOrder,
-  paymentStatusUi,
-  type PaymentStatus,
-} from './payment-status-ui';
+  type Payment,
+  type PaymentMethod,
+  type PaymentViewModel,
+  getPaymentViewModel,
+} from './payment-view-model';
+import { editablePaymentStatuses, paymentStatusOrder, paymentStatusUi } from './payment-status-ui';
 
 const logger = createLogger('monthly-payments-table');
-
-interface Payment {
-  associateId: number;
-  fullName: string;
-  defaultPaymentMethod: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros';
-  paymentId: number | null;
-  paymentStatus: 'pago' | 'pendente' | 'atrasado' | 'isento' | 'cancelado' | null;
-  monthPaymentMethod: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros' | null;
-  locationCountry: string | null;
-  locationCity: string | null;
-  functionalStatus: 'ativo' | 'aposentado' | 'cedido' | 'em_licenca' | null;
-  updatedAt: Date | null;
-}
 
 interface MonthlyPaymentsTableProps {
   payments: Payment[];
   year: number;
   month: number;
   currentFilters: MonthlyPaymentsSearchParams;
-}
-
-const methodConfig: Record<string, { label: string; short: string; group: string }> = {
-  folha: { label: 'Desconto em Folha', short: 'Folha', group: 'SIGEPE' },
-  boleto: { label: 'Boleto', short: 'Boleto', group: 'Direto' },
-  pix: { label: 'PIX', short: 'PIX', group: 'Direto' },
-  transferencia: { label: 'Transferência', short: 'Transf.', group: 'Direto' },
-  outros: { label: 'Outros', short: 'Outros', group: 'Direto' },
-};
-
-const locationGroup = (country: string | null): 'brasil' | 'exterior' => {
-  return isDomesticCountry(country) ? 'brasil' : 'exterior';
-};
-
-type PaymentMethod = Payment['defaultPaymentMethod'];
-interface PaymentViewModel extends Payment {
-  currentStatus: PaymentStatus;
-  currentMethod: PaymentMethod;
-  statusCfg: (typeof paymentStatusUi)[PaymentStatus];
-  methodCfg: (typeof methodConfig)[string];
-  locGroup: 'brasil' | 'exterior';
-}
-
-function getEffectivePaymentMethod(
-  monthPaymentMethod: Payment['monthPaymentMethod'],
-  defaultPaymentMethod: Payment['defaultPaymentMethod'],
-): PaymentMethod {
-  return monthPaymentMethod ?? defaultPaymentMethod;
-}
-
-function getEffectivePaymentStatus(paymentStatus: Payment['paymentStatus']): PaymentStatus {
-  return paymentStatus ?? 'pendente';
-}
-
-function getPaymentViewModel(payment: Payment): PaymentViewModel {
-  const currentStatus = getEffectivePaymentStatus(payment.paymentStatus);
-  const currentMethod = getEffectivePaymentMethod(
-    payment.monthPaymentMethod,
-    payment.defaultPaymentMethod,
-  );
-  return {
-    ...payment,
-    currentStatus,
-    currentMethod,
-    statusCfg: paymentStatusUi[currentStatus],
-    methodCfg: methodConfig[currentMethod] ?? methodConfig.outros,
-    locGroup: locationGroup(payment.locationCountry),
-  };
 }
 
 export default function MonthlyPaymentsTable({
@@ -603,7 +542,11 @@ export default function MonthlyPaymentsTable({
         <div
           role="alert"
           className="rounded-[8px] px-4 py-3 text-sm font-medium"
-          style={{ backgroundColor: errorBg, color: alertDangerText, border: `1px solid ${dangerBorder}` }}
+          style={{
+            backgroundColor: errorBg,
+            color: alertDangerText,
+            border: `1px solid ${dangerBorder}`,
+          }}
         >
           {errorMessage}
         </div>

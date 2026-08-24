@@ -12,8 +12,8 @@ import {
 import { isLegalConsultationStatus, type LegalConsultationStatus } from '@/lib/juridico/status';
 import { NotFoundError, ValidationError } from '@/lib/errors';
 import { getBusinessDateParts } from '@/lib/utils/date';
+import { retryOnUniqueViolation } from './retry-utils';
 
-const MAX_RETRIES = 3;
 const WEBHOOKABLE_STATUS_TRANSITIONS = new Set<LegalConsultationStatus>([
   'aguardando_escritorio',
   'respondida',
@@ -40,23 +40,9 @@ export async function generateInternalNumber(
     return nextNumber(executor);
   }
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      return await db.transaction(async (tx) => nextNumber(tx as unknown as DbExecutor));
-    } catch (error) {
-      const isUniqueViolation =
-        error instanceof Error && /unique constraint|duplicate key/i.test(error.message);
-
-      if (!isUniqueViolation || attempt === MAX_RETRIES) {
-        throw error;
-      }
-
-      await new Promise((r) => setTimeout(r, 50 * attempt));
-    }
-  }
-
-  throw new Error('Falha ao gerar número interno após múltiplas tentativas.');
-  // ponytail: generic internal failure (unique-constraint retries exhausted) — not classifiable as a domain error
+  return retryOnUniqueViolation(() =>
+    db.transaction(async (tx) => nextNumber(tx as unknown as DbExecutor)),
+  );
 }
 
 interface CreateConsultationInput {
@@ -86,70 +72,56 @@ export async function createConsultationService(input: CreateConsultationInput) 
     throw new ValidationError('Usuário criador inválido.');
   }
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      return await db.transaction(async (tx) => {
-        const internalNumber = await generateInternalNumber(tx);
-        const slaDueDate =
-          input.slaDueDate ??
-          (() => {
-            const d = new Date();
-            d.setDate(d.getDate() + input.slaDays);
-            return d;
-          })();
+  return retryOnUniqueViolation(() =>
+    db.transaction(async (tx) => {
+      const internalNumber = await generateInternalNumber(tx);
+      const slaDueDate =
+        input.slaDueDate ??
+        (() => {
+          const d = new Date();
+          d.setDate(d.getDate() + input.slaDays);
+          return d;
+        })();
 
-        const inserted = await insertConsultation(
-          {
+      const inserted = await insertConsultation(
+        {
+          internalNumber,
+          title: input.title.trim(),
+          questionSummary: input.questionSummary.trim(),
+          questionFullText: input.questionFullText?.trim() || null,
+          associateId: input.associateId,
+          slaDueDate,
+          createdBy: input.createdBy,
+          lastInteractionAt: new Date(),
+          lawyerId: input.lawyerId ?? null,
+          threadId: input.threadId ?? null,
+        },
+        tx as unknown as DbExecutor,
+      );
+
+      await emitDomainEvent(
+        {
+          type: 'legal_consultation.created',
+          entityType: 'legal_consultation',
+          entityId: inserted.id,
+          actorAdminId: input.createdBy,
+          payload: {
             internalNumber,
+            status: 'aberta',
+            associateId: input.associateId ?? null,
+            slaDueDate: slaDueDate.toISOString(),
             title: input.title.trim(),
-            questionSummary: input.questionSummary.trim(),
-            questionFullText: input.questionFullText?.trim() || null,
-            associateId: input.associateId,
-            slaDueDate,
-            createdBy: input.createdBy,
-            lastInteractionAt: new Date(),
-            lawyerId: input.lawyerId ?? null,
-            threadId: input.threadId ?? null,
-          },
-          tx as unknown as DbExecutor,
-        );
-
-        await emitDomainEvent(
-          {
-            type: 'legal_consultation.created',
-            entityType: 'legal_consultation',
-            entityId: inserted.id,
-            actorAdminId: input.createdBy,
-            payload: {
-              internalNumber,
-              status: 'aberta',
-              associateId: input.associateId ?? null,
-              slaDueDate: slaDueDate.toISOString(),
-              title: input.title.trim(),
-              links: {
-                app: `/app/juridico/consultas/${inserted.id}`,
-              },
+            links: {
+              app: `/app/juridico/consultas/${inserted.id}`,
             },
           },
-          tx as unknown as DbExecutor,
-        );
+        },
+        tx as unknown as DbExecutor,
+      );
 
-        return inserted;
-      });
-    } catch (error) {
-      const isUniqueViolation =
-        error instanceof Error && /unique constraint|duplicate key/i.test(error.message);
-
-      if (!isUniqueViolation || attempt === MAX_RETRIES) {
-        throw error;
-      }
-
-      await new Promise((r) => setTimeout(r, 50 * attempt));
-    }
-  }
-
-  throw new Error('Falha ao criar consulta após múltiplas tentativas.');
-  // ponytail: generic internal failure (unique-constraint retries exhausted) — not classifiable as a domain error
+      return inserted;
+    }),
+  );
 }
 
 export async function updateConsultationStatusService(id: number, status: string) {
