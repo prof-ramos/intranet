@@ -4,7 +4,8 @@ import { db } from '@/lib/db';
 import { admins, associates, auditLogs, domainEvents, monthlyPayments } from '@/lib/db/schema';
 import { ConcurrencyConflictError } from '@/lib/errors';
 import { emitDomainEvent } from '@/lib/integrations/outbox';
-import { updateMonthlyPayment } from './service';
+import { cancelMonthlyPayment, updateMonthlyPayment } from './service';
+import { getAssociatesWithPayments } from './repository';
 
 const runId = `${Date.now()}-${process.pid}`;
 const paymentIds: number[] = [];
@@ -76,6 +77,7 @@ describe('finance service integration', () => {
         month: 1,
         status: 'pendente',
         paymentMethod: 'pix',
+        amount: '1.00',
         updatedBy: requireAdminId(),
       })
       .returning();
@@ -148,6 +150,7 @@ describe('finance service integration', () => {
         month: 4,
         status: 'pendente',
         paymentMethod: 'pix',
+        amount: '1.00',
         updatedBy: requireAdminId(),
       })
       .returning();
@@ -172,6 +175,168 @@ describe('finance service integration', () => {
       .from(monthlyPayments)
       .where(eq(monthlyPayments.id, fixture.id));
     expect(persisted.status).toBe('pago');
+  });
+
+  it('records structured BRL fields and audits their old/new values atomically', async () => {
+    const [fixture] = await db
+      .insert(monthlyPayments)
+      .values({
+        associateId: requireAssociateId(),
+        year: 2098,
+        month: 5,
+        status: 'pendente',
+        paymentMethod: 'pix',
+        origin: 'outros',
+        notes: 'Aguardando conferência',
+        updatedBy: requireAdminId(),
+      })
+      .returning();
+    paymentIds.push(fixture.id);
+
+    const updated = await updateMonthlyPayment(
+      requireAdminId(),
+      {
+        associateId: requireAssociateId(),
+        year: fixture.year,
+        month: fixture.month,
+        status: 'pago',
+        paymentMethod: 'pix',
+        amount: '125,50',
+        origin: 'sigepe',
+        notes: 'Conferido no relatório SIGEPE',
+        paidAt: '2020-01-01',
+      },
+      fixture.updatedAt.toISOString(),
+    );
+
+    const [persisted] = await db
+      .select()
+      .from(monthlyPayments)
+      .where(eq(monthlyPayments.id, fixture.id));
+    const [audit] = await db
+      .select()
+      .from(auditLogs)
+      .where(and(eq(auditLogs.entityType, 'monthly_payment'), eq(auditLogs.entityId, fixture.id)));
+
+    expect(updated.amount).toBe('125.50');
+    expect(updated.origin).toBe('sigepe');
+    expect(updated.notes).toBe('Conferido no relatório SIGEPE');
+    expect(persisted.amount).toBe('125.50');
+    expect(persisted.paidAt?.toISOString()).toBe('2020-01-01T03:00:00.000Z');
+    expect(audit.changes).toMatchObject({
+      old: { amount: null, origin: 'outros', notes: 'Aguardando conferência' },
+      new: { amount: '125.50', origin: 'sigepe', notes: 'Conferido no relatório SIGEPE' },
+    });
+  });
+
+  it('creates a manual payment with old null and redacts textual PII from its audit', async () => {
+    const notes =
+      'CPF 123.456.789-01 SIAPE 1234567 email pessoa@example.test token segredo-sintetico';
+    const created = await updateMonthlyPayment(requireAdminId(), {
+      associateId: requireAssociateId(),
+      year: 2098,
+      month: 8,
+      status: 'pago',
+      paymentMethod: 'pix',
+      amount: '90,25',
+      origin: 'comprovante',
+      notes,
+      paidAt: '2020-01-04',
+    });
+    paymentIds.push(created.id);
+
+    const [audit] = await db
+      .select()
+      .from(auditLogs)
+      .where(and(eq(auditLogs.entityType, 'monthly_payment'), eq(auditLogs.entityId, created.id)));
+
+    expect(created.notes).toBe(notes);
+    expect(audit).toMatchObject({
+      performedBy: requireAdminId(),
+      action: 'create',
+      entityType: 'monthly_payment',
+      entityId: created.id,
+      changes: {
+        old: null,
+        new: {
+          amount: '90.25',
+          origin: 'comprovante',
+          notes: 'CPF [cpf] [siape] email [email] [token]',
+        },
+      },
+      metadata: { associateId: requireAssociateId(), year: 2098, month: 8 },
+    });
+    expect(JSON.stringify(audit)).not.toContain('123.456.789-01');
+    expect(JSON.stringify(audit)).not.toContain('1234567');
+    expect(JSON.stringify(audit)).not.toContain('pessoa@example.test');
+    expect(JSON.stringify(audit)).not.toContain('segredo-sintetico');
+  });
+
+  it('cancels without deleting the structured record or counting it as received', async () => {
+    const [fixture] = await db
+      .insert(monthlyPayments)
+      .values({
+        associateId: requireAssociateId(),
+        year: 2098,
+        month: 6,
+        status: 'pago',
+        paymentMethod: 'boleto',
+        amount: '80.00',
+        origin: 'comprovante',
+        paidAt: new Date('2020-01-02T03:00:00.000Z'),
+        updatedBy: requireAdminId(),
+      })
+      .returning();
+    paymentIds.push(fixture.id);
+
+    await cancelMonthlyPayment(requireAdminId(), fixture.id, 'Lançamento duplicado');
+
+    const [persisted] = await db
+      .select()
+      .from(monthlyPayments)
+      .where(eq(monthlyPayments.id, fixture.id));
+    expect(persisted.status).toBe('cancelado');
+    expect(persisted.amount).toBe('80.00');
+    expect(persisted.cancelledAt).not.toBeNull();
+    expect(persisted.cancelledBy).toBe(requireAdminId());
+
+    const summary = await getAssociatesWithPayments(fixture.year, fixture.month);
+    expect(summary.aggregates.cancelados).toBe(1);
+    expect(summary.aggregates.pagos).toBe(0);
+    expect(summary.aggregates.valorRecebido).toBe('0.00');
+  });
+
+  it('rejects a stale cancellation without changing the payment', async () => {
+    const [fixture] = await db
+      .insert(monthlyPayments)
+      .values({
+        associateId: requireAssociateId(),
+        year: 2098,
+        month: 7,
+        status: 'pago',
+        paymentMethod: 'pix',
+        amount: '50.00',
+        paidAt: new Date('2020-01-03T03:00:00.000Z'),
+        updatedBy: requireAdminId(),
+      })
+      .returning();
+    paymentIds.push(fixture.id);
+
+    await expect(
+      cancelMonthlyPayment(
+        requireAdminId(),
+        fixture.id,
+        'Tentativa com versão antiga',
+        '2000-01-01T00:00:00.000Z',
+      ),
+    ).rejects.toBeInstanceOf(ConcurrencyConflictError);
+
+    const [persisted] = await db
+      .select({ status: monthlyPayments.status, cancelledAt: monthlyPayments.cancelledAt })
+      .from(monthlyPayments)
+      .where(eq(monthlyPayments.id, fixture.id));
+    expect(persisted.status).toBe('pago');
+    expect(persisted.cancelledAt).toBeNull();
   });
 
   it('rolls back both a payment mutation and its outbox event', async () => {

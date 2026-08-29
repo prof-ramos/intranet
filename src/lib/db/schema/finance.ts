@@ -3,6 +3,7 @@ import {
   check,
   index,
   integer,
+  numeric,
   pgEnum,
   pgTable,
   text,
@@ -11,7 +12,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { associates } from './associates';
-import { paymentMethod } from './enums';
+import { paymentMethod, paymentOrigin } from './enums';
 import { admins } from './admins';
 
 export const paymentStatus = pgEnum('payment_status', [
@@ -33,6 +34,10 @@ export const monthlyPayments = pgTable(
     month: integer('month').notNull(),
     status: paymentStatus('status').notNull().default('pendente'),
     paymentMethod: paymentMethod('payment_method').notNull().default('folha'),
+    /** BRL amount; kept nullable for legacy/non-receipt rows. */
+    amount: numeric('amount', { precision: 12, scale: 2 }),
+    origin: paymentOrigin('origin').notNull().default('outros'),
+    notes: text('notes'),
     paidAt: timestamp('paid_at', { withTimezone: true }),
     cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
     cancellationReason: text('cancellation_reason'),
@@ -56,12 +61,21 @@ export const monthlyPayments = pgTable(
       table.month,
       table.paymentMethod,
     ),
+    index('idx_monthly_payments_year_month_origin').on(table.year, table.month, table.origin),
     index('idx_monthly_payments_associate_id').on(table.associateId),
     index('idx_monthly_payments_cancelled_at')
       .on(table.cancelledAt)
       .where(sql`${table.cancelledAt} IS NOT NULL`),
     check('chk_monthly_payments_month', sql`${table.month} between 1 and 12`),
     check('chk_monthly_payments_year', sql`${table.year} between 2000 and 2100`),
+    check(
+      'chk_monthly_payments_amount_positive',
+      sql`${table.amount} IS NULL OR ${table.amount} > 0`,
+    ),
+    check(
+      'chk_monthly_payments_notes_length',
+      sql`${table.notes} IS NULL OR char_length(${table.notes}) <= 2000`,
+    ),
   ],
 );
 

@@ -16,11 +16,18 @@ import {
   MapPin,
   UserCheck,
   CreditCard,
+  Pencil,
   RotateCcw,
   SlidersHorizontal,
 } from 'lucide-react';
 import { cancelPaymentAction, updatePaymentAction } from './actions';
 import CancelPaymentDialog from './CancelPaymentDialog';
+import PaymentEditorDialog, {
+  type EditablePaymentMethod,
+  type EditablePaymentStatus,
+  type PaymentEditorInitialValues,
+  type PaymentEditorValues,
+} from './PaymentEditorDialog';
 import { createLogger } from '@/lib/logger';
 import { toSafeErrorLog } from '@/lib/error-log';
 import {
@@ -47,6 +54,7 @@ import {
 } from '@/lib/ui/tokens';
 import {
   buildMonthlyPaymentsSearchParams,
+  type PaymentOrigin,
   type MonthlyPaymentsSearchParams,
 } from '@/lib/finance/search-params';
 import {
@@ -58,6 +66,12 @@ import {
   type PaymentMethod,
   type PaymentViewModel,
   getPaymentViewModel,
+  getStructuredAmount,
+  getPaymentOrigin,
+  getEditorInitialValues,
+  originConfig,
+  formatCurrency,
+  formatCivilDate,
 } from './payment-view-model';
 import { editablePaymentStatuses, paymentStatusOrder, paymentStatusUi } from './payment-status-ui';
 
@@ -69,6 +83,19 @@ interface MonthlyPaymentsTableProps {
   month: number;
   currentFilters: MonthlyPaymentsSearchParams;
 }
+
+type StructuredPaymentActionInput = {
+  associateId: number;
+  year: number;
+  month: number;
+  status: EditablePaymentStatus;
+  paymentMethod: EditablePaymentMethod;
+  amount: number | null;
+  paidAt: string | null;
+  origin: PaymentOrigin;
+  notes: string | null;
+  expectedUpdatedAt: string | null;
+};
 
 export default function MonthlyPaymentsTable({
   payments,
@@ -85,6 +112,12 @@ export default function MonthlyPaymentsTable({
   const [debouncedSearch, setDebouncedSearch] = useState(currentFilters.q);
 
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [editorTarget, setEditorTarget] = useState<Payment | null>(null);
+  const [editorStatusOverride, setEditorStatusOverride] = useState<EditablePaymentStatus | null>(
+    null,
+  );
+  const [editorSavingId, setEditorSavingId] = useState<number | null>(null);
+  const [editorErrorMessage, setEditorErrorMessage] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cancelErrorMessage, setCancelErrorMessage] = useState<string | null>(null);
@@ -93,6 +126,7 @@ export default function MonthlyPaymentsTable({
     associateId: number;
     paymentId: number;
     associateName: string;
+    expectedUpdatedAt: string | null;
   } | null>(null);
 
   useEffect(() => cancelPendingMonthlyPaymentsSearch, []);
@@ -149,17 +183,37 @@ export default function MonthlyPaymentsTable({
 
   const statusFilter = currentFilters.status ?? 'all';
   const methodFilter = currentFilters.method ?? 'all';
+  const originFilter = currentFilters.origin ?? 'all';
   const locationFilter = currentFilters.location ?? 'all';
   const hasActiveFilters = Boolean(
-    currentFilters.q || currentFilters.status || currentFilters.method || currentFilters.location,
+    currentFilters.q ||
+    currentFilters.status ||
+    currentFilters.method ||
+    currentFilters.origin ||
+    currentFilters.location,
+  );
+
+  const buildStructuredInput = useCallback(
+    (payment: Payment, values: PaymentEditorValues): StructuredPaymentActionInput => ({
+      associateId: payment.associateId,
+      year,
+      month,
+      status: values.status,
+      paymentMethod: values.paymentMethod,
+      amount: values.amount,
+      paidAt: values.paidAt,
+      origin: values.paymentOrigin,
+      notes: values.notes,
+      expectedUpdatedAt: payment.updatedAt?.toISOString() ?? null,
+    }),
+    [year, month],
   );
 
   const handleStatusChange = async (
-    associateId: number,
+    payment: PaymentViewModel,
     newStatus: 'pago' | 'pendente' | 'atrasado' | 'isento',
-    currentMethod: PaymentMethod,
-    expectedUpdatedAt: Date | null,
   ) => {
+    const associateId = payment.associateId;
     setUpdatingId(associateId);
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -169,8 +223,12 @@ export default function MonthlyPaymentsTable({
         year,
         month,
         status: newStatus,
-        paymentMethod: currentMethod,
-        expectedUpdatedAt: expectedUpdatedAt ? expectedUpdatedAt.toISOString() : null,
+        paymentMethod: payment.currentMethod,
+        amount: getStructuredAmount(payment),
+        paidAt: null,
+        origin: getPaymentOrigin(payment),
+        notes: payment.notes ?? null,
+        expectedUpdatedAt: payment.updatedAt?.toISOString() ?? null,
       });
 
       if (result && !result.success) {
@@ -199,10 +257,80 @@ export default function MonthlyPaymentsTable({
     }
   };
 
+  const handleEditorConfirm = async (values: PaymentEditorValues) => {
+    if (!editorTarget || editorSavingId !== null) return;
+    setEditorSavingId(editorTarget.associateId);
+    setEditorErrorMessage(null);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    try {
+      const result = await updatePaymentAction(buildStructuredInput(editorTarget, values));
+      if (result && result.success === false) {
+        if (result.error === 'CONCURRENCY_CONFLICT') {
+          setEditorErrorMessage(
+            'Este lançamento foi alterado por outro usuário. Feche o editor e recarregue a página antes de tentar novamente.',
+          );
+        } else {
+          setEditorErrorMessage(
+            'Não foi possível salvar o pagamento. Confira os dados e tente novamente.',
+          );
+        }
+        return;
+      }
+
+      setEditorTarget(null);
+      setEditorStatusOverride(null);
+      setSuccessMessage('Pagamento salvo com sucesso.');
+      router.refresh();
+      window.setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error) {
+      const code =
+        error && typeof error === 'object' && 'code' in error
+          ? String((error as { code?: unknown }).code)
+          : '';
+      setEditorErrorMessage(
+        code === 'CONCURRENCY_CONFLICT'
+          ? 'Este lançamento foi alterado por outro usuário. Feche o editor e recarregue a página antes de tentar novamente.'
+          : 'Não foi possível salvar o pagamento. Confira os dados e tente novamente.',
+      );
+      logger.error('Failed to save structured payment', {
+        associateId: editorTarget.associateId,
+        year,
+        month,
+        error: toSafeErrorLog(error),
+      });
+    } finally {
+      setEditorSavingId(null);
+    }
+  };
+
+  const openEditor = (payment: Payment, statusOverride?: EditablePaymentStatus) => {
+    setEditorErrorMessage(null);
+    setEditorStatusOverride(statusOverride ?? null);
+    setEditorTarget(payment);
+  };
+
+  const editorInitialValues = useMemo<PaymentEditorInitialValues>(() => {
+    if (!editorTarget) {
+      return {
+        status: 'pendente',
+        paymentMethod: 'outros',
+        amount: null,
+        paidAt: null,
+        paymentOrigin: 'outros',
+        notes: null,
+        expectedUpdatedAt: null,
+      };
+    }
+    const values = getEditorInitialValues(editorTarget);
+    return editorStatusOverride ? { ...values, status: editorStatusOverride } : values;
+  }, [editorTarget, editorStatusOverride]);
+
   const handleCancelPayment = (
     associateId: number,
     paymentId: number | null,
     associateName: string,
+    expectedUpdatedAt: Date | null,
   ) => {
     if (!paymentId) {
       setErrorMessage('Inicialize a mensalidade antes de cancelar.');
@@ -211,7 +339,12 @@ export default function MonthlyPaymentsTable({
 
     setErrorMessage(null);
     setCancelErrorMessage(null);
-    setCancelTarget({ associateId, paymentId, associateName });
+    setCancelTarget({
+      associateId,
+      paymentId,
+      associateName,
+      expectedUpdatedAt: expectedUpdatedAt?.toISOString() ?? null,
+    });
   };
 
   const handleCancelConfirm = async (reason: string) => {
@@ -227,6 +360,9 @@ export default function MonthlyPaymentsTable({
         year,
         month,
         reason,
+        ...(cancelTarget.expectedUpdatedAt
+          ? { expectedUpdatedAt: cancelTarget.expectedUpdatedAt }
+          : {}),
       });
 
       if (result && !result.success) {
@@ -234,6 +370,10 @@ export default function MonthlyPaymentsTable({
           setCancelErrorMessage('Mensalidade não encontrada. Recarregue a página.');
         } else if (result.error === 'PAYMENT_ALREADY_CANCELLED') {
           setCancelErrorMessage('Esta mensalidade já está cancelada.');
+        } else if (result.error === 'CONCURRENCY_CONFLICT') {
+          setCancelErrorMessage(
+            'Este lançamento foi alterado por outro usuário. Recarregue a página antes de cancelar.',
+          );
         } else {
           setCancelErrorMessage('Erro ao cancelar mensalidade. Tente novamente.');
         }
@@ -275,6 +415,13 @@ export default function MonthlyPaymentsTable({
     { value: 'outros', label: 'Outros', icon: CreditCard },
   ];
 
+  const originOptions = [
+    { value: 'sigepe' as const, label: 'SIGEPE' },
+    { value: 'itamaraty' as const, label: 'Itamaraty' },
+    { value: 'comprovante' as const, label: 'Comprovante' },
+    { value: 'outros' as const, label: 'Outros' },
+  ];
+
   const locationOptions = [
     { value: 'all', label: 'Todos', icon: MapPin },
     { value: 'brasil', label: 'Brasil', icon: MapPin },
@@ -301,15 +448,19 @@ export default function MonthlyPaymentsTable({
         <select
           id={`payment-status-${payment.associateId}-${variant}`}
           value={payment.currentStatus}
-          disabled={updatingId === payment.associateId || cancellingId === payment.associateId}
-          onChange={(event) =>
-            handleStatusChange(
-              payment.associateId,
-              event.target.value as 'pago' | 'pendente' | 'atrasado' | 'isento',
-              payment.currentMethod,
-              payment.updatedAt,
-            )
+          disabled={
+            updatingId === payment.associateId ||
+            editorSavingId === payment.associateId ||
+            cancellingId === payment.associateId
           }
+          onChange={(event) => {
+            const nextStatus = event.target.value as EditablePaymentStatus;
+            if (nextStatus === 'pago') {
+              openEditor(payment, nextStatus);
+              return;
+            }
+            void handleStatusChange(payment, nextStatus);
+          }}
           className={`rounded-[8px] border bg-white px-2 text-xs font-bold transition-colors ${desktopDenseControlClass} ${focusRingClass}`}
           style={{ borderColor: borderMuted, color: payment.statusCfg.color }}
         >
@@ -327,9 +478,18 @@ export default function MonthlyPaymentsTable({
     payment.currentStatus === 'cancelado' ? null : (
       <button
         type="button"
-        disabled={updatingId === payment.associateId || cancellingId === payment.associateId}
+        disabled={
+          updatingId === payment.associateId ||
+          editorSavingId === payment.associateId ||
+          cancellingId === payment.associateId
+        }
         onClick={() =>
-          handleCancelPayment(payment.associateId, payment.paymentId, payment.fullName)
+          handleCancelPayment(
+            payment.associateId,
+            payment.paymentId,
+            payment.fullName,
+            payment.updatedAt,
+          )
         }
         aria-label={`Cancelar mensalidade de ${payment.fullName}`}
         className={`inline-flex items-center justify-center gap-1.5 rounded-[8px] px-2.5 text-xs font-bold transition-colors hover:bg-[var(--cancel-hover-bg)] disabled:cursor-not-allowed disabled:opacity-40 ${desktopDenseControlClass} ${focusRingClass}`}
@@ -345,6 +505,28 @@ export default function MonthlyPaymentsTable({
         <span>Cancelar</span>
       </button>
     );
+
+  const renderEditButton = (payment: PaymentViewModel) => {
+    if (payment.currentStatus === 'cancelado') return null;
+    const hasRecord = payment.paymentId != null;
+    return (
+      <button
+        type="button"
+        onClick={() => openEditor(payment)}
+        disabled={
+          updatingId === payment.associateId ||
+          editorSavingId === payment.associateId ||
+          cancellingId === payment.associateId
+        }
+        aria-label={`${hasRecord ? 'Editar lançamento' : 'Registrar pagamento'} de ${payment.fullName}`}
+        className={`inline-flex items-center justify-center gap-1.5 rounded-[8px] px-2.5 text-xs font-bold transition-colors hover:bg-[#eef1f6] disabled:cursor-not-allowed disabled:opacity-40 ${desktopDenseControlClass} ${focusRingClass}`}
+        style={{ color: navy, border: `1px solid ${hairline}` }}
+      >
+        <Pencil size={14} aria-hidden="true" />
+        <span>{hasRecord ? 'Editar' : 'Registrar'}</span>
+      </button>
+    );
+  };
 
   return (
     <div className="min-w-0 space-y-5">
@@ -405,7 +587,7 @@ export default function MonthlyPaymentsTable({
         </div>
 
         <div
-          className="mt-5 grid gap-4 border-t pt-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,0.7fr)]"
+          className="mt-5 grid gap-4 border-t pt-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,0.8fr)]"
           style={{ borderColor: hairline }}
         >
           <div>
@@ -447,6 +629,49 @@ export default function MonthlyPaymentsTable({
                   >
                     <cfg.icon size={12} aria-hidden="true" />
                     {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <span
+              className="mb-2 block text-[10px] font-bold tracking-[0.1em] uppercase"
+              style={{ color: textMuted }}
+            >
+              Origem
+            </span>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por origem">
+              <button
+                type="button"
+                onClick={() => updateFilter('origin', undefined)}
+                aria-pressed={originFilter === 'all'}
+                className={`inline-flex items-center gap-1.5 rounded-[8px] px-2.5 text-xs font-bold transition-colors ${desktopDenseControlClass} ${focusRingClass}`}
+                style={{
+                  backgroundColor: originFilter === 'all' ? navy : canvas,
+                  color: originFilter === 'all' ? white : textMuted,
+                  border: `1px solid ${originFilter === 'all' ? navy : hairline}`,
+                }}
+              >
+                Todas
+              </button>
+              {originOptions.map((origin) => {
+                const active = originFilter === origin.value;
+                return (
+                  <button
+                    type="button"
+                    key={origin.value}
+                    onClick={() => updateFilter('origin', active ? undefined : origin.value)}
+                    aria-pressed={active}
+                    className={`inline-flex items-center gap-1.5 rounded-[8px] px-2.5 text-xs font-bold transition-colors ${desktopDenseControlClass} ${focusRingClass}`}
+                    style={{
+                      backgroundColor: active ? navy : canvas,
+                      color: active ? white : textMuted,
+                      border: `1px solid ${active ? navy : hairline}`,
+                    }}
+                  >
+                    {origin.label}
                   </button>
                 );
               })}
@@ -578,10 +803,19 @@ export default function MonthlyPaymentsTable({
         </div>
 
         <div className="hidden max-w-full min-w-0 overflow-x-auto md:block">
-          <table className="w-full min-w-[820px] border-collapse text-left">
+          <table className="w-full min-w-[1180px] border-collapse text-left">
             <thead>
               <tr style={{ backgroundColor: canvas, borderBottom: `1px solid ${hairline}` }}>
-                {['Associado', 'Local', 'Canal', 'Status', 'Atualização'].map((label) => (
+                {[
+                  'Associado',
+                  'Lotação',
+                  'Forma',
+                  'Origem',
+                  'Status',
+                  'Valor',
+                  'Data',
+                  'Ações',
+                ].map((label) => (
                   <th
                     key={label}
                     className="px-5 py-3 text-[11px] font-bold tracking-[0.08em] uppercase last:text-right"
@@ -652,6 +886,15 @@ export default function MonthlyPaymentsTable({
                     </td>
                     <td className="px-5 py-3.5">
                       <span
+                        className="inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold"
+                        style={{ color: textSecondary, borderColor: hairline }}
+                        title={originConfig[getPaymentOrigin(payment)].label}
+                      >
+                        {originConfig[getPaymentOrigin(payment)].short}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span
                         className="inline-flex items-center gap-1.5 text-xs font-semibold"
                         style={{ color: payment.statusCfg.color }}
                       >
@@ -662,9 +905,19 @@ export default function MonthlyPaymentsTable({
                         {payment.statusCfg.label}
                       </span>
                     </td>
+                    <td
+                      className="px-5 py-3.5 text-xs font-semibold"
+                      style={{ color: textPrimary }}
+                    >
+                      {formatCurrency(getStructuredAmount(payment))}
+                    </td>
+                    <td className="px-5 py-3.5 text-xs" style={{ color: textSecondary }}>
+                      {formatCivilDate(payment.paidAt)}
+                    </td>
                     <td className="px-5 py-3.5 text-right">
                       <div className="inline-flex items-center justify-end gap-2">
                         {renderStatusControl(payment, 'desktop')}
+                        {renderEditButton(payment)}
                         {renderCancelButton(payment)}
                       </div>
                     </td>
@@ -745,11 +998,41 @@ export default function MonthlyPaymentsTable({
                         : ''}
                     </span>
                   </div>
+                  <div>
+                    <span
+                      className="block text-[10px] font-bold tracking-[0.1em] uppercase"
+                      style={{ color: textMuted }}
+                    >
+                      Origem
+                    </span>
+                    <span
+                      className="mt-1 block text-xs font-medium"
+                      style={{ color: textSecondary }}
+                    >
+                      {originConfig[getPaymentOrigin(payment)].label}
+                    </span>
+                  </div>
+                  <div>
+                    <span
+                      className="block text-[10px] font-bold tracking-[0.1em] uppercase"
+                      style={{ color: textMuted }}
+                    >
+                      Valor / data
+                    </span>
+                    <span
+                      className="mt-1 block text-xs font-medium"
+                      style={{ color: textSecondary }}
+                    >
+                      {formatCurrency(getStructuredAmount(payment))} ·{' '}
+                      {formatCivilDate(payment.paidAt)}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <div className="inline-flex items-center gap-2">
                     {renderStatusControl(payment, 'mobile')}
                   </div>
+                  {renderEditButton(payment)}
                   {renderCancelButton(payment)}
                 </div>
               </article>
@@ -770,7 +1053,7 @@ export default function MonthlyPaymentsTable({
       </section>
 
       <CancelPaymentDialog
-        key={cancelTarget?.associateId ?? 'closed'}
+        key={`cancel-${cancelTarget?.associateId ?? 'closed'}`}
         associateName={cancelTarget?.associateName ?? ''}
         open={cancelTarget !== null}
         isPending={cancelTarget !== null && cancellingId === cancelTarget.associateId}
@@ -782,6 +1065,28 @@ export default function MonthlyPaymentsTable({
           }
         }}
         onConfirm={handleCancelConfirm}
+      />
+
+      <PaymentEditorDialog
+        key={`editor-${editorTarget?.associateId ?? 'closed'}`}
+        associateName={editorTarget?.fullName ?? ''}
+        periodLabel={new Intl.DateTimeFormat('pt-BR', {
+          month: 'long',
+          year: 'numeric',
+        }).format(new Date(year, month - 1, 1))}
+        mode={editorTarget?.paymentId ? 'edit' : 'create'}
+        initialValues={editorInitialValues}
+        open={editorTarget !== null}
+        isPending={editorTarget !== null && editorSavingId === editorTarget.associateId}
+        errorMessage={editorTarget ? editorErrorMessage : null}
+        onClose={() => {
+          if (editorTarget && editorSavingId !== editorTarget.associateId) {
+            setEditorErrorMessage(null);
+            setEditorStatusOverride(null);
+            setEditorTarget(null);
+          }
+        }}
+        onConfirm={handleEditorConfirm}
       />
     </div>
   );

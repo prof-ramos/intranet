@@ -2,18 +2,18 @@
 
 ## Nomes de branch
 
-| Prefixo     | Uso                                                   | Exemplo                      |
-| ----------- | ----------------------------------------------------- | ---------------------------- |
-| `feat/`     | Nova funcionalidade                                   | `feat/report-csv-export`     |
-| `fix/`      | Correção de bug                                       | `fix/cpf-mask`               |
-| `hotfix/`   | Correção urgente de produção                          | `hotfix/login-rate-limit`    |
-| `refactor/` | Refatoração sem mudança visual                        | `refactor/consolidate-dates` |
-| `chore/`    | Manutenção (deps, config)                             | `chore/update-next`          |
-| `docs/`     | Documentação                                          | `docs/add-branch-rules`      |
-| `test/`     | Adição ou correção de testes                          | `test/auth-rate-limit`       |
-| `advisor/`  | Execução de plano numerado por advisor                | `advisor/057-operational-hygiene` |
+| Prefixo     | Uso                                                   | Exemplo                                |
+| ----------- | ----------------------------------------------------- | -------------------------------------- |
+| `feat/`     | Nova funcionalidade                                   | `feat/report-csv-export`               |
+| `fix/`      | Correção de bug                                       | `fix/cpf-mask`                         |
+| `hotfix/`   | Correção urgente de produção                          | `hotfix/login-rate-limit`              |
+| `refactor/` | Refatoração sem mudança visual                        | `refactor/consolidate-dates`           |
+| `chore/`    | Manutenção (deps, config)                             | `chore/update-next`                    |
+| `docs/`     | Documentação                                          | `docs/add-branch-rules`                |
+| `test/`     | Adição ou correção de testes                          | `test/auth-rate-limit`                 |
+| `advisor/`  | Execução de plano numerado por advisor                | `advisor/057-operational-hygiene`      |
 | `codex/`    | Execução de plano numerado pelo Codex                 | `codex/060-read-only-production-smoke` |
-| `jules-`    | Branch criada pelo Google Jules após aprovação humana | `jules-1234567890-abcd`      |
+| `jules-`    | Branch criada pelo Google Jules após aprovação humana | `jules-1234567890-abcd`                |
 
 ## Commits
 
@@ -54,6 +54,7 @@ npm run pr:check
 - O repositório é mantido por uma pessoa; a proteção exige o PR e os checks, mas não exige aprovação de outra conta.
 - **Sempre**: após o commit, com a worktree limpa, executar o gate canônico `npm run pr:check` antes de publicar ou fazer merge.
 - **E2E**: `E2E Tests (Playwright)` é obrigatório no CI para todo PR; executar `npm run test:e2e` localmente também quando a mudança afetar jornadas, rotas ou componentes cobertos pelo Playwright.
+- **Smoke de produção**: `Smoke Test — Production` é um gate operacional pós-merge em `push` para `main`; fica intencionalmente `skipped` em PRs e **não** deve ser adicionado aos checks obrigatórios da proteção de branch. Se ficar skipped em `main` porque `build`/E2E falharam ou foram cancelados, trate a falha upstream como o gate bloqueador.
 - PRs gerados pelo Jules devem nascer como draft e só podem sair de draft após revisão humana do diff e dos checks.
 - Comentários sem menção explícita a `@jules` não autorizam novas alterações automatizadas.
 - Sugestões proativas, CI Fixer e exportação automática de PR devem permanecer desativados para este repositório.

@@ -11,6 +11,7 @@ teste, validacao de crons e revisao minima de integracoes/API keys sem secrets.
 
 Higiene de secrets: [`operations/secrets-hygiene.md`](./operations/secrets-hygiene.md).  
 Plano de sunset de PII plaintext: [`operations/pii-plaintext-sunset.md`](./operations/pii-plaintext-sunset.md).
+Registro operacional pós-merge: [`operations/post-merge-smoke-observation.md`](./operations/post-merge-smoke-observation.md).
 
 ## 0. Checklist Único De Release (Deploy → Migrate → Smoke)
 
@@ -53,6 +54,39 @@ código e/ou schema. Não inverter a ordem quando houver migration SQL nova.
 6. **Encerramento**
    - [ ] Anotar no canal de incidente (ADR 011) se houve incidente ou rollback
    - [ ] Se migrate não era necessária, pular passo 3 explicitamente no registro
+
+### Smoke pós-merge — owner, evidência e alerta
+
+- A rotina canônica é o `push` em `main`: o job `Smoke Test — Production` só
+  começa depois de `build` e E2E verdes, valida o SHA completo no health
+  autenticado e executa com `SMOKE_ALLOW_MUTATIONS=false`.
+- O smoke pode ficar **skipped em PRs** por desenho e não deve ser adicionado
+  como check obrigatório da proteção de `main`. Em `main`, um skip causado por
+  falha ou cancelamento de `build`/E2E é incidente upstream; não é aprovação do
+  smoke.
+- Execução local é somente exceção controlada, com `SMOKE_EXPECTED_COMMIT_SHA`,
+  `SMOKE_ALLOW_MUTATIONS=false` e evidência equivalente do run. Nunca copiar
+  secrets para o repositório ou para logs.
+- Considerar alerta quando o smoke falhar, quando ficar inesperadamente skipped
+  após os pré-requisitos verdes, ou quando o health expuser SHA diferente do
+  deployment esperado. O owner técnico primário e o substituto da [ADR
+  011](./adr/011-incident-owners-day-one.md) devem ser avisados pelo canal
+  único de incidente; o owner monitora também as 48h seguintes.
+- Registrar no incidente: URL do run, SHA do commit, deployment/URL Vercel,
+  modo de mutação, cenário que falhou, causa provável e ação (forward-fix ou
+  rollback conforme ADR 010). Não incluir credenciais, PII ou payloads
+  sensíveis.
+
+### Observação pós-merge (24–48 h)
+
+Depois do smoke read-only, mantenha a janela de observação documentada no
+[registro operacional](./operations/post-merge-smoke-observation.md). Ela deve
+conter o SHA completo, deployment, run/job do CI, horário UTC, owners e
+limitações de acesso. O job de produção pode permanecer `skipped` em PRs draft
+ou em PRs onde o smoke foi intencionalmente excluído; isso não transforma o
+smoke em gate obrigatório de PR. O gate obrigatório é o smoke read-only após o
+merge em `main`, sempre com `SMOKE_ALLOW_MUTATIONS=false` salvo dispatch
+mutante autorizado em janela separada.
 
 ### Anti-padrões (não fazer)
 

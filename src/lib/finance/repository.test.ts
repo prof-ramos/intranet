@@ -282,5 +282,14 @@ describe('finance repository', () => {
       expect(compiled).toContain('coalesce(');
       expect(compiled).toContain('= $');
     });
+
+    it('applies the structured origin filter', async () => {
+      dbMock.setSelectResult([]);
+      await getAssociatesWithPayments(2026, 5, { origin: 'sigepe' });
+
+      const whereClause = dbMock._selectChain.where.mock.calls.at(-1)?.[0];
+      const compiled = compileSql(whereClause);
+      expect(compiled).toContain('= $');
+    });
   });
 });

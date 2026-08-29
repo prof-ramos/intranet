@@ -27,7 +27,7 @@ export const auditLogs = pgTable(
       onDelete: 'set null',
     }),
     changes: jsonb('changes').$type<{
-      old: Record<string, unknown>;
+      old: Record<string, unknown> | null;
       new: Record<string, unknown>;
     } | null>(),
     metadata: jsonb('metadata').$type<Record<string, unknown> | null>(),
