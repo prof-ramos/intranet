@@ -63,7 +63,6 @@ import {
 } from './navigation-coordinator';
 import {
   type Payment,
-  type PaymentMethod,
   type PaymentViewModel,
   getPaymentViewModel,
   getStructuredAmount,
