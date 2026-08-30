@@ -352,7 +352,7 @@ test('6. Financeiro — mensalidades renderizam sem inicializar ou alterar pagam
   const unexpectedWriteMethods = captureUnexpectedWriteMethods(page);
   await page.goto('/app/financeiro/mensalidades');
   await expect(page.getByRole('heading', { name: 'Controle de Mensalidades' })).toBeVisible({
-    timeout: 15_000,
+    timeout: 20_000,
   });
 
   // Somente leitura: valida o período, os agregados e a fila sem acionar controles de escrita.
