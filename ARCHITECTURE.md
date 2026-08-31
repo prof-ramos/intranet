@@ -10,12 +10,12 @@ A intranet ASOF e uma aplicacao Next.js 16.2.6 App Router, server-side, com Driz
 
 - `src/app/app/associados` e `src/lib/associates`: Cadastro de Oficiais, lotacao/posto, situacao funcional, vínculo ASOF e contribuicao. A rota permanece `/app/associados` por compatibilidade historica.
 - `src/app/app/atividades` e `src/lib/activities`: board administrativo, responsaveis, prioridades e prazos. Lógica de conclusão extraída para `deriveCompletedAt()` em `transformations.ts`; labels consolidados via `ACTIVITY_PRIORITY_LABELS` em `status.ts`.
-- `src/app/app/financeiro` e `src/lib/finance`: mensalidades e status de pagamento. Inicialização de mês usa bulk upsert (`ON CONFLICT DO UPDATE`) ao invés de inserts individuais.
+- `src/app/app/financeiro` e `src/lib/finance`: mensalidades e status de pagamento. Inicialização de mês usa bulk upsert (`ON CONFLICT DO UPDATE`) ao invés de inserts individuais. A UI do operador está oculta no ciclo atual (V2, issue #429): layouts redirecionam para `/app`.
 - `src/app/app/juridico` e `src/lib/juridico`: consultas, processos, notas e SLA.
 - `src/app/app/secretaria/oficios` e `src/lib/oficios`: oficios, rich text, PDF e assinatura digital via Assinafy.
 - `src/app/app/notifications` e `src/lib/notifications`: alertas persistidos.
 - `src/app/app/config`: usuarios, lotacoes, auditoria, API keys e webhooks outbound.
-- `src/app/app/email-triage` e `src/lib/email-triage`: triagem automatica de e-mails com Gemini AI. Busca emails via Gmail API, analisa com IA, persiste resultado operacional, correlaciona consultas abertas quando seguro e notifica admins.
+- `src/app/app/email-triage` e `src/lib/email-triage`: triagem automatica de e-mails com Gemini AI. Busca emails via Gmail API, analisa com IA, persiste resultado operacional, correlaciona consultas abertas quando seguro e notifica admins. A UI do operador está oculta no ciclo atual (V2, issue #429): layouts redirecionam para `/app`.
 - `src/lib/assinafy`: cliente Assinafy, webhook handler, repository e service para assinatura digital de ofícios.
 
 ## Modulo Email Triage

@@ -10,7 +10,7 @@ ASOF staff and leadership use this intranet in an authenticated, operational con
 
 ## Product Purpose
 
-ASOF Intranet centralizes the operational management of Oficiais de Chancelaria and ASOF association workflows: cadastro, vínculo ASOF, situação funcional, atividades, jurídico, financeiro, ofícios, notifications, audit, and LGPD operations. Success means the team can trust the system as the canonical operational surface: data is complete, terminology is precise, actions are traceable, and routine administrative work is faster without weakening privacy or governance.
+ASOF Intranet centralizes the operational management of Oficiais de Chancelaria and ASOF association workflows: cadastro, vínculo ASOF, situação funcional, atividades, jurídico, ofícios, notifications, audit, and LGPD operations. Financeiro/mensalidades and email triage remain in the codebase for V2 ([#429](https://github.com/prof-ramos/intranet/issues/429)) but are hidden from the operator UI. Success means the team can trust the system as the canonical operational surface: data is complete, terminology is precise, actions are traceable, and routine administrative work is faster without weakening privacy or governance.
 
 ## Brand Personality
 

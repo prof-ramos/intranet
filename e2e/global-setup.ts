@@ -171,7 +171,7 @@ async function warmupJitRoutes() {
       console.warn('[warmupJitRoutes] João profile not found; /editar route not warmed');
     }
 
-    // Compile the financeiro route used in other specs.
+    // Compile the V2-deferred financeiro layout (redirects to /app).
     await page.goto(`${E2E_BASE_URL}/app/financeiro/mensalidades`, { timeout: 60_000 });
 
     // Compile the oficios route to prevent JIT timeout in assinafy tests.
