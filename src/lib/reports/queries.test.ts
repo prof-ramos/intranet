@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Drizzle mock chains require any for self-referencing builders */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { getAssociatesForReport } from './queries';
+import { countAssociatesForReport, getAssociatesForReport } from './queries';
 
 const { dbMock, MOCK_ASSOCIATE, loggerMock, decryptPiiFieldMock } = vi.hoisted(() => {
   const MOCK_ASSOCIATE = {
@@ -111,6 +111,19 @@ describe('reports queries', () => {
       dbMock.setSelectResult([]);
       const results = await getAssociatesForReport({ functionalStatus: 'aposentado' });
       expect(results).toHaveLength(0);
+    });
+
+    it('counts matching associates without selecting rows', async () => {
+      dbMock.setSelectResult([{ total: 7 }]);
+      await expect(countAssociatesForReport({ functionalStatus: 'ativo' })).resolves.toBe(7);
+      expect(dbMock.select).toHaveBeenCalled();
+      expect(dbMock._selectChain.where).toHaveBeenCalled();
+      expect(dbMock._selectChain.limit).not.toHaveBeenCalled();
+    });
+
+    it('returns zero when the count row is missing', async () => {
+      dbMock.setSelectResult([]);
+      await expect(countAssociatesForReport()).resolves.toBe(0);
     });
 
     it('applies a bounded limit on the query', async () => {
