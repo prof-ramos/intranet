@@ -31,6 +31,7 @@ flowchart TD
 ## Rotas Públicas
 
 ### `/`
+
 Redireciona para `/login` (sem sessão) ou `/app` (com sessão).
 
 **Funcional quando:** o redirect ocorre em < 100 ms sem piscar a página.
@@ -42,12 +43,14 @@ Redireciona para `/login` (sem sessão) ou `/app` (com sessão).
 Autenticação via email + senha.
 
 **Funcionalidades:**
+
 - Validação de credenciais com bcrypt + dummy hash anti-enumeração
 - Cookie de sessão `httpOnly` assinado com `SESSION_SECRET`
 - Rate limit de 5 tentativas/15 min por IP (bloqueio com mensagem genérica)
 - Redirect pós-login para destino original (query `?next=`)
 
 **Funcional quando:**
+
 - [ ] Login com credenciais corretas cria sessão e redireciona para `/app`
 - [ ] Credenciais erradas exibem mensagem de erro sem vazar qual campo falhou
 - [ ] Após 5 tentativas, exibe mensagem de bloqueio temporário
@@ -60,10 +63,12 @@ Autenticação via email + senha.
 Solicita token de reset por email.
 
 **Funcionalidades:**
+
 - Aceita email, envia link com token HMAC de uso único
 - Resposta genérica independente de o email existir (anti-enumeração)
 
 **Funcional quando:**
+
 - [ ] Email válido registrado: recebe link de reset
 - [ ] Email não registrado: resposta indistinguível do caso de sucesso
 - [ ] Token expira após 1 hora
@@ -75,11 +80,13 @@ Solicita token de reset por email.
 Redefine senha via token da URL.
 
 **Funcionalidades:**
+
 - Valida token HMAC e expiry
 - Aceita nova senha (mín. 8 chars) + confirmação
 - Invalida token após uso
 
 **Funcional quando:**
+
 - [ ] Token válido: redireciona para `/login` após redefinição
 - [ ] Token expirado ou inválido: exibe erro sem stack trace
 - [ ] Reutilização de token: bloqueada
@@ -91,11 +98,13 @@ Redefine senha via token da URL.
 Troca obrigatória de senha para usuários com `mustChangePassword = true`.
 
 **Funcionalidades:**
+
 - Requer autenticação
 - Valida senha atual antes de aceitar nova
 - Limpa flag `mustChangePassword` ao concluir
 
 **Funcional quando:**
+
 - [ ] Usuário sem a flag é redirecionado para `/app`
 - [ ] Senha atual errada: exibe erro
 - [ ] Troca bem-sucedida: redireciona para `/app`
@@ -117,13 +126,10 @@ graph LR
     ASSOC_REL[/app/associados/relatorio]
     ATIV[/app/atividades]
     ATIV_NOVA[/app/atividades/nova]
-    FIN[/app/financeiro/mensalidades]
     JUR[/app/juridico]
     JUR_LIST[/app/juridico/consultas]
     JUR_NOVA[/app/juridico/consultas/nova]
     JUR_ID[/app/juridico/consultas/id]
-    TRIAGE[/app/email-triage]
-    TRIAGE_ID[/app/email-triage/id]
     ETIQ[/app/etiquetas]
     SEARCH[/app/search]
     SEC_OF[/app/secretaria/oficios]
@@ -143,10 +149,8 @@ graph LR
     APP --> ASSOC --> ASSOC_ID --> ASSOC_EDIT
     ASSOC --> ASSOC_REL
     APP --> ATIV --> ATIV_NOVA
-    APP --> FIN
     APP --> JUR --> JUR_LIST --> JUR_ID
     JUR_LIST --> JUR_NOVA
-    APP --> TRIAGE --> TRIAGE_ID
     APP --> ETIQ
     APP --> SEARCH
     APP --> SEC_OF --> SEC_OF_NOVO
@@ -169,6 +173,7 @@ graph LR
 **Acesso:** `*`
 
 **Funcionalidades:**
+
 - KPIs do quadro associativo: total de ativos, inadimplentes, pendentes de migração
 - Atividades em aberto, atrasadas e urgentes
 - Mini-kanban com contagem por status
@@ -176,6 +181,7 @@ graph LR
 - Sidebar com perfil do usuário logado
 
 **Funcional quando:**
+
 - [ ] KPIs refletem dados reais do banco (não valores fixos)
 - [ ] Atividades urgentes (vencidas) aparecem em destaque
 - [ ] Página carrega em < 3 s com dados reais
@@ -187,6 +193,7 @@ graph LR
 **Acesso:** `*`
 
 **Funcionalidades:**
+
 - Lista paginada (20/pág) de Oficiais de Chancelaria, incluindo associados e não associados à ASOF
 - Busca por nome (LIKE escapado), CPF (hash-based exact match) ou SIAPE (hash-based exact match)
 - Toggle de modo de busca: Nome / CPF / SIAPE
@@ -195,6 +202,7 @@ graph LR
 - Botão para exportar relatório CSV (redireciona para `/app/associados/relatorio`)
 
 **Funcional quando:**
+
 - [ ] Busca por nome retorna resultados parciais e é insensível a acentos
 - [ ] Busca por CPF retorna resultado exato (match por hash blind index)
 - [ ] Busca por SIAPE retorna resultado exato (match por hash blind index)
@@ -209,6 +217,7 @@ graph LR
 **Acesso:** `*`
 
 **Funcionalidades:**
+
 - Dados de identificação: nome, CPF, SIAPE, RG, sexo, estado civil, naturalidade (cidade/UF)
 - Endereço completo (logradouro, bairro, cidade, UF, CEP), lotação, classe, situação funcional e contribuição
 - Dados administrativos: tipo de missão, origem de carreira, data de admissão, posse e cancelamento, forma de pagamento, membro CEOC/CAOC
@@ -220,6 +229,7 @@ graph LR
 - Botão "Voltar" com `returnTo` preserva filtros da listagem de origem
 
 **Funcional quando:**
+
 - [ ] Todos os dados PII são visíveis para usuários autenticados (política de visibilidade completa)
 - [ ] `admin` vê observações internas; demais roles não veem
 - [ ] Dependentes: adicionar, editar nome/parentesco, remover (com confirmação)
@@ -234,12 +244,14 @@ graph LR
 **Acesso:** `admin`, `diretoria`
 
 **Funcionalidades:**
+
 - Formulário expandido (17 campos novos): sexo, estado civil, naturalidade (cidade/UF), RG (número, órgão expedidor, UF, data de expedição), bairro, UF do endereço, CEP, tipo de missão, origem de carreira, data de admissão, data de posse, data de cancelamento, forma de pagamento, membro CEOC/CAOC, email secundário
 - Validação de CPF, SIAPE, RG, datas e emails
 - Observações internas (somente `admin`)
 - Auditoria automática ao salvar
 
 **Funcional quando:**
+
 - [ ] Dados inválidos (CPF malformado, email duplicado) bloqueiam o submit com mensagem específica
 - [ ] Salvar redireciona para o perfil e exibe feedback de sucesso
 - [ ] `secretaria` recebe 403 ao tentar acessar
@@ -251,6 +263,7 @@ graph LR
 **Acesso:** `admin`, `diretoria`
 
 **Funcionalidades:**
+
 - Seleção de campos com classificação LGPD (37 campos em 3 grupos: Dados Pessoais, Endereço, Administrativo)
 - Filtros: situação funcional, associativa, contribuição, mês de aniversário, tipo de missão, origem de carreira, forma de pagamento
 - Download CSV com BOM UTF-8, separador `;`, formatação pt-BR (datas dd/MM/yyyy, booleanos Sim/Não, enums com labels)
@@ -260,6 +273,7 @@ graph LR
 - Audit log automático (LGPD)
 
 **Funcional quando:**
+
 - [ ] CSV gerado abre corretamente em Excel (BOM + separador `;`)
 - [ ] Campos não selecionados não aparecem no arquivo
 - [ ] 11ª requisição no mesmo minuto retorna 429
@@ -275,6 +289,7 @@ graph LR
 **Acesso:** `*`
 
 **Funcionalidades:**
+
 - Cards por status: `a_fazer`, `em_andamento`, `aguardando_terceiros`, `concluido`
 - Drag-and-drop entre colunas (atualiza posição e status)
 - Filtros por responsável e por associado vinculado
@@ -282,6 +297,7 @@ graph LR
 - Quick-add de nova atividade inline
 
 **Funcional quando:**
+
 - [ ] Drag-and-drop persiste o novo status após recarregar a página
 - [ ] Filtros combinados funcionam (responsável + associado)
 - [ ] Card movido para `concluida` registra `completedAt`
@@ -293,10 +309,12 @@ graph LR
 **Acesso:** `admin`, `diretoria`
 
 **Funcionalidades:**
+
 - Campos: título, descrição, status, prioridade, responsável, associado, data de vencimento
 - Vinculação opcional a associado via `AssociatePicker`
 
 **Funcional quando:**
+
 - [ ] Título obrigatório é validado no cliente e no servidor
 - [ ] Salvar redireciona para `/app/atividades` com o card visível na coluna correta
 
@@ -304,9 +322,12 @@ graph LR
 
 ### `/app/financeiro/mensalidades` — Mensalidades
 
-**Acesso:** `admin`, `diretoria`
+**Status:** fora da UI do ciclo atual (V2). Issue [#429](https://github.com/prof-ramos/intranet/issues/429). O código permanece; o layout redireciona para `/app` e o item some da sidebar. O histórico de mensalidades no perfil do oficial continua visível.
 
-**Funcionalidades:**
+**Acesso (quando a V2 reabrir):** `admin`, `diretoria`
+
+**Funcionalidades (código retido, sem superfície operacional):**
+
 - Inicialização mensal: cria registros de pagamento para todos os oficiais com vínculo ASOF (`initializeMonthAction`)
 - Tabela de pagamentos: status por associado (`em_dia`, `inadimplente`, `isento`)
 - KPIs: total recebido, inadimplentes, isentos, taxa de adimplência
@@ -314,6 +335,7 @@ graph LR
 - Atualização individual de status de pagamento
 
 **Funcional quando:**
+
 - [ ] Inicialização cria exatamente um registro por associado ASOF
 - [ ] KPIs somam corretamente (sem dupla contagem)
 - [ ] Navegação mensal mantém os dados do mês selecionado
@@ -325,11 +347,13 @@ graph LR
 **Acesso:** `admin`, `diretoria`
 
 **Funcionalidades:**
+
 - Indicadores: consultas abertas, aguardando escritório, sem atualização > 7 dias, SLA vencendo em 48 h, respondidas no mês
 - Lista de ações pendentes (ordenadas por urgência)
 - Distribuição visual por status
 
 **Funcional quando:**
+
 - [ ] Contador "SLA vencendo" reflete consultas com `slaDeadline` nos próximos 2 dias
 - [ ] Consultas stale (> 7 dias sem nota) aparecem destacadas
 
@@ -340,12 +364,14 @@ graph LR
 **Acesso:** `admin`, `diretoria`
 
 **Funcionalidades:**
+
 - Paginação (20/pág)
 - Busca por título ou número interno
 - Filtro por status
 - Destaque visual: stale (> 7 dias) e SLA vencido
 
 **Funcional quando:**
+
 - [ ] Busca funciona para número parcial (ex: `JUR-2026`)
 - [ ] Filtro de status preserva-se ao navegar entre páginas
 
@@ -356,10 +382,12 @@ graph LR
 **Acesso:** `admin`, `diretoria`
 
 **Funcionalidades:**
+
 - Campos: título, resumo, texto completo, associado, prazo SLA (dias)
 - Número interno gerado automaticamente (JUR-YYYY-NNN sequencial)
 
 **Funcional quando:**
+
 - [ ] Número gerado é único e sequencial dentro do ano
 - [ ] Prazo SLA calculado como `createdAt + slaDeadlineDays`
 - [ ] Salvar redireciona para o detalhe da consulta criada
@@ -371,6 +399,7 @@ graph LR
 **Acesso:** `admin`, `diretoria`
 
 **Funcionalidades:**
+
 - Dados completos da consulta (status, título, texto, associado, SLA)
 - Histórico de notas em ordem cronológica
 - Formulário para adicionar nova nota
@@ -378,6 +407,7 @@ graph LR
 - Painel lateral com resumo e SLA
 
 **Funcional quando:**
+
 - [ ] Nova nota aparece imediatamente no histórico após submit
 - [ ] Mudança de status persiste após recarregar
 - [ ] ID inexistente retorna página `not-found`
@@ -386,15 +416,19 @@ graph LR
 
 ### `/app/email-triage` — Triagem de E-mails
 
-**Acesso:** `admin`, `diretoria`
+**Status:** fora da UI do ciclo atual (V2). Issue [#429](https://github.com/prof-ramos/intranet/issues/429). O código e os crons permanecem; o layout redireciona para `/app` e o item some da sidebar.
 
-**Funcionalidades:**
+**Acesso (quando a V2 reabrir):** `admin`, `diretoria`
+
+**Funcionalidades (código retido, sem superfície operacional):**
+
 - KPIs: total de emails, por status, taxa de conclusão
 - Tabela paginada (20/pág) com filtros por status, prioridade e busca textual
 - Ações em massa: validar, concluir, arquivar
 - Classificação automática via Gemini AI (categoria, prazo, risco, ação recomendada)
 
 **Funcional quando:**
+
 - [ ] Filtros combinados (status + prioridade + texto) funcionam juntos
 - [ ] Ação em massa atualiza status de todos os itens selecionados
 - [ ] Busca textual funciona com blind indexes (não expõe PII em query)
@@ -403,9 +437,12 @@ graph LR
 
 ### `/app/email-triage/[id]` — Detalhe de Triagem
 
-**Acesso:** `*` (conteúdo PII visível para todos os autenticados)
+**Status:** fora da UI do ciclo atual (V2). Mesmo redirect de `/app/email-triage`.
+
+**Acesso (quando a V2 reabrir):** `*` (conteúdo PII visível para todos os autenticados)
 
 **Funcionalidades:**
+
 - Conteúdo completo do email (remetente, assunto, corpo)
 - Classificação da IA com campos editáveis
 - Observações internas e notas
@@ -413,6 +450,7 @@ graph LR
 - Audit log automático de acesso (LGPD)
 
 **Funcional quando:**
+
 - [ ] Audit log registrado a cada acesso ao conteúdo
 - [ ] Atualização de status refletida na lista
 - [ ] ID inexistente retorna página `not-found`
@@ -424,12 +462,14 @@ graph LR
 **Acesso:** `*`
 
 **Funcionalidades:**
+
 - Seleção de modelo Pimaco (presets configurados)
 - Configuração de layout e conteúdo
 - Geração de PDF via rota server-side (`POST /app/etiquetas/gerar`)
 - Impressão via browser
 
 **Funcional quando:**
+
 - [ ] PDF gerado tem dimensões corretas para o modelo selecionado
 - [ ] Download funciona sem erro 500
 
@@ -442,11 +482,13 @@ graph LR
 **Acesso:** `*`
 
 **Funcionalidades:**
+
 - Busca unificada por associados, oficios e consultas jurídicas
 - Resultados agrupados por entidade
 - Navegação direta para o item encontrado
 
 **Funcional quando:**
+
 - [ ] Retorna resultados de pelo menos uma entidade para termos válidos
 - [ ] Resultados de entidades restritas (ex: jurídico) são filtrados por role
 
@@ -457,6 +499,7 @@ graph LR
 **Acesso:** `admin`, `diretoria`, `secretaria`
 
 **Funcionalidades:**
+
 - Tabela paginada: número, destinatário, data, status
 - Filtros por status e período
 - Ações: visualizar, baixar PDF, editar, cancelar, **enviar para assinatura**
@@ -465,6 +508,7 @@ graph LR
 - Botão "Enviar para Assinatura" visível apenas para ofícios com status `gerado` ou `rascunho`
 
 **Funcional quando:**
+
 - [ ] PDF baixado segue o Padrão Ofício com numeração correta (`Ofício nº 001/2026-ASOF`)
 - [ ] Ofício cancelado não pode ser editado (botão desabilitado)
 - [ ] Botão "Enviar para Assinatura" aparece apenas para status `gerado`/`rascunho`
@@ -478,6 +522,7 @@ graph LR
 **Acesso:** `admin`, `diretoria`, `secretaria`
 
 **Funcionalidades:**
+
 - Campos: destinatário, cargo, vocativo, assunto, setor Itamaraty
 - Editor rich text para o corpo
 - Fecho e signatário
@@ -486,6 +531,7 @@ graph LR
 - Validação de impessoalidade client-side (warnings para primeira pessoa, coloquialismos)
 
 **Funcional quando:**
+
 - [ ] Número gerado é único e sequencial
 - [ ] Salvar sem IA configurada funciona normalmente (IA é opcional)
 - [ ] Campos obrigatórios validados antes do submit
@@ -498,11 +544,13 @@ graph LR
 **Acesso:** `admin`, `diretoria`, `secretaria`
 
 **Funcionalidades:**
+
 - Mesmo formulário do novo, com dados preenchidos
 - Apenas ofícios com status não-cancelado podem ser editados
 - Validação de impessoalidade client-side
 
 **Funcional quando:**
+
 - [ ] Ofício cancelado retorna 404/not-found ao tentar editar
 - [ ] Salvar redireciona para a lista com dados atualizados
 - [ ] Warnings de impessoalidade aparecem mas não bloqueiam envio
@@ -514,6 +562,7 @@ graph LR
 **Acesso:** `admin`, `diretoria`, `secretaria`
 
 **Funcionalidades:**
+
 - Upload com categorias: contrato, ata, oficio, rh, estatuto, etc.
 - Lista paginada com busca por nome e filtro por categoria
 - Download com URL assinada (expiração configurável)
@@ -521,6 +570,7 @@ graph LR
 - Vinculação opcional a entidade (associado, ofício, consulta)
 
 **Funcional quando:**
+
 - [ ] Upload de arquivo > 10 MB rejeita com mensagem clara
 - [ ] URL de download expira após o período configurado
 - [ ] Exclusão remove o arquivo do storage e o registro do banco
@@ -532,6 +582,7 @@ graph LR
 **Acesso:** `admin`, `secretaria`
 
 **Funcionalidades:**
+
 - Seleção de tipo de email
 - Prompt livre para instruções à IA (Gemini)
 - Geração de assunto + corpo HTML
@@ -539,6 +590,7 @@ graph LR
 - Requer `NEXT_PUBLIC_AI_ENABLED = true` e Gemini configurado
 
 **Funcional quando:**
+
 - [ ] Gemini não configurado: exibe mensagem de erro adequada (não 500)
 - [ ] Resposta da IA exibe preview antes de qualquer envio
 - [ ] Erros da API Gemini retornam mensagem genérica (sem vazar detalhes internos)
@@ -552,6 +604,7 @@ graph LR
 Cards de navegação para sub-módulos: Usuários, Lotações, Auditoria, Webhooks, API Keys, IA.
 
 **Funcional quando:**
+
 - [ ] `diretoria` e `secretaria` recebem 403 ao tentar acessar
 
 ---
@@ -561,12 +614,14 @@ Cards de navegação para sub-módulos: Usuários, Lotações, Auditoria, Webhoo
 **Acesso:** `admin`
 
 **Funcionalidades:**
+
 - Lista de admins: nome, email, role, status ativo/inativo
 - Reset de senha (gera senha temporária, força `mustChangePassword`)
 - Ativação/desativação de conta
 - Audit log de todas as ações
 
 **Funcional quando:**
+
 - [ ] Admin não pode desativar a própria conta
 - [ ] Senha temporária exige troca no próximo login
 
@@ -577,11 +632,13 @@ Cards de navegação para sub-módulos: Usuários, Lotações, Auditoria, Webhoo
 **Acesso:** `admin`, `diretoria`
 
 **Funcionalidades:**
+
 - Cadastro com nome e tipo (`domestic`/`abroad`)
 - Edição e ativação/desativação
 - Validação de nome duplicado
 
 **Funcional quando:**
+
 - [ ] Nome duplicado bloqueado com mensagem específica
 - [ ] Lotação desativada não aparece no `AssociatePicker`
 
@@ -592,11 +649,13 @@ Cards de navegação para sub-módulos: Usuários, Lotações, Auditoria, Webhoo
 **Acesso:** `admin`, `diretoria`
 
 **Funcionalidades:**
+
 - Consulta paginada (50/pág) de `audit_logs`
 - Filtros por ação, tipo de entidade e intervalo de datas
 - Timestamps exibidos em `America/Sao_Paulo`
 
 **Funcional quando:**
+
 - [ ] Filtros combinados reduzem corretamente o conjunto de resultados
 - [ ] Registro de ações sensíveis (edição de associado, reset de senha) está presente
 
@@ -607,12 +666,14 @@ Cards de navegação para sub-módulos: Usuários, Lotações, Auditoria, Webhoo
 **Acesso:** `admin`
 
 **Funcionalidades:**
+
 - Lista de subscriptions com URL e status
 - Criação com `targetUrl` HTTPS pública (validação SSRF)
 - Rotação de segredo HMAC
 - Ativação/desativação
 
 **Funcional quando:**
+
 - [ ] URL privada (RFC-1918, localhost) é rejeitada na criação
 - [ ] Segredo exibido apenas uma vez após criação/rotação
 
@@ -623,11 +684,13 @@ Cards de navegação para sub-módulos: Usuários, Lotações, Auditoria, Webhoo
 **Acesso:** `admin`
 
 **Funcionalidades:**
+
 - Criação com escopos: `events:read`, `events:write`, `webhooks:manage`, `admin`
 - Exibição única do segredo após criação
 - Rotação e desativação
 
 **Funcional quando:**
+
 - [ ] Segredo não recuperável após fechar o modal de criação
 - [ ] Chave desativada retorna 401 nas APIs
 
@@ -638,10 +701,12 @@ Cards de navegação para sub-módulos: Usuários, Lotações, Auditoria, Webhoo
 **Acesso:** `admin`
 
 **Funcionalidades:**
+
 - Status da integração Gemini (chave configurada ou não)
 - Indicador visual de saúde
 
 **Funcional quando:**
+
 - [ ] Com `GEMINI_API_KEY` ausente: exibe aviso claro
 - [ ] Com chave configurada: exibe status ativo
 
@@ -654,6 +719,7 @@ Cards de navegação para sub-módulos: Usuários, Lotações, Auditoria, Webhoo
 Exibe política LGPD e canal de contato para exercício de direitos do titular.
 
 **Funcional quando:**
+
 - [ ] Página carrega sem erro para qualquer role autenticada
 
 ---
@@ -679,6 +745,7 @@ sequenceDiagram
 ```
 
 ### `GET /api/v1/health`
+
 Health check autenticado para integrações M2M. Requer escopo `health:read` ou role `admin`/`diretoria`.
 
 **Funcional quando:** retorna `{ status: "ok" }` com 200 em < 500 ms.
@@ -686,18 +753,21 @@ Health check autenticado para integrações M2M. Requer escopo `health:read` ou 
 ---
 
 ### `GET|POST /api/v1/events`
+
 - `GET`: lista domain events pendentes
 - `POST`: dispara eventos por ID ou processa fila pendente
 
 Autenticação: API Key com escopos `events:read` / `events:write`. Rate limit por chave.
 
 **Funcional quando:**
+
 - [ ] Evento dispatched persiste `webhook_delivery` com resultado
 - [ ] Evento inexistente retorna 404 estruturado
 
 ---
 
 ### `POST /api/v1/email-triage/process`
+
 Processa emails da fila Gmail via Gemini AI. Requer `CRON_SECRET`.
 
 **Funcional quando:** classificação persiste no banco e não expõe PII em logs.
@@ -705,11 +775,13 @@ Processa emails da fila Gmail via Gemini AI. Requer `CRON_SECRET`.
 ---
 
 ### `GET /api/v1/cron/gmail-watch`
+
 Renova subscription Gmail Watch (cron). Requer `CRON_SECRET`.
 
 ---
 
 ### `GET /api/v1/cron/lgpd-retention`
+
 Executa rotina de retenção LGPD (anonimização/exclusão de dados vencidos). Requer `CRON_SECRET`.
 
 **Funcional quando:** registros além do período de retenção são anonimizados sem falha silenciosa.
@@ -717,6 +789,7 @@ Executa rotina de retenção LGPD (anonimização/exclusão de dados vencidos). 
 ---
 
 ### `GET /api/v1/juridico/sla-warnings`
+
 Emite notificações de SLA vencendo para consultas jurídicas. Requer `CRON_SECRET`.
 
 **Funcional quando:** emite ao menos uma notificação por consulta com SLA em < 48 h, sem duplicatas.
@@ -724,16 +797,19 @@ Emite notificações de SLA vencendo para consultas jurídicas. Requer `CRON_SEC
 ---
 
 ### `POST /api/v1/gmail-webhook`
+
 Recebe push notifications do Gmail (Pub/Sub). Valida payload e enfileira para triagem.
 
 ---
 
 ### `POST /api/v1/events/dispatch`
+
 Endpoint alternativo para disparo manual de domain events.
 
 ---
 
 ### `POST /app/etiquetas/gerar`
+
 Gera PDF de etiquetas Pimaco. Requer autenticação + role `admin`/`diretoria`/`secretaria`.
 
 **Funcional quando:** PDF com dimensões corretas para o preset retornado em < 5 s.
@@ -741,6 +817,7 @@ Gera PDF de etiquetas Pimaco. Requer autenticação + role `admin`/`diretoria`/`
 ---
 
 ### `GET /api/oficios/[id]/download`
+
 Download do PDF de um ofício. Requer autenticação.
 
 **Funcional quando:** PDF gerado segue o Padrão Ofício; ofício cancelado retorna 404.
@@ -748,11 +825,13 @@ Download do PDF de um ofício. Requer autenticação.
 ---
 
 ### `POST /api/webhooks/assinafy`
+
 Recebe eventos do serviço de assinatura digital Assinafy. Valida `X-Webhook-Secret` (HMAC SHA-256).
 
 **Eventos suportados:** `document_signed`, `signer_signed_document`, `document_rejected`, `document_expired`, `document_cancelled`, `document_failed`, `document_ready`, `signer_declined`, `signer_viewed`, `assignment_created`, `assignment_completed`
 
 **Processamento (transacional):**
+
 1. Mapeia status Assinafy → `oficios.assinafyStatus`
 2. Early return se status inalterado (idempotência)
 3. Atualiza `oficios` com novo status + timestamp
@@ -761,6 +840,7 @@ Recebe eventos do serviço de assinatura digital Assinafy. Valida `X-Webhook-Sec
 6. Cria `notifications.oficio.status_changed` para **todos admins ativos** (`actorId: null`)
 
 **Funcional quando:**
+
 - [ ] Payload inválido ou secret errado retorna 401 sem processar
 - [ ] Status idêntico = early return (sem duplicatas)
 - [ ] Notificação criada para todos admins ativos dentro da transação
@@ -773,13 +853,13 @@ Recebe eventos do serviço de assinatura digital Assinafy. Valida `X-Webhook-Sec
 
 Estes requisitos se aplicam a todas as páginas e APIs:
 
-| Requisito | Critério |
-|---|---|
-| **Autenticação** | Qualquer rota `/app/*` sem sessão redireciona para `/login` |
-| **Autorização** | Role insuficiente retorna 403 (não 404 ou 500) |
-| **Error boundaries** | Toda rota tem `error.tsx`; erros não expõem stack trace no browser |
-| **Not-found** | Rotas dinâmicas com ID inválido têm `not-found.tsx` |
-| **PII em logs** | Nenhum CPF, email, SIAPE em texto plano em `stdout`/`stderr` |
-| **Audit log** | Criação, edição e exclusão de associados, usuários, ofícios e consultas são registrados |
-| **Acessibilidade** | Formulários com `label` associado; navegação por teclado funcional |
-| **Performance** | Páginas com dados reais carregam em < 3 s em conexão 4G |
+| Requisito            | Critério                                                                                |
+| -------------------- | --------------------------------------------------------------------------------------- |
+| **Autenticação**     | Qualquer rota `/app/*` sem sessão redireciona para `/login`                             |
+| **Autorização**      | Role insuficiente retorna 403 (não 404 ou 500)                                          |
+| **Error boundaries** | Toda rota tem `error.tsx`; erros não expõem stack trace no browser                      |
+| **Not-found**        | Rotas dinâmicas com ID inválido têm `not-found.tsx`                                     |
+| **PII em logs**      | Nenhum CPF, email, SIAPE em texto plano em `stdout`/`stderr`                            |
+| **Audit log**        | Criação, edição e exclusão de associados, usuários, ofícios e consultas são registrados |
+| **Acessibilidade**   | Formulários com `label` associado; navegação por teclado funcional                      |
+| **Performance**      | Páginas com dados reais carregam em < 3 s em conexão 4G                                 |

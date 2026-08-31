@@ -15,14 +15,15 @@ vi.mock('@/components/LogoutButton', () => ({
 afterEach(cleanup);
 
 describe('Sidebar', () => {
-  it('groups navigation by operational purpose without changing role-based links', () => {
+  it('hides financeiro and email triage from the operator navigation', () => {
     render(<Sidebar user={{ name: 'Ana Silva', role: 'admin' }} />);
 
     expect(screen.getByText('Operação')).toBeDefined();
     expect(screen.getByText('Cadastro')).toBeDefined();
     expect(screen.getByText('Gestão')).toBeDefined();
-    expect(screen.getByRole('link', { name: 'Triagem de E-mails' })).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Financeiro' })).toBeDefined();
+    expect(screen.queryByRole('link', { name: 'Triagem de E-mails' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Financeiro' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Jurídico' })).toBeDefined();
   });
 
   it('keeps management-only entries hidden from secretaria', () => {
