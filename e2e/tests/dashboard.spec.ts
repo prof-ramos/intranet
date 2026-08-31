@@ -21,7 +21,8 @@ test.describe('Dashboard', () => {
     await expect(page.locator('text=Atividades em curso')).toBeVisible();
 
     const navigation = await expectNavigationSections(page);
-    await expect(navigation.getByRole('button', { name: 'Financeiro' })).toBeVisible();
+    await expect(navigation.getByRole('button', { name: 'Financeiro' })).toHaveCount(0);
+    await expect(navigation.getByRole('link', { name: 'Triagem de E-mails' })).toHaveCount(0);
     await expect(navigation.getByRole('link', { name: 'Relatórios' })).toBeVisible();
     await expect(navigation.getByRole('button', { name: 'Configurações' })).toBeVisible();
     await expect(navigation.getByText('E-mails com IA', { exact: true })).toHaveCount(1);
@@ -33,7 +34,8 @@ test.describe('Dashboard', () => {
     await expect(page.locator('h1')).toContainText('Painel Administrativo');
 
     const navigation = await expectNavigationSections(page);
-    await expect(navigation.getByRole('button', { name: 'Financeiro' })).toBeVisible();
+    await expect(navigation.getByRole('button', { name: 'Financeiro' })).toHaveCount(0);
+    await expect(navigation.getByRole('link', { name: 'Triagem de E-mails' })).toHaveCount(0);
     await expect(navigation.getByRole('link', { name: 'Relatórios' })).toBeVisible();
     await expect(navigation.getByRole('button', { name: 'Configurações' })).toBeVisible();
     await expect(navigation.getByText('E-mails com IA', { exact: true })).toHaveCount(0);
@@ -46,6 +48,7 @@ test.describe('Dashboard', () => {
 
     const navigation = await expectNavigationSections(page);
     await expect(navigation.getByRole('button', { name: 'Financeiro' })).toHaveCount(0);
+    await expect(navigation.getByRole('link', { name: 'Triagem de E-mails' })).toHaveCount(0);
     await expect(navigation.getByRole('link', { name: 'Relatórios' })).toHaveCount(0);
     await expect(navigation.getByRole('button', { name: 'Configurações' })).toHaveCount(0);
   });

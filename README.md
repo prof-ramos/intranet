@@ -23,19 +23,19 @@ Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de 
 
 ## Módulos principais
 
-| Módulo                    | Rota principal                 | Responsabilidade                                                                     |
-| ------------------------- | ------------------------------ | ------------------------------------------------------------------------------------ |
-| Dashboard                 | `/app`                         | Visão operacional de associados ASOF, atividades, jurídico e financeiro.             |
-| Cadastro de Oficiais      | `/app/associados`              | Cadastro, perfil, lotação/posto, situação funcional, vínculo ASOF e contribuição.    |
-| Atividades                | `/app/atividades`              | Kanban administrativo com responsáveis, prioridades, prazos e vínculos com oficiais. |
-| Jurídico                  | `/app/juridico`                | Consultas jurídicas, notas, SLA e histórico de atendimento.                          |
-| Triagem de E-mails        | `/app/email-triage`            | Controle operacional de prazos, demandas e evidências extraídas de e-mails.          |
-| Secretaria / Ofícios      | `/app/secretaria/oficios`      | Geração, edição, cancelamento e download de ofícios.                                 |
-| Financeiro / Mensalidades | `/app/financeiro/mensalidades` | Controle mensal de pagamentos e status de mensalidade.                               |
-| Relatórios                | `/app/associados/relatorio`    | Exportação auditada de dados de oficiais para `admin` e `diretoria`.                 |
-| Configurações             | `/app/config`                  | Usuários, lotações, auditoria, API keys e webhooks outbound.                         |
+| Módulo               | Rota principal              | Responsabilidade                                                                     |
+| -------------------- | --------------------------- | ------------------------------------------------------------------------------------ |
+| Dashboard            | `/app`                      | Visão operacional de associados ASOF, atividades e jurídico.                         |
+| Cadastro de Oficiais | `/app/associados`           | Cadastro, perfil, lotação/posto, situação funcional, vínculo ASOF e contribuição.    |
+| Atividades           | `/app/atividades`           | Kanban administrativo com responsáveis, prioridades, prazos e vínculos com oficiais. |
+| Jurídico             | `/app/juridico`             | Consultas jurídicas, notas, SLA e histórico de atendimento.                          |
+| Secretaria / Ofícios | `/app/secretaria/oficios`   | Geração, edição, cancelamento e download de ofícios.                                 |
+| Relatórios           | `/app/associados/relatorio` | Exportação auditada de dados de oficiais para `admin` e `diretoria`.                 |
+| Configurações        | `/app/config`               | Usuários, lotações, auditoria, API keys e webhooks outbound.                         |
 
 > Dados como CPF, SIAPE, email, endereço e dados funcionais são sensíveis pela LGPD. Use os helpers de sanitização/logging do projeto e não exponha esses dados em logs, erros ou payloads públicos.
+>
+> Financeiro/mensalidades (`/app/financeiro`) e triagem de e-mails (`/app/email-triage`) permanecem no código e nos crons, mas **não aparecem na navegação** no ciclo atual ([#429](https://github.com/prof-ramos/intranet/issues/429)). Deep links redirecionam para `/app`.
 
 ---
 
@@ -319,9 +319,7 @@ src/
       associados/           # Cadastro de Oficiais + relatórios
       atividades/            # Kanban de atividades administrativas
       config/                # configurações, auditoria, usuários, integrações, lotações
-      financeiro/mensalidades/ # mensalidades e dashboard financeiro
       juridico/              # consultas, processos, pareceres e notas jurídicas
-      email-triage/          # triagem operacional de e-mails, prazos e demandas
       notifications/         # actions de notificação
       search/                # busca global
       secretaria/oficios/    # gestão de ofícios

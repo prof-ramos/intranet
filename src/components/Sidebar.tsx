@@ -1,13 +1,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import {
-  DollarSign,
   FileSpreadsheet,
   Kanban,
   LayoutDashboard,
   Mail,
   MapPin,
-  Receipt,
   Scale,
   Settings,
   Shield,
@@ -78,9 +76,6 @@ export function Sidebar({ user }: SidebarProps) {
           <NavLink href="/app/atividades" icon={<Kanban size={20} />}>
             Atividades
           </NavLink>
-          <NavLink href="/app/email-triage" icon={<Mail size={20} />}>
-            Triagem de E-mails
-          </NavLink>
           <NavLink href="/app/juridico" icon={<Scale size={20} />}>
             Jurídico
           </NavLink>
@@ -124,20 +119,6 @@ export function Sidebar({ user }: SidebarProps) {
                 : []),
             ]}
           />
-          {user.role !== 'secretaria' && (
-            <NavGroup
-              basePath="/app/financeiro"
-              icon={<DollarSign size={20} />}
-              label="Financeiro"
-              items={[
-                {
-                  href: '/app/financeiro/mensalidades',
-                  label: 'Mensalidades',
-                  icon: <Receipt size={18} />,
-                },
-              ]}
-            />
-          )}
           {user.role !== 'secretaria' && (
             <NavLink href="/app/associados/relatorio" icon={<FileSpreadsheet size={20} />}>
               Relatórios

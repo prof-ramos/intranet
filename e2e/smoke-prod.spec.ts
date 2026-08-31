@@ -344,32 +344,24 @@ mutatingTest('5. Jurídico — criar consulta e avançar status', async ({ page 
   }
 });
 
-// ── 6. Financeiro ───────────────────────────────────────────────────────────
-test('6. Financeiro — mensalidades renderizam sem inicializar ou alterar pagamentos', async ({
+// ── 6. Financeiro / triagem (V2) ────────────────────────────────────────────
+test('6. Financeiro e triagem — rotas V2 redirecionam ao dashboard sem escrita', async ({
   page,
 }) => {
   await loginAdmin(page);
   const unexpectedWriteMethods = captureUnexpectedWriteMethods(page);
   await page.goto('/app/financeiro/mensalidades');
-  await expect(page.getByRole('heading', { name: 'Controle de Mensalidades' })).toBeVisible({
+  await expect(page).toHaveURL(/\/app\/?$/);
+  await expect(page.getByRole('heading', { name: 'Painel Administrativo' })).toBeVisible({
     timeout: 20_000,
   });
 
-  // Somente leitura: valida o período, os agregados e a fila sem acionar controles de escrita.
-  await expect(page.getByLabel('Selecionar mês')).toHaveValue(/^\d{4}-\d{2}$/);
-  await expect(page.getByRole('region', { name: 'Fechamento mensal' })).toBeVisible();
-  await expect(page.getByRole('progressbar', { name: 'Taxa de pagamento' })).toHaveAttribute(
-    'aria-valuetext',
-    /^\d+% pagos$/,
-  );
-  await expect(page.getByRole('region', { name: 'Filtros de mensalidades' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Fila de conferência' })).toBeVisible();
-  await expect(page.getByText(/^\d+ exibidos$/)).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Perfil da cobrança' })).toBeVisible();
+  const navigation = page.getByRole('navigation', { name: 'Navegação principal' });
+  await expect(navigation.getByRole('button', { name: 'Financeiro' })).toHaveCount(0);
+  await expect(navigation.getByRole('link', { name: 'Triagem de E-mails' })).toHaveCount(0);
 
-  const renderedContent = await page.locator('main').innerText();
-  expect(renderedContent).not.toMatch(/\b(?:NaN|undefined)\b/);
-  expect(renderedContent).not.toContain('[object Object]');
+  await page.goto('/app/email-triage');
+  await expect(page).toHaveURL(/\/app\/?$/);
   expect(unexpectedWriteMethods).toEqual([]);
 });
 

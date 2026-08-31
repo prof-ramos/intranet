@@ -10,27 +10,28 @@ Authenticated dashboard — main app area after login. All routes require auth v
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `error.tsx` | Error boundary |
-| `layout.tsx` | Dashboard layout with sidebar |
-| `loading.tsx` | Loading state |
-| `page.tsx` | Redirects to atividades |
+| File          | Purpose                       |
+| ------------- | ----------------------------- |
+| `error.tsx`   | Error boundary                |
+| `layout.tsx`  | Dashboard layout with sidebar |
+| `loading.tsx` | Loading state                 |
+| `page.tsx`    | Redirects to atividades       |
 
 ## Subdirectories
 
-| Directory | Purpose |
-|-----------|---------|
-| `_dashboard/` | Shared dashboard components — DashboardActivitiesOverview, DashboardIndicators, DashboardSidebar |
-| `associados/` | Associates CRUD + relatorio/download |
-| `atividades/` | Activity kanban board — `_board/` (ActivityCard, Drawer, FilterBar, QuickAdd, SummaryStrip), `nova/` (AssigneePicker, AssociatePicker, NovaAtividadeForm) |
-| `config/` | Admin config — auditoria, integracoes/ (api-keys, ia, webhooks), lotacoes, usuarios |
-| `financeiro/` | Financial management — mensalidades/ (FinanceKPis, MonthlyPaymentsTable, actions) |
-| `juridico/` | Legal consultations — consultas/ ([id]/, nova/) |
-| `notifications/` | Notification center and actions |
-| `privacidade/` | Privacy policy page |
-| `search/` | Global search page |
-| `secretaria/` | Secretaria — documentos/, emails/gerar, oficios/ (_components, [id]/editar, novo/) |
+| Directory        | Purpose                                                                                                                                                   |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `_dashboard/`    | Shared dashboard components — DashboardActivitiesOverview, DashboardIndicators, DashboardSidebar                                                          |
+| `associados/`    | Associates CRUD + relatorio/download                                                                                                                      |
+| `atividades/`    | Activity kanban board — `_board/` (ActivityCard, Drawer, FilterBar, QuickAdd, SummaryStrip), `nova/` (AssigneePicker, AssociatePicker, NovaAtividadeForm) |
+| `config/`        | Admin config — auditoria, integracoes/ (api-keys, ia, webhooks), lotacoes, usuarios                                                                       |
+| `financeiro/`    | Financial management — mensalidades/ (código retido; UI oculta na V2, issue #429)                                                                         |
+| `email-triage/`  | Email triage — list/detail (código e crons retidos; UI oculta na V2, issue #429)                                                                          |
+| `juridico/`      | Legal consultations — consultas/ ([id]/, nova/)                                                                                                           |
+| `notifications/` | Notification center and actions                                                                                                                           |
+| `privacidade/`   | Privacy policy page                                                                                                                                       |
+| `search/`        | Global search page                                                                                                                                        |
+| `secretaria/`    | Secretaria — documentos/, emails/gerar, oficios/ (\_components, [id]/editar, novo/)                                                                       |
 
 ## For AI Agents
 
