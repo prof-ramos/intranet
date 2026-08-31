@@ -30,6 +30,10 @@ vi.mock('@/lib/integrations/webhooks/repository', () => ({
   listWebhookSubscriptions: vi.fn(),
 }));
 
+vi.mock('@/lib/integrations/webhooks/validation', () => ({
+  isPublicWebhookUrl: vi.fn().mockResolvedValue(true),
+}));
+
 vi.mock('@/lib/integrations/webhooks/secrets', () => ({
   encryptWebhookSecret: (...args: unknown[]) => mockEncryptWebhookSecret(...args),
 }));

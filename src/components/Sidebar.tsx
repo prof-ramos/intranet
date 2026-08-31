@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import {
+  Bot,
   DollarSign,
   FileSpreadsheet,
   Kanban,
@@ -90,7 +91,11 @@ export function Sidebar({ user }: SidebarProps) {
           <p id="nav-cadastro" className={`${navSectionLabelClass} pt-5`}>
             Cadastro
           </p>
-          <NavLink href="/app/associados" icon={<Users size={20} />}>
+          <NavLink
+            href="/app/associados"
+            exclude={['/app/associados/relatorio']}
+            icon={<Users size={20} />}
+          >
             Oficiais
           </NavLink>
         </div>
@@ -142,6 +147,11 @@ export function Sidebar({ user }: SidebarProps) {
           <NavLink href="/app/privacidade" icon={<Shield size={20} />}>
             Privacidade
           </NavLink>
+          {user.role === 'secretaria' && (
+            <NavLink href="/app/config/mcp" icon={<Bot size={20} />}>
+              Tokens MCP
+            </NavLink>
+          )}
           {user.role !== 'secretaria' && (
             <NavGroup
               basePath="/app/config"
@@ -160,6 +170,7 @@ export function Sidebar({ user }: SidebarProps) {
                   label: 'Integrações',
                   icon: <Webhook size={18} />,
                 },
+                { href: '/app/config/mcp', label: 'Tokens MCP', icon: <Bot size={18} /> },
               ]}
             />
           )}

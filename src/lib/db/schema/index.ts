@@ -23,3 +23,4 @@ export * from './password-reset-tokens';
 export * from './password-reset-attempts';
 export * from './dependents';
 export * from './health-agreements';
+export * from './mcp-tokens';

@@ -1,7 +1,7 @@
 # API Documentation — ASOF Intranet
 
 > Documentação dos endpoints HTTP públicos atualmente expostos pela ASOF Intranet.
-> Última atualização: 2026-06-19
+> Última atualização: 2026-08-31
 
 ---
 
@@ -9,7 +9,7 @@
 
 A superficie HTTP publica atual da ASOF Intranet e pequena e intencionalmente restrita.
 
-Hoje existem **14 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
+Hoje existem **17 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
 
 | Metodo        | Rota                                 | Finalidade                                                                                         |
 | ------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------- |
@@ -27,6 +27,9 @@ Hoje existem **14 endpoints HTTP expostos**, com superficie publica intencionalm
 | `GET`         | `/api/v1/cron/cleanup-nonces`        | Limpa nonces expirados de replay protection (cron bearer, diário 01:00 UTC)                        |
 | `POST`        | `/app/etiquetas/gerar`               | Geracao administrativa de etiquetas Pimaco em PDF                                                  |
 | `POST`        | `/api/webhooks/assinafy`             | Webhook de retorno de assinatura digital (Assinafy)                                                |
+| `GET`         | `/api/mcp`                           | Transporte Streamable HTTP MCP para operadores                                                     |
+| `POST`        | `/api/mcp`                           | Mensagens e chamadas de tools pelo transporte Streamable HTTP MCP                                  |
+| `DELETE`      | `/api/mcp`                           | Encerramento do transporte Streamable HTTP MCP                                                     |
 
 ### O que esta fora deste documento
 
@@ -122,11 +125,52 @@ Erros em endpoints HTTP são logados via `src/lib/logger.ts` com redação autom
 Não existem hoje:
 
 - OAuth de integracao
-- tokens de acesso pessoal
 - webhooks inbound publicos
 - ingestao inbound de eventos
 
 A fundacao `/api/v1/*` existe para padronizar autenticacao e envelopes JSON, mas ainda nao representa uma API publica ampla.
+
+### MCP de operador (`/api/mcp`)
+
+O endpoint `GET`/`POST`/`DELETE /api/mcp` implementa o transporte **Streamable HTTP MCP** para operadores internos. Ele nao e REST CRUD e nao pertence a fundacao M2M HMAC de `/api/v1/*`. Tambem nao e o servidor Postgres de engenharia configurado no `.mcp.json`: clientes MCP de produto acessam services do dominio, nunca SQL direto.
+
+#### Autenticacao e emissao do PAT
+
+- O operador cria o proprio PAT em `/app/config/mcp`.
+- O token tem prefixo `asof_mcp_`, expira obrigatoriamente em 90 dias e e exibido uma unica vez.
+- A criacao exige checkbox de ciencia LGPD sobre o uso do provedor LLM como subprocessador.
+- Cada request usa `Authorization: Bearer <PAT>`. Cookie de sessao e assinatura M2M HMAC nao autenticam `/api/mcp`.
+- A role e o estado do operador sao relidos de `admins`; usuario inativo ou com troca de senha pendente perde o acesso imediatamente.
+- Rate limit: 60 requests por 15 minutos por PAT e por IP na pré-autenticação. Limite excedido responde `429` com `Retry-After`. Falha ao persistir o limitador responde `503`, nunca `401`.
+- `src/proxy.ts` nao protege `/api/mcp` nem redireciona para `/login`; o proprio handler autentica o Bearer.
+
+#### Tools da onda 1
+
+- `asof_search_associates` — busca Oficiais de Chancelaria.
+- `asof_get_associate` — consulta um Oficial; `include_sensitive` e `false` por padrao.
+- `asof_list_associate_dependents` — lista dependentes de um Oficial.
+- `asof_list_associate_health_agreements` — lista convenios de saude de um Oficial; exige `include_sensitive: true`.
+
+Dados sensiveis so podem ser incluidos quando a tool oferecer `include_sensitive: true`. Cada chamada registra auditoria com `metadata.channel = "mcp"` e identidade do operador.
+
+#### Configuracao de cliente
+
+Exemplo para clientes Streamable HTTP como Cursor ou Claude:
+
+```json
+{
+  "mcpServers": {
+    "asof-intranet": {
+      "url": "https://intranet.asof.com.br/api/mcp",
+      "headers": {
+        "Authorization": "Bearer asof_mcp_SEU_TOKEN"
+      }
+    }
+  }
+}
+```
+
+O PAT deve ser tratado como segredo e revogado em `/app/config/mcp` quando nao for mais necessario. A decisao arquitetural completa esta no [ADR 021](./docs/adr/021-mcp-operator-control-plane.md).
 
 ### Seguranca dos webhooks outbound
 

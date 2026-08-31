@@ -17,6 +17,7 @@ A intranet ASOF e uma aplicacao Next.js 16.2.6 App Router, server-side, com Driz
 - `src/app/app/config`: usuarios, lotacoes, auditoria, API keys e webhooks outbound.
 - `src/app/app/email-triage` e `src/lib/email-triage`: triagem automatica de e-mails com Gemini AI. Busca emails via Gmail API, analisa com IA, persiste resultado operacional, correlaciona consultas abertas quando seguro e notifica admins.
 - `src/lib/assinafy`: cliente Assinafy, webhook handler, repository e service para assinatura digital de ofícios.
+- `src/lib/mcp`, `/api/mcp` e `/app/config/mcp`: control plane MCP de operador via Streamable HTTP e PATs em `operator_mcp_tokens`. A UI e as tools MCP compartilham os mesmos services de dominio; o canal MCP nao expoe SQL nem REST CRUD. Ver [ADR 021](./docs/adr/021-mcp-operator-control-plane.md).
 
 ## Modulo Email Triage
 

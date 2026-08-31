@@ -213,7 +213,6 @@ _Avoid_: "Advogado" sozinho, pois é ambíguo — pode ser o responsável intern
 
 #### Processo Jurídico
 
-
 Caso jurídico mais estruturado (Fase 2 do módulo). Relaciona-se a pareceres e notas.
 
 - **Status** (`legalProcessStatus`): `ativo`, `concluido`, `suspenso`.
@@ -237,7 +236,6 @@ Compromisso com data-limite extraído de uma Consulta Jurídica, geralmente iden
 - Notificações progressivas antes do vencimento são geradas pelo sistema automaticamente.
 
 _Avoid_: confundir com SLA de inatividade. O SLA mede ausência de atualização em uma Consulta Jurídica; o Prazo Processual mede um compromisso processual específico com data e responsável definidos.
-
 
 ---
 
@@ -278,7 +276,6 @@ Notificação que exige **resolução explícita** por um coordenador, com regis
 - **Ciclo de vida**: `ativo` → `resolvido` (com `resolved_by`, `resolved_at`, `resolution_note`).
 
 _Avoid_: confundir com Notificação, cujo ciclo de vida encerra com a leitura. O Alerta de Acompanhamento só encerra quando o coordenador registra explicitamente a ação tomada.
-
 
 #### Evento de Domínio
 
@@ -348,6 +345,7 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 3. **Rate Limit de Login**: 5 tentativas por email a cada 15 minutos, persistido em PostgreSQL.
 4. **Dev Bypass**: `SKIP_AUTH=true` permite desenvolvimento sem autenticação real, mas é ignorado em produção.
 5. **Redefinição de Senha**: Administradores podem resetar a senha de outros usuários. A exposição temporária de credenciais geradas no painel administrativo é tratada como um débito técnico documentado no ADR 005. Como política de segurança de dados, senhas temporárias nunca devem ser salvas em logs ou registros de auditoria.
+6. **PAT MCP de Operador**: O canal `/api/mcp` autentica operadores internos com PAT individual prefixado por `asof_mcp_`. O PAT identifica uma pessoa de `admins`; sua role, `isActive` e `mustChangePassword` são relidos ao vivo a cada autenticação. Não é credencial M2M, não reutiliza `integration_api_keys` e não aceita cookie de sessão.
 
 ### Auditoria e LGPD
 
@@ -356,6 +354,8 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 3. **PII View** (`publicAssociateListColumns` em `src/lib/associates/repository.ts`): Seleção de colunas Drizzle ORM que exclui campos `_ciphertext` e `_hash`, fornecendo uma visão segura para listagens paginadas de associados.
 4. **Ator Sistema**: `logAuditAction` aceita `adminId: null` para operações automáticas (ex: webhook Assinafy, marcação automática de inadimplência, dispatch agendado). Dois bypass sites migrados: `finance/service.ts` (`auto_mark_overdue`) e `dispatch/route.ts` (`domain_event_dispatch_scheduled`).
 5. **Transação de Auditoria**: `logAuditAction` suporta parâmetro `executor` (Tx) para inclusão dentro de transações existentes (ex: webhook handler).
+6. **Canal MCP**: Cada chamada de tool registra o operador em `adminId` e `metadata.channel = 'mcp'`. Tools de leitura retornam campos operacionais por padrão; a solicitação explícita de dados sensíveis é registrada por `include_sensitive`.
+7. **Subprocessador LLM**: Ao criar o PAT, o operador reconhece que o provedor do cliente LLM processará os dados acessados pelo MCP como subprocessador. A ciência fica documentada em `lgpd_acknowledged_at`; ela não substitui o DPA institucional.
 
 ---
 

@@ -16,6 +16,9 @@ export default defineConfig({
     exclude: ['src/**/*.integration.test.{ts,tsx}'],
     setupFiles: ['src/test/setup.ts'],
     reporters: ['default'],
+    // jsdom + Next/React renders routinely exceed Vitest's 5s default when the
+    // suite is CPU-contended (parallel workers). Integration tests already use 15s.
+    testTimeout: 15_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

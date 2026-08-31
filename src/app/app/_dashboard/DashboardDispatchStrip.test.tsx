@@ -1,8 +1,25 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { DashboardDispatchStrip } from './DashboardDispatchStrip';
+
+vi.mock('next/link', () => ({
+  default: ({
+    href,
+    children,
+    ...props
+  }: {
+    href: string;
+    children: ReactNode;
+    [key: string]: unknown;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 afterEach(cleanup);
 
@@ -23,7 +40,7 @@ describe('DashboardDispatchStrip', () => {
     );
 
     expect(screen.getByText('Responsável: Sem responsável')).toBeDefined();
-    expect(screen.getByRole('link', { name: /cobrar retorno/i }).getAttribute('href')).toBe(
+    expect(screen.getByText('Cobrar retorno').closest('a')?.getAttribute('href')).toBe(
       '/app/atividades?dueLate=1&open=7',
     );
   });

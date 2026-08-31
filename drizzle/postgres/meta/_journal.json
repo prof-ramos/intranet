@@ -232,6 +232,13 @@
       "when": 1787081643759,
       "tag": "0032_opposite_zarek",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1788177649661,
+      "tag": "0033_operator_mcp_tokens",
+      "breakpoints": true
     }
   ]
 }

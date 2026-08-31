@@ -409,6 +409,17 @@ const expectedColumns = {
     'created_at:timestamptz:NO',
     'updated_at:timestamptz:NO',
   ],
+  operator_mcp_tokens: [
+    'id:int8:NO',
+    'admin_id:int8:NO',
+    'name:text:NO',
+    'token_hash:text:NO',
+    'lgpd_acknowledged_at:timestamptz:NO',
+    'last_used_at:timestamptz:YES',
+    'expires_at:timestamptz:NO',
+    'revoked_at:timestamptz:YES',
+    'created_at:timestamptz:NO',
+  ],
   rate_limits: [
     'id:int8:NO',
     'key:text:NO',
@@ -799,6 +810,12 @@ const expectedIndexes = {
   ],
   dependents: ['dependents_pkey', 'idx_dependents_associate_id'],
   health_agreements: ['health_agreements_pkey', 'idx_health_agreements_associate_id'],
+  operator_mcp_tokens: [
+    'idx_operator_mcp_tokens_active',
+    'idx_operator_mcp_tokens_admin_id',
+    'idx_operator_mcp_tokens_token_hash_unique',
+    'operator_mcp_tokens_pkey',
+  ],
   rate_limits: ['idx_rate_limits_expires_at', 'idx_rate_limits_key_scope', 'rate_limits_pkey'],
   test_results: [
     'idx_test_results_duration',

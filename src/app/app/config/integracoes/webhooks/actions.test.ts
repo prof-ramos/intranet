@@ -29,6 +29,10 @@ vi.mock('@/lib/integrations/webhooks/subscriptions', () => ({
   validateWebhookSubscriptionEvents: (events: string[]) => events,
 }));
 
+vi.mock('@/lib/integrations/webhooks/validation', () => ({
+  isPublicWebhookUrl: vi.fn().mockResolvedValue(true),
+}));
+
 vi.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => revalidatePathMock(...args),
 }));

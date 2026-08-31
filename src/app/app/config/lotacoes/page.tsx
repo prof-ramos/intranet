@@ -1,11 +1,14 @@
 import { db } from '@/lib/db';
 import { assignments } from '@/lib/db/schema';
+import { requireRole } from '@/lib/auth/authorization';
 import { asc } from 'drizzle-orm';
 import { AssignmentForm } from './AssignmentForm';
 import { AssignmentActionsPanel } from './AssignmentActionsPanel';
 import { AssignmentEditRow } from './AssignmentEditRow';
 
 export default async function LotacoesPage() {
+  await requireRole(['admin', 'diretoria']);
+
   const items = await db
     .select({
       id: assignments.id,

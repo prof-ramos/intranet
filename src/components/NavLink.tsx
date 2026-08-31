@@ -5,18 +5,31 @@ import { usePathname } from 'next/navigation';
 import { type CSSProperties, type ReactNode } from 'react';
 import { primaryContainerActive, primaryContainerHover, skyBlue } from '@/lib/ui/tokens';
 
+export function isNavLinkActive(
+  pathname: string,
+  href: string,
+  exclude: readonly string[] = [],
+): boolean {
+  if (pathname === href) return true;
+  if (href === '/app') return false;
+  if (!pathname.startsWith(`${href}/`)) return false;
+  return !exclude.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
 export function NavLink({
   href,
   icon,
   children,
+  exclude,
 }: {
   href: string;
   icon: ReactNode;
   children: ReactNode;
+  exclude?: readonly string[];
 }) {
   const pathname = usePathname();
 
-  const isActive = pathname === href || (href !== '/app' && pathname.startsWith(`${href}/`));
+  const isActive = isNavLinkActive(pathname, href, exclude);
   const className = [
     'flex min-h-[58px] items-center gap-3 pr-9 text-sm leading-tight font-medium transition-colors duration-150',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring-color)]',
