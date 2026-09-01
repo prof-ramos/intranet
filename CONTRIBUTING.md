@@ -74,6 +74,38 @@ Acesse `http://localhost:3000`.
 
 Use o runbook para operações reais de deploy, backup, rollback e smoke test: [`docs/runbook.md`](./docs/runbook.md).
 
+### Configuração de Agentes IA
+
+O projeto possui configurações para agentes IA em `.verboo/settings.local.json`:
+
+```json
+{
+  "env": {
+    "DATABASE_URL": "postgresql://gabrielramos@localhost:5432/asof_intranet",
+    "SKIP_AUTH": "true"
+  },
+  "model": "pro-old/deepseek-v4-flash-0731",
+  "language": "pt",
+  "alwaysThinkingEnabled": true
+}
+```
+
+#### Skills Instalados
+
+```bash
+# oh-my-claudecode - framework de orquestração multi-agente
+npx skills add yeachan-heo/oh-my-claudecode
+
+# Anthropic skills - skills oficiais
+npx skills add https://github.com/anthropics/skills
+```
+
+Principais skills disponíveis:
+- `/team` - Orquestração multi-agente
+- `/autopilot` - Execução autônoma
+- `/verify` - Verificação de implementação
+- `/research` - Pesquisa de código
+
 ## 2. Visão geral da estrutura do projeto
 
 O projeto é uma aplicação Next.js 16 App Router full-stack. Server Components, Server Actions, Route Handlers e acesso ao banco vivem no mesmo repositório.

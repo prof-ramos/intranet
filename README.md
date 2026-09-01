@@ -431,3 +431,62 @@ Veja [`docs/runbook.md`](./docs/runbook.md) para procedimentos operacionais.
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Guia do desenvolvedor e padrão de contribuição.                                    |
 | [`docs/runbook.md`](./docs/runbook.md) | Procedimentos operacionais: deploy, backup, rollback, smoke tests e incidentes.    |
 | [`TODO-PROD.md`](./TODO-PROD.md)       | Checklist vivo de prontidão de produção e bloqueadores atuais.                     |
+
+---
+
+## Configuração de Agentes IA
+
+O projeto possui configurações para agentes IA (Claude Code, Verboo Code) em `.verboo/settings.local.json` e `.agents/skills/`.
+
+### Skills Instalados
+
+#### oh-my-claudecode (35 skills)
+
+Framework de orquestração multi-agente para Claude Code. Skills principais:
+
+| Skill | Descrição |
+|-------|-----------|
+| `team` | Orquestração multi-agente com pipeline staging |
+| `autopilot` | Execução autônoma end-to-end |
+| `deep-interview` | Clarificação de requisitos via-questionamento socrático |
+| `research` | Pesquisa de código e documentação |
+| `verify` | Verificação de implementação |
+| `debug` | Diagnóstico de problemas |
+
+#### Anthropic Skills (20 skills)
+
+Skills oficiais da Anthropic para desenvolvimento:
+
+| Skill | Descrição |
+|-------|-----------|
+| `claude-api` | Integração com API Claude |
+| `webapp-testing` | Testes de aplicação web |
+| `frontend-design` | Design de interfaces |
+| `mcp-builder` | Construção de servidores MCP |
+| `discernment-nudge` | Verificação de pressupostos em respostas |
+
+### Variáveis de Ambiente Locais
+
+Configure em `.verboo/settings.local.json`:
+
+```json
+{
+  "env": {
+    "DATABASE_URL": "postgresql://gabrielramos@localhost:5432/asof_intranet",
+    "SKIP_AUTH": "true"
+  }
+}
+```
+
+### Comandos de Skills
+
+```bash
+# Instalar skills
+npx skills add yeachan-heo/oh-my-claudecode
+npx skills add https://github.com/anthropics/skills
+
+# Usar skill (invoque via /nome-do-skill)
+/team          # Orquestração multi-agente
+/autopilot     # Execução autônoma
+/verify        # Verificação de implementação
+```
