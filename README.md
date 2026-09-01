@@ -88,6 +88,7 @@ variáveis de um ambiente Vercel em diagnósticos ou uso controlado com
 | `DATABASE_URL`           | URL PostgreSQL de runtime. Em produção, prefira pooler/runtime com usuário restrito. |
 | `DATABASE_MIGRATION_URL` | URL PostgreSQL direta/non-pooling para migrations do Drizzle.                        |
 | `SESSION_SECRET`         | Segredo forte para assinar cookies `httpOnly` de sessão.                             |
+| `ASOF_INTRANET_URL`      | URL canônica da intranet. Obrigatória quando `VERCEL_ENV=production`.                |
 
 No setup atual de produção no Vercel:
 

@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-05-26 | Updated: 2026-05-26 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-09-01 -->
 
 # lib
 
@@ -24,26 +24,32 @@ Domain library modules for business logic, data access, and DB schema. All modul
 | Directory | Purpose |
 |-----------|---------|
 | `activities/` | Activity/kanban board — board-data, queries, repository, service, status, transformations, types |
-| `ai/` | Gemini AI integration — constants, gemini.ts, settings |
+| `ai/` | Gemini AI via `@google/genai` — constants, gemini.ts, settings |
+| `assinafy/` | Cliente Assinafy, webhook handler, repository e política de transição |
+| `assignments/` | Lotação/postos |
 | `associates/` | Associate management — lgpd, location-country, profile, repository, search-params, service |
 | `audit/` | Audit log queries and service |
 | `auth/` | Self-hosted auth — actions, authorization, config, login-rate-limit, password hashing, require-auth, session |
+| `cache/` | Cache helpers |
+| `cron/` | Cron utilities |
 | `crypto/` | PII encryption — index, pii encryption, safe-compare |
 | `dashboard/` | Dashboard queries and view models |
 | `db/` | Database connection and Drizzle schema (schema/ has 20+ schema files) |
-| `documents/` | Document storage queries and actions |
 | `email/` | Email sending and templates |
+| `email-triage/` | Triagem de e-mail (Gmail + Gemini) |
+| `errors/` | Domain error hierarchy |
+| `etiquetas/` | Geração de etiquetas |
 | `finance/` | Financial/mensalidades — effective-payment, queries, repository, search-params, service |
 | `integrations/` | Webhook and API key management — auth, config, http, outbox, rate-limit, types, keys/, webhooks/ |
 | `juridico/` | Legal/juridico — consultas, opinions, processes, dashboard, queries, repository, service, sla, sla-notifications |
 | `lgpd/` | LGPD compliance — retention policy |
 | `notifications/` | Notification repository and service |
-| `oficios/` | Oficio document generation — pdf, repository, service, validations |
+| `oficios/` | Oficio document generation — pdf, repository, service (`sendForSignature`), validations |
 | `reports/` | Report generation — audit, csv, export-filters, policy, queries, service |
 | `routing/` | Route parameter parsing |
 | `search/` | Global search queries |
 | `server-actions/` | Server action utilities |
-| `storage/` | File storage (future) |
+| `smoke/` | Contratos e espera de deployment do smoke |
 | `ui/` | UI tokens and role labels |
 | `utils/` | Date and string utilities |
 | `validation/` | Zod schemas for form validation |
@@ -80,5 +86,4 @@ Domain library modules for business logic, data access, and DB schema. All modul
 
 - `drizzle-orm` — Database ORM and schema
 - `zod` — Schema validation
-- `viem` / `ws` — Ethereum/wallet integrations (in `crypto/`)
-- `@ai-sdk/gemini` — Gemini AI integration (in `ai/`)
+- `@google/genai` — Gemini AI integration (in `ai/`)

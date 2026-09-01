@@ -37,9 +37,8 @@ live under `advisor-plans/` to avoid colliding with that archive.
 Completed plan files are removed after merge; this README table remains the
 historical ledger and status index for the advisor run.
 
-Arquivos restantes neste diretório: `059-unique-associate-blind-indexes.md` e
-`063-reconcile-operational-docs.md`. O resto foi removido em 2026-09-01 porque
-já estava em `main`.
+Arquivos restantes neste diretório: `059-unique-associate-blind-indexes.md`. O resto
+foi removido em 2026-09-01 porque já estava em `main`.
 
 ## Repo verification commands (exact, from CLAUDE.md)
 
@@ -127,7 +126,7 @@ the embedded Node on macOS — prefix `PATH="/opt/homebrew/bin:$PATH"` for E2E/b
 | 060  | Vincular e conter o smoke de produção                              | P1       | M      | 057        | MERGED — PR [#400](https://github.com/prof-ramos/intranet/pull/400) @2f0db3c                                                                                                                                       | `main` (`2f0db3c`)                                        |
 | 061  | Impedir regressões de estado Assinafy                              | P1       | M      | —          | MERGED — PR [#396](https://github.com/prof-ramos/intranet/pull/396) @0ea3920                                                                                                                                       | `main` (`0ea3920`)                                        |
 | 062  | Auditar mensalidades somente após commit                           | P1       | S      | —          | MERGED — PR #397; outbox transacional e auditoria pós-commit validadas pelos quatro gates protegidos                                                                                                               | `main` (`c2751bd`)                                        |
-| 063  | Reconciliar documentação operacional com o runtime                 | P2       | M      | 057, 060   | TODO                                                                                                                                                                                                               | plan-only (docs)                                          |
+| 063  | Reconciliar documentação operacional com o runtime                 | P2       | M      | 057, 060   | DONE — runbook, AGENTS, PAGES, ARCHITECTURE, README e checker de fences shell; arquivo do plano removido                                                                           | plan-only (docs)                                          |
 | 064  | Reconciliar identidades duplicadas sem expor PII                   | P1       | L      | 057        | MERGED — PR [#399](https://github.com/prof-ramos/intranet/pull/399) @fefa64e                                                                                                                                       | `main` (`fefa64e`)                                        |
 
 Status values: TODO | IN PROGRESS | DONE | MERGED | BLOCKED (one-line reason) | REJECTED (one-line rationale).

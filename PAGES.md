@@ -330,8 +330,8 @@ graph LR
 **Funcionalidades (código retido, sem superfície operacional):**
 
 - Inicialização mensal: cria registros de pagamento para todos os oficiais com vínculo ASOF (`initializeMonthAction`)
-- Tabela de pagamentos: status por associado (`em_dia`, `inadimplente`, `isento`)
-- KPIs: total recebido, inadimplentes, isentos, taxa de adimplência
+- Tabela de pagamentos: status por associado (`pago`, `pendente`, `atrasado`, `isento`, `cancelado`)
+- KPIs: total de associados, valor recebido, taxa de pagamento, contagens por `payment_status` (`pagos`, `pendentes`, `atrasados`, `isentos`, `cancelados`)
 - Navegação mês a mês (anterior/próximo)
 - Atualização individual de status de pagamento
 
@@ -755,8 +755,10 @@ Health check autenticado para integrações M2M. Requer escopo `health:read` ou 
 
 ### `GET|POST /api/v1/events`
 
-- `GET`: lista domain events pendentes
-- `POST`: dispara eventos por ID ou processa fila pendente
+Operador outbound-only. Inbound event ingestion não está implementado.
+
+- `GET`: anuncia capacidade (`direction: "outbound-only"`); não lista eventos pendentes
+- `POST`: despacha um `eventId` já persistido ou processa a fila pendente (`limit`)
 
 Autenticação: API Key com escopos `events:read` / `events:write`. Rate limit por chave.
 

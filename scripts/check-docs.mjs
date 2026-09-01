@@ -4,6 +4,20 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SHELL_FENCE_LANGUAGES = new Set(['bash', 'console', 'sh', 'shell', 'zsh']);
+const PATH_FENCE_LANGUAGES = new Set(['bash', 'sh', 'shell', 'zsh']);
+const VERSIONED_ROOTS = new Set([
+  '.github',
+  '.husky',
+  'advisor-plans',
+  'docs',
+  'drizzle',
+  'e2e',
+  'plans',
+  'public',
+  'scripts',
+  'src',
+]);
+const SCRIPT_PATH_EXTENSIONS = /\.(?:cjs|js|mjs|sh|sql|ts|tsx)$/iu;
 
 function parseLinkTarget(rawTarget) {
   const trimmed = rawTarget.trim();
@@ -79,6 +93,44 @@ function isLocalRelativeTarget(target) {
   );
 }
 
+function candidateRepoPath(token) {
+  const unquoted =
+    (token.startsWith('"') && token.endsWith('"')) || (token.startsWith("'") && token.endsWith("'"))
+      ? token.slice(1, -1)
+      : token;
+  if (!unquoted || unquoted.startsWith('-') || unquoted.startsWith('/')) return null;
+  if (/[$<>*?[\]{}~]|:\/\//u.test(unquoted)) return null;
+  if (/^[a-z][a-z\d+.-]*:/iu.test(unquoted)) return null;
+
+  const normalized = unquoted.replace(/^\.\//u, '');
+  if (!normalized.includes('/')) return null;
+
+  const firstSegment = normalized.split('/', 1)[0];
+  if (!VERSIONED_ROOTS.has(firstSegment) && !SCRIPT_PATH_EXTENSIONS.test(normalized)) {
+    return null;
+  }
+  return normalized;
+}
+
+function shellFenceRepoPaths(line) {
+  const withoutContinuation = line.replace(/\\$/u, '');
+  const paths = [];
+  const tokenizer = /"([^"]*)"|'([^']*)'|(\S+)/gu;
+
+  for (const match of withoutContinuation.matchAll(tokenizer)) {
+    const path = candidateRepoPath(match[1] ?? match[2] ?? match[3] ?? '');
+    if (path) paths.push(path);
+  }
+
+  return paths;
+}
+
+function validateShellFencePath(file, lineNumber, repoPath, rootDir, issues) {
+  if (!existsSync(resolve(rootDir, repoPath))) {
+    issues.push({ file, line: lineNumber, message: `missing path in shell fence: ${repoPath}` });
+  }
+}
+
 function validateLink(file, lineNumber, rawTarget, rootDir, issues) {
   const target = parseLinkTarget(rawTarget);
   if (!isLocalRelativeTarget(target)) return;
@@ -131,6 +183,12 @@ export function checkMarkdownFiles({ rootDir, markdownFiles, scripts }) {
           if (!Object.hasOwn(scripts, command)) {
             issues.push({ file, line: lineNumber, message: `unknown npm script: ${command}` });
           }
+        }
+      }
+
+      if (fence && PATH_FENCE_LANGUAGES.has(fence.language)) {
+        for (const repoPath of shellFenceRepoPaths(line)) {
+          validateShellFencePath(file, lineNumber, repoPath, rootDir, issues);
         }
       }
 
