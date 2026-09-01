@@ -264,7 +264,8 @@ graph LR
 
 **Funcionalidades:**
 
-- Seleção de campos com classificação LGPD (37 campos em 3 grupos: Dados Pessoais, Endereço, Administrativo)
+- Seleção de campos com classificação LGPD visível (37 campos em 3 grupos: Dados pessoais, Endereço, Administrativo)
+- Manifesto de exportação com N oficiais no recorte, N campos e N dados pessoais selecionados
 - Filtros: situação funcional, associativa, contribuição, mês de aniversário, tipo de missão, origem de carreira, forma de pagamento
 - Download CSV com BOM UTF-8, separador `;`, formatação pt-BR (datas dd/MM/yyyy, booleanos Sim/Não, enums com labels)
 - Prevenção de injeção de fórmula em células (tab prefix)

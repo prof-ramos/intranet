@@ -85,7 +85,11 @@ export function Sidebar({ user }: SidebarProps) {
           <p id="nav-cadastro" className={`${navSectionLabelClass} pt-5`}>
             Cadastro
           </p>
-          <NavLink href="/app/associados" icon={<Users size={20} />}>
+          <NavLink
+            href="/app/associados"
+            exclude={['/app/associados/relatorio']}
+            icon={<Users size={20} />}
+          >
             Oficiais
           </NavLink>
         </div>
