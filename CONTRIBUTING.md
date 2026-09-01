@@ -74,6 +74,39 @@ Acesse `http://localhost:3000`.
 
 Use o runbook para operações reais de deploy, backup, rollback e smoke test: [`docs/runbook.md`](./docs/runbook.md).
 
+### Configuração de Agentes IA
+
+O projeto possui configurações para agentes IA em `.verboo/settings.local.json`:
+
+```json
+{
+  "env": {
+    "DATABASE_URL": "postgresql://gabrielramos@localhost:5432/asof_intranet",
+    "SKIP_AUTH": "true"
+  },
+  "model": "pro-old/deepseek-v4-flash-0731",
+  "language": "pt",
+  "alwaysThinkingEnabled": true
+}
+```
+
+#### Skills Instalados
+
+```bash
+# oh-my-claudecode - framework de orquestração multi-agente
+npx skills add yeachan-heo/oh-my-claudecode
+
+# Anthropic skills - skills oficiais
+npx skills add https://github.com/anthropics/skills
+```
+
+Principais skills disponíveis:
+
+- `/team` - Orquestração multi-agente
+- `/autopilot` - Execução autônoma
+- `/verify` - Verificação de implementação
+- `/research` - Pesquisa de código
+
 ## 2. Visão geral da estrutura do projeto
 
 O projeto é uma aplicação Next.js 16 App Router full-stack. Server Components, Server Actions, Route Handlers e acesso ao banco vivem no mesmo repositório.
@@ -130,6 +163,25 @@ Regras importantes:
 - Use `createLogger('module-name')` em vez de `console.*` em código de produção.
 - Prefira repository/service para regras e SQL; Server Actions devem validar entrada, chamar domínio e revalidar cache.
 - O mapa arquitetural mais completo está em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+
+### Componentes de Dashboard
+
+O dashboard (`src/app/app/page.tsx`) utiliza componentes especializados:
+
+| Componente                    | Caminho                                                  | Descrição                                         |
+| ----------------------------- | -------------------------------------------------------- | ------------------------------------------------- |
+| `WelcomeBanner`               | `src/app/app/_dashboard/WelcomeBanner.tsx`               | Banner de boas-vindas para novos usuários         |
+| `DashboardIndicators`         | `src/app/app/_dashboard/DashboardIndicators.tsx`         | KPIs acionáveis com indicadores de ação           |
+| `DashboardDispatchStrip`      | `src/app/app/_dashboard/DashboardDispatchStrip.tsx`      | Pendências vencidas com empty state               |
+| `DashboardActivitiesOverview` | `src/app/app/_dashboard/DashboardActivitiesOverview.tsx` | Visão geral de atividades por status              |
+| `DashboardSidebar`            | `src/app/app/_dashboard/DashboardSidebar.tsx`            | Sidebar com associados por país e aniversariantes |
+
+Componentes compartilhados:
+
+| Componente   | Caminho                         | Descrição                           |
+| ------------ | ------------------------------- | ----------------------------------- |
+| `EmptyState` | `src/components/EmptyState.tsx` | Estado vazio reutilizável com CTA   |
+| `Sidebar`    | `src/components/Sidebar.tsx`    | Navegação lateral com Ações Rápidas |
 
 ## 3. Fluxo de trabalho de desenvolvimento
 

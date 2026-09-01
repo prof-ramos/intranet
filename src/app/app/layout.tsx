@@ -8,13 +8,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="drawer md:drawer-open min-h-screen">
-      <a
-        href="#main-content"
-        className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-4 focus-visible:left-4 focus-visible:z-[100] focus-visible:rounded-[8px] focus-visible:bg-[#040920] focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-semibold focus-visible:text-white focus-visible:outline-none"
-      >
-        Ir para o conteúdo principal
-      </a>
-
       <input id="app-drawer" type="checkbox" className="drawer-toggle" aria-hidden="true" />
 
       <div

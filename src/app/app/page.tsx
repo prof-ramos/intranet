@@ -3,11 +3,12 @@ import { getDashboardViewModel } from '@/lib/dashboard/view-model';
 import { focusRingClass } from '@/lib/ui/tokens';
 import { Calendar, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { PageHeader } from '@/components/PageHeader';
 import { DashboardActivitiesOverview } from './_dashboard/DashboardActivitiesOverview';
 import { DashboardDispatchStrip } from './_dashboard/DashboardDispatchStrip';
 import { DashboardIndicators } from './_dashboard/DashboardIndicators';
 import { DashboardSidebar } from './_dashboard/DashboardSidebar';
-import { PageHeader } from '@/components/PageHeader';
+import { WelcomeBanner } from './_dashboard/WelcomeBanner';
 import { formatBusinessDate } from '@/lib/utils/date';
 
 export default async function DashboardPage() {
@@ -19,6 +20,8 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-[1180px] flex-1 flex-col px-5 py-7 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+      <WelcomeBanner userName={user.name} isNewUser={false} />
+
       <PageHeader
         eyebrow={`Sala de operações · ${today}`}
         title="Painel Administrativo"

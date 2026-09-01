@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getDevAuthUser, isSkipAuthEnabled } from '@/lib/auth/config';
+import { getDevAuthUser, isProductionRuntime, isSkipAuthEnabled } from '@/lib/auth/config';
 
 describe('auth config', () => {
   it('reads the development user from env when skip auth is enabled', () => {
@@ -53,5 +53,11 @@ describe('auth config', () => {
 
   it('ignores auth bypass in production (VERCEL_ENV)', () => {
     expect(isSkipAuthEnabled({ SKIP_AUTH: 'true', VERCEL_ENV: 'production' })).toBe(false);
+  });
+
+  it('treats NODE_ENV or VERCEL_ENV production as production runtime', () => {
+    expect(isProductionRuntime({ NODE_ENV: 'production' })).toBe(true);
+    expect(isProductionRuntime({ VERCEL_ENV: 'production' })).toBe(true);
+    expect(isProductionRuntime({ NODE_ENV: 'test', VERCEL_ENV: 'preview' })).toBe(false);
   });
 });

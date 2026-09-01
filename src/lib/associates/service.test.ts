@@ -13,6 +13,16 @@ import {
   getAssociateStatusLabel,
 } from './service';
 
+import { ValidationError } from '@/lib/errors';
+
+function uniqueViolation(constraint: string) {
+  const cause = Object.assign(
+    new Error(`duplicate key value violates unique constraint "${constraint}"`),
+    { code: '23505', constraint_name: constraint },
+  );
+  return Object.assign(new Error('Failed query: insert into associates'), { cause });
+}
+
 const mockFindAssociatesPaginated = vi.fn();
 const mockFindAssociateById = vi.fn();
 const mockUpdateAssociateById = vi.fn();
@@ -459,6 +469,28 @@ describe('updateAssociateData', () => {
       { tx: true },
     );
   });
+
+  it.each([
+    ['idx_associates_cpf_hash', 'Já existe um oficial cadastrado com este CPF.'],
+    ['idx_associates_siape_hash', 'Já existe um oficial cadastrado com este SIAPE.'],
+    [
+      'idx_associates_primary_email_hash',
+      'Já existe um oficial cadastrado com este e-mail principal.',
+    ],
+  ] as const)('translates unique %s collisions to ValidationError', async (constraint, message) => {
+    mockUpdateAssociateById.mockRejectedValueOnce(uniqueViolation(constraint));
+
+    await expect(
+      updateAssociateData({ id: 1, fullName: 'Alice', cpf: '999' }, adminActor),
+    ).rejects.toSatisfy((error) => error instanceof ValidationError && error.message === message);
+  });
+
+  it('does not mask unique violations from unrelated constraints', async () => {
+    const error = uniqueViolation('idx_associates_phone_hash');
+    mockUpdateAssociateById.mockRejectedValueOnce(error);
+
+    await expect(updateAssociateData({ id: 1, fullName: 'Alice' }, adminActor)).rejects.toBe(error);
+  });
 });
 
 describe('associate child mutation services', () => {
@@ -658,5 +690,35 @@ describe('createAssociateData', () => {
     ).rejects.toThrow('Ator inválido.');
 
     expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['idx_associates_cpf_hash', 'Já existe um oficial cadastrado com este CPF.'],
+    ['idx_associates_siape_hash', 'Já existe um oficial cadastrado com este SIAPE.'],
+    [
+      'idx_associates_primary_email_hash',
+      'Já existe um oficial cadastrado com este e-mail principal.',
+    ],
+  ] as const)('translates unique %s collisions to ValidationError', async (constraint, message) => {
+    const repository = await import('./repository');
+    vi.mocked(repository.findAssociateByCpfHash).mockResolvedValue(null as never);
+    vi.mocked(repository.findAssociateBySiapeHash).mockResolvedValue(null as never);
+    vi.mocked(repository.findAssociateByPrimaryEmailHash).mockResolvedValue(null as never);
+    vi.mocked(repository.insertAssociate).mockRejectedValueOnce(uniqueViolation(constraint));
+
+    await expect(
+      createAssociateData({ fullName: 'Novo Oficial', cpf: '999' }, adminActor),
+    ).rejects.toSatisfy((error) => error instanceof ValidationError && error.message === message);
+  });
+
+  it('does not mask unique violations from unrelated constraints', async () => {
+    const repository = await import('./repository');
+    const error = uniqueViolation('associates_pkey');
+    vi.mocked(repository.findAssociateByCpfHash).mockResolvedValue(null as never);
+    vi.mocked(repository.findAssociateBySiapeHash).mockResolvedValue(null as never);
+    vi.mocked(repository.findAssociateByPrimaryEmailHash).mockResolvedValue(null as never);
+    vi.mocked(repository.insertAssociate).mockRejectedValueOnce(error);
+
+    await expect(createAssociateData({ fullName: 'Novo Oficial' }, adminActor)).rejects.toBe(error);
   });
 });

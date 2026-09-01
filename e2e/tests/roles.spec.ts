@@ -127,4 +127,46 @@ test.describe('Config sidebar navigation', () => {
     await page.goto('/app');
     await expect(page.getByRole('button', { name: 'Configurações' })).not.toBeVisible();
   });
+
+  test('secretaria submenu contains official search and preserves its route', async ({
+    page,
+    loginAsSecretaria,
+  }) => {
+    await loginAsSecretaria();
+    await page.goto('/app');
+
+    const navigation = page.getByRole('navigation', { name: 'Navegação principal' });
+    await navigation.getByRole('button', { name: 'Secretaria' }).click();
+    const officialsLink = navigation.getByRole('link', { name: 'Pesquisa de oficiais' });
+    await expect(officialsLink).toBeVisible();
+    await officialsLink.click();
+    await expect(page).toHaveURL('/app/associados');
+  });
+
+  test('expands Secretaria and marks the official search route active', async ({
+    page,
+    loginAsSecretaria,
+  }) => {
+    await loginAsSecretaria();
+    await page.goto('/app/associados');
+
+    const navigation = page.getByRole('navigation', { name: 'Navegação principal' });
+    await expect(navigation.getByRole('button', { name: 'Secretaria' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    await expect(navigation.getByRole('link', { name: 'Pesquisa de oficiais' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
+  test('secretaria hides juridico because the route remains restricted', async ({
+    page,
+    loginAsSecretaria,
+  }) => {
+    await loginAsSecretaria();
+    await page.goto('/app');
+    await expect(page.getByRole('link', { name: 'Jurídico' })).toHaveCount(0);
+  });
 });

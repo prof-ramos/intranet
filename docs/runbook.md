@@ -159,12 +159,7 @@ O seed cria ou atualiza o admin inicial em `admins`, grava `password_hash`, defi
 
 ### 3.1 Associados
 
-No ambiente Neon já populado para o go-live, o banco contém **1662 Oficiais de Chancelaria** importados do sistema legado, sendo **440 associados** à ASOF. Em um PostgreSQL novo ou restaurado sem dump operacional, importe primeiro o arquivo legado controlado antes de assumir esses números:
-
-```bash
-npx tsx scripts/import-asof-associados-json.ts <arquivo-legado.json> --apply
-node --env-file=.env.local scripts/seed-assignments-from-import.ts --apply
-```
+No ambiente Neon já populado para o go-live, o banco contém **1662 Oficiais de Chancelaria** importados do sistema legado, sendo **440 associados** à ASOF. Em um PostgreSQL novo ou restaurado sem dump operacional, restaure a partir do backup oficial (seção 8). Não há importador legado no repositório.
 
 ## 4. Validacao Tecnica
 
@@ -242,7 +237,7 @@ Validar no ambiente alvo:
 - atividades;
 - juridico;
 - oficios;
-- financeiro;
+- financeiro (código retido; UI oculta no ciclo V2, issue #429);
 - auditoria;
 - reset de senha de outro usuario com senha temporaria;
 - notificacoes persistidas;

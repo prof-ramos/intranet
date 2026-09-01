@@ -91,4 +91,72 @@ describe('documentation checker', () => {
     expect(exitCode).toBe(1);
     expect(diagnostics).toEqual(['README.md:1: unknown npm script: absent']);
   });
+
+  it('accepts existing repo-relative paths in shell fences', async () => {
+    const rootDir = await createFixture({
+      'README.md': ['```bash', 'npx tsx scripts/exists.ts', '```'].join('\n'),
+      'scripts/exists.ts': 'export {};',
+    });
+
+    expect(checkMarkdownFiles({ rootDir, markdownFiles: ['README.md'], scripts: {} })).toEqual([]);
+  });
+
+  it('reports missing shell-fence paths with file and line', async () => {
+    const rootDir = await createFixture({
+      'docs/runbook.md': [
+        '```bash',
+        'npx tsx scripts/import-asof-associados-json.ts <arquivo-legado.json> --apply',
+        'node --env-file=.env.local scripts/seed-assignments-from-import.ts --apply',
+        '```',
+      ].join('\n'),
+    });
+
+    expect(
+      checkMarkdownFiles({ rootDir, markdownFiles: ['docs/runbook.md'], scripts: {} }),
+    ).toEqual([
+      {
+        file: 'docs/runbook.md',
+        line: 2,
+        message: 'missing path in shell fence: scripts/import-asof-associados-json.ts',
+      },
+      {
+        file: 'docs/runbook.md',
+        line: 3,
+        message: 'missing path in shell fence: scripts/seed-assignments-from-import.ts',
+      },
+    ]);
+  });
+
+  it('ignores placeholders, variables, URLs, absolute paths, globs and non-shell fences', async () => {
+    const rootDir = await createFixture({
+      'README.md': [
+        '```bash',
+        'npx tsx <scripts/missing.ts>',
+        'node $HOME/scripts/missing.ts',
+        'curl https://example.test/scripts/missing.ts',
+        '/opt/asof-intranet/current/scripts/missing.ts',
+        'ls scripts/*.ts',
+        '```',
+        '```text',
+        'npx tsx scripts/missing.ts',
+        '```',
+      ].join('\n'),
+    });
+
+    expect(checkMarkdownFiles({ rootDir, markdownFiles: ['README.md'], scripts: {} })).toEqual([]);
+  });
+
+  it('reports a missing path on the continuation line of a multiline command', async () => {
+    const rootDir = await createFixture({
+      'README.md': ['```zsh', 'npx tsx \\', '  scripts/missing.ts', '```'].join('\n'),
+    });
+
+    expect(checkMarkdownFiles({ rootDir, markdownFiles: ['README.md'], scripts: {} })).toEqual([
+      {
+        file: 'README.md',
+        line: 3,
+        message: 'missing path in shell fence: scripts/missing.ts',
+      },
+    ]);
+  });
 });

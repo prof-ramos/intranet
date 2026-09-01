@@ -950,6 +950,28 @@ describe('database schema contract', () => {
     expectContractMap('indexes', actual, expectedIndexes);
   });
 
+  it('marks associate identity hash indexes as unique', async () => {
+    const sql = requireConnectedDatabase();
+    const rows = await sql<{ indexname: string; indisunique: boolean }[]>`
+      select i.relname as indexname, ix.indisunique
+      from pg_index ix
+      join pg_class i on i.oid = ix.indexrelid
+      join pg_namespace n on n.oid = i.relnamespace
+      where n.nspname = 'public'
+        and i.relname in (
+          'idx_associates_cpf_hash',
+          'idx_associates_siape_hash',
+          'idx_associates_primary_email_hash'
+        )
+      order by i.relname
+    `;
+    expect(rows).toEqual([
+      { indexname: 'idx_associates_cpf_hash', indisunique: true },
+      { indexname: 'idx_associates_primary_email_hash', indisunique: true },
+      { indexname: 'idx_associates_siape_hash', indisunique: true },
+    ]);
+  });
+
   it('has pg_trgm available', async () => {
     const sql = requireConnectedDatabase();
     const rows = await sql<{ extname: string }[]>`

@@ -19,5 +19,5 @@ No subdirectories — flat component directory.
 
 ## For AI Agents
 
-- Components use CSS modules pattern
+- Components use Tailwind CSS and DaisyUI, not CSS modules
 - Test files co-located with `.test.ts` suffix

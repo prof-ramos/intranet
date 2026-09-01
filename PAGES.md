@@ -264,7 +264,8 @@ graph LR
 
 **Funcionalidades:**
 
-- Seleção de campos com classificação LGPD (37 campos em 3 grupos: Dados Pessoais, Endereço, Administrativo)
+- Seleção de campos com classificação LGPD visível (37 campos em 3 grupos: Dados pessoais, Endereço, Administrativo)
+- Manifesto de exportação com N oficiais no recorte, N campos e N dados pessoais selecionados
 - Filtros: situação funcional, associativa, contribuição, mês de aniversário, tipo de missão, origem de carreira, forma de pagamento
 - Download CSV com BOM UTF-8, separador `;`, formatação pt-BR (datas dd/MM/yyyy, booleanos Sim/Não, enums com labels)
 - Prevenção de injeção de fórmula em células (tab prefix)
@@ -329,8 +330,8 @@ graph LR
 **Funcionalidades (código retido, sem superfície operacional):**
 
 - Inicialização mensal: cria registros de pagamento para todos os oficiais com vínculo ASOF (`initializeMonthAction`)
-- Tabela de pagamentos: status por associado (`em_dia`, `inadimplente`, `isento`)
-- KPIs: total recebido, inadimplentes, isentos, taxa de adimplência
+- Tabela de pagamentos: status por associado (`pago`, `pendente`, `atrasado`, `isento`, `cancelado`)
+- KPIs: total de associados, valor recebido, taxa de pagamento, contagens por `payment_status` (`pagos`, `pendentes`, `atrasados`, `isentos`, `cancelados`)
 - Navegação mês a mês (anterior/próximo)
 - Atualização individual de status de pagamento
 
@@ -754,8 +755,10 @@ Health check autenticado para integrações M2M. Requer escopo `health:read` ou 
 
 ### `GET|POST /api/v1/events`
 
-- `GET`: lista domain events pendentes
-- `POST`: dispara eventos por ID ou processa fila pendente
+Operador outbound-only. Inbound event ingestion não está implementado.
+
+- `GET`: anuncia capacidade (`direction: "outbound-only"`); não lista eventos pendentes
+- `POST`: despacha um `eventId` já persistido ou processa a fila pendente (`limit`)
 
 Autenticação: API Key com escopos `events:read` / `events:write`. Rate limit por chave.
 

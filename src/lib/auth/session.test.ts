@@ -4,6 +4,7 @@ import { SESSION_COOKIE_NAME } from '@/lib/auth/config';
 
 let skipAuth = false;
 let storedCookie: string | undefined;
+let cookieOptions: Record<string, unknown> | undefined;
 let mockDbUser: {
   id: number;
   name: string;
@@ -18,8 +19,11 @@ const cookieStore = {
   get: vi.fn((name: string) =>
     name === SESSION_COOKIE_NAME && storedCookie ? { value: storedCookie } : undefined,
   ),
-  set: vi.fn((name: string, value: string) => {
-    if (name === SESSION_COOKIE_NAME) storedCookie = value;
+  set: vi.fn((name: string, value: string, options?: Record<string, unknown>) => {
+    if (name === SESSION_COOKIE_NAME) {
+      storedCookie = value;
+      cookieOptions = options;
+    }
   }),
   delete: vi.fn((name: string) => {
     if (name === SESSION_COOKIE_NAME) storedCookie = undefined;
@@ -66,10 +70,24 @@ vi.mock('@/lib/db', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.unstubAllEnvs();
   skipAuth = false;
   storedCookie = undefined;
+  cookieOptions = undefined;
   mockDbUser = null;
 });
+
+function mockActiveAdmin() {
+  mockDbUser = {
+    id: 7,
+    name: 'Admin',
+    email: 'admin@asof.local',
+    role: 'admin',
+    isActive: true,
+    mustChangePassword: false,
+    sessionVersion: 0,
+  };
+}
 
 describe('session', () => {
   it('returns the development user when SKIP_AUTH is enabled', async () => {
@@ -114,6 +132,38 @@ describe('session', () => {
 
     await destroySession();
     expect(storedCookie).toBeUndefined();
+  });
+
+  it('sets the session cookie without Secure outside production runtime', async () => {
+    mockActiveAdmin();
+
+    await createSession({ userId: 7, email: 'admin@asof.local' });
+
+    expect(cookieOptions).toMatchObject({
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false,
+      path: '/',
+    });
+  });
+
+  it('sets the session cookie Secure when NODE_ENV is production', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    mockActiveAdmin();
+
+    await createSession({ userId: 7, email: 'admin@asof.local' });
+
+    expect(cookieOptions).toMatchObject({ secure: true });
+  });
+
+  it('sets the session cookie Secure when VERCEL_ENV is production', async () => {
+    vi.stubEnv('NODE_ENV', 'test');
+    vi.stubEnv('VERCEL_ENV', 'production');
+    mockActiveAdmin();
+
+    await createSession({ userId: 7, email: 'admin@asof.local' });
+
+    expect(cookieOptions).toMatchObject({ secure: true });
   });
 
   it('returns null when the signed cookie maps to an inactive admin', async () => {
