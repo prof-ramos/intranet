@@ -121,6 +121,10 @@ describe('requireAuth', () => {
   });
 
   it('does not bypass active-admin revalidation in production when SKIP_AUTH is set', async () => {
+    const { isSkipAuthEnabled: realIsSkipAuthEnabled } = await vi.importActual<
+      typeof import('@/lib/auth/config')
+    >('@/lib/auth/config');
+    authConfigMock.isSkipAuthEnabled.mockImplementation((env) => realIsSkipAuthEnabled(env));
     vi.stubEnv('SKIP_AUTH', 'true');
     vi.stubEnv('NODE_ENV', 'production');
     mockSession = {
@@ -141,6 +145,8 @@ describe('requireAuth', () => {
     };
 
     await expect(requireAuth()).rejects.toThrow('NEXT_REDIRECT:/login');
+    expect(authConfigMock.isSkipAuthEnabled).toHaveBeenCalled();
+    expect(authConfigMock.isSkipAuthEnabled.mock.results.at(-1)?.value).toBe(false);
   });
 
   it('fails with an actionable error when the configured development admin is missing', async () => {
