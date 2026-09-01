@@ -36,6 +36,7 @@ export function AuthShell({ title, children, maxWidth = 'sm' }: AuthShellProps) 
       >
         <div className="flex flex-col gap-6 p-6">
           <div className="flex flex-col items-center text-center">
+            <h1 className="sr-only">ASOF</h1>
             <Image
               src="/logo.svg"
               alt="ASOF — Associação de Oficiais de Chancelaria"

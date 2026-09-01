@@ -5,6 +5,7 @@ async function expectNavigationSections(page: Page) {
   const navigation = page.getByRole('navigation', { name: 'Navegação principal' });
   await expect(navigation.locator('[role="group"] > p')).toHaveText([
     'Operação',
+    'Cadastro',
     'Gestão',
     'Administração',
   ]);
@@ -109,7 +110,10 @@ test.describe('Dashboard', () => {
     await expect(page).toHaveURL(/associationStatus=associado.*contributionStatus=em_dia/);
 
     await page.goto('/app');
-    await page.getByRole('link', { name: /^atrasadas \d+$/i }).click();
+    await page
+      .getByRole('region', { name: 'Indicadores' })
+      .getByRole('link', { name: /^atrasadas/i })
+      .click();
     await expect(page).toHaveURL(/dueLate=1/);
 
     await page.goto('/app');

@@ -19,6 +19,7 @@ describe('AuthShell', () => {
     );
 
     expect(screen.getByRole('main').id).toBe('main-content');
+    expect(screen.getByRole('heading', { level: 1, name: 'ASOF' })).toBeDefined();
     expect(screen.getByLabelText(/ASOF/)).toBeDefined();
     expect(screen.getByText('Intranet')).toBeDefined();
     expect(screen.getByText('Acesso restrito')).toBeDefined();
