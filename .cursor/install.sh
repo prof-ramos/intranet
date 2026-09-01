@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+echo "[cloud-agent] Provisioning PostgreSQL..."
+bash "$SCRIPT_DIR/provision-postgres.sh"
 
 echo "[cloud-agent] Installing npm dependencies..."
 npm ci

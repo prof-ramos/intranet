@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# Fresh Cloud Agent images have no PostgreSQL. Provision before starting it.
+bash "$SCRIPT_DIR/provision-postgres.sh"
 
 if ! pg_isready -h localhost -q 2>/dev/null; then
   echo "[cloud-agent] Starting PostgreSQL..."
