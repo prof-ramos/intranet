@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { Sidebar } from './Sidebar';
 
 const usePathnameMock = vi.hoisted(() => vi.fn(() => '/app'));
@@ -21,12 +21,13 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('Sidebar', () => {
-  it('hides financeiro and email triage from the operator navigation', () => {
+  it('orders the primary sections and hides unsupported operator entries', () => {
     render(<Sidebar user={{ name: 'Ana Silva', role: 'admin' }} />);
 
     expect(screen.getByText('Operação')).toBeDefined();
     expect(screen.getByText('Cadastro')).toBeDefined();
     expect(screen.getByText('Gestão')).toBeDefined();
+    expect(screen.getByText('Administração')).toBeDefined();
     expect(screen.queryByRole('link', { name: 'Triagem de E-mails' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Financeiro' })).toBeNull();
     expect(screen.getByRole('link', { name: 'Jurídico' })).toBeDefined();
@@ -54,11 +55,21 @@ describe('Sidebar', () => {
     ).toBeNull();
   });
 
-  it('keeps management-only entries hidden from secretaria', () => {
+  it('groups official search and reports under Secretaria', () => {
+    render(<Sidebar user={{ name: 'Ana Silva', role: 'admin' }} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Secretaria' }));
+
+    expect(screen.getByRole('link', { name: 'Pesquisa de oficiais' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Relatórios' })).toBeDefined();
+  });
+
+  it('keeps restricted entries hidden from secretaria', () => {
     render(<Sidebar user={{ name: 'Bia Costa', role: 'secretaria' }} />);
 
     expect(screen.queryByRole('button', { name: 'Financeiro' })).toBeNull();
     expect(screen.queryByText('Relatórios')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Jurídico' })).toBeNull();
     expect(screen.getByText('Privacidade')).toBeDefined();
   });
 });

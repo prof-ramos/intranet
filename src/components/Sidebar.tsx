@@ -6,7 +6,9 @@ import {
   LayoutDashboard,
   Mail,
   MapPin,
+  Plus,
   Scale,
+  Search,
   Settings,
   Shield,
   ShieldCheck,
@@ -16,7 +18,7 @@ import {
 import { NavLink } from '@/components/NavLink';
 import { NavGroup } from '@/components/NavGroup';
 import { LogoutButton } from '@/components/LogoutButton';
-import { type AuthRole } from '@/lib/auth/config';
+import { PRIVILEGED_ROLES, type AuthRole } from '@/lib/auth/config';
 import { focusRingClass } from '@/lib/ui/tokens';
 
 interface SidebarProps {
@@ -28,6 +30,12 @@ interface SidebarProps {
 
 const navSectionLabelClass =
   'px-9 pb-1 text-[10px] font-bold tracking-[0.12em] text-white/45 uppercase';
+
+const quickActionClass = [
+  'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/80',
+  'transition-colors hover:bg-white/10 hover:text-white',
+  focusRingClass,
+].join(' ');
 
 export function Sidebar({ user }: SidebarProps) {
   return (
@@ -64,6 +72,25 @@ export function Sidebar({ user }: SidebarProps) {
         </p>
       </div>
 
+      {/* Quick Actions */}
+      <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(142, 193, 232, 0.15)' }}>
+        <p className={`${navSectionLabelClass} mb-2`}>Ações Rápidas</p>
+        <div className="flex flex-col gap-1">
+          <Link href="/app/atividades/nova" className={quickActionClass}>
+            <Plus size={16} />
+            Nova atividade
+          </Link>
+          <Link href="/app/secretaria/oficios/novo" className={quickActionClass}>
+            <FileSpreadsheet size={16} />
+            Novo ofício
+          </Link>
+          <Link href="/app/associados" className={quickActionClass}>
+            <Search size={16} />
+            Buscar associado
+          </Link>
+        </div>
+      </div>
+
       {/* Nav */}
       <nav className="flex flex-1 flex-col py-2" aria-label="Navegação principal">
         <div role="group" aria-labelledby="nav-operacao">
@@ -75,9 +102,6 @@ export function Sidebar({ user }: SidebarProps) {
           </NavLink>
           <NavLink href="/app/atividades" icon={<Kanban size={20} />}>
             Atividades
-          </NavLink>
-          <NavLink href="/app/juridico" icon={<Scale size={20} />}>
-            Jurídico
           </NavLink>
         </div>
 
@@ -100,9 +124,15 @@ export function Sidebar({ user }: SidebarProps) {
           </p>
           <NavGroup
             basePath="/app/secretaria"
+            activePaths={['/app/associados']}
             icon={<FileSpreadsheet size={20} />}
             label="Secretaria"
             items={[
+              {
+                href: '/app/associados',
+                label: 'Pesquisa de oficiais',
+                icon: <Users size={18} />,
+              },
               {
                 href: '/app/secretaria/oficios',
                 label: 'Ofícios',
@@ -117,17 +147,32 @@ export function Sidebar({ user }: SidebarProps) {
                     },
                   ]
                 : []),
+              ...(PRIVILEGED_ROLES.includes(user.role)
+                ? [
+                    {
+                      href: '/app/associados/relatorio',
+                      label: 'Relatórios',
+                      icon: <FileSpreadsheet size={18} />,
+                    },
+                  ]
+                : []),
             ]}
           />
-          {user.role !== 'secretaria' && (
-            <NavLink href="/app/associados/relatorio" icon={<FileSpreadsheet size={20} />}>
-              Relatórios
+          {PRIVILEGED_ROLES.includes(user.role) && (
+            <NavLink href="/app/juridico" icon={<Scale size={20} />}>
+              Jurídico
             </NavLink>
           )}
+        </div>
+
+        <div role="group" aria-labelledby="nav-administracao">
+          <p id="nav-administracao" className={`${navSectionLabelClass} pt-5`}>
+            Administração
+          </p>
           <NavLink href="/app/privacidade" icon={<Shield size={20} />}>
             Privacidade
           </NavLink>
-          {user.role !== 'secretaria' && (
+          {PRIVILEGED_ROLES.includes(user.role) && (
             <NavGroup
               basePath="/app/config"
               icon={<Settings size={20} />}
