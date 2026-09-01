@@ -37,8 +37,8 @@ live under `advisor-plans/` to avoid colliding with that archive.
 Completed plan files are removed after merge; this README table remains the
 historical ledger and status index for the advisor run.
 
-Arquivos restantes neste diretório: `059-unique-associate-blind-indexes.md`. O resto
-foi removido em 2026-09-01 porque já estava em `main`.
+Arquivos restantes neste diretório: nenhum. Os arquivos de plano foram
+removidos em 2026-09-01 porque já estavam em `main` ou acabaram de aterrissar.
 
 ## Repo verification commands (exact, from CLAUDE.md)
 
@@ -122,7 +122,7 @@ the embedded Node on macOS — prefix `PATH="/opt/homebrew/bin:$PATH"` for E2E/b
 | 056  | Validar comandos e caminhos relativos da documentação              | P3       | M      | 054        | MERGED — PR [#383](https://github.com/prof-ramos/intranet/pull/383) @566b726                                                                                                                                       | `main` (`566b726`)                                        |
 | 057  | Concluir higiene operacional com inventário e aprovações nominais  | P1       | M      | —          | DONE — 2026-07-18 (25 branches stale removidas; 231 registros `SMOKE_*` apagados em produção após inventário read-only aprovado nominalmente; `audit_logs` preservado; evidência em `TODO-PROD.md`)                | `main` (evidência docs, sem PR de código)                 |
 | 058  | Revogar sessões em toda troca de senha                             | P1       | S      | —          | MERGED — PR [#398](https://github.com/prof-ramos/intranet/pull/398) @997d5dd                                                                                                                                       | `main` (`997d5dd`)                                        |
-| 059  | Garantir unicidade dos blind indexes de identidade                 | P1       | M      | 057, 064   | TODO — próxima migration **0033** (`0032` já existe)                                                                                                                                                               | plan-only (migration)                                     |
+| 059  | Garantir unicidade dos blind indexes de identidade                 | P1       | M      | 057, 064   | DONE — uniqueIndex + migration **0033** fail-closed; arquivo do plano removido                                                                                                                                     | plan-only (migration)                                     |
 | 060  | Vincular e conter o smoke de produção                              | P1       | M      | 057        | MERGED — PR [#400](https://github.com/prof-ramos/intranet/pull/400) @2f0db3c                                                                                                                                       | `main` (`2f0db3c`)                                        |
 | 061  | Impedir regressões de estado Assinafy                              | P1       | M      | —          | MERGED — PR [#396](https://github.com/prof-ramos/intranet/pull/396) @0ea3920                                                                                                                                       | `main` (`0ea3920`)                                        |
 | 062  | Auditar mensalidades somente após commit                           | P1       | S      | —          | MERGED — PR #397; outbox transacional e auditoria pós-commit validadas pelos quatro gates protegidos                                                                                                               | `main` (`c2751bd`)                                        |

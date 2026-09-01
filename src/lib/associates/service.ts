@@ -62,6 +62,50 @@ const isMtEnum = (v: string): v is MtEnum => mtEnum.enumValues.includes(v as MtE
 const isCoEnum = (v: string): v is CoEnum => coEnum.enumValues.includes(v as CoEnum);
 const isPmEnum = (v: string): v is PmEnum => pmEnum.enumValues.includes(v as PmEnum);
 
+const IDENTITY_HASH_UNIQUE_INDEXES = {
+  idx_associates_cpf_hash: 'Já existe um oficial cadastrado com este CPF.',
+  idx_associates_siape_hash: 'Já existe um oficial cadastrado com este SIAPE.',
+  idx_associates_primary_email_hash: 'Já existe um oficial cadastrado com este e-mail principal.',
+} as const;
+
+function postgresConstraintFields(error: unknown): { code?: unknown; constraint?: unknown } {
+  if (typeof error !== 'object' || error === null) return {};
+  const candidate = error as {
+    code?: unknown;
+    constraint?: unknown;
+    constraint_name?: unknown;
+    cause?: unknown;
+  };
+  const nested =
+    typeof candidate.cause === 'object' && candidate.cause !== null
+      ? (candidate.cause as {
+          code?: unknown;
+          constraint?: unknown;
+          constraint_name?: unknown;
+        })
+      : undefined;
+  return {
+    code: candidate.code ?? nested?.code,
+    constraint:
+      candidate.constraint ??
+      candidate.constraint_name ??
+      nested?.constraint ??
+      nested?.constraint_name,
+  };
+}
+
+function identityUniqueViolationMessage(error: unknown): string | undefined {
+  const { code, constraint } = postgresConstraintFields(error);
+  if (code !== '23505' || typeof constraint !== 'string') return undefined;
+  return IDENTITY_HASH_UNIQUE_INDEXES[constraint as keyof typeof IDENTITY_HASH_UNIQUE_INDEXES];
+}
+
+function rethrowIdentityUniqueViolation(error: unknown): never {
+  const message = identityUniqueViolationMessage(error);
+  if (message) throw new ValidationError(message);
+  throw error;
+}
+
 function assertNullableEnum<T extends string>(
   value: string | null,
   isEnum: (v: string) => v is T,
@@ -483,15 +527,16 @@ export async function updateAssociateData(
   if (input.internalNotes !== undefined) values.internalNotes = input.internalNotes;
 
   const auditArgs = await db.transaction(async (tx) => {
-    const current = await findAssociateById(input.id, tx);
-    if (!current) {
-      throw new NotFoundError('Associado');
-    }
+    try {
+      const current = await findAssociateById(input.id, tx);
+      if (!current) {
+        throw new NotFoundError('Associado');
+      }
 
-    const changedFields = getChangedWebhookSafeFields(current, values);
-    const auditChangedFields = getChangedAuditFields(current, values, input);
+      const changedFields = getChangedWebhookSafeFields(current, values);
+      const auditChangedFields = getChangedAuditFields(current, values, input);
 
-    await updateAssociateById(input.id, values, tx);
+      await updateAssociateById(input.id, values, tx);
 
     if (changedFields.length > 0) {
       await emitDomainEvent(
@@ -521,6 +566,9 @@ export async function updateAssociateData(
           metadata: { changedFields: auditChangedFields },
         }
       : null;
+    } catch (error) {
+      rethrowIdentityUniqueViolation(error);
+    }
   });
 
   if (auditArgs) {
@@ -707,6 +755,7 @@ export async function createAssociateData(
   });
 
   const id = await db.transaction(async (tx) => {
+    try {
     // Unicidade por blind index (PII criptografada não permite busca por texto)
     if (piiPatch.cpfHash) {
       const dup = await findAssociateByCpfHash(piiPatch.cpfHash, tx);
@@ -774,6 +823,9 @@ export async function createAssociateData(
     await createDependentsBatch(id, dependents, tx);
 
     return id;
+    } catch (error) {
+      rethrowIdentityUniqueViolation(error);
+    }
   });
 
   // Best-effort audit AFTER the tx commits. A failed audit INSERT must not abort the
