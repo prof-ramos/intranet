@@ -32,8 +32,7 @@ Somente constraints no PostgreSQL fecham essa corrida.
 - `src/lib/associates/service.ts:465-474` atualiza blind indexes sem precheck.
 - Os índices plaintext em `associates.ts:124-126` são únicos, mas novas escritas
   limpam plaintext e não oferecem proteção para ciphertext.
-- A próxima migration no baseline é `0032`; `0031_reconcile_snapshot_baseline`
-  é a última registrada.
+- A próxima migration no baseline é `0033`; `0032_opposite_zarek` já existe.
 
 ## Comandos necessários
 
@@ -49,7 +48,7 @@ Somente constraints no PostgreSQL fecham essa corrida.
 **Dentro do escopo**:
 
 - `src/lib/db/schema/associates.ts`.
-- Nova migration `drizzle/postgres/0032_unique_associate_identity_hashes.sql`,
+- Nova migration `drizzle/postgres/0033_unique_associate_identity_hashes.sql`,
   journal e snapshot gerados pelo tooling.
 - `src/lib/db/schema.integration.test.ts`.
 - `src/lib/associates/service.ts`, teste unitário e nova integração focada.
@@ -138,7 +137,7 @@ PostgreSQL dedicado.
 
 ## Condições de STOP
 
-- Já existe migration 0032 ou os índices mudaram desde `14dae8f`.
+- Já existe migration 0033 ou os índices mudaram desde `14dae8f`.
 - O inventário encontra duplicatas em qualquer ambiente que não seja fixture.
 - Drizzle tenta gerar `CONCURRENTLY` ou editar migration aplicada.
 - Corrigir dados requer decrypt, exposição ou decisão sobre qual registro vencer.
