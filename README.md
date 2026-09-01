@@ -33,6 +33,15 @@ Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de 
 | Relatórios           | `/app/associados/relatorio` | Exportação auditada de dados de oficiais para `admin` e `diretoria`.                 |
 | Configurações        | `/app/config`               | Usuários, lotações, auditoria, API keys e webhooks outbound.                         |
 
+### Melhorias de UX (Dashboard)
+
+O dashboard foi otimizado para usuários diários com:
+
+- **WelcomeBanner** - Mensagem de boas-vindas personalizada
+- **QuickActions** - Ações rápidas no sidebar (Nova atividade, Novo ofício, Buscar associado)
+- **KPIs acionáveis** - Indicadores com contexto de ação e hover effects
+- **Empty states melhorados** - Botões CTA em estados vazios
+
 > Dados como CPF, SIAPE, email, endereço e dados funcionais são sensíveis pela LGPD. Use os helpers de sanitização/logging do projeto e não exponha esses dados em logs, erros ou payloads públicos.
 >
 > Financeiro/mensalidades (`/app/financeiro`) e triagem de e-mails (`/app/email-triage`) permanecem no código e nos crons, mas **não aparecem na navegação** no ciclo atual ([#429](https://github.com/prof-ramos/intranet/issues/429)). Deep links redirecionam para `/app`.

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import {
   dangerText,
   focusRingClass,
@@ -51,20 +52,29 @@ function StripeCard({ item }: { item: DashboardStripeItem }) {
   return (
     <Link
       href={item.href}
-      className={`block min-h-[104px] rounded-[16px] bg-white p-5 shadow-none transition-colors hover:bg-[rgba(4,9,32,0.02)] ${focusRingClass}`}
+      className={`group block min-h-[104px] rounded-[16px] bg-white p-5 shadow-none transition-all hover:bg-[rgba(4,9,32,0.02)] hover:shadow-sm ${focusRingClass}`}
       style={{ border: `1px solid ${hairline}`, borderTop: `3px solid ${skyBlue}` }}
     >
-      <div
-        className="text-[11px] leading-tight font-bold tracking-[0.1em] uppercase"
-        style={{ color: textMuted }}
-      >
-        {item.label}
+      <div className="flex items-start justify-between">
+        <div
+          className="text-[11px] leading-tight font-bold tracking-[0.1em] uppercase"
+          style={{ color: textMuted }}
+        >
+          {item.label}
+        </div>
+        <ArrowRight
+          className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100"
+          style={{ color: textMuted }}
+        />
       </div>
       <div
         className="mt-3 font-sans text-[30px] leading-none font-bold tabular-nums"
         style={{ color: item.tone === 'neg' ? dangerText : textPrimary }}
       >
         {item.value}
+      </div>
+      <div className="mt-2 text-xs" style={{ color: textMuted }}>
+        Clique para ver detalhes
       </div>
     </Link>
   );

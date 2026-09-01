@@ -7,6 +7,7 @@ import { DashboardActivitiesOverview } from './_dashboard/DashboardActivitiesOve
 import { DashboardDispatchStrip } from './_dashboard/DashboardDispatchStrip';
 import { DashboardIndicators } from './_dashboard/DashboardIndicators';
 import { DashboardSidebar } from './_dashboard/DashboardSidebar';
+import { WelcomeBanner } from './_dashboard/WelcomeBanner';
 import { formatBusinessDate } from '@/lib/utils/date';
 
 export default async function DashboardPage() {
@@ -18,6 +19,8 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-[1180px] flex-1 flex-col px-5 py-7 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
+      <WelcomeBanner userName={user.name} isNewUser={false} />
+
       <div className="mb-7 grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div className="min-w-0">
           <p className="text-[11px] tracking-[0.18em] text-[rgba(13,31,60,0.55)] uppercase">

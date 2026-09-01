@@ -163,6 +163,25 @@ Regras importantes:
 - Prefira repository/service para regras e SQL; Server Actions devem validar entrada, chamar domínio e revalidar cache.
 - O mapa arquitetural mais completo está em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
+### Componentes de Dashboard
+
+O dashboard (`src/app/app/page.tsx`) utiliza componentes especializados:
+
+| Componente | Caminho | Descrição |
+|------------|---------|-----------|
+| `WelcomeBanner` | `src/app/app/_dashboard/WelcomeBanner.tsx` | Banner de boas-vindas para novos usuários |
+| `DashboardIndicators` | `src/app/app/_dashboard/DashboardIndicators.tsx` | KPIs acionáveis com indicadores de ação |
+| `DashboardDispatchStrip` | `src/app/app/_dashboard/DashboardDispatchStrip.tsx` | Pendências vencidas com empty state |
+| `DashboardActivitiesOverview` | `src/app/app/_dashboard/DashboardActivitiesOverview.tsx` | Visão geral de atividades por status |
+| `DashboardSidebar` | `src/app/app/_dashboard/DashboardSidebar.tsx` | Sidebar com associados por país e aniversariantes |
+
+Componentes compartilhados:
+
+| Componente | Caminho | Descrição |
+|------------|---------|-----------|
+| `EmptyState` | `src/components/EmptyState.tsx` | Estado vazio reutilizável com CTA |
+| `Sidebar` | `src/components/Sidebar.tsx` | Navegação lateral com Ações Rápidas |
+
 ## 3. Fluxo de trabalho de desenvolvimento
 
 ### Antes de começar
