@@ -16,34 +16,20 @@ import {
   updateTriageDeadlineFromForm,
 } from '@/app/app/email-triage/actions';
 import { formatDate, daysSince } from '@/lib/utils/date';
-import {
-  ArrowLeft,
-  Clock,
-  FileText,
-  Mail,
-  Send,
-  Shield,
-  User,
-} from 'lucide-react';
-import { hairline, focusRingClass } from '@/lib/ui/tokens';
+import { ArrowLeft, Clock, FileText, Mail, Send, Shield, User } from 'lucide-react';
+import { hairline, focusRingClass, surfaceMuted, textSubtle } from '@/lib/ui/tokens';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 import { requireEntityById } from '@/lib/routing/require-entity';
 import { StatusUpdater } from './StatusUpdater';
 import { DeadlineEditor } from './DeadlineEditor';
 
-export default async function TriageDetalhePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function TriageDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const [_, { id }] = await Promise.all([requireAuth(), params]);
   const triageId = parsePositiveIntParam(id);
   const triage = await requireEntityById(triageId, (id) => getTriageById(id));
 
   const overdueDays =
-    triage.status === 'vencido' && triage.prazoData
-      ? daysSince(triage.prazoData)
-      : null;
+    triage.status === 'vencido' && triage.prazoData ? daysSince(triage.prazoData) : null;
 
   return (
     <main className="mx-auto w-full max-w-[1380px] px-5 py-7 sm:px-8 lg:px-10">
@@ -115,7 +101,7 @@ export default async function TriageDetalhePage({
             </p>
 
             <div className="mb-4 rounded-lg bg-[#f8fafc] p-3">
-              <p className="text-xs font-semibold text-[rgba(13,31,60,0.55)] uppercase tracking-wide mb-1">
+              <p className="mb-1 text-xs font-semibold tracking-wide text-[rgba(13,31,60,0.55)] uppercase">
                 Ação recomendada
               </p>
               <p className="text-sm leading-relaxed">{triage.acaoRecomendada}</p>
@@ -150,10 +136,7 @@ export default async function TriageDetalhePage({
                 <h3 className="font-serif text-lg font-bold">Prazo</h3>
                 <form action={updateTriageDeadlineFromForm} className="flex items-center gap-2">
                   <input type="hidden" name="id" value={triage.id} />
-                  <DeadlineEditor
-                    currentData={triage.prazoData}
-                    currentHora={triage.prazoHora}
-                  />
+                  <DeadlineEditor currentData={triage.prazoData} currentHora={triage.prazoHora} />
                 </form>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
@@ -188,10 +171,10 @@ export default async function TriageDetalhePage({
               </div>
               {triage.trechoFonteDoPrazo && (
                 <div className="mt-3 rounded-lg bg-[#f8fafc] p-3">
-                  <p className="text-xs font-semibold text-[rgba(13,31,60,0.55)] uppercase tracking-wide mb-1">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-[rgba(13,31,60,0.55)] uppercase">
                     Trecho fonte do prazo
                   </p>
-                  <p className="text-sm italic leading-relaxed">{triage.trechoFonteDoPrazo}</p>
+                  <p className="text-sm leading-relaxed italic">{triage.trechoFonteDoPrazo}</p>
                 </div>
               )}
             </div>
@@ -207,12 +190,15 @@ export default async function TriageDetalhePage({
                 {triage.sourceEvidence.map((ev, i) => (
                   <li key={i} className="rounded-lg bg-[#f8fafc] p-3">
                     <div className="mb-1 flex items-center gap-2">
-                      <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600">
+                      <span
+                        className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
+                        style={{ backgroundColor: surfaceMuted, color: textSubtle }}
+                      >
                         {ev.tipo}
                       </span>
                       <span className="text-xs text-[rgba(13,31,60,0.40)]">{ev.referencia}</span>
                     </div>
-                    <p className="text-sm italic leading-relaxed">{ev.trecho}</p>
+                    <p className="text-sm leading-relaxed italic">{ev.trecho}</p>
                   </li>
                 ))}
               </ul>
@@ -245,9 +231,7 @@ export default async function TriageDetalhePage({
           <div className="rounded-[16px] bg-white p-5" style={{ border: `1px solid ${hairline}` }}>
             <h3 className="mb-4 font-serif text-lg font-bold">Corpo do e-mail</h3>
             <div className="rounded-lg bg-[#f8fafc] p-3">
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                {triage.bodyExcerpt}
-              </p>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">{triage.bodyExcerpt}</p>
             </div>
           </div>
 
@@ -327,7 +311,7 @@ export default async function TriageDetalhePage({
               </li>
               <li className="flex justify-between">
                 <span className="text-[rgba(13,31,60,0.60)]">Base legal</span>
-                <span className="font-medium text-right max-w-[180px] truncate">
+                <span className="max-w-[180px] truncate text-right font-medium">
                   {triage.legalBasis.replace(/_/g, ' ')}
                 </span>
               </li>
