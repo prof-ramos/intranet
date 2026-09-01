@@ -97,5 +97,5 @@ export async function changePassword(formData: FormData) {
       ensureError(error),
     );
   }
-  redirect('/login?reset=success');
+  redirect('/login?changed=success');
 }

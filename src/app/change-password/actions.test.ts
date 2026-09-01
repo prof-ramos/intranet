@@ -77,7 +77,7 @@ describe('change password action', () => {
 
   it('destroys the current session and redirects to login after a successful password change', async () => {
     await expect(changePassword(buildFormData())).rejects.toThrow(
-      'NEXT_REDIRECT:/login?reset=success',
+      'NEXT_REDIRECT:/login?changed=success',
     );
 
     expect(mockChangePasswordService).toHaveBeenCalledWith(
@@ -94,7 +94,7 @@ describe('change password action', () => {
       Object.assign(new Error('cookie failed with private data'), { code: 'E_COOKIE' }),
     );
     await expect(changePassword(buildFormData())).rejects.toThrow(
-      'NEXT_REDIRECT:/login?reset=success',
+      'NEXT_REDIRECT:/login?changed=success',
     );
 
     expect(mockChangePasswordService).toHaveBeenCalledOnce();

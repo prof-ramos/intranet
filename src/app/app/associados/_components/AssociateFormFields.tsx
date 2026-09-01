@@ -1,9 +1,11 @@
 import type { HTMLInputTypeAttribute, ReactNode } from 'react';
 import { getAssociateEnumOptions, type AssociateEnumOption } from '@/lib/associates/field-registry';
+import { focusRingClass } from '@/lib/ui/tokens';
 
-export const associateInputStyle = 'input input-bordered w-full';
-const selectStyle = 'select select-bordered w-full';
-const textareaStyle = 'textarea textarea-bordered w-full';
+const fieldBase = `h-10 w-full rounded-[8px] border border-[#e2e8f0] bg-white px-3 text-sm text-[#0d1f3c] placeholder:text-[rgba(13,31,60,0.40)] ${focusRingClass}`;
+export const associateInputStyle = fieldBase;
+const selectStyle = fieldBase;
+const textareaStyle = `min-h-[96px] w-full rounded-[8px] border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#0d1f3c] ${focusRingClass}`;
 const sectionStyle = 'mb-6 rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-5 sm:p-7';
 
 type Option = AssociateEnumOption;
@@ -208,7 +210,7 @@ function CheckboxField({ id, label, checked }: { id: string; label: string; chec
         type="checkbox"
         value="true"
         defaultChecked={checked}
-        className="checkbox checkbox-sm"
+        className={`h-4 w-4 rounded-[4px] border accent-[#040920] ${focusRingClass}`}
       />
       <label htmlFor={id} className="text-sm font-medium">
         {label}

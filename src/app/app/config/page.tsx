@@ -1,17 +1,13 @@
 import Link from 'next/link';
 import { KeyRound, Settings, Webhook } from 'lucide-react';
 import type { CSSProperties } from 'react';
+import { PageHeader } from '@/components/PageHeader';
 import { focusRingClass, skyBlue, borderFaint } from '@/lib/ui/tokens';
 
 export default async function ConfigPage() {
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
-      <p className="text-[11px] tracking-[0.18em] text-[rgba(13,31,60,0.55)] uppercase">
-        Sistema · Preferências operacionais
-      </p>
-      <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
-        Configurações
-      </h1>
+      <PageHeader eyebrow="Sistema · Preferências operacionais" title="Configurações" />
 
       <div className="mt-8 grid gap-4 md:grid-cols-2">
         <Link

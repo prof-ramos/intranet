@@ -12,6 +12,10 @@ export const compactActionClass = 'min-h-10 min-w-10 lg:min-h-8 lg:min-w-8';
 
 export const hairline = 'rgba(4, 9, 32, 0.05)';
 export const navy = '#040920';
+export const sidebarGradientStart = '#031a35';
+export const sidebarGradientEnd = '#06284f';
+export const sidebarAccentBorder = 'rgba(142, 193, 232, 0.22)';
+export const sidebarEyebrowText = '#b3d2ea';
 export const primaryContainerHover = '#0d3260';
 export const primaryContainerActive = '#123d73';
 export const skyBlue = '#76AEEA';
