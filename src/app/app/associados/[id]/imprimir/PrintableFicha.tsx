@@ -53,8 +53,12 @@ export function PrintableFicha({ profile }: { profile: AssociateProfile }) {
   return (
     <div className="mx-auto max-w-[760px] p-10 text-black">
       <header className="mb-6 border-b-2 border-black pb-3">
-        <p className="m-0 text-[10px] tracking-[0.2em] uppercase">Ficha Cadastral · ASOF</p>
-        <h1 className="m-0 text-2xl font-bold">{associate.fullName}</h1>
+        <p className="m-0 font-serif text-[10px] tracking-[0.22em] uppercase">
+          Ficha Cadastral · ASOF
+        </p>
+        <h1 className="m-0 mt-2 font-serif text-[28px] leading-tight font-bold">
+          {associate.fullName}
+        </h1>
         <p className="m-0 text-xs">
           Associado #{associate.id}
           {associate.siape ? ` · SIAPE ${associate.siape}` : ''} ·{' '}

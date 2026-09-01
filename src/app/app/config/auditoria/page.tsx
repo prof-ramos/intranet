@@ -6,7 +6,7 @@ import { admins } from '@/lib/db/schema/admins';
 import { desc, eq, and, gte, lt, ilike, count } from 'drizzle-orm';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
 import type { SQL } from 'drizzle-orm';
-import { focusRingClass } from '@/lib/ui/tokens';
+import { auditEntityBadgeColors, focusRingClass } from '@/lib/ui/tokens';
 import { calculatePaginationBounds } from '@/lib/pagination';
 
 const PAGE_SIZE = 50;
@@ -23,20 +23,6 @@ const entityTypeLabels: Record<string, string> = {
   official_letter: 'Ofício',
   domain_event: 'Evento de domínio',
   webhook_subscription: 'Webhook',
-};
-
-const entityTypeBadge: Record<string, string> = {
-  associate: 'bg-blue-50 text-blue-700',
-  admin: 'bg-purple-50 text-purple-700',
-  activity: 'bg-amber-50 text-amber-700',
-  assignment: 'bg-teal-50 text-teal-700',
-  legal_consultation: 'bg-rose-50 text-rose-700',
-  legal_process: 'bg-rose-50 text-rose-700',
-  finance: 'bg-green-50 text-green-700',
-  monthly_payment: 'bg-green-50 text-green-700',
-  official_letter: 'bg-sky-50 text-sky-700',
-  domain_event: 'bg-gray-50 text-gray-700',
-  webhook_subscription: 'bg-indigo-50 text-indigo-700',
 };
 
 // ⚡ Bolt: Cache Intl instances to avoid expensive object creation on every render
@@ -220,7 +206,11 @@ export default async function AuditoriaPage({
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${entityTypeBadge[row.entityType] ?? 'bg-gray-50 text-gray-700'}`}
+                        className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                        style={{
+                          backgroundColor: auditEntityBadgeColors[row.entityType]?.bg ?? '#eef1f6',
+                          color: auditEntityBadgeColors[row.entityType]?.text ?? '#59677a',
+                        }}
                       >
                         {entityTypeLabels[row.entityType] ?? row.entityType}
                       </span>
