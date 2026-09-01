@@ -32,13 +32,13 @@ export function isAuthRole(value: string | undefined): value is AuthRole {
   return AUTH_ROLES.includes(value as AuthRole);
 }
 
+export function isProductionRuntime(env: AuthEnv = process.env): boolean {
+  return env.NODE_ENV === 'production' || env.VERCEL_ENV === 'production';
+}
+
 export function isSkipAuthEnabled(env: AuthEnv = process.env): boolean {
   if (env.SKIP_AUTH !== 'true') return false;
-  // Guard: Vercel production always blocks SKIP_AUTH regardless of NODE_ENV
-  if (env.VERCEL_ENV === 'production') return false;
-  // Guard: explicit NODE_ENV=production also blocks
-  if (env.NODE_ENV === 'production') return false;
-  return true;
+  return !isProductionRuntime(env);
 }
 
 function parseDevUserId(value: string | undefined): number {
