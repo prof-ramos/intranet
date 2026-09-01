@@ -124,7 +124,7 @@ describe('requireAuth', () => {
     const { isSkipAuthEnabled: realIsSkipAuthEnabled } = await vi.importActual<
       typeof import('@/lib/auth/config')
     >('@/lib/auth/config');
-    authConfigMock.isSkipAuthEnabled.mockImplementation((env) => realIsSkipAuthEnabled(env));
+    authConfigMock.isSkipAuthEnabled.mockImplementation(() => realIsSkipAuthEnabled());
     vi.stubEnv('SKIP_AUTH', 'true');
     vi.stubEnv('NODE_ENV', 'production');
     mockSession = {
