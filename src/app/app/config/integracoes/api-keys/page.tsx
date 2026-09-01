@@ -3,6 +3,10 @@ import { requireRole } from '@/lib/auth/authorization';
 import { listApiKeysAction } from './actions';
 import { ApiKeyCreateForm } from './ApiKeyCreateForm';
 import { ApiKeyActionsPanel } from './ApiKeyActionsPanel';
+import { PageHeader } from '@/components/PageHeader';
+import { focusRingClass, navy, primaryContainerHover } from '@/lib/ui/tokens';
+import Link from 'next/link';
+import type { CSSProperties } from 'react';
 
 const scopeLabels: Record<string, string> = {
   'events:read': 'events:read',
@@ -32,18 +36,18 @@ export default async function ApiKeysPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
-      <p className="text-[11px] tracking-[0.18em] text-[rgba(13,31,60,0.55)] uppercase">
-        Configurações · Integrações · API Keys
-      </p>
-      <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
-        Chaves de API
-      </h1>
-      <p className="mt-3 max-w-3xl text-sm leading-6 text-[rgba(13,31,60,0.65)]">
-        Gerencie chaves de acesso para integrações externas. Cada chave possui escopos restritos e é
-        exibida em texto claro somente no momento da criação ou rotação.
-      </p>
+      <PageHeader
+        eyebrow="Configurações · Integrações · API Keys"
+        title="Chaves de API"
+        description="Gerencie chaves de acesso para integrações externas. Cada chave possui escopos restritos e é exibida em texto claro somente no momento da criação ou rotação."
+        backHref="/app/config"
+        backLabel="Voltar para configurações"
+      />
 
-      <section className="mt-8 rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white p-6">
+      <section
+        id="nova-chave"
+        className="mt-8 rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white p-6"
+      >
         <h2 className="mb-4 text-sm font-semibold text-[#040920]">Nova chave de API</h2>
         <ApiKeyCreateForm />
       </section>
@@ -60,6 +64,15 @@ export default async function ApiKeysPage() {
             <p className="mt-2 text-sm text-[rgba(13,31,60,0.55)]">
               Crie uma chave de API para começar a integrar sistemas externos com a intranet.
             </p>
+            <Link
+              href="#nova-chave"
+              className={`mt-4 inline-flex h-10 items-center rounded-[8px] px-5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[var(--primary-hover)] ${focusRingClass}`}
+              style={
+                { backgroundColor: navy, '--primary-hover': primaryContainerHover } as CSSProperties
+              }
+            >
+              Criar chave de API
+            </Link>
           </div>
         ) : (
           apiKeys.map((key) => (

@@ -6,6 +6,10 @@ import {
 } from '@/lib/integrations/webhooks/subscriptions';
 import { WebhookSubscriptionActions } from './WebhookSubscriptionActions';
 import { WebhookSubscriptionForm } from './WebhookSubscriptionForm';
+import { PageHeader } from '@/components/PageHeader';
+import { focusRingClass, navy, primaryContainerHover } from '@/lib/ui/tokens';
+import Link from 'next/link';
+import type { CSSProperties } from 'react';
 
 const eventLabels: Record<string, string> = {
   'associate.updated': 'Associado atualizado',
@@ -25,18 +29,18 @@ export default async function WebhookSubscriptionsPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
-      <p className="text-[11px] tracking-[0.18em] text-[rgba(13,31,60,0.55)] uppercase">
-        Configurações · Integrações · Webhooks
-      </p>
-      <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">
-        Webhook subscriptions
-      </h1>
-      <p className="mt-3 max-w-3xl text-sm leading-6 text-[rgba(13,31,60,0.65)]">
-        Configure destinos HTTP para automações externas. Cada entrega usa assinatura HMAC e payload
-        mínimo para evitar exposição de dados pessoais.
-      </p>
+      <PageHeader
+        eyebrow="Configurações · Integrações · Webhooks"
+        title="Webhook subscriptions"
+        description="Configure destinos HTTP para automações externas. Cada entrega usa assinatura HMAC e payload mínimo para evitar exposição de dados pessoais."
+        backHref="/app/config"
+        backLabel="Voltar para configurações"
+      />
 
-      <section className="mt-8 rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white p-6">
+      <section
+        id="nova-subscription"
+        className="mt-8 rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white p-6"
+      >
         <h2 className="mb-4 text-sm font-semibold text-[#040920]">Nova subscription</h2>
         <WebhookSubscriptionForm
           mode="create"
@@ -60,6 +64,15 @@ export default async function WebhookSubscriptionsPage() {
               Crie uma subscription para começar a enviar eventos da intranet para automações
               externas.
             </p>
+            <Link
+              href="#nova-subscription"
+              className={`mt-4 inline-flex h-10 items-center rounded-[8px] px-5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[var(--primary-hover)] ${focusRingClass}`}
+              style={
+                { backgroundColor: navy, '--primary-hover': primaryContainerHover } as CSSProperties
+              }
+            >
+              Criar subscription
+            </Link>
           </div>
         ) : (
           subscriptions.map((subscription) => (

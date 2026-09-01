@@ -10,6 +10,9 @@ import {
   hairline,
   error,
   elevatedShadow,
+  textFaint,
+  textSubtle,
+  surfaceMuted,
 } from '@/lib/ui/tokens';
 
 interface SendForSignatureModalProps {
@@ -68,7 +71,7 @@ export function SendForSignatureModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="motion-safe:animate-in motion-safe:fade-in fixed inset-0 z-50 flex items-center justify-center motion-safe:duration-150"
       style={{ backgroundColor: overlayScrim }}
       onClick={handleClose}
       role="dialog"
@@ -76,7 +79,7 @@ export function SendForSignatureModal({
       aria-label="Enviar para assinatura"
     >
       <div
-        className="relative w-full max-w-md rounded-[16px] bg-white p-6"
+        className="motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in relative w-full max-w-md rounded-[16px] bg-white p-6 motion-safe:duration-150"
         style={{ boxShadow: elevatedShadow }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -84,23 +87,30 @@ export function SendForSignatureModal({
           type="button"
           onClick={handleClose}
           disabled={isSending}
-          className={`absolute right-4 top-4 rounded-md p-1 text-slate-400 transition-colors hover:text-[#040920] disabled:opacity-40 ${focusRingClass}`}
+          className={`absolute top-4 right-4 rounded-md p-1 transition-colors duration-150 hover:text-[#040920] disabled:opacity-40 ${focusRingClass}`}
+          style={{ color: textFaint }}
           aria-label="Fechar"
         >
           <X size={20} />
         </button>
 
-        <h2 className="pr-6 font-serif text-xl font-bold text-[#040920]">
-          Enviar para Assinatura
-        </h2>
+        <h2 className="pr-6 font-serif text-xl font-bold text-[#040920]">Enviar para Assinatura</h2>
 
         <div className="mt-4 space-y-3">
-          <div className="rounded-[8px] bg-slate-50 px-3 py-2" style={{ border: `1px solid ${hairline}` }}>
-            <p className="text-xs text-[rgba(13,31,60,0.45)] uppercase tracking-wider">Ofício</p>
+          <div
+            className="rounded-[8px] px-3 py-2"
+            style={{ border: `1px solid ${hairline}`, backgroundColor: surfaceMuted }}
+          >
+            <p className="text-xs tracking-wider text-[rgba(13,31,60,0.45)] uppercase">Ofício</p>
             <p className="mt-0.5 text-sm font-semibold text-[#040920]">{oficioNumber}</p>
           </div>
-          <div className="rounded-[8px] bg-slate-50 px-3 py-2" style={{ border: `1px solid ${hairline}` }}>
-            <p className="text-xs text-[rgba(13,31,60,0.45)] uppercase tracking-wider">Signatário</p>
+          <div
+            className="rounded-[8px] px-3 py-2"
+            style={{ border: `1px solid ${hairline}`, backgroundColor: surfaceMuted }}
+          >
+            <p className="text-xs tracking-wider text-[rgba(13,31,60,0.45)] uppercase">
+              Signatário
+            </p>
             <p className="mt-0.5 text-sm font-semibold text-[#040920]">{cleanedName}</p>
           </div>
         </div>
@@ -108,7 +118,7 @@ export function SendForSignatureModal({
         <form onSubmit={handleSubmit} className="mt-5">
           <label
             htmlFor="signer-email"
-            className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[rgba(13,31,60,0.6)]"
+            className="mb-1.5 block text-xs font-semibold tracking-wider text-[rgba(13,31,60,0.6)] uppercase"
           >
             Email do signatário
           </label>
@@ -120,7 +130,7 @@ export function SendForSignatureModal({
             onChange={(e) => setEmail(e.target.value)}
             placeholder="email@exemplo.com"
             disabled={isSending}
-            className={`w-full rounded-[8px] border px-3 py-2 text-sm outline-none transition-colors placeholder:text-[rgba(13,31,60,0.3)] disabled:opacity-50 ${focusRingClass}`}
+            className={`w-full rounded-[8px] border px-3 py-2 text-sm transition-colors outline-none placeholder:text-[rgba(13,31,60,0.3)] disabled:opacity-50 ${focusRingClass}`}
             style={{ borderColor: hairline }}
             autoFocus
           />
@@ -136,8 +146,8 @@ export function SendForSignatureModal({
               type="button"
               onClick={handleClose}
               disabled={isSending}
-              className={`rounded-[8px] border px-4 py-2 text-sm font-medium text-[rgba(13,31,60,0.6)] transition-colors hover:bg-gray-50 disabled:opacity-40 ${focusRingClass}`}
-              style={{ borderColor: hairline }}
+              className={`rounded-[8px] border px-4 py-2 text-sm font-medium transition-colors duration-150 hover:bg-[rgba(4,9,32,0.04)] disabled:opacity-40 ${focusRingClass}`}
+              style={{ borderColor: hairline, color: textSubtle }}
             >
               Cancelar
             </button>

@@ -49,18 +49,38 @@ function PrintSection({
 export function PrintableFicha({ profile }: { profile: AssociateProfile }) {
   const { associate, dependents, healthAgreements, timeline } = profile;
   const sections = buildAssociateProfileSections(profile);
+  const generatedAt = new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/Sao_Paulo',
+  }).format(new Date());
 
   return (
     <div className="mx-auto max-w-[760px] p-10 text-black">
-      <header className="mb-6 border-b-2 border-black pb-3">
-        <p className="m-0 font-serif text-[10px] tracking-[0.22em] uppercase">
-          Ficha Cadastral · ASOF
-        </p>
-        <h1 className="m-0 mt-2 font-serif text-[28px] leading-tight font-bold">
+      <header className="mb-6 border-b-2 border-black pb-4">
+        <div className="flex items-start justify-between gap-6">
+          <div>
+            <p className="m-0 font-serif text-[10px] tracking-[0.22em] uppercase">
+              Associação dos Oficiais de Chancelaria do Serviço Exterior Brasileiro
+            </p>
+            <p className="m-0 mt-1 font-serif text-[10px] tracking-[0.18em] text-black/55 uppercase">
+              Ficha cadastral institucional
+            </p>
+          </div>
+          <p className="m-0 text-right text-[9px] leading-relaxed text-black/50">
+            Emitido em
+            <br />
+            {generatedAt}
+          </p>
+        </div>
+        <h1 className="m-0 mt-4 font-serif text-[28px] leading-tight font-bold">
           {associate.fullName}
         </h1>
-        <p className="m-0 text-xs">
-          Associado #{associate.id}
+        <p className="m-0 mt-2 text-xs text-black/70">
+          Registro #{associate.id}
           {associate.siape ? ` · SIAPE ${associate.siape}` : ''} ·{' '}
           {getAssociateStatusLabel(associate.functionalStatus) ?? 'Situação funcional pendente'}
         </p>

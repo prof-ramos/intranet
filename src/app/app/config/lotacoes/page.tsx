@@ -4,6 +4,7 @@ import { asc } from 'drizzle-orm';
 import { AssignmentForm } from './AssignmentForm';
 import { AssignmentActionsPanel } from './AssignmentActionsPanel';
 import { AssignmentEditRow } from './AssignmentEditRow';
+import { PageHeader } from '@/components/PageHeader';
 
 export default async function LotacoesPage() {
   const items = await db
@@ -24,10 +25,12 @@ export default async function LotacoesPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
-      <p className="text-[11px] tracking-[0.18em] text-[rgba(13,31,60,0.55)] uppercase">
-        Configurações · Lotações
-      </p>
-      <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">Lotações</h1>
+      <PageHeader
+        eyebrow="Configurações · Lotações"
+        title="Lotações"
+        backHref="/app/config"
+        backLabel="Voltar para configurações"
+      />
 
       <div className="mt-8 rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white p-6">
         <h2 className="mb-4 text-sm font-semibold text-[#040920]">Nova lotação</h2>

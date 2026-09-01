@@ -5,6 +5,7 @@ import { focusRingClass } from '@/lib/ui/tokens';
 import { Users, ListTodo } from 'lucide-react';
 import Link from 'next/link';
 import { SearchForm } from './SearchForm';
+import { PageHeader } from '@/components/PageHeader';
 
 export default async function SearchPage({
   searchParams,
@@ -25,14 +26,7 @@ export default async function SearchPage({
 
   return (
     <main className="mx-auto flex w-full max-w-[1180px] flex-1 flex-col px-5 py-7 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
-      <div className="mb-7">
-        <p className="text-[11px] tracking-[0.18em] uppercase" style={{ color: textMuted }}>
-          Intranet ASOF
-        </p>
-        <h1 className="mt-2 font-serif text-4xl leading-none font-bold text-[#040920]">
-          Busca Global
-        </h1>
-      </div>
+      <PageHeader eyebrow="Intranet ASOF" title="Busca Global" />
 
       <SearchForm defaultValue={query} />
 
@@ -91,7 +85,7 @@ function ResultSection({
     <section>
       <div className="mb-3 flex items-center gap-2">
         {icon}
-        <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: textMuted }}>
+        <h2 className="text-xs font-semibold tracking-wider uppercase" style={{ color: textMuted }}>
           {title}
         </h2>
       </div>
@@ -100,10 +94,7 @@ function ResultSection({
         style={{ border: `1px solid ${hairline}` }}
       >
         {results.map((result, index) => (
-          <li
-            key={result.id}
-            style={{ borderTop: index === 0 ? 'none' : `1px solid ${hairline}` }}
-          >
+          <li key={result.id} style={{ borderTop: index === 0 ? 'none' : `1px solid ${hairline}` }}>
             <Link
               href={result.href}
               className={`flex flex-col gap-0.5 px-4 py-3 transition-colors hover:bg-[rgba(4,9,32,0.02)] ${focusRingClass}`}

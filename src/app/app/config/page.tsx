@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { KeyRound, Settings, Webhook } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { PageHeader } from '@/components/PageHeader';
-import { focusRingClass, skyBlue, borderFaint } from '@/lib/ui/tokens';
+import { focusRingClass, skyBlue, borderFaint, navy, primaryContainerHover } from '@/lib/ui/tokens';
 
 export default async function ConfigPage() {
   return (
@@ -45,6 +45,15 @@ export default async function ConfigPage() {
         <p className="mt-2 text-sm text-[rgba(13,31,60,0.55)]">
           Preferências operacionais da intranet serão configuráveis aqui em breve.
         </p>
+        <Link
+          href="/app/config/integracoes/webhooks"
+          className={`mt-4 inline-flex h-10 items-center rounded-[8px] px-5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[var(--primary-hover)] ${focusRingClass}`}
+          style={
+            { backgroundColor: navy, '--primary-hover': primaryContainerHover } as CSSProperties
+          }
+        >
+          Configurar integrações
+        </Link>
       </div>
     </main>
   );
