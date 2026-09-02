@@ -23,19 +23,28 @@ Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de 
 
 ## Módulos principais
 
-| Módulo                    | Rota principal                 | Responsabilidade                                                                     |
-| ------------------------- | ------------------------------ | ------------------------------------------------------------------------------------ |
-| Dashboard                 | `/app`                         | Visão operacional de associados ASOF, atividades, jurídico e financeiro.             |
-| Cadastro de Oficiais      | `/app/associados`              | Cadastro, perfil, lotação/posto, situação funcional, vínculo ASOF e contribuição.    |
-| Atividades                | `/app/atividades`              | Kanban administrativo com responsáveis, prioridades, prazos e vínculos com oficiais. |
-| Jurídico                  | `/app/juridico`                | Consultas jurídicas, notas, SLA e histórico de atendimento.                          |
-| Triagem de E-mails        | `/app/email-triage`            | Controle operacional de prazos, demandas e evidências extraídas de e-mails.          |
-| Secretaria / Ofícios      | `/app/secretaria/oficios`      | Geração, edição, cancelamento e download de ofícios.                                 |
-| Financeiro / Mensalidades | `/app/financeiro/mensalidades` | Controle mensal de pagamentos e status de mensalidade.                               |
-| Relatórios                | `/app/associados/relatorio`    | Exportação auditada de dados de oficiais para `admin` e `diretoria`.                 |
-| Configurações             | `/app/config`                  | Usuários, lotações, auditoria, API keys e webhooks outbound.                         |
+| Módulo               | Rota principal              | Responsabilidade                                                                     |
+| -------------------- | --------------------------- | ------------------------------------------------------------------------------------ |
+| Dashboard            | `/app`                      | Visão operacional de associados ASOF, atividades e jurídico.                         |
+| Cadastro de Oficiais | `/app/associados`           | Cadastro, perfil, lotação/posto, situação funcional, vínculo ASOF e contribuição.    |
+| Atividades           | `/app/atividades`           | Kanban administrativo com responsáveis, prioridades, prazos e vínculos com oficiais. |
+| Jurídico             | `/app/juridico`             | Consultas jurídicas, notas, SLA e histórico de atendimento.                          |
+| Secretaria / Ofícios | `/app/secretaria/oficios`   | Geração, edição, cancelamento e download de ofícios.                                 |
+| Relatórios           | `/app/associados/relatorio` | Exportação auditada de dados de oficiais para `admin` e `diretoria`.                 |
+| Configurações        | `/app/config`               | Usuários, lotações, auditoria, API keys e webhooks outbound.                         |
+
+### Melhorias de UX (Dashboard)
+
+O dashboard foi otimizado para usuários diários com:
+
+- **WelcomeBanner** - Mensagem de boas-vindas personalizada
+- **QuickActions** - Ações rápidas no sidebar (Nova atividade, Novo ofício, Buscar associado)
+- **KPIs acionáveis** - Indicadores com contexto de ação e hover effects
+- **Empty states melhorados** - Botões CTA em estados vazios
 
 > Dados como CPF, SIAPE, email, endereço e dados funcionais são sensíveis pela LGPD. Use os helpers de sanitização/logging do projeto e não exponha esses dados em logs, erros ou payloads públicos.
+>
+> Financeiro/mensalidades (`/app/financeiro`) e triagem de e-mails (`/app/email-triage`) permanecem no código e nos crons, mas **não aparecem na navegação** no ciclo atual ([#429](https://github.com/prof-ramos/intranet/issues/429)). Deep links redirecionam para `/app`.
 
 ---
 
@@ -88,6 +97,7 @@ variáveis de um ambiente Vercel em diagnósticos ou uso controlado com
 | `DATABASE_URL`           | URL PostgreSQL de runtime. Em produção, prefira pooler/runtime com usuário restrito. |
 | `DATABASE_MIGRATION_URL` | URL PostgreSQL direta/non-pooling para migrations do Drizzle.                        |
 | `SESSION_SECRET`         | Segredo forte para assinar cookies `httpOnly` de sessão.                             |
+| `ASOF_INTRANET_URL`      | URL canônica da intranet. Obrigatória quando `VERCEL_ENV=production`.                |
 
 No setup atual de produção no Vercel:
 
@@ -319,9 +329,7 @@ src/
       associados/           # Cadastro de Oficiais + relatórios
       atividades/            # Kanban de atividades administrativas
       config/                # configurações, auditoria, usuários, integrações, lotações
-      financeiro/mensalidades/ # mensalidades e dashboard financeiro
       juridico/              # consultas, processos, pareceres e notas jurídicas
-      email-triage/          # triagem operacional de e-mails, prazos e demandas
       notifications/         # actions de notificação
       search/                # busca global
       secretaria/oficios/    # gestão de ofícios
@@ -432,3 +440,62 @@ Veja [`docs/runbook.md`](./docs/runbook.md) para procedimentos operacionais.
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Guia do desenvolvedor e padrão de contribuição.                                    |
 | [`docs/runbook.md`](./docs/runbook.md) | Procedimentos operacionais: deploy, backup, rollback, smoke tests e incidentes.    |
 | [`TODO-PROD.md`](./TODO-PROD.md)       | Checklist vivo de prontidão de produção e bloqueadores atuais.                     |
+
+---
+
+## Configuração de Agentes IA
+
+O projeto possui configurações para agentes IA (Claude Code, Verboo Code) em `.verboo/settings.local.json` e `.agents/skills/`.
+
+### Skills Instalados
+
+#### oh-my-claudecode (35 skills)
+
+Framework de orquestração multi-agente para Claude Code. Skills principais:
+
+| Skill            | Descrição                                               |
+| ---------------- | ------------------------------------------------------- |
+| `team`           | Orquestração multi-agente com pipeline staging          |
+| `autopilot`      | Execução autônoma end-to-end                            |
+| `deep-interview` | Clarificação de requisitos via-questionamento socrático |
+| `research`       | Pesquisa de código e documentação                       |
+| `verify`         | Verificação de implementação                            |
+| `debug`          | Diagnóstico de problemas                                |
+
+#### Anthropic Skills (20 skills)
+
+Skills oficiais da Anthropic para desenvolvimento:
+
+| Skill               | Descrição                                |
+| ------------------- | ---------------------------------------- |
+| `claude-api`        | Integração com API Claude                |
+| `webapp-testing`    | Testes de aplicação web                  |
+| `frontend-design`   | Design de interfaces                     |
+| `mcp-builder`       | Construção de servidores MCP             |
+| `discernment-nudge` | Verificação de pressupostos em respostas |
+
+### Variáveis de Ambiente Locais
+
+Configure em `.verboo/settings.local.json`:
+
+```json
+{
+  "env": {
+    "DATABASE_URL": "postgresql://gabrielramos@localhost:5432/asof_intranet",
+    "SKIP_AUTH": "true"
+  }
+}
+```
+
+### Comandos de Skills
+
+```bash
+# Instalar skills
+npx skills add yeachan-heo/oh-my-claudecode
+npx skills add https://github.com/anthropics/skills
+
+# Usar skill (invoque via /nome-do-skill)
+/team          # Orquestração multi-agente
+/autopilot     # Execução autônoma
+/verify        # Verificação de implementação
+```

@@ -213,7 +213,6 @@ _Avoid_: "Advogado" sozinho, pois é ambíguo — pode ser o responsável intern
 
 #### Processo Jurídico
 
-
 Caso jurídico mais estruturado (Fase 2 do módulo). Relaciona-se a pareceres e notas.
 
 - **Status** (`legalProcessStatus`): `ativo`, `concluido`, `suspenso`.
@@ -237,7 +236,6 @@ Compromisso com data-limite extraído de uma Consulta Jurídica, geralmente iden
 - Notificações progressivas antes do vencimento são geradas pelo sistema automaticamente.
 
 _Avoid_: confundir com SLA de inatividade. O SLA mede ausência de atualização em uma Consulta Jurídica; o Prazo Processual mede um compromisso processual específico com data e responsável definidos.
-
 
 ---
 
@@ -279,7 +277,6 @@ Notificação que exige **resolução explícita** por um coordenador, com regis
 
 _Avoid_: confundir com Notificação, cujo ciclo de vida encerra com a leitura. O Alerta de Acompanhamento só encerra quando o coordenador registra explicitamente a ação tomada.
 
-
 #### Evento de Domínio
 
 Registro imutável de algo que aconteceu no sistema (`associate.updated`, `legal_consultation.created`, etc.). Persistido em `domain_events` e disponível para dispatch outbound via webhooks.
@@ -318,7 +315,7 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 1. **Mensalidades por Mês/Ano**: Cada associado ASOF deve ter um registro de mensalidade para cada mês/ano. O registro é criado via inicialização de mês.
 2. **Status Derivado**: O status de contribuição do associado (`contributionStatus`) é derivado a partir do histórico de mensalidades pagas/inadimplentes.
 3. **Inicialização Idempotente**: Inicializar um mês já existente não deve criar duplicatas.
-4. **Roles de Acesso**: `admin` e `diretoria` têm acesso completo; `secretaria` é redirecionada para o dashboard.
+4. **Roles de Acesso**: no ciclo atual a UI de `/app/financeiro` está oculta para todos os papéis (V2, issue #429); deep links redirecionam ao dashboard. Quando a V2 reabrir, `admin` e `diretoria` têm acesso completo e `secretaria` continua redirecionada.
 
 ### Módulo Jurídico
 

@@ -40,9 +40,9 @@ de staging/dev/preview.
 - [x] Rodar gates — `Lint, Typecheck & Test`, `Database Contract`, `Build Verification` e `E2E Tests (Playwright)` passaram no `main` em 2026-07-18 (`79ab33e`, [CI run 29629899812](https://github.com/prof-ramos/intranet/actions/runs/29629899812)).
 - [x] Rodar `npm run test:db` contra Neon produção antes do go-live — schema contract passou em 2026-05-26.
 - [x] Smoke test automatizado de producao implementado e validado (ADR 009):
-  - Spec E2E Playwright (`e2e/smoke-prod.spec.ts`) cobre login, dashboard, associados, atividades, juridico, oficios, financeiro, auditoria, notificacoes e carregamento da pagina de reset de senha.
+  - Spec E2E Playwright (`e2e/smoke-prod.spec.ts`) cobre login, dashboard, associados, atividades, juridico, oficios, redirecionamento das rotas financeiras/triagem (V2), auditoria, notificacoes e carregamento da pagina de reset de senha.
   - Todo run confirma no health autenticado que `deployment.gitCommitSha` e o SHA completo esperado antes dos demais testes.
-  - Push em `main` executa seis cenários read-only: login/sessão + SHA do deployment, dashboard, financeiro, auditoria, notificações e página de reset de senha.
+  - Push em `main` executa seis cenários read-only: login/sessão + SHA do deployment, dashboard, redirecionamento financeiro/triagem (V2), auditoria, notificações e página de reset de senha.
   - Escritas sao excepcionais: exigem `workflow_dispatch`, input `production_mutations=true` e marcadores `SMOKE_<run-id>_*`.
   - Conta dedicada de smoke: `smoke-admin@asof.local`, `role=admin`, `is_active=true`, `must_change_password=false`; senha gerenciada apenas por `SMOKE_ADMIN_PASSWORD` no GitHub Actions.
   - Pos-smoke mutante: executar manualmente o SQL run-scoped impresso pelo spec; entidades, notificacoes, `domain_events` e `webhook_deliveries` do run devem ficar zerados, com `audit_logs` preservado.
@@ -104,7 +104,7 @@ janela mutante autorizada; o CI define `SMOKE_RUN_ID` com run e tentativa. O job
 3. Associados — cria oficial `SMOKE_<run-id>_*` somente no modo mutante.
 4. Atividades — cria atividade `SMOKE_<run-id>_*` somente no modo mutante.
 5. Juridico — cria consulta `SMOKE_<run-id>_*` somente no modo mutante.
-6. Financeiro — mensalidades carregam (sem inicializacao de mes).
+6. Financeiro e triagem — rotas V2 redirecionam ao dashboard (sem tela de mensalidades).
 7. Oficios — cria oficio `SMOKE_<run-id>_*` somente no modo mutante.
 8. Auditoria — confirma que a listagem abre em modo read-only.
 9. Notificacoes — central abre via `data-testid="notification-bell"`.

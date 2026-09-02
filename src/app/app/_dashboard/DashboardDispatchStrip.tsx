@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AlertTriangle, ArrowRight } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Kanban, Plus } from 'lucide-react';
 import {
   dangerText,
   desktopDenseControlClass,
@@ -9,7 +9,6 @@ import {
   priorityStyles,
   surfaceMuted,
   textMuted,
-  textSubtle,
 } from '@/lib/ui/tokens';
 import { formatDashboardDueDate, type DashboardUrgentActivity } from '@/lib/dashboard/view-model';
 
@@ -49,9 +48,22 @@ export function DashboardDispatchStrip({ urgentActivities }: DashboardDispatchSt
       </div>
 
       {urgentActivities.length === 0 ? (
-        <p className="mt-5 text-sm" style={{ color: textSubtle }}>
-          Nenhuma atividade vencida no momento.
-        </p>
+        <div className="mt-5 flex flex-col items-center justify-center rounded-lg border border-dashed border-[rgba(4,9,32,0.10)] bg-[rgba(4,9,32,0.02)] px-4 py-8 text-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
+            <Kanban className="h-5 w-5 text-green-600" />
+          </div>
+          <p className="mt-3 text-sm font-medium text-[#040920]">Tudo em dia!</p>
+          <p className="mt-1 text-xs text-[rgba(13,31,60,0.5)]">
+            Nenhuma atividade vencida no momento.
+          </p>
+          <Link
+            href="/app/atividades/nova"
+            className={`mt-3 inline-flex items-center gap-1.5 rounded-lg bg-[#040920] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
+          >
+            <Plus size={12} />
+            Criar atividade
+          </Link>
+        </div>
       ) : (
         <ul className="mt-5 grid gap-3 lg:grid-cols-2">
           {urgentActivities.map((activity) => {

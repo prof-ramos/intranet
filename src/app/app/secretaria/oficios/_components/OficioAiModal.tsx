@@ -5,7 +5,15 @@ import type { UseFormGetValues, UseFormSetValue } from 'react-hook-form';
 import { AlertCircle, Loader2, Sparkles, X } from 'lucide-react';
 import { useEscapeKey } from '@/hooks/use-escape-key';
 import type { OfficialLetterFormValues } from '@/lib/oficios/validations';
-import { hairline, focusRingClass, navy } from '@/lib/ui/tokens';
+import {
+  hairline,
+  focusRingClass,
+  navy,
+  elevatedShadow,
+  textFaint,
+  textMuted,
+  surfaceMuted,
+} from '@/lib/ui/tokens';
 import { generateAiTextAction } from '../actions';
 
 interface OficioAiModalProps {
@@ -92,8 +100,8 @@ export function OficioAiModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="ai-modal-title"
-        className="motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in w-full max-w-lg rounded-2xl bg-white p-8 shadow-2xl motion-safe:duration-200"
-        style={{ overscrollBehavior: 'contain' }}
+        className="motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in w-full max-w-lg rounded-2xl bg-white p-8 motion-safe:duration-150"
+        style={{ overscrollBehavior: 'contain', boxShadow: elevatedShadow }}
       >
         <div className="mb-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -107,7 +115,10 @@ export function OficioAiModal({
               <h3 id="ai-modal-title" className="font-serif text-xl font-bold">
                 Auxiliar com IA
               </h3>
-              <p className="mt-0.5 text-[10px] tracking-widest text-slate-400 uppercase">
+              <p
+                className="mt-0.5 text-[10px] tracking-widest uppercase"
+                style={{ color: textFaint }}
+              >
                 Gemini 3.5 Flash
               </p>
             </div>
@@ -116,13 +127,14 @@ export function OficioAiModal({
             type="button"
             aria-label="Fechar modal"
             onClick={onClose}
-            className={`rounded-md p-1 text-slate-400 transition-colors hover:text-slate-700 ${focusRingClass}`}
+            className={`rounded-md p-1 transition-colors duration-150 hover:text-[#040920] ${focusRingClass}`}
+            style={{ color: textFaint }}
           >
             <X size={22} aria-hidden="true" />
           </button>
         </div>
 
-        <p className="mb-3 text-sm leading-relaxed text-slate-600">
+        <p className="mb-3 text-sm leading-relaxed" style={{ color: textMuted }}>
           O conteúdo atual do corpo do ofício foi carregado abaixo como referência. Edite ou
           substitua para orientar a IA. Os campos de destinatário e assunto já preenchidos serão
           usados como contexto.
@@ -145,12 +157,18 @@ export function OficioAiModal({
           disabled={isPending}
         />
 
-        <p className="mb-4 text-right text-[11px] text-slate-400">
-          <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-sans text-[10px]">
+        <p className="mb-4 text-right text-[11px]" style={{ color: textFaint }}>
+          <kbd
+            className="rounded border px-1.5 py-0.5 font-sans text-[10px]"
+            style={{ borderColor: hairline, backgroundColor: surfaceMuted }}
+          >
             Ctrl
           </kbd>
           {' + '}
-          <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-sans text-[10px]">
+          <kbd
+            className="rounded border px-1.5 py-0.5 font-sans text-[10px]"
+            style={{ borderColor: hairline, backgroundColor: surfaceMuted }}
+          >
             Enter
           </kbd>
           {' para gerar'}
@@ -170,7 +188,7 @@ export function OficioAiModal({
           <button
             type="button"
             onClick={onClose}
-            className={`h-11 rounded-xl px-6 text-sm font-semibold transition-colors hover:bg-slate-50 ${focusRingClass}`}
+            className={`h-11 rounded-xl px-6 text-sm font-semibold transition-colors duration-150 hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
           >
             Cancelar
           </button>

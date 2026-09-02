@@ -3,10 +3,17 @@
   "user": "ubuntu",
   "install": "bash .cursor/install.sh",
   "start": "bash .cursor/start.sh",
+  "ports": [
+    {
+      "name": "next-dev",
+      "port": 3000
+    }
+  ],
   "terminals": [
     {
-      "name": "dev",
-      "command": "bash .cursor/start.sh && npm run dev"
+      "name": "dev-server",
+      "command": "bash .cursor/start.sh && npm run dev",
+      "description": "Next.js development server (webpack, port 3000)"
     }
   ]
 }

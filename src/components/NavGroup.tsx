@@ -14,17 +14,23 @@ interface NavGroupItem {
 
 export function NavGroup({
   basePath,
+  activePaths = [],
   icon,
   label,
   items,
 }: {
   basePath: string;
+  activePaths?: string[];
   icon: ReactNode;
   label: string;
   items: NavGroupItem[];
 }) {
   const pathname = usePathname();
-  const isGroupActive = pathname === basePath || pathname.startsWith(`${basePath}/`);
+  const isPathActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
+  const isGroupActive = [basePath, ...activePaths].some(isPathActive);
+  const activeItemHref = items
+    .filter((item) => isPathActive(item.href))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
   const [expanded, setExpanded] = useState(isGroupActive);
   const isExpanded = isGroupActive || expanded;
 
@@ -69,7 +75,7 @@ export function NavGroup({
       </button>
       <div id={menuId} className="flex flex-col py-1" hidden={!isExpanded}>
         {items.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const isActive = activeItemHref === item.href;
           const itemStyle = {
             '--focus-ring-color': skyBlue,
             borderLeftColor: isActive ? skyBlue : 'transparent',

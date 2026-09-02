@@ -6,6 +6,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import {
   getDevAuthUser,
   isAuthRole,
+  isProductionRuntime,
   isSkipAuthEnabled,
   SESSION_COOKIE_NAME,
   type SessionData,
@@ -133,7 +134,7 @@ export async function createSession(input: { userId: number; email: string }): P
     {
       httpOnly: true,
       sameSite: 'lax',
-      secure: env.NODE_ENV === 'production',
+      secure: isProductionRuntime(),
       path: '/',
       maxAge: SESSION_TTL_SECONDS,
     },

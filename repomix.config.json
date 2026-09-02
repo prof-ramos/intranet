@@ -1,0 +1,19 @@
+{
+  "$schema": "https://repomix.com/schemas/latest/schema.json",
+  "output": {
+    "style": "markdown",
+    "filePath": "repomix-output.md"
+  },
+  "ignore": {
+    "customPatterns": [
+      "drizzle/postgres/meta/**",
+      "advisor-plans/**",
+      "plans/**",
+      "docs/**/archive/**",
+      "public/logo.svg",
+      "src/app/icon.svg",
+      "**/*.ttf",
+      "**/*.woff2"
+    ]
+  }
+}

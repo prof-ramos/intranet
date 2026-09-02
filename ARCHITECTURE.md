@@ -10,12 +10,12 @@ A intranet ASOF e uma aplicacao Next.js 16.2.6 App Router, server-side, com Driz
 
 - `src/app/app/associados` e `src/lib/associates`: Cadastro de Oficiais, lotacao/posto, situacao funcional, vínculo ASOF e contribuicao. A rota permanece `/app/associados` por compatibilidade historica.
 - `src/app/app/atividades` e `src/lib/activities`: board administrativo, responsaveis, prioridades e prazos. Lógica de conclusão extraída para `deriveCompletedAt()` em `transformations.ts`; labels consolidados via `ACTIVITY_PRIORITY_LABELS` em `status.ts`.
-- `src/app/app/financeiro` e `src/lib/finance`: mensalidades e status de pagamento. Inicialização de mês usa bulk upsert (`ON CONFLICT DO UPDATE`) ao invés de inserts individuais.
+- `src/app/app/financeiro` e `src/lib/finance`: mensalidades e status de pagamento. Inicialização de mês usa bulk upsert (`ON CONFLICT DO UPDATE`) ao invés de inserts individuais. A UI do operador está oculta no ciclo atual (V2, issue #429): layouts redirecionam para `/app`.
 - `src/app/app/juridico` e `src/lib/juridico`: consultas, processos, notas e SLA.
 - `src/app/app/secretaria/oficios` e `src/lib/oficios`: oficios, rich text, PDF e assinatura digital via Assinafy.
 - `src/app/app/notifications` e `src/lib/notifications`: alertas persistidos.
 - `src/app/app/config`: usuarios, lotacoes, auditoria, API keys e webhooks outbound.
-- `src/app/app/email-triage` e `src/lib/email-triage`: triagem automatica de e-mails com Gemini AI. Busca emails via Gmail API, analisa com IA, persiste resultado operacional, correlaciona consultas abertas quando seguro e notifica admins.
+- `src/app/app/email-triage` e `src/lib/email-triage`: triagem automatica de e-mails com Gemini AI. Busca emails via Gmail API, analisa com IA, persiste resultado operacional, correlaciona consultas abertas quando seguro e notifica admins. A UI do operador está oculta no ciclo atual (V2, issue #429): layouts redirecionam para `/app`.
 - `src/lib/assinafy`: cliente Assinafy, webhook handler, repository e service para assinatura digital de ofícios.
 
 ## Modulo Email Triage
@@ -73,34 +73,36 @@ A intranet ASOF e uma aplicacao Next.js 16.2.6 App Router, server-side, com Driz
 4. **Criação Signatário** — Signatário criado/recuperado via `createSigner` (fallback silencioso para emails existentes)
 5. **Assignment** — Solicitação de assinatura criada com `expires_at` 30 dias
 6. **Persistência** — `assinafy_signing_url`, `assinafyDocumentId`, `assinafyAssignmentId`, `assinafySignerId` salvos em transação
-7. **Webhook** — Assinafy envia callbacks para `/api/webhooks/assinafy` (eventos: `document_signed`, `signer_signed_document`, `document_rejected`, etc.)
+7. **Webhook** — Assinafy envia callbacks para `/api/webhooks/assinafy` (eventos: `signer_signed_document`, `document_signed`, `document_ready`, `document_expired`, `document_cancelled`, `signer_rejected_document`, `user_rejected_document`, `document_processing_failed`)
 8. **Processamento Webhook** — Dentro de transação: atualiza ofício, loga auditoria, emite domain event, notifica admins
 
 ### Componentes
 
 - `src/lib/assinafy/client.ts` — Cliente HTTP com extração defensiva de payload e recuperação de signatários
-- `src/lib/assinafy/types.ts` — Enums `AssinafyDocumentStatus` (11 estados), tipos de webhook
+- `src/lib/assinafy/types.ts` — Enum `AssinafyDocumentStatus` alinhado a `assinafy_document_status`, tipos de webhook
 - `src/lib/assinafy/repository.ts` — `findOficioByAssinafyDocumentId`, `updateAssinafyStatus`, `updateAssinafyFields`
-- `src/lib/assinafy/service.ts` — `handleWebhookEvent` (processamento transacional), `sendForSignature` (orquestração envio)
+- `src/lib/assinafy/service.ts` — `handleWebhookEvent` (processamento transacional)
+- `src/lib/oficios/service.ts` — `sendForSignature` (orquestração do envio)
 - `src/app/api/webhooks/assinafy/route.ts` — Endpoint público para webhooks Assinafy
 - `src/app/app/secretaria/oficios/_components/SendForSignatureModal.tsx` — Modal de envio
 - `src/app/app/secretaria/oficios/_components/OficiosTable.tsx` — Botão "Enviar para Assinatura" + badge "Abrir página de assinatura"
 
 ### Status Assinafy (enum `assinafy_document_status`)
 
-| Status              | Descricao                |
-| ------------------- | ------------------------ |
-| `pending`           | Aguardando processamento |
-| `uploaded`          | Documento carregado      |
-| `pending_signature` | Aguardando assinatura    |
-| `partially_signed`  | Parcialmente assinado    |
-| `signed`            | Assinado                 |
-| `rejected`          | Rejeitado                |
-| `expired`           | Expirado                 |
-| `cancelled`         | Cancelado                |
-| `failed`            | Falha                    |
-| `certificated`      | Certificado              |
-| `ready`             | Pronto                   |
+| Status                | Descricao                 |
+| --------------------- | ------------------------- |
+| `uploading`           | Upload em andamento       |
+| `uploaded`            | Documento carregado       |
+| `metadata_processing` | Processando metadados     |
+| `metadata_ready`      | Metadados prontos         |
+| `pending_signature`   | Aguardando assinatura     |
+| `partially_signed`    | Parcialmente assinado     |
+| `certificating`       | Certificando              |
+| `certificated`        | Certificado               |
+| `expired`             | Expirado                  |
+| `rejected_by_signer`  | Rejeitado pelo signatário |
+| `rejected_by_user`    | Rejeitado pelo usuário    |
+| `failed`              | Falha                     |
 
 ### Regras de Negocio
 

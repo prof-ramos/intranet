@@ -2,7 +2,7 @@
 
 # Test Mocks
 
-Test mocks for Jest/Vitest.
+Test mocks for Vitest.
 
 ## Key Files
 

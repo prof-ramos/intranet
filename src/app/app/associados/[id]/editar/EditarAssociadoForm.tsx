@@ -8,7 +8,7 @@ import {
   AssociateFormFields,
   type AssociateFormValues,
 } from '@/app/app/associados/_components/AssociateFormFields';
-import { focusRingClass } from '@/lib/ui/tokens';
+import { focusRingClass, textMuted } from '@/lib/ui/tokens';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 import type { EditAssociateDTO } from '@/lib/associates/service';
@@ -105,7 +105,7 @@ export function EditarAssociadoForm({ associate, canEditInternalNotes }: Props) 
           <ArrowLeft size={18} />
         </Link>
         <div>
-          <p className="text-base-content/55 text-[11px] tracking-[0.18em] uppercase">
+          <p className="text-[11px] tracking-[0.18em] uppercase" style={{ color: textMuted }}>
             Cadastro de Oficiais / Editar
           </p>
           <h1 className="mt-1 font-serif text-3xl font-bold">Editar oficial</h1>

@@ -7,6 +7,7 @@ async function expectNavigationSections(page: Page) {
     'Operação',
     'Cadastro',
     'Gestão',
+    'Administração',
   ]);
   return navigation;
 }
@@ -21,7 +22,10 @@ test.describe('Dashboard', () => {
     await expect(page.locator('text=Atividades em curso')).toBeVisible();
 
     const navigation = await expectNavigationSections(page);
-    await expect(navigation.getByRole('button', { name: 'Financeiro' })).toBeVisible();
+    await expect(navigation.getByRole('button', { name: 'Financeiro' })).toHaveCount(0);
+    await expect(navigation.getByRole('link', { name: 'Triagem de E-mails' })).toHaveCount(0);
+    await navigation.getByRole('button', { name: 'Secretaria' }).click();
+    await expect(navigation.getByRole('link', { name: 'Pesquisa de oficiais' })).toBeVisible();
     await expect(navigation.getByRole('link', { name: 'Relatórios' })).toBeVisible();
     await expect(navigation.getByRole('button', { name: 'Configurações' })).toBeVisible();
     await expect(navigation.getByText('E-mails com IA', { exact: true })).toHaveCount(1);
@@ -33,7 +37,10 @@ test.describe('Dashboard', () => {
     await expect(page.locator('h1')).toContainText('Painel Administrativo');
 
     const navigation = await expectNavigationSections(page);
-    await expect(navigation.getByRole('button', { name: 'Financeiro' })).toBeVisible();
+    await expect(navigation.getByRole('button', { name: 'Financeiro' })).toHaveCount(0);
+    await expect(navigation.getByRole('link', { name: 'Triagem de E-mails' })).toHaveCount(0);
+    await navigation.getByRole('button', { name: 'Secretaria' }).click();
+    await expect(navigation.getByRole('link', { name: 'Pesquisa de oficiais' })).toBeVisible();
     await expect(navigation.getByRole('link', { name: 'Relatórios' })).toBeVisible();
     await expect(navigation.getByRole('button', { name: 'Configurações' })).toBeVisible();
     await expect(navigation.getByText('E-mails com IA', { exact: true })).toHaveCount(0);
@@ -46,6 +53,9 @@ test.describe('Dashboard', () => {
 
     const navigation = await expectNavigationSections(page);
     await expect(navigation.getByRole('button', { name: 'Financeiro' })).toHaveCount(0);
+    await expect(navigation.getByRole('link', { name: 'Triagem de E-mails' })).toHaveCount(0);
+    await navigation.getByRole('button', { name: 'Secretaria' }).click();
+    await expect(navigation.getByRole('link', { name: 'Pesquisa de oficiais' })).toBeVisible();
     await expect(navigation.getByRole('link', { name: 'Relatórios' })).toHaveCount(0);
     await expect(navigation.getByRole('button', { name: 'Configurações' })).toHaveCount(0);
   });
@@ -100,7 +110,10 @@ test.describe('Dashboard', () => {
     await expect(page).toHaveURL(/associationStatus=associado.*contributionStatus=em_dia/);
 
     await page.goto('/app');
-    await page.getByRole('link', { name: /^atrasadas \d+$/i }).click();
+    await page
+      .getByRole('region', { name: 'Indicadores' })
+      .getByRole('link', { name: /^atrasadas/i })
+      .click();
     await expect(page).toHaveURL(/dueLate=1/);
 
     await page.goto('/app');

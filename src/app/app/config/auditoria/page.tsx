@@ -6,8 +6,9 @@ import { admins } from '@/lib/db/schema/admins';
 import { desc, eq, and, gte, lt, ilike, count } from 'drizzle-orm';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
 import type { SQL } from 'drizzle-orm';
-import { focusRingClass } from '@/lib/ui/tokens';
+import { auditEntityBadgeColors, focusRingClass, textFaint } from '@/lib/ui/tokens';
 import { calculatePaginationBounds } from '@/lib/pagination';
+import { PageHeader } from '@/components/PageHeader';
 
 const PAGE_SIZE = 50;
 
@@ -23,20 +24,6 @@ const entityTypeLabels: Record<string, string> = {
   official_letter: 'Ofício',
   domain_event: 'Evento de domínio',
   webhook_subscription: 'Webhook',
-};
-
-const entityTypeBadge: Record<string, string> = {
-  associate: 'bg-blue-50 text-blue-700',
-  admin: 'bg-purple-50 text-purple-700',
-  activity: 'bg-amber-50 text-amber-700',
-  assignment: 'bg-teal-50 text-teal-700',
-  legal_consultation: 'bg-rose-50 text-rose-700',
-  legal_process: 'bg-rose-50 text-rose-700',
-  finance: 'bg-green-50 text-green-700',
-  monthly_payment: 'bg-green-50 text-green-700',
-  official_letter: 'bg-sky-50 text-sky-700',
-  domain_event: 'bg-gray-50 text-gray-700',
-  webhook_subscription: 'bg-indigo-50 text-indigo-700',
 };
 
 // ⚡ Bolt: Cache Intl instances to avoid expensive object creation on every render
@@ -121,10 +108,12 @@ export default async function AuditoriaPage({
 
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
-      <p className="text-[11px] tracking-[0.18em] text-[rgba(13,31,60,0.55)] uppercase">
-        Configurações · Auditoria
-      </p>
-      <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">Auditoria</h1>
+      <PageHeader
+        eyebrow="Configurações · Auditoria"
+        title="Auditoria"
+        backHref="/app/config"
+        backLabel="Voltar para configurações"
+      />
 
       <form method="GET" action="/app/config/auditoria" className="mt-6 flex flex-wrap gap-3">
         <input
@@ -210,9 +199,7 @@ export default async function AuditoriaPage({
                     {dtf.format(row.createdAt)}
                   </td>
                   <td className="px-5 py-3 text-[#040920]">
-                    {row.actorName ?? (
-                      <span className="text-[rgba(13,31,60,0.35)] italic">Sistema</span>
-                    )}
+                    {row.actorName ?? <span style={{ color: textFaint }}>Sistema</span>}
                   </td>
                   <td className="px-5 py-3 font-mono text-xs text-[rgba(13,31,60,0.75)]">
                     {row.action}
@@ -220,7 +207,11 @@ export default async function AuditoriaPage({
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${entityTypeBadge[row.entityType] ?? 'bg-gray-50 text-gray-700'}`}
+                        className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                        style={{
+                          backgroundColor: auditEntityBadgeColors[row.entityType]?.bg ?? '#eef1f6',
+                          color: auditEntityBadgeColors[row.entityType]?.text ?? '#59677a',
+                        }}
                       >
                         {entityTypeLabels[row.entityType] ?? row.entityType}
                       </span>

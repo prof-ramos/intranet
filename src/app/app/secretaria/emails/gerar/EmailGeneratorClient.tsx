@@ -1,47 +1,74 @@
 'use client';
 
-import { useState, useRef, useEffect, useTransition } from 'react';
-import { Mail, Clipboard, Sparkles, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect, useTransition, type KeyboardEvent } from 'react';
+import {
+  AlertTriangle,
+  Clipboard,
+  Loader2,
+  Mail,
+  Megaphone,
+  Newspaper,
+  Sparkles,
+} from 'lucide-react';
 import { generateEmailAction } from './actions';
 import { EMAIL_MODEL, getModelDisplayName } from '@/lib/ai/constants';
 import {
+  alertDangerBg,
+  alertDangerBorder,
+  alertDangerText,
+  buttonOutlineBorder,
+  focusRingClass,
+  hairline,
+  linkText,
   navy,
   primaryContainerHover,
-  focusRingClass,
-  cardBorder,
-  cardShadow
+  skyBlue,
+  surfaceMuted,
+  textFaint,
+  textMuted,
+  textPrimary,
+  textStrong,
+  warningText,
 } from '@/lib/ui/tokens';
-import { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
+import type { LucideIcon } from 'lucide-react';
 
 type EmailType = 'newsletter' | 'convite' | 'comunicado' | 'aviso';
 
 const PROMPT_MAX = 600;
 
-const EMAIL_TYPES: { value: EmailType; icon: string; label: string }[] = [
-  { value: 'newsletter', icon: '📰', label: 'Newsletter' },
-  { value: 'convite',    icon: '📨', label: 'Convite'    },
-  { value: 'comunicado', icon: '📣', label: 'Comunicado' },
-  { value: 'aviso',      icon: '⚠️', label: 'Aviso'      },
+const EMAIL_TYPES: { value: EmailType; icon: LucideIcon; label: string }[] = [
+  { value: 'newsletter', icon: Newspaper, label: 'Newsletter' },
+  { value: 'convite', icon: Mail, label: 'Convite' },
+  { value: 'comunicado', icon: Megaphone, label: 'Comunicado' },
+  { value: 'aviso', icon: AlertTriangle, label: 'Aviso' },
 ];
+
+type ToastState = { variant: 'success' | 'error'; message: string } | null;
 
 export function EmailGeneratorClient() {
   const [emailType, setEmailType] = useState<EmailType>('newsletter');
-  const [prompt, setPrompt]       = useState('');
-  const [subject, setSubject]     = useState('');
+  const [prompt, setPrompt] = useState('');
+  const [subject, setSubject] = useState('');
   const [generatedHtml, setGeneratedHtml] = useState('');
-  const [toast, setToast]         = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState>(null);
   const [isPending, startTransition] = useTransition();
 
-  const iframeRef      = useRef<HTMLIFrameElement>(null);
-  const toastTimerRef  = useRef<NodeJS.Timeout | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
+  const showToast = (variant: 'success' | 'error', message: string) => {
+    setToast({ variant, message });
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     toastTimerRef.current = setTimeout(() => setToast(null), 3500);
   };
 
-  useEffect(() => () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); }, []);
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!generatedHtml || !iframeRef.current) return;
@@ -58,7 +85,10 @@ export function EmailGeneratorClient() {
 
   const handleGenerate = () => {
     const trimmed = prompt.trim();
-    if (!trimmed) { showToast('⚠️ Descreva o conteúdo do e-mail'); return; }
+    if (!trimmed) {
+      showToast('error', 'Descreva o conteúdo do e-mail.');
+      return;
+    }
 
     setSubject('');
     setGeneratedHtml('');
@@ -68,9 +98,9 @@ export function EmailGeneratorClient() {
       if (result.success) {
         setSubject(result.subject);
         setGeneratedHtml(result.html);
-        showToast('✓ E-mail gerado com sucesso!');
+        showToast('success', 'E-mail gerado com sucesso.');
       } else {
-        showToast('❌ ' + result.error);
+        showToast('error', result.error);
       }
     });
   };
@@ -79,24 +109,26 @@ export function EmailGeneratorClient() {
     if (!generatedHtml) return;
     try {
       await navigator.clipboard.writeText(generatedHtml);
-      showToast('✓ HTML copiado para a área de transferência');
+      showToast('success', 'HTML copiado para a área de transferência.');
     } catch {
-      showToast('❌ Erro ao copiar HTML');
+      showToast('error', 'Erro ao copiar HTML.');
     }
   };
 
   const copyForGmail = async () => {
     if (!generatedHtml) return;
     try {
-      const item = new ClipboardItem({ 'text/html': new Blob([generatedHtml], { type: 'text/html' }) });
+      const item = new ClipboardItem({
+        'text/html': new Blob([generatedHtml], { type: 'text/html' }),
+      });
       await navigator.clipboard.write([item]);
-      showToast('✓ E-mail copiado! Cole direto no Gmail (Ctrl+V)');
+      showToast('success', 'E-mail copiado. Cole direto no Gmail (Ctrl+V).');
     } catch {
       await copyHtml();
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
       handleGenerate();
@@ -104,37 +136,35 @@ export function EmailGeneratorClient() {
   };
 
   const charCount = prompt.length;
-  const charWarn  = charCount > PROMPT_MAX * 0.85;
+  const charWarn = charCount > PROMPT_MAX * 0.85;
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row">
-      {/* ── PAINEL ESQUERDO (Configurações) ── */}
-      <aside className="flex w-full flex-shrink-0 flex-col gap-6 lg:w-[400px]">
-        
-        {/* Tipo de E-mail */}
-        <section 
-      className="rounded-[16px] bg-white p-5"
-      style={{ border: cardBorder, boxShadow: cardShadow }}
-    >
-      <h2 className="mb-4 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-        Tipo de E-mail
-      </h2>
+      <aside className="flex w-full shrink-0 flex-col gap-6 lg:w-[400px]">
+        <section className="rounded-[16px] border bg-white p-5" style={{ borderColor: hairline }}>
+          <h2
+            className="mb-4 text-[11px] font-bold tracking-[0.18em] uppercase"
+            style={{ color: textMuted }}
+          >
+            Tipo de e-mail
+          </h2>
           <div className="grid grid-cols-2 gap-3">
-            {EMAIL_TYPES.map(({ value, icon, label }) => {
+            {EMAIL_TYPES.map(({ value, icon: Icon, label }) => {
               const isActive = emailType === value;
               return (
                 <button
                   key={value}
                   type="button"
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${focusRingClass} ${
-                    isActive
-                      ? 'border-[#76AEEA] bg-[#f0f6fc] text-[#0d3260]'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
+                  className={`flex items-center gap-2 rounded-[8px] border px-3 py-2.5 text-sm font-medium transition-colors duration-150 ${focusRingClass}`}
+                  style={{
+                    borderColor: isActive ? skyBlue : buttonOutlineBorder,
+                    backgroundColor: isActive ? '#f0f6fc' : '#ffffff',
+                    color: isActive ? linkText : textMuted,
+                  }}
                   onClick={() => setEmailType(value)}
                   aria-pressed={isActive}
                 >
-                  <span aria-hidden="true" className="text-base">{icon}</span>
+                  <Icon size={16} aria-hidden="true" />
                   {label}
                 </button>
               );
@@ -142,33 +172,37 @@ export function EmailGeneratorClient() {
           </div>
         </section>
 
-        {/* Descrição */}
-        <section 
-          className="rounded-[16px] bg-white p-5"
-          style={{ border: cardBorder, boxShadow: cardShadow }}
-        >
+        <section className="rounded-[16px] border bg-white p-5" style={{ borderColor: hairline }}>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-              Descreva o E-mail
+            <h2
+              className="text-[11px] font-bold tracking-[0.18em] uppercase"
+              style={{ color: textMuted }}
+            >
+              Descreva o e-mail
             </h2>
-            <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-500">
-              <Sparkles className="h-3 w-3 text-[#76AEEA]" />
+            <div
+              className="flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium"
+              style={{ borderColor: hairline, backgroundColor: surfaceMuted, color: textMuted }}
+            >
+              <Sparkles className="h-3 w-3" style={{ color: skyBlue }} aria-hidden="true" />
               {getModelDisplayName(EMAIL_MODEL)}
             </div>
           </div>
-          
+
           <textarea
-            className={`w-full resize-y rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 transition-colors focus:border-[#76AEEA] focus:outline-none focus:ring-1 focus:ring-[#76AEEA] ${focusRingClass}`}
+            className={`w-full resize-y rounded-[8px] border bg-white px-4 py-3 text-sm transition-colors duration-150 ${focusRingClass}`}
+            style={{ borderColor: hairline, color: textStrong }}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value.slice(0, PROMPT_MAX))}
             onKeyDown={handleKeyDown}
-            placeholder="Ex: Convite para o Encontro Jurídico sobre registro sindical, dia 26 de maio às 15h pelo Google Meet. Conduzido pelo advogado Eder Machado Leite."
+            placeholder="Ex: Convite para o Encontro Jurídico sobre registro sindical, dia 26 de maio às 15h pelo Google Meet."
             aria-label="Descrição do e-mail"
             rows={6}
           />
           <div className="mt-2 flex items-center justify-end">
-            <span 
-              className={`text-xs font-medium ${charWarn ? 'text-amber-600' : 'text-slate-400'}`} 
+            <span
+              className="text-xs font-medium"
+              style={{ color: charWarn ? warningText : textFaint }}
               aria-live="polite"
             >
               {charCount}/{PROMPT_MAX}
@@ -176,45 +210,69 @@ export function EmailGeneratorClient() {
           </div>
         </section>
 
-        {/* Gerar */}
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            className={`flex h-10 w-full items-center justify-center gap-2 rounded-lg px-5 text-sm font-bold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50 hover:bg-[var(--primary-hover)] active:scale-[0.98] ${focusRingClass}`}
-            style={{ 
-              backgroundColor: navy, 
-              '--primary-hover': primaryContainerHover 
-            } as CSSProperties}
+            className={`flex h-10 w-full items-center justify-center gap-2 rounded-[8px] px-5 text-sm font-bold text-white transition-colors duration-150 hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50 motion-safe:active:scale-[0.98] ${focusRingClass}`}
+            style={
+              { backgroundColor: navy, '--primary-hover': primaryContainerHover } as CSSProperties
+            }
             onClick={handleGenerate}
             disabled={isPending || !prompt.trim()}
             aria-busy={isPending}
           >
             {isPending ? (
-              <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /><span>Gerando e-mail...</span></>
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                <span>Gerando e-mail...</span>
+              </>
             ) : (
-              <><Sparkles className="h-4 w-4" aria-hidden="true" /><span>Gerar E-mail</span></>
+              <>
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+                <span>Gerar e-mail</span>
+              </>
             )}
           </button>
-          <p className="text-center text-xs text-slate-500">
-            Pressione <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-sans">Ctrl</kbd> + <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-sans">Enter</kbd> para gerar
+          <p className="text-center text-xs" style={{ color: textMuted }}>
+            Pressione{' '}
+            <kbd
+              className="rounded border px-1.5 py-0.5 font-sans text-[10px]"
+              style={{ borderColor: hairline, backgroundColor: surfaceMuted }}
+            >
+              Ctrl
+            </kbd>{' '}
+            +{' '}
+            <kbd
+              className="rounded border px-1.5 py-0.5 font-sans text-[10px]"
+              style={{ borderColor: hairline, backgroundColor: surfaceMuted }}
+            >
+              Enter
+            </kbd>{' '}
+            para gerar
           </p>
         </div>
       </aside>
 
-      {/* ── PAINEL DIREITO (Pré-visualização) ── */}
-      <section 
-        className="flex min-h-[600px] flex-1 flex-col overflow-hidden rounded-[16px] bg-white"
-        style={{ border: cardBorder, boxShadow: cardShadow }}
+      <section
+        className="flex min-h-[600px] flex-1 flex-col overflow-hidden rounded-[16px] border bg-white"
+        style={{ borderColor: hairline }}
         aria-label="Pré-visualização do e-mail"
       >
-        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 py-3 lg:px-6">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+        <div
+          className="flex items-center justify-between border-b px-5 py-3 lg:px-6"
+          style={{ borderColor: hairline, backgroundColor: surfaceMuted }}
+        >
+          <h2
+            className="text-[11px] font-bold tracking-[0.18em] uppercase"
+            style={{ color: textMuted }}
+          >
             Pré-visualização
           </h2>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className={`flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 ${focusRingClass}`}
+              className={`flex items-center gap-1.5 rounded-[8px] border bg-white px-3 py-1.5 text-xs font-semibold transition-colors duration-150 hover:bg-[rgba(4,9,32,0.04)] disabled:cursor-not-allowed disabled:opacity-50 ${focusRingClass}`}
+              style={{ borderColor: buttonOutlineBorder, color: textMuted }}
               onClick={copyHtml}
               disabled={!generatedHtml || isPending}
               title="Copiar código HTML"
@@ -224,7 +282,8 @@ export function EmailGeneratorClient() {
             </button>
             <button
               type="button"
-              className={`flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-[#0d3260] transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 ${focusRingClass}`}
+              className={`flex items-center gap-1.5 rounded-[8px] border bg-white px-3 py-1.5 text-xs font-semibold transition-colors duration-150 hover:bg-[rgba(4,9,32,0.04)] disabled:cursor-not-allowed disabled:opacity-50 ${focusRingClass}`}
+              style={{ borderColor: buttonOutlineBorder, color: linkText }}
               onClick={copyForGmail}
               disabled={!generatedHtml || isPending}
               title="Copiar como HTML renderizado para colar no Gmail"
@@ -235,54 +294,90 @@ export function EmailGeneratorClient() {
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col overflow-y-auto bg-slate-100/50 p-5 lg:p-8">
+        <div
+          className="flex flex-1 flex-col overflow-y-auto p-5 lg:p-8"
+          style={{ backgroundColor: surfaceMuted }}
+        >
           <div className="mx-auto w-full max-w-[640px]">
             {isPending && (
-              <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 text-slate-500" role="status" aria-live="polite">
-                <Loader2 className="h-8 w-8 animate-spin text-[#76AEEA]" aria-hidden="true" />
+              <div
+                className="flex min-h-[400px] flex-col items-center justify-center gap-4"
+                style={{ color: textMuted }}
+                role="status"
+                aria-live="polite"
+              >
+                <Loader2
+                  className="h-8 w-8 animate-spin"
+                  style={{ color: skyBlue }}
+                  aria-hidden="true"
+                />
                 <p className="text-sm font-medium">Gerando conteúdo com IA...</p>
               </div>
             )}
 
             {!isPending && !generatedHtml && (
               <div className="flex min-h-[400px] flex-col items-center justify-center text-center">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white text-2xl shadow-sm border border-slate-100">
-                  ✉️
+                <div
+                  className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border bg-white"
+                  style={{ borderColor: hairline, color: linkText }}
+                >
+                  <Mail size={28} aria-hidden="true" />
                 </div>
-                <h3 className="mb-2 font-serif text-xl font-medium text-slate-900">
+                <h3 className="mb-2 font-serif text-xl font-medium" style={{ color: textPrimary }}>
                   Nenhum e-mail gerado
                 </h3>
-                <p className="mb-6 max-w-sm text-sm text-slate-500">
-                  Preencha os campos ao lado e clique em <strong className="text-slate-700">Gerar E-mail</strong> para criar um novo modelo.
+                <p className="mb-6 max-w-sm text-sm" style={{ color: textMuted }}>
+                  Preencha os campos ao lado e clique em{' '}
+                  <strong style={{ color: textStrong }}>Gerar e-mail</strong> para criar um novo
+                  modelo.
                 </p>
-                <ol className="flex flex-col gap-3 text-left text-sm text-slate-600" aria-label="Passos">
-                  <li className="flex items-center gap-3">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#e0f2fe] text-[10px] font-bold text-[#0369a1]" aria-hidden="true">1</span>
-                    Escolha o tipo de e-mail
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#e0f2fe] text-[10px] font-bold text-[#0369a1]" aria-hidden="true">2</span>
-                    Descreva o conteúdo em linguagem natural
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#e0f2fe] text-[10px] font-bold text-[#0369a1]" aria-hidden="true">3</span>
-                    Gere o conteúdo final formatado
-                  </li>
+                <ol
+                  className="flex flex-col gap-3 text-left text-sm"
+                  style={{ color: textMuted }}
+                  aria-label="Passos"
+                >
+                  {[
+                    'Escolha o tipo de e-mail',
+                    'Descreva o conteúdo em linguagem natural',
+                    'Gere o conteúdo final formatado',
+                  ].map((step, index) => (
+                    <li key={step} className="flex items-center gap-3">
+                      <span
+                        className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold"
+                        style={{ backgroundColor: '#e0f2fe', color: linkText }}
+                        aria-hidden="true"
+                      >
+                        {index + 1}
+                      </span>
+                      {step}
+                    </li>
+                  ))}
                 </ol>
               </div>
             )}
 
             {!isPending && generatedHtml && (
               <div className="flex flex-col gap-4">
-                {subject && (
-                  <div className="flex flex-wrap items-baseline gap-3 rounded-[8px] border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#76AEEA]">
+                {subject ? (
+                  <div
+                    className="flex flex-wrap items-baseline gap-3 rounded-[8px] border bg-white px-4 py-3"
+                    style={{ borderColor: hairline }}
+                  >
+                    <span
+                      className="text-xs font-bold tracking-wider uppercase"
+                      style={{ color: skyBlue }}
+                    >
                       Assunto
                     </span>
-                    <span className="text-sm font-medium text-slate-900">{subject}</span>
+                    <span className="text-sm font-medium" style={{ color: textPrimary }}>
+                      {subject}
+                    </span>
                   </div>
-                )}
-                <div className="overflow-hidden rounded-[8px] border border-slate-200 bg-white shadow-sm">
+                ) : null}
+                <div
+                  className="overflow-hidden rounded-[8px] border bg-white"
+                  style={{ borderColor: hairline }}
+                >
                   <iframe
                     ref={iframeRef}
                     srcDoc={generatedHtml}
@@ -298,20 +393,28 @@ export function EmailGeneratorClient() {
         </div>
       </section>
 
-      {/* Toast Notification */}
-      {toast && (
-        <div 
-          className={`fixed bottom-6 right-6 z-50 max-w-sm rounded-lg px-4 py-3 text-sm font-medium shadow-lg transition-all ${
-            toast.startsWith('❌') 
-              ? 'border border-red-200 bg-red-50 text-red-900' 
-              : 'bg-slate-900 text-white'
-          }`}
-          role={toast.startsWith('❌') ? 'alert' : 'status'} 
+      {toast ? (
+        <div
+          className="fixed right-6 bottom-6 z-50 max-w-sm rounded-[8px] border px-4 py-3 text-sm font-medium"
+          style={
+            toast.variant === 'error'
+              ? {
+                  borderColor: alertDangerBorder,
+                  backgroundColor: alertDangerBg,
+                  color: alertDangerText,
+                }
+              : {
+                  borderColor: hairline,
+                  backgroundColor: navy,
+                  color: '#ffffff',
+                }
+          }
+          role={toast.variant === 'error' ? 'alert' : 'status'}
           aria-live="polite"
         >
-          {toast}
+          {toast.message}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

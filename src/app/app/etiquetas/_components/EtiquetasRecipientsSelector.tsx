@@ -1,8 +1,14 @@
 'use client';
 
-import { Search } from 'lucide-react';
+import { Loader2, Search } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
-import { mobileTouchTargetClass } from '@/lib/ui/tokens';
+import {
+  buttonOutlineBorder,
+  focusRingClass,
+  hairline,
+  mobileTouchTargetClass,
+  textMuted,
+} from '@/lib/ui/tokens';
 import { fetchAssociatesForEtiquetas, type EtiquetaAssociateOption } from '../actions';
 
 export function EtiquetasRecipientsSelector({
@@ -28,7 +34,9 @@ export function EtiquetasRecipientsSelector({
   }, [query]);
 
   function toggle(id: number) {
-    onChange(selectedIds.includes(id) ? selectedIds.filter((item) => item !== id) : [...selectedIds, id]);
+    onChange(
+      selectedIds.includes(id) ? selectedIds.filter((item) => item !== id) : [...selectedIds, id],
+    );
   }
 
   function toggleVisible() {
@@ -43,47 +51,72 @@ export function EtiquetasRecipientsSelector({
 
   return (
     <fieldset>
-      <legend className="text-sm font-semibold">Associados</legend>
+      <legend className="text-sm font-semibold" style={{ color: textMuted }}>
+        Associados
+      </legend>
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <label className="relative block w-full max-w-md">
           <span className="sr-only">Buscar associado por nome</span>
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 opacity-50" aria-hidden="true" />
+          <Search
+            className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+            style={{ color: textMuted }}
+            aria-hidden="true"
+          />
           <input
             type="search"
-            className="input input-bordered w-full pl-10"
+            className={`${mobileTouchTargetClass} w-full rounded-[8px] border bg-white pr-3 pl-10 text-sm ${focusRingClass}`}
+            style={{ borderColor: hairline }}
             placeholder="Buscar por nome..."
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
         </label>
         <div className="flex items-center gap-3">
-          {isPending && <span className="loading loading-spinner loading-sm" />}
-          <button type="button" className="btn btn-outline btn-sm" onClick={toggleVisible} disabled={associates.length === 0}>
+          {isPending ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : null}
+          <button
+            type="button"
+            className={`${mobileTouchTargetClass} rounded-[8px] border bg-white px-4 text-sm font-semibold text-[#040920] transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
+            style={{ borderColor: buttonOutlineBorder }}
+            onClick={toggleVisible}
+            disabled={associates.length === 0}
+          >
             Selecionar visíveis
           </button>
           <span className="text-sm font-semibold">{selectedIds.length} selecionado(s)</span>
         </div>
       </div>
-      <div className="mt-3 max-h-72 overflow-y-auto rounded-[8px] border border-base-300">
+      <div
+        className="mt-3 max-h-72 overflow-y-auto rounded-[8px] border"
+        style={{ borderColor: hairline }}
+      >
         {associates.length === 0 ? (
-          <p className="p-4 text-center text-sm opacity-70">Nenhum associado encontrado.</p>
+          <p className="p-4 text-center text-sm" style={{ color: textMuted }}>
+            Nenhum associado encontrado.
+          </p>
         ) : (
-          <ul className="divide-y divide-base-300">
+          <ul>
             {associates.map((associate) => (
-              <li key={associate.id}>
+              <li
+                key={associate.id}
+                className="border-b last:border-b-0"
+                style={{ borderColor: hairline }}
+              >
                 <label
-                  className={`${mobileTouchTargetClass} flex cursor-pointer items-start gap-3 p-3 transition-colors hover:bg-base-200/50`}
+                  className={`${mobileTouchTargetClass} flex cursor-pointer items-start gap-3 p-3 transition-colors hover:bg-[rgba(4,9,32,0.02)]`}
                 >
                   <input
                     type="checkbox"
-                    className="checkbox checkbox-sm mt-1"
+                    className={`mt-1 h-4 w-4 shrink-0 rounded-[4px] border ${focusRingClass}`}
+                    style={{ borderColor: hairline, accentColor: '#040920' }}
                     checked={selectedIds.includes(associate.id)}
                     onChange={() => toggle(associate.id)}
                   />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{associate.nome}</p>
-                    <p className="truncate text-xs opacity-70">
-                      {[associate.lotacao, associate.cidade, associate.uf].filter(Boolean).join(' · ') || 'Sem lotação informada'}
+                    <p className="truncate text-xs" style={{ color: textMuted }}>
+                      {[associate.lotacao, associate.cidade, associate.uf]
+                        .filter(Boolean)
+                        .join(' · ') || 'Sem lotação informada'}
                     </p>
                   </div>
                 </label>

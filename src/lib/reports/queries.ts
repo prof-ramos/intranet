@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { associates } from '@/lib/db/schema';
-import { eq, and, asc, sql } from 'drizzle-orm';
+import { eq, and, asc, sql, type SQL } from 'drizzle-orm';
 import { decryptPiiField } from '@/lib/crypto/pii';
 import { createLogger } from '@/lib/logger';
 
@@ -123,11 +123,8 @@ const reportColumns = {
   caocMember: associates.caocMember,
 };
 
-export async function getAssociatesForReport(
-  filters: ReportFilters = {},
-  limit: number = REPORT_DEFAULT_LIMIT,
-): Promise<ReportAssociate[]> {
-  const conditions = [];
+function buildReportFilterConditions(filters: ReportFilters): SQL[] {
+  const conditions: SQL[] = [];
 
   if (filters.functionalStatus) {
     conditions.push(eq(associates.functionalStatus, filters.functionalStatus));
@@ -159,10 +156,31 @@ export async function getAssociatesForReport(
     );
   }
 
+  return conditions;
+}
+
+function reportWhereClause(filters: ReportFilters) {
+  const conditions = buildReportFilterConditions(filters);
+  return conditions.length > 0 ? and(...conditions) : undefined;
+}
+
+export async function countAssociatesForReport(filters: ReportFilters = {}): Promise<number> {
+  const [row] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(associates)
+    .where(reportWhereClause(filters));
+
+  return row?.total ?? 0;
+}
+
+export async function getAssociatesForReport(
+  filters: ReportFilters = {},
+  limit: number = REPORT_DEFAULT_LIMIT,
+): Promise<ReportAssociate[]> {
   const rows = await db
     .select(reportColumns)
     .from(associates)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .where(reportWhereClause(filters))
     .orderBy(asc(associates.fullName))
     .limit(limit + 1);
 

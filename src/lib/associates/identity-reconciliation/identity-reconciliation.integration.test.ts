@@ -68,6 +68,9 @@ async function cleanup() {
 
 describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () => {
   beforeAll(async () => {
+    await db.execute(sql`DROP INDEX IF EXISTS idx_associates_cpf_hash`);
+    await db.execute(sql`DROP INDEX IF EXISTS idx_associates_siape_hash`);
+    await db.execute(sql`DROP INDEX IF EXISTS idx_associates_primary_email_hash`);
     const [admin] = await db
       .insert(admins)
       .values({
@@ -83,6 +86,15 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
   afterAll(async () => {
     await cleanup();
     if (adminId) await db.delete(admins).where(eq(admins.id, adminId));
+    await db.execute(
+      sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_associates_cpf_hash ON associates (cpf_hash)`,
+    );
+    await db.execute(
+      sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_associates_siape_hash ON associates (siape_hash)`,
+    );
+    await db.execute(
+      sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_associates_primary_email_hash ON associates (primary_email_hash)`,
+    );
   });
 
   afterEach(cleanup);

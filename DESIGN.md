@@ -155,7 +155,7 @@ elevation:
   button: '0 4px 0 #0409201f'
   drawer: '-12px 0 30px #0409201f'
   modal: '0 24px 60px #04092040'
-  # Note: tokens.ts currently exports only cardShadow, drawerShadow, and badgeShadow (floatingBadgeShadow). The card shadow value in tokens.ts (0 1px 3px rgba(4,9,32,0.08), 0 1px 2px rgba(4,9,32,0.04)) differs from the design spec. Components use Tailwind defaults (shadow-sm, shadow-xl) or inline values. The remaining elevation levels (popover, button, modal, flat) are not yet exported as tokens.
+  # Note: tokens.ts exports cardShadow, elevatedShadow, drawerShadow, and cardBorder. elevatedShadow is used for modals; cardBorder replaces shadow-sm on form sections. Remaining elevation levels (popover, button, flat) are not yet exported as separate tokens.
 motion:
   duration-fast: 120ms
   duration-base: 150ms
@@ -407,7 +407,7 @@ The palette is light and cool. The main canvas is a very pale blue-gray, content
 
 Avoid large saturated color blocks in the main work area. Most screens should be white panels and pale blue-gray containers with small color markers carrying status.
 
-> **Note:** `tokens.ts` exports approximately 35 named values. Many component tokens defined in this document (`on-primary`, `on-background`, `on-surface`, `surface` variants, `tertiary`, `outline`, `inverse-surface`, and composite tokens like `divider`, `tooltip`, `kanban-column`, etc.) are not yet exported and are used as inline values or Tailwind arbitrary values in components.
+> **Note:** `tokens.ts` exports design tokens used across the app, including layout (`sidebarGradientStart`, `sidebarGradientEnd`, `sidebarAccentBorder`, `sidebarEyebrowText`), text hierarchy (`textMuted`, `textPrimary`, `textSecondary`, `textSubtle`, `textFaint`, `textEyebrowMuted`, `iconMuted`), surfaces (`surfaceMuted`, `canvas`, `hairline`, `borderFaint`), elevation (`cardShadow`, `elevatedShadow`, `drawerShadow`, `cardBorder`), feedback colors, status/priority maps, category badges (`categoryColors`, `auditEntityBadgeColors`), and interaction utilities (`focusRingClass`, `mobileTouchTargetClass`, `desktopDenseControlClass`, `compactActionClass`). Many semantic tokens defined in this document (`on-primary`, `on-background`, `on-surface`, composite `divider`, `tooltip`, `kanban-column`, etc.) are not yet exported and remain inline or as Tailwind arbitrary values.
 
 ## Typography
 

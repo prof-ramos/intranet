@@ -26,7 +26,7 @@ test.describe('Kanban de Atividades', () => {
     await page.goto('/app/atividades');
 
     // Clica no botão "Nova atividade" para navegar ao formulário
-    await page.getByRole('link', { name: 'Nova atividade' }).click();
+    await page.locator('#main-content').getByRole('link', { name: 'Nova atividade' }).click();
     await expect(page).toHaveURL('/app/atividades/nova');
 
     // Preenche o título
