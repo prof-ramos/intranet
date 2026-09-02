@@ -98,9 +98,7 @@ describe('documentation checker', () => {
       'scripts/exists.ts': 'export {};',
     });
 
-    expect(
-      checkMarkdownFiles({ rootDir, markdownFiles: ['README.md'], scripts: {} }),
-    ).toEqual([]);
+    expect(checkMarkdownFiles({ rootDir, markdownFiles: ['README.md'], scripts: {} })).toEqual([]);
   });
 
   it('reports missing shell-fence paths with file and line', async () => {
@@ -145,9 +143,7 @@ describe('documentation checker', () => {
       ].join('\n'),
     });
 
-    expect(
-      checkMarkdownFiles({ rootDir, markdownFiles: ['README.md'], scripts: {} }),
-    ).toEqual([]);
+    expect(checkMarkdownFiles({ rootDir, markdownFiles: ['README.md'], scripts: {} })).toEqual([]);
   });
 
   it('reports a missing path on the continuation line of a multiline command', async () => {
@@ -155,9 +151,7 @@ describe('documentation checker', () => {
       'README.md': ['```zsh', 'npx tsx \\', '  scripts/missing.ts', '```'].join('\n'),
     });
 
-    expect(
-      checkMarkdownFiles({ rootDir, markdownFiles: ['README.md'], scripts: {} }),
-    ).toEqual([
+    expect(checkMarkdownFiles({ rootDir, markdownFiles: ['README.md'], scripts: {} })).toEqual([
       {
         file: 'README.md',
         line: 3,

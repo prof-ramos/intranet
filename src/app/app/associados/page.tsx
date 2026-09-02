@@ -9,6 +9,7 @@ import { AssociatesTable } from './components/AssociatesTable';
 import { OfficialsSearchBox } from './components/OfficialsSearchBox';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
+import { PageHeader } from '@/components/PageHeader';
 import { focusRingClass, textMuted } from '@/lib/ui/tokens';
 
 const PAGE_SIZE = 20;
@@ -54,24 +55,21 @@ export default async function AssociadosPage({
   return (
     <div>
       <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-8 sm:px-8 lg:px-10">
-        <section className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="font-serif text-4xl leading-none font-bold md:text-5xl">Oficiais</h1>
-            <p className="mt-3 text-base" style={{ color: textMuted }}>
-              Localize um Oficial de Chancelaria pelo nome.
-            </p>
-          </div>
-
-          {canCreateOfficial && (
-            <Link
-              href="/app/associados/novo"
-              className={`inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
-            >
-              <Plus size={16} aria-hidden="true" />
-              Novo oficial
-            </Link>
-          )}
-        </section>
+        <PageHeader
+          title="Oficiais"
+          description="Localize um Oficial de Chancelaria pelo nome."
+          actions={
+            canCreateOfficial ? (
+              <Link
+                href="/app/associados/novo"
+                className={`inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[8px] bg-[#040920] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
+              >
+                <Plus size={16} aria-hidden="true" />
+                Novo oficial
+              </Link>
+            ) : undefined
+          }
+        />
 
         <section className="mb-6">
           <OfficialsSearchBox key={q} initialQuery={q} />

@@ -9,7 +9,7 @@ import {
   associateInputStyle,
   createAssociateFormValues,
 } from '@/app/app/associados/_components/AssociateFormFields';
-import { focusRingClass } from '@/lib/ui/tokens';
+import { focusRingClass, textMuted } from '@/lib/ui/tokens';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { createLogger } from '@/lib/logger';
 
@@ -36,7 +36,7 @@ function DependentsCreateSection() {
           Adicionar dependente
         </button>
       </div>
-      <p className="text-base-content/60 mb-4 text-sm">
+      <p className="mb-4 text-sm" style={{ color: textMuted }}>
         Opcional no cadastro. Linhas vazias são ignoradas; nome sem parentesco (ou o inverso) gera
         erro. É possível editar depois no perfil.
       </p>
@@ -44,8 +44,8 @@ function DependentsCreateSection() {
         {rowKeys.map((key) => (
           <div key={key} className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto]">
             <div>
-              <label htmlFor={`dependentName-${key}`} className="label">
-                <span className="label-text font-semibold">Nome</span>
+              <label htmlFor={`dependentName-${key}`} className="mb-1 block text-sm font-semibold">
+                Nome
               </label>
               <input
                 id={`dependentName-${key}`}
@@ -57,8 +57,11 @@ function DependentsCreateSection() {
               />
             </div>
             <div>
-              <label htmlFor={`dependentRelationship-${key}`} className="label">
-                <span className="label-text font-semibold">Parentesco</span>
+              <label
+                htmlFor={`dependentRelationship-${key}`}
+                className="mb-1 block text-sm font-semibold"
+              >
+                Parentesco
               </label>
               <input
                 id={`dependentRelationship-${key}`}
@@ -128,7 +131,7 @@ export function CriarAssociadoForm({ canEditInternalNotes }: Props) {
           <ArrowLeft size={18} />
         </Link>
         <div>
-          <p className="text-base-content/55 text-[11px] tracking-[0.18em] uppercase">
+          <p className="text-[11px] tracking-[0.18em] uppercase" style={{ color: textMuted }}>
             Cadastro de Oficiais / Novo
           </p>
           <h1 className="mt-1 font-serif text-3xl font-bold">Cadastrar oficial</h1>

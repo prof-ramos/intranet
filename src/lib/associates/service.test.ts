@@ -482,18 +482,14 @@ describe('updateAssociateData', () => {
 
     await expect(
       updateAssociateData({ id: 1, fullName: 'Alice', cpf: '999' }, adminActor),
-    ).rejects.toSatisfy(
-      (error) => error instanceof ValidationError && error.message === message,
-    );
+    ).rejects.toSatisfy((error) => error instanceof ValidationError && error.message === message);
   });
 
   it('does not mask unique violations from unrelated constraints', async () => {
     const error = uniqueViolation('idx_associates_phone_hash');
     mockUpdateAssociateById.mockRejectedValueOnce(error);
 
-    await expect(
-      updateAssociateData({ id: 1, fullName: 'Alice' }, adminActor),
-    ).rejects.toBe(error);
+    await expect(updateAssociateData({ id: 1, fullName: 'Alice' }, adminActor)).rejects.toBe(error);
   });
 });
 
@@ -710,9 +706,9 @@ describe('createAssociateData', () => {
     vi.mocked(repository.findAssociateByPrimaryEmailHash).mockResolvedValue(null as never);
     vi.mocked(repository.insertAssociate).mockRejectedValueOnce(uniqueViolation(constraint));
 
-    await expect(createAssociateData({ fullName: 'Novo Oficial', cpf: '999' }, adminActor)).rejects.toSatisfy(
-      (error) => error instanceof ValidationError && error.message === message,
-    );
+    await expect(
+      createAssociateData({ fullName: 'Novo Oficial', cpf: '999' }, adminActor),
+    ).rejects.toSatisfy((error) => error instanceof ValidationError && error.message === message);
   });
 
   it('does not mask unique violations from unrelated constraints', async () => {

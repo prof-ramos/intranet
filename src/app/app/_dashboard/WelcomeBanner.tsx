@@ -27,9 +27,7 @@ export function WelcomeBanner({ userName, isNewUser = false }: WelcomeBannerProp
           <Sparkles className="h-5 w-5 text-blue-600" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-[#040920]">
-            Bem-vindo, {userName}!
-          </h2>
+          <h2 className="text-lg font-semibold text-[#040920]">Bem-vindo, {userName}!</h2>
           <p className="mt-1 text-sm text-[rgba(13,31,60,0.6)]">
             Aqui você gerencia atividades, ofícios e acompanha o trabalho da equipe.
           </p>

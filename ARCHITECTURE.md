@@ -89,20 +89,20 @@ A intranet ASOF e uma aplicacao Next.js 16.2.6 App Router, server-side, com Driz
 
 ### Status Assinafy (enum `assinafy_document_status`)
 
-| Status                  | Descricao                    |
-| ----------------------- | ---------------------------- |
-| `uploading`             | Upload em andamento          |
-| `uploaded`              | Documento carregado          |
-| `metadata_processing`   | Processando metadados        |
-| `metadata_ready`        | Metadados prontos            |
-| `pending_signature`     | Aguardando assinatura        |
-| `partially_signed`      | Parcialmente assinado        |
-| `certificating`         | Certificando                 |
-| `certificated`          | Certificado                  |
-| `expired`               | Expirado                     |
-| `rejected_by_signer`    | Rejeitado pelo signatário    |
-| `rejected_by_user`      | Rejeitado pelo usuário       |
-| `failed`                | Falha                        |
+| Status                | Descricao                 |
+| --------------------- | ------------------------- |
+| `uploading`           | Upload em andamento       |
+| `uploaded`            | Documento carregado       |
+| `metadata_processing` | Processando metadados     |
+| `metadata_ready`      | Metadados prontos         |
+| `pending_signature`   | Aguardando assinatura     |
+| `partially_signed`    | Parcialmente assinado     |
+| `certificating`       | Certificando              |
+| `certificated`        | Certificado               |
+| `expired`             | Expirado                  |
+| `rejected_by_signer`  | Rejeitado pelo signatário |
+| `rejected_by_user`    | Rejeitado pelo usuário    |
+| `failed`              | Falha                     |
 
 ### Regras de Negocio
 

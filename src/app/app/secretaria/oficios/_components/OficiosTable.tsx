@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { Edit2, Download, Ban, Loader2, PenSquare, TriangleAlert } from 'lucide-react';
+import { Edit2, Download, Ban, Loader2, PenSquare, TriangleAlert, FilePlus } from 'lucide-react';
 import { SendForSignatureModal } from './SendForSignatureModal';
 import { cancelOfficialLetterAction, markAssinafySubmissionInterruptedAction } from '../actions';
 import {
@@ -16,6 +16,10 @@ import {
   infoBg,
   hairline,
   focusRingClass,
+  textSubtle,
+  textFaint,
+  navy,
+  primaryContainerHover,
 } from '@/lib/ui/tokens';
 
 interface OficioRow {
@@ -73,12 +77,25 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
   if (oficios.length === 0) {
     return (
       <div
-        className="overflow-x-auto rounded-[16px] bg-white"
+        className="overflow-x-auto rounded-[16px] bg-white px-6 py-10 text-center"
         style={{ border: `1px solid ${hairline}` }}
       >
-        <p className="px-6 py-10 text-center text-sm text-[rgba(13,31,60,0.45)]">
+        <p className="text-sm" style={{ color: textSubtle }}>
           Nenhum ofício encontrado.
         </p>
+        <Link
+          href="/app/secretaria/oficios/novo"
+          className={`mt-4 inline-flex items-center gap-2 rounded-[8px] px-5 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[var(--primary-hover)] ${focusRingClass}`}
+          style={
+            {
+              backgroundColor: navy,
+              '--primary-hover': primaryContainerHover,
+            } as React.CSSProperties
+          }
+        >
+          <FilePlus size={16} aria-hidden="true" />
+          Novo ofício
+        </Link>
       </div>
     );
   }
@@ -90,24 +107,42 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
         style={{ border: `1px solid ${hairline}` }}
       >
         <table className="w-full text-left">
-          <thead className="border-b bg-slate-50/50" style={{ borderColor: hairline }}>
+          <thead className="border-b bg-[rgba(13,31,60,0.02)]" style={{ borderColor: hairline }}>
             <tr>
-              <th className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+              <th
+                className="px-6 py-4 text-[11px] font-bold tracking-wider uppercase"
+                style={{ color: textSubtle }}
+              >
                 Número
               </th>
-              <th className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+              <th
+                className="px-6 py-4 text-[11px] font-bold tracking-wider uppercase"
+                style={{ color: textSubtle }}
+              >
                 Status
               </th>
-              <th className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+              <th
+                className="px-6 py-4 text-[11px] font-bold tracking-wider uppercase"
+                style={{ color: textSubtle }}
+              >
                 Destinatário
               </th>
-              <th className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+              <th
+                className="px-6 py-4 text-[11px] font-bold tracking-wider uppercase"
+                style={{ color: textSubtle }}
+              >
                 Data
               </th>
-              <th className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+              <th
+                className="px-6 py-4 text-[11px] font-bold tracking-wider uppercase"
+                style={{ color: textSubtle }}
+              >
                 Assunto
               </th>
-              <th className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+              <th
+                className="px-6 py-4 text-[11px] font-bold tracking-wider uppercase"
+                style={{ color: textSubtle }}
+              >
                 Ações
               </th>
             </tr>
@@ -130,7 +165,7 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                   : `${success}15`;
 
               return (
-                <tr key={oficio.id} className="hover:bg-slate-50/50">
+                <tr key={oficio.id} className="transition-colors hover:bg-[rgba(13,31,60,0.02)]">
                   <td className="px-6 py-4 text-sm font-bold whitespace-nowrap">{oficio.number}</td>
                   <td className="px-6 py-4">
                     <span
@@ -147,7 +182,8 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                     <div className="flex items-center gap-2">
                       <Link
                         href={`/app/secretaria/oficios/${oficio.id}/editar`}
-                        className={`p-1 text-slate-400 transition-colors hover:text-[#040920] ${focusRingClass}`}
+                        className={`p-1 transition-colors duration-150 hover:text-[#040920] ${focusRingClass}`}
+                        style={{ color: textFaint }}
                         title="Editar"
                         aria-label="Editar ofício"
                       >
@@ -155,7 +191,8 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                       </Link>
                       <a
                         href={`/api/oficios/${oficio.id}/download`}
-                        className={`p-1 text-slate-400 transition-colors hover:text-[#040920] ${focusRingClass}`}
+                        className={`p-1 transition-colors duration-150 hover:text-[#040920] ${focusRingClass}`}
+                        style={{ color: textFaint }}
                         title="Download PDF"
                         aria-label="Download PDF"
                         download
@@ -169,7 +206,8 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                           <button
                             type="button"
                             onClick={() => setSignatureModalOficio(oficio)}
-                            className={`p-1 text-slate-400 transition-colors hover:text-[#040920] ${focusRingClass}`}
+                            className={`p-1 transition-colors duration-150 hover:text-[#040920] ${focusRingClass}`}
+                            style={{ color: textFaint }}
                             title="Enviar para assinatura"
                             aria-label="Enviar para assinatura"
                           >
@@ -196,7 +234,8 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                             <button
                               type="button"
                               onClick={() => setInterruptedConfirmId(null)}
-                              className={`rounded-md border border-[rgba(4,9,32,0.1)] px-2 py-0.5 text-xs font-medium text-[rgba(13,31,60,0.6)] transition-colors hover:bg-gray-50 ${focusRingClass}`}
+                              className={`rounded-md border border-[rgba(4,9,32,0.1)] px-2 py-0.5 text-xs font-medium transition-colors duration-150 hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
+                              style={{ color: textSubtle }}
                             >
                               Não
                             </button>
@@ -235,7 +274,8 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                             <button
                               type="button"
                               onClick={() => setCancelConfirmId(null)}
-                              className={`rounded-md border border-[rgba(4,9,32,0.1)] px-2 py-0.5 text-xs font-medium text-[rgba(13,31,60,0.6)] transition-colors hover:bg-gray-50 ${focusRingClass}`}
+                              className={`rounded-md border border-[rgba(4,9,32,0.1)] px-2 py-0.5 text-xs font-medium transition-colors duration-150 hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
+                              style={{ color: textSubtle }}
                             >
                               Não
                             </button>
@@ -244,7 +284,8 @@ export function OficiosTable({ oficios }: { oficios: OficioRow[] }) {
                           <button
                             type="button"
                             onClick={() => setCancelConfirmId(oficio.id)}
-                            className={`p-1 text-slate-400 transition-colors hover:text-red-600 ${focusRingClass}`}
+                            className={`p-1 transition-colors duration-150 hover:text-red-600 ${focusRingClass}`}
+                            style={{ color: textFaint }}
                             title="Cancelar ofício"
                             aria-label="Cancelar ofício"
                           >

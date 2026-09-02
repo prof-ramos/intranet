@@ -16,11 +16,19 @@ import {
   warningBg,
   warningBorder,
   warningText,
+  textMuted,
+  surfaceMuted,
+  cardBorder,
 } from '@/lib/ui/tokens';
 
 const RichTextEditor = dynamic(() => import('./RichTextEditor').then((mod) => mod.RichTextEditor), {
   ssr: false,
-  loading: () => <div className="h-[300px] w-full animate-pulse rounded-lg bg-slate-100" />,
+  loading: () => (
+    <div
+      className="h-[300px] w-full animate-pulse rounded-lg"
+      style={{ backgroundColor: surfaceMuted }}
+    />
+  ),
 });
 
 interface OficioFormFieldsProps {
@@ -48,8 +56,10 @@ interface BodySectionProps extends FormSectionProps {
   onOpenAiModal: () => void;
 }
 
+const labelClass = 'mb-1.5 block text-xs font-bold tracking-wider uppercase';
+const labelStyle = { color: textMuted };
 const inputClass = `w-full rounded-lg border px-4 py-2.5 text-sm transition-colors ${focusRingClass}`;
-const labelClass = 'mb-1.5 block text-xs font-bold tracking-wider text-slate-500 uppercase';
+const sectionClass = 'space-y-4 rounded-2xl border bg-white p-6';
 
 export function OficioFormFields({
   register,
@@ -87,14 +97,11 @@ export function OficioFormFields({
 
 function RecipientSection({ register, errors }: FormSectionProps) {
   return (
-    <div
-      className="space-y-4 rounded-2xl border bg-white p-6 shadow-sm"
-      style={{ borderColor: hairline }}
-    >
+    <div className={sectionClass} style={{ border: cardBorder }}>
       <h2 className="mb-4 font-serif text-lg font-bold">Destinatário</h2>
 
       <div>
-        <label htmlFor="recipient" className={labelClass}>
+        <label htmlFor="recipient" className={labelClass} style={labelStyle}>
           Nome do Destinatário
         </label>
         <input
@@ -108,7 +115,7 @@ function RecipientSection({ register, errors }: FormSectionProps) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="recipientRole" className={labelClass}>
+          <label htmlFor="recipientRole" className={labelClass} style={labelStyle}>
             Cargo
           </label>
           <input
@@ -120,7 +127,7 @@ function RecipientSection({ register, errors }: FormSectionProps) {
           {errors.recipientRole && <FieldError message={errors.recipientRole.message} />}
         </div>
         <div>
-          <label htmlFor="vocativo" className={labelClass}>
+          <label htmlFor="vocativo" className={labelClass} style={labelStyle}>
             Vocativo
           </label>
           <input
@@ -134,7 +141,7 @@ function RecipientSection({ register, errors }: FormSectionProps) {
       </div>
 
       <div>
-        <label htmlFor="itamaratySector" className={labelClass}>
+        <label htmlFor="itamaratySector" className={labelClass} style={labelStyle}>
           Setor Itamaraty
         </label>
         <input
@@ -148,7 +155,7 @@ function RecipientSection({ register, errors }: FormSectionProps) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="recipientAddress" className={labelClass}>
+          <label htmlFor="recipientAddress" className={labelClass} style={labelStyle}>
             Endereço
           </label>
           <input
@@ -160,7 +167,7 @@ function RecipientSection({ register, errors }: FormSectionProps) {
           {errors.recipientAddress && <FieldError message={errors.recipientAddress.message} />}
         </div>
         <div>
-          <label htmlFor="recipientCity" className={labelClass}>
+          <label htmlFor="recipientCity" className={labelClass} style={labelStyle}>
             Cidade
           </label>
           <input
@@ -174,7 +181,7 @@ function RecipientSection({ register, errors }: FormSectionProps) {
       </div>
 
       <div>
-        <label htmlFor="recipientZip" className={labelClass}>
+        <label htmlFor="recipientZip" className={labelClass} style={labelStyle}>
           CEP
         </label>
         <input
@@ -191,14 +198,11 @@ function RecipientSection({ register, errors }: FormSectionProps) {
 
 function DocumentSection({ register, errors }: FormSectionProps) {
   return (
-    <div
-      className="space-y-4 rounded-2xl border bg-white p-6 shadow-sm"
-      style={{ borderColor: hairline }}
-    >
+    <div className={sectionClass} style={{ border: cardBorder }}>
       <h2 className="mb-4 font-serif text-lg font-bold">Informações do Ofício</h2>
 
       <div>
-        <label htmlFor="subject" className={labelClass}>
+        <label htmlFor="subject" className={labelClass} style={labelStyle}>
           Assunto
         </label>
         <input
@@ -212,14 +216,14 @@ function DocumentSection({ register, errors }: FormSectionProps) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="letterDate" className={labelClass}>
+          <label htmlFor="letterDate" className={labelClass} style={labelStyle}>
             Data do Documento
           </label>
           <input id="letterDate" {...register('letterDate')} className={inputClass} />
           {errors.letterDate && <FieldError message={errors.letterDate.message} />}
         </div>
         <div>
-          <label htmlFor="closure" className={labelClass}>
+          <label htmlFor="closure" className={labelClass} style={labelStyle}>
             Fecho
           </label>
           <select id="closure" {...register('closure')} className={inputClass}>
@@ -231,14 +235,14 @@ function DocumentSection({ register, errors }: FormSectionProps) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="signatoryName" className={labelClass}>
+          <label htmlFor="signatoryName" className={labelClass} style={labelStyle}>
             Nome do Signatário
           </label>
           <input id="signatoryName" {...register('signatoryName')} className={inputClass} />
           {errors.signatoryName && <FieldError message={errors.signatoryName.message} />}
         </div>
         <div>
-          <label htmlFor="signatoryRole" className={labelClass}>
+          <label htmlFor="signatoryRole" className={labelClass} style={labelStyle}>
             Cargo do Signatário
           </label>
           <input id="signatoryRole" {...register('signatoryRole')} className={inputClass} />
@@ -263,10 +267,7 @@ function BodySection({
   );
 
   return (
-    <div
-      className="space-y-4 rounded-2xl border bg-white p-6 shadow-sm lg:col-span-2"
-      style={{ borderColor: hairline }}
-    >
+    <div className={`${sectionClass} lg:col-span-2`} style={{ border: cardBorder }}>
       <div className="mb-4 flex items-center justify-between gap-4">
         <h2 className="font-serif text-lg font-bold">Corpo do Ofício</h2>
         <button
@@ -343,7 +344,7 @@ function FormFooter({
         <button
           type="button"
           onClick={onCancel}
-          className={`h-11 rounded-xl border px-8 text-sm font-semibold transition-colors hover:bg-slate-50 ${focusRingClass}`}
+          className={`h-11 rounded-xl border px-8 text-sm font-semibold transition-colors duration-150 hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
           style={{ borderColor: hairline }}
         >
           Cancelar

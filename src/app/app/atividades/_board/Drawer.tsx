@@ -130,14 +130,14 @@ export function Drawer({
     <>
       <button
         aria-label="Fechar detalhes"
-        className="fixed inset-0 z-50 cursor-default"
+        className="fixed inset-0 z-50 cursor-default motion-safe:transition-opacity motion-safe:duration-150"
         style={{ background: overlayScrim }}
         type="button"
         onClick={onClose}
       />
       <aside
         ref={drawerRef}
-        className="fixed top-0 right-0 bottom-0 z-50 flex w-full max-w-[480px] flex-col bg-white"
+        className="fixed top-0 right-0 bottom-0 z-50 flex w-full max-w-[480px] flex-col bg-white motion-safe:transition-transform motion-safe:duration-150"
         style={{ boxShadow: drawerShadow }}
         role="dialog"
         aria-modal="true"

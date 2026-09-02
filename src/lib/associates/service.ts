@@ -538,34 +538,34 @@ export async function updateAssociateData(
 
       await updateAssociateById(input.id, values, tx);
 
-    if (changedFields.length > 0) {
-      await emitDomainEvent(
-        {
-          type: 'associate.updated',
-          entityType: 'associate',
-          entityId: input.id,
-          actorAdminId: actor.userId,
-          payload: {
-            associateId: input.id,
-            changedFields,
-            links: {
-              app: `/app/associados/${input.id}`,
+      if (changedFields.length > 0) {
+        await emitDomainEvent(
+          {
+            type: 'associate.updated',
+            entityType: 'associate',
+            entityId: input.id,
+            actorAdminId: actor.userId,
+            payload: {
+              associateId: input.id,
+              changedFields,
+              links: {
+                app: `/app/associados/${input.id}`,
+              },
             },
           },
-        },
-        tx,
-      );
-    }
+          tx,
+        );
+      }
 
-    return auditChangedFields.length > 0
-      ? {
-          adminId: actor.userId,
-          action: 'associate_updated',
-          entityType: 'associate' as const,
-          entityId: input.id,
-          metadata: { changedFields: auditChangedFields },
-        }
-      : null;
+      return auditChangedFields.length > 0
+        ? {
+            adminId: actor.userId,
+            action: 'associate_updated',
+            entityType: 'associate' as const,
+            entityId: input.id,
+            metadata: { changedFields: auditChangedFields },
+          }
+        : null;
     } catch (error) {
       rethrowIdentityUniqueViolation(error);
     }
@@ -756,73 +756,73 @@ export async function createAssociateData(
 
   const id = await db.transaction(async (tx) => {
     try {
-    // Unicidade por blind index (PII criptografada não permite busca por texto)
-    if (piiPatch.cpfHash) {
-      const dup = await findAssociateByCpfHash(piiPatch.cpfHash, tx);
-      if (dup) throw new ValidationError('Já existe um oficial cadastrado com este CPF.');
-    }
-    if (piiPatch.siapeHash) {
-      const dup = await findAssociateBySiapeHash(piiPatch.siapeHash, tx);
-      if (dup) throw new ValidationError('Já existe um oficial cadastrado com este SIAPE.');
-    }
-    if (piiPatch.primaryEmailHash) {
-      const dup = await findAssociateByPrimaryEmailHash(piiPatch.primaryEmailHash, tx);
-      if (dup) {
-        throw new ValidationError('Já existe um oficial cadastrado com este e-mail principal.');
+      // Unicidade por blind index (PII criptografada não permite busca por texto)
+      if (piiPatch.cpfHash) {
+        const dup = await findAssociateByCpfHash(piiPatch.cpfHash, tx);
+        if (dup) throw new ValidationError('Já existe um oficial cadastrado com este CPF.');
       }
-    }
+      if (piiPatch.siapeHash) {
+        const dup = await findAssociateBySiapeHash(piiPatch.siapeHash, tx);
+        if (dup) throw new ValidationError('Já existe um oficial cadastrado com este SIAPE.');
+      }
+      if (piiPatch.primaryEmailHash) {
+        const dup = await findAssociateByPrimaryEmailHash(piiPatch.primaryEmailHash, tx);
+        if (dup) {
+          throw new ValidationError('Já existe um oficial cadastrado com este e-mail principal.');
+        }
+      }
 
-    const dependents = (input.dependents ?? [])
-      .map((d) => ({
-        name: d.name.trim(),
-        relationship: d.relationship.trim(),
-      }))
-      .filter((d) => d.name.length > 0 && d.relationship.length > 0);
+      const dependents = (input.dependents ?? [])
+        .map((d) => ({
+          name: d.name.trim(),
+          relationship: d.relationship.trim(),
+        }))
+        .filter((d) => d.name.length > 0 && d.relationship.length > 0);
 
-    const values: UpdateAssociateValues = {
-      fullName: input.fullName,
-      secondaryEmail: emptyToNull(input.secondaryEmail),
-      birthDate: emptyToNull(input.birthDate),
-      birthCity: emptyToNull(input.birthCity),
-      birthState: emptyToNull(input.birthState),
-      neighborhood: emptyToNull(input.neighborhood),
-      addressState: emptyToNull(input.addressState),
-      zipCode: emptyToNull(input.zipCode),
-      locationCity: emptyToNull(input.locationCity),
-      locationCountry: emptyToNull(input.locationCountry),
-      assignment: emptyToNull(input.assignment),
-      assignmentStartDate: emptyToNull(input.assignmentStartDate),
-      classPattern: emptyToNull(input.classPattern),
-      associationCategory: emptyToNull(input.associationCategory),
-      rgIssuer: emptyToNull(input.rgIssuer),
-      rgState: emptyToNull(input.rgState),
-      rgExpeditionDate: emptyToNull(input.rgExpeditionDate),
-      admissionDate: emptyToNull(input.admissionDate),
-      inaugurationDate: emptyToNull(input.inaugurationDate),
-      retirementDate: emptyToNull(input.retirementDate),
-      cancellationDate: emptyToNull(input.cancellationDate),
-      leaveDate: emptyToNull(input.leaveDate),
-      joinedAt: toJoinedAtTimestamp(input.joinedAt),
-      ceocMember: input.ceocMember ?? null,
-      caocMember: input.caocMember ?? null,
-      numberOfDependents:
-        dependents.length > 0 ? dependents.length : (input.numberOfDependents ?? null),
-      ...piiPatch,
-      functionalStatus,
-      associationStatus,
-      contributionStatus,
-      paymentMethod: paymentMethodRaw ?? 'folha',
-      sex,
-      maritalStatus,
-      missionType,
-      careerOrigin,
-      internalNotes: input.internalNotes ?? null,
-    };
+      const values: UpdateAssociateValues = {
+        fullName: input.fullName,
+        secondaryEmail: emptyToNull(input.secondaryEmail),
+        birthDate: emptyToNull(input.birthDate),
+        birthCity: emptyToNull(input.birthCity),
+        birthState: emptyToNull(input.birthState),
+        neighborhood: emptyToNull(input.neighborhood),
+        addressState: emptyToNull(input.addressState),
+        zipCode: emptyToNull(input.zipCode),
+        locationCity: emptyToNull(input.locationCity),
+        locationCountry: emptyToNull(input.locationCountry),
+        assignment: emptyToNull(input.assignment),
+        assignmentStartDate: emptyToNull(input.assignmentStartDate),
+        classPattern: emptyToNull(input.classPattern),
+        associationCategory: emptyToNull(input.associationCategory),
+        rgIssuer: emptyToNull(input.rgIssuer),
+        rgState: emptyToNull(input.rgState),
+        rgExpeditionDate: emptyToNull(input.rgExpeditionDate),
+        admissionDate: emptyToNull(input.admissionDate),
+        inaugurationDate: emptyToNull(input.inaugurationDate),
+        retirementDate: emptyToNull(input.retirementDate),
+        cancellationDate: emptyToNull(input.cancellationDate),
+        leaveDate: emptyToNull(input.leaveDate),
+        joinedAt: toJoinedAtTimestamp(input.joinedAt),
+        ceocMember: input.ceocMember ?? null,
+        caocMember: input.caocMember ?? null,
+        numberOfDependents:
+          dependents.length > 0 ? dependents.length : (input.numberOfDependents ?? null),
+        ...piiPatch,
+        functionalStatus,
+        associationStatus,
+        contributionStatus,
+        paymentMethod: paymentMethodRaw ?? 'folha',
+        sex,
+        maritalStatus,
+        missionType,
+        careerOrigin,
+        internalNotes: input.internalNotes ?? null,
+      };
 
-    const id = await insertAssociate(values, tx);
-    await createDependentsBatch(id, dependents, tx);
+      const id = await insertAssociate(values, tx);
+      await createDependentsBatch(id, dependents, tx);
 
-    return id;
+      return id;
     } catch (error) {
       rethrowIdentityUniqueViolation(error);
     }

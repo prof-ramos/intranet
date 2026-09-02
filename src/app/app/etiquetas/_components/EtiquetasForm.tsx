@@ -1,8 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import type { EtiquetaFieldKey, EtiquetaPrintMode, PimacoTemplate, PimacoTemplateCode } from '@/lib/etiquetas';
+import type {
+  EtiquetaFieldKey,
+  EtiquetaPrintMode,
+  PimacoTemplate,
+  PimacoTemplateCode,
+} from '@/lib/etiquetas';
 import type { EtiquetaAssociateOption } from '../actions';
+import { InlineAlert } from '@/components/ui/InlineAlert';
+import { FormRadioGroup } from '@/components/ui/FormRadioGroup';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { hairline, textMuted } from '@/lib/ui/tokens';
 import { EtiquetasFieldSelector } from './EtiquetasFieldSelector';
 import { EtiquetasPrintOptions } from './EtiquetasPrintOptions';
 import { EtiquetasRecipientsSelector } from './EtiquetasRecipientsSelector';
@@ -35,8 +44,8 @@ export function EtiquetasForm({
   const [debug, setDebug] = useState(false);
   const [peo, setPeo] = useState(false);
   const [ectOpenable, setEctOpenable] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   function changeMode(nextMode: EtiquetaPrintMode) {
     setMode(nextMode);
@@ -51,6 +60,7 @@ export function EtiquetasForm({
     }
 
     setIsGenerating(true);
+
     try {
       const response = await fetch('/app/etiquetas/gerar', {
         method: 'POST',
@@ -69,7 +79,7 @@ export function EtiquetasForm({
       });
 
       if (!response.ok) {
-        const payload = await response.json().catch(() => null);
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
         throw new Error(payload?.error ?? 'Não foi possível gerar o PDF.');
       }
 
@@ -92,23 +102,18 @@ export function EtiquetasForm({
   return (
     <div className="grid gap-6 p-5 lg:grid-cols-[320px_1fr] lg:p-6">
       <div className="space-y-5">
-        <EtiquetasTemplateSelector templates={templates} value={templateCode} onChange={setTemplateCode} />
-        <fieldset>
-          <legend className="text-sm font-semibold">Modo de envio</legend>
-          <div className="mt-2 grid gap-2">
-            {MODES.map((item) => (
-              <label key={item.value} className="flex min-h-10 items-center gap-2 rounded-[8px] border border-base-300 px-3 text-sm">
-                <input
-                  type="radio"
-                  className="radio radio-sm"
-                  checked={mode === item.value}
-                  onChange={() => changeMode(item.value)}
-                />
-                {item.label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        <EtiquetasTemplateSelector
+          templates={templates}
+          value={templateCode}
+          onChange={setTemplateCode}
+        />
+        <FormRadioGroup
+          legend="Modo de envio"
+          name="etiqueta-mode"
+          value={mode}
+          options={MODES}
+          onChange={changeMode}
+        />
         <EtiquetasPrintOptions
           startPosition={startPosition}
           offsetXmm={offsetXmm}
@@ -128,20 +133,29 @@ export function EtiquetasForm({
       </div>
 
       <div className="space-y-6">
-        <EtiquetasRecipientsSelector initialAssociates={initialAssociates} selectedIds={selectedIds} onChange={setSelectedIds} />
-        <EtiquetasFieldSelector fields={fieldKeys} selected={selectedFields} onChange={setSelectedFields} />
+        <EtiquetasRecipientsSelector
+          initialAssociates={initialAssociates}
+          selectedIds={selectedIds}
+          onChange={setSelectedIds}
+        />
+        <EtiquetasFieldSelector
+          fields={fieldKeys}
+          selected={selectedFields}
+          onChange={setSelectedFields}
+        />
 
-        {error && (
-          <div className="alert alert-error">
-            <span>{error}</span>
-          </div>
-        )}
+        {error ? <InlineAlert variant="error">{error}</InlineAlert> : null}
 
-        <div className="flex flex-col gap-2 border-t border-base-300 pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs opacity-70">Imprima em A4, escala 100%, sem ajustar à página.</p>
-          <button type="button" className="btn btn-primary" onClick={generatePdf} disabled={isGenerating}>
-            {isGenerating ? 'Gerando...' : 'Salvar e Imprimir'}
-          </button>
+        <div
+          className="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"
+          style={{ borderColor: hairline }}
+        >
+          <p className="text-xs" style={{ color: textMuted }}>
+            Imprima em A4, escala 100%, sem ajustar à página.
+          </p>
+          <PrimaryButton onClick={generatePdf} pending={isGenerating} pendingLabel="Gerando...">
+            Gerar PDF
+          </PrimaryButton>
         </div>
       </div>
     </div>

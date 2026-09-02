@@ -1,6 +1,6 @@
 import { OficioForm } from '../../_components/OficioForm';
 import { getOfficialLetterAction } from '../../actions';
-import { textMuted } from '@/lib/ui/tokens';
+import { PageHeader } from '@/components/PageHeader';
 import { parsePositiveIntParam } from '@/lib/routing/params';
 import { requireEntityById } from '@/lib/routing/require-entity';
 
@@ -12,15 +12,13 @@ export default async function EditarOficioPage({ params }: { params: Promise<{ i
 
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
-      <div className="mb-8">
-        <p className="text-[11px] tracking-[0.18em] uppercase" style={{ color: textMuted }}>
-          Ofícios
-        </p>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-baseline sm:gap-4">
-          <h1 className="font-serif text-4xl font-bold md:text-[3rem]">Editar Ofício</h1>
-          <span className="font-serif text-xl font-medium text-slate-400">{oficio.number}</span>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Ofícios"
+        title="Editar Ofício"
+        description={oficio.number}
+        backHref="/app/secretaria/oficios"
+        backLabel="Voltar para ofícios"
+      />
 
       <OficioForm
         id={oficio.id}

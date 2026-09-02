@@ -1,6 +1,8 @@
 'use client';
 
 import type { EtiquetaFieldKey } from '@/lib/etiquetas';
+import { FormCheckbox } from '@/components/ui/FormCheckbox';
+import { hairline, textMuted } from '@/lib/ui/tokens';
 
 const FIELD_LABELS: Record<EtiquetaFieldKey, string> = {
   nome: 'Nome',
@@ -29,23 +31,30 @@ export function EtiquetasFieldSelector({
   onChange: (fields: EtiquetaFieldKey[]) => void;
 }) {
   function toggle(field: EtiquetaFieldKey) {
-    onChange(selected.includes(field) ? selected.filter((item) => item !== field) : [...selected, field]);
+    onChange(
+      selected.includes(field) ? selected.filter((item) => item !== field) : [...selected, field],
+    );
   }
 
   return (
     <fieldset>
-      <legend className="text-sm font-semibold">Campos da etiqueta</legend>
+      <legend className="text-sm font-semibold" style={{ color: textMuted }}>
+        Campos da etiqueta
+      </legend>
       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {fields.map((field) => (
-          <label key={field} className="flex min-h-10 items-center gap-2 rounded-[8px] border border-base-300 px-3 text-sm">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-sm"
+          <div
+            key={field}
+            className="rounded-[8px] border px-3 py-2"
+            style={{ borderColor: hairline }}
+          >
+            <FormCheckbox
+              id={`field-${field}`}
+              label={FIELD_LABELS[field]}
               checked={selected.includes(field)}
               onChange={() => toggle(field)}
             />
-            <span>{FIELD_LABELS[field]}</span>
-          </label>
+          </div>
         ))}
       </div>
     </fieldset>

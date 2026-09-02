@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { admins } from '@/lib/db/schema';
 import { asc } from 'drizzle-orm';
 import { UserActionsPanel } from './UserActionsPanel';
+import { PageHeader } from '@/components/PageHeader';
 
 export default async function UsuariosPage() {
   const currentUser = await requireRole(['admin']);
@@ -29,10 +30,12 @@ export default async function UsuariosPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
-      <p className="text-[11px] tracking-[0.18em] text-[rgba(13,31,60,0.55)] uppercase">
-        Configurações · Usuários
-      </p>
-      <h1 className="mt-2 font-serif text-4xl leading-none font-bold md:text-[3rem]">Usuários</h1>
+      <PageHeader
+        eyebrow="Configurações · Usuários"
+        title="Usuários"
+        backHref="/app/config"
+        backLabel="Voltar para configurações"
+      />
 
       <div className="mt-8 overflow-hidden rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white">
         <table className="w-full text-sm">

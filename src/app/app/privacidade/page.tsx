@@ -1,5 +1,6 @@
 import { requireAuth } from '@/lib/auth/require-auth';
 import { requestDataDownload, requestAccountDeletion } from '@/app/app/privacidade/actions';
+import { PageHeader } from '@/components/PageHeader';
 import {
   focusRingClass,
   textPrimary,
@@ -35,20 +36,14 @@ export default async function PrivacidadePage() {
 
   return (
     <main className="mx-auto flex w-full max-w-[800px] flex-1 flex-col px-5 py-7 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
-      <div className="mb-8">
-        <h1
-          className="font-serif text-3xl leading-none font-bold md:text-4xl"
-          style={{ color: textPrimary }}
-        >
-          Privacidade e Transparência
-        </h1>
-        <p className="mt-3" style={{ color: textMuted }}>
-          Gerencie seus dados pessoais em conformidade com a Lei Geral de Proteção de Dados (LGPD).
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Compliance · LGPD"
+        title="Privacidade e Transparência"
+        description="Gerencie seus dados pessoais em conformidade com a Lei Geral de Proteção de Dados (LGPD)."
+      />
 
       <section
-        className="mb-10 rounded-xl border bg-white p-6 shadow-sm sm:p-8"
+        className="mb-10 rounded-[16px] border bg-white p-6 sm:p-8"
         style={{ borderColor: hairline }}
       >
         <h2 className="mb-4 text-xl font-bold" style={{ color: textPrimary }}>
@@ -63,7 +58,7 @@ export default async function PrivacidadePage() {
         <form action={wrappedRequestDataDownload}>
           <button
             type="submit"
-            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-[8px] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#0d3260] ${focusRingClass}`}
             style={{ backgroundColor: navy }}
           >
             <Download size={16} aria-hidden="true" />
@@ -73,7 +68,7 @@ export default async function PrivacidadePage() {
       </section>
 
       <section
-        className="rounded-xl border p-6 shadow-sm sm:p-8"
+        className="rounded-[16px] border p-6 sm:p-8"
         style={{ borderColor: alertDangerBorder, backgroundColor: alertDangerBg }}
       >
         <div className="mb-4 flex items-center gap-2" style={{ color: alertDangerText }}>
@@ -86,7 +81,7 @@ export default async function PrivacidadePage() {
         </p>
 
         <div
-          className="mb-6 rounded-md border p-4 text-sm"
+          className="mb-6 rounded-[8px] border p-4 text-sm"
           style={{
             backgroundColor: alertDangerNoteBg,
             color: alertDangerNoteText,
@@ -103,7 +98,7 @@ export default async function PrivacidadePage() {
         <form action={wrappedRequestAccountDeletion}>
           <button
             type="submit"
-            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border bg-white px-5 text-sm font-semibold transition-colors hover:border-[#f87171] hover:bg-[#fef2f2] ${focusRingClass}`}
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-[8px] border bg-white px-5 text-sm font-semibold transition-colors hover:border-[#f87171] hover:bg-[#fef2f2] ${focusRingClass}`}
             style={{
               color: alertDangerText,
               borderColor: alertDangerButtonBorder,

@@ -12,6 +12,10 @@ export const compactActionClass = 'min-h-10 min-w-10 lg:min-h-8 lg:min-w-8';
 
 export const hairline = 'rgba(4, 9, 32, 0.05)';
 export const navy = '#040920';
+export const sidebarGradientStart = '#031a35';
+export const sidebarGradientEnd = '#06284f';
+export const sidebarAccentBorder = 'rgba(142, 193, 232, 0.22)';
+export const sidebarEyebrowText = '#b3d2ea';
 export const primaryContainerHover = '#0d3260';
 export const primaryContainerActive = '#123d73';
 export const skyBlue = '#76AEEA';
@@ -87,6 +91,22 @@ export const progressBg = surfaceMuted;
 export const progressFg = navy;
 
 // Category badge colors (used in DocumentList)
+export const textEyebrowMuted = 'rgba(13,31,60,0.55)';
+
+export const auditEntityBadgeColors: Record<string, { bg: string; text: string }> = {
+  associate: { bg: '#eff6ff', text: '#1e40af' },
+  admin: { bg: '#f5f3ff', text: '#5b21b6' },
+  activity: { bg: '#fef3c7', text: '#92400e' },
+  assignment: { bg: '#ecfdf5', text: '#065f46' },
+  legal_consultation: { bg: '#fff1f2', text: '#9f1239' },
+  legal_process: { bg: '#fff1f2', text: '#9f1239' },
+  finance: { bg: '#dcfce7', text: '#15803d' },
+  monthly_payment: { bg: '#dcfce7', text: '#15803d' },
+  official_letter: { bg: '#e0f2fe', text: '#0369a1' },
+  domain_event: { bg: '#eef1f6', text: '#59677a' },
+  webhook_subscription: { bg: '#eef2ff', text: '#4338ca' },
+};
+
 export const categoryColors: Record<string, { bg: string; text: string }> = {
   modelo_contrato: { bg: '#e0f2fe', text: '#0369a1' },
   contrato: { bg: '#eff6ff', text: '#1e40af' },

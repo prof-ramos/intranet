@@ -1,5 +1,8 @@
 import { changePassword } from '@/app/change-password/actions';
-import { SubmitButton } from '@/app/change-password/SubmitButton';
+import { AuthAlert, AuthHint } from '@/components/auth/AuthAlert';
+import { AuthField } from '@/components/auth/AuthField';
+import { AuthShell } from '@/components/auth/AuthShell';
+import { AuthSubmitButton } from '@/components/auth/AuthSubmitButton';
 import { requireAuth } from '@/lib/auth/require-auth';
 
 export default async function ChangePasswordPage({
@@ -11,74 +14,46 @@ export default async function ChangePasswordPage({
   const { error } = await searchParams;
 
   return (
-    <main className="bg-primary flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-[16px] bg-white shadow-xl">
-        <div className="flex flex-col gap-6 p-6">
-          <div>
-            <h1 className="font-serif text-3xl font-bold">Alterar senha</h1>
-            <p className="text-base-content/60 text-sm">
-              Defina uma senha forte para continuar usando a intranet.
-            </p>
-          </div>
+    <AuthShell title="Alterar senha" maxWidth="md">
+      <AuthHint>
+        Defina uma senha forte para continuar usando a intranet. A senha deve ter pelo menos 8
+        caracteres, com pelo menos um número e um caractere especial.
+      </AuthHint>
 
-          {error && (
-            <div role="alert" className="alert alert-error text-sm">
-              {error}
-            </div>
-          )}
+      {error && <AuthAlert variant="error">{error}</AuthAlert>}
 
-          <form action={changePassword} className="flex flex-col gap-4">
-            <fieldset className="fieldset">
-              <legend className="fieldset-legend">Senha atual</legend>
-              <label htmlFor="currentPassword" className="sr-only">
-                Senha atual
-              </label>
-              <input
-                id="currentPassword"
-                name="currentPassword"
-                type="password"
-                required
-                autoComplete="current-password"
-                className="input w-full"
-              />
-            </fieldset>
+      <form action={changePassword} className="flex flex-col gap-4">
+        <AuthField
+          id="currentPassword"
+          name="currentPassword"
+          type="password"
+          label="Senha atual"
+          required
+          autoComplete="current-password"
+        />
 
-            <fieldset className="fieldset">
-              <legend className="fieldset-legend">Nova senha</legend>
-              <label htmlFor="newPassword" className="sr-only">
-                Nova senha
-              </label>
-              <input
-                id="newPassword"
-                name="newPassword"
-                type="password"
-                required
-                minLength={8}
-                autoComplete="new-password"
-                className="input w-full"
-              />
-            </fieldset>
+        <AuthField
+          id="newPassword"
+          name="newPassword"
+          type="password"
+          label="Nova senha"
+          required
+          minLength={8}
+          autoComplete="new-password"
+        />
 
-            <fieldset className="fieldset">
-              <legend className="fieldset-legend">Confirmar nova senha</legend>
-              <label htmlFor="confirmPassword" className="sr-only">
-                Confirmar nova senha
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                minLength={8}
-                autoComplete="new-password"
-                className="input w-full"
-              />
-            </fieldset>
+        <AuthField
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          label="Confirmar nova senha"
+          required
+          minLength={8}
+          autoComplete="new-password"
+        />
 
-            <SubmitButton />
-          </form>
-        </div>
-      </div>
-    </main>
+        <AuthSubmitButton label="Salvar nova senha" pendingLabel="Salvando..." />
+      </form>
+    </AuthShell>
   );
 }

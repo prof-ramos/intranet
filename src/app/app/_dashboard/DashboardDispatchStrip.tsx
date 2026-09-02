@@ -52,9 +52,7 @@ export function DashboardDispatchStrip({ urgentActivities }: DashboardDispatchSt
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50">
             <Kanban className="h-5 w-5 text-green-600" />
           </div>
-          <p className="mt-3 text-sm font-medium text-[#040920]">
-            Tudo em dia!
-          </p>
+          <p className="mt-3 text-sm font-medium text-[#040920]">Tudo em dia!</p>
           <p className="mt-1 text-xs text-[rgba(13,31,60,0.5)]">
             Nenhuma atividade vencida no momento.
           </p>

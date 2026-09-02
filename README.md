@@ -453,25 +453,25 @@ O projeto possui configurações para agentes IA (Claude Code, Verboo Code) em `
 
 Framework de orquestração multi-agente para Claude Code. Skills principais:
 
-| Skill | Descrição |
-|-------|-----------|
-| `team` | Orquestração multi-agente com pipeline staging |
-| `autopilot` | Execução autônoma end-to-end |
+| Skill            | Descrição                                               |
+| ---------------- | ------------------------------------------------------- |
+| `team`           | Orquestração multi-agente com pipeline staging          |
+| `autopilot`      | Execução autônoma end-to-end                            |
 | `deep-interview` | Clarificação de requisitos via-questionamento socrático |
-| `research` | Pesquisa de código e documentação |
-| `verify` | Verificação de implementação |
-| `debug` | Diagnóstico de problemas |
+| `research`       | Pesquisa de código e documentação                       |
+| `verify`         | Verificação de implementação                            |
+| `debug`          | Diagnóstico de problemas                                |
 
 #### Anthropic Skills (20 skills)
 
 Skills oficiais da Anthropic para desenvolvimento:
 
-| Skill | Descrição |
-|-------|-----------|
-| `claude-api` | Integração com API Claude |
-| `webapp-testing` | Testes de aplicação web |
-| `frontend-design` | Design de interfaces |
-| `mcp-builder` | Construção de servidores MCP |
+| Skill               | Descrição                                |
+| ------------------- | ---------------------------------------- |
+| `claude-api`        | Integração com API Claude                |
+| `webapp-testing`    | Testes de aplicação web                  |
+| `frontend-design`   | Design de interfaces                     |
+| `mcp-builder`       | Construção de servidores MCP             |
 | `discernment-nudge` | Verificação de pressupostos em respostas |
 
 ### Variáveis de Ambiente Locais
