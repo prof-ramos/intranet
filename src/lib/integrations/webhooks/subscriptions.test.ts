@@ -16,6 +16,17 @@ const tx = {
   insert: vi.fn(() => ({ values: auditValues })),
 };
 const VALID_SECRET = '0123456789abcdef0123456789abcdef';
+const PUBLIC_WEBHOOK_DNS = [{ address: '93.184.216.34', family: 4 }];
+const SSRF_URL_MESSAGE =
+  'A URL deve usar HTTPS público; hosts locais, privados ou reservados não são permitidos.';
+
+const { lookupMock } = vi.hoisted(() => ({
+  lookupMock: vi.fn(),
+}));
+
+vi.mock('node:dns/promises', () => ({
+  lookup: lookupMock,
+}));
 
 vi.mock('@/lib/db', () => ({
   db: {
@@ -37,6 +48,7 @@ vi.mock('@/lib/integrations/webhooks/secrets', () => ({
 describe('managed webhook subscriptions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    lookupMock.mockResolvedValue(PUBLIC_WEBHOOK_DNS);
     mockTransaction.mockImplementation((callback) => callback(tx));
     mockEncryptWebhookSecret.mockReturnValue('enc:v1:test');
     auditValues.mockResolvedValue(undefined);
@@ -127,6 +139,40 @@ describe('managed webhook subscriptions', () => {
     expect(auditValues).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'webhook_subscription_deactivated' }),
     );
+  });
+
+  it('rejects loopback webhook URLs without consulting DNS', async () => {
+    await expect(
+      createManagedWebhookSubscription(1, {
+        name: 'Automação',
+        targetUrl: 'https://127.0.0.1/webhook',
+        secret: VALID_SECRET,
+        subscribedEvents: ['associate.updated'],
+      }),
+    ).rejects.toMatchObject({
+      issues: [expect.objectContaining({ path: ['targetUrl'], message: SSRF_URL_MESSAGE })],
+    });
+
+    expect(lookupMock).not.toHaveBeenCalled();
+    expect(mockInsertWebhookSubscription).not.toHaveBeenCalled();
+  });
+
+  it('rejects hostnames that resolve to a private address', async () => {
+    lookupMock.mockResolvedValue([{ address: '10.0.0.1', family: 4 }]);
+
+    await expect(
+      createManagedWebhookSubscription(1, {
+        name: 'Automação',
+        targetUrl: 'https://example.com/webhook',
+        secret: VALID_SECRET,
+        subscribedEvents: ['associate.updated'],
+      }),
+    ).rejects.toMatchObject({
+      issues: [expect.objectContaining({ path: ['targetUrl'], message: SSRF_URL_MESSAGE })],
+    });
+
+    expect(lookupMock).toHaveBeenCalledWith('example.com', { all: true });
+    expect(mockInsertWebhookSubscription).not.toHaveBeenCalled();
   });
 
   it('rotates secrets without exposing previous ciphertext in audit changes', async () => {

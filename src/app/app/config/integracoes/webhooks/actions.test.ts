@@ -12,6 +12,17 @@ const rotateManagedWebhookSubscriptionSecretMock = vi.fn();
 const setManagedWebhookSubscriptionActiveMock = vi.fn();
 const updateManagedWebhookSubscriptionMock = vi.fn();
 const revalidatePathMock = vi.fn();
+const PUBLIC_WEBHOOK_DNS = [{ address: '93.184.216.34', family: 4 }];
+const SSRF_URL_MESSAGE =
+  'A URL deve usar HTTPS público; hosts locais, privados ou reservados não são permitidos.';
+
+const { lookupMock } = vi.hoisted(() => ({
+  lookupMock: vi.fn(),
+}));
+
+vi.mock('node:dns/promises', () => ({
+  lookup: lookupMock,
+}));
 
 vi.mock('@/lib/auth/authorization', () => ({
   requireRole: (...args: unknown[]) => requireRoleMock(...args),
@@ -45,6 +56,7 @@ function buildWebhookFormData() {
 describe('config integracoes webhook actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    lookupMock.mockResolvedValue(PUBLIC_WEBHOOK_DNS);
     requireRoleMock.mockResolvedValue({ userId: 7 });
     createManagedWebhookSubscriptionMock.mockResolvedValue(undefined);
     rotateManagedWebhookSubscriptionSecretMock.mockResolvedValue(undefined);
@@ -81,6 +93,33 @@ describe('config integracoes webhook actions', () => {
       success: false,
       message: 'O segredo HMAC deve ter pelo menos 32 caracteres.',
     });
+    expect(lookupMock).toHaveBeenCalledWith('example.com', { all: true });
+    expect(createManagedWebhookSubscriptionMock).not.toHaveBeenCalled();
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects loopback webhook URLs before secret validation', async () => {
+    const formData = buildWebhookFormData();
+    formData.set('targetUrl', 'https://127.0.0.1/webhook');
+    formData.set('secret', 'a'.repeat(32));
+
+    const result = await createWebhookSubscription(null, formData);
+
+    expect(result).toEqual({ success: false, message: SSRF_URL_MESSAGE });
+    expect(lookupMock).not.toHaveBeenCalled();
+    expect(createManagedWebhookSubscriptionMock).not.toHaveBeenCalled();
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects hostnames that resolve to a private address', async () => {
+    lookupMock.mockResolvedValue([{ address: '10.0.0.1', family: 4 }]);
+    const formData = buildWebhookFormData();
+    formData.set('secret', 'a'.repeat(32));
+
+    const result = await createWebhookSubscription(null, formData);
+
+    expect(result).toEqual({ success: false, message: SSRF_URL_MESSAGE });
+    expect(lookupMock).toHaveBeenCalledWith('example.com', { all: true });
     expect(createManagedWebhookSubscriptionMock).not.toHaveBeenCalled();
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
