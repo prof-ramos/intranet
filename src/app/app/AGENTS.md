@@ -31,7 +31,7 @@ Authenticated dashboard — main app area after login. All routes require auth v
 | `notifications/` | Notification center and actions                                                                                                                           |
 | `privacidade/`   | Privacy policy page                                                                                                                                       |
 | `search/`        | Global search page                                                                                                                                        |
-| `secretaria/`    | Secretaria — documentos/, emails/gerar, oficios/ (\_components, [id]/editar, novo/)                                                                       |
+| `secretaria/`    | Secretaria — documentos/, emails/gerar, mala-direta/, oficios/ (\_components, [id]/editar, novo/)                                                         |
 
 ## For AI Agents
 

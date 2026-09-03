@@ -138,6 +138,11 @@ export function Sidebar({ user }: SidebarProps) {
                 label: 'Ofícios',
                 icon: <FileSpreadsheet size={18} />,
               },
+              {
+                href: '/app/secretaria/mala-direta',
+                label: 'Mala direta',
+                icon: <Mail size={18} />,
+              },
               ...(user.role !== 'diretoria'
                 ? [
                     {
