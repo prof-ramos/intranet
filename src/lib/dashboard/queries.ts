@@ -4,7 +4,7 @@ import {
   normalizedCountryLabelSql,
 } from '@/lib/associates/location-country';
 import { activities, admins, associates, assignments } from '@/lib/db/schema';
-import { and, asc, count, countDistinct, desc, eq, ne, sql } from 'drizzle-orm';
+import { and, asc, countDistinct, desc, eq, ne, sql } from 'drizzle-orm';
 import { withCache } from '@/lib/cache/with-cache';
 
 // Cache TTLs (em segundos)
