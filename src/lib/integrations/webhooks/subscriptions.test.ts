@@ -34,6 +34,11 @@ vi.mock('@/lib/integrations/webhooks/secrets', () => ({
   encryptWebhookSecret: (...args: unknown[]) => mockEncryptWebhookSecret(...args),
 }));
 
+vi.mock('@/lib/integrations/webhooks/validation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/integrations/webhooks/validation')>()),
+  isPublicWebhookUrl: vi.fn().mockResolvedValue(true),
+}));
+
 describe('managed webhook subscriptions', () => {
   beforeEach(() => {
     vi.clearAllMocks();

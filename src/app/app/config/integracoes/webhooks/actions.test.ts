@@ -33,6 +33,11 @@ vi.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => revalidatePathMock(...args),
 }));
 
+vi.mock('@/lib/integrations/webhooks/validation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/integrations/webhooks/validation')>()),
+  isPublicWebhookUrl: vi.fn().mockResolvedValue(true),
+}));
+
 function buildWebhookFormData() {
   const formData = new FormData();
   formData.set('name', 'Webhook principal');

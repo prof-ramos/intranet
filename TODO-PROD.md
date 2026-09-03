@@ -4,8 +4,12 @@ Checklist canonica de go-live da intranet ASOF. Itens historicos ja executados
 permanecem aqui apenas quando ainda orientam operacao ou auditoria; evidencias
 pontuais antigas ficam em `docs/operations/archive/`.
 
-Atualizado em 2026-07-18. Última verificação completa do `main`: 2026-07-18,
-HEAD `997d5dd` ([CI run 29657944902](https://github.com/prof-ramos/intranet/actions/runs/29657944902)).
+Atualizado em 2026-09-03. Última leitura do `main` remoto: 2026-09-03,
+HEAD `7f185e46b827be1f99994ee9a172ad69486eab6f`. Último CI completo verde no
+`main`: 2026-09-01, SHA `6d14de8efea1738fcf7bad9049d690b31cd40aa6`
+([CI run 33514977658](https://github.com/prof-ramos/intranet/actions/runs/33514977658)).
+O push do HEAD atual falhou no job E2E e pulou o smoke
+([CI run 33555240683](https://github.com/prof-ramos/intranet/actions/runs/33555240683)).
 
 Para ambientes, bancos, dados, migrations e CI/CD, a fonte oficial pós-go-live é
 [`docs/environments.md`](./docs/environments.md) (ADR 015). Este checklist
@@ -37,7 +41,7 @@ de staging/dev/preview.
 - [x] Admin gabriel.org.br seedado no Neon com must_change_password=true.
 - [x] Login do admin validado em producao: gabriel.org.br acessou intranet.asof.com.br com redirect para troca de senha obrigatoria.
 - [x] Troca de senha obrigatoria realizada pelo admin apos primeiro login. (gabriel@asof.org.br → nova senha definida em 2026-05-26 via intranet.asof.com.br/change-password)
-- [x] Rodar gates — `Lint, Typecheck & Test`, `Database Contract`, `Build Verification` e `E2E Tests (Playwright)` passaram no `main` em 2026-07-18 (`79ab33e`, [CI run 29629899812](https://github.com/prof-ramos/intranet/actions/runs/29629899812)).
+- [x] Rodar gates — `Lint, Typecheck & Test`, `Database Contract`, `Build Verification` e `E2E Tests (Playwright)` passaram no `main` em 2026-07-18 (`79ab33e`, [CI run 29629899812](https://github.com/prof-ramos/intranet/actions/runs/29629899812)). Revalidação 2026-09-01 no SHA `6d14de8` (CI 33514977658) verde. HEAD `7f185e4` (2026-09-01): Lint/Typecheck/Test, Database Contract e Build verdes; **E2E falhou** e o smoke de produção foi skipped (CI 33555240683).
 - [x] Rodar `npm run test:db` contra Neon produção antes do go-live — schema contract passou em 2026-05-26.
 - [x] Smoke test automatizado de producao implementado e validado (ADR 009):
   - Spec E2E Playwright (`e2e/smoke-prod.spec.ts`) cobre login, dashboard, associados, atividades, juridico, oficios, redirecionamento das rotas financeiras/triagem (V2), auditoria, notificacoes e carregamento da pagina de reset de senha.
@@ -47,9 +51,29 @@ de staging/dev/preview.
   - Conta dedicada de smoke: `smoke-admin@asof.local`, `role=admin`, `is_active=true`, `must_change_password=false`; senha gerenciada apenas por `SMOKE_ADMIN_PASSWORD` no GitHub Actions.
   - Pos-smoke mutante: executar manualmente o SQL run-scoped impresso pelo spec; entidades, notificacoes, `domain_events` e `webhook_deliveries` do run devem ficar zerados, com `audit_logs` preservado.
   - CI/CD: o job pós-merge `Smoke Test — Production` roda read-only em push para `main`; dispatch manual também é read-only por default e o job permanece skipped em PRs.
-  - Execuções recentes validadas: 2026-08-18, `Smoke Test — Production` aprovado no [CI run 32172046902](https://github.com/prof-ramos/intranet/actions/runs/32172046902), no SHA `1221a10eaeb15906f03844ef15a4030afca6d3a3`; e 2026-08-19, aprovado no [CI run 32215753730](https://github.com/prof-ramos/intranet/actions/runs/32215753730), no SHA `b827bc4ec96f86e2143f52a128bbf890f3c159e5`.
+  - Execuções recentes validadas: 2026-08-18, `Smoke Test — Production` aprovado no [CI run 32172046902](https://github.com/prof-ramos/intranet/actions/runs/32172046902), no SHA `1221a10eaeb15906f03844ef15a4030afca6d3a3`; e 2026-08-19, aprovado no [CI run 32215753730](https://github.com/prof-ramos/intranet/actions/runs/32215753730), no SHA `b827bc4ec96f86e2143f52a128bbf890f3c159e5`. O smoke do HEAD `7f185e4` não rodou (E2E anterior falhou).
 - [x] Validar crons com `CRON_SECRET` antes de ativar operacao.
 - [x] Confirmar que previews/staging nao apontam para banco de producao — envs gerais de banco foram removidos do ambiente Preview no Vercel em 2026-05-26; restam apenas `SESSION_SECRET` em Preview e `GEMINI_API_KEY` restrita ao branch `feature/outbound-integrations-webhooks`.
+
+## Pendências atuais (2026-09-03)
+
+Itens abertos nesta leitura. Não reabrem o gate histórico de go-live; bloqueiam
+confiança operacional no `HEAD` atual.
+
+- [ ] Restaurar E2E no `main` no SHA `7f185e4` (ou sucessor) — job
+      `E2E Tests (Playwright)` falhou no [CI run 33555240683](https://github.com/prof-ramos/intranet/actions/runs/33555240683/job/100014928053); smoke de produção ficou skipped.
+- [ ] Aplicar `0033_unique_associate_identity_hashes` no Neon `main` com
+      `ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate` **antes** de
+      confiar na unicidade de CPF/SIAPE/e-mail em produção. O Vercel não
+      migra. Schema no repo: 34 SQL em `drizzle/postgres/` (baseline `0000` …
+      `0033`). Sem evidência nesta leitura de que `0033` já rodou em prod.
+- [ ] Fechar [#436](https://github.com/prof-ramos/intranet/issues/436) via
+      [PR #438](https://github.com/prof-ramos/intranet/pull/438) (mock de DNS
+      nos testes de webhook). Unitários locais sem rede ainda rejeitam
+      `https://example.com/webhook` em `isPublicWebhookUrl`.
+- [ ] Revalidar `npm audit --omit=dev` — em 2026-09-03: 5 high + 29 moderate
+      (34 total). O check histórico abaixo registrou 1 moderate transitiva;
+      o número atual é outro e precisa de triagem, não de “já feito”.
 
 ## Recomendado Antes Do Go-Live
 
@@ -211,10 +235,32 @@ continuam pertencendo ao inventario e a limpeza controlada do Plano 057._
   `/api/v1/health` respondeu `401` com `unauthorized`, comportamento esperado sem
   sessão; isso não substitui a checagem final de logs de login/auditoria. A janela
   permanece aberta até `2026-08-20T18:37Z`.
+- **Encerramento da janela (2026-09-03):** o prazo `2026-08-20T18:37Z` já passou.
+  Não há evidência nova de alerta de login/auditoria nesta leitura. A janela de
+  24–48 h de agosto está encerrada; a confiança operacional volta a depender do
+  CI/smoke do `HEAD` atual (E2E vermelho em `7f185e4`).
 - **E2E:** o setup passou a registrar as fases sem dados sensíveis. No run local
   de 2026-08-18, foram medidos: warmup JIT 57,0 s, autenticação 6,2 s, servidor
   pronto 3,8 s, migrations 1,1 s, seed 0,7 s e setup total 70,1 s. A suíte
   completa passou 83/83 em 7,8 min; o cache de browsers está configurado no
   E2E e no smoke. O timeout permanece em 25 min para E2E e 15 min para smoke.
+
+### Estado operacional (2026-08-31 a 2026-09-03)
+
+- **V2 de produto (PR #430):** UI operacional de financeiro e email-triage
+  oculta; rotas redirecionam ao dashboard. Código e crons permanecem. Smoke
+  cobre o redirecionamento, não a tela de mensalidades.
+- **Identidade cadastral (SHA `803712f`):** índices únicos em `cpf_hash`,
+  `siape_hash` e `primary_email_hash` + mapeamento `23505` → `ValidationError`.
+  Contrato de schema atualizado. Aplicar `0033` no Neon `main` é pendência
+  operacional (seção acima).
+- **Auth (SHA `a56e2d1` + testes `4e6f8e1`):** `isProductionRuntime()` unifica
+  `NODE_ENV`/`VERCEL_ENV` para `SKIP_AUTH` e cookie `Secure`.
+- **Dashboard (SHA `7f185e4`):** WelcomeBanner, empty states e atalhos na
+  sidebar. Lint/typecheck/unit/DB/build verdes nesse SHA; E2E falhou.
+- **Abrir:** issue [#436](https://github.com/prof-ramos/intranet/issues/436) e
+  PR [#438](https://github.com/prof-ramos/intranet/pull/438) (DNS nos testes de
+  webhook). Drafts #432 (MCP operador) e #428 (Cloud Agent env) não são gate
+  de produção.
 
 Este arquivo substitui as pendencias antigas de smoke de tempo real e reconciliacao de projetos de banco. Elas nao sao mais caminho de go-live.
