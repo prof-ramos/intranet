@@ -60,7 +60,7 @@ export const getAssociateMetrics = withCache({
   },
   keyFn: () => ['associate-metrics'],
   ttl: TTL_MODERATE,
-  tags: ['associates', 'dashboard'],
+  tags: ['dashboard:associates', 'associates'],
 });
 
 export interface ActivityStatusCount {
@@ -104,7 +104,7 @@ export const getActivityMetrics = withCache({
   },
   keyFn: () => ['activity-metrics'],
   ttl: TTL_VOLATILE,
-  tags: ['activities', 'dashboard'],
+  tags: ['dashboard:activities'],
 });
 
 export interface TopRegion {
@@ -125,7 +125,7 @@ const _getTopRegions = withCache({
       .limit(limit),
   keyFn: (limit) => ['top-regions-v3', String(limit)],
   ttl: TTL_STABLE,
-  tags: ['associates', 'dashboard'],
+  tags: ['dashboard:associates', 'associates'],
   maxEntries: 10,
 });
 
@@ -158,7 +158,7 @@ const _getUrgentActivities = withCache({
       .limit(limit),
   keyFn: (limit) => ['urgent-activities', String(limit)],
   ttl: TTL_REALTIME,
-  tags: ['activities', 'dashboard'],
+  tags: ['dashboard:activities'],
   maxEntries: 10,
 });
 
@@ -201,7 +201,7 @@ const _getBirthdaysThisMonth = withCache({
   },
   keyFn: (limit) => ['birthdays-this-month', String(limit)],
   ttl: TTL_BIRTHDAY,
-  tags: ['dashboard'],
+  tags: ['dashboard:associates', 'associates'],
   maxEntries: 10,
 });
 
@@ -243,7 +243,7 @@ const _getKanbanCards = withCache({
       .limit(limit),
   keyFn: (limit) => ['kanban-cards', String(limit)],
   ttl: TTL_REALTIME,
-  tags: ['activities', 'dashboard'],
+  tags: ['dashboard:activities'],
   maxEntries: 10,
 });
 

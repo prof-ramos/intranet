@@ -267,11 +267,15 @@ export interface OverduePaymentTransition {
   cancelledBy: number | null;
 }
 
+export const OVERDUE_PAYMENT_BATCH_SIZE = 500;
+
 export async function markOverduePaymentsForAudit(
   executor: DbExecutor = db,
   now: Date = new Date(),
+  options: { limit?: number } = {},
 ): Promise<OverduePaymentTransition[]> {
   const { year: thisYear, month: thisMonth } = getBusinessDateParts(now);
+  const limit = Math.min(Math.max(options.limit ?? OVERDUE_PAYMENT_BATCH_SIZE, 1), 2000);
 
   return executor
     .update(monthlyPayments)
@@ -287,6 +291,17 @@ export async function markOverduePaymentsForAudit(
           lt(monthlyPayments.year, thisYear),
           and(eq(monthlyPayments.year, thisYear), lt(monthlyPayments.month, thisMonth)),
         ),
+        sql`${monthlyPayments.id} in (
+          select id from ${monthlyPayments}
+          where ${monthlyPayments.status} = 'pendente'
+            and (
+              ${monthlyPayments.year} < ${thisYear}
+              or (${monthlyPayments.year} = ${thisYear} and ${monthlyPayments.month} < ${thisMonth})
+            )
+          order by ${monthlyPayments.id}
+          for update skip locked
+          limit ${limit}
+        )`,
       ),
     )
     .returning({

@@ -2,6 +2,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SQL } from 'drizzle-orm';
 
+const unstableCacheCalls = vi.hoisted(
+  () => [] as Array<{ key: string[]; options?: { revalidate?: number; tags?: string[] } }>,
+);
+
 function compileSql(fragment: SQL) {
   return fragment.toQuery({
     escapeName: (name: string) => `"${name}"`,
@@ -40,7 +44,14 @@ const dbMock = vi.hoisted(() => {
 });
 
 vi.mock('next/cache', () => ({
-  unstable_cache: (fn: (...args: any[]) => any) => fn,
+  unstable_cache: (
+    fn: (...args: any[]) => any,
+    key: string[],
+    options?: { revalidate?: number; tags?: string[] },
+  ) => {
+    unstableCacheCalls.push({ key, options });
+    return fn;
+  },
 }));
 
 vi.mock('@/lib/db', () => ({ db: dbMock }));
@@ -50,8 +61,41 @@ import * as dashboardQueries from './queries';
 describe('dashboard queries', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    unstableCacheCalls.length = 0;
     dbMock.lastSelectShape = undefined;
     dbMock.setSelectResult([{ brasil: 0, exterior: 0 }]);
+  });
+
+  it('uses domain-specific dashboard cache tags without the broad dashboard tag', async () => {
+    await dashboardQueries.getAssociateMetrics();
+    await dashboardQueries.getTopRegions(7);
+    dbMock.setSelectResult([
+      {
+        id: 1,
+        fullName: 'Pessoa Teste',
+        assignment: 'SERE',
+        birthDate: '1985-09-03',
+      },
+    ]);
+    await dashboardQueries.getBirthdaysThisMonth(11);
+    dbMock.setSelectResult([]);
+    await dashboardQueries.getActivityMetrics();
+    await dashboardQueries.getUrgentActivities(5);
+    await dashboardQueries.getKanbanCards(21);
+
+    const tagsByKey = Object.fromEntries(
+      unstableCacheCalls.map(({ key, options }) => [key[0], options?.tags]),
+    );
+
+    expect(tagsByKey['associate-metrics']).toEqual(['dashboard:associates', 'associates']);
+    expect(tagsByKey['top-regions-v3']).toEqual(['dashboard:associates', 'associates']);
+    expect(tagsByKey['birthdays-this-month']).toEqual(['dashboard:associates', 'associates']);
+    expect(tagsByKey['activity-metrics']).toEqual(['dashboard:activities']);
+    expect(tagsByKey['urgent-activities']).toEqual(['dashboard:activities']);
+    expect(tagsByKey['kanban-cards']).toEqual(['dashboard:activities']);
+    expect(unstableCacheCalls.flatMap(({ options }) => options?.tags ?? [])).not.toContain(
+      'dashboard',
+    );
   });
 
   it('loads all associate metrics in one filtered aggregate', async () => {
