@@ -1,0 +1,83 @@
+name: Reconcile Production Identities
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'report (somente leitura) ou apply (requer evidence_hash)'
+        required: true
+        type: choice
+        options:
+          - report
+          - apply
+      evidence_hash:
+        description: 'Hash do report (obrigatório em apply)'
+        required: false
+        type: string
+      confirm:
+        description: 'Digite APPLY-RECONCILE apenas no modo apply'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    name: Reconcile associate identities
+    runs-on: ubuntu-latest
+    environment: Production
+    if: >
+      github.event.inputs.mode == 'report' ||
+      (github.event.inputs.mode == 'apply' &&
+       github.event.inputs.confirm == 'APPLY-RECONCILE' &&
+       github.event.inputs.evidence_hash != '')
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve Neon connection
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          URL="$(npx neonctl@latest connection-string \
+            --api-key "$NEON_API_KEY" \
+            --project-id "$NEON_PROJECT_ID" \
+            --org-id org-red-mode-09715915 \
+            --branch main \
+            --pooled false)"
+          echo "::add-mask::${URL}"
+          PASSWORD="$(python3 -c 'from urllib.parse import urlparse, unquote; import sys; print(unquote(urlparse(sys.argv[1]).password or ""))' "$URL")"
+          if [ -n "$PASSWORD" ]; then
+            echo "::add-mask::${PASSWORD}"
+          fi
+          printf '%s' "$URL" > "$RUNNER_TEMP/database_url"
+          chmod 600 "$RUNNER_TEMP/database_url"
+
+      - name: Run identity reconciliation
+        env:
+          MODE: ${{ github.event.inputs.mode }}
+          EVIDENCE_HASH: ${{ github.event.inputs.evidence_hash }}
+        run: |
+          set -euo pipefail
+          export DATABASE_URL="$(cat "$RUNNER_TEMP/database_url")"
+          export DATABASE_MIGRATION_URL="$DATABASE_URL"
+          export SESSION_SECRET="$(openssl rand -hex 32)"
+          export SKIP_AUTH=true
+          if [ "$MODE" = "apply" ]; then
+            node --import tsx scripts/reconcile-associate-identities.ts apply --evidence-hash "$EVIDENCE_HASH"
+          else
+            node --import tsx scripts/reconcile-associate-identities.ts report
+          fi
