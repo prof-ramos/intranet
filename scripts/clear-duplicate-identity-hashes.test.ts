@@ -6,7 +6,7 @@ describe('planClearDuplicateIdentityHashes', () => {
     expect(
       planClearDuplicateIdentityHashes([
         { column: 'cpf_hash', ids: [714, 201] },
-        { column: 'siape_hash', ids: [10, 10, 12] },
+        { column: 'siape_hash', ids: ['10', '10', '12'] },
       ]),
     ).toEqual([
       {

@@ -18,11 +18,13 @@ export interface ClearDuplicateIdentityHashesReport {
 }
 
 export function planClearDuplicateIdentityHashes(
-  rows: Array<{ column: HashColumn; ids: number[] }>,
+  rows: Array<{ column: HashColumn; ids: Array<number | string> }>,
 ): DuplicateHashGroup[] {
   return rows
     .map(({ column, ids }) => {
-      const sorted = [...new Set(ids)].sort((a, b) => a - b);
+      const sorted = [...new Set(ids.map((id) => Number(id)))]
+        .filter((id) => Number.isInteger(id) && id > 0)
+        .sort((a, b) => a - b);
       if (sorted.length < 2) return null;
       return {
         column,
@@ -64,44 +66,12 @@ async function loadDuplicateGroups(sql: postgres.Sql): Promise<DuplicateHashGrou
             `;
 
     for (const row of rows) {
-      const ids = (row.ids as number[]) ?? [];
+      const ids = ((row.ids as Array<number | string> | null) ?? []).map(Number);
       collected.push({ column, ids });
     }
   }
 
   return planClearDuplicateIdentityHashes(collected);
-}
-
-async function clearHashForIds(
-  tx: postgres.Sql,
-  column: HashColumn,
-  clearIds: number[],
-): Promise<number> {
-  const result =
-    column === 'cpf_hash'
-      ? await tx`
-          UPDATE associates
-          SET cpf_hash = NULL, updated_at = NOW()
-          WHERE id IN ${tx(clearIds)}
-            AND cpf_hash IS NOT NULL
-          RETURNING id
-        `
-      : column === 'siape_hash'
-        ? await tx`
-            UPDATE associates
-            SET siape_hash = NULL, updated_at = NOW()
-            WHERE id IN ${tx(clearIds)}
-              AND siape_hash IS NOT NULL
-            RETURNING id
-          `
-        : await tx`
-            UPDATE associates
-            SET primary_email_hash = NULL, updated_at = NOW()
-            WHERE id IN ${tx(clearIds)}
-              AND primary_email_hash IS NOT NULL
-            RETURNING id
-          `;
-  return result.length;
 }
 
 async function applyClearDuplicateIdentityHashes(
@@ -113,7 +83,32 @@ async function applyClearDuplicateIdentityHashes(
   await sql.begin(async (tx) => {
     for (const group of groups) {
       if (group.clearIds.length === 0) continue;
-      clearedRowCount += await clearHashForIds(tx, group.column, group.clearIds);
+
+      const result =
+        group.column === 'cpf_hash'
+          ? await tx`
+              UPDATE associates
+              SET cpf_hash = NULL, updated_at = NOW()
+              WHERE id IN ${tx(group.clearIds)}
+                AND cpf_hash IS NOT NULL
+              RETURNING id
+            `
+          : group.column === 'siape_hash'
+            ? await tx`
+                UPDATE associates
+                SET siape_hash = NULL, updated_at = NOW()
+                WHERE id IN ${tx(group.clearIds)}
+                  AND siape_hash IS NOT NULL
+                RETURNING id
+              `
+            : await tx`
+                UPDATE associates
+                SET primary_email_hash = NULL, updated_at = NOW()
+                WHERE id IN ${tx(group.clearIds)}
+                  AND primary_email_hash IS NOT NULL
+                RETURNING id
+              `;
+      clearedRowCount += result.length;
 
       await tx`
         INSERT INTO audit_logs (action, entity_type, entity_id, performed_by, changes, metadata)
