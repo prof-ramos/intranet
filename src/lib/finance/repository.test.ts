@@ -166,14 +166,17 @@ describe('finance repository', () => {
   });
 
   describe('findAssociatesMissingPaymentForMonth', () => {
-    it('filters out associates that already have a payment row for the month', async () => {
-      dbMock.setSelectResult([
-        { associateId: 1, defaultPaymentMethod: 'folha', paymentId: null },
-        { associateId: 2, defaultPaymentMethod: 'boleto', paymentId: 55 },
-      ]);
+    it('uses a SQL anti-join and projects only missing-associate fields', async () => {
+      dbMock.setSelectResult([{ associateId: 1, defaultPaymentMethod: 'folha', paymentId: null }]);
 
       const result = await findAssociatesMissingPaymentForMonth(2026, 5);
 
+      const projection = dbMock.select.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+      expect(Object.keys(projection)).toEqual(['associateId', 'defaultPaymentMethod']);
+      const whereClause = dbMock._selectChain.where.mock.calls.at(-1)?.[0];
+      const compiledWhere = compileSql(whereClause);
+      expect(compiledWhere).toContain('"monthly_payments".');
+      expect(compiledWhere).toContain(' is null');
       expect(result).toEqual([{ associateId: 1, defaultPaymentMethod: 'folha' }]);
     });
   });
@@ -240,6 +243,16 @@ describe('finance repository', () => {
       expect(dbMock._selectChain.where).toHaveBeenCalled();
       expect(dbMock._selectChain.limit).toHaveBeenCalledWith(20);
       expect(dbMock._selectChain.offset).toHaveBeenCalledWith(0);
+    });
+
+    it('uses the aggregate total without issuing a redundant count query', async () => {
+      dbMock.setSelectResult([{ associateId: 10, fullName: 'Test', total: 37 }]);
+
+      const result = await getAssociatesWithPayments(2026, 5);
+
+      expect(dbMock.select).toHaveBeenCalledTimes(2);
+      expect(result.total).toBe(37);
+      expect(result.aggregates.total).toBe(37);
     });
 
     it('applies status filter', async () => {

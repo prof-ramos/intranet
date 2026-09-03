@@ -11,10 +11,36 @@ export async function lockOfficialLetterSequenceYear(year: number, tx: DbExecuto
   );
 }
 
+export type OfficialLetterListItem = {
+  id: number;
+  number: string;
+  status: OfficialLetter['status'];
+  recipient: string;
+  letterDate: string;
+  subject: string;
+  signatoryName: string;
+  assinafyDocumentId: string | null;
+  assinafyStatus: string | null;
+  assinafySigningUrl: string | null;
+};
+
+const officialLetterListColumns = {
+  id: oficios.id,
+  number: oficios.number,
+  status: oficios.status,
+  recipient: oficios.recipient,
+  letterDate: oficios.letterDate,
+  subject: oficios.subject,
+  signatoryName: oficios.signatoryName,
+  assinafyDocumentId: oficios.assinafyDocumentId,
+  assinafyStatus: oficios.assinafyStatus,
+  assinafySigningUrl: oficios.assinafySigningUrl,
+} as const;
+
 export async function findOfficialLetters(
   year?: number,
   options?: { limit?: number; tx?: DbExecutor },
-) {
+): Promise<OfficialLetterListItem[]> {
   const limit = options?.limit ?? 100;
   const tx = options?.tx ?? db;
   const filters = [];
@@ -23,7 +49,7 @@ export async function findOfficialLetters(
   }
 
   return tx
-    .select()
+    .select(officialLetterListColumns)
     .from(oficios)
     .where(and(...filters))
     .orderBy(desc(oficios.createdAt))

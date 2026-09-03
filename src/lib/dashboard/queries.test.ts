@@ -45,7 +45,7 @@ vi.mock('next/cache', () => ({
 
 vi.mock('@/lib/db', () => ({ db: dbMock }));
 
-import { countActiveAssociatesByLocation, getTopRegions } from './queries';
+import * as dashboardQueries from './queries';
 
 describe('dashboard queries', () => {
   beforeEach(() => {
@@ -54,14 +54,40 @@ describe('dashboard queries', () => {
     dbMock.setSelectResult([{ brasil: 0, exterior: 0 }]);
   });
 
-  it('counts location using assignment type before falling back to country', async () => {
-    await countActiveAssociatesByLocation();
+  it('loads all associate metrics in one filtered aggregate', async () => {
+    dbMock.setSelectResult([
+      {
+        active: 763,
+        brasil: 282,
+        exterior: 481,
+        contributionsOk: 700,
+        inadimplentes: 63,
+      },
+    ]);
+
+    const getAssociateMetrics = (
+      dashboardQueries as typeof dashboardQueries & {
+        getAssociateMetrics?: () => Promise<{
+          active: number;
+          byLocation: { brasil: number; exterior: number };
+          contributionsOk: number;
+          inadimplentes: number;
+        }>;
+      }
+    ).getAssociateMetrics;
+    expect(getAssociateMetrics).toBeTypeOf('function');
+    if (!getAssociateMetrics) return;
+
+    const result = await getAssociateMetrics();
 
     const selectShape = dbMock.lastSelectShape as Record<string, SQL>;
     const brasilSql = compileSql(selectShape.brasil);
     const exteriorSql = compileSql(selectShape.exterior);
 
-    expect(brasilSql).toContain('count(distinct');
+    expect(compileSql(selectShape.active)).toContain('count(*) filter');
+    expect(compileSql(selectShape.contributionsOk)).toContain('count(*) filter');
+    expect(compileSql(selectShape.inadimplentes)).toContain('count(*) filter');
+    expect(brasilSql).toContain('count(*) filter');
     expect(brasilSql).toContain('coalesce(');
     expect(brasilSql).toContain('::text');
     expect(brasilSql).toContain("= 'nacional'");
@@ -71,17 +97,70 @@ describe('dashboard queries', () => {
     expect(brasilSql).toContain("'brazil'");
     expect(brasilSql).toContain("'brasili'");
 
-    expect(exteriorSql).toContain('count(distinct');
+    expect(exteriorSql).toContain('count(*) filter');
     expect(exteriorSql).toContain('coalesce(');
     expect(exteriorSql).toContain('::text');
     expect(exteriorSql).toContain("= 'exterior'");
     expect(dbMock._selectChain.leftJoin).toHaveBeenCalled();
+    expect(dbMock.select).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      active: 763,
+      byLocation: { brasil: 282, exterior: 481 },
+      contributionsOk: 700,
+      inadimplentes: 63,
+    });
+  });
+
+  it('loads open, overdue, and per-status activity metrics in one aggregate', async () => {
+    dbMock.setSelectResult([
+      {
+        open: 12,
+        overdue: 3,
+        aFazer: 4,
+        emAndamento: 5,
+        aguardandoTerceiros: 2,
+        concluido: 1,
+      },
+    ]);
+
+    const getActivityMetrics = (
+      dashboardQueries as typeof dashboardQueries & {
+        getActivityMetrics?: () => Promise<{
+          open: number;
+          overdue: number;
+          byStatus: { status: string; total: number }[];
+        }>;
+      }
+    ).getActivityMetrics;
+    expect(getActivityMetrics).toBeTypeOf('function');
+    if (!getActivityMetrics) return;
+
+    const result = await getActivityMetrics();
+    const selectShape = dbMock.lastSelectShape as Record<string, SQL>;
+
+    expect(compileSql(selectShape.open)).toContain('count(*) filter');
+    expect(compileSql(selectShape.overdue)).toContain('count(*) filter');
+    expect(compileSql(selectShape.aFazer)).toContain("= 'a_fazer'");
+    expect(compileSql(selectShape.emAndamento)).toContain("= 'em_andamento'");
+    expect(compileSql(selectShape.aguardandoTerceiros)).toContain("= 'aguardando_terceiros'");
+    expect(compileSql(selectShape.concluido)).toContain("= 'concluido'");
+    expect(dbMock.select).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      open: 12,
+      overdue: 3,
+      byStatus: [
+        { status: 'a_fazer', total: 4 },
+        { status: 'em_andamento', total: 5 },
+        { status: 'aguardando_terceiros', total: 2 },
+        { status: 'concluido', total: 1 },
+      ],
+    });
   });
 
   it('normalizes country aliases without assignments join', async () => {
     dbMock.setSelectResult([]);
 
-    await getTopRegions(6);
+    await dashboardQueries.getTopRegions(6);
 
     const selectShape = dbMock.lastSelectShape as Record<string, SQL>;
     const countrySql = compileSql(selectShape.country);

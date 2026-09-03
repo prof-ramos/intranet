@@ -20,86 +20,47 @@ function formatDayMonth(dateStr: string): string {
   return `${day}/${month}`;
 }
 
-export const countActiveAssociates = withCache({
-  fn: async (): Promise<number> => {
-    const rows = await db
-      .select({ count: count() })
-      .from(associates)
-      .where(eq(associates.associationStatus, 'associado'));
-    return rows[0].count;
-  },
-  keyFn: () => ['active-associates-count'],
-  ttl: TTL_STABLE,
-  tags: ['associates', 'dashboard'],
-});
-
 export interface ActiveAssociatesByLocation {
   brasil: number;
   exterior: number;
 }
 
-export const countActiveAssociatesByLocation = withCache({
-  fn: async (): Promise<ActiveAssociatesByLocation> => {
+export interface AssociateMetrics {
+  active: number;
+  byLocation: ActiveAssociatesByLocation;
+  contributionsOk: number;
+  inadimplentes: number;
+}
+
+export const getAssociateMetrics = withCache({
+  fn: async (): Promise<AssociateMetrics> => {
     const locationType = assignmentLocationTypeSql(assignments.type, associates.locationCountry);
 
     const rows = await db
       .select({
-        brasil: sql<number>`count(distinct ${associates.id}) filter (where ${locationType} = 'nacional')::int`,
-        exterior: sql<number>`count(distinct ${associates.id}) filter (where ${locationType} = 'exterior')::int`,
+        active: sql<number>`count(*) filter (where ${associates.associationStatus} = 'associado')::int`,
+        brasil: sql<number>`count(*) filter (where ${associates.associationStatus} = 'associado' and ${locationType} = 'nacional')::int`,
+        exterior: sql<number>`count(*) filter (where ${associates.associationStatus} = 'associado' and ${locationType} = 'exterior')::int`,
+        contributionsOk: sql<number>`count(*) filter (where ${associates.associationStatus} = 'associado' and ${associates.contributionStatus} = 'em_dia')::int`,
+        inadimplentes: sql<number>`count(*) filter (where ${associates.associationStatus} = 'associado' and ${associates.contributionStatus} = 'inadimplente')::int`,
       })
       .from(associates)
-      .leftJoin(assignments, eq(assignments.name, associates.assignment))
-      .where(eq(associates.associationStatus, 'associado'));
+      .leftJoin(assignments, eq(assignments.name, associates.assignment));
 
-    return rows[0] ?? { brasil: 0, exterior: 0 };
+    const row = rows[0];
+    return {
+      active: Number(row?.active ?? 0),
+      byLocation: {
+        brasil: Number(row?.brasil ?? 0),
+        exterior: Number(row?.exterior ?? 0),
+      },
+      contributionsOk: Number(row?.contributionsOk ?? 0),
+      inadimplentes: Number(row?.inadimplentes ?? 0),
+    };
   },
-  keyFn: () => ['active-associates-by-location-count'],
-  ttl: TTL_STABLE,
-  tags: ['associates', 'dashboard'],
-});
-
-export const countContributionsOkAssociates = withCache({
-  fn: async (): Promise<number> => {
-    const rows = await db
-      .select({ count: count() })
-      .from(associates)
-      .where(
-        and(
-          eq(associates.associationStatus, 'associado'),
-          eq(associates.contributionStatus, 'em_dia'),
-        ),
-      );
-    return rows[0].count;
-  },
-  keyFn: () => ['contributions-ok-count'],
+  keyFn: () => ['associate-metrics'],
   ttl: TTL_MODERATE,
   tags: ['associates', 'dashboard'],
-});
-
-export const countOpenActivities = withCache({
-  fn: async (): Promise<number> => {
-    const rows = await db
-      .select({ count: count() })
-      .from(activities)
-      .where(ne(activities.status, 'concluido'));
-    return rows[0].count;
-  },
-  keyFn: () => ['open-activities-count'],
-  ttl: TTL_VOLATILE,
-  tags: ['activities', 'dashboard'],
-});
-
-export const countOverdueActivities = withCache({
-  fn: async (): Promise<number> => {
-    const rows = await db
-      .select({ count: count() })
-      .from(activities)
-      .where(and(ne(activities.status, 'concluido'), sql`${activities.dueDate} < now()`));
-    return rows[0].count;
-  },
-  keyFn: () => ['overdue-activities-count'],
-  ttl: TTL_VOLATILE,
-  tags: ['activities', 'dashboard'],
 });
 
 export interface ActivityStatusCount {
@@ -107,14 +68,41 @@ export interface ActivityStatusCount {
   total: number;
 }
 
-export const getActivitiesByStatus = withCache({
-  fn: async (): Promise<ActivityStatusCount[]> => {
-    return db
-      .select({ status: activities.status, total: count() })
-      .from(activities)
-      .groupBy(activities.status);
+export interface ActivityMetrics {
+  open: number;
+  overdue: number;
+  byStatus: ActivityStatusCount[];
+}
+
+export const getActivityMetrics = withCache({
+  fn: async (): Promise<ActivityMetrics> => {
+    const rows = await db
+      .select({
+        open: sql<number>`count(*) filter (where ${activities.status} <> 'concluido')::int`,
+        overdue: sql<number>`count(*) filter (where ${activities.status} <> 'concluido' and ${activities.dueDate} < now())::int`,
+        aFazer: sql<number>`count(*) filter (where ${activities.status} = 'a_fazer')::int`,
+        emAndamento: sql<number>`count(*) filter (where ${activities.status} = 'em_andamento')::int`,
+        aguardandoTerceiros: sql<number>`count(*) filter (where ${activities.status} = 'aguardando_terceiros')::int`,
+        concluido: sql<number>`count(*) filter (where ${activities.status} = 'concluido')::int`,
+      })
+      .from(activities);
+
+    const row = rows[0];
+    return {
+      open: Number(row?.open ?? 0),
+      overdue: Number(row?.overdue ?? 0),
+      byStatus: [
+        { status: 'a_fazer', total: Number(row?.aFazer ?? 0) },
+        { status: 'em_andamento', total: Number(row?.emAndamento ?? 0) },
+        {
+          status: 'aguardando_terceiros',
+          total: Number(row?.aguardandoTerceiros ?? 0),
+        },
+        { status: 'concluido', total: Number(row?.concluido ?? 0) },
+      ],
+    };
   },
-  keyFn: () => ['activities-by-status'],
+  keyFn: () => ['activity-metrics'],
   ttl: TTL_VOLATILE,
   tags: ['activities', 'dashboard'],
 });
@@ -219,24 +207,6 @@ const _getBirthdaysThisMonth = withCache({
 
 export const getBirthdaysThisMonth = (limit = 10): Promise<BirthdayItem[]> =>
   _getBirthdaysThisMonth(limit);
-
-export const countInadimplentesAssociates = withCache({
-  fn: async (): Promise<number> => {
-    const rows = await db
-      .select({ count: count() })
-      .from(associates)
-      .where(
-        and(
-          eq(associates.associationStatus, 'associado'),
-          eq(associates.contributionStatus, 'inadimplente'),
-        ),
-      );
-    return rows[0].count;
-  },
-  keyFn: () => ['inadimplentes-count'],
-  ttl: TTL_MODERATE,
-  tags: ['associates', 'dashboard'],
-});
 
 export interface KanbanCard {
   id: number;

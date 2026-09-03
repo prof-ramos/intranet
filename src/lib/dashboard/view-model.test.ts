@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const queriesMock = vi.hoisted(() => ({
+  getAssociateMetrics: vi.fn(),
+  getActivityMetrics: vi.fn(),
   countActiveAssociates: vi.fn(),
   countActiveAssociatesByLocation: vi.fn(),
   countContributionsOkAssociates: vi.fn(),
@@ -15,6 +17,8 @@ const queriesMock = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/dashboard/queries', () => ({
+  getAssociateMetrics: queriesMock.getAssociateMetrics,
+  getActivityMetrics: queriesMock.getActivityMetrics,
   countActiveAssociates: queriesMock.countActiveAssociates,
   countActiveAssociatesByLocation: queriesMock.countActiveAssociatesByLocation,
   countContributionsOkAssociates: queriesMock.countContributionsOkAssociates,
@@ -56,6 +60,22 @@ describe('formatDashboardDueDate', () => {
 describe('getDashboardViewModel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    queriesMock.getAssociateMetrics.mockResolvedValue({
+      active: 763,
+      byLocation: { brasil: 282, exterior: 481 },
+      contributionsOk: 700,
+      inadimplentes: 63,
+    });
+    queriesMock.getActivityMetrics.mockResolvedValue({
+      open: 12,
+      overdue: 3,
+      byStatus: [
+        { status: 'a_fazer', total: 4 },
+        { status: 'em_andamento', total: 5 },
+        { status: 'aguardando_terceiros', total: 2 },
+        { status: 'concluido', total: 1 },
+      ],
+    });
     queriesMock.countActiveAssociates.mockResolvedValue(763);
     queriesMock.countActiveAssociatesByLocation.mockResolvedValue({
       brasil: 282,
@@ -101,7 +121,15 @@ describe('getDashboardViewModel', () => {
   it('builds the stripe with associate distribution by location', async () => {
     const viewModel = await getDashboardViewModel();
 
-    expect(queriesMock.countActiveAssociatesByLocation).toHaveBeenCalledTimes(1);
+    expect(queriesMock.getAssociateMetrics).toHaveBeenCalledTimes(1);
+    expect(queriesMock.getActivityMetrics).toHaveBeenCalledTimes(1);
+    expect(queriesMock.countActiveAssociates).not.toHaveBeenCalled();
+    expect(queriesMock.countActiveAssociatesByLocation).not.toHaveBeenCalled();
+    expect(queriesMock.countContributionsOkAssociates).not.toHaveBeenCalled();
+    expect(queriesMock.countInadimplentesAssociates).not.toHaveBeenCalled();
+    expect(queriesMock.countOpenActivities).not.toHaveBeenCalled();
+    expect(queriesMock.countOverdueActivities).not.toHaveBeenCalled();
+    expect(queriesMock.getActivitiesByStatus).not.toHaveBeenCalled();
     expect(viewModel.stripe).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -158,6 +186,12 @@ describe('getDashboardViewModel', () => {
   });
 
   it('handles zero active associates without division by zero', async () => {
+    queriesMock.getAssociateMetrics.mockResolvedValue({
+      active: 0,
+      byLocation: { brasil: 0, exterior: 0 },
+      contributionsOk: 0,
+      inadimplentes: 0,
+    });
     queriesMock.countActiveAssociates.mockResolvedValue(0);
     queriesMock.getTopRegions.mockResolvedValue([]);
 
