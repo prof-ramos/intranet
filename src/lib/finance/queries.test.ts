@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getAssociatesWithPaymentsMock = vi.fn();
+const unstableCacheMock = vi.hoisted(() => vi.fn((fn: (...args: unknown[]) => unknown) => fn));
 
 vi.mock('./repository', () => ({
   getAssociatesWithPayments: (...args: unknown[]) => getAssociatesWithPaymentsMock(...args),
+}));
+
+vi.mock('next/cache', () => ({
+  unstable_cache: unstableCacheMock,
 }));
 
 import { getMonthlyPaymentsData } from './queries';
@@ -28,6 +33,19 @@ describe('finance queries', () => {
       method: 'pix',
       location: 'brasil',
     });
+    expect(unstableCacheMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      [
+        'monthly-payments',
+        '2026',
+        '5',
+        '{"q":"  Maria  ","status":"pago","method":"pix","origin":"","location":"brasil","page":"","pageSize":""}',
+      ],
+      {
+        revalidate: 30,
+        tags: ['finance:2026:5'],
+      },
+    );
   });
 
   it('rejects invalid year and month values before touching the repository', async () => {

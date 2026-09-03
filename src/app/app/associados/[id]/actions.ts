@@ -24,7 +24,7 @@ function revalidateAssociatePaths(associateId: number) {
   revalidatePath(`/app/associados/${associateId}`);
   revalidatePath(`/app/associados/${associateId}/editar`);
   revalidateTag('associates', 'max');
-  revalidateTag('dashboard', 'max');
+  revalidateTag('dashboard:associates', 'max');
 }
 
 // ─── Dependent Actions ──────────────────────────────────────────────────

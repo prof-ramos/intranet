@@ -30,7 +30,7 @@ function parseAssignmentId(raw: string): number {
 
 function revalidateAssignments() {
   revalidateTag('associates', 'max');
-  revalidateTag('dashboard', 'max');
+  revalidateTag('dashboard:associates', 'max');
   revalidatePath('/app/config/lotacoes');
 }
 

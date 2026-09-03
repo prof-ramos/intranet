@@ -74,7 +74,7 @@ export const updatePaymentAction = defineServerAction({
       throw error;
     }
 
-    revalidateTag(`finance-monthly-${payment.year}-${payment.month}`, 'max');
+    revalidateTag(`finance:${payment.year}:${payment.month}`, 'max');
     revalidatePath('/app/financeiro/mensalidades');
 
     return { success: true } as const;
@@ -86,7 +86,7 @@ const _initializeMonthAction = defineServerAction({
   schema: initializeMonthSchema,
   service: async (input: { year: number; month: number }, user) => {
     const counts = await initializeMonth(user.userId, input.year, input.month);
-    revalidateTag(`finance-monthly-${input.year}-${input.month}`, 'max');
+    revalidateTag(`finance:${input.year}:${input.month}`, 'max');
     revalidatePath('/app/financeiro/mensalidades');
     return { success: true as const, ...counts };
   },
@@ -140,7 +140,7 @@ export const cancelPaymentAction = defineServerAction({
       throw error;
     }
 
-    revalidateTag(`finance-monthly-${input.year}-${input.month}`, 'max');
+    revalidateTag(`finance:${input.year}:${input.month}`, 'max');
     revalidatePath('/app/financeiro/mensalidades');
 
     return { success: true } as const;

@@ -54,7 +54,7 @@ describe('financeiro mensalidades actions', () => {
       }),
       '2026-05-17T11:00:00.000Z',
     );
-    expect(revalidateTagMock).toHaveBeenCalledWith('finance-monthly-2026-5', 'max');
+    expect(revalidateTagMock).toHaveBeenCalledWith('finance:2026:5', 'max');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/financeiro/mensalidades');
   });
 
@@ -168,7 +168,7 @@ describe('financeiro mensalidades actions', () => {
 
     expect(result).toEqual({ success: true, created: 12, maintained: 0, rejected: 0 });
     expect(initializeMonthMock).toHaveBeenCalledWith(7, 2026, 5);
-    expect(revalidateTagMock).toHaveBeenCalledWith('finance-monthly-2026-5', 'max');
+    expect(revalidateTagMock).toHaveBeenCalledWith('finance:2026:5', 'max');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/financeiro/mensalidades');
   });
 
@@ -182,7 +182,7 @@ describe('financeiro mensalidades actions', () => {
 
     expect(result).toEqual({ success: true });
     expect(cancelMonthlyPaymentMock).toHaveBeenCalledWith(7, 99, 'Lançamento em duplicidade');
-    expect(revalidateTagMock).toHaveBeenCalledWith('finance-monthly-2026-5', 'max');
+    expect(revalidateTagMock).toHaveBeenCalledWith('finance:2026:5', 'max');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/financeiro/mensalidades');
   });
 
