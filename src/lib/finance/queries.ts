@@ -24,6 +24,29 @@ function financeCacheKey(year: number, month: number, filters?: MonthlyPaymentsF
   ];
 }
 
+/**
+ * `unstable_cache` JSON-serializes values, so Date fields come back as ISO strings.
+ * Revive them before handing data to the UI / optimistic concurrency checks.
+ */
+function reviveCachedDate(value: Date | string | null | undefined): Date | null {
+  if (value == null) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+export function reviveMonthlyPaymentsData(data: PaymentsData): PaymentsData {
+  return {
+    ...data,
+    rows: data.rows.map((row) => ({
+      ...row,
+      paidAt: reviveCachedDate(row.paidAt),
+      cancelledAt: reviveCachedDate(row.cancelledAt),
+      updatedAt: reviveCachedDate(row.updatedAt),
+    })),
+  };
+}
+
 const getMonthlyPaymentsDataCached = withCache<
   [number, number, MonthlyPaymentsFilters | undefined],
   PaymentsData
@@ -45,6 +68,7 @@ export const getMonthlyPaymentsData = cache(
     if (!parsed.success) {
       throw new Error(parsed.error.issues[0].message);
     }
-    return getMonthlyPaymentsDataCached(year, month, filters);
+    const data = await getMonthlyPaymentsDataCached(year, month, filters);
+    return reviveMonthlyPaymentsData(data);
   },
 );
