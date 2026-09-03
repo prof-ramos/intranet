@@ -16,6 +16,16 @@ A intranet já tem bases sólidas: pool Postgres configurado, `withCache`/`unsta
 
 Prioridade sugerida de implementação: **P1 cache/queries → P1 bundle Novu → P1 reports/crypto → P1 atividades/ofícios → P2 limpeza**.
 
+## Status de implementação (2026-09-03)
+
+| Onda | Status | Notas                                                                                                                                                                                                   |
+| ---- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A    | Feito  | Dashboard `getAssociateMetrics`/`getActivityMetrics`; board sempre com limit; lista de ofícios projetada; anti-join SQL + aggregates.total no financeiro                                                |
+| B    | Feito  | Tags `dashboard:associates` / `dashboard:activities` / `legal:*` / `finance:Y:M`; `withCache` aceita tags dinâmicas; cache persistente de mensalidades                                                  |
+| C    | Feito  | Cache HKDF por processo; decrypt PII só para colunas selecionadas no CSV; cron overdue em batches `FOR UPDATE SKIP LOCKED`; cache negativo de assets PDF; `Cache-Control: private, no-store` em CSV/PDF |
+| D    | Feito  | Novu sob clique; Tiptap sob “Editar formatação”; `search-params.shared` client-safe; `WelcomeBanner`/`FinanceKPIs` sem `'use client'`                                                                   |
+| E    | Feito  | Migration `0034_performance_query_indexes` + script CONCURRENTLY manual; keyset em auditoria; notas jurídicas limitadas (100)                                                                           |
+
 ---
 
 ## 1. Gargalos de desempenho
