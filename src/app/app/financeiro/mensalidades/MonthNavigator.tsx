@@ -7,7 +7,7 @@ import { useTransition } from 'react';
 import {
   buildMonthlyPaymentsSearchParams,
   type MonthlyPaymentsSearchParams,
-} from '@/lib/finance/search-params';
+} from '@/lib/finance/search-params.shared';
 import {
   borderMuted,
   compactActionClass,

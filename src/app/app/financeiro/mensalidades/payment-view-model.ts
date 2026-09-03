@@ -1,6 +1,6 @@
 import { isDomesticCountry } from '@/lib/associates/location-country';
 import { paymentStatusUi, type PaymentStatus } from './payment-status-ui';
-import type { PaymentOrigin } from '@/lib/finance/search-params';
+import type { PaymentOrigin } from '@/lib/finance/search-params.shared';
 import type { EditablePaymentStatus, PaymentEditorInitialValues } from './PaymentEditorDialog';
 
 export interface Payment {

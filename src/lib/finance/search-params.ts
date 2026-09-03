@@ -1,16 +1,19 @@
 import { monthlyPaymentsSearchParamsSchema } from '@/lib/validation/schemas';
-import { paymentStatus } from '@/lib/db/schema/finance';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
 import { getBusinessDateParts } from '@/lib/utils/date';
 
-export interface MonthlyPaymentsSearchParams {
-  q: string;
-  status?: (typeof paymentStatus.enumValues)[number];
-  method?: 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros';
-  origin?: 'sigepe' | 'itamaraty' | 'comprovante' | 'outros';
-  location?: 'brasil' | 'exterior';
-  page: number;
-}
+export {
+  buildMonthlyPaymentsSearchParams,
+  isPaymentOrigin,
+  paymentOrigins,
+  type MonthlyPaymentsSearchParams,
+  type PaymentOrigin,
+  type PaymentLocationFilter,
+  type PaymentMethodFilter,
+  type PaymentStatusFilter,
+} from './search-params.shared';
+
+import type { MonthlyPaymentsSearchParams } from './search-params.shared';
 
 export interface MonthlyPaymentsPageSearchParams {
   year: number;
@@ -55,14 +58,6 @@ export function parseMonthlyPaymentsSearchParams(params: {
   return result;
 }
 
-const paymentOrigins = ['sigepe', 'itamaraty', 'comprovante', 'outros'] as const;
-
-export type PaymentOrigin = (typeof paymentOrigins)[number];
-
-export function isPaymentOrigin(value: string | undefined): value is PaymentOrigin {
-  return value != null && (paymentOrigins as readonly string[]).includes(value);
-}
-
 export function parseMonthlyPaymentsPageSearchParams(
   params: {
     year?: string;
@@ -82,26 +77,6 @@ export function parseMonthlyPaymentsPageSearchParams(
     month: parseBoundedInteger(params.month, businessDate.month, 1, 12),
     filters: parseMonthlyPaymentsSearchParams(params),
   };
-}
-
-export function buildMonthlyPaymentsSearchParams(
-  current: MonthlyPaymentsSearchParams,
-  updates: Partial<MonthlyPaymentsSearchParams>,
-): Record<string, string> {
-  const next = { ...current, ...updates };
-  if (['q', 'status', 'method', 'origin', 'location'].some((key) => Object.hasOwn(updates, key))) {
-    next.page = 1;
-  }
-  const params: Record<string, string> = {};
-
-  if (next.q) params.q = next.q;
-  if (next.status) params.status = next.status;
-  if (next.method) params.method = next.method;
-  if (next.origin) params.origin = next.origin;
-  if (next.location) params.location = next.location;
-  if (next.page && next.page !== 1) params.page = String(next.page);
-
-  return params;
 }
 
 export function buildAssociateNameSearchPattern(query: string): string {

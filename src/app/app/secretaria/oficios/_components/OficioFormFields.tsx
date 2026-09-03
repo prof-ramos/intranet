@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
 import type { FieldErrors, UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import { AlertCircle, AlertTriangle, Loader2, Save, Sparkles } from 'lucide-react';
@@ -261,6 +261,7 @@ function BodySection({
   bodyPlainText,
   onOpenAiModal,
 }: BodySectionProps) {
+  const [editorOpen, setEditorOpen] = useState(() => Boolean(bodyRichText?.trim()));
   const impersonalityWarnings = useMemo<ImpersonalityWarning[]>(
     () => (bodyPlainText.trim() ? checkImpersonality(bodyPlainText) : []),
     [bodyPlainText],
@@ -283,14 +284,35 @@ function BodySection({
 
       <input type="hidden" {...register('bodyRichText')} />
       <input type="hidden" {...register('bodyPlainText')} />
-      <RichTextEditor
-        valueHtml={bodyRichText}
-        error={errors.bodyPlainText?.message ?? errors.bodyRichText?.message}
-        onChange={({ html, text }) => {
-          setValue('bodyRichText', html, { shouldDirty: true, shouldValidate: true });
-          setValue('bodyPlainText', text, { shouldDirty: true, shouldValidate: true });
-        }}
-      />
+      {editorOpen ? (
+        <RichTextEditor
+          valueHtml={bodyRichText}
+          error={errors.bodyPlainText?.message ?? errors.bodyRichText?.message}
+          onChange={({ html, text }) => {
+            setValue('bodyRichText', html, { shouldDirty: true, shouldValidate: true });
+            setValue('bodyPlainText', text, { shouldDirty: true, shouldValidate: true });
+          }}
+        />
+      ) : (
+        <button
+          type="button"
+          className={`flex min-h-[160px] w-full flex-col items-start justify-center rounded-lg border border-dashed px-4 py-6 text-left transition-colors hover:bg-[rgba(4,9,32,0.02)] ${focusRingClass}`}
+          style={{ borderColor: hairline, color: textMuted }}
+          onClick={() => setEditorOpen(true)}
+        >
+          <span className="text-sm font-medium" style={{ color: navy }}>
+            Editar formatação
+          </span>
+          <span className="mt-1 text-xs">
+            Carrega o editor rico sob demanda (~126 KiB). Clique para começar.
+          </span>
+          {bodyPlainText ? (
+            <span className="mt-3 line-clamp-4 text-sm whitespace-pre-wrap" style={{ color: navy }}>
+              {bodyPlainText}
+            </span>
+          ) : null}
+        </button>
+      )}
       {errors.bodyRichText && <FieldError message={errors.bodyRichText.message} />}
       {errors.bodyPlainText && <FieldError message={errors.bodyPlainText.message} />}
 

@@ -56,7 +56,7 @@ import {
   buildMonthlyPaymentsSearchParams,
   type PaymentOrigin,
   type MonthlyPaymentsSearchParams,
-} from '@/lib/finance/search-params';
+} from '@/lib/finance/search-params.shared';
 import {
   cancelPendingMonthlyPaymentsSearch,
   scheduleMonthlyPaymentsSearch,
