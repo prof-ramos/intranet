@@ -182,14 +182,21 @@ Single-context: `CONTEXT.md` at root + `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Feedback e Armadilhas Operacionais (Memória)
 
+- **Neon prod via GHA, não OAuth pessoal:** conta OAuth típica **não** é membro de `org-red-mode-09715915`. Usar workflows `Migrate Production` / reconcile / clear-duplicate-hashes com `NEON_API_KEY`. Não colar callback OAuth com `code=` no chat. Detalhe em `docs/agent-memory`.
+- **zsh + placeholders `<…>`:** `<role>` vira redirecionamento; usar nome literal ou omitir `--role-name`.
+- **Webhook unit tests:** mockar `isPublicWebhookUrl` (DNS ao vivo em `example.com` quebra a suite). PR #439 / #436.
+- **Unique hash 0033:** duplicatas bloqueiam migrate; se reconcile tem `eligibleCount: 0`, clear hashes (NULL; múltiplos NULL OK no unique) — não forçar merge cadastral. Clear só zera hash (ciphertext fica): editar o duplicata recria o hash e estoura unique. Audit do clear aponta para `keepId`. Script `--apply` não tem guard de host — só via GHA.
+- **postgres.js `sql.begin`:** `TransactionSql` ≠ `Sql` → typecheck/preview quebram; SQL inline no callback. `array_agg` bigint → coerce `Number()` antes do sort.
+- **npm audit / undici:** residual moderate transitivo do Next — não `npm audit fix --force`.
 - **CI "Database Contract" ≠ só schema:** o job roda migrate + `test:db` + `test:integration`. Falha pode ser `server-only` sem alias no `vitest.integration.config.ts` (unit já tem). Ler o step do log antes de culpar migration.
-- **Deploy Vercel não migra Neon:** após PR com coluna nova, aplicar `ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate` (ou neonctl connection-string + guarded-migrate) **antes** de confiar no smoke prod. Sintoma clássico: `column "X" does not exist` no POST de create.
+- **Deploy Vercel não migra Neon:** após PR com coluna nova, aplicar `ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate` (ou workflow GHA / neonctl + guarded-migrate) **antes** de confiar no smoke prod. Sintoma clássico: `column "X" does not exist` no POST de create.
 - **Smoke "CPF já existe" sem CPF no form:** `buildPiiPatch` não pode hashear `''` — blank → clear (hash null). 1º create sem PII grava hash de vazio; 2º colide. Ver `docs/agent-memory` + PR #302.
 - **Smoke fail-fast:** só `form [role="alert"]`; `.text-red-*` casa botão Remover e gera falso positivo (create pode ter sucesso no DB). PR #303.
 - **Smoke residual:** limpar `SMOKE_%` após qualquer run (SQL impresso no log não auto-executa). Combinar com check de `cpf_hash`/`siape_hash` no residual.
 - **vercel env pull production:** keys DATABASE\_\* podem vir com valor vazio (Neon integration). Preferir `neonctl connection-string` (org `org-red-mode-09715915`, project `long-leaf-97822199`) e **não imprimir** a URL com senha.
 - **Husky pre-commit:** precisa shebang + mode 100755; leve no commit (lint-staged+typecheck), suite no pre-push. PR #300.
 - **Orquestrador babysita CI até o fim:** após push, polle checks, fixe falhas e só encerre com status final — não "aguardar re-run" e parar.
+- **finishing-branch em `main` com docs unstaged:** não mergear local; branch `docs/…` + PR (ex. #447).
 
 - **Neon Free Tier Retention Limit:** O roteiro de Go-Live exige retenção de backup contínuo (PITR) de no mínimo 24h. No entanto, o plano _Free_ do Neon Database limita o `history_retention_seconds` a 21600 (exatas 6 horas). Não é possível alterar este valor via API ou CLI (`neonctl projects update ...`) sem antes migrar o projeto para o plano Launch/Pro. Se for realizar validações de Go-Live e rollbacks na camada Free, a janela completa deve durar menos de 6 horas.
 - **Vercel CLI Interactive Prompts:** Ao usar `vercel env add <KEY> production --force` em um processo não interativo (background), a CLI pode congelar esperando confirmação `(y/N)` se a variável já existir ou for sobreposição. **Solução:** Sempre use a flag combinada `--force --yes` para scripts automatizados ou background tasks.
