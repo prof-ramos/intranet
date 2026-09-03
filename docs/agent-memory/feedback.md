@@ -67,6 +67,42 @@
 - **Regra preventiva**: Antes de `gh pr close/merge` ou comentários que alteram triagem, obter ok explícito (ou “do all” / autorização ampla do plano). Não assumir que o plano anexado sozinho libera o write.
 - **Confiança**: alta
 
+## 2026-09-03 — Clear de hash deixa ciphertext; edição recria o unique
+
+- **Tipo**: Lacuna de produto / efeito colateral de ops
+- **Escopo**: `clear-duplicate-identity-hashes.ts`, `buildPiiPatch`, unique 0033
+- **Memória**: O clear zera só `cpf_hash`/`siape_hash`/`primary_email_hash`. Ciphertext permanece. No edit, a UI descriptografa, o form reenvia o CPF e `buildPiiPatch` regrava o hash → unique explode (“Já existe um oficial cadastrado com este CPF”). Busca por CPF/SIAPE também não acha o “perdedor”.
+- **Evidência**: Code review 2026-09-03 pós-#445/#446; `updateAssociateData` não pré-checa hash excluindo o próprio `id` — depende do unique + `rethrowIdentityUniqueViolation`.
+- **Regra preventiva**: Após clear, não tratar o cadastro “órfão de hash” como pesquisável/editável sem plano. Follow-up: limpar ciphertext+hash juntos **ou** UI/serviço que evite rehash do duplicata. Clear ≠ merge.
+- **Confiança**: alta
+
+## 2026-09-03 — Script de clear sem guard de host remoto
+
+- **Tipo**: Armadilha operacional / falta de fail-closed
+- **Escopo**: `scripts/clear-duplicate-identity-hashes.ts --apply`
+- **Memória**: Seed tem `ALLOW_REMOTE_DEV_SEED`; `guarded-migrate` tem `ALLOW_PRODUCTION_MIGRATIONS`. O clear `--apply` aceita qualquer `DATABASE_MIGRATION_URL`. `.env.local` apontando para Neon + apply local muta produção.
+- **Evidência**: Code review 2026-09-03; workflow GHA é o caminho canônico, o script CLI não replica o guard.
+- **Regra preventiva**: Não rodar `--apply` fora do workflow. Se precisar local, exigir confirmação/host allowlist no mesmo espírito do seed. Workflow pinava org literal mas `NEON_PROJECT_ID` vem de `vars` — confirmar `long-leaf-97822199` antes de migrate/clear.
+- **Confiança**: alta
+
+## 2026-09-03 — Audit log do clear aponta para o keepId, não para quem perdeu o hash
+
+- **Tipo**: Trilha de auditoria enganosa
+- **Escopo**: `associate_identity_hash_cleared` em `clear-duplicate-identity-hashes.ts`
+- **Memória**: `entity_id` = `keepId` (sobrevivente). Consulta por `entity_id` do oficial cujo hash foi NULL não mostra o evento; `clearIds` ficam só em `metadata`.
+- **Evidência**: Code review 2026-09-03.
+- **Regra preventiva**: Preferir um log por `clearId` (`entity_id` = quem mudou). Não assumir que a ficha do duplicata tem o audit.
+- **Confiança**: alta
+
+## 2026-09-03 — finishing-a-development-branch em `main` com docs unstaged
+
+- **Tipo**: Ajuste de conduta / skill vs estado do git
+- **Escopo**: skill finishing-a-development-branch
+- **Memória**: Código da sessão já estava em `origin/main`. Restavam 3 arquivos de memória unstaged **em `main`**. A skill pede 4 opções incluindo “merge local”; merge local de docs soltos em `main` fura o fluxo de PR. Correto: branch `docs/…` + PR (#447), não commit direto em `main`.
+- **Evidência**: Sessão 2026-09-03 — usuário “sigo sua recomendação” → opção 2.
+- **Regra preventiva**: Se HEAD é `main` e o trabalho restante é docs, não oferecer merge local como default. Abrir branch e PR. Worktree da skill permanece para iterar o PR.
+- **Confiança**: alta
+
 ## 2026-09-03 — npm audit: não usar `--force` no undici do Next
 
 - **Tipo**: Armadilha de dependências

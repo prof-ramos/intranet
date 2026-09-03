@@ -20,8 +20,8 @@
 
 - **Tipo**: Contrato de schema / dados
 - **Escopo**: `0033_unique_associate_identity_hashes.sql`, `cpf_hash` / `siape_hash` / `primary_email_hash`
-- **Memória**: Indexes únicos nesses hashes. PostgreSQL permite **múltiplos NULL** na mesma coluna unique → clear de hash (NULL) desbloqueia a migration sem merge de linhas. Script de clear mantém o menor `id` do grupo, zera hash nos demais, audita `associate_identity_hash_cleared`. Reconcile completo de cadastro (merge de oficiais) é problema de produto separado e pode ficar `eligibleCount: 0` por ambiguidade.
-- **Evidência**: Migrate Production run sucesso pós-clear; report reconcile com componentes ambíguos.
+- **Memória**: Indexes únicos nesses hashes. PostgreSQL permite **múltiplos NULL** na mesma coluna unique → clear de hash (NULL) desbloqueia a migration sem merge de linhas. Script de clear mantém o menor `id` do grupo, zera **somente o hash** nos demais (ciphertext permanece), audita `associate_identity_hash_cleared` no `keepId`. Edição posterior do “perdedor” pode recriar o hash via `buildPiiPatch` e colidir no unique. Reconcile completo de cadastro (merge de oficiais) é problema de produto separado e pode ficar `eligibleCount: 0` por ambiguidade.
+- **Evidência**: Migrate Production run sucesso pós-clear; report reconcile com componentes ambíguos; code review 2026-09-03.
 - **Confiança**: alta
 
 ## 2026-09-03 — Unitários de webhook devem mockar SSRF URL check
