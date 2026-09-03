@@ -4,6 +4,34 @@
 
 ---
 
+## 2026-09-03 — Ops Neon produção via GHA + `NEON_API_KEY` (não OAuth pessoal)
+
+- **Tipo**: Procedimento operacional
+- **Escopo**: Neon `intranet-db` / produção / migrations
+- **Memória**: Org Vercel-managed `org-red-mode-09715915` / project `long-leaf-97822199`. OAuth pessoal típico **não** tem membership na org → `neonctl` local não resolve connection-string de prod. Caminho canônico: workflows dispatch em `.github/workflows/`:
+  - `migrate-production.yml` — confirmação `MIGRATE-PRODUCTION`; checa duplicatas de hash; `guarded-migrate`
+  - `reconcile-production-identities.yml` — report/apply (apply só com `eligibleCount` + evidence)
+  - `clear-duplicate-identity-hashes.yml` — limpa hashes duplicados para desbloquear unique indexes
+  Secret: `NEON_API_KEY` (projeto, não org-wide). Mascarar URL; nunca imprimir senha.
+- **Evidência**: Sessão 2026-09-03 — migration 0033 aplicada via GHA após clear de 11 linhas.
+- **Confiança**: alta
+
+## 2026-09-03 — Unique indexes de identity hash (0033) e semântica NULL
+
+- **Tipo**: Contrato de schema / dados
+- **Escopo**: `0033_unique_associate_identity_hashes.sql`, `cpf_hash` / `siape_hash` / `primary_email_hash`
+- **Memória**: Indexes únicos nesses hashes. PostgreSQL permite **múltiplos NULL** na mesma coluna unique → clear de hash (NULL) desbloqueia a migration sem merge de linhas. Script de clear mantém o menor `id` do grupo, zera hash nos demais, audita `associate_identity_hash_cleared`. Reconcile completo de cadastro (merge de oficiais) é problema de produto separado e pode ficar `eligibleCount: 0` por ambiguidade.
+- **Evidência**: Migrate Production run sucesso pós-clear; report reconcile com componentes ambíguos.
+- **Confiança**: alta
+
+## 2026-09-03 — Unitários de webhook devem mockar SSRF URL check
+
+- **Tipo**: Convenção de teste
+- **Escopo**: webhooks create/update
+- **Memória**: `isPublicWebhookUrl` resolve DNS. Testes de subscription/actions mockam o helper para `true`; testes do próprio validation mockam `dns/promises`. Padrão obrigatório para URLs tipo `example.com`.
+- **Evidência**: PR #439 / issue #436.
+- **Confiança**: alta
+
 ## 2026-07-09 — `buildPiiPatch` trata blank como clear (sem blind index)
 
 - **Tipo**: Contrato de escrita PII
@@ -47,10 +75,10 @@
 
 ## 2026-07-09 — Produção Neon: migrate via neonctl + guarded-migrate
 
-- **Tipo**: Procedimento operacional
+- **Tipo**: Procedimento operacional (parcialmente supersedido)
 - **Escopo**: Neon `intranet-db` / produção
-- **Memória**: `vercel env pull --environment production` pode listar keys `DATABASE_URL`/`DATABASE_MIGRATION_URL` com **valor vazio** (integração Neon/sensitive). Caminho que funcionou: `neonctl projects list --org-id org-red-mode-09715915` → project `long-leaf-97822199` → `neonctl connection-string --project-id ... --branch main --pooled false` → `ALLOW_PRODUCTION_MIGRATIONS=true DATABASE_MIGRATION_URL=... node --import tsx scripts/guarded-migrate.ts`. **Nunca logar a connection string completa** (senha em plain text no stdout do neonctl).
-- **Evidência**: Sessão 2026-07-09 — leave_date aplicado em prod; smoke verde após migrate + cleanup SMOKE.
+- **Memória**: `vercel env pull --environment production` pode listar keys `DATABASE_URL`/`DATABASE_MIGRATION_URL` com **valor vazio** (integração Neon/sensitive). Quando o operador **tem** membership/API key local válida: `neonctl connection-string --project-id long-leaf-97822199 --org-id org-red-mode-09715915 --branch main --pooled false` → `ALLOW_PRODUCTION_MIGRATIONS=true … guarded-migrate`. **Atualização 2026-09-03:** OAuth pessoal sem membership na org → preferir workflow `Migrate Production` + `NEON_API_KEY` (ver entrada 2026-09-03). **Nunca logar a connection string completa**.
+- **Evidência**: Sessão 2026-07-09 — leave_date; 2026-09-03 — GHA migrate 0033.
 - **Confiança**: alta
 
 ## 2026-07-09 — Fax legado fora de propósito; leaveDate é o campo de licença

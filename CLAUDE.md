@@ -182,8 +182,14 @@ Single-context: `CONTEXT.md` at root + `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Feedback e Armadilhas Operacionais (Memória)
 
+- **Neon prod via GHA, não OAuth pessoal:** conta OAuth típica **não** é membro de `org-red-mode-09715915`. Usar workflows `Migrate Production` / reconcile / clear-duplicate-hashes com `NEON_API_KEY`. Não colar callback OAuth com `code=` no chat. Detalhe em `docs/agent-memory`.
+- **zsh + placeholders `<…>`:** `<role>` vira redirecionamento; usar nome literal ou omitir `--role-name`.
+- **Webhook unit tests:** mockar `isPublicWebhookUrl` (DNS ao vivo em `example.com` quebra a suite). PR #439 / #436.
+- **Unique hash 0033:** duplicatas bloqueiam migrate; se reconcile tem `eligibleCount: 0`, clear hashes (NULL; múltiplos NULL OK no unique) — não forçar merge cadastral.
+- **postgres.js `sql.begin`:** `TransactionSql` ≠ `Sql` → typecheck/preview quebram; SQL inline no callback. `array_agg` bigint → coerce `Number()` antes do sort.
+- **npm audit / undici:** residual moderate transitivo do Next — não `npm audit fix --force`.
 - **CI "Database Contract" ≠ só schema:** o job roda migrate + `test:db` + `test:integration`. Falha pode ser `server-only` sem alias no `vitest.integration.config.ts` (unit já tem). Ler o step do log antes de culpar migration.
-- **Deploy Vercel não migra Neon:** após PR com coluna nova, aplicar `ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate` (ou neonctl connection-string + guarded-migrate) **antes** de confiar no smoke prod. Sintoma clássico: `column "X" does not exist` no POST de create.
+- **Deploy Vercel não migra Neon:** após PR com coluna nova, aplicar `ALLOW_PRODUCTION_MIGRATIONS=true npm run db:migrate` (ou workflow GHA / neonctl + guarded-migrate) **antes** de confiar no smoke prod. Sintoma clássico: `column "X" does not exist` no POST de create.
 - **Smoke "CPF já existe" sem CPF no form:** `buildPiiPatch` não pode hashear `''` — blank → clear (hash null). 1º create sem PII grava hash de vazio; 2º colide. Ver `docs/agent-memory` + PR #302.
 - **Smoke fail-fast:** só `form [role="alert"]`; `.text-red-*` casa botão Remover e gera falso positivo (create pode ter sucesso no DB). PR #303.
 - **Smoke residual:** limpar `SMOKE_%` após qualquer run (SQL impresso no log não auto-executa). Combinar com check de `cpf_hash`/`siape_hash` no residual.

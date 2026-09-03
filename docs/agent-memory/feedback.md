@@ -4,6 +4,78 @@
 
 ---
 
+## 2026-09-03 — neonctl OAuth pessoal ≠ acesso à org Vercel-managed
+
+- **Tipo**: Armadilha operacional / caminho errado insistido
+- **Escopo**: Neon produção, migrations, connection-string
+- **Memória**: Conta OAuth pessoal (`gabriel@proframos.com`) **não é membro** de `org-red-mode-09715915`. `neonctl connection-string` / `projects list` locais falham ou pedem org inacessível. Caminho certo: workflows GHA (`Migrate Production`, reconcile/clear) com secret `NEON_API_KEY` (escopo do projeto). Não insistir em OAuth local nem pedir ao usuário colar callback URL com `code=` no chat.
+- **Evidência**: Sessão 2026-09-03 — migrate 0033; workflows `.github/workflows/migrate-production.yml` etc.; runs GHA de clear + migrate.
+- **Regra preventiva**: Antes de qualquer op Neon prod, checar se o operador local é membro da org. Se não, só GHA + `NEON_API_KEY`. Nunca logar connection string; nunca reutilizar `code=` de OAuth colado em chat.
+- **Confiança**: alta
+
+## 2026-09-03 — Placeholders `<role>` no zsh viram redirecionamento
+
+- **Tipo**: Erro de comando shell
+- **Escopo**: neonctl / qualquer CLI no zsh
+- **Memória**: Documentação com `--role-name <role>` copiada literalmente: zsh interpreta `<role>` como redirecionamento (`no such file or directory: role`).
+- **Evidência**: Sessão 2026-09-03 — tentativa de `neonctl connection-string --role-name <role>`.
+- **Regra preventiva**: Nunca passar placeholders com `< >` em comandos shell. Omitir `--role-name` (default da branch) ou usar nome literal listado por `neonctl roles list`.
+- **Confiança**: alta
+
+## 2026-09-03 — Testes de webhook sem mock de `isPublicWebhookUrl` = DNS ao vivo
+
+- **Tipo**: Flake / dependência de rede em unitário
+- **Escopo**: `subscriptions.test.ts`, `actions.test.ts` (webhooks)
+- **Memória**: Suite unitária falhava em 5 testes com “HTTPS público…” porque `isPublicWebhookUrl` faz `dns.lookup` real em `https://example.com/webhook`. `validation.test.ts` já mockava DNS; os outros dois arquivos não. Fix: `vi.mock` de `isPublicWebhookUrl` → `true` (PR #439).
+- **Evidência**: Issue #436; PRs #438 (dup) / #439 (mergeado).
+- **Regra preventiva**: Qualquer teste que cria/atualiza subscription com URL pública deve mockar `isPublicWebhookUrl` (ou `dns/promises`). Não depender de DNS/rede em unitários.
+- **Confiança**: alta
+
+## 2026-09-03 — `postgres` `sql.begin`: `TransactionSql` ≠ `Sql` (quebra typecheck/preview)
+
+- **Tipo**: Armadilha de tipos TypeScript
+- **Escopo**: scripts com `postgres` (js), Vercel preview build
+- **Memória**: Helper tipado como `(sql: postgres.Sql) => …` chamado com `tx` de `sql.begin` falha `TS2345` (`TransactionSql` não assignable a `Sql`). Preview Vercel em `df0b023` vermelho por typecheck, não por runtime Neon. Fix: UPDATEs/INSERTs **inline** no callback de `begin` (PR #446).
+- **Evidência**: Sessão 2026-09-03 — `scripts/clear-duplicate-identity-hashes.ts`.
+- **Regra preventiva**: Não passar `tx` de `sql.begin` para funções tipadas como `postgres.Sql`. Preferir SQL inline no callback ou aceitar união/`TransactionSql`.
+- **Confiança**: alta
+
+## 2026-09-03 — `array_agg(bigint)` chega como string; sort lexicográfico escolhe keepId errado
+
+- **Tipo**: Bug silencioso de dados
+- **Escopo**: clear de hashes duplicados / scripts ops
+- **Memória**: IDs de `array_agg(id)` podem vir como `string`. Sem `Number()`, ordenação lexicográfica (“10” < “2”) escolhe o `keepId` errado ao limpar duplicatas.
+- **Evidência**: Sessão 2026-09-03 — coerce em `planClearDuplicateIdentityHashes` + teste.
+- **Regra preventiva**: Sempre `Number()` / validar inteiro positivo antes de sort/min em IDs vindos do driver postgres.
+- **Confiança**: alta
+
+## 2026-09-03 — Reconcile de identidades com `eligibleCount: 0` ≠ caminho para unique index
+
+- **Tipo**: Diagnóstico incompleto / ferramenta errada
+- **Escopo**: migration 0033, `reconcile-associate-identities.ts`
+- **Memória**: Report de reconcile mostrou componentes ambíguos e `eligibleCount: 0` — apply automático de merge **impossível**. Bloqueio da 0033 era só unicidade de hash; resolver com **clear** dos hashes duplicados (manter menor `id`, NULL nos demais; unique partial/NULL-friendly), não forçar merge cadastral.
+- **Evidência**: Workflows reconcile + `clear-duplicate-identity-hashes`; migrate 0033 sucesso após clear.
+- **Regra preventiva**: Se 0033 aborta por duplicata de hash e reconcile não tem eligible, usar clear-hashes (com auditoria), não insistir em apply reconcile. Clear ≠ merge de registros (backlog de produto separado).
+- **Confiança**: alta
+
+## 2026-09-03 — Fechar PR duplicado precisa autorização explícita (Smart Mode)
+
+- **Tipo**: Ajuste de conduta / shared-state
+- **Escopo**: `gh pr close`, comentários em PRs
+- **Memória**: Plano operacional listava “fechar #438 como duplicado”, mas Smart Mode bloqueou o close até autorização explícita do usuário. Pedido genérico de “próximos passos” não basta para writes em estado compartilhado.
+- **Evidência**: Sessão 2026-09-03 — close #438.
+- **Regra preventiva**: Antes de `gh pr close/merge` ou comentários que alteram triagem, obter ok explícito (ou “do all” / autorização ampla do plano). Não assumir que o plano anexado sozinho libera o write.
+- **Confiança**: alta
+
+## 2026-09-03 — npm audit: não usar `--force` no undici do Next
+
+- **Tipo**: Armadilha de dependências
+- **Escopo**: `npm audit`, Next.js
+- **Memória**: Após bump coordenado do ecossistema `@tiptap/*` (3.24→3.31+) e `npm audit fix`, restou 1 moderate (`undici` transitiva do Next). Fix “oficial” pede `--force` fora do range — risco de quebrar Next. Aceitar residual até upgrade de Next.
+- **Evidência**: PR #440; sessão 2026-09-03.
+- **Regra preventiva**: Triage audit: (1) `audit fix` sem force, (2) bump coordenado de ecossistemas (tiptap), (3) transitivas do Next — documentar, não forçar.
+- **Confiança**: alta
+
 ## 2026-07-09 — Diagnóstico de CI pelo nome do job (falso positivo leave_date)
 
 - **Tipo**: Suposição incorreta / diagnóstico preguiçoso
