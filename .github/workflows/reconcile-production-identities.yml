@@ -75,7 +75,6 @@ jobs:
           export DATABASE_URL="$(cat "$RUNNER_TEMP/database_url")"
           export DATABASE_MIGRATION_URL="$DATABASE_URL"
           export SESSION_SECRET="$(openssl rand -hex 32)"
-          export SKIP_AUTH=true
           if [ "$MODE" = "apply" ]; then
             node --import tsx scripts/reconcile-associate-identities.ts apply --evidence-hash "$EVIDENCE_HASH"
           else
