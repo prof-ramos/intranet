@@ -173,9 +173,27 @@ export async function countAssociatesForReport(filters: ReportFilters = {}): Pro
   return row?.total ?? 0;
 }
 
+const PII_DECRYPT_FIELDS = [
+  'cpf',
+  'rg',
+  'primaryEmail',
+  'phone',
+  'whatsapp',
+  'address',
+  'siape',
+] as const;
+
+type PiiDecryptField = (typeof PII_DECRYPT_FIELDS)[number];
+
+function shouldDecryptPii(field: PiiDecryptField, selectedKeys?: string[]): boolean {
+  if (!selectedKeys || selectedKeys.length === 0) return true;
+  return selectedKeys.includes(field);
+}
+
 export async function getAssociatesForReport(
   filters: ReportFilters = {},
   limit: number = REPORT_DEFAULT_LIMIT,
+  selectedKeys?: string[],
 ): Promise<ReportAssociate[]> {
   const rows = await db
     .select(reportColumns)
@@ -205,23 +223,36 @@ export async function getAssociatesForReport(
     birthDate: row.birthDate,
     birthCity: row.birthCity,
     birthState: row.birthState,
-    // Decrypt PII fields with ciphertext fallback
-    cpf: decryptPiiField(row.cpfCiphertext ?? null, row.cpf ?? null),
-    rg: decryptPiiField(row.rgCiphertext ?? null, row.rg ?? null),
+    cpf: shouldDecryptPii('cpf', selectedKeys)
+      ? decryptPiiField(row.cpfCiphertext ?? null, row.cpf ?? null)
+      : null,
+    rg: shouldDecryptPii('rg', selectedKeys)
+      ? decryptPiiField(row.rgCiphertext ?? null, row.rg ?? null)
+      : null,
     rgIssuer: row.rgIssuer,
     rgState: row.rgState,
     rgExpeditionDate: row.rgExpeditionDate,
-    primaryEmail: decryptPiiField(row.primaryEmailCiphertext ?? null, row.primaryEmail ?? null),
+    primaryEmail: shouldDecryptPii('primaryEmail', selectedKeys)
+      ? decryptPiiField(row.primaryEmailCiphertext ?? null, row.primaryEmail ?? null)
+      : null,
     secondaryEmail: row.secondaryEmail,
-    phone: decryptPiiField(row.phoneCiphertext ?? null, row.phone ?? null),
-    whatsapp: decryptPiiField(row.whatsappCiphertext ?? null, row.whatsapp ?? null),
-    address: decryptPiiField(row.addressCiphertext ?? null, row.address ?? null),
+    phone: shouldDecryptPii('phone', selectedKeys)
+      ? decryptPiiField(row.phoneCiphertext ?? null, row.phone ?? null)
+      : null,
+    whatsapp: shouldDecryptPii('whatsapp', selectedKeys)
+      ? decryptPiiField(row.whatsappCiphertext ?? null, row.whatsapp ?? null)
+      : null,
+    address: shouldDecryptPii('address', selectedKeys)
+      ? decryptPiiField(row.addressCiphertext ?? null, row.address ?? null)
+      : null,
     neighborhood: row.neighborhood,
     addressState: row.addressState,
     zipCode: row.zipCode,
     locationCity: row.locationCity,
     locationCountry: row.locationCountry,
-    siape: decryptPiiField(row.siapeCiphertext ?? null, row.siape ?? null),
+    siape: shouldDecryptPii('siape', selectedKeys)
+      ? decryptPiiField(row.siapeCiphertext ?? null, row.siape ?? null)
+      : null,
     assignment: row.assignment,
     assignmentStartDate: row.assignmentStartDate,
     classPattern: row.classPattern,

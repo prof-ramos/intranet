@@ -54,6 +54,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${oficio.number.replace(/[^a-zA-Z0-9._-]/g, '_')}.pdf"`,
+      'Cache-Control': 'private, no-store',
     },
   });
 }

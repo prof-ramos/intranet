@@ -128,6 +128,12 @@ describe('crypto module', () => {
       const key2 = hkdfDeriveKey(OTHER_KEY, KEY_CONTEXTS.piiEncryption);
       expect(key1.equals(key2)).toBe(false);
     });
+
+    it('returns the same Buffer instance for repeated derivations (process cache)', () => {
+      const key1 = hkdfDeriveKey(TEST_KEY, KEY_CONTEXTS.piiEncryption);
+      const key2 = hkdfDeriveKey(TEST_KEY, KEY_CONTEXTS.piiEncryption);
+      expect(key1).toBe(key2);
+    });
   });
 
   describe('blindIndex', () => {

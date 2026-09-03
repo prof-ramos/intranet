@@ -2,17 +2,26 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fontkit from '@pdf-lib/fontkit';
-import {
-  PDFDocument,
-  PageSizes,
-  StandardFonts,
-  type PDFPage,
-  type PDFFont,
-} from 'pdf-lib';
+import { PDFDocument, PageSizes, StandardFonts, type PDFPage, type PDFFont } from 'pdf-lib';
 import { type OfficialLetter } from '@/lib/db/schema/oficios';
 
-const CARLITO_FONTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'public', 'fonts', 'carlito');
-const LOGO_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'public', 'logo.png');
+const CARLITO_FONTS_DIR = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..',
+  '..',
+  'public',
+  'fonts',
+  'carlito',
+);
+const LOGO_PATH = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..',
+  '..',
+  'public',
+  'logo.png',
+);
 
 // Conversions
 const CM_TO_PT = 28.3465;
@@ -30,46 +39,57 @@ const FOOTER_FONT_SIZE = 11;
 const PARAGRAPH_SPACING = 6;
 
 let cachedCarlitoFonts: { regular: Uint8Array; bold: Uint8Array } | null = null;
+/** null = not attempted; true = attempted and unavailable (negative cache). */
+let carlitoFontsUnavailable = false;
 let cachedLogoBytes: Uint8Array | null | undefined;
+let logoLoadAttempted = false;
 
 /** Resets in-memory asset cache (tests only). */
 export function resetOficioPdfAssetCacheForTests() {
   cachedCarlitoFonts = null;
+  carlitoFontsUnavailable = false;
   cachedLogoBytes = undefined;
+  logoLoadAttempted = false;
 }
 
 async function getCarlitoFontBytes(): Promise<{ regular: Uint8Array; bold: Uint8Array } | null> {
-  if (!cachedCarlitoFonts) {
+  if (cachedCarlitoFonts) return cachedCarlitoFonts;
+  if (carlitoFontsUnavailable) return null;
+
+  try {
+    cachedCarlitoFonts = {
+      regular: fs.readFileSync(path.join(CARLITO_FONTS_DIR, 'Carlito-Regular.ttf')),
+      bold: fs.readFileSync(path.join(CARLITO_FONTS_DIR, 'Carlito-Bold.ttf')),
+    };
+    return cachedCarlitoFonts;
+  } catch {
+    // Serverless fallback: fetch fonts via HTTP from the app URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     try {
+      const [regularResp, boldResp] = await Promise.all([
+        fetch(`${baseUrl}/fonts/carlito/Carlito-Regular.ttf`, {
+          signal: AbortSignal.timeout(5000),
+        }),
+        fetch(`${baseUrl}/fonts/carlito/Carlito-Bold.ttf`, { signal: AbortSignal.timeout(5000) }),
+      ]);
+      if (!regularResp.ok || !boldResp.ok) throw new Error('Font fetch failed');
       cachedCarlitoFonts = {
-        regular: fs.readFileSync(path.join(CARLITO_FONTS_DIR, 'Carlito-Regular.ttf')),
-        bold: fs.readFileSync(path.join(CARLITO_FONTS_DIR, 'Carlito-Bold.ttf')),
+        regular: new Uint8Array(await regularResp.arrayBuffer()),
+        bold: new Uint8Array(await boldResp.arrayBuffer()),
       };
+      return cachedCarlitoFonts;
     } catch {
-      // Serverless fallback: fetch fonts via HTTP from the app URL
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      try {
-        const [regularResp, boldResp] = await Promise.all([
-          fetch(`${baseUrl}/fonts/carlito/Carlito-Regular.ttf`, { signal: AbortSignal.timeout(5000) }),
-          fetch(`${baseUrl}/fonts/carlito/Carlito-Bold.ttf`, { signal: AbortSignal.timeout(5000) }),
-        ]);
-        if (!regularResp.ok || !boldResp.ok) throw new Error('Font fetch failed');
-        cachedCarlitoFonts = {
-          regular: new Uint8Array(await regularResp.arrayBuffer()),
-          bold: new Uint8Array(await boldResp.arrayBuffer()),
-        };
-      } catch {
-        return null;
-      }
+      carlitoFontsUnavailable = true;
+      return null;
     }
   }
-  return cachedCarlitoFonts;
 }
 
 async function loadLogoBytes(): Promise<Uint8Array | ArrayBuffer> {
-  if (cachedLogoBytes) {
-    return cachedLogoBytes;
+  if (logoLoadAttempted) {
+    return cachedLogoBytes ?? new Uint8Array();
   }
+  logoLoadAttempted = true;
   try {
     cachedLogoBytes = fs.readFileSync(LOGO_PATH);
     return cachedLogoBytes;
@@ -82,7 +102,8 @@ async function loadLogoBytes(): Promise<Uint8Array | ArrayBuffer> {
       cachedLogoBytes = new Uint8Array(await resp.arrayBuffer());
       return cachedLogoBytes;
     } catch {
-      return new Uint8Array();
+      cachedLogoBytes = new Uint8Array();
+      return cachedLogoBytes;
     }
   }
 }
@@ -174,8 +195,18 @@ export function htmlToPlainText(html: string) {
 }
 
 const MESES_PT = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
 ];
 
 function formatDatePtBr(dateStr: string): string {
@@ -192,8 +223,10 @@ function formatDatePtBr(dateStr: string): string {
   return dateStr;
 }
 
-const FOOTER_LINE_1 = 'ASOF – Associação Nacional dos Oficiais de Chancelaria do Serviço Exterior Brasileiro';
-const FOOTER_LINE_2 = 'Esplanada dos Ministérios, Bloco H – Zona Cívico-Administrativa – 1.º Subsolo, Sala ASOF';
+const FOOTER_LINE_1 =
+  'ASOF – Associação Nacional dos Oficiais de Chancelaria do Serviço Exterior Brasileiro';
+const FOOTER_LINE_2 =
+  'Esplanada dos Ministérios, Bloco H – Zona Cívico-Administrativa – 1.º Subsolo, Sala ASOF';
 const FOOTER_LINE_3 = 'Brasília/DF – CEP 70170-900     |     CNPJ: 26.989.392/0001-57';
 
 function drawPageNumber(
@@ -259,7 +292,9 @@ function drawSubjectBlock(
 
   let currentY = y - bodyLineSpacing;
   const remainder = words.slice(consumed).join(' ');
-  const continuationLines = remainder ? wrapText(remainder, font, BODY_FONT_SIZE, contentWidth) : [];
+  const continuationLines = remainder
+    ? wrapText(remainder, font, BODY_FONT_SIZE, contentWidth)
+    : [];
 
   for (const line of continuationLines) {
     page.drawText(line, { x: marginLeft, y: currentY, size: BODY_FONT_SIZE, font });
@@ -269,12 +304,7 @@ function drawSubjectBlock(
   return currentY;
 }
 
-function drawFooter(
-  page: PDFPage,
-  width: number,
-  font: PDFFont,
-  fontBold: PDFFont,
-) {
+function drawFooter(page: PDFPage, width: number, font: PDFFont, fontBold: PDFFont) {
   const footerLineSpacing = font.heightAtSize(FOOTER_FONT_SIZE);
   const footerY = 18;
 
@@ -316,16 +346,16 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   try {
     const logoBytes = await loadLogoBytes();
     const logoImage = await pdfDoc.embedPng(logoBytes);
-      const logoWidth = 4.125 * CM_TO_PT; // 0.25 \textwidth (16.5cm * 0.25)
-      const logoHeight = (logoImage.height / logoImage.width) * logoWidth;
-      page.drawImage(logoImage, {
-        x: (width - logoWidth) / 2,
-        y: currentY - logoHeight,
-        width: logoWidth,
-        height: logoHeight,
-      });
-      // Add extra spacing (approx. two blank lines) before the text
-      currentY -= logoHeight + 48;
+    const logoWidth = 4.125 * CM_TO_PT; // 0.25 \textwidth (16.5cm * 0.25)
+    const logoHeight = (logoImage.height / logoImage.width) * logoWidth;
+    page.drawImage(logoImage, {
+      x: (width - logoWidth) / 2,
+      y: currentY - logoHeight,
+      width: logoWidth,
+      height: logoHeight,
+    });
+    // Add extra spacing (approx. two blank lines) before the text
+    currentY -= logoHeight + 48;
   } catch {
     // Fallback: render text placeholder if logo fails to load
     const fallback = 'ASOF';
@@ -346,7 +376,9 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   const hasOrdinal = /N[.º]?\s*\d/.test(upperNumber);
   const hasPrefix = /^OF[ÍI]CIO/.test(upperNumber);
   const displayNumber = hasOrdinal
-    ? (hasPrefix ? upperNumber : `OFÍCIO ${upperNumber}`)
+    ? hasPrefix
+      ? upperNumber
+      : `OFÍCIO ${upperNumber}`
     : `OFÍCIO N.º ${oficio.number.replace(/^OF[ÍI]CIO\s+/i, '').toUpperCase()}`;
   page.drawText(displayNumber, {
     x: marginLeft,
@@ -379,7 +411,12 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
   currentY -= bodyLineSpacing;
 
   if (oficio.recipientAddress) {
-    page.drawText(oficio.recipientAddress, { x: marginLeft, y: currentY, size: BODY_FONT_SIZE, font });
+    page.drawText(oficio.recipientAddress, {
+      x: marginLeft,
+      y: currentY,
+      size: BODY_FONT_SIZE,
+      font,
+    });
     currentY -= bodyLineSpacing;
   }
 
@@ -416,7 +453,7 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
 
   const firstLineIndent = 2.5 * CM_TO_PT; // MRPR: 2,5 cm recuo primeira linha
 
-  // Vocativo (não numerado — MRPR)  
+  // Vocativo (não numerado — MRPR)
   if (oficio.vocativo) {
     page.drawText(oficio.vocativo, { x: marginLeft, y: currentY, size: BODY_FONT_SIZE, font });
     currentY -= bodyLineSpacing + 6;
@@ -426,7 +463,7 @@ export async function generateOfficialLetterPdf(oficio: OfficialLetter) {
     // Determine numbering
     let pText = paragraphs[i];
     if (useNumbering && !/^\d+\./.test(pText)) {
-      // MRPR says first paragraph is unnumbered if it's the only one, 
+      // MRPR says first paragraph is unnumbered if it's the only one,
       // but if there are multiple, all are numbered.
       pText = `${i + 1}. ${pText}`;
     }
