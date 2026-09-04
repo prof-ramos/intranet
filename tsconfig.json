@@ -27,6 +27,7 @@
   },
   "include": [
     "next-env.d.ts",
+    "src/types/webmcp.d.ts",
     "**/*.ts",
     "**/*.tsx",
     "**/*.mts",

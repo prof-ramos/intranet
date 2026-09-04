@@ -115,6 +115,10 @@ Troca obrigatória de senha para usuários com `mustChangePassword = true`.
 
 Todas as rotas abaixo exigem autenticação. Usuário sem sessão é redirecionado para `/login`.
 
+### WebMCP (agentes no browser)
+
+A área autenticada registra tools WebMCP (`document.modelContext`) para um **agente futuro usado pela Secretaria** — não pelos associados. Progressive enhancement: sem Chrome/Edge com Origin Trial ou `chrome://flags/#enable-webmcp-testing`, a UI humana não muda. Ver [ADR 021](docs/adr/021-webmcp-secretaria.md).
+
 ### Mapa de navegação
 
 ```mermaid

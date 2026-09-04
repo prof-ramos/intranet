@@ -13,7 +13,7 @@ Authenticated dashboard — main app area after login. All routes require auth v
 | File          | Purpose                       |
 | ------------- | ----------------------------- |
 | `error.tsx`   | Error boundary                |
-| `layout.tsx`  | Dashboard layout with sidebar |
+| `layout.tsx`   | Dashboard layout with sidebar + WebMCP registry |
 | `loading.tsx` | Loading state                 |
 | `page.tsx`    | Redirects to atividades       |
 

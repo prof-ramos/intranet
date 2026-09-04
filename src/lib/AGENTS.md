@@ -54,6 +54,7 @@ Domain library modules for business logic, data access, and DB schema. All modul
 | `ui/`             | UI tokens and role labels                                                                                        |
 | `utils/`          | Date and string utilities                                                                                        |
 | `validation/`     | Zod schemas for form validation                                                                                  |
+| `webmcp/`         | Tools WebMCP da Secretaria (`document.modelContext`, catálogo por role/rota)                                     |
 
 ## For AI Agents
 

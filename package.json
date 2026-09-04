@@ -68,6 +68,7 @@
     "react-hook-form": "^7.78.0",
     "server-only": "^0.0.1",
     "undici": "6.27.0",
+    "webmcp-types": "^0.1.6",
     "zod": "^4.4.3"
   },
   "devDependencies": {

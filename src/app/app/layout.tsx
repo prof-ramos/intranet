@@ -3,6 +3,8 @@ import { requireAuth } from '@/lib/auth/require-auth';
 import { Sidebar } from '@/components/Sidebar';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { NotificationInboxWrapper } from '@/components/NotificationInboxWrapper';
+import { WebMcpRegistryWrapper } from '@/components/webmcp/WebMcpRegistryWrapper';
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireAuth();
 
@@ -39,6 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </header>
 
         {children}
+        <WebMcpRegistryWrapper role={user.role} />
       </div>
 
       <div className="drawer-side z-40 print:hidden">
