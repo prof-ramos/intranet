@@ -106,6 +106,7 @@ describe('oficios repository', () => {
       const listResult = {
         id: MOCK_RESULT.id,
         number: MOCK_RESULT.number,
+        year: MOCK_RESULT.year,
         status: MOCK_RESULT.status,
         recipient: MOCK_RESULT.recipient,
         letterDate: MOCK_RESULT.letterDate,
@@ -127,6 +128,7 @@ describe('oficios repository', () => {
       expect(Object.keys(projection)).toEqual([
         'id',
         'number',
+        'year',
         'status',
         'recipient',
         'letterDate',

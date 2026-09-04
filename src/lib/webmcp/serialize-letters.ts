@@ -1,6 +1,7 @@
 import type { OfficialLetter } from '@/lib/db/schema/oficios';
+import type { OfficialLetterListItem } from '@/lib/oficios/repository';
 
-export function serializeOfficialLetterListItem(letter: OfficialLetter) {
+export function serializeOfficialLetterListItem(letter: OfficialLetterListItem) {
   return {
     id: letter.id,
     number: letter.number,

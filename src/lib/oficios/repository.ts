@@ -14,6 +14,7 @@ export async function lockOfficialLetterSequenceYear(year: number, tx: DbExecuto
 export type OfficialLetterListItem = {
   id: number;
   number: string;
+  year: number;
   status: OfficialLetter['status'];
   recipient: string;
   letterDate: string;
@@ -27,6 +28,7 @@ export type OfficialLetterListItem = {
 const officialLetterListColumns = {
   id: oficios.id,
   number: oficios.number,
+  year: oficios.year,
   status: oficios.status,
   recipient: oficios.recipient,
   letterDate: oficios.letterDate,
