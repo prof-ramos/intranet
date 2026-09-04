@@ -15,7 +15,8 @@ Shared React UI components used across the app.
 
 ## Structure
 
-No subdirectories — flat component directory.
+- Flat shared UI at this root
+- `webmcp/` — `WebMcpRegistry` / wrapper (progressive enhancement; tools só em `/app`)
 
 ## For AI Agents
 
