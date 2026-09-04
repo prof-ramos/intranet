@@ -78,7 +78,7 @@ export const updateAssociate = defineFormAction({
     revalidatePath('/app/associados');
     revalidatePath(`/app/associados/${id}`);
     revalidateTag('associates', 'max');
-    revalidateTag('dashboard', 'max');
+    revalidateTag('dashboard:associates', 'max');
 
     return id;
   },
@@ -108,7 +108,7 @@ export const createAssociate = defineFormAction({
 
     revalidatePath('/app/associados');
     revalidateTag('associates', 'max');
-    revalidateTag('dashboard', 'max');
+    revalidateTag('dashboard:associates', 'max');
 
     return id;
   },

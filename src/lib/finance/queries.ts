@@ -1,15 +1,74 @@
-import { cache } from 'react';
+import { withCache } from '@/lib/cache/with-cache';
 import { getAssociatesWithPayments, type MonthlyPaymentsFilters } from './repository';
 import { yearMonthObjectSchema } from '@/lib/validation/schemas';
+import { cache } from 'react';
 
 type PaymentsData = Awaited<ReturnType<typeof getAssociatesWithPayments>>;
 
+const TTL_MONTHLY = 30;
+
+function financeCacheKey(year: number, month: number, filters?: MonthlyPaymentsFilters): string[] {
+  return [
+    'monthly-payments',
+    String(year),
+    String(month),
+    JSON.stringify({
+      q: filters?.q ?? '',
+      status: filters?.status ?? '',
+      method: filters?.method ?? '',
+      origin: filters?.origin ?? '',
+      location: filters?.location ?? '',
+      page: filters?.page ?? '',
+      pageSize: filters?.pageSize ?? '',
+    }),
+  ];
+}
+
+/**
+ * `unstable_cache` JSON-serializes values, so Date fields come back as ISO strings.
+ * Revive them before handing data to the UI / optimistic concurrency checks.
+ */
+function reviveCachedDate(value: Date | string | null | undefined): Date | null {
+  if (value == null) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+export function reviveMonthlyPaymentsData(data: PaymentsData): PaymentsData {
+  return {
+    ...data,
+    rows: data.rows.map((row) => ({
+      ...row,
+      paidAt: reviveCachedDate(row.paidAt),
+      cancelledAt: reviveCachedDate(row.cancelledAt),
+      updatedAt: reviveCachedDate(row.updatedAt),
+    })),
+  };
+}
+
+const getMonthlyPaymentsDataCached = withCache<
+  [number, number, MonthlyPaymentsFilters | undefined],
+  PaymentsData
+>({
+  fn: (year, month, filters) => getAssociatesWithPayments(year, month, filters),
+  keyFn: financeCacheKey,
+  ttl: TTL_MONTHLY,
+  tags: (year, month) => [`finance:${year}:${month}`],
+  maxEntries: 50,
+});
+
+/**
+ * Request-scoped dedupe + persistent Data Cache keyed by year/month/filters.
+ * Mutations invalidate `finance:${year}:${month}`.
+ */
 export const getMonthlyPaymentsData = cache(
   async (year: number, month: number, filters?: MonthlyPaymentsFilters): Promise<PaymentsData> => {
     const parsed = yearMonthObjectSchema.safeParse({ year, month });
     if (!parsed.success) {
       throw new Error(parsed.error.issues[0].message);
     }
-    return getAssociatesWithPayments(year, month, filters);
+    const data = await getMonthlyPaymentsDataCached(year, month, filters);
+    return reviveMonthlyPaymentsData(data);
   },
 );

@@ -1,13 +1,16 @@
 import { requireRole } from '@/lib/auth/authorization';
-import { parseAuditSearchParams } from '@/lib/audit/search-params';
+import {
+  encodeAuditCursor,
+  parseAuditCursor,
+  parseAuditSearchParams,
+} from '@/lib/audit/search-params';
 import { db } from '@/lib/db';
 import { auditLogs, type AuditLog } from '@/lib/db/schema/audit';
 import { admins } from '@/lib/db/schema/admins';
-import { desc, eq, and, gte, lt, ilike, count } from 'drizzle-orm';
+import { desc, eq, and, gte, lt, ilike, count, sql } from 'drizzle-orm';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
 import type { SQL } from 'drizzle-orm';
 import { auditEntityBadgeColors, focusRingClass, textFaint } from '@/lib/ui/tokens';
-import { calculatePaginationBounds } from '@/lib/pagination';
 import { PageHeader } from '@/components/PageHeader';
 
 const PAGE_SIZE = 50;
@@ -26,7 +29,6 @@ const entityTypeLabels: Record<string, string> = {
   webhook_subscription: 'Webhook',
 };
 
-// ⚡ Bolt: Cache Intl instances to avoid expensive object creation on every render
 const dtf = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
   month: '2-digit',
@@ -39,11 +41,19 @@ const dtf = new Intl.DateTimeFormat('pt-BR', {
 export default async function AuditoriaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; tipo?: string; q?: string; de?: string; ate?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    cursor?: string;
+    tipo?: string;
+    q?: string;
+    de?: string;
+    ate?: string;
+  }>;
 }) {
   await requireRole(['admin', 'diretoria']);
 
-  const { page, entityType, q, de, ate } = parseAuditSearchParams(await searchParams);
+  const { cursor, entityType, q, de, ate } = parseAuditSearchParams(await searchParams);
+  const keyset = parseAuditCursor(cursor);
 
   const filters: SQL[] = [];
 
@@ -53,8 +63,6 @@ export default async function AuditoriaPage({
   if (q) {
     filters.push(ilike(auditLogs.action, `%${escapeLikePattern(q)}%`));
   }
-  // BRT = UTC-3, fixed offset since Brazil eliminated DST in 2019.
-  // new Date('YYYY-MM-DDT00:00:00-03:00') gives the correct São Paulo midnight in UTC.
   if (de) {
     const d = new Date(`${de}T00:00:00-03:00`);
     if (!isNaN(d.getTime())) filters.push(gte(auditLogs.createdAt, d));
@@ -62,22 +70,26 @@ export default async function AuditoriaPage({
   if (ate) {
     const d = new Date(`${ate}T00:00:00-03:00`);
     if (!isNaN(d.getTime())) {
-      // Exclusive upper bound: start of next day in BRT = +24h
       d.setUTCDate(d.getUTCDate() + 1);
       filters.push(lt(auditLogs.createdAt, d));
     }
   }
 
+  if (keyset) {
+    // Keyset: (created_at, id) lexicographically older than the cursor in DESC order.
+    filters.push(
+      sql`(${auditLogs.createdAt}, ${auditLogs.id}) < (${keyset.createdAt}, ${keyset.id})`,
+    );
+  }
+
   const where = filters.length > 0 ? and(...filters) : undefined;
 
-  // Count first so we can clamp page before fetching rows (avoids empty-table
-  // with misleading footer when a manual URL supplies page > totalPages).
-  const [{ total }] = await db.select({ total: count() }).from(auditLogs).where(where);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-  const effectivePage = total > 0 ? Math.min(page, totalPages) : 1;
-  const { from, to } = calculatePaginationBounds(effectivePage, PAGE_SIZE, total);
+  // Exact count only on the first page (no cursor). Deep OFFSET counts are avoided.
+  const total = keyset
+    ? null
+    : ((await db.select({ total: count() }).from(auditLogs).where(where))[0]?.total ?? 0);
 
-  const rows = await db
+  const fetched = await db
     .select({
       id: auditLogs.id,
       action: auditLogs.action,
@@ -89,17 +101,23 @@ export default async function AuditoriaPage({
     .from(auditLogs)
     .leftJoin(admins, eq(auditLogs.performedBy, admins.id))
     .where(where)
-    .orderBy(desc(auditLogs.createdAt))
-    .limit(PAGE_SIZE)
-    .offset((effectivePage - 1) * PAGE_SIZE);
+    .orderBy(desc(auditLogs.createdAt), desc(auditLogs.id))
+    .limit(PAGE_SIZE + 1);
 
-  function pageUrl(p: number) {
+  const hasMore = fetched.length > PAGE_SIZE;
+  const rows = hasMore ? fetched.slice(0, PAGE_SIZE) : fetched;
+  const nextCursor =
+    hasMore && rows.length > 0
+      ? encodeAuditCursor(rows[rows.length - 1].createdAt, rows[rows.length - 1].id)
+      : null;
+
+  function listUrl(next?: { cursor?: string | null }) {
     const sp = new URLSearchParams();
     if (entityType) sp.set('tipo', entityType);
     if (q) sp.set('q', q);
     if (de) sp.set('de', de);
     if (ate) sp.set('ate', ate);
-    if (p > 1) sp.set('page', String(p));
+    if (next?.cursor) sp.set('cursor', next.cursor);
     const qs = sp.toString();
     return `/app/config/auditoria${qs ? `?${qs}` : ''}`;
   }
@@ -231,30 +249,30 @@ export default async function AuditoriaPage({
 
       <div className="mt-3 flex items-center justify-between text-xs text-[rgba(13,31,60,0.45)]">
         <span>
-          {total === 0
+          {rows.length === 0
             ? 'Nenhum evento.'
-            : `${from}–${to} de ${total} evento${total !== 1 ? 's' : ''}`}
+            : total != null
+              ? `${rows.length} nesta página · ${total} evento${total !== 1 ? 's' : ''} no filtro`
+              : `${rows.length} nesta página`}
         </span>
-        {totalPages > 1 && (
-          <div className="flex gap-2">
-            {effectivePage > 1 && (
-              <a
-                href={pageUrl(effectivePage - 1)}
-                className={`flex h-8 items-center rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-xs text-[rgba(13,31,60,0.65)] transition-colors hover:bg-[rgba(13,31,60,0.04)] ${focusRingClass}`}
-              >
-                ← Anterior
-              </a>
-            )}
-            {effectivePage < totalPages && (
-              <a
-                href={pageUrl(effectivePage + 1)}
-                className={`flex h-8 items-center rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-xs text-[rgba(13,31,60,0.65)] transition-colors hover:bg-[rgba(13,31,60,0.04)] ${focusRingClass}`}
-              >
-                Próxima →
-              </a>
-            )}
-          </div>
-        )}
+        <div className="flex gap-2">
+          {keyset && (
+            <a
+              href={listUrl()}
+              className={`flex h-8 items-center rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-xs text-[rgba(13,31,60,0.65)] transition-colors hover:bg-[rgba(13,31,60,0.04)] ${focusRingClass}`}
+            >
+              ← Início
+            </a>
+          )}
+          {nextCursor && (
+            <a
+              href={listUrl({ cursor: nextCursor })}
+              className={`flex h-8 items-center rounded-[6px] border border-[rgba(4,9,32,0.12)] bg-white px-3 text-xs text-[rgba(13,31,60,0.65)] transition-colors hover:bg-[rgba(13,31,60,0.04)] ${focusRingClass}`}
+            >
+              Próxima →
+            </a>
+          )}
+        </div>
       </div>
     </main>
   );

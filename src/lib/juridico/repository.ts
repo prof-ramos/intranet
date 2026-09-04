@@ -258,7 +258,9 @@ export interface NoteItem {
 export async function getNotesByEntity(
   entityType: 'consultation' | 'process',
   entityId: number,
+  options: { limit?: number } = {},
 ): Promise<NoteItem[]> {
+  const limit = Math.min(Math.max(options.limit ?? 100, 1), 500);
   const rows = await db
     .select({
       id: legalNotes.id,
@@ -271,15 +273,20 @@ export async function getNotesByEntity(
     .from(legalNotes)
     .leftJoin(admins, eq(legalNotes.createdBy, admins.id))
     .where(and(eq(legalNotes.entityType, entityType), eq(legalNotes.entityId, entityId)))
-    .orderBy(asc(legalNotes.createdAt));
+    .orderBy(desc(legalNotes.createdAt), desc(legalNotes.id))
+    .limit(limit);
 
-  return rows.map((r) => ({
-    id: r.id,
-    content: r.content,
-    createdBy: { id: r.createdById, name: r.createdByName ?? 'Desconhecido' },
-    isEscritorioResponse: r.isEscritorioResponse,
-    createdAt: r.createdAt.toISOString(),
-  }));
+  // Return chronological order for the UI (oldest → newest within the window).
+  return rows
+    .slice()
+    .reverse()
+    .map((r) => ({
+      id: r.id,
+      content: r.content,
+      createdBy: { id: r.createdById, name: r.createdByName ?? 'Desconhecido' },
+      isEscritorioResponse: r.isEscritorioResponse,
+      createdAt: r.createdAt.toISOString(),
+    }));
 }
 
 export interface PendingAction {

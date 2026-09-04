@@ -1,14 +1,10 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { defineFormAction, defineServerAction } from '@/lib/server-actions/define-form-action';
 import { AREAS } from '@/lib/activities/constants';
 import { listActivityTimeline } from '@/lib/activities/repository';
 import { createActivityService, updateActivityService } from '@/lib/activities/service';
-import {
-  ACTIVITY_PRIORITY_LABELS,
-  ACTIVITY_STATUS_LABELS,
-} from '@/lib/activities/status';
+import { ACTIVITY_PRIORITY_LABELS, ACTIVITY_STATUS_LABELS } from '@/lib/activities/status';
 import type { ActivityTimelineItem, Priority, Status } from '@/lib/activities/types';
 import { ACTIVITY_PRIORITIES, ACTIVITY_STATUSES } from '@/lib/activities/types';
 import { z } from 'zod';
@@ -98,7 +94,10 @@ const updateActivitySchema = z.object({
   assigneeId: z.number().int().positive().nullable().optional(),
   reassignmentMessage: z
     .string()
-    .max(MAX_REASSIGNMENT_MESSAGE_LENGTH, 'A mensagem de reatribuição não pode exceder 2.000 caracteres.')
+    .max(
+      MAX_REASSIGNMENT_MESSAGE_LENGTH,
+      'A mensagem de reatribuição não pode exceder 2.000 caracteres.',
+    )
     .nullable()
     .optional(),
 });
@@ -174,7 +173,10 @@ export const createActivity = defineFormAction({
       createdBy: user.userId,
     });
   },
-  revalidate: '/app/atividades',
+  revalidate: {
+    path: '/app/atividades',
+    tag: 'dashboard:activities',
+  },
 });
 
 export const createQuickActivityAction = defineServerAction({
@@ -193,8 +195,6 @@ export const createQuickActivityAction = defineServerAction({
       createdBy: user.userId,
     });
 
-    revalidatePath('/app/atividades');
-
     return {
       id: created.id,
       title: created.title,
@@ -210,6 +210,10 @@ export const createQuickActivityAction = defineServerAction({
       tags: created.tags ?? [],
       dueOffset: null,
     };
+  },
+  revalidate: {
+    path: '/app/atividades',
+    tag: 'dashboard:activities',
   },
 });
 
@@ -227,8 +231,6 @@ export const updateActivityAction = defineServerAction({
       reassignmentMessage: input.reassignmentMessage,
     });
 
-    revalidatePath('/app/atividades');
-
     return {
       id: result.id,
       status: result.status,
@@ -237,6 +239,10 @@ export const updateActivityAction = defineServerAction({
       completedAt: result.completedAt?.toISOString() ?? null,
       assigneeId: result.assigneeId,
     };
+  },
+  revalidate: {
+    path: '/app/atividades',
+    tag: 'dashboard:activities',
   },
 });
 

@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 let callCount = 0;
+const cacheOptions: Array<{ revalidate?: number; tags?: string[] }> = [];
 
 vi.mock('next/cache', () => ({
-  unstable_cache: (fn: (...args: unknown[]) => unknown, key: string[]) => {
+  unstable_cache: (
+    fn: (...args: unknown[]) => unknown,
+    key: string[],
+    options?: { revalidate?: number; tags?: string[] },
+  ) => {
     const id = ++callCount;
+    cacheOptions.push(options ?? {});
     const wrapper = async () => {
       return { result: await fn(), id, key };
     };
@@ -17,6 +23,7 @@ import { withCache } from './with-cache';
 describe('withCache', () => {
   beforeEach(() => {
     callCount = 0;
+    cacheOptions.length = 0;
   });
 
   it('passes ttl as revalidate and tags to unstable_cache', async () => {
@@ -31,6 +38,21 @@ describe('withCache', () => {
     const result = await cached();
 
     expect(result.key).toEqual(['test-key']);
+    expect(cacheOptions).toEqual([{ revalidate: 42, tags: ['tag-a', 'tag-b'] }]);
+  });
+
+  it('derives tags from the wrapped function arguments', async () => {
+    const fn = vi.fn().mockResolvedValue('ok');
+    const cached = withCache({
+      fn,
+      keyFn: (year: number, month: number) => ['payments', String(year), String(month)],
+      ttl: 60,
+      tags: (year: number, month: number) => [`finance:${year}:${month}`],
+    });
+
+    await cached(2026, 5);
+
+    expect(cacheOptions).toEqual([{ revalidate: 60, tags: ['finance:2026:5'] }]);
   });
 
   it('forwards arguments to the wrapped function', async () => {

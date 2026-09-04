@@ -1,5 +1,3 @@
-'use client';
-
 import type { MonthlyPaymentsAggregates } from '@/lib/finance/repository';
 import {
   canvas,

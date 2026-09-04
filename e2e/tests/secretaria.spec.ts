@@ -29,6 +29,16 @@ async function resetOficioFormFixtures() {
     .where(eq(oficios.number, SEEDED_OFICIO_NUMBER));
 }
 
+async function openOficioBodyEditor(page: Page) {
+  const editor = page.getByLabel('Corpo do ofício');
+  if (await editor.count()) {
+    return editor;
+  }
+  await page.getByRole('button', { name: 'Editar formatação' }).click();
+  await expect(page.getByLabel('Corpo do ofício')).toBeVisible();
+  return page.getByLabel('Corpo do ofício');
+}
+
 async function fillRequiredOficioFields(page: Page, subject: string, body: string) {
   await page.getByLabel('Nome do Destinatário').fill('Diretora do Departamento Consular');
   await page.getByLabel('Cargo', { exact: true }).fill('Diretora');
@@ -37,7 +47,8 @@ async function fillRequiredOficioFields(page: Page, subject: string, body: strin
   await page.getByLabel('Assunto').fill(subject);
   await page.getByLabel('Nome do Signatário').fill('Presidente da ASOF');
   await page.getByLabel('Cargo do Signatário').fill('Presidente');
-  await page.getByLabel('Corpo do ofício').fill(body);
+  const editor = await openOficioBodyEditor(page);
+  await editor.fill(body);
 }
 
 test.describe('Secretaria — Ofícios', () => {
@@ -98,6 +109,8 @@ test.describe('Secretaria — Ofícios', () => {
     await expect(page.locator('h1')).toContainText('Gerar Novo Ofício');
     await expect(page.locator('input[name="recipient"]')).toBeVisible();
     await expect(page.locator('input[name="subject"]')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Editar formatação' })).toBeVisible();
+    await openOficioBodyEditor(page);
     await expect(page.locator('[aria-label="Corpo do ofício"]')).toBeVisible();
   });
 
@@ -187,10 +200,10 @@ test.describe('Secretaria — regressões do OficioForm', () => {
 
     const recipient = page.getByLabel('Nome do Destinatário');
     const subject = page.getByLabel('Assunto');
-    const editor = page.getByLabel('Corpo do ofício');
     const body = 'Corpo preservado ao abrir e fechar o auxiliar com IA.';
     await recipient.fill('Embaixadora Teste');
     await subject.fill('Assunto preservado no modal');
+    const editor = await openOficioBodyEditor(page);
     await editor.fill(body);
 
     const openModal = page.getByRole('button', { name: 'Auxiliar com IA' });
@@ -204,9 +217,12 @@ test.describe('Secretaria — regressões do OficioForm', () => {
 
     await openModal.click();
     await expect(instruction).toHaveValue(body);
-    await page.getByRole('dialog', { name: 'Auxiliar com IA' }).getByRole('button', {
-      name: 'Cancelar',
-    }).click();
+    await page
+      .getByRole('dialog', { name: 'Auxiliar com IA' })
+      .getByRole('button', {
+        name: 'Cancelar',
+      })
+      .click();
     await expect(page.getByRole('dialog', { name: 'Auxiliar com IA' })).toBeHidden();
 
     await openModal.click();

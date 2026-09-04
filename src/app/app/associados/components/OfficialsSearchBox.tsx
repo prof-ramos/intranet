@@ -4,7 +4,7 @@ import { Search, X } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import { focusRingClass, textMuted } from '@/lib/ui/tokens';
-import { MIN_SEARCH_CHARS } from '@/lib/associates/search-params';
+import { MIN_SEARCH_CHARS } from '@/lib/associates/search-params.shared';
 
 interface OfficialsSearchBoxProps {
   initialQuery: string;

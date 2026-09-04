@@ -56,7 +56,7 @@ import {
   buildMonthlyPaymentsSearchParams,
   type PaymentOrigin,
   type MonthlyPaymentsSearchParams,
-} from '@/lib/finance/search-params';
+} from '@/lib/finance/search-params.shared';
 import {
   cancelPendingMonthlyPaymentsSearch,
   scheduleMonthlyPaymentsSearch,
@@ -68,6 +68,7 @@ import {
   getStructuredAmount,
   getPaymentOrigin,
   getEditorInitialValues,
+  toPaymentIsoString,
   originConfig,
   formatCurrency,
   formatCivilDate,
@@ -203,7 +204,7 @@ export default function MonthlyPaymentsTable({
       paidAt: values.paidAt,
       origin: values.paymentOrigin,
       notes: values.notes,
-      expectedUpdatedAt: payment.updatedAt?.toISOString() ?? null,
+      expectedUpdatedAt: toPaymentIsoString(payment.updatedAt),
     }),
     [year, month],
   );
@@ -227,7 +228,7 @@ export default function MonthlyPaymentsTable({
         paidAt: null,
         origin: getPaymentOrigin(payment),
         notes: payment.notes ?? null,
-        expectedUpdatedAt: payment.updatedAt?.toISOString() ?? null,
+        expectedUpdatedAt: toPaymentIsoString(payment.updatedAt),
       });
 
       if (result && !result.success) {
@@ -329,7 +330,7 @@ export default function MonthlyPaymentsTable({
     associateId: number,
     paymentId: number | null,
     associateName: string,
-    expectedUpdatedAt: Date | null,
+    expectedUpdatedAt: Date | string | null,
   ) => {
     if (!paymentId) {
       setErrorMessage('Inicialize a mensalidade antes de cancelar.');
@@ -342,7 +343,7 @@ export default function MonthlyPaymentsTable({
       associateId,
       paymentId,
       associateName,
-      expectedUpdatedAt: expectedUpdatedAt?.toISOString() ?? null,
+      expectedUpdatedAt: toPaymentIsoString(expectedUpdatedAt),
     });
   };
 

@@ -9,12 +9,13 @@ Documentation directory covering architecture decisions, design guidelines, comp
 
 ## Key Files
 
-| File                              | Description                                                                             |
-| --------------------------------- | --------------------------------------------------------------------------------------- |
-| `runbook.md`                      | Operations runbook — deployment, monitoring, troubleshooting, and rollback procedures   |
-| `environments.md`                 | Official source for environments, databases, data classes, migrations, and CI/CD        |
-| `agents/jules-governance.md`      | Approval, publication, environment, audit, and incident controls for Google Jules       |
-| `agents/coderabbit-governance.md` | OSS plan, opt-in review, security, quota, labels, and operating controls for CodeRabbit |
+| File                                          | Description                                                                              |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `runbook.md`                                  | Operations runbook — deployment, monitoring, troubleshooting, and rollback procedures    |
+| `environments.md`                             | Official source for environments, databases, data classes, migrations, and CI/CD         |
+| `development/performance-audit-2026-09-03.md` | Auditoria de desempenho (gargalos, pool, cache, bundles) e plano de otimização por ondas |
+| `agents/jules-governance.md`                  | Approval, publication, environment, audit, and incident controls for Google Jules        |
+| `agents/coderabbit-governance.md`             | OSS plan, opt-in review, security, quota, labels, and operating controls for CodeRabbit  |
 
 ## Subdirectories
 
@@ -24,7 +25,7 @@ Documentation directory covering architecture decisions, design guidelines, comp
 | [`agents/`](./agents/)           | Agent-facing documentation — issue tracker, triage labels and agent governance                                        |
 | [`compliance/`](./compliance/)   | LGPD compliance checklist and data handling policies                                                                  |
 | [`design/`](./design/)           | Design system — theme tokens and oficios padrao templates                                                             |
-| [`development/`](./development/) | Development documentation — branch naming and the retired test-metrics schema note                                    |
+| [`development/`](./development/) | Development documentation — branch naming, performance audit, retired test-metrics schema note                        |
 | [`jornadas/`](./jornadas/)       | User journey maps — financeiro personas and monthly payment flows                                                     |
 | [`lotacao/`](./lotacao/)         | Geographic assignment docs — postos no exterior and SERE                                                              |
 

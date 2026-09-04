@@ -80,7 +80,7 @@ describe('juridico actions', () => {
     );
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/juridico');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/juridico/consultas');
-    expect(revalidateTagMock).toHaveBeenCalledWith('legal', {});
+    expect(revalidateTagMock).toHaveBeenCalledWith('legal:summary', {});
   });
 
   it('rejects when juridico rate limit is exceeded', async () => {
@@ -118,8 +118,9 @@ describe('juridico actions', () => {
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/juridico');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/juridico/consultas');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/juridico/consultas/21');
-    expect(revalidateTagMock).toHaveBeenCalledWith('consultation-detail', {});
-    expect(revalidateTagMock).toHaveBeenCalledWith('legal-notes', {});
+    expect(revalidateTagMock).toHaveBeenCalledWith('legal:consultation-detail', {});
+    expect(revalidateTagMock).toHaveBeenCalledWith('legal:summary', {});
+    expect(revalidateTagMock).not.toHaveBeenCalledWith('legal:notes', expect.anything());
   });
 
   it('parses escritorio response and revalidates after adding a note', async () => {
@@ -144,8 +145,9 @@ describe('juridico actions', () => {
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/juridico');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/juridico/consultas');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/juridico/consultas/33');
-    expect(revalidateTagMock).toHaveBeenCalledWith('legal-notes', {});
-    expect(revalidateTagMock).toHaveBeenCalledWith('consultation-detail', {});
+    expect(revalidateTagMock).toHaveBeenCalledWith('legal:notes', {});
+    expect(revalidateTagMock).toHaveBeenCalledWith('legal:consultation-detail', {});
+    expect(revalidateTagMock).toHaveBeenCalledWith('legal:summary', {});
   });
 
   it('rejects every mutation when the juridico role boundary denies access', async () => {

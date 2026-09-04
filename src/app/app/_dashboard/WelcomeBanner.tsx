@@ -1,5 +1,3 @@
-'use client';
-
 import { Sparkles, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { focusRingClass } from '@/lib/ui/tokens';

@@ -8,7 +8,7 @@ export interface WithCacheOptions<TArgs extends unknown[], TReturn> {
   /** Time-to-live in seconds (passed to Next.js revalidate). */
   ttl: number;
   /** Tags for explicit invalidation. */
-  tags: string[];
+  tags: string[] | ((...args: TArgs) => string[]);
   /** Optional max entries for the in-memory wrapper cache. Defaults to 100. */
   maxEntries?: number;
 }
@@ -29,7 +29,11 @@ export function withCache<TArgs extends unknown[], TReturn>(
   const cacheMap = new Map<string, ReturnType<typeof unstable_cache>>();
   const limit = maxEntries;
 
-  function setWithLimit(map: typeof cacheMap, key: string, value: ReturnType<typeof unstable_cache>) {
+  function setWithLimit(
+    map: typeof cacheMap,
+    key: string,
+    value: ReturnType<typeof unstable_cache>,
+  ) {
     if (map.size >= limit && !map.has(key)) {
       const firstKey = map.keys().next().value;
       if (firstKey !== undefined) {
@@ -49,7 +53,7 @@ export function withCache<TArgs extends unknown[], TReturn>(
 
     const created = unstable_cache(async () => fn(...args), key, {
       revalidate: ttl,
-      tags,
+      tags: typeof tags === 'function' ? tags(...args) : tags,
     });
 
     setWithLimit(cacheMap, cacheKey, created);

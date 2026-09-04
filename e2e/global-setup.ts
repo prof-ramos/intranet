@@ -42,7 +42,11 @@ function getRecentServerLog() {
 }
 
 async function waitForServerReady(pid: number) {
-  const deadline = Date.now() + 120_000;
+  // Cold webpack JIT of `/login` on CI can exceed 15–20s. A short per-request
+  // AbortSignal cancels the HTTP wait and can starve the first compile if the
+  // runner is slow, leaving only AbortError for the whole deadline.
+  const deadline = Date.now() + 180_000;
+  const requestTimeoutMs = 30_000;
   let lastError: unknown;
 
   while (Date.now() < deadline) {
@@ -54,7 +58,7 @@ async function waitForServerReady(pid: number) {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), requestTimeoutMs);
       const response = await fetch(`${E2E_BASE_URL}/login`, {
         redirect: 'manual',
         signal: controller.signal,
@@ -252,6 +256,7 @@ export default async function globalSetup() {
       env: {
         ...process.env,
         DATABASE_URL: TEST_DATABASE_URL,
+        DATABASE_MIGRATION_URL: TEST_DATABASE_URL,
         NEXT_E2E: '1',
         SKIP_AUTH: 'false',
         // Fixed only for ephemeral E2E runs; tests do not persist signed sessions.

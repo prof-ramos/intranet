@@ -8,7 +8,7 @@ import {
 } from '@/lib/db/schema/finance';
 import { paymentOrigin } from '@/lib/db/schema/enums';
 import { associates } from '@/lib/db/schema/associates';
-import { and, asc, desc, eq, ilike, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, isNull, lt, or, sql } from 'drizzle-orm';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
 import { effectivePaymentMethodSql } from './effective-payment';
 import { getBusinessDateParts } from '@/lib/utils/date';
@@ -236,7 +236,6 @@ export async function findAssociatesMissingPaymentForMonth(
     .select({
       associateId: associates.id,
       defaultPaymentMethod: associates.paymentMethod,
-      paymentId: monthlyPayments.id,
     })
     .from(associates)
     .leftJoin(
@@ -247,11 +246,12 @@ export async function findAssociatesMissingPaymentForMonth(
         eq(monthlyPayments.month, month),
       ),
     )
-    .where(eq(associates.associationStatus, 'associado'));
+    .where(and(eq(associates.associationStatus, 'associado'), isNull(monthlyPayments.id)));
 
-  return rows
-    .filter((r) => !r.paymentId)
-    .map((r) => ({ associateId: r.associateId, defaultPaymentMethod: r.defaultPaymentMethod }));
+  return rows.map((r) => ({
+    associateId: r.associateId,
+    defaultPaymentMethod: r.defaultPaymentMethod,
+  }));
 }
 
 export interface OverduePaymentTransition {
@@ -267,11 +267,15 @@ export interface OverduePaymentTransition {
   cancelledBy: number | null;
 }
 
+export const OVERDUE_PAYMENT_BATCH_SIZE = 500;
+
 export async function markOverduePaymentsForAudit(
   executor: DbExecutor = db,
   now: Date = new Date(),
+  options: { limit?: number } = {},
 ): Promise<OverduePaymentTransition[]> {
   const { year: thisYear, month: thisMonth } = getBusinessDateParts(now);
+  const limit = Math.min(Math.max(options.limit ?? OVERDUE_PAYMENT_BATCH_SIZE, 1), 2000);
 
   return executor
     .update(monthlyPayments)
@@ -287,6 +291,17 @@ export async function markOverduePaymentsForAudit(
           lt(monthlyPayments.year, thisYear),
           and(eq(monthlyPayments.year, thisYear), lt(monthlyPayments.month, thisMonth)),
         ),
+        sql`${monthlyPayments.id} in (
+          select id from ${monthlyPayments}
+          where ${monthlyPayments.status} = 'pendente'
+            and (
+              ${monthlyPayments.year} < ${thisYear}
+              or (${monthlyPayments.year} = ${thisYear} and ${monthlyPayments.month} < ${thisMonth})
+            )
+          order by ${monthlyPayments.id}
+          for update skip locked
+          limit ${limit}
+        )`,
       ),
     )
     .returning({
@@ -386,12 +401,6 @@ export async function getAssociatesWithPayments(
     .offset((page - 1) * pageSize)
     .limit(pageSize);
 
-  const countQuery = db
-    .select({ total: sql<number>`count(*)` })
-    .from(associates)
-    .leftJoin(monthlyPayments, joinCondition)
-    .where(where);
-
   const aggregatesQuery = db
     .select({
       total: sql<number>`count(*)`,
@@ -418,16 +427,12 @@ export async function getAssociatesWithPayments(
     .leftJoin(monthlyPayments, joinCondition)
     .where(where);
 
-  const [rows, countRows, aggregateRows] = await Promise.all([
-    rowsQuery,
-    countQuery,
-    aggregatesQuery,
-  ]);
-  const total = Number(countRows[0]?.total ?? 0);
+  const [rows, aggregateRows] = await Promise.all([rowsQuery, aggregatesQuery]);
   const raw = aggregateRows[0];
   const number = (value: number | undefined) => Number(value ?? 0);
+  const total = number(raw?.total);
   const aggregates: MonthlyPaymentsAggregates = {
-    total: number(raw?.total),
+    total,
     pagos: number(raw?.pagos),
     pendentes: number(raw?.pendentes),
     atrasados: number(raw?.atrasados),

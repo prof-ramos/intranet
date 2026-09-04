@@ -11,6 +11,7 @@ const createActivityServiceMock = vi.fn();
 const updateActivityServiceMock = vi.fn();
 const listActivityTimelineMock = vi.fn();
 const revalidatePathMock = vi.fn();
+const revalidateTagMock = vi.fn();
 
 vi.mock('@/lib/auth/authorization', () => ({
   requireRole: (...args: unknown[]) => requireRoleMock(...args),
@@ -27,6 +28,7 @@ vi.mock('@/lib/activities/repository', () => ({
 
 vi.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => revalidatePathMock(...args),
+  revalidateTag: (...args: unknown[]) => revalidateTagMock(...args),
 }));
 
 describe('atividades actions', () => {
@@ -71,6 +73,7 @@ describe('atividades actions', () => {
       createdBy: 7,
     });
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/atividades');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:activities', 'max');
   });
 
   it('rejects invalid assignee ids instead of silently nulling them', async () => {
@@ -176,6 +179,7 @@ describe('atividades actions', () => {
       tags: [],
       dueOffset: null,
     });
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:activities', 'max');
   });
 
   it('rejects an invalid quick activity status before calling the service', async () => {
@@ -198,7 +202,10 @@ describe('atividades actions', () => {
 
     const tooManyTags = new FormData();
     tooManyTags.set('title', 'Nova atividade');
-    tooManyTags.set('tags', JSON.stringify(Array.from({ length: 21 }, (_, index) => `tag-${index}`)));
+    tooManyTags.set(
+      'tags',
+      JSON.stringify(Array.from({ length: 21 }, (_, index) => `tag-${index}`)),
+    );
 
     await expect(createActivity(tooManyTags)).rejects.toThrow('tags');
 
@@ -240,6 +247,7 @@ describe('atividades actions', () => {
       reassignmentMessage: undefined,
     });
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/atividades');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:activities', 'max');
   });
 
   it('rejects an invalid activity priority before calling the service', async () => {
