@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-05-26 | Updated: 2026-05-26 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-09-04 -->
 
 # src
 
@@ -24,6 +24,8 @@ Next.js 16 App Router source directory. Contains all application code: pages, la
 | `hooks/` | Custom React hooks (see `hooks/AGENTS.md`) |
 | `lib/` | Domain services, DB schema, auth, repositories (see `lib/AGENTS.md`) |
 | `__mocks__/` | Test mocks (see `__mocks__/AGENTS.md`) |
+| `test/` | Shared Vitest setup |
+| `types/` | Ambient TypeScript declarations, including WebMCP |
 
 ## For AI Agents
 
@@ -40,7 +42,7 @@ Next.js 16 App Router source directory. Contains all application code: pages, la
 - E2E: `npm run test:e2e` (Playwright) — do not point at `localhost:3000` dev server; use port 3001 via `npm run test:e2e`.
 
 ### Common Patterns
-- Domain repositories live in `src/lib/repositories/` and accept a `tx` (transaction) executor.
+- Domain repositories are colocated in `src/lib/<domain>/repository.ts`; transactional services pass a transaction executor where required.
 - Multi-table operations use `db.transaction()` — never leave partial writes.
 - Status/type fields use PostgreSQL enums (never `text` for bounded sets).
 - Component props interfaces are defined above the component; use `FC<Props>` or plain function signatures.

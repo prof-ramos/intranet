@@ -1,15 +1,16 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-05-26 | Updated: 2026-05-26 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-09-04 -->
 
 # e2e
 
 ## Purpose
-Playwright end-to-end test suite for the ASOF Intranet application. Spins up a separate Next.js dev server on port 3001 with its own `.next-e2e` distDir, creates/migrates/seeds an isolated `asof_test` database via global setup, and runs browser-based tests across authenticatedfunctional areas (associados, dashboard, financeiro, juridico, login, roles, secretaria, usuarios).
+Playwright end-to-end test suite for the ASOF Intranet application. Spins up a separate Next.js dev server on port 3001 with its own `.next-e2e` distDir, creates/migrates/seeds an isolated `asof_test` database via global setup, and runs browser-based tests across authenticated functional areas.
 
 ## Key Files
 | File | Description |
 |------|-------------|
-| `playwright.config.ts` | Playwright configuration — baseURL http://localhost:3001, headless, 30s timeout, reporter |
+| `../playwright.config.ts` | Main Playwright configuration — baseURL http://127.0.0.1:3001, headless, 30s expectation timeout |
+| `smoke-prod.spec.ts` | Separately configured production smoke coverage; not part of the main local E2E suite |
 | `global-setup.ts` | Creates `asof_test` database, runs migrations via `npm run db:migrate`, seeds test data |
 | `global-teardown.ts` | Tears down test db and kills the e2e Next.js server process |
 | `fixtures.ts` | Shared Playwright fixtures for authenticated pages and db reset per test |
@@ -18,7 +19,8 @@ Playwright end-to-end test suite for the ASOF Intranet application. Spins up a s
 | Directory | Purpose |
 |-----------|---------|
 | `helpers/` | Test utilities — `db.ts` wraps the seed/admin helper for resetting test data |
-| `tests/` | Spec files per functional area — associados, dashboard, financeiro, juridico, login, roles, secretaria, usuarios |
+| `mocks/` | Local external-service mocks, currently the Assinafy server |
+| `tests/` | Specs for associados, perfil/impressão, atividades, dashboard, financeiro, jurídico, login/logout, roles, secretaria, Assinafy and usuários |
 
 ## For AI Agents
 

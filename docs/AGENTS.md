@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-05-26 | Updated: 2026-07-16 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-09-04 -->
 
 # docs
 
@@ -21,13 +21,16 @@ Documentation directory covering architecture decisions, design guidelines, comp
 
 | Directory                        | Purpose                                                                                                               |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| [`adr/`](./adr/)                 | Architecture Decision Records covering auth, DB, RLS, notifications, kanban, LGPD, go-live, rollback and environments |
+| [`adr/`](./adr/)                 | Architecture Decision Records (see `adr/AGENTS.md`)                                                                    |
+| [`agent-memory/`](./agent-memory/) | Durable operational lessons, feedback and security notes                                                             |
 | [`agents/`](./agents/)           | Agent-facing documentation — issue tracker, triage labels and agent governance                                        |
 | [`compliance/`](./compliance/)   | LGPD compliance checklist and data handling policies                                                                  |
 | [`design/`](./design/)           | Design system — theme tokens and oficios padrao templates                                                             |
 | [`development/`](./development/) | Development documentation — branch naming, performance audit, retired test-metrics schema note                        |
+| [`email-controller/`](./email-controller/) | Gmail/Gemini controller research and delivery plans                                                        |
 | [`jornadas/`](./jornadas/)       | User journey maps — financeiro personas and monthly payment flows                                                     |
 | [`lotacao/`](./lotacao/)         | Geographic assignment docs — postos no exterior and SERE                                                              |
+| [`operations/`](./operations/)   | Operational procedures for identity, PII, secrets and smoke observation (see `operations/AGENTS.md`)                  |
 
 ## For AI Agents
 

@@ -1,4 +1,5 @@
-<!-- Parent: ../../AGENTS.md -->
+<!-- Parent: ../AGENTS.md -->
+<!-- Generated: 2026-09-04 | Updated: 2026-09-04 -->
 
 # Hooks
 
@@ -14,3 +15,6 @@ Shared React hooks.
 
 - Hooks follow React 19 patterns
 - Tests in `.test.ts` files
+- Keep browser subscriptions and timers cleaned up; notification polling must not multiply across renders
+
+<!-- MANUAL: -->
