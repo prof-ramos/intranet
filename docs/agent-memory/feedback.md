@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-09-04 — Comunicação com usuário/operador em pt-BR (skills em inglês)
+
+- **Tipo**: Ajuste de conduta / UX do agente
+- **Escopo**: Skills com templates em inglês (ex.: `finishing-a-development-branch`), menus de opções, status ao usuário
+- **Memória**: Default de comunicação com usuário/operador é **pt-BR**. Skills cujo `SKILL.md` está em inglês não autorizam trocar o menu/status face ao usuário para inglês — traduzir opções e status para português.
+- **Evidência**: Preferência explícita do operador; regra de usuário “Always respond in Portuguese”.
+- **Regra preventiva**: Executar a skill em inglês internamente; apresentar perguntas, opções numeradas e status em português. Não espelhar o idioma do template no diálogo com o usuário.
+- **Confiança**: alta
+
 ## 2026-09-03 — neonctl OAuth pessoal ≠ acesso à org Vercel-managed
 
 - **Tipo**: Armadilha operacional / caminho errado insistido

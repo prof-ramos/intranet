@@ -182,6 +182,7 @@ Single-context: `CONTEXT.md` at root + `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Feedback e Armadilhas Operacionais (Memória)
 
+- **Comunicação pt-BR:** default com usuário/operador é português. Skills com templates em inglês (ex. menus de `finishing-a-development-branch`) devem apresentar opções e status em pt-BR — não espelhar o idioma do SKILL.md. Detalhe em `docs/agent-memory/feedback.md`.
 - **Neon prod via GHA, não OAuth pessoal:** conta OAuth típica **não** é membro de `org-red-mode-09715915`. Usar workflows `Migrate Production` / reconcile / clear-duplicate-hashes com `NEON_API_KEY`. Não colar callback OAuth com `code=` no chat. Detalhe em `docs/agent-memory`.
 - **zsh + placeholders `<…>`:** `<role>` vira redirecionamento; usar nome literal ou omitir `--role-name`.
 - **Webhook unit tests:** mockar `isPublicWebhookUrl` (DNS ao vivo em `example.com` quebra a suite). PR #439 / #436.
