@@ -1,17 +1,17 @@
-name: Clear Duplicate Identity Hashes
+name: Cleanup Smoke Residuals
 
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'report (somente leitura) ou apply (limpa hashes duplicados)'
+        description: 'report (somente leitura) ou apply (apaga SMOKE_%)'
         required: true
         type: choice
         options:
           - report
           - apply
       confirm:
-        description: 'Digite CLEAR-DUPLICATE-IDENTITY-HASHES apenas no modo apply'
+        description: 'Digite CLEAN-SMOKE-RESIDUALS apenas no modo apply'
         required: false
         type: string
 
@@ -19,14 +19,14 @@ permissions:
   contents: read
 
 jobs:
-  clear:
-    name: Clear duplicate identity hashes
+  smoke-residuals:
+    name: Inventory or clean SMOKE_% residuals
     runs-on: ubuntu-latest
     environment: Production
     if: >
       github.event.inputs.mode == 'report' ||
       (github.event.inputs.mode == 'apply' &&
-       github.event.inputs.confirm == 'CLEAR-DUPLICATE-IDENTITY-HASHES')
+       github.event.inputs.confirm == 'CLEAN-SMOKE-RESIDUALS')
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -61,42 +61,22 @@ jobs:
           printf '%s' "$URL" > "$RUNNER_TEMP/database_migration_url"
           chmod 600 "$RUNNER_TEMP/database_migration_url"
 
-      - name: Report or clear duplicate identity hashes
+      - name: Report or clean SMOKE residuals
         env:
           MODE: ${{ github.event.inputs.mode }}
         run: |
           set -euo pipefail
           export DATABASE_MIGRATION_URL="$(cat "$RUNNER_TEMP/database_migration_url")"
           if [ "$MODE" = "apply" ]; then
-            node --import tsx scripts/clear-duplicate-identity-hashes.ts --apply
+            export ALLOW_SMOKE_RESIDUAL_CLEANUP=CLEAN-SMOKE-RESIDUALS
+            node --import tsx scripts/smoke-residuals-cleanup.ts --apply
           else
-            # report exits 2 when duplicates exist; still print the JSON
             set +e
-            node --import tsx scripts/clear-duplicate-identity-hashes.ts
+            node --import tsx scripts/smoke-residuals-cleanup.ts
             code=$?
             set -e
+            # exit 2 = residuals found (informational for report)
             if [ "$code" -ne 0 ] && [ "$code" -ne 2 ]; then
               exit "$code"
             fi
           fi
-
-      # Temporary piggyback (ops/smoke-residual-inventory): read-only SMOKE_% counts.
-      - name: Inventory SMOKE residuals (read-only)
-        if: github.event.inputs.mode == 'report'
-        run: |
-          set -euo pipefail
-          export DATABASE_MIGRATION_URL="$(cat "$RUNNER_TEMP/database_migration_url")"
-          set +e
-          node --import tsx scripts/smoke-residuals-cleanup.ts
-          code=$?
-          set -e
-          if [ "$code" -ne 0 ] && [ "$code" -ne 2 ]; then
-            exit "$code"
-          fi
-
-      - name: Verify no duplicate identity hashes remain
-        if: github.event.inputs.mode == 'apply'
-        run: |
-          set -euo pipefail
-          export DATABASE_MIGRATION_URL="$(cat "$RUNNER_TEMP/database_migration_url")"
-          node --import tsx scripts/check-associate-identity-duplicates.ts
