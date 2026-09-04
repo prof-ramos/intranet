@@ -1,0 +1,82 @@
+name: Cleanup Smoke Residuals
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'report (somente leitura) ou apply (apaga SMOKE_%)'
+        required: true
+        type: choice
+        options:
+          - report
+          - apply
+      confirm:
+        description: 'Digite CLEAN-SMOKE-RESIDUALS apenas no modo apply'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-residuals:
+    name: Inventory or clean SMOKE_% residuals
+    runs-on: ubuntu-latest
+    environment: Production
+    if: >
+      github.event.inputs.mode == 'report' ||
+      (github.event.inputs.mode == 'apply' &&
+       github.event.inputs.confirm == 'CLEAN-SMOKE-RESIDUALS')
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve Neon direct connection
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          URL="$(npx neonctl@latest connection-string \
+            --api-key "$NEON_API_KEY" \
+            --project-id "$NEON_PROJECT_ID" \
+            --org-id org-red-mode-09715915 \
+            --branch main \
+            --pooled false)"
+          echo "::add-mask::${URL}"
+          PASSWORD="$(python3 -c 'from urllib.parse import urlparse, unquote; import sys; print(unquote(urlparse(sys.argv[1]).password or ""))' "$URL")"
+          if [ -n "$PASSWORD" ]; then
+            echo "::add-mask::${PASSWORD}"
+          fi
+          printf '%s' "$URL" > "$RUNNER_TEMP/database_migration_url"
+          chmod 600 "$RUNNER_TEMP/database_migration_url"
+
+      - name: Report or clean SMOKE residuals
+        env:
+          MODE: ${{ github.event.inputs.mode }}
+        run: |
+          set -euo pipefail
+          export DATABASE_MIGRATION_URL="$(cat "$RUNNER_TEMP/database_migration_url")"
+          if [ "$MODE" = "apply" ]; then
+            export ALLOW_SMOKE_RESIDUAL_CLEANUP=CLEAN-SMOKE-RESIDUALS
+            node --import tsx scripts/smoke-residuals-cleanup.ts --apply
+          else
+            set +e
+            node --import tsx scripts/smoke-residuals-cleanup.ts
+            code=$?
+            set -e
+            # exit 2 = residuals found (informational for report)
+            if [ "$code" -ne 0 ] && [ "$code" -ne 2 ]; then
+              exit "$code"
+            fi
+          fi
