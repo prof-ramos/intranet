@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'report (somente leitura) ou apply (limpa hashes duplicados)'
+        description: 'report (somente leitura) ou apply (limpa hashes duplicados OU SMOKE_% com confirm dedicado)'
         required: true
         type: choice
         options:
           - report
           - apply
       confirm:
-        description: 'Digite CLEAR-DUPLICATE-IDENTITY-HASHES apenas no modo apply'
+        description: 'apply: CLEAR-DUPLICATE-IDENTITY-HASHES ou CLEAN-SMOKE-RESIDUALS'
         required: false
         type: string
 
@@ -26,7 +26,8 @@ jobs:
     if: >
       github.event.inputs.mode == 'report' ||
       (github.event.inputs.mode == 'apply' &&
-       github.event.inputs.confirm == 'CLEAR-DUPLICATE-IDENTITY-HASHES')
+       (github.event.inputs.confirm == 'CLEAR-DUPLICATE-IDENTITY-HASHES' ||
+        github.event.inputs.confirm == 'CLEAN-SMOKE-RESIDUALS'))
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -62,6 +63,9 @@ jobs:
           chmod 600 "$RUNNER_TEMP/database_migration_url"
 
       - name: Report or clear duplicate identity hashes
+        if: >
+          github.event.inputs.mode == 'report' ||
+          github.event.inputs.confirm == 'CLEAR-DUPLICATE-IDENTITY-HASHES'
         env:
           MODE: ${{ github.event.inputs.mode }}
         run: |
@@ -94,8 +98,20 @@ jobs:
             exit "$code"
           fi
 
+      - name: Apply SMOKE residual cleanup
+        if: >
+          github.event.inputs.mode == 'apply' &&
+          github.event.inputs.confirm == 'CLEAN-SMOKE-RESIDUALS'
+        run: |
+          set -euo pipefail
+          export DATABASE_MIGRATION_URL="$(cat "$RUNNER_TEMP/database_migration_url")"
+          export ALLOW_SMOKE_RESIDUAL_CLEANUP=CLEAN-SMOKE-RESIDUALS
+          node --import tsx scripts/smoke-residuals-cleanup.ts --apply
+
       - name: Verify no duplicate identity hashes remain
-        if: github.event.inputs.mode == 'apply'
+        if: >
+          github.event.inputs.mode == 'apply' &&
+          github.event.inputs.confirm == 'CLEAR-DUPLICATE-IDENTITY-HASHES'
         run: |
           set -euo pipefail
           export DATABASE_MIGRATION_URL="$(cat "$RUNNER_TEMP/database_migration_url")"
