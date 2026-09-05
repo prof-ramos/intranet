@@ -4,7 +4,7 @@ Atualizado em 2026-07-18 para refletir a higiene operacional do Plano 057, conte
 
 ## Visao Geral
 
-A intranet ASOF e uma aplicacao Next.js 16.2.6 App Router, server-side, com Drizzle ORM e PostgreSQL gerenciado (Neon). O repo atual e a fonte canonica de dominio, schema e UI.
+A intranet ASOF e uma aplicacao Next.js 16.2.12 App Router, server-side, com Drizzle ORM e PostgreSQL gerenciado (Neon). O repo atual e a fonte canonica de dominio, schema e UI.
 
 ## Modulos De Dominio
 
@@ -158,12 +158,12 @@ O baseline nao depende de roles, policies, publications ou recursos de plataform
 ## Error Boundaries
 
 - Componente base `src/components/ErrorBoundary.tsx` — factory `createErrorBoundary` com logging via `toSafeErrorLog` (PII-safe)
-- 18 boundaries consolidados: `app/error.tsx`, `app/change-password/error.tsx`, `app/app/error.tsx`, `app/app/config/error.tsx`, `app/app/associados/error.tsx`, `app/app/atividades/error.tsx`, `app/app/financeiro/error.tsx`, `app/app/financeiro/mensalidades/error.tsx`, `app/app/juridico/error.tsx`, `app/app/juridico/consultas/error.tsx`, `app/app/juridico/consultas/nova/error.tsx`, `app/app/juridico/consultas/[id]/error.tsx`, `app/app/secretaria/error.tsx`, `app/app/secretaria/oficios/error.tsx`, `app/app/secretaria/documentos/error.tsx`, `app/app/email-triage/error.tsx`, `app/app/search/error.tsx`, `app/app/privacidade/error.tsx`, `app/app/etiquetas/error.tsx`
+- 18 boundaries consolidados: `app/error.tsx`, `app/change-password/error.tsx`, `app/app/error.tsx`, `app/app/config/error.tsx`, `app/app/associados/error.tsx`, `app/app/atividades/error.tsx`, `app/app/financeiro/error.tsx`, `app/app/financeiro/mensalidades/error.tsx`, `app/app/juridico/error.tsx`, `app/app/juridico/consultas/error.tsx`, `app/app/juridico/consultas/nova/error.tsx`, `app/app/juridico/consultas/[id]/error.tsx`, `app/app/secretaria/error.tsx`, `app/app/secretaria/oficios/error.tsx`, `app/app/secretaria/mala-direta/error.tsx`, `app/app/email-triage/error.tsx`, `app/app/search/error.tsx`, `app/app/privacidade/error.tsx`, `app/app/etiquetas/error.tsx`
 - `not-found.tsx` em rotas dinâmicas: `app/app/associados/[id]/not-found.tsx`, `app/app/secretaria/oficios/[id]/editar/not-found.tsx`
 
 ## Notificacoes
 
-Notificacoes sao registros persistidos. O cliente carrega via Server Actions e atualiza periodicamente. Entrega em tempo real nao faz parte do caminho critico do go-live.
+Notificacoes de dominio continuam sendo registros persistidos em PostgreSQL (`notifications`), gravados via `emitEvent` / server actions. O layout autenticado monta o inbox **Novu** (`NotificationInboxWrapper`) apenas quando `NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER` esta definido; sem essa env o header nao exibe sino. O componente legado `NotificationBell` (polling) existe no codigo mas nao esta montado no layout — decisao de produto pendente (completar Novu vs restaurar Bell). Entrega em tempo real nao faz parte do caminho critico do go-live.
 
 Tipos de notificação:
 

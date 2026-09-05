@@ -178,10 +178,9 @@ O dashboard (`src/app/app/page.tsx`) utiliza componentes especializados:
 
 Componentes compartilhados:
 
-| Componente   | Caminho                         | Descrição                           |
-| ------------ | ------------------------------- | ----------------------------------- |
-| `EmptyState` | `src/components/EmptyState.tsx` | Estado vazio reutilizável com CTA   |
-| `Sidebar`    | `src/components/Sidebar.tsx`    | Navegação lateral com Ações Rápidas |
+| Componente | Caminho                      | Descrição                           |
+| ---------- | ---------------------------- | ----------------------------------- |
+| `Sidebar`  | `src/components/Sidebar.tsx` | Navegação lateral com Ações Rápidas |
 
 ## 3. Fluxo de trabalho de desenvolvimento
 
