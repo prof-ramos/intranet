@@ -4,38 +4,44 @@
 # e2e
 
 ## Purpose
+
 Playwright end-to-end test suite for the ASOF Intranet application. Spins up a separate Next.js dev server on port 3001 with its own `.next-e2e` distDir, creates/migrates/seeds an isolated `asof_test` database via global setup, and runs browser-based tests across authenticated functional areas.
 
 ## Key Files
-| File | Description |
-|------|-------------|
+
+| File                      | Description                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------ |
 | `../playwright.config.ts` | Main Playwright configuration — baseURL http://127.0.0.1:3001, headless, 30s expectation timeout |
-| `smoke-prod.spec.ts` | Separately configured production smoke coverage; not part of the main local E2E suite |
-| `global-setup.ts` | Creates `asof_test` database, runs migrations via `npm run db:migrate`, seeds test data |
-| `global-teardown.ts` | Tears down test db and kills the e2e Next.js server process |
-| `fixtures.ts` | Shared Playwright fixtures for authenticated pages and db reset per test |
+| `smoke-prod.spec.ts`      | Separately configured production smoke coverage; not part of the main local E2E suite            |
+| `global-setup.ts`         | Creates `asof_test` database, runs migrations via `npm run db:migrate`, seeds test data          |
+| `global-teardown.ts`      | Tears down test db and kills the e2e Next.js server process                                      |
+| `fixtures.ts`             | Shared Playwright fixtures for authenticated pages and db reset per test                         |
 
 ## Subdirectories
-| Directory | Purpose |
-|-----------|---------|
-| `helpers/` | Test utilities — `db.ts` wraps the seed/admin helper for resetting test data |
-| `mocks/` | Local external-service mocks, currently the Assinafy server |
-| `tests/` | Specs for associados, perfil/impressão, atividades, dashboard, financeiro, jurídico, login/logout, roles, secretaria, Assinafy and usuários |
+
+| Directory  | Purpose                                                                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `helpers/` | Test utilities — `db.ts` wraps the seed/admin helper for resetting test data                                                                |
+| `mocks/`   | Local external-service mocks, currently the Assinafy server                                                                                 |
+| `tests/`   | Specs for associados, perfil/impressão, atividades, dashboard, financeiro, jurídico, login/logout, roles, secretaria, Assinafy and usuários |
 
 ## For AI Agents
 
 ### Working In This Directory
+
 - Run tests with `npm run test:e2e` from the project root.
 - The E2E server starts on port 3001 and sets `NEXT_E2E=1`; `next.config.ts` uses `distDir: ".next-e2e"` to isolate cache/dev from the normal dev server on port 3000.
 - Global setup creates `asof_test` fresh before the session; do not run E2E against an unseeded dev server on 3000.
 - Repeated login failures can leave entries in `login_attempts` and trigger `/login?error=rate-limit`.
 
 ### Testing Requirements
+
 - All specs require authenticated sessions; fixtures handle login via seeded test credentials.
 - Use `fixtures.adminPage`, `fixtures.diretoriaPage`, etc. for role-scoped tests.
 - Reset test data between tests via the `db` fixture helper in `helpers/db.ts`.
 
 ### Common Patterns
+
 - Each spec file groups tests by page/route using `test.describe`.
 - Server Actions are tested via `page.request.post()` on the Next.js server.
 - Screenshot on failure is automatic via Playwright trace config.
@@ -65,7 +71,15 @@ These were discovered during real flakiness incidents (associados.spec.ts tests 
 - **Always** `rm -rf .next-e2e` before diagnosing "works on my machine" E2E failures.
 - The global setup now warms the critical routes precisely to make cold-cache runs reliable.
 
-**4. `/app/associados` is Cadastro de Oficiais**
+**4. NotificationBell: compile once in warmup, click in `notifications.spec.ts`**
+
+- The Bell + `use-notifications` / actions graph is lazy until the first click (`NotificationBellWrapper`).
+- The PR E2E job must open the panel in `e2e/tests/notifications.spec.ts`. Prod smoke spec 9 is not a substitute.
+- Warm the chunk **once** in `warmupJitRoutes()` by clicking `notification-bell` and waiting for `Painel de notificações`.
+- **Never** wait for Bell hydration inside `loginAs` or on every `/app` page. That compile raced server actions and killed `:3001` (`CONNECTION_RESET` / `CONNECTION_REFUSED`).
+- Do not switch the wrapper back to a static or eager `dynamic()` import without evidence that the E2E webpack process survives the full suite.
+
+**5. `/app/associados` is Cadastro de Oficiais**
 
 - `src/lib/associates/repository.ts` (used by `getAssociatesListPage`) lists all Oficiais de Chancelaria by default.
 - Use the explicit `associationStatus=associado` filter only when a spec needs current ASOF members.
@@ -74,11 +88,13 @@ These were discovered during real flakiness incidents (associados.spec.ts tests 
 ## Dependencies
 
 ### Internal
+
 - `../src/app/` — App Router pages and API routes under test
 - `../src/lib/db/` — Drizzle schema used by `global-setup.ts` for migrations
 - `../drizzle/postgres/` — SQL migration files applied by global setup
 
 ### External
+
 - `@playwright/test` — E2E test runner
 - `playwright` — Browser automation
 
