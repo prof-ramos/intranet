@@ -20,7 +20,8 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/lib/webmcp/build-tools', () => ({
-  buildSecretariaTools: (router: unknown, context?: unknown) => buildSecretariaToolsMock(router, context),
+  buildSecretariaTools: (router: unknown, context?: unknown) =>
+    buildSecretariaToolsMock(router, context),
 }));
 
 vi.mock('@/lib/webmcp/register', () => ({

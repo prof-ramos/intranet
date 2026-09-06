@@ -93,7 +93,11 @@ describe('getOfficialProfileAction', () => {
   it('serializes the profile for a found official', async () => {
     const profile = { associate: { id: 9, fullName: 'Ana' } };
     getAssociateProfileMock.mockResolvedValue(profile);
-    serializeOfficialProfileMock.mockReturnValue({ id: 9, fullName: 'Ana', href: '/app/associados/9' });
+    serializeOfficialProfileMock.mockReturnValue({
+      id: 9,
+      fullName: 'Ana',
+      href: '/app/associados/9',
+    });
 
     await expect(getOfficialProfileAction({ id: 9 })).resolves.toEqual({
       found: true,

@@ -21,8 +21,6 @@ export const GMAIL_CONTACTS_HEADERS = [
 export const MALA_DIRETA_DEFAULT_LIMIT = 5000;
 
 /** Default audience: ASOF associates only. */
-export const MALA_DIRETA_DEFAULT_FILTERS: Required<
-  Pick<MalaDiretaFilters, 'associationStatus'>
-> = {
+export const MALA_DIRETA_DEFAULT_FILTERS: Required<Pick<MalaDiretaFilters, 'associationStatus'>> = {
   associationStatus: 'associado',
 };

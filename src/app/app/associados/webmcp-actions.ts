@@ -3,10 +3,7 @@
 import { z } from 'zod';
 import { defineServerAction } from '@/lib/server-actions/define-form-action';
 import { getAssociateProfile, getAssociatesListPage } from '@/lib/associates/service';
-import {
-  MIN_SEARCH_CHARS,
-  type AssociateSearchMode,
-} from '@/lib/associates/search-params';
+import { MIN_SEARCH_CHARS, type AssociateSearchMode } from '@/lib/associates/search-params';
 import { associateSearchParamsSchema } from '@/lib/validation/schemas';
 import { serializeOfficialProfile } from '@/lib/webmcp/serialize';
 

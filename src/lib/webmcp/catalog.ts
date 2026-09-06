@@ -34,7 +34,11 @@ export const WEBMCP_CATALOG: readonly WebMcpCatalogEntry[] = [
   { name: 'open-mala-direta', roles: ['admin', 'diretoria', 'secretaria'], scope: 'app' },
   { name: 'open-email-generator', roles: ['admin', 'secretaria'], scope: 'app' },
   { name: 'add-dependent', roles: ['admin', 'diretoria', 'secretaria'], scope: 'official-profile' },
-  { name: 'edit-dependent', roles: ['admin', 'diretoria', 'secretaria'], scope: 'official-profile' },
+  {
+    name: 'edit-dependent',
+    roles: ['admin', 'diretoria', 'secretaria'],
+    scope: 'official-profile',
+  },
   {
     name: 'remove-dependent',
     roles: ['admin', 'diretoria', 'secretaria'],

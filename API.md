@@ -9,7 +9,7 @@
 
 A superficie HTTP publica atual da ASOF Intranet e pequena e intencionalmente restrita.
 
-Hoje existem **14 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
+Hoje existem **15 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
 
 | Metodo        | Rota                                 | Finalidade                                                                                         |
 | ------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------- |
@@ -25,6 +25,7 @@ Hoje existem **14 endpoints HTTP expostos**, com superficie publica intencionalm
 | `GET`         | `/api/v1/cron/lgpd-retention`        | Job agendado de retencao e anonimizacao LGPD (cron bearer)                                         |
 | `GET`         | `/api/v1/cron/overdue-payments`      | Marca mensalidades vencidas pendente → atrasado via `autoMarkOverduePaymentsService` (cron bearer) |
 | `GET`         | `/api/v1/cron/cleanup-nonces`        | Limpa nonces expirados de replay protection (cron bearer, diário 01:00 UTC)                        |
+| `GET`         | `/api/v1/mailing/process`            | Processa a fila de campanhas de e-mail em lote (cron bearer, diário 07:00 UTC)                     |
 | `POST`        | `/app/etiquetas/gerar`               | Geracao administrativa de etiquetas Pimaco em PDF                                                  |
 | `POST`        | `/api/webhooks/assinafy`             | Webhook de retorno de assinatura digital (Assinafy)                                                |
 
@@ -669,6 +670,39 @@ Renova a watch subscription da API Gmail para a caixa controller@asof.org.br. O 
 
 ---
 
+### 9.1 Processamento da Fila de Mala Direta
+
+**Metodo:** `GET`
+**Rota:** `/api/v1/mailing/process`
+
+#### Descricao
+
+Processa um lote da fila de campanhas de e-mail (`mailing_campaigns` em `em_envio`). Reivindica destinatários com `FOR UPDATE SKIP LOCKED`, envia via Mailjet e atualiza sucesso/falha por destinatário. Agenda Vercel: diária (`0 7 * * *`, limite Hobby). Lotes extras saem da UI (“Iniciar envio” / “Processar lote”).
+
+#### Autorizacao
+
+- `Authorization: Bearer <CRON_SECRET>`
+
+#### Resposta de sucesso
+
+```json
+{
+  "ok": true,
+  "data": {
+    "mode": "scheduled",
+    "result": { "processed": 2, "sent": 2, "failed": 0 }
+  }
+}
+```
+
+#### Observacoes
+
+- Não expõe e-mail, nome ou outros PII no JSON nem em logs
+- Cancelamento em voo não envia e não promove a campanha de `cancelada` para `concluida`
+- Campanha só vai para `falhou` quando todos os destinatários falharam e o status ainda é `em_envio`
+
+---
+
 ### 10. Job Agendado de Retencao LGPD
 
 **Metodo:** `GET`
@@ -878,7 +912,7 @@ curl -L \
 - A API HTTP atual nao e uma API REST completa
 - Nao existe documentacao OpenAPI/Swagger
 - Nao existem endpoints JSON publicos amplos de consulta ou mutacao de dominio
-- A fundacao M2M atual cobre `/api/v1/health`, `/api/v1/events`, `/api/v1/email-triage/process`, `/api/v1/gmail-webhook` e os crons `/api/v1/events/dispatch`, `/api/v1/juridico/sla-warnings`, `/api/v1/cron/*` (estes ultimos com bearer `CRON_SECRET`)
+- A fundacao M2M atual cobre `/api/v1/health`, `/api/v1/events`, `/api/v1/email-triage/process`, `/api/v1/gmail-webhook`, `/api/v1/mailing/process` e os crons `/api/v1/events/dispatch`, `/api/v1/juridico/sla-warnings`, `/api/v1/cron/*` (estes ultimos com bearer `CRON_SECRET`)
 - Nao existe OAuth de integracao
 - Excecao: `/api/webhooks/assinafy` e um endpoint inbound publico para webhooks da plataforma Assinafy (validacao por header de segredo compartilhado (X-Webhook-Secret))
 - A superficie atual foi desenhada para uso por usuarios autenticados na propria intranet

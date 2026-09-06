@@ -22,15 +22,13 @@ import {
 } from '@/app/app/secretaria/oficios/actions';
 import { countMalaDiretaAudienceAction } from '@/app/app/secretaria/mala-direta/actions';
 import { generateEmailAction } from '@/app/app/secretaria/emails/gerar/actions';
-import { serializeOfficialLetterDetail, serializeOfficialLetterListItem } from './serialize-letters';
+import {
+  serializeOfficialLetterDetail,
+  serializeOfficialLetterListItem,
+} from './serialize-letters';
 import { downloadAuthenticatedCsv } from './download-csv';
 import { objectToFormData } from './form-data';
-import {
-  optionalPositiveInt,
-  optionalString,
-  requiredPositiveInt,
-  requiredString,
-} from './args';
+import { optionalPositiveInt, optionalString, requiredPositiveInt, requiredString } from './args';
 import { navigateResult, runTool, toolJsonResult, toolTextResult } from './result';
 import type { WebMcpTool } from './types';
 
@@ -72,10 +70,7 @@ function buildMalaDiretaQuery(input: Record<string, unknown>): string {
   return params.toString();
 }
 
-export function buildSecretariaTools(
-  router: RouterLike,
-  context: ToolContext = {},
-): WebMcpTool[] {
+export function buildSecretariaTools(router: RouterLike, context: ToolContext = {}): WebMcpTool[] {
   const officialId = context.officialId ?? null;
   const navigate = (href: string, message: string) => {
     router.push(href);
@@ -159,11 +154,14 @@ export function buildSecretariaTools(
       },
       annotations: { readOnlyHint: true },
       execute: async (input) =>
-        runTool(() => getOfficialProfileAction({ id: requiredPositiveInt(input.id, 'ID do oficial') })),
+        runTool(() =>
+          getOfficialProfileAction({ id: requiredPositiveInt(input.id, 'ID do oficial') }),
+        ),
     },
     {
       name: 'open-officials-list',
-      description: 'Abre a listagem de oficiais na UI, opcionalmente com o termo de busca já preenchido.',
+      description:
+        'Abre a listagem de oficiais na UI, opcionalmente com o termo de busca já preenchido.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -173,9 +171,7 @@ export function buildSecretariaTools(
       annotations: { readOnlyHint: true },
       execute: async (input) => {
         const q = optionalString(input.q);
-        const href = q
-          ? `/app/associados?q=${encodeURIComponent(q)}`
-          : '/app/associados';
+        const href = q ? `/app/associados?q=${encodeURIComponent(q)}` : '/app/associados';
         return navigate(href, 'Abrindo o cadastro de oficiais.');
       },
     },
@@ -460,10 +456,10 @@ export function buildSecretariaTools(
     },
     {
       name: 'open-mala-direta',
-      description: 'Abre a tela de mala direta (contagem e exportação CSV para o Gmail).',
+      description: 'Abre as campanhas de mala direta (e-mail em lote e etiquetas).',
       inputSchema: { type: 'object', properties: {} },
       annotations: { readOnlyHint: true },
-      execute: async () => navigate('/app/secretaria/mala-direta', 'Abrindo a mala direta.'),
+      execute: async () => navigate('/app/mala-direta', 'Abrindo as campanhas de mala direta.'),
     },
     {
       name: 'open-email-generator',
@@ -475,7 +471,8 @@ export function buildSecretariaTools(
     },
     {
       name: 'add-dependent',
-      description: 'Adiciona um dependente à ficha do oficial aberta. associateId, se enviado, precisa coincidir com a rota.',
+      description:
+        'Adiciona um dependente à ficha do oficial aberta. associateId, se enviado, precisa coincidir com a rota.',
       inputSchema: {
         type: 'object',
         properties: {

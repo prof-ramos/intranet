@@ -5,11 +5,7 @@ import { db } from '@/lib/db';
 import { assignments, associates } from '@/lib/db/schema';
 import { createLogger } from '@/lib/logger';
 import { splitContactName } from './name-split';
-import {
-  MALA_DIRETA_DEFAULT_LIMIT,
-  type GmailContactRow,
-  type MalaDiretaFilters,
-} from './types';
+import { MALA_DIRETA_DEFAULT_LIMIT, type GmailContactRow, type MalaDiretaFilters } from './types';
 
 const logger = createLogger('mala-direta:queries');
 
@@ -35,7 +31,9 @@ function buildAudienceConditions(filters: MalaDiretaFilters): SQL | undefined {
     filters.associationStatus
       ? eq(associates.associationStatus, filters.associationStatus)
       : undefined,
-    filters.functionalStatus ? eq(associates.functionalStatus, filters.functionalStatus) : undefined,
+    filters.functionalStatus
+      ? eq(associates.functionalStatus, filters.functionalStatus)
+      : undefined,
     locationCondition(filters.location),
     hasPrintableAssociateName,
     hasPrimaryEmailSql,

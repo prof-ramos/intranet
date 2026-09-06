@@ -8,6 +8,7 @@ import {
   healthAgreements,
   legalConsultations,
   legalProcesses,
+  mailingRecipients,
   monthlyPayments,
 } from '@/lib/db/schema';
 import {
@@ -29,6 +30,7 @@ const EXPECTED_ASSOCIATE_FOREIGN_KEYS = new Set([
   'public.legal_processes.associate_id',
   'public.dependents.associate_id',
   'public.health_agreements.associate_id',
+  'public.mailing_recipients.associate_id',
 ]);
 
 export interface ReconciliationSnapshot {
@@ -94,7 +96,8 @@ export async function acquireReconciliationWriteBarrier(tx: DbExecutor): Promise
       public.legal_consultations,
       public.legal_processes,
       public.dependents,
-      public.health_agreements
+      public.health_agreements,
+      public.mailing_recipients
     in share row exclusive mode
   `);
 }
@@ -149,6 +152,15 @@ export async function loadReconciliationSnapshot(
       .from(healthAgreements)
       .where(inArray(healthAgreements.associateId, ids))
       .orderBy(healthAgreements.id);
+    const mailingRecipientRows = await tx
+      .select({
+        id: mailingRecipients.id,
+        associateId: mailingRecipients.associateId,
+        campaignId: mailingRecipients.campaignId,
+      })
+      .from(mailingRecipients)
+      .where(inArray(mailingRecipients.associateId, ids))
+      .orderBy(mailingRecipients.id);
 
     for (const row of activityRows) {
       if (row.associateId !== null)
@@ -174,6 +186,14 @@ export async function loadReconciliationSnapshot(
       relationships.get(row.associateId)!.dependents.push({ id: row.id });
     for (const row of agreementRows) {
       relationships.get(row.associateId)!.healthAgreements.push({ id: row.id });
+    }
+    for (const row of mailingRecipientRows) {
+      if (row.associateId !== null) {
+        relationships.get(row.associateId)!.mailingRecipients.push({
+          id: row.id,
+          campaignId: row.campaignId,
+        });
+      }
     }
   }
 
@@ -216,6 +236,11 @@ async function assertNoKnownReferences(tx: DbExecutor, absorbedIds: number[]): P
       .from(healthAgreements)
       .where(inArray(healthAgreements.associateId, absorbedIds))
       .limit(1),
+    await tx
+      .select({ id: mailingRecipients.id })
+      .from(mailingRecipients)
+      .where(inArray(mailingRecipients.associateId, absorbedIds))
+      .limit(1),
   ];
   if (checks.some((rows) => rows.length > 0)) throw new Error('RECONCILIATION_REFERENCE_REMAINS');
 }
@@ -236,6 +261,7 @@ export async function applyReconciliationPlan(
       legalProcesses: 0,
       dependents: 0,
       healthAgreements: 0,
+      mailingRecipients: 0,
     };
 
     movedCounts.activities = (
@@ -279,6 +305,13 @@ export async function applyReconciliationPlan(
         .set({ associateId: canonicalId })
         .where(inArray(healthAgreements.associateId, absorbedIds))
         .returning({ id: healthAgreements.id })
+    ).length;
+    movedCounts.mailingRecipients = (
+      await tx
+        .update(mailingRecipients)
+        .set({ associateId: canonicalId })
+        .where(inArray(mailingRecipients.associateId, absorbedIds))
+        .returning({ id: mailingRecipients.id })
     ).length;
 
     await hooks.afterReparent?.();

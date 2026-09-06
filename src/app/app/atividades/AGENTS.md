@@ -9,23 +9,23 @@ Authenticated kanban interface for creating, filtering, assigning and moving adm
 
 ## Key Files
 
-| File | Description |
-|---|---|
-| `page.tsx` | Server entry that loads board data |
-| `AtividadesBoard.tsx` | Main client board orchestration |
-| `actions.ts` | Server Actions for activity mutations |
-| `ReassignModal.tsx` | Assignee-change workflow |
-| `_board/types.ts` | Board-specific view types |
-| `_board/url-state.ts` | URL filter serialization and parsing |
-| `_board/useBoardPreferences.ts` | Persisted board display preferences |
-| `nova/NovaAtividadeForm.tsx` | Activity creation form |
+| File                            | Description                           |
+| ------------------------------- | ------------------------------------- |
+| `page.tsx`                      | Server entry that loads board data    |
+| `AtividadesBoard.tsx`           | Main client board orchestration       |
+| `actions.ts`                    | Server Actions for activity mutations |
+| `ReassignModal.tsx`             | Assignee-change workflow              |
+| `_board/types.ts`               | Board-specific view types             |
+| `_board/url-state.ts`           | URL filter serialization and parsing  |
+| `_board/useBoardPreferences.ts` | Persisted board display preferences   |
+| `nova/NovaAtividadeForm.tsx`    | Activity creation form                |
 
 ## Subdirectories
 
-| Directory | Purpose |
-|---|---|
+| Directory | Purpose                                                                 |
+| --------- | ----------------------------------------------------------------------- |
 | `_board/` | Columns, cards, drawer, filters, quick-add, summaries and board helpers |
-| `nova/` | New-activity form and associate/assignee/tag inputs |
+| `nova/`   | New-activity form and associate/assignee/tag inputs                     |
 
 ## For AI Agents
 

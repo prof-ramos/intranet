@@ -17,7 +17,9 @@ describe('generateGmailContactsCsv', () => {
     expect(csv.startsWith('\uFEFF')).toBe(true);
     expect(csv).toContain(GMAIL_CONTACTS_HEADERS.map((h) => `"${h}"`).join(','));
     expect(csv).toContain('\r\n');
-    expect(csv).toContain('"Adalardo Nunciato Santiago","Adalardo","Santiago","ansantiago77@example.com"');
+    expect(csv).toContain(
+      '"Adalardo Nunciato Santiago","Adalardo","Santiago","ansantiago77@example.com"',
+    );
   });
 
   it('escapes quotes and prefixes formula-like cells', () => {

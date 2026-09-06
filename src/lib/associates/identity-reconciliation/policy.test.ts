@@ -13,6 +13,7 @@ const EMPTY_RELATIONSHIPS: RelationshipSnapshot = {
   legalProcesses: [],
   dependents: [],
   healthAgreements: [],
+  mailingRecipients: [],
 };
 
 function official(
@@ -107,6 +108,7 @@ describe('associate identity reconciliation policy', () => {
           legalProcesses: 0,
           dependents: 0,
           healthAgreements: 0,
+          mailingRecipients: 0,
         },
         conflictCodes: [],
       },
@@ -191,6 +193,35 @@ describe('associate identity reconciliation policy', () => {
         'NORMALIZED_NAME_CONFLICT',
       ],
     });
+  });
+
+  it('fails closed when two duplicates already appear in the same mailing campaign', () => {
+    const plan = buildReconciliationPlan({
+      associates: [official(1, { cpfHash: 'shared' }), official(2, { cpfHash: 'shared' })],
+      relationships: new Map([
+        [
+          1,
+          {
+            ...EMPTY_RELATIONSHIPS,
+            mailingRecipients: [{ id: 11, campaignId: 90 }],
+          },
+        ],
+        [
+          2,
+          {
+            ...EMPTY_RELATIONSHIPS,
+            mailingRecipients: [{ id: 12, campaignId: 90 }],
+          },
+        ],
+      ]),
+      unknownForeignKeys: [],
+    });
+
+    expect(plan.report.components[0]).toMatchObject({
+      eligible: false,
+      conflictCodes: ['MAILING_RECIPIENT_CAMPAIGN_CONFLICT'],
+    });
+    expect(plan.canApply).toBe(false);
   });
 
   it('selects the most complete and most connected canonical, then uses age and ID ties', () => {

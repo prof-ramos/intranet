@@ -9,16 +9,16 @@ Server-side authentication, authorization, password lifecycle, session cookies, 
 
 ## Key Files
 
-| File | Description |
-|---|---|
-| `session.ts` | Signed HTTP-only session creation, reading and invalidation |
-| `require-auth.ts` | Page/action authentication and role guards |
-| `authorization.ts` | Canonical role and permission checks |
-| `actions.ts` | Login/logout and account-related Server Actions |
-| `password.ts` | Argon2 password hashing and verification |
-| `password-reset.ts` | Temporary token-based password reset flow |
-| `login-rate-limit.ts` | Database-backed login attempt throttling |
-| `development-identity.ts` | Fail-closed `SKIP_AUTH` development identity handling |
+| File                      | Description                                                 |
+| ------------------------- | ----------------------------------------------------------- |
+| `session.ts`              | Signed HTTP-only session creation, reading and invalidation |
+| `require-auth.ts`         | Page/action authentication and role guards                  |
+| `authorization.ts`        | Canonical role and permission checks                        |
+| `actions.ts`              | Login/logout and account-related Server Actions             |
+| `password.ts`             | Argon2 password hashing and verification                    |
+| `password-reset.ts`       | Temporary token-based password reset flow                   |
+| `login-rate-limit.ts`     | Database-backed login attempt throttling                    |
+| `development-identity.ts` | Fail-closed `SKIP_AUTH` development identity handling       |
 
 ## For AI Agents
 

@@ -9,19 +9,19 @@ Drizzle/PostgreSQL connection layer, retry/query helpers, schema definitions and
 
 ## Key Files
 
-| File | Description |
-|---|---|
-| `index.ts` | Shared Drizzle client and PostgreSQL pool configuration |
-| `retry.ts` | Narrow retry policy for transient database failures |
-| `like-pattern.ts` | Safe escaping for SQL LIKE patterns |
+| File                         | Description                                                                  |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| `index.ts`                   | Shared Drizzle client and PostgreSQL pool configuration                      |
+| `retry.ts`                   | Narrow retry policy for transient database failures                          |
+| `like-pattern.ts`            | Safe escaping for SQL LIKE patterns                                          |
 | `schema.integration.test.ts` | Live contract for tables, columns, enums, indexes, extensions and migrations |
-| `schema/index.ts` | Schema barrel imported by Drizzle and application code |
-| `schema/enums.ts` | Shared PostgreSQL enums |
+| `schema/index.ts`            | Schema barrel imported by Drizzle and application code                       |
+| `schema/enums.ts`            | Shared PostgreSQL enums                                                      |
 
 ## Subdirectories
 
-| Directory | Purpose |
-|---|---|
+| Directory | Purpose                                                                                                                        |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `schema/` | One typed Drizzle schema module per domain, including auth, activities, associates, finance, legal, integrations and documents |
 
 ## For AI Agents

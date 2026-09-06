@@ -30,17 +30,25 @@ describe('downloadAuthenticatedCsv', () => {
       }),
     );
 
-    await expect(downloadAuthenticatedCsv('/app/secretaria/mala-direta/download')).resolves.toEqual({
-      ok: false,
-      status: 429,
-      message: 'Muitas exportações. Aguarde um minuto e tente de novo.',
-    });
+    await expect(downloadAuthenticatedCsv('/app/secretaria/mala-direta/download')).resolves.toEqual(
+      {
+        ok: false,
+        status: 429,
+        message: 'Muitas exportações. Aguarde um minuto e tente de novo.',
+      },
+    );
   });
 
   it('triggers a blob download on 200', async () => {
     const click = vi.fn();
     vi.spyOn(document, 'createElement').mockImplementation(() => {
-      return { click, rel: '', href: '', download: '', remove: vi.fn() } as unknown as HTMLAnchorElement;
+      return {
+        click,
+        rel: '',
+        href: '',
+        download: '',
+        remove: vi.fn(),
+      } as unknown as HTMLAnchorElement;
     });
     vi.spyOn(document.body, 'append').mockImplementation(() => undefined);
 
@@ -56,10 +64,12 @@ describe('downloadAuthenticatedCsv', () => {
       }),
     );
 
-    await expect(downloadAuthenticatedCsv('/app/secretaria/mala-direta/download')).resolves.toEqual({
-      ok: true,
-      filename: 'mala-direta-gmail-2026-09-04.csv',
-    });
+    await expect(downloadAuthenticatedCsv('/app/secretaria/mala-direta/download')).resolves.toEqual(
+      {
+        ok: true,
+        filename: 'mala-direta-gmail-2026-09-04.csv',
+      },
+    );
     expect(click).toHaveBeenCalled();
   });
 });
