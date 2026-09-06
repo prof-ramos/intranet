@@ -4,7 +4,7 @@ Atualizado em 2026-07-18 para refletir a higiene operacional do Plano 057, conte
 
 ## Visao Geral
 
-A intranet ASOF e uma aplicacao Next.js 16.2.12 App Router, server-side, com Drizzle ORM e PostgreSQL gerenciado (Neon). O repo atual e a fonte canonica de dominio, schema e UI.
+A intranet ASOF e uma aplicacao Next.js 16 App Router, server-side, com Drizzle ORM e PostgreSQL gerenciado (Neon). O repo atual e a fonte canonica de dominio, schema e UI.
 
 ## Modulos De Dominio
 
