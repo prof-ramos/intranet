@@ -605,7 +605,7 @@ Não tratar esta seção como checklist de release até nova decisão de produto
 **Funcionalidades:**
 
 - Histórico de campanhas (canal, status, destinatários, enviados, falhas, autor)
-- Criação com filtros, preview da lista e template com variáveis
+- Criação com filtros (vínculo, situação, contribuição, localização, categoria, lotação), preview da lista e template com variáveis (`{{nome}}`, `{{lotacao}}`, `{{padrao}}`, endereço, e-mail)
 - Canal e-mail: rascunho → iniciar envio (fila/cron) → sucesso/falha por destinatário
 - Canal etiquetas: PDF Pimaco 6182 (`POST …/etiquetas/gerar`) e CSV (`POST …/etiquetas/csv`)
 - Cancelamento de rascunho ou envio em andamento (auditável)
