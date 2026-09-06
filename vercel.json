@@ -32,7 +32,7 @@
     },
     {
       "path": "/api/v1/mailing/process",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 7 * * *"
     }
   ]
 }

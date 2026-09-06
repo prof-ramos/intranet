@@ -826,7 +826,7 @@ Renova subscription Gmail Watch (cron). Requer `CRON_SECRET`.
 
 ### `GET /api/v1/mailing/process`
 
-Processa a fila de campanhas de e-mail em lote. Requer `CRON_SECRET`. Agenda Vercel: a cada 15 minutos.
+Processa a fila de campanhas de e-mail em lote. Requer `CRON_SECRET`. Agenda Vercel: diária (`0 7 * * *`, limite Hobby). Lotes extras saem de “Iniciar envio” / “Processar lote” na campanha.
 
 **Funcional quando:** reivindica destinatários com `SKIP LOCKED`, não envia após cancelamento e não expõe PII em logs.
 

@@ -5,7 +5,9 @@ import { defineServerAction } from '@/lib/server-actions/define-form-action';
 import {
   cancelMailingCampaign,
   createMailingCampaign,
+  MAILING_MANUAL_BATCH,
   previewMailingAudience,
+  processMailingBatch,
   startMailingCampaign,
   type MailingPreviewResult,
 } from '@/lib/mailing';
@@ -60,7 +62,17 @@ export const createMailingCampaignAction = defineServerAction({
 export const startMailingCampaignAction = defineServerAction({
   auth: ALLOWED_ROLES,
   schema: z.object({ campaignId: z.number().int().positive() }),
-  service: async (input, user) => startMailingCampaign(input.campaignId, user.userId),
+  service: async (input, user) => {
+    await startMailingCampaign(input.campaignId, user.userId);
+    return processMailingBatch(MAILING_MANUAL_BATCH);
+  },
+  revalidate: '/app/mala-direta',
+});
+
+export const processMailingBatchAction = defineServerAction({
+  auth: ALLOWED_ROLES,
+  schema: z.object({ campaignId: z.number().int().positive() }),
+  service: async () => processMailingBatch(MAILING_MANUAL_BATCH),
   revalidate: '/app/mala-direta',
 });
 

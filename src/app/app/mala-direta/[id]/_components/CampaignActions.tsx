@@ -3,7 +3,11 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Loader2 } from 'lucide-react';
-import { cancelMailingCampaignAction, startMailingCampaignAction } from '../../actions';
+import {
+  cancelMailingCampaignAction,
+  processMailingBatchAction,
+  startMailingCampaignAction,
+} from '../../actions';
 import type { MailingCampaignDetail } from '@/lib/mailing';
 import { campaignEtiquetasDownloadPath } from '@/lib/mailing/paths';
 
@@ -64,6 +68,17 @@ export function CampaignActions({ campaign }: { campaign: MailingCampaignDetail 
           >
             {isPending && <Loader2 size={16} className="animate-spin" />}
             Iniciar envio
+          </button>
+        )}
+        {campaign.channel === 'email' && campaign.status === 'em_envio' && (
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => run(() => processMailingBatchAction({ campaignId: campaign.id }))}
+            className={`${BUTTON_CLASS} border-[#0d3260] bg-[#040920] text-white hover:bg-[#0d3260]`}
+          >
+            {isPending && <Loader2 size={16} className="animate-spin" />}
+            Processar lote
           </button>
         )}
         {(campaign.status === 'rascunho' || campaign.status === 'em_envio') && (

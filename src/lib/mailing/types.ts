@@ -90,4 +90,5 @@ export interface MailingRecipientRow {
 export const MAILING_MAX_RECIPIENTS = 2000;
 export const MAILING_MAX_ATTEMPTS = 3;
 export const MAILING_PREVIEW_SAMPLE = 25;
+export const MAILING_MANUAL_BATCH = 20;
 export const MAILING_STALE_CLAIM_MS = 20 * 60 * 1000;
