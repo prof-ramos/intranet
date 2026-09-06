@@ -61,6 +61,20 @@ describe('NotificationBell panel', () => {
     expect(screen.getByText('Atividade atribuída')).toBeDefined();
   });
 
+  it('focuses the trigger when the panel opens from the lazy wrapper', async () => {
+    vi.mocked(listNotificationsAction).mockResolvedValue({
+      notifications: [],
+    } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
+
+    render(<NotificationBell userId={1} defaultOpen />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: 'Painel de notificações' })).toBeDefined();
+    });
+
+    expect(document.activeElement).toBe(screen.getByTestId('notification-bell'));
+  });
+
   it('shows a full error only when the list is empty', async () => {
     vi.mocked(listNotificationsAction).mockRejectedValue(new Error('offline'));
 
