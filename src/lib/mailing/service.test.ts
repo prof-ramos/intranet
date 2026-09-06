@@ -36,7 +36,11 @@ vi.mock('./repository', () => ({
   cancelPendingRecipients: vi.fn(),
   claimPendingRecipients: vi.fn().mockResolvedValue([]),
   getPendingRecipients: vi.fn().mockResolvedValue([]),
-  finalizeCampaignProgress: vi.fn(),
+  finalizeCampaignProgress: vi.fn().mockResolvedValue({
+    totals: { sent: 0, failed: 0, pending: 1 },
+    terminalStatus: null,
+    transitioned: false,
+  }),
   markRecipientResult: vi.fn(),
   markRecipientCancelled: vi.fn(),
 }));
@@ -295,6 +299,7 @@ describe('processMailingBatch', () => {
         categoria: null,
         situacaoAssociativa: 'nao_associado',
         lotacao: 'SERE',
+        padrao: 'Especial V',
         enderecoCompleto: null,
         bairro: null,
         cidade: 'Brasília',
@@ -363,6 +368,38 @@ describe('processMailingBatch', () => {
     expect(mockedSendEmail).not.toHaveBeenCalled();
     expect(mockedRepository.markRecipientCancelled).toHaveBeenCalledWith(expect.anything(), 103);
     expect(result).toEqual({ processed: 1, sent: 0, failed: 0 });
+  });
+
+  it('audita conclusão quando o worker fecha a campanha em envio', async () => {
+    mockedRepository.claimPendingRecipients.mockResolvedValue([]);
+    mockedRepository.finalizeCampaignProgress.mockResolvedValue({
+      totals: { sent: 4, failed: 1, pending: 0 },
+      terminalStatus: 'concluida',
+      transitioned: true,
+    });
+
+    await processMailingBatch(10);
+
+    expect(logAuditAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        adminId: null,
+        action: 'mailing.campaign.completed',
+        metadata: expect.objectContaining({ campaignId: 9, sent: 4, failed: 1 }),
+      }),
+    );
+  });
+
+  it('audita falha total sem sobrescrever quando a finalização não transiciona', async () => {
+    mockedRepository.claimPendingRecipients.mockResolvedValue([]);
+    mockedRepository.finalizeCampaignProgress.mockResolvedValue({
+      totals: { sent: 0, failed: 3, pending: 0 },
+      terminalStatus: 'falhou',
+      transitioned: false,
+    });
+
+    await processMailingBatch(10);
+
+    expect(logAuditAction).not.toHaveBeenCalled();
   });
 });
 

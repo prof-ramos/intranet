@@ -10,6 +10,7 @@ export const MAILING_TEMPLATE_VARIABLES: MailingTemplateVariable[] = [
   { key: 'categoria', label: 'Categoria associativa' },
   { key: 'situacao_associativa', label: 'Situação associativa' },
   { key: 'lotacao', label: 'Lotação / posto' },
+  { key: 'padrao', label: 'Classe e padrão' },
   { key: 'endereco_completo', label: 'Endereço completo' },
   { key: 'bairro', label: 'Bairro' },
   { key: 'cidade', label: 'Cidade' },
@@ -25,6 +26,7 @@ export interface MailingTemplateContext {
   categoria?: string | null;
   situacao_associativa?: string | null;
   lotacao?: string | null;
+  padrao?: string | null;
   endereco_completo?: string | null;
   bairro?: string | null;
   cidade?: string | null;

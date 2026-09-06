@@ -49,6 +49,18 @@ export function describeMailingFilters(filters: unknown): { label: string; value
       value: LOCATION_LABEL[parsed.location] ?? parsed.location,
     });
   }
+  if (parsed.associationCategory) {
+    rows.push({
+      label: 'Categoria',
+      value: parsed.associationCategory,
+    });
+  }
+  if (parsed.assignment) {
+    rows.push({
+      label: 'Lotação',
+      value: parsed.assignment,
+    });
+  }
   return rows;
 }
 

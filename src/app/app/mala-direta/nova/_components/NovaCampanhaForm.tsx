@@ -15,6 +15,8 @@ interface Filters {
   functionalStatus?: 'ativo' | 'aposentado' | 'cedido' | 'em_licenca';
   contributionStatus?: 'em_dia' | 'inadimplente';
   location?: 'brasil' | 'exterior';
+  associationCategory?: string;
+  assignment?: string;
 }
 
 const SELECT_CLASS = [
@@ -191,7 +193,7 @@ export function NovaCampanhaForm() {
         <legend className="text-sm font-semibold" style={{ color: textMuted }}>
           Público-alvo
         </legend>
-        <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium" style={{ color: textMuted }}>
               Situação associativa
@@ -252,6 +254,34 @@ export function NovaCampanhaForm() {
               <option value="brasil">Brasil</option>
               <option value="exterior">Exterior</option>
             </select>
+          </label>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium" style={{ color: textMuted }}>
+              Categoria
+            </span>
+            <input
+              type="text"
+              value={filters.associationCategory ?? ''}
+              onChange={(event) => updateFilter('associationCategory', event.target.value)}
+              placeholder="Ex.: efetivo"
+              maxLength={120}
+              className={SELECT_CLASS}
+            />
+          </label>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium" style={{ color: textMuted }}>
+              Lotação
+            </span>
+            <input
+              type="text"
+              value={filters.assignment ?? ''}
+              onChange={(event) => updateFilter('assignment', event.target.value)}
+              placeholder="Ex.: SERE ou Paris"
+              maxLength={120}
+              className={SELECT_CLASS}
+            />
           </label>
         </div>
 

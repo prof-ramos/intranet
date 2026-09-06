@@ -8,11 +8,15 @@ describe('describeMailingFilters', () => {
         associationStatus: 'nao_associado',
         functionalStatus: 'aposentado',
         location: 'exterior',
+        associationCategory: 'efetivo',
+        assignment: 'SERE',
       }),
     ).toEqual([
       { label: 'Vínculo ASOF', value: 'Não associado' },
       { label: 'Situação funcional', value: 'Aposentado' },
       { label: 'Localização', value: 'Exterior' },
+      { label: 'Categoria', value: 'efetivo' },
+      { label: 'Lotação', value: 'SERE' },
     ]);
   });
 

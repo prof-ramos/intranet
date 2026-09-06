@@ -2,12 +2,21 @@ import { z } from 'zod';
 import { mailingChannel } from '@/lib/db/schema';
 import { MAILING_MAX_RECIPIENTS } from './types';
 
+const optionalTrimmedFilter = z
+  .string()
+  .trim()
+  .max(120)
+  .optional()
+  .transform((value) => (value ? value : undefined));
+
 export const mailingAudienceFiltersSchema = z
   .object({
     associationStatus: z.enum(['associado', 'nao_associado']).optional(),
     functionalStatus: z.enum(['ativo', 'aposentado', 'cedido', 'em_licenca']).optional(),
     contributionStatus: z.enum(['em_dia', 'inadimplente']).optional(),
     location: z.enum(['brasil', 'exterior']).optional(),
+    associationCategory: optionalTrimmedFilter,
+    assignment: optionalTrimmedFilter,
   })
   .strict();
 

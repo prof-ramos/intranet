@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, sql, type SQL } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import {
   admins,
@@ -32,6 +32,10 @@ function hasContactSql(channel: 'email' | 'etiquetas'): SQL | undefined {
   )`;
 }
 
+function likeContains(value: string): string {
+  return `%${value.replace(/[%_]/g, '')}%`;
+}
+
 function audienceConditions(filters: MailingAudienceFilters, channel: 'email' | 'etiquetas') {
   return and(
     filters.associationStatus
@@ -49,6 +53,10 @@ function audienceConditions(filters: MailingAudienceFilters, channel: 'email' | 
           filters.location,
         )
       : undefined,
+    filters.associationCategory
+      ? sql`lower(btrim(${associates.associationCategory})) = ${filters.associationCategory.toLocaleLowerCase('pt-BR')}`
+      : undefined,
+    filters.assignment ? ilike(associates.assignment, likeContains(filters.assignment)) : undefined,
     hasContactSql(channel),
   );
 }
@@ -209,6 +217,7 @@ export async function getMailingRecipientContexts(
       associationCategory: associates.associationCategory,
       associationStatus: associates.associationStatus,
       assignment: associates.assignment,
+      classPattern: associates.classPattern,
       locationCity: associates.locationCity,
       addressState: associates.addressState,
       neighborhood: associates.neighborhood,
@@ -225,6 +234,7 @@ export async function getMailingRecipientContexts(
     categoria: row.associationCategory,
     situacaoAssociativa: row.associationStatus,
     lotacao: row.assignment,
+    padrao: row.classPattern,
     enderecoCompleto: decryptPiiField(row.addressCiphertext, row.address),
     bairro: row.neighborhood,
     cidade: row.locationCity,

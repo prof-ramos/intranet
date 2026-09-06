@@ -184,6 +184,7 @@ function buildContext(
     categoria: recipient?.categoria ?? null,
     situacao_associativa: recipient?.situacaoAssociativa ?? null,
     lotacao: recipient?.lotacao ?? null,
+    padrao: recipient?.padrao ?? null,
     endereco_completo: recipient?.enderecoCompleto ?? null,
     bairro: recipient?.bairro ?? null,
     cidade: recipient?.cidade ?? null,
@@ -224,7 +225,7 @@ export async function processMailingBatch(limit: number): Promise<ProcessMailing
 
     const pending = await claimPendingRecipients(db, campaign.id, remaining);
     if (pending.length === 0) {
-      await db.transaction((tx) => finalizeCampaignProgress(tx, campaign.id));
+      await finalizeAndAuditCampaign(campaign.id);
       continue;
     }
 
@@ -278,10 +279,31 @@ export async function processMailingBatch(limit: number): Promise<ProcessMailing
       }
     }
 
-    await db.transaction((tx) => finalizeCampaignProgress(tx, campaign.id));
+    await finalizeAndAuditCampaign(campaign.id);
   }
 
   return result;
+}
+
+async function finalizeAndAuditCampaign(campaignId: number): Promise<void> {
+  await db.transaction(async (tx) => {
+    const progress = await finalizeCampaignProgress(tx, campaignId);
+    if (!progress.transitioned || !progress.terminalStatus) return;
+    await logAuditAction({
+      adminId: null,
+      action:
+        progress.terminalStatus === 'falhou'
+          ? 'mailing.campaign.failed'
+          : 'mailing.campaign.completed',
+      entityType: 'associate',
+      metadata: {
+        campaignId,
+        sent: progress.totals.sent,
+        failed: progress.totals.failed,
+      },
+      executor: tx,
+    });
+  });
 }
 
 export async function generateCampaignEtiquetasPdf(campaignId: number): Promise<Uint8Array> {
@@ -335,6 +357,7 @@ export async function buildCampaignEtiquetasCsv(campaignId: number): Promise<str
     'categoria',
     'situacao_associativa',
     'lotacao',
+    'padrao',
     'endereco_completo',
     'bairro',
     'cidade',
@@ -350,6 +373,7 @@ export async function buildCampaignEtiquetasCsv(campaignId: number): Promise<str
       recipient.categoria,
       recipient.situacaoAssociativa,
       recipient.lotacao,
+      recipient.padrao,
       recipient.enderecoCompleto,
       recipient.bairro,
       recipient.cidade,

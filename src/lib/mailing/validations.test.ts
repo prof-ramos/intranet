@@ -12,8 +12,22 @@ describe('mailingAudienceFiltersSchema', () => {
       functionalStatus: 'ativo',
       contributionStatus: 'em_dia',
       location: 'exterior',
+      associationCategory: 'efetivo',
+      assignment: 'SERE',
     });
     expect(result.success).toBe(true);
+  });
+
+  it('normaliza categoria e lotação vazias', () => {
+    const result = mailingAudienceFiltersSchema.safeParse({
+      associationCategory: '  ',
+      assignment: '',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.associationCategory).toBeUndefined();
+      expect(result.data.assignment).toBeUndefined();
+    }
   });
 
   it('rejeita chaves desconhecidas', () => {

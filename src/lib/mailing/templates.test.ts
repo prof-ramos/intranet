@@ -15,9 +15,12 @@ const context = {
 
 describe('renderTemplate', () => {
   it('substitui variáveis conhecidas', () => {
-    expect(renderTemplate('Olá, {{nome}} ({{ lotacao }})', context)).toBe(
-      'Olá, João da Silva (Embaixada em Paris)',
-    );
+    expect(
+      renderTemplate('Olá, {{nome}} ({{ lotacao }}) — {{padrao}}', {
+        ...context,
+        padrao: 'Especial V',
+      }),
+    ).toBe('Olá, João da Silva (Embaixada em Paris) — Especial V');
   });
 
   it('aceita espaços dentro das chaves', () => {

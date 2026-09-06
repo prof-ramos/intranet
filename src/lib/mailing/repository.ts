@@ -190,12 +190,30 @@ export async function getCampaignRecipientTotals(
   return totals;
 }
 
+export type TerminalMailingStatus = 'concluida' | 'falhou';
+
+export function resolveTerminalCampaignStatus(
+  totals: CampaignRecipientTotals,
+): TerminalMailingStatus | null {
+  if (totals.pending > 0) return null;
+  return totals.sent === 0 && totals.failed > 0 ? 'falhou' : 'concluida';
+}
+
+export interface FinalizeCampaignProgressResult {
+  totals: CampaignRecipientTotals;
+  terminalStatus: TerminalMailingStatus | null;
+  transitioned: boolean;
+}
+
 /**
  * Atualiza os contadores da campanha a partir dos destinatários e, quando não
- * restam destinatários pendentes/em envio, marca como concluída somente se
- * ainda estiver `em_envio` — nunca sobrescreve `cancelada`.
+ * restam destinatários pendentes/em envio, marca como concluída ou falhou
+ * somente se ainda estiver `em_envio` — nunca sobrescreve `cancelada`.
  */
-export async function finalizeCampaignProgress(tx: DbExecutor, campaignId: number): Promise<void> {
+export async function finalizeCampaignProgress(
+  tx: DbExecutor,
+  campaignId: number,
+): Promise<FinalizeCampaignProgressResult> {
   const totals = await getCampaignRecipientTotals(tx, campaignId);
   await tx
     .update(mailingCampaigns)
@@ -205,10 +223,16 @@ export async function finalizeCampaignProgress(tx: DbExecutor, campaignId: numbe
     })
     .where(eq(mailingCampaigns.id, campaignId));
 
-  if (totals.pending > 0) return;
+  const terminalStatus = resolveTerminalCampaignStatus(totals);
+  if (!terminalStatus) {
+    return { totals, terminalStatus: null, transitioned: false };
+  }
 
-  await tx
+  const updated = await tx
     .update(mailingCampaigns)
-    .set({ status: 'concluida', completedAt: new Date() })
-    .where(and(eq(mailingCampaigns.id, campaignId), eq(mailingCampaigns.status, 'em_envio')));
+    .set({ status: terminalStatus, completedAt: new Date() })
+    .where(and(eq(mailingCampaigns.id, campaignId), eq(mailingCampaigns.status, 'em_envio')))
+    .returning({ id: mailingCampaigns.id });
+
+  return { totals, terminalStatus, transitioned: updated.length > 0 };
 }

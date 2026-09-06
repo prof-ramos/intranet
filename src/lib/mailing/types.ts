@@ -24,6 +24,8 @@ export interface MailingAudienceFilters {
   functionalStatus?: 'ativo' | 'aposentado' | 'cedido' | 'em_licenca';
   contributionStatus?: 'em_dia' | 'inadimplente';
   location?: 'brasil' | 'exterior';
+  associationCategory?: string;
+  assignment?: string;
 }
 
 export interface MailingAudienceMember {
@@ -67,6 +69,7 @@ export interface MailingRecipientContext {
   categoria: string | null;
   situacaoAssociativa: string | null;
   lotacao: string | null;
+  padrao: string | null;
   enderecoCompleto: string | null;
   bairro: string | null;
   cidade: string | null;
