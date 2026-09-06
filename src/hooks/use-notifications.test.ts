@@ -105,5 +105,35 @@ describe('use-notifications', () => {
         vi.useRealTimers();
       }
     });
+
+    it('seta erro quando o poll falha com a lista vazia', async () => {
+      vi.useFakeTimers();
+      try {
+        vi.mocked(listNotificationsAction).mockResolvedValueOnce({
+          notifications: [],
+        } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
+
+        const { result } = renderHook(() => useNotifications({ userId: 1 }));
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(result.current.notifications).toHaveLength(0);
+        expect(result.current.error).toBeNull();
+
+        vi.mocked(listNotificationsAction).mockRejectedValueOnce(new Error('Poll timeout'));
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(60_000);
+        });
+
+        expect(result.current.notifications).toHaveLength(0);
+        expect(result.current.error).toBe('Não foi possível atualizar as notificações.');
+        expect(result.current.loading).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });

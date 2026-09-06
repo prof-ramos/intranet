@@ -138,6 +138,8 @@ export function NotificationBell({ userId }: NotificationBellProps) {
         navigate: (safeHref) => router.push(safeHref),
         close: () => setOpen(false),
       });
+    } catch {
+      // O hook já fez rollback e setou o erro; o painel permanece aberto.
     } finally {
       setPendingId(null);
     }
@@ -205,7 +207,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           </div>
 
           <div className="max-h-[28rem] overflow-y-auto">
-            {loading ? (
+            {loading && notifications.length === 0 ? (
               <div
                 role="status"
                 aria-live="polite"
@@ -215,78 +217,94 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                 <Loader2 size={16} className="animate-spin" aria-hidden="true" />
                 Carregando notificações...
               </div>
-            ) : loadError ? (
-              <div role="alert" className="px-4 py-6 text-sm" style={{ color: textMuted }}>
-                {loadError}
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="px-4 py-8 text-sm" style={{ color: textMuted }}>
-                Nenhuma notificação encontrada.
-              </div>
             ) : (
-              <ul className="divide-y" style={{ borderColor: hairline }}>
-                {notifications.map((notification) => {
-                  const safeHref = getSafeInternalHref(notification.href);
-                  const isPending = pendingId === notification.id;
+              <>
+                {loadError ? (
+                  <div
+                    role="alert"
+                    className={
+                      notifications.length > 0 ? 'border-b px-4 py-3 text-sm' : 'px-4 py-6 text-sm'
+                    }
+                    style={{ color: textMuted, borderColor: hairline }}
+                  >
+                    {loadError}
+                  </div>
+                ) : null}
 
-                  return (
-                    <li key={notification.id}>
-                      <button
-                        type="button"
-                        onClick={() => handleNotificationClick(notification.id, safeHref)}
-                        disabled={isPending}
-                        className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-[#f8fafc] disabled:cursor-wait ${focusRingClass}`}
-                        style={{
-                          backgroundColor: notification.readAt ? white : '#f5f9ff',
-                          borderLeft: notification.readAt
-                            ? `3px solid transparent`
-                            : `3px solid ${skyBlue}`,
-                        }}
-                      >
-                        <span
-                          className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
-                          style={{
-                            backgroundColor: notification.readAt ? 'rgba(13,31,60,0.18)' : skyBlue,
-                          }}
-                          aria-hidden="true"
-                        />
+                {notifications.length === 0 && !loadError ? (
+                  <div className="px-4 py-8 text-sm" style={{ color: textMuted }}>
+                    Nenhuma notificação encontrada.
+                  </div>
+                ) : null}
 
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-start justify-between gap-3">
-                            <span className="min-w-0">
-                              <span className="block truncate text-sm font-semibold text-[#0d1f3c]">
-                                {notification.title}
-                              </span>
-                              <span
-                                className="mt-1 block text-sm leading-5"
-                                style={{ color: textMuted }}
-                              >
-                                {notification.message || 'Sem detalhes adicionais.'}
-                              </span>
-                            </span>
+                {notifications.length > 0 ? (
+                  <ul className="divide-y" style={{ borderColor: hairline }}>
+                    {notifications.map((notification) => {
+                      const safeHref = getSafeInternalHref(notification.href);
+                      const isPending = pendingId === notification.id;
 
+                      return (
+                        <li key={notification.id}>
+                          <button
+                            type="button"
+                            onClick={() => handleNotificationClick(notification.id, safeHref)}
+                            disabled={isPending}
+                            className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-[#f8fafc] disabled:cursor-wait ${focusRingClass}`}
+                            style={{
+                              backgroundColor: notification.readAt ? white : '#f5f9ff',
+                              borderLeft: notification.readAt
+                                ? `3px solid transparent`
+                                : `3px solid ${skyBlue}`,
+                            }}
+                          >
                             <span
-                              className="shrink-0 text-[11px] font-medium"
-                              style={{ color: textMuted }}
-                            >
-                              {formatTimestamp(notification.createdAt)}
-                            </span>
-                          </span>
+                              className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
+                              style={{
+                                backgroundColor: notification.readAt
+                                  ? 'rgba(13,31,60,0.18)'
+                                  : skyBlue,
+                              }}
+                              aria-hidden="true"
+                            />
 
-                          {!safeHref && (
-                            <span
-                              className="mt-2 block text-[11px] font-medium tracking-[0.06em] uppercase"
-                              style={{ color: textMuted }}
-                            >
-                              Sem atalho interno
+                            <span className="min-w-0 flex-1">
+                              <span className="flex items-start justify-between gap-3">
+                                <span className="min-w-0">
+                                  <span className="block truncate text-sm font-semibold text-[#0d1f3c]">
+                                    {notification.title}
+                                  </span>
+                                  <span
+                                    className="mt-1 block text-sm leading-5"
+                                    style={{ color: textMuted }}
+                                  >
+                                    {notification.message || 'Sem detalhes adicionais.'}
+                                  </span>
+                                </span>
+
+                                <span
+                                  className="shrink-0 text-[11px] font-medium"
+                                  style={{ color: textMuted }}
+                                >
+                                  {formatTimestamp(notification.createdAt)}
+                                </span>
+                              </span>
+
+                              {!safeHref && (
+                                <span
+                                  className="mt-2 block text-[11px] font-medium tracking-[0.06em] uppercase"
+                                  style={{ color: textMuted }}
+                                >
+                                  Sem atalho interno
+                                </span>
+                              )}
                             </span>
-                          )}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
+              </>
             )}
           </div>
         </div>
