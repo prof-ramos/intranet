@@ -145,9 +145,6 @@ async function warmupJitRoutes() {
   try {
     const page = await context.newPage();
     await page.goto(`${E2E_BASE_URL}/app`);
-    await page.locator('[data-testid="notification-bell"]:not([disabled])').waitFor({
-      timeout: 60_000,
-    });
 
     // Compile the filtered associados list so subsequent list navigations are
     // instant. The list links to the profile first; the edit route is exposed
@@ -183,12 +180,6 @@ async function warmupJitRoutes() {
 
     // Compile the oficios route to prevent JIT timeout in assinafy tests.
     await page.goto(`${E2E_BASE_URL}/app/secretaria/oficios`, { timeout: 60_000 });
-
-    // Compile the activity form so the first create action is not JIT-bound.
-    await page.goto(`${E2E_BASE_URL}/app/atividades/nova`, { timeout: 60_000 });
-    await page.locator('[data-testid="notification-bell"]:not([disabled])').waitFor({
-      timeout: 60_000,
-    });
 
     // The edit form includes the rich-text editor's client bundle. Waiting for
     // DOMContentLoaded warms the protected App Router page without blocking

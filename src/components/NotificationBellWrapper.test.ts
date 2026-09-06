@@ -9,10 +9,12 @@ const source = readFileSync(
 );
 
 describe('NotificationBellWrapper', () => {
-  it('loads NotificationBell through a dynamic import without the action graph', () => {
+  it('loads NotificationBell through a dynamic import only after open', () => {
     expect(source).toMatch(/dynamic\(/);
     expect(source).toMatch(/ssr:\s*false/);
     expect(source).toMatch(/import\('\.\/NotificationBell'\)/);
+    expect(source).toMatch(/const \[opened, setOpened\]/);
+    expect(source).toMatch(/defaultOpen/);
     expect(source).not.toMatch(/from '@\/hooks\/use-notifications'/);
     expect(source).not.toMatch(/from '@\/app\/app\/notifications\/actions'/);
   });

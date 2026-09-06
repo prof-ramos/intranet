@@ -11,7 +11,7 @@ Shared React UI components used across the app.
 - `NavGroup.tsx` — navigation group with label and links
 - `NavLink.tsx` — navigation link with active state
 - `NotificationBell.tsx` — in-app notification bell (with test)
-- `NotificationBellWrapper.tsx` — dynamic island no layout autenticado (evita compilar actions no grafo estático)
+- `NotificationBellWrapper.tsx` — carrega o Bell só ao abrir o painel (evita actions no grafo de toda página /app)
 - `Sidebar.tsx` — main sidebar navigation component
 
 ## Structure

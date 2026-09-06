@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'fs';
 import path from 'path';
-import { expect, test as base, type BrowserContext, type Page } from '@playwright/test';
+import { test as base, type BrowserContext, type Page } from '@playwright/test';
 import { E2E_AUTH_STATE_DIR, E2E_USERS, type E2EAuthRole } from './constants';
 
 export interface TestUser {
@@ -76,13 +76,6 @@ async function loginWithPassword(page: Page, user: TestUser, maxAttempts = 3) {
   await page.waitForURL('/app', { timeout: 15000 });
 }
 
-export async function waitForNotificationBell(page: Page) {
-  // O wrapper monta um skeleton disabled até o chunk do Bell hidratar.
-  // Sem essa espera, o JIT do dynamic import compete com a primeira
-  // server action da página (ex.: criar atividade) e o toast nunca aparece.
-  await expect(page.getByTestId('notification-bell')).toBeEnabled();
-}
-
 async function loginAs(page: Page, user: TestUser, role: E2EAuthRole) {
   const context = page.context();
   await context.clearCookies();
@@ -90,7 +83,6 @@ async function loginAs(page: Page, user: TestUser, role: E2EAuthRole) {
   await page.goto('/app');
 
   if (page.url().includes('/app')) {
-    await waitForNotificationBell(page);
     return;
   }
 
@@ -99,7 +91,6 @@ async function loginAs(page: Page, user: TestUser, role: E2EAuthRole) {
   // paying the bcrypt/login cost on the normal path.
   await context.clearCookies();
   await loginWithPassword(page, user);
-  await waitForNotificationBell(page);
 }
 
 export const test = base.extend<{

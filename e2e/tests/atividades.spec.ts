@@ -1,4 +1,4 @@
-import { test, expect, waitForNotificationBell } from '../fixtures';
+import { test, expect } from '../fixtures';
 
 test.describe('Kanban de Atividades', () => {
   test('board carrega com colunas visíveis', async ({ page, loginAsAdmin }) => {
@@ -28,7 +28,6 @@ test.describe('Kanban de Atividades', () => {
     // Clica no botão "Nova atividade" para navegar ao formulário
     await page.locator('#main-content').getByRole('link', { name: 'Nova atividade' }).click();
     await expect(page).toHaveURL('/app/atividades/nova');
-    await waitForNotificationBell(page);
 
     // Preenche o título
     await page.fill('#activity-title', 'Validar boletim de Junho');

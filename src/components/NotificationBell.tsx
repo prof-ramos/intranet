@@ -19,6 +19,7 @@ import {
 
 interface NotificationBellProps {
   userId: number;
+  defaultOpen?: boolean;
 }
 
 // ⚡ Bolt: Cache Intl instances to avoid expensive object creation on every render
@@ -85,10 +86,10 @@ export async function processNotificationClick(input: {
   return Boolean(safeHref);
 }
 
-export function NotificationBell({ userId }: NotificationBellProps) {
+export function NotificationBell({ userId, defaultOpen = false }: NotificationBellProps) {
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [pendingId, setPendingId] = useState<number | null>(null);
   const {
     notifications,
