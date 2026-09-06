@@ -10,7 +10,7 @@ Shared React UI components used across the app.
 - `LogoutButton.tsx` — logout button component
 - `NavGroup.tsx` — navigation group with label and links
 - `NavLink.tsx` — navigation link with active state
-- `NotificationBell.tsx` — legacy in-app bell (with test; not mounted in layout; Novu inbox used when configured)
+- `NotificationBell.tsx` — in-app notification bell (with test; mounted in the authenticated layout)
 - `Sidebar.tsx` — main sidebar navigation component
 
 ## Structure

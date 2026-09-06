@@ -6,6 +6,8 @@ Aceito (emendado em 2026-07-01 — §4 des-canoniza o routing de `createdById` e
 
 Emenda 2026-09-06: o escritor in-app (`emitEvent` → `notifications`) permanece ativo; o leitor `NotificationBell` (polling) **não** está montado no layout. Novu é inbox opcional sem publisher no backend. Decisão de produto pendente — não tratar o fluxo até o Bell como UI vigente.
 
+Emenda 2026-09-06 (decisão A): o layout autenticado volta a montar `NotificationBell` como UI in-app. O caminho vigente é `emitEvent` → `notifications` → polling do Bell. Novu não é o caminho in-app e não está montado.
+
 ## Contexto
 
 O módulo `/app/atividades` (quadro Kanban) é uma das superfícies operacionais mais movimentadas da intranet. A diretoria manifestou a necessidade de expor mudanças no Kanban para um **futuro sistema de automação/push externo** — por exemplo, enviar e-mail ao Coordenador quando uma tarefa por ele atribuída sai de `a_fazer` para `em_andamento`. O escopo desta decisão é **exclusivamente o webhook em si** (emissão + entrega); o consumer de e-mail/automação está fora de escopo.
@@ -15,7 +17,7 @@ A investigação do código revelou dois fatos que moldam a decisão:
 1. **A infraestrutura de webhook já existe em ~90%.** Há outbox transacional (`domain_events` + `emitDomainEvent` em `src/lib/integrations/outbox.ts`), subscrições gerenciadas com HMAC-SHA256 (`webhook_subscriptions`), dispatcher com `FOR UPDATE SKIP LOCKED`, retry exponencial (máx. 5), proteção SSRF/redirect, saniteização PII no corpo e nos excertos de resposta, e UI admin de subscrição em `/app/config/integracoes/webhooks`. O dispatcher roda via Vercel Cron em `/api/v1/events/dispatch` (diário 03:00 UTC), rota GET protegida por `CRON_SECRET`.
 
 2. **Há dois sistemas de eventos distintos no codebase**, e apenas um deles é webhook:
-   - **Sistema in-app (`src/lib/events.ts`)** — persistência recipient-targeted em `notifications`. `emitEvent` → `notifications` (PostgreSQL). Já cobre `activity.assigned` e `activity.completed` (com `dedupeKey` e guarda contra auto-notificação). **Não é webhook.** O `NotificationBell` que fazia polling desses registros existe no código mas não está montado; o header só mostra Novu quando configurado, sem publisher a partir deste sistema.
+   - **Sistema in-app (`src/lib/events.ts`)** — persistência recipient-targeted em `notifications`. `emitEvent` → `notifications` (PostgreSQL) → `NotificationBell` (polling no layout autenticado). Já cobre `activity.assigned` e `activity.completed` (com `dedupeKey` e guarda contra auto-notificação). **Não é webhook.** Novu não é o caminho in-app.
    - **Sistema outbox (`src/lib/integrations/outbox.ts`)** — webhooks outbound. `emitDomainEvent` → `domain_events` → dispatcher → POST HMAC assinado para subscrições externas. Cobria apenas `associate.updated`, `legal_consultation.*`, `official_letter.*`, `monthly_payment.updated`. **Não tinha nenhum `activity.*`.**
 
 Portanto a pergunta "seria possível um webhook?" tem resposta trivial (sim, a infraestrutura existe); o trabalho real é **adicionar eventos `activity.*` ao outbox**.

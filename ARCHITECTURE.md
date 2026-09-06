@@ -163,7 +163,7 @@ O baseline nao depende de roles, policies, publications ou recursos de plataform
 
 ## Notificacoes
 
-Notificacoes de dominio continuam sendo registros persistidos em PostgreSQL (`notifications`), gravados via `emitEvent` / server actions. O layout autenticado monta o inbox **Novu** (`NotificationInboxWrapper`) apenas quando `NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER` esta definido; sem essa env o header nao exibe sino. O componente legado `NotificationBell` (polling) existe no codigo mas nao esta montado no layout — decisao de produto pendente (completar Novu vs restaurar Bell). Entrega em tempo real nao faz parte do caminho critico do go-live.
+Notificacoes de dominio sao registros persistidos em PostgreSQL (`notifications`), gravados via `emitEvent` / server actions. O layout autenticado monta o `NotificationBell` (polling) para ler esses registros. Novu nao e o caminho in-app e nao esta montado. Entrega em tempo real nao faz parte do caminho critico do go-live.
 
 Tipos de notificação:
 
