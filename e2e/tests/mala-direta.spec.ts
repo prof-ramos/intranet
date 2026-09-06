@@ -47,15 +47,15 @@ test.describe('Mala direta — campanhas', () => {
     await expect(page.getByRole('heading', { name: 'E2E campanha etiquetas' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Baixar PDF (Pimaco 6182)' })).toBeVisible();
 
-    const responsePromise = page.waitForResponse(
-      (response) =>
-        response.url().includes('/etiquetas/csv') && response.request().method() === 'POST',
-    );
+    const downloadPromise = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Baixar CSV' }).click();
-    const response = await responsePromise;
-    expect(response.status()).toBe(200);
-    expect(response.headers()['content-type']).toContain('text/csv');
-    const csv = await response.text();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toContain('.csv');
+
+    const downloadPath = await download.path();
+    expect(downloadPath).not.toBeNull();
+    const fs = await import('node:fs');
+    const csv = fs.readFileSync(downloadPath!, 'utf8');
     expect(csv).toContain('nome');
     expect(csv.split(/\r?\n/).length).toBeGreaterThan(1);
   });
