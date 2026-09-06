@@ -39,7 +39,7 @@ test.describe('Ficha impressa do Oficial de Chancelaria', () => {
     const printPage = await openPrintableFicha(page);
 
     await printPage.emulateMedia({ media: 'print' });
-    await expect(printPage.getByRole('link', { name: 'Oficiais' })).toBeHidden();
+    await expect(printPage.getByRole('link', { name: 'Oficiais', exact: true })).toBeHidden();
     await expect(printPage.getByRole('button', { name: 'Imprimir' })).toBeHidden();
   });
 });

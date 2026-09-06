@@ -191,9 +191,9 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 #### Notificações
 
-| Tabela          | Arquivo            | Finalidade                                                                  |
-| --------------- | ------------------ | --------------------------------------------------------------------------- |
-| `notifications` | `notifications.ts` | Notificações persistidas (backend ativo; UI Bell desmontada, Novu opcional) |
+| Tabela          | Arquivo            | Finalidade                                                                      |
+| --------------- | ------------------ | ------------------------------------------------------------------------------- |
+| `notifications` | `notifications.ts` | Notificações persistidas; UI = NotificationBell (polling) no layout autenticado |
 
 #### Auditoria
 

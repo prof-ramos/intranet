@@ -5,9 +5,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { useNotifications } from './use-notifications';
-import {
-  listNotificationsAction,
-} from '@/app/app/notifications/actions';
+import { listNotificationsAction } from '@/app/app/notifications/actions';
 
 // Mock the actions
 vi.mock('@/app/app/notifications/actions', () => ({
@@ -25,9 +23,7 @@ describe('use-notifications', () => {
     it('handles successful notification loading', async () => {
       // Setup mock to return some dummy data
       vi.mocked(listNotificationsAction).mockResolvedValueOnce({
-        notifications: [
-          { id: '1', title: 'Test 1', createdAt: '2026-05-17T10:00:00.000Z' },
-        ],
+        notifications: [{ id: '1', title: 'Test 1', createdAt: '2026-05-17T10:00:00.000Z' }],
       } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
 
       const { result } = renderHook(() => useNotifications({ userId: 1 }));
@@ -35,7 +31,7 @@ describe('use-notifications', () => {
       // Initial load in useEffect will trigger, we await it
       await act(async () => {
         // give useEffect time to resolve
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
       // Now test the actual refresh method
@@ -57,12 +53,14 @@ describe('use-notifications', () => {
 
     it('sets error state when loadNotifications throws in refresh', async () => {
       // First, let the initial load succeed or fail so we can test just refresh
-      vi.mocked(listNotificationsAction).mockResolvedValueOnce({ notifications: [] } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
+      vi.mocked(listNotificationsAction).mockResolvedValueOnce({
+        notifications: [],
+      } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
 
       const { result } = renderHook(() => useNotifications({ userId: 1 }));
 
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
       // Now mock it to reject for the refresh call
@@ -74,6 +72,68 @@ describe('use-notifications', () => {
 
       expect(result.current.error).toBe('Não foi possível carregar as notificações.');
       expect(result.current.loading).toBe(false);
+    });
+  });
+
+  describe('poll automático', () => {
+    it('mantém a lista e não seta erro quando o poll falha após um load bem-sucedido', async () => {
+      vi.useFakeTimers();
+      try {
+        vi.mocked(listNotificationsAction).mockResolvedValueOnce({
+          notifications: [{ id: '1', title: 'Test 1', createdAt: '2026-05-17T10:00:00.000Z' }],
+        } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
+
+        const { result } = renderHook(() => useNotifications({ userId: 1 }));
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(result.current.notifications).toHaveLength(1);
+        expect(result.current.error).toBeNull();
+
+        vi.mocked(listNotificationsAction).mockRejectedValueOnce(new Error('Poll timeout'));
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(60_000);
+        });
+
+        expect(result.current.notifications).toHaveLength(1);
+        expect(result.current.error).toBeNull();
+        expect(result.current.loading).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('seta erro quando o poll falha com a lista vazia', async () => {
+      vi.useFakeTimers();
+      try {
+        vi.mocked(listNotificationsAction).mockResolvedValueOnce({
+          notifications: [],
+        } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
+
+        const { result } = renderHook(() => useNotifications({ userId: 1 }));
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(result.current.notifications).toHaveLength(0);
+        expect(result.current.error).toBeNull();
+
+        vi.mocked(listNotificationsAction).mockRejectedValueOnce(new Error('Poll timeout'));
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(60_000);
+        });
+
+        expect(result.current.notifications).toHaveLength(0);
+        expect(result.current.error).toBe('Não foi possível atualizar as notificações.');
+        expect(result.current.loading).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });

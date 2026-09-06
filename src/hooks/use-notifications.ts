@@ -36,23 +36,37 @@ type NotificationsListPayload =
       unreadCount?: number;
     };
 
-export function useNotifications({ userId: _userId }: UseNotificationsOptions): UseNotificationsResult {
+export function useNotifications({
+  userId: _userId,
+}: UseNotificationsOptions): UseNotificationsResult {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const notificationsRef = useRef<NotificationItem[]>([]);
-  useEffect(() => {
-    notificationsRef.current = notifications;
-  }, [notifications]);
+
+  const replaceNotifications = useCallback((next: NotificationItem[]) => {
+    notificationsRef.current = next;
+    setNotifications(next);
+  }, []);
+
+  const updateNotifications = useCallback(
+    (updater: (current: NotificationItem[]) => NotificationItem[]) => {
+      const next = updater(notificationsRef.current);
+      notificationsRef.current = next;
+      setNotifications(next);
+    },
+    [],
+  );
 
   const unreadCount = useMemo(() => countUnread(notifications), [notifications]);
 
   const loadNotifications = useCallback(async () => {
     const payload = (await listNotificationsAction()) as NotificationsListPayload;
     const nextNotifications = extractNotifications(payload);
-    setNotifications(nextNotifications);
-  }, []);
+    replaceNotifications(nextNotifications);
+    setError(null);
+  }, [replaceNotifications]);
 
   const refresh = useCallback(async () => {
     try {
@@ -70,7 +84,7 @@ export function useNotifications({ userId: _userId }: UseNotificationsOptions): 
     async (id: number) => {
       const previous = notificationsRef.current;
 
-      setNotifications((current) =>
+      updateNotifications((current) =>
         current.map((item) =>
           item.id === id && !item.readAt ? { ...item, readAt: new Date().toISOString() } : item,
         ),
@@ -80,19 +94,19 @@ export function useNotifications({ userId: _userId }: UseNotificationsOptions): 
         await markNotificationReadAction(id);
         setError(null);
       } catch (error) {
-        setNotifications(previous);
+        replaceNotifications(previous);
         setError('Não foi possível marcar a notificação como lida.');
         throw error;
       }
     },
-    [],
+    [replaceNotifications, updateNotifications],
   );
 
   const markAllAsRead = useCallback(async () => {
     const previous = notificationsRef.current;
     const now = new Date().toISOString();
 
-    setNotifications((current) =>
+    updateNotifications((current) =>
       current.map((item) => (item.readAt ? item : { ...item, readAt: now })),
     );
 
@@ -100,10 +114,10 @@ export function useNotifications({ userId: _userId }: UseNotificationsOptions): 
       await markAllNotificationsReadAction();
       setError(null);
     } catch {
-      setNotifications(previous);
+      replaceNotifications(previous);
       setError('Não foi possível marcar todas as notificações como lidas.');
     }
-  }, []);
+  }, [replaceNotifications, updateNotifications]);
 
   useEffect(() => {
     let active = true;
@@ -135,7 +149,9 @@ export function useNotifications({ userId: _userId }: UseNotificationsOptions): 
     const tick = () => {
       if (document.visibilityState === 'visible') {
         void loadNotifications().catch(() => {
-          setError('Não foi possível atualizar as notificações.');
+          if (notificationsRef.current.length === 0) {
+            setError('Não foi possível atualizar as notificações.');
+          }
         });
       }
     };
@@ -154,7 +170,9 @@ export function useNotifications({ userId: _userId }: UseNotificationsOptions): 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         void loadNotifications().catch(() => {
-          setError('Não foi possível atualizar as notificações.');
+          if (notificationsRef.current.length === 0) {
+            setError('Não foi possível atualizar as notificações.');
+          }
         });
         startTimer();
       } else {

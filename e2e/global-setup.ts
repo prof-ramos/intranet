@@ -255,6 +255,9 @@ export default async function globalSetup() {
       cwd: process.cwd(),
       env: {
         ...process.env,
+        NODE_OPTIONS: /\b--max-old-space-size=/.test(process.env.NODE_OPTIONS ?? '')
+          ? process.env.NODE_OPTIONS
+          : `${process.env.NODE_OPTIONS ?? ''} --max-old-space-size=4096`.trim(),
         DATABASE_URL: TEST_DATABASE_URL,
         DATABASE_MIGRATION_URL: TEST_DATABASE_URL,
         NEXT_E2E: '1',
