@@ -22,7 +22,7 @@ test.describe('Mala direta — campanhas', () => {
     await page.getByRole('button', { name: 'Criar campanha de e-mail' }).click();
     await expect(page).toHaveURL(/\/app\/mala-direta\/\d+$/);
     await expect(page.getByRole('heading', { name: 'E2E campanha assembleia' })).toBeVisible();
-    await expect(page.getByText('Destinatários')).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Nome' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Iniciar envio' })).toBeVisible();
   });
 });
