@@ -165,6 +165,7 @@ O ambiente Cloud Agent usa Postgres local + seed sintético (`bash .cursor/insta
 
 - App de verificação manual: `npm run dev` em `http://127.0.0.1:3000` com `SKIP_AUTH=true` (`.env.local`). Playwright/E2E continua em `127.0.0.1:3001`.
 - Identidade de dev: `DEV_USER_ID=1`, `DEV_USER_ROLE=admin`. Se `requireAuth` reclamar de e-mail/role, rode `npm run db:seed:dev`.
+- `ENCRYPTION_MASTER_KEY` precisa existir no `.env.local` do Cloud Agent — a busca por CPF/SIAPE usa blind index. O `install.sh` define uma chave local se estiver ausente.
 - Cadastro de oficiais (`/app/associados`): a busca humana e a tool WebMCP `search-officials` compartilham `searchBy=name|cpf|siape`. Não apague `searchBy` da query string. Nome é parcial (≥ 2 caracteres); CPF/SIAPE são match exato por hash (CPF com 11 dígitos; SIAPE com ≥ 5 dígitos).
 - Ao mudar UI, verifique o fluxo no browser (não só screenshot): nome, troca de modo, CPF/SIAPE e `returnTo`. Preferir `form [role="alert"]` e controles com nome acessível.
 

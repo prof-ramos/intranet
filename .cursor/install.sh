@@ -19,4 +19,14 @@ if [[ ! -f .env.local ]]; then
     .env.local
 fi
 
+# CPF/SIAPE search uses blind indexes. Without a local key the list page throws.
+if ! grep -q '^ENCRYPTION_MASTER_KEY=' .env.local; then
+  echo "[cloud-agent] Setting ENCRYPTION_MASTER_KEY for local identity search..."
+  if grep -q '^# ENCRYPTION_MASTER_KEY=' .env.local; then
+    sed -i 's|^# ENCRYPTION_MASTER_KEY=.*|ENCRYPTION_MASTER_KEY=cloud-agent-dev-encryption-master-key-32|' .env.local
+  else
+    printf '\nENCRYPTION_MASTER_KEY=cloud-agent-dev-encryption-master-key-32\n' >> .env.local
+  fi
+fi
+
 echo "[cloud-agent] Install complete."

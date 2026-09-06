@@ -15,6 +15,11 @@ import {
   type NewMonthlyPayment,
   type NewOfficialLetter,
 } from '@/lib/db/schema';
+import { piiBlindIndex } from '@/lib/crypto/pii';
+import {
+  normalizeCpfForSearch,
+  normalizeSiapeForSearch,
+} from '@/lib/associates/search-params.shared';
 import { assertDevSeedDatabaseAllowed } from './dev-seed-safety';
 import { ensureDevelopmentAdminInDatabase } from './dev-admin-store';
 
@@ -277,6 +282,11 @@ function dependentCountForIndex(index: number): number {
   return 1;
 }
 
+function optionalIdentityHash(value: string): string | null {
+  if (!process.env.ENCRYPTION_MASTER_KEY || !value) return null;
+  return piiBlindIndex(value);
+}
+
 function buildAssociates(): NewAssociate[] {
   return Array.from({ length: 120 }, (_, index) => {
     const seq = index + 1;
@@ -312,7 +322,11 @@ function buildAssociates(): NewAssociate[] {
       primaryEmail: `oficial.${String(seq).padStart(3, '0')}@asof.local`,
       secondaryEmail: `oficial.${String(seq).padStart(3, '0')}@itamaraty.local`,
       cpf: syntheticCpf(seq),
+      cpfHash: optionalIdentityHash(normalizeCpfForSearch(syntheticCpf(seq))),
       siape: `DEV${String(seq).padStart(7, '0')}`,
+      siapeHash: optionalIdentityHash(
+        normalizeSiapeForSearch(`DEV${String(seq).padStart(7, '0')}`),
+      ),
       phone: `(61) 9${String(90000000 + seq).slice(1)}`,
       whatsapp: `(61) 9${String(91000000 + seq).slice(1)}`,
       rg: syntheticRg(seq),
