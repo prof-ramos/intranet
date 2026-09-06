@@ -8,7 +8,7 @@ Shared React hooks.
 ## Key Files
 
 - `notifications-normalize.ts` — notification data normalization (with test)
-- `use-notifications.ts` — polling hook for persisted notifications (consumed by NotificationBell in the authenticated layout)
+- `use-notifications.ts` — polling hook for persisted notifications; identity comes from the session in server actions, not a client `userId`
 - `use-escape-key.ts` — hook for closing overlays/modals on Escape
 
 ## For AI Agents

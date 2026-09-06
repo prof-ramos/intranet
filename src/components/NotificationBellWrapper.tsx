@@ -12,21 +12,18 @@ const NotificationBell = dynamic(
   },
 );
 
-interface NotificationBellWrapperProps {
-  userId: number;
-}
-
 /**
  * Loads the Bell + server-action graph only after the user opens the panel.
+ * Identity comes from the session inside the server actions, not a client prop.
  * A static import (or eager dynamic import) made webpack compile
  * use-notifications/actions on every /app page and killed the E2E :3001 process.
  */
-export function NotificationBellWrapper({ userId }: NotificationBellWrapperProps) {
+export function NotificationBellWrapper() {
   const [opened, setOpened] = useState(false);
 
   if (!opened) {
     return <NotificationBellTrigger open={false} onClick={() => setOpened(true)} />;
   }
 
-  return <NotificationBell userId={userId} defaultOpen />;
+  return <NotificationBell defaultOpen />;
 }

@@ -29,7 +29,7 @@ describe('use-notifications', () => {
         notifications: [{ id: '1', title: 'Test 1', createdAt: '2026-05-17T10:00:00.000Z' }],
       } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
 
-      const { result } = renderHook(() => useNotifications({ userId: 1 }));
+      const { result } = renderHook(() => useNotifications());
 
       // Initial load in useEffect will trigger, we await it
       await act(async () => {
@@ -60,7 +60,7 @@ describe('use-notifications', () => {
         notifications: [],
       } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
 
-      const { result } = renderHook(() => useNotifications({ userId: 1 }));
+      const { result } = renderHook(() => useNotifications());
 
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -86,7 +86,7 @@ describe('use-notifications', () => {
           notifications: [{ id: '1', title: 'Test 1', createdAt: '2026-05-17T10:00:00.000Z' }],
         } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
 
-        const { result } = renderHook(() => useNotifications({ userId: 1 }));
+        const { result } = renderHook(() => useNotifications());
 
         await act(async () => {
           await vi.advanceTimersByTimeAsync(0);
@@ -117,9 +117,11 @@ describe('use-notifications', () => {
             { id: 12, title: 'Test 1', createdAt: '2026-05-17T10:00:00.000Z', readAt: null },
           ],
         } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
-        vi.mocked(markNotificationReadAction).mockResolvedValue(true);
+        vi.mocked(markNotificationReadAction).mockResolvedValue(
+          undefined as unknown as Awaited<ReturnType<typeof markNotificationReadAction>>,
+        );
 
-        const { result } = renderHook(() => useNotifications({ userId: 1 }));
+        const { result } = renderHook(() => useNotifications());
 
         await act(async () => {
           await vi.advanceTimersByTimeAsync(0);
@@ -168,7 +170,7 @@ describe('use-notifications', () => {
           notifications: [],
         } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
 
-        const { result } = renderHook(() => useNotifications({ userId: 1 }));
+        const { result } = renderHook(() => useNotifications());
 
         await act(async () => {
           await vi.advanceTimersByTimeAsync(0);

@@ -41,7 +41,7 @@ describe('NotificationBell panel', () => {
     } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
     vi.mocked(markNotificationReadAction).mockRejectedValue(new Error('boom'));
 
-    render(<NotificationBell userId={1} />);
+    render(<NotificationBell />);
 
     fireEvent.click(screen.getByTestId('notification-bell'));
 
@@ -66,7 +66,7 @@ describe('NotificationBell panel', () => {
       notifications: [],
     } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
 
-    render(<NotificationBell userId={1} defaultOpen />);
+    render(<NotificationBell defaultOpen />);
 
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: 'Painel de notificações' })).toBeDefined();
@@ -78,7 +78,7 @@ describe('NotificationBell panel', () => {
   it('shows a full error only when the list is empty', async () => {
     vi.mocked(listNotificationsAction).mockRejectedValue(new Error('offline'));
 
-    render(<NotificationBell userId={1} />);
+    render(<NotificationBell />);
     fireEvent.click(screen.getByTestId('notification-bell'));
 
     await waitFor(() => {

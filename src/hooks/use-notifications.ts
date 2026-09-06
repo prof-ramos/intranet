@@ -13,10 +13,6 @@ import {
   type NotificationLike,
 } from './notifications-normalize';
 
-interface UseNotificationsOptions {
-  userId: number;
-}
-
 interface UseNotificationsResult {
   notifications: NotificationItem[];
   unreadCount: number;
@@ -36,9 +32,7 @@ type NotificationsListPayload =
       unreadCount?: number;
     };
 
-export function useNotifications({
-  userId: _userId,
-}: UseNotificationsOptions): UseNotificationsResult {
+export function useNotifications(): UseNotificationsResult {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

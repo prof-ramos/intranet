@@ -19,7 +19,6 @@ import {
 } from '@/lib/ui/tokens';
 
 interface NotificationBellProps {
-  userId: number;
   defaultOpen?: boolean;
 }
 
@@ -79,7 +78,7 @@ export async function processNotificationClick(input: {
   return Boolean(safeHref);
 }
 
-export function NotificationBell({ userId, defaultOpen = false }: NotificationBellProps) {
+export function NotificationBell({ defaultOpen = false }: NotificationBellProps) {
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(defaultOpen);
@@ -91,7 +90,7 @@ export function NotificationBell({ userId, defaultOpen = false }: NotificationBe
     error: loadError,
     markAsRead,
     markAllAsRead,
-  } = useNotifications({ userId });
+  } = useNotifications();
 
   const triggerRef = useRef<HTMLButtonElement>(null);
 
