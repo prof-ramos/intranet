@@ -44,6 +44,12 @@ export function useNotifications({
   const [error, setError] = useState<string | null>(null);
 
   const notificationsRef = useRef<NotificationItem[]>([]);
+  const fetchGenerationRef = useRef(0);
+
+  const bumpFetchGeneration = useCallback(() => {
+    fetchGenerationRef.current += 1;
+    return fetchGenerationRef.current;
+  }, []);
 
   const replaceNotifications = useCallback((next: NotificationItem[]) => {
     notificationsRef.current = next;
@@ -62,11 +68,15 @@ export function useNotifications({
   const unreadCount = useMemo(() => countUnread(notifications), [notifications]);
 
   const loadNotifications = useCallback(async () => {
+    const generation = bumpFetchGeneration();
     const payload = (await listNotificationsAction()) as NotificationsListPayload;
+    if (generation !== fetchGenerationRef.current) {
+      return;
+    }
     const nextNotifications = extractNotifications(payload);
     replaceNotifications(nextNotifications);
     setError(null);
-  }, [replaceNotifications]);
+  }, [bumpFetchGeneration, replaceNotifications]);
 
   const refresh = useCallback(async () => {
     try {
@@ -83,6 +93,7 @@ export function useNotifications({
   const markAsRead = useCallback(
     async (id: number) => {
       const previous = notificationsRef.current;
+      bumpFetchGeneration();
 
       updateNotifications((current) =>
         current.map((item) =>
@@ -99,12 +110,13 @@ export function useNotifications({
         throw error;
       }
     },
-    [replaceNotifications, updateNotifications],
+    [bumpFetchGeneration, replaceNotifications, updateNotifications],
   );
 
   const markAllAsRead = useCallback(async () => {
     const previous = notificationsRef.current;
     const now = new Date().toISOString();
+    bumpFetchGeneration();
 
     updateNotifications((current) =>
       current.map((item) => (item.readAt ? item : { ...item, readAt: now })),
@@ -117,7 +129,7 @@ export function useNotifications({
       replaceNotifications(previous);
       setError('Não foi possível marcar todas as notificações como lidas.');
     }
-  }, [replaceNotifications, updateNotifications]);
+  }, [bumpFetchGeneration, replaceNotifications, updateNotifications]);
 
   useEffect(() => {
     let active = true;

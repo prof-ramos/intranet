@@ -5,6 +5,7 @@ import { useEscapeKey } from '@/hooks/use-escape-key';
 import { Bell, CheckCheck, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/hooks/use-notifications';
+import { getSafeInternalHref } from '@/lib/notifications/safe-href';
 import {
   canvas,
   elevatedShadow,
@@ -58,14 +59,6 @@ function formatTimestamp(value: string) {
   }
 
   return dtf.format(date);
-}
-
-function getSafeInternalHref(href: string | null) {
-  if (!href || !href.startsWith('/') || href.startsWith('//')) {
-    return null;
-  }
-
-  return href;
 }
 
 export async function processNotificationClick(input: {
