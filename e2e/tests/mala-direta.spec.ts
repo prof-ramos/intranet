@@ -38,7 +38,7 @@ test.describe('Mala direta — campanhas', () => {
     await page.goto('/app/mala-direta/nova');
     await expect(page.getByRole('heading', { name: 'Nova campanha' })).toBeVisible();
 
-    await page.getByLabel('Etiquetas (impressão postal)').check();
+    await page.getByRole('radio', { name: 'Etiquetas (impressão postal)' }).check();
     await page.getByLabel('Nome da campanha').fill('E2E campanha etiquetas');
     await expect(page.getByText(/destinatário/)).toBeVisible();
 
