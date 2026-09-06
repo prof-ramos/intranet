@@ -8,6 +8,7 @@ const logDataAccessMock = vi.fn();
 
 vi.mock('./queries', () => ({
   getAssociatesForReport: (...args: unknown[]) => getAssociatesForReportMock(...args),
+  REPORT_DEFAULT_LIMIT: 5000,
 }));
 
 vi.mock('./audit', () => ({

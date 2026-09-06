@@ -1,11 +1,6 @@
 import {
-  countActiveAssociates,
-  countActiveAssociatesByLocation,
-  countContributionsOkAssociates,
-  countInadimplentesAssociates,
-  countOpenActivities,
-  countOverdueActivities,
-  getActivitiesByStatus,
+  getAssociateMetrics,
+  getActivityMetrics,
   getBirthdaysThisMonth,
   getTopRegions,
   getUrgentActivities,
@@ -76,30 +71,31 @@ export { formatShortDate as formatDashboardDueDate } from '@/lib/utils/date';
 
 export async function getDashboardViewModel(): Promise<DashboardViewModel> {
   const [
-    activeAssociates,
-    activeAssociatesByLocation,
-    contributionsOk,
-    inadimplentesCount,
-    openActivities,
-    overdueActivities,
-    activitiesByStatus,
+    associateMetrics,
+    activityMetrics,
     topRegions,
     urgentActivities,
     kanbanCards,
     birthdaysThisMonth,
   ] = await Promise.all([
-    countActiveAssociates(),
-    countActiveAssociatesByLocation(),
-    countContributionsOkAssociates(),
-    countInadimplentesAssociates(),
-    countOpenActivities(),
-    countOverdueActivities(),
-    getActivitiesByStatus(),
+    getAssociateMetrics(),
+    getActivityMetrics(),
     getTopRegions(),
     getUrgentActivities(),
     getKanbanCards(),
     getBirthdaysThisMonth(),
   ]);
+  const {
+    active: activeAssociates,
+    byLocation: activeAssociatesByLocation,
+    contributionsOk,
+    inadimplentes: inadimplentesCount,
+  } = associateMetrics;
+  const {
+    open: openActivities,
+    overdue: overdueActivities,
+    byStatus: activitiesByStatus,
+  } = activityMetrics;
 
   const contributionRate =
     activeAssociates === 0 ? 0 : Math.round((contributionsOk / activeAssociates) * 100);

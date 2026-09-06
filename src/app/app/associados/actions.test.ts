@@ -63,7 +63,8 @@ describe('associados actions', () => {
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados/15');
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
-    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:associates', 'max');
+    expect(revalidateTagMock).not.toHaveBeenCalledWith('dashboard:activities', expect.anything());
   });
 
   it('rejects invalid associate payloads before calling the service', async () => {

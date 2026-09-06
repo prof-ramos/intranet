@@ -1,4 +1,4 @@
-import { getAssociatesForReport } from './queries';
+import { getAssociatesForReport, REPORT_DEFAULT_LIMIT } from './queries';
 import { generateCsv } from './csv';
 import { auditReportDownload } from './audit';
 import { logDataAccess } from '@/lib/audit/service';
@@ -26,22 +26,23 @@ export async function generateReport(
   filters: ReportFilters,
   selectedKeys: string[],
 ): Promise<ReportResult> {
-  const rows = await getAssociatesForReport(filters);
+  const rows = await getAssociatesForReport(filters, REPORT_DEFAULT_LIMIT, selectedKeys);
   const csv = generateCsv(rows, selectedKeys);
 
-  await auditBestEffort('audit log', () =>
-    auditReportDownload(userId, filters, selectedKeys, rows.length),
-  );
-
-  await auditBestEffort('data access log', () =>
-    logDataAccess({
-      adminId: userId,
-      action: 'export',
-      entityType: 'associate',
-      entityId: null,
-      metadata: { format: 'csv', fieldCount: selectedKeys.length, rowCount: rows.length },
-    }),
-  );
+  await Promise.all([
+    auditBestEffort('audit log', () =>
+      auditReportDownload(userId, filters, selectedKeys, rows.length),
+    ),
+    auditBestEffort('data access log', () =>
+      logDataAccess({
+        adminId: userId,
+        action: 'export',
+        entityType: 'associate',
+        entityId: null,
+        metadata: { format: 'csv', fieldCount: selectedKeys.length, rowCount: rows.length },
+      }),
+    ),
+  ]);
 
   return { csv, rowCount: rows.length };
 }

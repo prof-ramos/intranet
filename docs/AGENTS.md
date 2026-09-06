@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-05-26 | Updated: 2026-07-16 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-09-04 -->
 
 # docs
 
@@ -9,24 +9,28 @@ Documentation directory covering architecture decisions, design guidelines, comp
 
 ## Key Files
 
-| File                              | Description                                                                             |
-| --------------------------------- | --------------------------------------------------------------------------------------- |
-| `runbook.md`                      | Operations runbook — deployment, monitoring, troubleshooting, and rollback procedures   |
-| `environments.md`                 | Official source for environments, databases, data classes, migrations, and CI/CD        |
-| `agents/jules-governance.md`      | Approval, publication, environment, audit, and incident controls for Google Jules       |
-| `agents/coderabbit-governance.md` | OSS plan, opt-in review, security, quota, labels, and operating controls for CodeRabbit |
+| File                                          | Description                                                                              |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `runbook.md`                                  | Operations runbook — deployment, monitoring, troubleshooting, and rollback procedures    |
+| `environments.md`                             | Official source for environments, databases, data classes, migrations, and CI/CD         |
+| `development/performance-audit-2026-09-03.md` | Auditoria de desempenho (gargalos, pool, cache, bundles) e plano de otimização por ondas |
+| `agents/jules-governance.md`                  | Approval, publication, environment, audit, and incident controls for Google Jules        |
+| `agents/coderabbit-governance.md`             | OSS plan, opt-in review, security, quota, labels, and operating controls for CodeRabbit  |
 
 ## Subdirectories
 
-| Directory                        | Purpose                                                                                                               |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| [`adr/`](./adr/)                 | Architecture Decision Records covering auth, DB, RLS, notifications, kanban, LGPD, go-live, rollback and environments |
-| [`agents/`](./agents/)           | Agent-facing documentation — issue tracker, triage labels and agent governance                                        |
-| [`compliance/`](./compliance/)   | LGPD compliance checklist and data handling policies                                                                  |
-| [`design/`](./design/)           | Design system — theme tokens and oficios padrao templates                                                             |
-| [`development/`](./development/) | Development documentation — branch naming and the retired test-metrics schema note                                    |
-| [`jornadas/`](./jornadas/)       | User journey maps — financeiro personas and monthly payment flows                                                     |
-| [`lotacao/`](./lotacao/)         | Geographic assignment docs — postos no exterior and SERE                                                              |
+| Directory                                  | Purpose                                                                                              |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| [`adr/`](./adr/)                           | Architecture Decision Records (see `adr/AGENTS.md`)                                                  |
+| [`agent-memory/`](./agent-memory/)         | Durable operational lessons, feedback and security notes                                             |
+| [`agents/`](./agents/)                     | Agent-facing documentation — issue tracker, triage labels and agent governance                       |
+| [`compliance/`](./compliance/)             | LGPD compliance checklist and data handling policies                                                 |
+| [`design/`](./design/)                     | Design system — theme tokens and oficios padrao templates                                            |
+| [`development/`](./development/)           | Development documentation — branch naming, performance audit, retired test-metrics schema note       |
+| [`email-controller/`](./email-controller/) | Gmail/Gemini controller research and delivery plans                                                  |
+| [`jornadas/`](./jornadas/)                 | User journey maps — financeiro personas and monthly payment flows                                    |
+| [`lotacao/`](./lotacao/)                   | Geographic assignment docs — postos no exterior and SERE                                             |
+| [`operations/`](./operations/)             | Operational procedures for identity, PII, secrets and smoke observation (see `operations/AGENTS.md`) |
 
 ## For AI Agents
 
@@ -45,7 +49,7 @@ Documentation directory covering architecture decisions, design guidelines, comp
 ### Common Patterns
 
 - ADRs use a title line followed by Status, Context, Decision, Consequences.
-- Screenshots in `design/screenshots/` are named `[page]-[state].png`.
+- Screenshots, when present under `docs/design/`, follow `[page]-[state].png`.
 
 ## Dependencies
 

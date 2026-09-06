@@ -1,6 +1,6 @@
 import { isDomesticCountry } from '@/lib/associates/location-country';
 import { paymentStatusUi, type PaymentStatus } from './payment-status-ui';
-import type { PaymentOrigin } from '@/lib/finance/search-params';
+import type { PaymentOrigin } from '@/lib/finance/search-params.shared';
 import type { EditablePaymentStatus, PaymentEditorInitialValues } from './PaymentEditorDialog';
 
 export interface Payment {
@@ -13,7 +13,8 @@ export interface Payment {
   locationCountry: string | null;
   locationCity: string | null;
   functionalStatus: 'ativo' | 'aposentado' | 'cedido' | 'em_licenca' | null;
-  updatedAt: Date | null;
+  /** May arrive as ISO string after Data Cache JSON round-trip. */
+  updatedAt: Date | string | null;
   /** Structured payment fields are optional while old rows/contracts are being migrated. */
   amount?: number | string | null;
   paymentAmount?: number | string | null;
@@ -132,6 +133,15 @@ export function getPaymentOrigin(payment: Payment): PaymentOrigin {
   return 'comprovante';
 }
 
+export function toPaymentIsoString(value: Date | string | null | undefined): string | null {
+  if (value == null || value === '') return null;
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+  }
+  return Number.isNaN(value.getTime()) ? null : value.toISOString();
+}
+
 export function getEditorInitialValues(payment: Payment): PaymentEditorInitialValues {
   return {
     status: getEffectivePaymentStatus(payment.paymentStatus) as EditablePaymentStatus,
@@ -143,6 +153,6 @@ export function getEditorInitialValues(payment: Payment): PaymentEditorInitialVa
     paidAt: getCivilPaidAt(payment.paidAt),
     paymentOrigin: getPaymentOrigin(payment),
     notes: payment.notes ?? null,
-    expectedUpdatedAt: payment.updatedAt?.toISOString() ?? null,
+    expectedUpdatedAt: toPaymentIsoString(payment.updatedAt),
   };
 }

@@ -91,13 +91,30 @@ export const KEY_CONTEXTS = {
 
 export type KeyContext = (typeof KEY_CONTEXTS)[keyof typeof KEY_CONTEXTS];
 
+/** Process-local HKDF cache — keys are immutable for a given master+context. */
+const hkdfKeyCache = new Map<string, Buffer>();
+
+/** Clears the HKDF process cache (tests / key rotation only). */
+export function clearHkdfKeyCache(): void {
+  hkdfKeyCache.clear();
+}
+
 /**
  * Derives a 32-byte key from a master key using HKDF-SHA256 with domain
  * separation. Different contexts produce cryptographically independent keys
  * from the same master key, so compromising one context does not affect others.
+ *
+ * Results are cached per process for (masterKey, context) so bulk encrypt/
+ * decrypt (reports, imports) does not re-run HKDF for every field.
  */
 export function hkdfDeriveKey(masterKey: string, context: KeyContext): Buffer {
-  return Buffer.from(hkdfSync('sha256', masterKey, HKDF_SALT, context, HKDF_KEY_LENGTH));
+  const cacheKey = `${context}\0${masterKey}`;
+  const cached = hkdfKeyCache.get(cacheKey);
+  if (cached) return cached;
+
+  const derived = Buffer.from(hkdfSync('sha256', masterKey, HKDF_SALT, context, HKDF_KEY_LENGTH));
+  hkdfKeyCache.set(cacheKey, derived);
+  return derived;
 }
 
 // ─── HMAC Blind Index (searchable encryption) ───────────────────────────────

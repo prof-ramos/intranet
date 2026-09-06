@@ -86,7 +86,7 @@ describe('associate [id] actions', () => {
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados');
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados/42');
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
-    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:associates', 'max');
   });
 
   it('addDependentAction: throws on Zod failure when name is empty', async () => {
@@ -110,7 +110,7 @@ describe('associate [id] actions', () => {
       5,
     );
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
-    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:associates', 'max');
   });
 
   it('editDependentAction: secretaria role is accepted', async () => {
@@ -137,7 +137,7 @@ describe('associate [id] actions', () => {
     expect(deleteAssociateDependentMock).toHaveBeenCalledWith(3, 42, 5);
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados');
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
-    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:associates', 'max');
   });
 
   it('removeDependentAction: throws on Zod failure when id is not a number', async () => {
@@ -157,7 +157,7 @@ describe('associate [id] actions', () => {
       5,
     );
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
-    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:associates', 'max');
   });
 
   it('addHealthAgreementAction: throws on Zod failure when provider is empty', async () => {
@@ -179,7 +179,7 @@ describe('associate [id] actions', () => {
       5,
     );
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
-    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:associates', 'max');
   });
 
   it('editHealthAgreementAction: diretoria role is accepted', async () => {
@@ -208,7 +208,7 @@ describe('associate [id] actions', () => {
     expect(deleteAssociateHealthAgreementMock).toHaveBeenCalledWith(5, 42, 5);
     expect(revalidatePathMock).toHaveBeenCalledWith('/app/associados');
     expect(revalidateTagMock).toHaveBeenCalledWith('associates', 'max');
-    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard', 'max');
+    expect(revalidateTagMock).toHaveBeenCalledWith('dashboard:associates', 'max');
   });
 
   it('removeHealthAgreementAction: throws on Zod failure when associateId is invalid', async () => {

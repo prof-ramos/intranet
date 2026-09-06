@@ -18,7 +18,7 @@ import {
   textPrimary,
   textSecondary,
 } from '@/lib/ui/tokens';
-import type { PaymentOrigin } from '@/lib/finance/search-params';
+import type { PaymentOrigin } from '@/lib/finance/search-params.shared';
 
 export type EditablePaymentStatus = 'pago' | 'pendente' | 'atrasado' | 'isento';
 export type EditablePaymentMethod = 'folha' | 'boleto' | 'pix' | 'transferencia' | 'outros';

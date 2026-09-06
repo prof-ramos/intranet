@@ -124,11 +124,12 @@ describe('activities repository', () => {
     it.each([
       ['overdue', { dueLate: true }],
       ['open', { openOnly: true }],
-    ])('filters the complete %s queue before applying the board limit', async (_label, options) => {
+      ['status', { status: 'em_andamento' as const }],
+    ])('applies the board limit to the filtered %s queue', async (_label, options) => {
       await findActivities(options);
 
       expect(dbMock._selectChain.where).toHaveBeenCalledWith(expect.anything());
-      expect(dbMock._selectChain.limit).not.toHaveBeenCalled();
+      expect(dbMock._selectChain.limit).toHaveBeenCalledWith(200);
       expect(dbMock._selectChain.offset).toHaveBeenCalledWith(0);
     });
 

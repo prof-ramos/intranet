@@ -1,5 +1,5 @@
 {
-  "id": "b476ce4e-99a1-4752-ae1f-c0a9e0e18407",
+  "id": "1b442f44-d08c-46ee-af23-0dcf445cb19b",
   "prevId": "74eb34fa-9149-4311-8323-0511a575339b",
   "version": "7",
   "dialect": "postgresql",
@@ -796,7 +796,7 @@
           "name": "idx_associates_name_lower_trgm",
           "columns": [
             {
-              "expression": "translate(lower(\"full_name\"), 'ÁÀÂÃÄÅáàâãäåÉÈÊËéèêëÍÌÎÏíìîïÓÒÔÕÖóòôõöÚÙÛÜúùûüÇçÑñ', 'AAAAAAaaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn') gin_trgm_ops",
+              "expression": "translate(lower(\"full_name\"), '\u00c1\u00c0\u00c2\u00c3\u00c4\u00c5\u00e1\u00e0\u00e2\u00e3\u00e4\u00e5\u00c9\u00c8\u00ca\u00cb\u00e9\u00e8\u00ea\u00eb\u00cd\u00cc\u00ce\u00cf\u00ed\u00ec\u00ee\u00ef\u00d3\u00d2\u00d4\u00d5\u00d6\u00f3\u00f2\u00f4\u00f5\u00f6\u00da\u00d9\u00db\u00dc\u00fa\u00f9\u00fb\u00fc\u00c7\u00e7\u00d1\u00f1', 'AAAAAAaaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn') gin_trgm_ops",
               "asc": true,
               "isExpression": true,
               "nulls": "last"
@@ -1075,6 +1075,44 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "idx_activities_open_updated": {
+          "name": "idx_activities_open_updated",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {},
+          "where": "\"activities\".\"status\" <> 'concluido'"
+        },
+        "idx_activities_title_trgm": {
+          "name": "idx_activities_title_trgm",
+          "columns": [
+            {
+              "expression": "title",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1298,6 +1336,49 @@
           "isUnique": false,
           "concurrently": false,
           "method": "btree",
+          "with": {}
+        },
+        "idx_audit_entity_created": {
+          "name": "idx_audit_entity_created",
+          "columns": [
+            {
+              "expression": "entity_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_audit_action_trgm": {
+          "name": "idx_audit_action_trgm",
+          "columns": [
+            {
+              "expression": "action",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
           "with": {}
         }
       },
@@ -2679,6 +2760,38 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "idx_legal_consultations_title_trgm": {
+          "name": "idx_legal_consultations_title_trgm",
+          "columns": [
+            {
+              "expression": "title",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        },
+        "idx_legal_consultations_internal_number_trgm": {
+          "name": "idx_legal_consultations_internal_number_trgm",
+          "columns": [
+            {
+              "expression": "internal_number",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -3063,6 +3176,39 @@
           "columns": [
             {
               "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_legal_notes_entity_created": {
+          "name": "idx_legal_notes_entity_created",
+          "columns": [
+            {
+              "expression": "entity_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "entity_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -5670,347 +5816,6 @@
         }
       },
       "isRLSEnabled": false
-    },
-    "public.mailing_campaigns": {
-      "name": "mailing_campaigns",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "bigint",
-          "primaryKey": true,
-          "notNull": true,
-          "identity": {
-            "type": "always",
-            "name": "mailing_campaigns_id_seq",
-            "schema": "public",
-            "increment": "1",
-            "startWith": "1",
-            "minValue": "1",
-            "maxValue": "9223372036854775807",
-            "cache": "1",
-            "cycle": false
-          }
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "channel": {
-          "name": "channel",
-          "type": "mailing_channel",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "subject": {
-          "name": "subject",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "template_body": {
-          "name": "template_body",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "mailing_campaign_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'rascunho'"
-        },
-        "filters": {
-          "name": "filters",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "recipient_count": {
-          "name": "recipient_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "sent_count": {
-          "name": "sent_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "failed_count": {
-          "name": "failed_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "started_at": {
-          "name": "started_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "completed_at": {
-          "name": "completed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_mailing_campaigns_created_by": {
-          "name": "idx_mailing_campaigns_created_by",
-          "columns": [
-            {
-              "expression": "created_by",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_mailing_campaigns_status_created_at": {
-          "name": "idx_mailing_campaigns_status_created_at",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "mailing_campaigns_created_by_admins_id_fk": {
-          "name": "mailing_campaigns_created_by_admins_id_fk",
-          "tableFrom": "mailing_campaigns",
-          "tableTo": "admins",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.mailing_recipients": {
-      "name": "mailing_recipients",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "bigint",
-          "primaryKey": true,
-          "notNull": true,
-          "identity": {
-            "type": "always",
-            "name": "mailing_recipients_id_seq",
-            "schema": "public",
-            "increment": "1",
-            "startWith": "1",
-            "minValue": "1",
-            "maxValue": "9223372036854775807",
-            "cache": "1",
-            "cycle": false
-          }
-        },
-        "campaign_id": {
-          "name": "campaign_id",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "associate_id": {
-          "name": "associate_id",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "recipient_name": {
-          "name": "recipient_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "email_ciphertext": {
-          "name": "email_ciphertext",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "mailing_recipient_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'pendente'"
-        },
-        "attempts": {
-          "name": "attempts",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "last_error": {
-          "name": "last_error",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "sent_at": {
-          "name": "sent_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_mailing_recipients_campaign_associate": {
-          "name": "idx_mailing_recipients_campaign_associate",
-          "columns": [
-            {
-              "expression": "campaign_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "associate_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_mailing_recipients_campaign_status": {
-          "name": "idx_mailing_recipients_campaign_status",
-          "columns": [
-            {
-              "expression": "campaign_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_mailing_recipients_pending": {
-          "name": "idx_mailing_recipients_pending",
-          "columns": [
-            {
-              "expression": "campaign_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "\"mailing_recipients\".\"status\" = 'pendente'",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "mailing_recipients_campaign_id_mailing_campaigns_id_fk": {
-          "name": "mailing_recipients_campaign_id_mailing_campaigns_id_fk",
-          "tableFrom": "mailing_recipients",
-          "tableTo": "mailing_campaigns",
-          "columnsFrom": ["campaign_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "mailing_recipients_associate_id_associates_id_fk": {
-          "name": "mailing_recipients_associate_id_associates_id_fk",
-          "tableFrom": "mailing_recipients",
-          "tableTo": "associates",
-          "columnsFrom": ["associate_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
     }
   },
   "enums": {
@@ -6308,21 +6113,6 @@
       "name": "test_runner",
       "schema": "public",
       "values": ["vitest", "playwright"]
-    },
-    "public.mailing_campaign_status": {
-      "name": "mailing_campaign_status",
-      "schema": "public",
-      "values": ["rascunho", "em_envio", "concluida", "falhou", "cancelada"]
-    },
-    "public.mailing_channel": {
-      "name": "mailing_channel",
-      "schema": "public",
-      "values": ["email", "etiquetas"]
-    },
-    "public.mailing_recipient_status": {
-      "name": "mailing_recipient_status",
-      "schema": "public",
-      "values": ["pendente", "enviado", "falhou", "cancelado"]
     }
   },
   "schemas": {},

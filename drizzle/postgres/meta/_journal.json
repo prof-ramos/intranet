@@ -243,8 +243,8 @@
     {
       "idx": 34,
       "version": "7",
-      "when": 1788468105079,
-      "tag": "0034_mailing_campaigns",
+      "when": 1788476403299,
+      "tag": "0034_performance_query_indexes",
       "breakpoints": true
     }
   ]

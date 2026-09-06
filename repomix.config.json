@@ -7,8 +7,6 @@
   "ignore": {
     "customPatterns": [
       "drizzle/postgres/meta/**",
-      "advisor-plans/**",
-      "plans/**",
       "docs/**/archive/**",
       "public/logo.svg",
       "src/app/icon.svg",

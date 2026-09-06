@@ -25,7 +25,7 @@ export const createConsultation = defineFormAction({
     });
     revalidatePath('/app/juridico');
     revalidatePath('/app/juridico/consultas');
-    revalidateTag('legal', {});
+    revalidateTag('legal:summary', {});
     return inserted;
   },
   redirect: (inserted) => `/app/juridico/consultas/${inserted.id}`,
@@ -40,8 +40,8 @@ export const updateConsultationStatusFromForm = defineFormAction({
     revalidatePath('/app/juridico');
     revalidatePath('/app/juridico/consultas');
     revalidatePath(`/app/juridico/consultas/${data.id}`);
-    revalidateTag('consultation-detail', {});
-    revalidateTag('legal-notes', {});
+    revalidateTag('legal:consultation-detail', {});
+    revalidateTag('legal:summary', {});
   },
   rateLimit: { key: 'juridico_action', windowMs: 60_000, maxRequests: 30 },
 });
@@ -62,8 +62,9 @@ export const addNote = defineFormAction({
     revalidatePath('/app/juridico');
     revalidatePath('/app/juridico/consultas');
     revalidatePath(`/app/juridico/consultas/${data.entityId}`);
-    revalidateTag('legal-notes', {});
-    revalidateTag('consultation-detail', {});
+    revalidateTag('legal:notes', {});
+    revalidateTag('legal:consultation-detail', {});
+    revalidateTag('legal:summary', {});
   },
   rateLimit: { key: 'juridico_action', windowMs: 60_000, maxRequests: 30 },
 });

@@ -15,7 +15,7 @@ export const countConsultationsByStatus = withCache({
   fn: repoCountByStatus,
   keyFn: (status) => ['consultations-count-by-status', String(status)],
   ttl: TTL_VOLATILE,
-  tags: ['legal', 'dashboard'],
+  tags: ['legal:summary'],
 });
 
 export const countConsultationsStale = (days = 7) =>
@@ -23,7 +23,7 @@ export const countConsultationsStale = (days = 7) =>
     fn: () => repoCountStale(days),
     keyFn: () => ['consultations-stale-count', String(days)],
     ttl: TTL_VOLATILE,
-    tags: ['legal', 'dashboard'],
+    tags: ['legal:summary'],
   })();
 
 export const countConsultationsSlaDueSoon = (days = 2) =>
@@ -31,14 +31,14 @@ export const countConsultationsSlaDueSoon = (days = 2) =>
     fn: () => repoCountSlaDueSoon(days),
     keyFn: () => ['consultations-sla-due-soon', String(days)],
     ttl: TTL_VOLATILE,
-    tags: ['legal', 'dashboard'],
+    tags: ['legal:summary'],
   })();
 
 export const countConsultationsRespondedThisMonth = withCache({
   fn: repoCountResponded,
   keyFn: () => ['consultations-responded-month'],
   ttl: TTL_VOLATILE,
-  tags: ['legal', 'dashboard'],
+  tags: ['legal:summary'],
 });
 
 export type { ConsultationListItem, GetConsultationsFilters } from './repository';
@@ -49,7 +49,7 @@ export const getConsultationById = withCache({
   fn: repoGetById,
   keyFn: (id: number) => ['consultation-detail', String(id)],
   ttl: 30,
-  tags: ['legal', 'consultation-detail'],
+  tags: ['legal:consultation-detail'],
 });
 
 export type { NoteItem } from './repository';
@@ -62,7 +62,7 @@ export const getNotesByEntity = withCache({
     String(entityId),
   ],
   ttl: 15,
-  tags: ['legal', 'legal-notes'],
+  tags: ['legal:notes'],
 });
 
 export type { PendingAction } from './repository';

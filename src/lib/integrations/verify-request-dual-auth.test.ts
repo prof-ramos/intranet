@@ -12,7 +12,9 @@ const {
   mockDbSelect,
   mockDbInsert,
 } = vi.hoisted(() => {
-  const mockDbInsertValues = vi.fn(() => ({ onConflictDoNothing: vi.fn(() => ({ returning: vi.fn(() => Promise.resolve([{ id: 1 }])) })) }));
+  const mockDbInsertValues = vi.fn(() => ({
+    onConflictDoNothing: vi.fn(() => ({ returning: vi.fn(() => Promise.resolve([{ id: 1 }])) })),
+  }));
   const mockDbSelectLimit = vi.fn(() => Promise.resolve([]));
   const mockDbSelectWhere = vi.fn(() => ({ limit: mockDbSelectLimit }));
   const mockDbSelectFrom = vi.fn(() => ({ where: mockDbSelectWhere }));
@@ -48,7 +50,12 @@ vi.mock('@/lib/db', () => ({
 }));
 
 vi.mock('@/lib/db/schema', () => ({
-  integrationSignatureNonces: { id: 'id', keyId: 'key_id', signature: 'signature', expiresAt: 'expires_at' },
+  integrationSignatureNonces: {
+    id: 'id',
+    keyId: 'key_id',
+    signature: 'signature',
+    expiresAt: 'expires_at',
+  },
 }));
 
 vi.mock('@/lib/integrations/config', () => ({
@@ -87,7 +94,7 @@ vi.mock('@/lib/integrations/http', () => ({
 }));
 
 // Import after mocks
-import { verifyIntegrationRequest, authorizeIntegrationRequest } from './auth';
+import { verifyIntegrationRequest, authorizeIntegrationRequest } from './verify-request';
 
 // --- Helpers ---
 
@@ -266,7 +273,9 @@ describe('verifyIntegrationRequest (dual-auth)', () => {
         }
       }
       expect(mockFindActiveApiKeyByHash).toHaveBeenCalledWith(sha256Hex(TEST_TABLE_KEY_RAW));
-      expect(mockDecryptIntegrationSigningSecret).toHaveBeenCalledWith('enc:v2:k1.iv.tag.ciphertext');
+      expect(mockDecryptIntegrationSigningSecret).toHaveBeenCalledWith(
+        'enc:v2:k1.iv.tag.ciphertext',
+      );
     });
 
     it('authenticates a legacy table-backed key with the shared HMAC fallback', async () => {

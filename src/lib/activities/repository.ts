@@ -120,11 +120,10 @@ export async function findActivities(options: FindActivitiesOptions = {}) {
       desc(activities.id),
     );
 
-  // Dashboard counters represent the complete operational queue. Apply those
-  // filters in SQL and do not truncate their result before it reaches the board.
-  const rows = operationalFilter
-    ? await query.offset(offset)
-    : await query.limit(limit).offset(offset);
+  // Dashboard counters represent the complete operational queue via separate
+  // aggregate queries. The board itself is always bounded so filtered views
+  // (open / overdue / status) cannot grow unbounded in memory or transfer.
+  const rows = await query.limit(limit).offset(offset);
 
   return rows.sort(compareBoardRows);
 }

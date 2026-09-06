@@ -115,6 +115,10 @@ Troca obrigatória de senha para usuários com `mustChangePassword = true`.
 
 Todas as rotas abaixo exigem autenticação. Usuário sem sessão é redirecionado para `/login`.
 
+### WebMCP (agentes no browser)
+
+A área autenticada registra tools WebMCP (`document.modelContext`) para um **agente futuro usado pela Secretaria** — não pelos associados. Progressive enhancement: sem Chrome/Edge com Origin Trial ou `chrome://flags/#enable-webmcp-testing`, a UI humana não muda. Ver [ADR 021](docs/adr/021-webmcp-secretaria.md).
+
 ### Mapa de navegação
 
 ```mermaid
@@ -135,7 +139,7 @@ graph LR
     SEC_OF[/app/secretaria/oficios]
     SEC_OF_NOVO[/app/secretaria/oficios/novo]
     SEC_OF_EDIT[/app/secretaria/oficios/id/editar]
-    SEC_DOC[/app/secretaria/documentos]
+    SEC_DOC[/app/secretaria/documentos — fora do dia 1]
     SEC_EMAIL[/app/secretaria/emails/gerar]
     CFG[/app/config]
     CFG_USR[/app/config/usuarios]
@@ -558,23 +562,19 @@ graph LR
 
 ---
 
-### `/app/secretaria/documentos` — Documentos Institucionais
+### `/app/secretaria/documentos` — Documentos Institucionais (fora do dia 1)
 
-**Acesso:** `admin`, `diretoria`, `secretaria`
+**Status:** rota **não implementada** no App Router. Schema `documents` existe como placeholder (ADR 008 / ADR 020); não há `page.tsx` sob `src/app/app/secretaria/documentos/`. Storage de objetos permanece fora do baseline de go-live.
 
-**Funcionalidades:**
+**Acesso previsto (quando ativado):** `admin`, `diretoria`, `secretaria`
 
-- Upload com categorias: contrato, ata, oficio, rh, estatuto, etc.
-- Lista paginada com busca por nome e filtro por categoria
-- Download com URL assinada (expiração configurável)
-- Exclusão com confirmação
-- Vinculação opcional a entidade (associado, ofício, consulta)
+**Escopo futuro (não operacional hoje):**
 
-**Funcional quando:**
+- Upload com categorias e metadados no PostgreSQL
+- Download via URL assinada em object storage privado
+- Exclusão com confirmação e auditoria
 
-- [ ] Upload de arquivo > 10 MB rejeita com mensagem clara
-- [ ] URL de download expira após o período configurado
-- [ ] Exclusão remove o arquivo do storage e o registro do banco
+Não tratar esta seção como checklist de release até nova decisão de produto.
 
 ---
 

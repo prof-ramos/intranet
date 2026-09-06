@@ -253,10 +253,10 @@ Criação rápida de atividade diretamente no board, sem abrir formulário compl
 
 O Kanban emite eventos em **dois sistemas distintos**, não confundir:
 
-- **Sino in-app (`src/lib/events.ts` → `notifications`)** — notifica o destinatário direto (responsável atribuído, criador). Tipos: `activity.assigned`, `activity.completed`. Recipient-targeted, com `dedupeKey` e guarda contra auto-notificação. **Não é webhook.**
-- **Outbox de webhook (`domain_events` → dispatcher → POST HMAC)** — para automação/push externo. Superconjunto do sino: `activity.created`, `activity.status_changed`, `activity.assigned`, `activity.completed`, `activity.priority_changed`, `activity.due_date_changed`. Emitidos transacionalmente em `db.transaction` junto com a mutação; dispatch inline fire-and-forget após commit + cron diário como rede. Payload leva IDs + `links.app` (sem `title`/`description`, para minimizar PII no outbox). Roteamento do destinatário é **decisão do consumer**, não da intranet (que apenas expõe os sinais — `createdById` no `data`, `actor.adminId` no envelope). A intranet **não canoniza** uma política. Dois padrões válidos: (a) **Criador** — notificar `createdById` (disponível em todo evento) quando `actor.adminId !== createdById`; consumer simples, mas "criou" ≠ "atribuiu"; (b) **Atribuidor** — notificar `actor.adminId` do último `activity.assigned` para a atividade, correlacionando `activity.assigned` + `activity.status_changed` por `entity.id` (activityId) — fiel a "coordenador que atribuiu ao responsável atual", exige correlação entre eventos. Ver ADR 018 §4.
+- **Persistência in-app (`src/lib/events.ts` → `notifications`)** — grava alerta para o destinatário direto (responsável atribuído, criador). Tipos: `activity.assigned`, `activity.completed`. Recipient-targeted, com `dedupeKey` e guarda contra auto-notificação. **Não é webhook.** O layout autenticado lê esses registros via `NotificationBell` (polling). Novu não é o caminho in-app.
+- **Outbox de webhook (`domain_events` → dispatcher → POST HMAC)** — para automação/push externo. Superconjunto da persistência in-app: `activity.created`, `activity.status_changed`, `activity.assigned`, `activity.completed`, `activity.priority_changed`, `activity.due_date_changed`. Emitidos transacionalmente em `db.transaction` junto com a mutação; dispatch inline fire-and-forget após commit + cron diário como rede. Payload leva IDs + `links.app` (sem `title`/`description`, para minimizar PII no outbox). Roteamento do destinatário é **decisão do consumer**, não da intranet (que apenas expõe os sinais — `createdById` no `data`, `actor.adminId` no envelope). A intranet **não canoniza** uma política. Dois padrões válidos: (a) **Criador** — notificar `createdById` (disponível em todo evento) quando `actor.adminId !== createdById`; consumer simples, mas "criou" ≠ "atribuiu"; (b) **Atribuidor** — notificar `actor.adminId` do último `activity.assigned` para a atividade, correlacionando `activity.assigned` + `activity.status_changed` por `entity.id` (activityId) — fiel a "coordenador que atribuiu ao responsável atual", exige correlação entre eventos. Ver ADR 018 §4.
 
-_Avoid_: tratar "notificação" (sino) como sinônimo de "webhook" (outbox). O primeiro é interno e recipient-targeted; o segundo é externo e tipado por mudança.
+_Avoid_: tratar "notificação" persistida como sinônimo de "webhook" (outbox). O primeiro é interno, recipient-targeted e lido pelo `NotificationBell`; o segundo é externo e tipado por mudança.
 
 ---
 
@@ -416,6 +416,7 @@ Além dos módulos de domínio listados acima, o sistema inclui módulos auxilia
 - **`storage/`** — Interface de armazenamento de documentos; o provedor de objetos privado é decisão de infraestrutura.
 - **`assinafy/`** — Cliente Assinafy, webhook handler, repository e service para assinatura digital de ofícios.
 - **`errors/`** — Hierarquia de erros tipados (`DomainError`, `ConcurrencyConflictError`, `NotFoundError`, `ValidationError`, `RateLimitError`, `ExternalServiceError`, `UnauthorizedError`) com handlers globais `unhandledRejection`/`uncaughtException`.
+- **`webmcp/`** — Tools WebMCP da Secretaria (`document.modelContext`) para um agente futuro no browser. Só staff autenticado em `/app/*`; associados não usam. Ver ADR 021.
 
 ---
 

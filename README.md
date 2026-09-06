@@ -7,7 +7,7 @@
 
 Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia o cadastro de Oficiais de Chancelaria, associados ASOF, atividades administrativas e comunicações internas da diretoria.
 
-**Stack:** Next.js 16.2.6 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL gerenciado · auth server-side própria
+**Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL gerenciado · auth server-side própria
 
 ---
 
@@ -143,9 +143,9 @@ Para todos os ambientes, siga a matriz oficial em [`docs/environments.md`](./doc
 | `ASOF_WEBHOOK_SECRET_ENCRYPTION_KEY`           | —       | Chave usada para criptografar/decriptografar `webhook_subscriptions.secret_ciphertext`                                |
 | `CRON_SECRET`                                  | —       | Segredo bearer enviado pelo Vercel Cron para `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings`              |
 | `ASOF_INTEGRATION_API_KEY`                     | —       | Compatibilidade legada para chave global sem escopos; não configurar em produção nova sem exceção registrada          |
-| `NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER`      | —       | Identificador publico Novu para renderizar o inbox; sem ele, o componente nao e carregado                             |
-| `NEXT_PUBLIC_NOVU_BACKEND_URL`                 | —       | URL backend Novu opcional para self-hosted                                                                            |
-| `NEXT_PUBLIC_NOVU_SOCKET_URL`                  | —       | URL websocket Novu opcional para self-hosted                                                                          |
+| `NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER`      | —       | Residual. Nao e o caminho in-app; o layout usa `NotificationBell` + PostgreSQL                                        |
+| `NEXT_PUBLIC_NOVU_BACKEND_URL`                 | —       | Residual. URL backend Novu; wrappers existem no repo mas nao estao montados                                           |
+| `NEXT_PUBLIC_NOVU_SOCKET_URL`                  | —       | Residual. URL websocket Novu; wrappers existem no repo mas nao estao montados                                         |
 
 O caminho M2M principal usa chaves persistidas em `integration_api_keys`, criadas por admin em `/app/config/integracoes/api-keys`, com escopos como `events:read`, `events:write`, `webhooks:manage` e `admin`. A UI exibe a API key e o segredo HMAC por chave uma unica vez na criacao ou rotacao; clientes devem assinar `x-asof-signature` com esse segredo. A chave global `ASOF_INTEGRATION_API_KEY` existe apenas como compatibilidade de transição, usa `ASOF_INTEGRATION_HMAC_SECRET`, gera log de depreciação e tem acesso irrestrito quando configurada.
 

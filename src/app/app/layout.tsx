@@ -1,10 +1,14 @@
 import { Menu } from 'lucide-react';
 import { requireAuth } from '@/lib/auth/require-auth';
+import { getUnreadNotificationsCountForUser } from '@/lib/notifications/service';
 import { Sidebar } from '@/components/Sidebar';
 import { GlobalSearch } from '@/components/GlobalSearch';
-import { NotificationInboxWrapper } from '@/components/NotificationInboxWrapper';
+import { NotificationBellWrapper } from '@/components/NotificationBellWrapper';
+import { WebMcpRegistryWrapper } from '@/components/webmcp/WebMcpRegistryWrapper';
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireAuth();
+  const unreadCount = await getUnreadNotificationsCountForUser(user.userId);
 
   return (
     <div className="drawer md:drawer-open min-h-screen">
@@ -34,11 +38,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <GlobalSearch />
           </div>
           <div className="ml-auto flex shrink-0 items-center">
-            <NotificationInboxWrapper subscriberId={user.userId} />
+            <NotificationBellWrapper initialUnreadCount={unreadCount} />
           </div>
         </header>
 
         {children}
+        <WebMcpRegistryWrapper role={user.role} />
       </div>
 
       <div className="drawer-side z-40 print:hidden">

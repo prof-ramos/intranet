@@ -1,5 +1,5 @@
 import * as repository from './repository';
-import { markOverduePaymentsForAudit } from './repository';
+import { markOverduePaymentsForAudit, OVERDUE_PAYMENT_BATCH_SIZE } from './repository';
 import { logAuditAction } from '@/lib/audit/service';
 import { db } from '@/lib/db';
 import { emitDomainEvent, emitDomainEventsBatch } from '@/lib/integrations/outbox';
@@ -149,68 +149,72 @@ export function validateStatusTransition(currentStatus: string, newStatus: strin
 }
 
 export async function autoMarkOverduePaymentsService(): Promise<number> {
-  const { transitioned, eventIds } = await db.transaction(async (tx) => {
-    const rows = await markOverduePaymentsForAudit(tx);
+  let totalCount = 0;
+  const allEventIds: number[] = [];
 
-    if (rows.length > 0) {
-      await tx.insert(auditLogs).values(
+  // Process in bounded batches so a missed cron cannot materialize the entire
+  // backlog in one transaction (locks + memory + oversized multi-row inserts).
+  for (;;) {
+    const { transitioned, eventIds } = await db.transaction(async (tx) => {
+      const rows = await markOverduePaymentsForAudit(tx);
+
+      if (rows.length > 0) {
+        await tx.insert(auditLogs).values(
+          rows.map((payment) => ({
+            performedBy: null,
+            action: 'auto_mark_overdue',
+            entityType: 'monthly_payment' as const,
+            entityId: payment.id,
+            changes: {
+              old: { status: 'pendente' },
+              new: { status: 'atrasado' },
+            },
+            metadata: {
+              actorType: 'system',
+              associateId: payment.associateId,
+              year: payment.year,
+              month: payment.month,
+            },
+          })),
+        );
+      }
+
+      const emittedEvents = await emitDomainEventsBatch(
         rows.map((payment) => ({
-          performedBy: null,
-          action: 'auto_mark_overdue',
+          type: 'monthly_payment.updated' as const,
           entityType: 'monthly_payment' as const,
           entityId: payment.id,
-          changes: {
-            old: { status: 'pendente' },
-            new: { status: 'atrasado' },
-          },
-          metadata: {
-            actorType: 'system',
+          actorAdminId: null,
+          payload: {
             associateId: payment.associateId,
             year: payment.year,
             month: payment.month,
+            previousStatus: 'pendente' as const,
+            status: 'atrasado' as const,
+            paymentMethod: payment.paymentMethod,
+            paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
+            links: {
+              app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
+            },
           },
         })),
+        tx,
       );
-    }
+      const emittedEventIds = emittedEvents.map((event) => event.id);
 
-    // Outbox invariant: emit domain events INSIDE the tx so the event row
-    // commits (or rolls back) with the mutation. Post-commit dispatch below
-    // is fire-and-forget; the cron /api/v1/events/dispatch is the safety net.
-    //
-    // Batch insert: um único `INSERT ... VALUES (...), (...)` em vez de N+1
-    // INSERTs sequenciais dentro da tx. Preserva o invariant do outbox
-    // (commit/rollback atômico) e valida/sanitiza cada payload igual ao
-    // `emitDomainEvent` unitário.
-    const emittedEvents = await emitDomainEventsBatch(
-      rows.map((payment) => ({
-        type: 'monthly_payment.updated' as const,
-        entityType: 'monthly_payment' as const,
-        entityId: payment.id,
-        actorAdminId: null,
-        payload: {
-          associateId: payment.associateId,
-          year: payment.year,
-          month: payment.month,
-          previousStatus: 'pendente' as const,
-          status: 'atrasado' as const,
-          paymentMethod: payment.paymentMethod,
-          paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
-          links: {
-            app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
-          },
-        },
-      })),
-      tx,
-    );
-    const emittedEventIds = emittedEvents.map((event) => event.id);
+      return { transitioned: rows, eventIds: emittedEventIds };
+    });
 
-    return { transitioned: rows, eventIds: emittedEventIds };
-  });
+    totalCount += transitioned.length;
+    allEventIds.push(...eventIds);
 
-  // Fire-and-forget post-commit dispatch so webhooks send promptly without
-  // waiting for the cron. The cron /api/v1/events/dispatch remains the safety
-  // net for any dispatch that fails or is skipped here.
-  for (const id of eventIds) {
+    if (transitioned.length === 0) break;
+    // Batch size is enforced inside markOverduePaymentsForAudit; stop when a
+    // short batch indicates the backlog is drained.
+    if (transitioned.length < OVERDUE_PAYMENT_BATCH_SIZE) break;
+  }
+
+  for (const id of allEventIds) {
     void dispatchDomainEventById(id).catch((e) => {
       logger.error('[autoMarkOverdue] post-commit dispatch failed', {
         eventId: id,
@@ -219,13 +223,13 @@ export async function autoMarkOverduePaymentsService(): Promise<number> {
     });
   }
 
-  const count = transitioned.length;
-
-  if (count > 0) {
-    logger.info('[autoMarkOverdue] Transitioned payments pendente → atrasado', { count });
+  if (totalCount > 0) {
+    logger.info('[autoMarkOverdue] Transitioned payments pendente → atrasado', {
+      count: totalCount,
+    });
   }
 
-  return count;
+  return totalCount;
 }
 
 function getPaymentAuditState(payment: MonthlyPayment, includeStructured = true) {

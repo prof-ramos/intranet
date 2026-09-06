@@ -39,6 +39,24 @@ describe('processNotificationClick', () => {
     expect(close).toHaveBeenCalledOnce();
   });
 
+  it('does not navigate to slash-backslash hosts', async () => {
+    const markAsRead = vi.fn().mockResolvedValue(undefined);
+    const navigate = vi.fn();
+    const close = vi.fn();
+
+    const navigated = await processNotificationClick({
+      notificationId: 12,
+      href: '/\\evil.example',
+      markAsRead,
+      navigate,
+      close,
+    });
+
+    expect(navigated).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(close).toHaveBeenCalledOnce();
+  });
+
   it('does not navigate or close when markAsRead fails', async () => {
     const markAsRead = vi.fn().mockRejectedValue(new Error('boom'));
     const navigate = vi.fn();

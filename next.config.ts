@@ -80,10 +80,13 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    const originTrialToken = process.env.WEBMCP_ORIGIN_TRIAL_TOKEN?.trim();
     return [
       {
         source: '/(.*)',
-        headers: securityHeaders,
+        headers: originTrialToken
+          ? [...securityHeaders, { key: 'Origin-Trial', value: originTrialToken }]
+          : securityHeaders,
       },
     ];
   },

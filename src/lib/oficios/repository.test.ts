@@ -102,9 +102,45 @@ describe('oficios repository', () => {
   });
 
   describe('findOfficialLetters', () => {
-    it('queries with default limit 100', async () => {
+    it('selects only the fields consumed by the list UI and uses the default limit', async () => {
+      const listResult = {
+        id: MOCK_RESULT.id,
+        number: MOCK_RESULT.number,
+        year: MOCK_RESULT.year,
+        status: MOCK_RESULT.status,
+        recipient: MOCK_RESULT.recipient,
+        letterDate: MOCK_RESULT.letterDate,
+        subject: MOCK_RESULT.subject,
+        signatoryName: MOCK_RESULT.signatoryName,
+        assinafyDocumentId: MOCK_RESULT.assinafyDocumentId,
+        assinafyStatus: MOCK_RESULT.assinafyStatus,
+        assinafySigningUrl: null,
+      };
+      dbMock.setSelectResult([listResult]);
+
       const results = await findOfficialLetters();
-      expect(results).toEqual([MOCK_RESULT]);
+
+      const projection = dbMock.select.mock.calls.at(-1)?.[0] as
+        | Record<string, unknown>
+        | undefined;
+      expect(projection).toBeDefined();
+      if (!projection) return;
+      expect(Object.keys(projection)).toEqual([
+        'id',
+        'number',
+        'year',
+        'status',
+        'recipient',
+        'letterDate',
+        'subject',
+        'signatoryName',
+        'assinafyDocumentId',
+        'assinafyStatus',
+        'assinafySigningUrl',
+      ]);
+      expect(projection).not.toHaveProperty('bodyRichText');
+      expect(projection).not.toHaveProperty('bodyPlainText');
+      expect(results).toEqual([listResult]);
       expect(dbMock._selectChain.limit).toHaveBeenCalledWith(100);
     });
 
@@ -116,6 +152,20 @@ describe('oficios repository', () => {
     it('filters by year when provided', async () => {
       await findOfficialLetters(2026);
       expect(dbMock._selectChain.where).toHaveBeenCalled();
+    });
+    it('projects list columns without body fields', async () => {
+      await findOfficialLetters();
+      expect(dbMock.select).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: expect.anything(),
+          number: expect.anything(),
+          subject: expect.anything(),
+          recipient: expect.anything(),
+        }),
+      );
+      const shape = dbMock.select.mock.calls[0]?.[0] as Record<string, unknown>;
+      expect(shape).not.toHaveProperty('bodyRichText');
+      expect(shape).not.toHaveProperty('bodyPlainText');
     });
   });
 

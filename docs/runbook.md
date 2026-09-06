@@ -378,3 +378,28 @@ Filtre por `event_type` em `activity.*` para isolar eventos de Kanban. Eventos `
 - A via inline (fire-and-forget dentro do request) swallowed falhas de dispatch e só loga (`logger.error('inline dispatch failed ...')`) — a mutação do Kanban nunca falha por causa do webhook. O evento permanece `pending` e é recuperado pelo cron.
 - Não existe ingestão inbound por essa rota; eventos só são persistidos por serviços internos em `db.transaction` (atomicidade all-or-nothing com a mutação).
 - Ver ADR 018 para o conjunto de eventos `activity.*` e o racional de atomicidade.
+
+## Índices CONCURRENTLY (performance)
+
+A migration `0034_performance_query_indexes.sql` usa `CREATE INDEX IF NOT EXISTS`
+(transacional) para CI, preview e bancos pequenos via `npm run db:migrate`.
+
+Em produção com tabelas grandes (audit*logs, activities, legal*\*), preferir a
+variante sem bloquear writes:
+
+```bash
+psql "$DATABASE_MIGRATION_URL" \
+  -f drizzle/postgres/manual/0034_performance_query_indexes_concurrently.sql
+```
+
+Regras:
+
+- Rodar **fora** de `npm run db:migrate` (CONCURRENTLY não entra em transação).
+- Se `0034` já foi aplicada pelo migrate, os `IF NOT EXISTS` tornam o script no-op.
+- Se aplicar só o script manual, inserir o hash da migration em
+  `drizzle.__drizzle_migrations` conforme o procedimento de migrations manuais
+  deste runbook.
+- Índices cobertos: board aberto (`idx_activities_open_updated`), busca de título
+  (`idx_activities_title_trgm`), auditoria (`idx_audit_entity_created`,
+  `idx_audit_action_trgm`), notas/jurídico (`idx_legal_notes_entity_created`,
+  trigram em title/internal_number).
