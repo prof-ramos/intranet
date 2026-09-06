@@ -19,4 +19,6 @@ if [[ ! -f .env.local ]]; then
     .env.local
 fi
 
+bash "$SCRIPT_DIR/ensure-dev-env.sh"
+
 echo "[cloud-agent] Install complete."

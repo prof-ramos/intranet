@@ -73,6 +73,13 @@ describe('searchOfficialsAction', () => {
     expect(result.total).toBe(1);
   });
 
+  it('asks for a complete CPF before querying', async () => {
+    const result = await searchOfficialsAction({ q: '123.456.789-0', searchBy: 'cpf' });
+    expect(result.rows).toEqual([]);
+    expect(result.message).toMatch(/CPF completo/);
+    expect(getAssociatesListPageMock).not.toHaveBeenCalled();
+  });
+
   it('rejects invalid searchBy values before querying', async () => {
     await expect(searchOfficialsAction({ q: 'Ana', searchBy: 'email' } as never)).rejects.toThrow();
     expect(getAssociatesListPageMock).not.toHaveBeenCalled();
@@ -93,7 +100,11 @@ describe('getOfficialProfileAction', () => {
   it('serializes the profile for a found official', async () => {
     const profile = { associate: { id: 9, fullName: 'Ana' } };
     getAssociateProfileMock.mockResolvedValue(profile);
-    serializeOfficialProfileMock.mockReturnValue({ id: 9, fullName: 'Ana', href: '/app/associados/9' });
+    serializeOfficialProfileMock.mockReturnValue({
+      id: 9,
+      fullName: 'Ana',
+      href: '/app/associados/9',
+    });
 
     await expect(getOfficialProfileAction({ id: 9 })).resolves.toEqual({
       found: true,

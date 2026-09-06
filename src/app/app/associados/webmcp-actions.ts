@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { defineServerAction } from '@/lib/server-actions/define-form-action';
 import { getAssociateProfile, getAssociatesListPage } from '@/lib/associates/service';
 import {
-  MIN_SEARCH_CHARS,
+  associateSearchHelp,
+  isAssociateSearchReady,
   type AssociateSearchMode,
 } from '@/lib/associates/search-params';
 import { associateSearchParamsSchema } from '@/lib/validation/schemas';
@@ -28,7 +29,7 @@ export const searchOfficialsAction = defineServerAction({
       associationStatus: input.associationStatus,
       location: input.location,
     };
-    const hasSearch = q.length >= MIN_SEARCH_CHARS;
+    const hasSearch = isAssociateSearchReady(q, searchBy);
     const hasFilters = Object.values(filters).some(Boolean);
 
     if (!hasSearch && !hasFilters) {
@@ -36,8 +37,9 @@ export const searchOfficialsAction = defineServerAction({
         rows: [],
         total: 0,
         page: input.page,
-        message:
-          'Informe um termo de busca (mínimo 2 caracteres) ou um filtro (vínculo, situação funcional, contribuição ou localização).',
+        message: q
+          ? associateSearchHelp(searchBy)
+          : 'Informe um termo de busca (mínimo 2 caracteres) ou um filtro (vínculo, situação funcional, contribuição ou localização).',
       };
     }
 
