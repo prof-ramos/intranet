@@ -109,7 +109,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 - `src/app/app/associados/[id]/actions.ts` — server actions CRUD para dependentes e convênios
 - `src/app/app/associados/[id]/DependentManager.tsx` — componente cliente para gerenciamento inline de dependentes e convênios
 - `scripts/seed-dev.ts` — massa sintética robusta para desenvolvimento local, sem PII real
-- `src/lib/notifications/` — notificações persistidas (polling, sem Realtime)
+- `src/lib/notifications/` — persistência PostgreSQL de notificações via `emitEvent`; UI Bell desmontada; Novu opcional sem publisher
 - `src/lib/assinafy/service.ts` — orquestra webhook Assinafy; idempotência dentro de `db.transaction`; veja ADR 013
 - `src/lib/integrations/verify-request.ts` — autenticação M2M dual (env-var + table-backed), rate limiting, prevenção de replay via nonces
 - `next.config.ts` — Next.js config

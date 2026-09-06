@@ -44,7 +44,7 @@ Domain library modules for business logic, data access, and DB schema. All modul
 | `juridico/`       | Legal/juridico — consultas, opinions, processes, dashboard, queries, repository, service, sla, sla-notifications         |
 | `lgpd/`           | LGPD compliance — retention policy                                                                                       |
 | `mala-direta/`    | Export CSV Google Contacts (fase 1 mala direta)                                                                          |
-| `notifications/`  | Notification repository and service                                                                                      |
+| `notifications/`  | Persistência PostgreSQL via emitEvent; UI Bell desmontada; Novu opcional sem publisher                                   |
 | `oficios/`        | Oficio document generation — pdf, repository, service (`sendForSignature`), validations                                  |
 | `reports/`        | Report generation — audit, csv, export-filters, policy, queries, service                                                 |
 | `routing/`        | Route parameter parsing                                                                                                  |

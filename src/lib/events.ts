@@ -1,3 +1,11 @@
+/**
+ * In-app notification writer.
+ *
+ * `emitEvent` persists recipient-targeted rows in `notifications`.
+ * The polling `NotificationBell` that used to read them is not mounted.
+ * Novu, when configured, is a separate client inbox without a publisher here.
+ * Do not add a second writer or assume a live bell UI.
+ */
 import type { DbExecutor } from '@/lib/db';
 import { createNotification } from '@/lib/notifications/repository';
 import { createNotificationFromEvent } from '@/lib/notifications/service';
