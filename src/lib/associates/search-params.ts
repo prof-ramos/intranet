@@ -2,8 +2,14 @@ import { associateSearchParamsSchema } from '@/lib/validation/schemas';
 import { escapeLikePattern } from '@/lib/db/like-pattern';
 
 export {
+  ASSOCIATE_SEARCH_MODES,
+  CPF_SEARCH_DIGITS,
   MIN_SEARCH_CHARS,
+  MIN_SIAPE_SEARCH_DIGITS,
+  associateSearchHelp,
+  associateSearchPlaceholder,
   buildAssociatesSearchParams,
+  isAssociateSearchReady,
   normalizeAssociateNameForSearch,
   normalizeCpfForSearch,
   normalizeSiapeForSearch,

@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-26 | Updated: 2026-09-04 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-09-06 -->
 <!-- Parent: none (root) -->
 
 # ASOF Intranet — AI Agent Directory
@@ -158,6 +158,15 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 - E2E: Playwright, `http://127.0.0.1:3001` (não 3000), database `asof_test` criado por `e2e/global-setup.ts`.
 - `npm run test:db` — schema contract contra PostgreSQL ao vivo (valida tables, columns, enums, indexes, extensions e alinhamento de migrations). **Importante:** ao mudar qualquer schema Drizzle ou migração SQL, atualizar também `src/lib/db/schema.integration.test.ts` (expectedColumns, expectedEnums, expectedIndexes). Enums do banco usam valores em português (ex: `activity_priority: ['baixa', 'normal', 'alta', 'urgente']`), nunca assumir valores em inglês.
 - `npm run test:e2e` nunca contra `http://localhost:3000`; apontar para `3001` com `NEXT_E2E=1` e `.next-e2e` como `distDir`. Gotchas não-triviais (JIT warmup, órfãos EADDRINUSE, filtros de vínculo ASOF) estão em `e2e/AGENTS.md` — leia antes de tocar em specs.
+
+## Cursor Cloud specific instructions
+
+O ambiente Cloud Agent usa Postgres local + seed sintético (`bash .cursor/install.sh` / `bash .cursor/start.sh`). Não puxar Neon/Vercel Storage para o agente.
+
+- App de verificação manual: `npm run dev` em `http://127.0.0.1:3000` com `SKIP_AUTH=true` (`.env.local`). Playwright/E2E continua em `127.0.0.1:3001`.
+- Identidade de dev: `DEV_USER_ID=1`, `DEV_USER_ROLE=admin`. Se `requireAuth` reclamar de e-mail/role, rode `npm run db:seed:dev`.
+- Cadastro de oficiais (`/app/associados`): a busca humana e a tool WebMCP `search-officials` compartilham `searchBy=name|cpf|siape`. Não apague `searchBy` da query string. Nome é parcial (≥ 2 caracteres); CPF/SIAPE são match exato por hash (CPF com 11 dígitos; SIAPE com ≥ 5 dígitos).
+- Ao mudar UI, verifique o fluxo no browser (não só screenshot): nome, troca de modo, CPF/SIAPE e `returnTo`. Preferir `form [role="alert"]` e controles com nome acessível.
 
 ### Gotchas
 

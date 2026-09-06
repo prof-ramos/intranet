@@ -23,7 +23,7 @@ Authenticated dashboard — main app area after login. All routes require auth v
 | Directory        | Purpose                                                                                                                |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `_dashboard/`    | Shared dashboard components — DashboardActivitiesOverview, DashboardIndicators, DashboardSidebar                       |
-| `associados/`    | Associates CRUD + relatorio/download                                                                                   |
+| `associados/`    | Cadastro de oficiais — lista com `searchBy` (nome, CPF ou SIAPE), CRUD, ficha e relatorio/download                     |
 | `atividades/`    | Activity kanban board, filters, preferences and creation flow (see `atividades/AGENTS.md`)                             |
 | `config/`        | Admin config — auditoria, integrations, assignments and users (see `config/AGENTS.md`)                                 |
 | `etiquetas/`     | Label generation UI and printable output                                                                               |
