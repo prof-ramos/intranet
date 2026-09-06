@@ -36,7 +36,9 @@ type NotificationsListPayload =
       unreadCount?: number;
     };
 
-export function useNotifications({ userId: _userId }: UseNotificationsOptions): UseNotificationsResult {
+export function useNotifications({
+  userId: _userId,
+}: UseNotificationsOptions): UseNotificationsResult {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +54,7 @@ export function useNotifications({ userId: _userId }: UseNotificationsOptions): 
     const payload = (await listNotificationsAction()) as NotificationsListPayload;
     const nextNotifications = extractNotifications(payload);
     setNotifications(nextNotifications);
+    setError(null);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -66,27 +69,24 @@ export function useNotifications({ userId: _userId }: UseNotificationsOptions): 
     }
   }, [loadNotifications]);
 
-  const markAsRead = useCallback(
-    async (id: number) => {
-      const previous = notificationsRef.current;
+  const markAsRead = useCallback(async (id: number) => {
+    const previous = notificationsRef.current;
 
-      setNotifications((current) =>
-        current.map((item) =>
-          item.id === id && !item.readAt ? { ...item, readAt: new Date().toISOString() } : item,
-        ),
-      );
+    setNotifications((current) =>
+      current.map((item) =>
+        item.id === id && !item.readAt ? { ...item, readAt: new Date().toISOString() } : item,
+      ),
+    );
 
-      try {
-        await markNotificationReadAction(id);
-        setError(null);
-      } catch (error) {
-        setNotifications(previous);
-        setError('Não foi possível marcar a notificação como lida.');
-        throw error;
-      }
-    },
-    [],
-  );
+    try {
+      await markNotificationReadAction(id);
+      setError(null);
+    } catch (error) {
+      setNotifications(previous);
+      setError('Não foi possível marcar a notificação como lida.');
+      throw error;
+    }
+  }, []);
 
   const markAllAsRead = useCallback(async () => {
     const previous = notificationsRef.current;
@@ -135,7 +135,9 @@ export function useNotifications({ userId: _userId }: UseNotificationsOptions): 
     const tick = () => {
       if (document.visibilityState === 'visible') {
         void loadNotifications().catch(() => {
-          setError('Não foi possível atualizar as notificações.');
+          if (notificationsRef.current.length === 0) {
+            setError('Não foi possível atualizar as notificações.');
+          }
         });
       }
     };
@@ -154,7 +156,9 @@ export function useNotifications({ userId: _userId }: UseNotificationsOptions): 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         void loadNotifications().catch(() => {
-          setError('Não foi possível atualizar as notificações.');
+          if (notificationsRef.current.length === 0) {
+            setError('Não foi possível atualizar as notificações.');
+          }
         });
         startTimer();
       } else {

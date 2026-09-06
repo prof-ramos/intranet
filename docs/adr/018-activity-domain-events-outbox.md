@@ -4,9 +4,7 @@
 
 Aceito (emendado em 2026-07-01 — §4 des-canoniza o routing de `createdById` e apresenta os padrões Criador/Atribuidor como decisão do consumer; a intranet não prescreve política de routing)
 
-Emenda 2026-09-06: o escritor in-app (`emitEvent` → `notifications`) permanece ativo; o leitor `NotificationBell` (polling) **não** está montado no layout. Novu é inbox opcional sem publisher no backend. Decisão de produto pendente — não tratar o fluxo até o Bell como UI vigente.
-
-Emenda 2026-09-06 (decisão A): o layout autenticado volta a montar `NotificationBell` como UI in-app. O caminho vigente é `emitEvent` → `notifications` → polling do Bell. Novu não é o caminho in-app e não está montado.
+Emenda 2026-09-06 (decisão A, vigente): o layout autenticado monta `NotificationBell` como UI in-app. O caminho é `emitEvent` → `notifications` → polling do Bell. Novu não é o caminho in-app e não está montado. A emenda anterior do mesmo dia (Bell desmontado / decisão pendente) fica superseded.
 
 ## Contexto
 
