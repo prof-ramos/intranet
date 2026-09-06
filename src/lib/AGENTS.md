@@ -13,7 +13,7 @@ Domain library modules for business logic, data access, and DB schema. All modul
 | ----------------- | -------------------------------------------------------------------------------------- |
 | `env.ts`          | Environment variable access and validation (with test)                                 |
 | `error-log.ts`    | Error logging (with test)                                                              |
-| `events.ts`       | Event system (with test)                                                               |
+| `events.ts`       | In-app notification writer (`emitEvent`); contract lives in `notifications/types.ts`   |
 | `ip.ts`           | IP extraction (with test)                                                              |
 | `logger.ts`       | Structured logger with PII redaction. Use `createLogger('module-name')` not console.\* |
 | `rate-limit.ts`   | Rate limiting (with test)                                                              |

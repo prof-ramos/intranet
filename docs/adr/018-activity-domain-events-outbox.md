@@ -113,6 +113,7 @@ O cron `/api/v1/events/dispatch` **permanece diário 03:00 UTC** — o inline co
 - ADR 014 — Proteção contra replay de integrações.
 - `src/lib/integrations/outbox.ts` — `emitDomainEvent` + `payloadSchemaByEventType`.
 - `src/lib/integrations/webhooks/service.ts` — dispatcher (`dispatchDomainEventById`, `dispatchPendingDomainEvents`).
-- `src/lib/events.ts` — sistema in-app de notificações (`activity.assigned`, `activity.completed`).
+- `src/lib/events.ts` — writer in-app (`emitEvent`).
+- `src/lib/notifications/types.ts` — contrato dos tipos persistidos (`NOTIFICATION_EVENT_TYPES`, payloads).
 - `src/lib/activities/service.ts` — camada de serviço onde a emissão é inserida.
 - `CONTEXT.md` — glossário: "Evento de Domínio", "Webhook Outbound", "Atividade (Kanban)".
