@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ASOF Intranet — Sistema interno da Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia o Cadastro de Oficiais de Chancelaria, o vínculo ASOF, atividades administrativas, financeiro e comunicações internas da diretoria.
 
-**Stack:** Next.js 16.2.6 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL/Neon · Auth server-side própria
+**Stack:** Next.js 16.2.12 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL/Neon · Auth server-side própria
 
 ## Setup
 
@@ -147,7 +147,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 
 ## Gotchas
 
-- Não fazer downgrade do Next.js abaixo de 16.2.6.
+- Não fazer downgrade do Next.js abaixo de 16.2.12.
 - `next.config.ts` fixa `turbopack.root` para evitar resolução de Tailwind pelo diretório pai.
 - Dev server pesado em 8 GB RAM: usar `scripts/run-dev-60s.sh` para diagnósticos de freeze.
 - E2E nunca aponta para `http://localhost:3000` (dev server); usa `3001` com `NEXT_E2E=1`.

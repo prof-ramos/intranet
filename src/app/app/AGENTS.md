@@ -10,12 +10,12 @@ Authenticated dashboard — main app area after login. All routes require auth v
 
 ## Key Files
 
-| File          | Purpose                       |
-| ------------- | ----------------------------- |
-| `error.tsx`   | Error boundary                |
-| `layout.tsx`   | Dashboard layout with sidebar + WebMCP registry |
-| `loading.tsx` | Loading state                 |
-| `page.tsx`    | Redirects to atividades       |
+| File          | Purpose                                         |
+| ------------- | ----------------------------------------------- |
+| `error.tsx`   | Error boundary                                  |
+| `layout.tsx`  | Dashboard layout with sidebar + WebMCP registry |
+| `loading.tsx` | Loading state                                   |
+| `page.tsx`    | Redirects to atividades                         |
 
 ## Subdirectories
 
@@ -31,7 +31,7 @@ Authenticated dashboard — main app area after login. All routes require auth v
 | `notifications/` | Notification center and actions                                                                                                                           |
 | `privacidade/`   | Privacy policy page                                                                                                                                       |
 | `search/`        | Global search page                                                                                                                                        |
-| `secretaria/`    | Secretaria — documentos/, emails/gerar, mala-direta/, oficios/ (\_components, [id]/editar, novo/)                                                         |
+| `secretaria/`    | Secretaria — emails/gerar, mala-direta/, oficios/ (\_components, [id]/editar, novo/)                                                                      |
 
 ## For AI Agents
 

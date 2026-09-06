@@ -46,7 +46,7 @@ Documentation directory covering architecture decisions, design guidelines, comp
 ### Common Patterns
 
 - ADRs use a title line followed by Status, Context, Decision, Consequences.
-- Screenshots in `design/screenshots/` are named `[page]-[state].png`.
+- Screenshots, when present under `docs/design/`, follow `[page]-[state].png`.
 
 ## Dependencies
 
