@@ -7,8 +7,11 @@ const source = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'la
 
 describe('authenticated layout notifications', () => {
   it('mounts the PostgreSQL NotificationBell and not the Novu inbox', () => {
-    expect(source).toMatch(/import \{ NotificationBell \} from '@\/components\/NotificationBell'/);
-    expect(source).toMatch(/<NotificationBell userId=\{user\.userId\} \/>/);
+    expect(source).toMatch(
+      /import \{ NotificationBellWrapper \} from '@\/components\/NotificationBellWrapper'/,
+    );
+    expect(source).toMatch(/<NotificationBellWrapper userId=\{user\.userId\} \/>/);
+    expect(source).not.toMatch(/from '@\/components\/NotificationBell'/);
     expect(source).not.toMatch(/NotificationInboxWrapper/);
   });
 });

@@ -223,3 +223,13 @@ jobs:
 
       - name: Run E2E tests
         run: npm run test:e2e
+
+      - name: Dump E2E dev server log
+        if: failure()
+        run: |
+          if [ -f .next-e2e/e2e-dev-server.log ]; then
+            echo '----- .next-e2e/e2e-dev-server.log (tail) -----'
+            tail -n 200 .next-e2e/e2e-dev-server.log
+          else
+            echo 'No .next-e2e/e2e-dev-server.log'
+          fi
