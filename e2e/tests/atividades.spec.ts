@@ -36,7 +36,9 @@ test.describe('Kanban de Atividades', () => {
     await page.getByRole('button', { name: 'Criar atividade' }).click();
 
     // Verifica que o toast de sucesso aparece na página do formulário
-    await expect(page.getByRole('status')).toContainText('Atividade criada com sucesso');
+    await expect(page.locator('main').getByRole('status')).toContainText(
+      'Atividade criada com sucesso',
+    );
 
     // Navega de volta ao board
     await page.getByRole('link', { name: 'Voltar para Atividades' }).click();

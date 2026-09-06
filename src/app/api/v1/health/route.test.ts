@@ -5,7 +5,7 @@ const mockAuthorizeIntegrationRequest = vi.fn();
 const mockPreAuthConsume = vi.fn();
 const mockPrincipalConsume = vi.fn();
 
-vi.mock('@/lib/integrations/auth', () => ({
+vi.mock('@/lib/integrations/verify-request', () => ({
   authorizeIntegrationRequest: (...args: unknown[]) => mockAuthorizeIntegrationRequest(...args),
 }));
 

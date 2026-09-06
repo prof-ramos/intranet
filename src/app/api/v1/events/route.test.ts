@@ -9,7 +9,7 @@ const mockDispatchDomainEventById = vi.fn();
 const mockDispatchPendingDomainEvents = vi.fn();
 const auditValues = vi.fn();
 
-vi.mock('@/lib/integrations/auth', () => ({
+vi.mock('@/lib/integrations/verify-request', () => ({
   authorizeIntegrationRequest: (...args: unknown[]) => mockAuthorizeIntegrationRequest(...args),
 }));
 

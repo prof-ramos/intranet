@@ -1,12 +1,12 @@
 # Dependencias
 
-Atualizado em 2026-07-18. Versões conferidas contra `package.json` atual (Next.js 16.2.6, React 19.2.6, drizzle-orm 0.45.2, Vitest 4.1.8).
+Atualizado em 2026-09-05. Versões conferidas contra `package.json` atual (Next.js 16.2.12, React 19.2.6, drizzle-orm 0.45.2, Vitest 4.1.7).
 
 ## Stack Mantido
 
 ### Runtime
 
-- **Next.js 16.2.6** (App Router) com React 19 e TypeScript 6.
+- **Next.js 16.2.12** (App Router) com React 19 e TypeScript 6.
 - **Drizzle ORM** (`drizzle-orm` 0.45+) + `postgres` para PostgreSQL.
 - **DaisyUI 5** + **Tailwind CSS 4** para UI e design system.
 - **Tiptap** (`@tiptap/core`, `@tiptap/react`, `@tiptap/starter-kit`, extensões `text-align` e `text-style`) para editor rico de oficios.
@@ -35,7 +35,7 @@ Atualizado em 2026-07-18. Versões conferidas contra `package.json` atual (Next.
 
 ## Dependencias Removidas Nesta Frente
 
-- SDKs de plataforma externa para auth, entrega em tempo real e storage.
+- SDKs de plataforma externa para auth e storage. (`@novu/react` permanece como inbox opcional incompleto — ver auditoria 2026-09-05.)
 - WebSocket dedicado ao smoke de entrega em tempo real.
 
 O go-live nao depende de auth externo, entrega em tempo real externa nem storage externo. Storage de objetos privado sera escolhido em frente separada se Documentos for obrigatorio. A implementacao final de storage fisico devera ser acompanhada de uma decisao formal de adocao.

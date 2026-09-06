@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { generateOfficialLetterPdf } from '../../src/lib/oficios/pdf';
 import { type OfficialLetter } from '../../src/lib/db/schema/oficios';
 
@@ -19,8 +20,10 @@ const sampleOficio: OfficialLetter = {
   signatoryName: 'BELTRANO DA SILVA',
   signatoryRole: 'Presidente da ASOF',
   closure: 'Respeitosamente,',
-  bodyRichText: '<p>Temos a honra de nos dirigir a Vossa Excelência para solicitar providências quanto à adequação dos sistemas corporativos internos.</p><p>A modernização dos sistemas é essencial para a eficiência administrativa do Ministério das Relações Exteriores, de modo a assegurar o cumprimento adequado das metas institucionais.</p>',
-  bodyPlainText: 'Temos a honra de nos dirigir a Vossa Excelência para solicitar providências quanto à adequação dos sistemas corporativos internos.\n\nA modernização dos sistemas é essencial para a eficiência administrativa do Ministério das Relações Exteriores, de modo a assegurar o cumprimento adequado das metas institucionais.',
+  bodyRichText:
+    '<p>Temos a honra de nos dirigir a Vossa Excelência para solicitar providências quanto à adequação dos sistemas corporativos internos.</p><p>A modernização dos sistemas é essencial para a eficiência administrativa do Ministério das Relações Exteriores, de modo a assegurar o cumprimento adequado das metas institucionais.</p>',
+  bodyPlainText:
+    'Temos a honra de nos dirigir a Vossa Excelência para solicitar providências quanto à adequação dos sistemas corporativos internos.\n\nA modernização dos sistemas é essencial para a eficiência administrativa do Ministério das Relações Exteriores, de modo a assegurar o cumprimento adequado das metas institucionais.',
   status: 'rascunho',
   assinafyDocumentId: null,
   assinafyAssignmentId: null,
@@ -39,7 +42,9 @@ const sampleOficio: OfficialLetter = {
 
 async function main() {
   const pdfBytes = await generateOfficialLetterPdf(sampleOficio);
-  const outPath = '/Users/gabrielramos/.gemini/antigravity-cli/brain/08d5dc30-304b-4717-954d-1e3f1f33d43b/oficio-padrao-teste.pdf';
+  const outDir = path.join(process.cwd(), 'tmp');
+  fs.mkdirSync(outDir, { recursive: true });
+  const outPath = path.join(outDir, 'oficio-padrao-teste.pdf');
   fs.writeFileSync(outPath, pdfBytes);
   console.log('PDF saved to', outPath);
 }

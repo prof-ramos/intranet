@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-05-26 | Updated: 2026-09-04 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-09-06 -->
 
 # lib
 
@@ -13,7 +13,7 @@ Domain library modules for business logic, data access, and DB schema. All modul
 | ----------------- | -------------------------------------------------------------------------------------- |
 | `env.ts`          | Environment variable access and validation (with test)                                 |
 | `error-log.ts`    | Error logging (with test)                                                              |
-| `events.ts`       | Event system (with test)                                                               |
+| `events.ts`       | In-app notification writer (`emitEvent`); contract lives in `notifications/types.ts`   |
 | `ip.ts`           | IP extraction (with test)                                                              |
 | `logger.ts`       | Structured logger with PII redaction. Use `createLogger('module-name')` not console.\* |
 | `pagination.ts`   | Shared pagination limits and parsing                                                   |
@@ -36,7 +36,7 @@ Domain library modules for business logic, data access, and DB schema. All modul
 | `cron/`           | Cron utilities                                                                                                   |
 | `crypto/`         | PII encryption — index, pii encryption, safe-compare                                                             |
 | `dashboard/`      | Dashboard queries and view models                                                                                |
-| `db/`             | Database connection, retry/query helpers and 26 domain schema files (see `db/AGENTS.md`)                         |
+| `db/`             | Database connection, retry/query helpers and 26 schema files (see `db/AGENTS.md`)                                |
 | `email/`          | Email sending and templates                                                                                      |
 | `email-triage/`   | Triagem de e-mail (Gmail + Gemini)                                                                               |
 | `errors/`         | Domain error hierarchy                                                                                           |
@@ -46,7 +46,7 @@ Domain library modules for business logic, data access, and DB schema. All modul
 | `juridico/`       | Legal/juridico — consultas, opinions, processes, dashboard, queries, repository, service, sla, sla-notifications |
 | `lgpd/`           | LGPD compliance — retention policy                                                                               |
 | `mala-direta/`    | Export CSV Google Contacts (fase 1 mala direta)                                                                  |
-| `notifications/`  | Notification repository and service                                                                              |
+| `notifications/`  | Persistência PostgreSQL via emitEvent; UI vigente = NotificationBell no layout autenticado                       |
 | `oficios/`        | Oficio document generation — pdf, repository, service (`sendForSignature`), validations                          |
 | `reports/`        | Report generation — audit, csv, export-filters, policy, queries, service                                         |
 | `routing/`        | Route parameter parsing                                                                                          |

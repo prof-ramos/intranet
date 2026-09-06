@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { authorizeIntegrationRequest } from '@/lib/integrations/auth';
+import { authorizeIntegrationRequest } from '@/lib/integrations/verify-request';
 import { db } from '@/lib/db';
 import { auditLogs } from '@/lib/db/schema';
 import { jsonError, jsonMethodNotAllowed, jsonOk } from '@/lib/integrations/http';

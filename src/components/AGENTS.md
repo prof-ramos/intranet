@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-09-04 | Updated: 2026-09-04 -->
+<!-- Generated: 2026-09-04 | Updated: 2026-09-06 -->
 
 # Components
 
@@ -8,13 +8,13 @@ Shared React UI components used across the app.
 ## Key Files
 
 - `GlobalSearch.tsx` — global search component
-- `EmptyState.tsx` — standardized empty-result presentation
 - `ErrorBoundary.tsx` — reusable client error boundary
 - `LogoutButton.tsx` — logout button component
 - `NavGroup.tsx` — navigation group with label and links
 - `NavLink.tsx` — navigation link with active state
-- `NotificationBell.tsx` — notification bell (with test)
-- `NotificationInboxWrapper.tsx` (client boundary), `NotificationInbox.tsx`, `NotificationInboxSkeleton.tsx` — notification center UI
+- `NotificationBell.tsx` — UI in-app vigente do sino (com teste)
+- `NotificationBellWrapper.tsx` — carrega o Bell só ao abrir o painel (evita actions no grafo de toda página `/app`)
+- `NotificationInboxWrapper.tsx`, `NotificationInbox.tsx`, `NotificationInboxSkeleton.tsx` — residual Novu; **não montados** no layout
 - `PageHeader.tsx` — shared page heading and action layout
 - `Sidebar.tsx` — main sidebar navigation component
 
@@ -30,5 +30,6 @@ Shared React UI components used across the app.
 - Components use Tailwind CSS and DaisyUI, not CSS modules
 - Test files are colocated with `.test.ts` or `.test.tsx` suffix
 - Preserve accessible names, keyboard behavior and server/client boundaries when extracting shared UI
+- Do not remount `NotificationInboxWrapper` in the authenticated layout without a new product decision
 
 <!-- MANUAL: -->

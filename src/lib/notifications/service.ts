@@ -1,8 +1,4 @@
-import type {
-  NotificationEntity,
-  NotificationEventPayload,
-  NotificationEventType,
-} from '@/lib/events';
+import type { NotificationEntity, NotificationEventPayload, NotificationEventType } from './types';
 import type { DbExecutor } from '@/lib/db';
 import {
   countUnreadNotificationsForUser,

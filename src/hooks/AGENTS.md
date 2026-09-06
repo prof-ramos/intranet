@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-09-04 | Updated: 2026-09-04 -->
+<!-- Generated: 2026-09-04 | Updated: 2026-09-06 -->
 
 # Hooks
 
@@ -7,8 +7,8 @@ Shared React hooks.
 
 ## Key Files
 
-- `notifications-normalize.ts` — notification data normalization (with test + bench)
-- `use-notifications.ts` — hook for fetching/managing notifications
+- `notifications-normalize.ts` — notification data normalization (with test)
+- `use-notifications.ts` — polling hook for persisted notifications (consumed by NotificationBell in the authenticated layout)
 - `use-escape-key.ts` — hook for closing overlays/modals on Escape
 
 ## For AI Agents

@@ -15,12 +15,6 @@ export interface LogAuditOptions {
   executor?: DbExecutor;
 }
 
-/**
- * @deprecated Use LogAuditOptions directly. Kept for backwards compatibility
- * with code that was written against an earlier version of the audit API.
- */
-export type AuditLogInput = LogAuditOptions;
-
 export async function logAuditAction(options: LogAuditOptions): Promise<void> {
   if (options.adminId !== null && (!Number.isInteger(options.adminId) || options.adminId <= 0)) {
     throw new Error('Invalid audit actor.');

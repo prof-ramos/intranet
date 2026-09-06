@@ -1,7 +1,9 @@
 # ADR 012: Papra Como Candidato A DMS Externo Para Documentos
 
-Status: accepted (emendado em 2026-07-18 — decisão de não seguir com o Papra registrada em `TODO-PROD.md` em 2026-07-08; a POC descrita abaixo não foi executada e não deve ser reaberta como gate de go-live)
+Status: Superseded — decisão posterior: não seguir com Papra
 Data: 2026-05-29
+
+A decisão vigente está em `TODO-PROD.md` e no ADR 020. O corpo abaixo é registro histórico da POC que não foi executada e não deve ser reaberta como gate de go-live.
 
 ## Contexto
 
