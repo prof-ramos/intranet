@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ASOF Intranet — Sistema interno da Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia o Cadastro de Oficiais de Chancelaria, o vínculo ASOF, atividades administrativas, financeiro e comunicações internas da diretoria.
 
-**Stack:** Next.js 16.2.12 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL/Neon · Auth server-side própria
+**Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL/Neon · Auth server-side própria
 
 ## Setup
 
@@ -109,7 +109,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 - `src/app/app/associados/[id]/actions.ts` — server actions CRUD para dependentes e convênios
 - `src/app/app/associados/[id]/DependentManager.tsx` — componente cliente para gerenciamento inline de dependentes e convênios
 - `scripts/seed-dev.ts` — massa sintética robusta para desenvolvimento local, sem PII real
-- `src/lib/notifications/` — notificações persistidas (polling, sem Realtime)
+- `src/lib/notifications/` — persistência PostgreSQL de notificações via `emitEvent`; UI Bell desmontada; Novu opcional sem publisher
 - `src/lib/assinafy/service.ts` — orquestra webhook Assinafy; idempotência dentro de `db.transaction`; veja ADR 013
 - `src/lib/integrations/verify-request.ts` — autenticação M2M dual (env-var + table-backed), rate limiting, prevenção de replay via nonces
 - `next.config.ts` — Next.js config
@@ -147,7 +147,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 
 ## Gotchas
 
-- Não fazer downgrade do Next.js abaixo de 16.2.12.
+- Não fazer downgrade do Next.js abaixo de Next.js 16. Versão exata em `package.json`.
 - `next.config.ts` fixa `turbopack.root` para evitar resolução de Tailwind pelo diretório pai.
 - Dev server pesado em 8 GB RAM: usar `scripts/run-dev-60s.sh` para diagnósticos de freeze.
 - E2E nunca aponta para `http://localhost:3000` (dev server); usa `3001` com `NEXT_E2E=1`.

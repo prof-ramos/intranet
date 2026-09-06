@@ -13,7 +13,7 @@ import {
   recoverStuckProcessingEvents,
   updateDomainEventDeliveryStatus,
 } from '@/lib/integrations/webhooks/repository';
-import { signIntegrationRequest } from '@/lib/integrations/auth';
+import { signIntegrationRequest } from '@/lib/integrations/sign-request';
 import type { DomainEventType } from '@/lib/integrations/outbox';
 import { decryptWebhookSecret } from '@/lib/integrations/webhooks/secrets';
 import { sanitizePiiValue } from '@/lib/sanitize-pii';

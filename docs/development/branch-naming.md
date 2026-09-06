@@ -41,21 +41,18 @@ refactor/issue-97-associates-profile
 fix/issue-73-lgpd-button-label
 ```
 
-Work driven by a numbered advisor/executor plan under `advisor-plans/` uses the
-plan number instead of an issue number, with the executor as prefix:
-
-```bash
-advisor/057-operational-hygiene
-codex/060-read-only-production-smoke
-codex/064-reconcile-associate-identities
-```
+The canonical record of completed work is the GitHub issue or pull request, not
+a ledger in the repository.
 
 ## Legacy / Acceptable (Minimize New Usage)
 
 - `Pimaco` — anti-pattern (no type, no issue number, misleading name); already
   cleaned up, kept here only as a negative example.
-- `feature/<initiative-slug>` — pre-dates the `advisor/`/`codex/` plan-number
-  convention above; prefer the plan-numbered form for new plan-driven work.
+- `feature/<initiative-slug>` — pre-dates the issue-mapped convention; use
+  sparingly and document the scope in the PR description.
+- `advisor/<plan-number>-…` and `codex/<plan-number>-…` — historical prefixes
+  from archived advisor/executor ledgers. Do not create new branches in this
+  form; map new work to a GitHub issue.
 
 ## Workflow Rules
 

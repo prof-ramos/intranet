@@ -8,11 +8,9 @@ const PATH_FENCE_LANGUAGES = new Set(['bash', 'sh', 'shell', 'zsh']);
 const VERSIONED_ROOTS = new Set([
   '.github',
   '.husky',
-  'advisor-plans',
   'docs',
   'drizzle',
   'e2e',
-  'plans',
   'public',
   'scripts',
   'src',

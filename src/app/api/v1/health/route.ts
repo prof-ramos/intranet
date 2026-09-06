@@ -1,4 +1,4 @@
-import { authorizeIntegrationRequest } from '@/lib/integrations/auth';
+import { authorizeIntegrationRequest } from '@/lib/integrations/verify-request';
 import { jsonError, jsonOk } from '@/lib/integrations/http';
 import {
   getIntegrationPreAuthRateLimitKey,

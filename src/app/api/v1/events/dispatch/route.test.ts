@@ -21,7 +21,7 @@ vi.mock('@/lib/db/schema', () => ({
   auditLogs: {},
 }));
 
-vi.mock('@/lib/integrations/auth', () => ({
+vi.mock('@/lib/integrations/verify-request', () => ({
   authorizeIntegrationRequest: (...args: unknown[]) => mockAuthorizeIntegrationRequest(...args),
 }));
 

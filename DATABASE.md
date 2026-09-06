@@ -228,10 +228,12 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 #### Métricas
 
-| Tabela         | Arquivo           | Finalidade           |
-| -------------- | ----------------- | -------------------- |
-| `test_results` | `test-metrics.ts` | Resultados de testes |
-| `test_runs`    | `test-metrics.ts` | Execuções de teste   |
+| Tabela         | Arquivo           | Finalidade                                                          |
+| -------------- | ----------------- | ------------------------------------------------------------------- |
+| `test_results` | `test-metrics.ts` | Legado — sem produtor ativo; mantido por compatibilidade histórica. |
+| `test_runs`    | `test-metrics.ts` | Legado — sem produtor ativo; mantido por compatibilidade histórica. |
+
+Ver [`docs/development/test-metrics.md`](docs/development/test-metrics.md).
 
 ### Views
 

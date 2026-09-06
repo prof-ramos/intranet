@@ -17,7 +17,7 @@ Next.js 16 App Router application for ASOF (associação) internal management �
 | `docs/environments.md`         | Official environment/database/data/migration matrix                                                                   |
 | `TODO-PROD.md`                 | Go-live checklist and production readiness                                                                            |
 | `package.json`                 | Dependencies and scripts (dev, build, test, e2e, typecheck, lint, migrate, validate)                                  |
-| `next.config.ts`               | Next.js 16.2.12 config — security headers, E2E `distDir` swap, fixed `turbopack.root`                                 |
+| `next.config.ts`               | Next.js 16 config — security headers, E2E `distDir` swap, fixed `turbopack.root`                                      |
 | `src/lib/env.ts`               | Zod-validated env; **throws on startup** if required vars are missing (blocks build)                                  |
 | `src/proxy.ts`                 | Route guard (Next.js 16 `proxy.ts`); redirects to `/login` for `/app/*` and `/change-password` when no session cookie |
 | `drizzle.config.ts`            | Drizzle Kit — rejects transaction-mode pooler URLs (port 6543); use `DATABASE_MIGRATION_URL`                          |
@@ -160,7 +160,7 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 
 ### Gotchas
 
-- Next.js `16.2.12` — não fazer downgrade. Verificar `node_modules/next/dist/docs/` antes de mudar APIs.
+- Next.js 16 — não fazer downgrade. Verificar `node_modules/next/dist/docs/` antes de mudar APIs. Versão exata em `package.json`.
 - `next.config.ts` fixa `turbopack.root` para evitar resolução de Tailwind pelo diretório pai. O padrão é Webpack; Turbopack é modo de diagnóstico explícito (problema de resolução de Tailwind reproduzido em máquinas com 8 GB RAM).
 - Dev server pesado em 8 GB RAM: usar `scripts/run-dev-60s.sh` para diagnósticos de freeze.
 - Após mudanças em dependências, Next ou Tailwind: rodar `lint` + `typecheck` + `test` + `build`.
