@@ -17,6 +17,7 @@ describe('NotificationBellWrapper', () => {
     expect(source).toMatch(/defaultOpen/);
     expect(source).toMatch(/NotificationBellTrigger/);
     expect(source).toMatch(/busy/);
+    expect(source).toMatch(/initialUnreadCount/);
     expect(source).not.toMatch(/aria-expanded=\{true\}/);
     expect(source).not.toMatch(/from '@\/hooks\/use-notifications'/);
     expect(source).not.toMatch(/from '@\/app\/app\/notifications\/actions'/);

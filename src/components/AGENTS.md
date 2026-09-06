@@ -14,7 +14,7 @@ Shared React UI components used across the app.
 - `NavLink.tsx` — navigation link with active state
 - `NotificationBell.tsx` — UI in-app vigente do sino (com teste)
 - `NotificationBellTrigger.tsx` — botão compartilhado (casca, loading e painel)
-- `NotificationBellWrapper.tsx` — carrega o Bell só ao abrir o painel (evita actions no grafo de toda página `/app`)
+- `NotificationBellWrapper.tsx` — casca leve; badge via `initialUnreadCount` do layout; painel só no clique
 - `NotificationInboxWrapper.tsx`, `NotificationInbox.tsx`, `NotificationInboxSkeleton.tsx` — residual Novu; **não montados** no layout
 - `PageHeader.tsx` — shared page heading and action layout
 - `Sidebar.tsx` — main sidebar navigation component

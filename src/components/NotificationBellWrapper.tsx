@@ -12,17 +12,25 @@ const NotificationBell = dynamic(
   },
 );
 
+interface NotificationBellWrapperProps {
+  initialUnreadCount?: number;
+}
+
 /**
  * Loads the Bell + server-action graph only after the user opens the panel.
- * Identity comes from the session inside the server actions, not a client prop.
- * A static import (or eager dynamic import) made webpack compile
- * use-notifications/actions on every /app page and killed the E2E :3001 process.
+ * The unread badge comes from the server layout so the closed shell stays light.
  */
-export function NotificationBellWrapper() {
+export function NotificationBellWrapper({ initialUnreadCount = 0 }: NotificationBellWrapperProps) {
   const [opened, setOpened] = useState(false);
 
   if (!opened) {
-    return <NotificationBellTrigger open={false} onClick={() => setOpened(true)} />;
+    return (
+      <NotificationBellTrigger
+        open={false}
+        unreadCount={initialUnreadCount}
+        onClick={() => setOpened(true)}
+      />
+    );
   }
 
   return <NotificationBell defaultOpen />;

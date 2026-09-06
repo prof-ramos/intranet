@@ -13,7 +13,8 @@ describe('authenticated layout notifications', () => {
     expect(source).toMatch(
       /import \{ NotificationBellWrapper \} from '@\/components\/NotificationBellWrapper'/,
     );
-    expect(source).toMatch(/<NotificationBellWrapper \/>/);
+    expect(source).toMatch(/getUnreadNotificationsCountForUser/);
+    expect(source).toMatch(/<NotificationBellWrapper initialUnreadCount=\{unreadCount\} \/>/);
     expect(source).not.toMatch(/from '@\/components\/NotificationBell'/);
     expect(source).not.toMatch(/NotificationInboxWrapper/);
   });
