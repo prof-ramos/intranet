@@ -2,7 +2,6 @@ export {
   cancelMailingCampaign,
   createMailingCampaign,
   generateCampaignEtiquetasPdf,
-  buildCampaignEtiquetasCsv,
   previewMailingAudience,
   processMailingBatch,
   startMailingCampaign,
@@ -10,6 +9,7 @@ export {
   type MailingPreviewResult,
   type ProcessMailingBatchResult,
 } from './service';
+export { buildCampaignEtiquetasCsv } from './csv';
 export {
   countAudience,
   fetchAudience,
