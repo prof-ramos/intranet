@@ -25,6 +25,7 @@ export const mailingCampaignStatus = pgEnum('mailing_campaign_status', [
 
 export const mailingRecipientStatus = pgEnum('mailing_recipient_status', [
   'pendente',
+  'enviando',
   'enviado',
   'falhou',
   'cancelado',

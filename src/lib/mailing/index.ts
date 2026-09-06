@@ -15,8 +15,11 @@ export {
   fetchAudience,
   getCampaignAssociateIds,
   getCampaignDetail,
+  getMailingRecipientContexts,
+  listCampaignRecipients,
   listCampaigns,
 } from './queries';
+export { campaignEtiquetasDownloadPath } from './paths';
 export {
   MAILING_TEMPLATE_VARIABLES,
   findUnknownTemplateVariables,
@@ -31,6 +34,7 @@ export {
   MAILING_CHANNELS,
   MAILING_MAX_ATTEMPTS,
   MAILING_MAX_RECIPIENTS,
+  MAILING_PREVIEW_SAMPLE,
   MAILING_RECIPIENT_STATUSES,
   type MailingAudienceFilters,
   type MailingAudienceMember,
@@ -38,6 +42,8 @@ export {
   type MailingCampaignHistoryRow,
   type MailingCampaignStatus,
   type MailingChannel,
+  type MailingRecipientContext,
+  type MailingRecipientRow,
   type MailingRecipientStatus,
 } from './types';
 export {

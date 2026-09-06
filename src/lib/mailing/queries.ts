@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import {
   admins,
@@ -14,6 +14,8 @@ import type {
   MailingAudienceMember,
   MailingCampaignDetail,
   MailingCampaignHistoryRow,
+  MailingRecipientContext,
+  MailingRecipientRow,
   MailingRecipientStatus,
 } from './types';
 
@@ -158,6 +160,7 @@ export async function getCampaignDetail(id: number): Promise<MailingCampaignDeta
 
   const recipientTotals: MailingCampaignDetail['recipientTotals'] = {
     pendente: 0,
+    enviando: 0,
     enviado: 0,
     falhou: 0,
     cancelado: 0,
@@ -184,6 +187,80 @@ export async function getCampaignAssociateIds(campaignId: number): Promise<numbe
   return rows
     .map((row) => row.associateId)
     .filter((associateId): associateId is number => associateId !== null);
+}
+
+export async function getMailingRecipientContexts(
+  ids: number[],
+): Promise<MailingRecipientContext[]> {
+  if (ids.length === 0) return [];
+
+  const rows = await db
+    .select({
+      id: associates.id,
+      fullName: associates.fullName,
+      siape: associates.siape,
+      siapeCiphertext: associates.siapeCiphertext,
+      primaryEmail: associates.primaryEmail,
+      primaryEmailCiphertext: associates.primaryEmailCiphertext,
+      phone: associates.phone,
+      phoneCiphertext: associates.phoneCiphertext,
+      address: associates.address,
+      addressCiphertext: associates.addressCiphertext,
+      associationCategory: associates.associationCategory,
+      associationStatus: associates.associationStatus,
+      assignment: associates.assignment,
+      locationCity: associates.locationCity,
+      addressState: associates.addressState,
+      neighborhood: associates.neighborhood,
+      zipCode: associates.zipCode,
+    })
+    .from(associates)
+    .where(inArray(associates.id, ids))
+    .orderBy(asc(associates.fullName), asc(associates.id));
+
+  return rows.map((row) => ({
+    associateId: row.id,
+    nome: row.fullName,
+    matricula: decryptPiiField(row.siapeCiphertext, row.siape),
+    categoria: row.associationCategory,
+    situacaoAssociativa: row.associationStatus,
+    lotacao: row.assignment,
+    enderecoCompleto: decryptPiiField(row.addressCiphertext, row.address),
+    bairro: row.neighborhood,
+    cidade: row.locationCity,
+    uf: row.addressState,
+    cep: row.zipCode,
+    email: decryptPiiField(row.primaryEmailCiphertext, row.primaryEmail),
+    telefone: decryptPiiField(row.phoneCiphertext, row.phone),
+  }));
+}
+
+export async function listCampaignRecipients(campaignId: number): Promise<MailingRecipientRow[]> {
+  const rows = await db
+    .select({
+      id: mailingRecipients.id,
+      associateId: mailingRecipients.associateId,
+      name: mailingRecipients.recipientName,
+      emailCiphertext: mailingRecipients.emailCiphertext,
+      status: mailingRecipients.status,
+      attempts: mailingRecipients.attempts,
+      lastError: mailingRecipients.lastError,
+      sentAt: mailingRecipients.sentAt,
+    })
+    .from(mailingRecipients)
+    .where(eq(mailingRecipients.campaignId, campaignId))
+    .orderBy(asc(mailingRecipients.id));
+
+  return rows.map((row) => ({
+    id: row.id,
+    associateId: row.associateId,
+    name: row.name,
+    email: row.emailCiphertext ? decryptPiiField(row.emailCiphertext, null) : null,
+    status: row.status,
+    attempts: row.attempts,
+    lastError: row.lastError,
+    sentAt: row.sentAt,
+  }));
 }
 
 export type { MailingRecipientStatus };

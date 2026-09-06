@@ -45,7 +45,8 @@ Domain library modules for business logic, data access, and DB schema. All modul
 | `integrations/`   | M2M verification, API keys, outbox and webhooks (see `integrations/AGENTS.md`)                                   |
 | `juridico/`       | Legal/juridico — consultas, opinions, processes, dashboard, queries, repository, service, sla, sla-notifications |
 | `lgpd/`           | LGPD compliance — retention policy                                                                               |
-| `mala-direta/`    | Export CSV Google Contacts (fase 1 mala direta)                                                                  |
+| `mala-direta/`    | Export CSV Google Contacts (fase 1)                                                                              |
+| `mailing/`        | Campanhas de mala direta — e-mail em lote, etiquetas, fila/cron                                                  |
 | `notifications/`  | Persistência PostgreSQL via emitEvent; UI vigente = NotificationBell; `safe-href` para atalhos internos          |
 | `oficios/`        | Oficio document generation — pdf, repository, service (`sendForSignature`), validations                          |
 | `reports/`        | Report generation — audit, csv, export-filters, policy, queries, service                                         |

@@ -141,6 +141,10 @@ graph LR
     SEC_OF_EDIT[/app/secretaria/oficios/id/editar]
     SEC_DOC[/app/secretaria/documentos — fora do dia 1]
     SEC_EMAIL[/app/secretaria/emails/gerar]
+    SEC_GMAIL[/app/secretaria/mala-direta]
+    MAIL[/app/mala-direta]
+    MAIL_NOVA[/app/mala-direta/nova]
+    MAIL_ID[/app/mala-direta/id]
     CFG[/app/config]
     CFG_USR[/app/config/usuarios]
     CFG_LOT[/app/config/lotacoes]
@@ -578,6 +582,43 @@ Não tratar esta seção como checklist de release até nova decisão de produto
 
 ---
 
+### `/app/secretaria/mala-direta` — Contatos para Gmail
+
+**Acesso:** `admin`, `diretoria`, `secretaria`
+
+**Funcionalidades:**
+
+- Contagem e exportação CSV no formato Google Contacts (fase 1 de #437)
+- Atalho para as campanhas em `/app/mala-direta`
+
+**Funcional quando:**
+
+- [ ] CSV baixa no formato de importação do Gmail
+- [ ] Filtros de público batem com a contagem
+
+---
+
+### `/app/mala-direta` — Campanhas de mala direta
+
+**Acesso:** `admin`, `diretoria`, `secretaria`
+
+**Funcionalidades:**
+
+- Histórico de campanhas (canal, status, destinatários, enviados, falhas, autor)
+- Criação com filtros, preview da lista e template com variáveis
+- Canal e-mail: rascunho → iniciar envio (fila/cron) → sucesso/falha por destinatário
+- Canal etiquetas: PDF Pimaco 6182 (`POST …/etiquetas/gerar`) e CSV (`POST …/etiquetas/csv`)
+- Cancelamento de rascunho ou envio em andamento (auditável)
+
+**Funcional quando:**
+
+- [ ] Preview mostra contagem e amostra antes de criar
+- [ ] Envio registra status por destinatário
+- [ ] PDF/CSV de etiquetas inclui o público filtrado (associados e não associados)
+- [ ] Cancelar não deixa a campanha como concluída
+
+---
+
 ### `/app/secretaria/emails/gerar` — Gerador de E-mails com IA
 
 **Acesso:** `admin`, `secretaria`
@@ -780,6 +821,14 @@ Processa emails da fila Gmail via Gemini AI. Requer `CRON_SECRET`.
 ### `GET /api/v1/cron/gmail-watch`
 
 Renova subscription Gmail Watch (cron). Requer `CRON_SECRET`.
+
+---
+
+### `GET /api/v1/mailing/process`
+
+Processa a fila de campanhas de e-mail em lote. Requer `CRON_SECRET`. Agenda Vercel: a cada 15 minutos.
+
+**Funcional quando:** reivindica destinatários com `SKIP LOCKED`, não envia após cancelamento e não expõe PII em logs.
 
 ---
 

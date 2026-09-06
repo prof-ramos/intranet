@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/auth/authorization';
-import { getCampaignDetail } from '@/lib/mailing';
+import { getCampaignDetail, listCampaignRecipients } from '@/lib/mailing';
+import {
+  describeMailingFilters,
+  MAILING_RECIPIENT_STATUS_LABEL,
+} from '@/lib/mailing/filter-labels';
 import { hairline, textMuted } from '@/lib/ui/tokens';
 import { CampaignStatusBadge } from '../_components/CampaignStatusBadge';
 import { CampaignActions } from './_components/CampaignActions';
@@ -16,6 +20,8 @@ export default async function CampanhaDetailPage({ params }: { params: Promise<{
 
   const campaign = await getCampaignDetail(campaignId);
   if (!campaign) notFound();
+  const recipients = await listCampaignRecipients(campaignId);
+  const filterRows = describeMailingFilters(campaign.filters);
 
   return (
     <main className="mx-auto w-full max-w-[1180px] px-5 py-7 sm:px-8 lg:px-10">
@@ -52,11 +58,15 @@ export default async function CampanhaDetailPage({ params }: { params: Promise<{
         </div>
       )}
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <SummaryCard label="Destinatários" value={campaign.recipientCount} />
-        <SummaryCard label="Pendentes" value={campaign.recipientTotals.pendente} />
+        <SummaryCard
+          label="Pendentes"
+          value={campaign.recipientTotals.pendente + campaign.recipientTotals.enviando}
+        />
         <SummaryCard label="Enviados" value={campaign.recipientTotals.enviado} />
         <SummaryCard label="Falhas" value={campaign.recipientTotals.falhou} />
+        <SummaryCard label="Cancelados" value={campaign.recipientTotals.cancelado} />
       </div>
 
       <section
@@ -66,9 +76,22 @@ export default async function CampanhaDetailPage({ params }: { params: Promise<{
         <p className="text-xs font-semibold tracking-wide uppercase" style={{ color: textMuted }}>
           Filtros do público
         </p>
-        <pre className="mt-2 overflow-x-auto rounded-[8px] bg-slate-50 p-3 font-mono text-xs text-[#5b6b80]">
-          {JSON.stringify(campaign.filters, null, 2)}
-        </pre>
+        {filterRows.length === 0 ? (
+          <p className="mt-2 text-sm" style={{ color: textMuted }}>
+            Todos os oficiais com contato no canal selecionado.
+          </p>
+        ) : (
+          <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+            {filterRows.map((row) => (
+              <div key={row.label}>
+                <dt className="text-xs" style={{ color: textMuted }}>
+                  {row.label}
+                </dt>
+                <dd className="text-sm font-medium text-[#040920]">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
       </section>
 
       <section
@@ -81,6 +104,51 @@ export default async function CampanhaDetailPage({ params }: { params: Promise<{
         <pre className="mt-2 rounded-[8px] bg-slate-50 p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-[#040920]">
           {campaign.templateBody}
         </pre>
+      </section>
+
+      <section
+        className="mt-6 overflow-hidden rounded-[12px] border bg-white"
+        style={{ borderColor: hairline }}
+      >
+        <div className="px-5 py-4">
+          <p className="text-xs font-semibold tracking-wide uppercase" style={{ color: textMuted }}>
+            Destinatários
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-t text-xs tracking-wide text-[#5b6b80] uppercase">
+                <th className="px-5 py-3 font-semibold">Nome</th>
+                <th className="px-5 py-3 font-semibold">E-mail</th>
+                <th className="px-5 py-3 font-semibold">Status</th>
+                <th className="px-5 py-3 text-right font-semibold">Tentativas</th>
+                <th className="px-5 py-3 font-semibold">Último erro</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recipients.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-5 py-6 text-center text-[#5b6b80]">
+                    Nenhum destinatário nesta campanha.
+                  </td>
+                </tr>
+              ) : (
+                recipients.map((recipient) => (
+                  <tr key={recipient.id} className="border-t border-[rgba(4,9,32,0.06)]">
+                    <td className="px-5 py-3 font-medium text-[#040920]">{recipient.name}</td>
+                    <td className="px-5 py-3 text-[#5b6b80]">{recipient.email ?? '—'}</td>
+                    <td className="px-5 py-3">
+                      {MAILING_RECIPIENT_STATUS_LABEL[recipient.status] ?? recipient.status}
+                    </td>
+                    <td className="px-5 py-3 text-right tabular-nums">{recipient.attempts}</td>
+                    <td className="px-5 py-3 text-[#5b6b80]">{recipient.lastError ?? '—'}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </main>
   );

@@ -141,7 +141,7 @@ export function Sidebar({ user }: SidebarProps) {
               },
               {
                 href: '/app/secretaria/mala-direta',
-                label: 'Mala direta',
+                label: 'Contatos Gmail',
                 icon: <Mail size={18} />,
               },
               ...(user.role !== 'diretoria'

@@ -6,21 +6,22 @@ import { toSafeErrorLog } from '@/lib/error-log';
 import { sendEmail } from '@/lib/email';
 import { env } from '@/lib/env';
 import { logAuditAction } from '@/lib/audit/service';
+import { DEFAULT_FIELDS_BY_MODE, generateEtiquetasFromRecipients } from '@/lib/etiquetas';
 import {
-  DEFAULT_FIELDS_BY_MODE,
-  generateEtiquetasFromRecipients,
-  getEtiquetaRecipientsByIds,
-  type EtiquetaRecipient,
-} from '@/lib/etiquetas';
-import { countAudience, fetchAudience, getCampaignAssociateIds } from './queries';
+  countAudience,
+  fetchAudience,
+  getCampaignAssociateIds,
+  getMailingRecipientContexts,
+} from './queries';
 import {
   cancelPendingRecipients,
   finalizeCampaignProgress,
   getCampaignById,
-  getPendingRecipients,
   insertCampaignWithRecipients,
+  markRecipientCancelled,
   markRecipientResult,
   updateCampaignStatus,
+  claimPendingRecipients,
 } from './repository';
 import {
   findUnknownTemplateVariables,
@@ -29,7 +30,13 @@ import {
   type MailingTemplateContext,
 } from './templates';
 import { createMailingCampaignSchema } from './validations';
-import { MAILING_MAX_RECIPIENTS, type MailingAudienceFilters, type MailingChannel } from './types';
+import {
+  MAILING_MAX_RECIPIENTS,
+  MAILING_PREVIEW_SAMPLE,
+  type MailingAudienceFilters,
+  type MailingChannel,
+  type MailingRecipientContext,
+} from './types';
 
 const logger = createLogger('mailing:service');
 
@@ -44,7 +51,7 @@ export async function previewMailingAudience(
   filters: MailingAudienceFilters,
 ): Promise<MailingPreviewResult> {
   const total = await countAudience(filters, channel);
-  const sample = await fetchAudience(filters, channel, 5);
+  const sample = await fetchAudience(filters, channel, MAILING_PREVIEW_SAMPLE);
   return {
     count: total,
     sample: sample.map((member) => ({ associateId: member.associateId, name: member.name })),
@@ -166,20 +173,24 @@ export interface ProcessMailingBatchResult {
   skipped?: 'mailjet_not_configured' | 'sender_not_validated';
 }
 
-function buildContext(recipient: EtiquetaRecipient): MailingTemplateContext {
+function buildContext(
+  recipient: MailingRecipientContext | undefined,
+  fallbackName: string,
+  fallbackEmail: string | null,
+): MailingTemplateContext {
   return {
-    nome: recipient.nome,
-    matricula: recipient.matricula,
-    categoria: recipient.categoria,
-    situacao_associativa: recipient.situacaoAssociativa,
-    lotacao: recipient.lotacao,
-    endereco_completo: recipient.enderecoCompleto,
-    bairro: recipient.bairro,
-    cidade: recipient.cidade,
-    uf: recipient.uf,
-    cep: recipient.cep,
-    email: recipient.email,
-    telefone: recipient.telefone,
+    nome: recipient?.nome ?? fallbackName,
+    matricula: recipient?.matricula ?? null,
+    categoria: recipient?.categoria ?? null,
+    situacao_associativa: recipient?.situacaoAssociativa ?? null,
+    lotacao: recipient?.lotacao ?? null,
+    endereco_completo: recipient?.enderecoCompleto ?? null,
+    bairro: recipient?.bairro ?? null,
+    cidade: recipient?.cidade ?? null,
+    uf: recipient?.uf ?? null,
+    cep: recipient?.cep ?? null,
+    email: fallbackEmail ?? recipient?.email ?? null,
+    telefone: recipient?.telefone ?? null,
   };
 }
 
@@ -211,7 +222,7 @@ export async function processMailingBatch(limit: number): Promise<ProcessMailing
   for (const campaign of campaigns) {
     if (remaining <= 0) break;
 
-    const pending = await getPendingRecipients(db, campaign.id, remaining);
+    const pending = await claimPendingRecipients(db, campaign.id, remaining);
     if (pending.length === 0) {
       await db.transaction((tx) => finalizeCampaignProgress(tx, campaign.id));
       continue;
@@ -220,30 +231,36 @@ export async function processMailingBatch(limit: number): Promise<ProcessMailing
     const associateIds = pending
       .map((recipient) => recipient.associateId)
       .filter((associateId): associateId is number => associateId !== null);
-    const recipientRows = await getEtiquetaRecipientsByIds(associateIds);
-    const contextByAssociate = new Map(recipientRows.map((row) => [Number(row.id), row] as const));
+    const recipientRows = await getMailingRecipientContexts(associateIds);
+    const contextByAssociate = new Map(recipientRows.map((row) => [row.associateId, row] as const));
 
     for (const recipient of pending) {
       remaining -= 1;
       result.processed += 1;
-      const associate: EtiquetaRecipient | undefined =
-        recipient.associateId !== null ? contextByAssociate.get(recipient.associateId) : undefined;
 
+      const liveCampaign = await getCampaignById(db, campaign.id);
+      if (!liveCampaign || liveCampaign.status !== 'em_envio') {
+        await markRecipientCancelled(db, recipient.id);
+        continue;
+      }
+
+      const associate =
+        recipient.associateId !== null ? contextByAssociate.get(recipient.associateId) : undefined;
       const snapshotEmail =
         recipient.emailCiphertext !== null ? decryptPii(recipient.emailCiphertext) : null;
       const email = snapshotEmail ?? associate?.email ?? null;
 
-      if (!email || !associate) {
+      if (!email) {
         await markRecipientResult(db, recipient.id, { ok: false, error: 'sem_destinatario' });
         result.failed += 1;
         continue;
       }
 
-      const context = buildContext(associate);
+      const context = buildContext(associate, recipient.recipientName, email);
       try {
         await sendEmail({
           to: email,
-          toName: context.nome ?? '',
+          toName: context.nome ?? recipient.recipientName,
           subject: campaign.subject ?? '',
           htmlBody: renderTemplateHtml(campaign.templateBody, context),
           textBody: renderTemplateText(campaign.templateBody, context),
@@ -274,7 +291,22 @@ export async function generateCampaignEtiquetasPdf(campaignId: number): Promise<
     throw new Error('A campanha não usa o canal de etiquetas.');
   }
   const associateIds = await getCampaignAssociateIds(campaignId);
-  const recipients = await getEtiquetaRecipientsByIds(associateIds);
+  const recipients = (await getMailingRecipientContexts(associateIds)).map((recipient) => ({
+    id: String(recipient.associateId),
+    nome: recipient.nome,
+    matricula: recipient.matricula,
+    categoria: recipient.categoria,
+    situacaoAssociativa: recipient.situacaoAssociativa,
+    lotacao: recipient.lotacao,
+    posto: recipient.lotacao,
+    enderecoCompleto: recipient.enderecoCompleto,
+    bairro: recipient.bairro,
+    cidade: recipient.cidade,
+    uf: recipient.uf,
+    cep: recipient.cep,
+    email: recipient.email,
+    telefone: recipient.telefone,
+  }));
   return generateEtiquetasFromRecipients({
     templateCode: '6182',
     mode: 'postal',
@@ -295,7 +327,7 @@ export async function buildCampaignEtiquetasCsv(campaignId: number): Promise<str
     throw new Error('A campanha não usa o canal de etiquetas.');
   }
   const associateIds = await getCampaignAssociateIds(campaignId);
-  const recipients = await getEtiquetaRecipientsByIds(associateIds);
+  const recipients = await getMailingRecipientContexts(associateIds);
 
   const header = [
     'nome',

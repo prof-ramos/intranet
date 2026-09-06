@@ -24,12 +24,21 @@ export default async function MalaDiretaPage() {
           title="Mala direta"
           description="Crie campanhas de e-mail em lote ou folhas de etiquetas para envio postal."
         />
-        <Link
-          href="/app/mala-direta/nova"
-          className="inline-flex min-h-11 items-center gap-2 rounded-[8px] bg-[#040920] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0d3260]"
-        >
-          Nova campanha
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/app/secretaria/mala-direta"
+            className="inline-flex min-h-11 items-center rounded-[8px] border bg-white px-4 py-2 text-sm font-medium text-[#040920] hover:bg-slate-50"
+            style={{ borderColor: hairline }}
+          >
+            Contatos Gmail
+          </Link>
+          <Link
+            href="/app/mala-direta/nova"
+            className="inline-flex min-h-11 items-center gap-2 rounded-[8px] bg-[#040920] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0d3260]"
+          >
+            Nova campanha
+          </Link>
+        </div>
       </div>
 
       <section

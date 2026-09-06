@@ -1,12 +1,19 @@
-import { and, asc, count, eq } from 'drizzle-orm';
+import { and, count, eq, inArray, sql } from 'drizzle-orm';
 import type { DbExecutor } from '@/lib/db';
 import { mailingCampaigns, mailingRecipients, type NewMailingCampaign } from '@/lib/db/schema';
 import type { MailingCampaignStatus } from './types';
-import { MAILING_MAX_ATTEMPTS } from './types';
+import { MAILING_MAX_ATTEMPTS, MAILING_STALE_CLAIM_MS } from './types';
 
 export interface MailingRecipientSnapshot {
   associateId: number;
   name: string;
+  emailCiphertext: string | null;
+}
+
+export interface ClaimedMailingRecipient {
+  id: number;
+  associateId: number | null;
+  recipientName: string;
   emailCiphertext: string | null;
 }
 
@@ -56,6 +63,53 @@ export async function updateCampaignStatus(
     .where(eq(mailingCampaigns.id, id));
 }
 
+const CLAIMABLE_STATUSES = ['pendente', 'enviando'] as const;
+
+function isClaimableStatus(
+  status: (typeof mailingRecipients.$inferSelect)['status'],
+): status is (typeof CLAIMABLE_STATUSES)[number] {
+  return status === 'pendente' || status === 'enviando';
+}
+
+export async function claimPendingRecipients(
+  tx: DbExecutor,
+  campaignId: number,
+  limit: number,
+): Promise<ClaimedMailingRecipient[]> {
+  if (!Number.isInteger(limit) || limit < 1) return [];
+
+  const staleBefore = new Date(Date.now() - MAILING_STALE_CLAIM_MS);
+
+  return tx
+    .update(mailingRecipients)
+    .set({ status: 'enviando', updatedAt: new Date() })
+    .where(
+      inArray(
+        mailingRecipients.id,
+        sql`(
+          SELECT mr.id
+          FROM mailing_recipients mr
+          INNER JOIN mailing_campaigns mc ON mc.id = mr.campaign_id
+          WHERE mr.campaign_id = ${campaignId}
+            AND mc.status = 'em_envio'
+            AND (
+              mr.status = 'pendente'
+              OR (mr.status = 'enviando' AND mr.updated_at < ${staleBefore})
+            )
+          ORDER BY mr.id ASC
+          LIMIT ${limit}
+          FOR UPDATE OF mr SKIP LOCKED
+        )`,
+      ),
+    )
+    .returning({
+      id: mailingRecipients.id,
+      associateId: mailingRecipients.associateId,
+      recipientName: mailingRecipients.recipientName,
+      emailCiphertext: mailingRecipients.emailCiphertext,
+    });
+}
+
 export async function markRecipientResult(
   tx: DbExecutor,
   recipientId: number,
@@ -65,7 +119,7 @@ export async function markRecipientResult(
     .select({ attempts: mailingRecipients.attempts, status: mailingRecipients.status })
     .from(mailingRecipients)
     .where(eq(mailingRecipients.id, recipientId));
-  if (!current || current.status !== 'pendente') return;
+  if (!current || !isClaimableStatus(current.status)) return;
 
   const attempts = current.attempts + 1;
   const exhausted = attempts >= MAILING_MAX_ATTEMPTS;
@@ -81,7 +135,24 @@ export async function markRecipientResult(
             lastError: result.error ?? null,
           },
     )
-    .where(eq(mailingRecipients.id, recipientId));
+    .where(
+      and(
+        eq(mailingRecipients.id, recipientId),
+        inArray(mailingRecipients.status, CLAIMABLE_STATUSES),
+      ),
+    );
+}
+
+export async function markRecipientCancelled(tx: DbExecutor, recipientId: number): Promise<void> {
+  await tx
+    .update(mailingRecipients)
+    .set({ status: 'cancelado' })
+    .where(
+      and(
+        eq(mailingRecipients.id, recipientId),
+        inArray(mailingRecipients.status, CLAIMABLE_STATUSES),
+      ),
+    );
 }
 
 export async function cancelPendingRecipients(tx: DbExecutor, campaignId: number): Promise<void> {
@@ -91,25 +162,6 @@ export async function cancelPendingRecipients(tx: DbExecutor, campaignId: number
     .where(
       and(eq(mailingRecipients.campaignId, campaignId), eq(mailingRecipients.status, 'pendente')),
     );
-}
-
-export async function getPendingRecipients(
-  tx: DbExecutor,
-  campaignId: number,
-  limit: number,
-): Promise<{ id: number; associateId: number | null; emailCiphertext: string | null }[]> {
-  return tx
-    .select({
-      id: mailingRecipients.id,
-      associateId: mailingRecipients.associateId,
-      emailCiphertext: mailingRecipients.emailCiphertext,
-    })
-    .from(mailingRecipients)
-    .where(
-      and(eq(mailingRecipients.campaignId, campaignId), eq(mailingRecipients.status, 'pendente')),
-    )
-    .orderBy(asc(mailingRecipients.id))
-    .limit(limit);
 }
 
 export interface CampaignRecipientTotals {
@@ -132,24 +184,31 @@ export async function getCampaignRecipientTotals(
   for (const row of rows) {
     if (row.status === 'enviado') totals.sent = row.total;
     if (row.status === 'falhou') totals.failed = row.total;
-    if (row.status === 'pendente') totals.pending = row.total;
+    if (row.status === 'pendente' || row.status === 'enviando')
+      totals.pending = totals.pending + row.total;
   }
   return totals;
 }
 
 /**
  * Atualiza os contadores da campanha a partir dos destinatários e, quando não
- * restam destinatários pendentes, marca a campanha como concluída.
+ * restam destinatários pendentes/em envio, marca como concluída somente se
+ * ainda estiver `em_envio` — nunca sobrescreve `cancelada`.
  */
 export async function finalizeCampaignProgress(tx: DbExecutor, campaignId: number): Promise<void> {
   const totals = await getCampaignRecipientTotals(tx, campaignId);
-  const completed = totals.pending === 0;
   await tx
     .update(mailingCampaigns)
     .set({
       sentCount: totals.sent,
       failedCount: totals.failed,
-      ...(completed ? { status: 'concluida', completedAt: new Date() } : {}),
     })
     .where(eq(mailingCampaigns.id, campaignId));
+
+  if (totals.pending > 0) return;
+
+  await tx
+    .update(mailingCampaigns)
+    .set({ status: 'concluida', completedAt: new Date() })
+    .where(and(eq(mailingCampaigns.id, campaignId), eq(mailingCampaigns.status, 'em_envio')));
 }

@@ -521,7 +521,7 @@ const expectedEnums = {
   assignment_type: ['nacional', 'exterior'],
   mailing_channel: ['email', 'etiquetas'],
   mailing_campaign_status: ['rascunho', 'em_envio', 'concluida', 'falhou', 'cancelada'],
-  mailing_recipient_status: ['pendente', 'enviado', 'falhou', 'cancelado'],
+  mailing_recipient_status: ['pendente', 'enviando', 'enviado', 'falhou', 'cancelado'],
   audit_entity_type: [
     'associate',
     'admin',

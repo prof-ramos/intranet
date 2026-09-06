@@ -1,11 +1,24 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { createMailingCampaign, previewMailingAudience, startMailingCampaign } from './service';
+import {
+  cancelMailingCampaign,
+  createMailingCampaign,
+  previewMailingAudience,
+  processMailingBatch,
+  startMailingCampaign,
+} from './service';
+
+const findSendingCampaigns = vi.fn();
 
 vi.mock('@/lib/db', () => ({
   db: {
     transaction: vi.fn((callback: (tx: unknown) => Promise<number> | Promise<void>) =>
       callback({}),
     ),
+    query: {
+      mailingCampaigns: {
+        findMany: (...args: unknown[]) => findSendingCampaigns(...args),
+      },
+    },
   },
 }));
 
@@ -13,6 +26,7 @@ vi.mock('./queries', () => ({
   countAudience: vi.fn(),
   fetchAudience: vi.fn(),
   getCampaignAssociateIds: vi.fn().mockResolvedValue([]),
+  getMailingRecipientContexts: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('./repository', () => ({
@@ -20,14 +34,16 @@ vi.mock('./repository', () => ({
   getCampaignById: vi.fn(),
   updateCampaignStatus: vi.fn(),
   cancelPendingRecipients: vi.fn(),
+  claimPendingRecipients: vi.fn().mockResolvedValue([]),
   getPendingRecipients: vi.fn().mockResolvedValue([]),
   finalizeCampaignProgress: vi.fn(),
   markRecipientResult: vi.fn(),
+  markRecipientCancelled: vi.fn(),
 }));
 
 vi.mock('@/lib/crypto/pii', () => ({
   encryptPii: vi.fn((value: string) => `enc:${value}`),
-  decryptPii: vi.fn((value: string) => value),
+  decryptPii: vi.fn((value: string) => (value.startsWith('enc:') ? value.slice(4) : value)),
 }));
 
 vi.mock('@/lib/audit/service', () => ({
@@ -57,9 +73,11 @@ import * as queries from './queries';
 import * as repository from './repository';
 import { encryptPii } from '@/lib/crypto/pii';
 import { logAuditAction } from '@/lib/audit/service';
+import { sendEmail } from '@/lib/email';
 
 const mockedQueries = vi.mocked(queries);
 const mockedRepository = vi.mocked(repository);
+const mockedSendEmail = vi.mocked(sendEmail);
 
 const USER_ID = 1;
 
@@ -219,6 +237,132 @@ describe('startMailingCampaign', () => {
     } as never);
 
     await expect(startMailingCampaign(5, USER_ID)).rejects.toThrow('e-mail');
+  });
+});
+
+describe('cancelMailingCampaign', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('cancela rascunho ou envio em andamento', async () => {
+    mockedRepository.getCampaignById.mockResolvedValue({
+      id: 5,
+      status: 'em_envio',
+    } as never);
+
+    await cancelMailingCampaign(5, USER_ID);
+
+    expect(mockedRepository.updateCampaignStatus).toHaveBeenCalledWith(
+      expect.anything(),
+      5,
+      'cancelada',
+    );
+    expect(mockedRepository.cancelPendingRecipients).toHaveBeenCalledWith(expect.anything(), 5);
+  });
+});
+
+describe('processMailingBatch', () => {
+  const campaign = {
+    id: 9,
+    channel: 'email',
+    status: 'em_envio',
+    subject: 'Assembleia',
+    templateBody: 'Olá {{nome}}',
+    startedAt: new Date(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    findSendingCampaigns.mockResolvedValue([campaign]);
+    mockedRepository.getCampaignById.mockResolvedValue(campaign as never);
+  });
+
+  it('envia para não associado usando o snapshot e o contexto sem filtro de vínculo', async () => {
+    mockedRepository.claimPendingRecipients.mockResolvedValue([
+      {
+        id: 101,
+        associateId: 44,
+        recipientName: 'Carla Não Associada',
+        emailCiphertext: 'enc:carla@asof.org.br',
+      },
+    ]);
+    mockedQueries.getMailingRecipientContexts.mockResolvedValue([
+      {
+        associateId: 44,
+        nome: 'Carla Não Associada',
+        matricula: '123',
+        categoria: null,
+        situacaoAssociativa: 'nao_associado',
+        lotacao: 'SERE',
+        enderecoCompleto: null,
+        bairro: null,
+        cidade: 'Brasília',
+        uf: 'DF',
+        cep: null,
+        email: 'carla@asof.org.br',
+        telefone: null,
+      },
+    ]);
+
+    const result = await processMailingBatch(10);
+
+    expect(mockedQueries.getMailingRecipientContexts).toHaveBeenCalledWith([44]);
+    expect(mockedSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'carla@asof.org.br',
+        toName: 'Carla Não Associada',
+        subject: 'Assembleia',
+      }),
+    );
+    expect(mockedRepository.markRecipientResult).toHaveBeenCalledWith(expect.anything(), 101, {
+      ok: true,
+    });
+    expect(result).toEqual({ processed: 1, sent: 1, failed: 0 });
+  });
+
+  it('envia com nome e e-mail do snapshot quando o cadastro some', async () => {
+    mockedRepository.claimPendingRecipients.mockResolvedValue([
+      {
+        id: 102,
+        associateId: 99,
+        recipientName: 'Oficial Removido',
+        emailCiphertext: 'enc:removido@asof.org.br',
+      },
+    ]);
+    mockedQueries.getMailingRecipientContexts.mockResolvedValue([]);
+
+    const result = await processMailingBatch(10);
+
+    expect(mockedSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'removido@asof.org.br',
+        toName: 'Oficial Removido',
+      }),
+    );
+    expect(result.sent).toBe(1);
+    expect(result.failed).toBe(0);
+  });
+
+  it('não envia destinatários reivindicados depois do cancelamento da campanha', async () => {
+    mockedRepository.claimPendingRecipients.mockResolvedValue([
+      {
+        id: 103,
+        associateId: 1,
+        recipientName: 'Ana',
+        emailCiphertext: 'enc:ana@asof.org.br',
+      },
+    ]);
+    mockedRepository.getCampaignById.mockResolvedValue({
+      ...campaign,
+      status: 'cancelada',
+    } as never);
+
+    const result = await processMailingBatch(10);
+
+    expect(mockedSendEmail).not.toHaveBeenCalled();
+    expect(mockedRepository.markRecipientCancelled).toHaveBeenCalledWith(expect.anything(), 103);
+    expect(result).toEqual({ processed: 1, sent: 0, failed: 0 });
   });
 });
 

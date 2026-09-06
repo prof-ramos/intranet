@@ -456,10 +456,10 @@ export function buildSecretariaTools(router: RouterLike, context: ToolContext = 
     },
     {
       name: 'open-mala-direta',
-      description: 'Abre a tela de mala direta (contagem e exportação CSV para o Gmail).',
+      description: 'Abre as campanhas de mala direta (e-mail em lote e etiquetas).',
       inputSchema: { type: 'object', properties: {} },
       annotations: { readOnlyHint: true },
-      execute: async () => navigate('/app/secretaria/mala-direta', 'Abrindo a mala direta.'),
+      execute: async () => navigate('/app/mala-direta', 'Abrindo as campanhas de mala direta.'),
     },
     {
       name: 'open-email-generator',

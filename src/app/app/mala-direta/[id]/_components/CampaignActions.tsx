@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react';
 import { Loader2 } from 'lucide-react';
 import { cancelMailingCampaignAction, startMailingCampaignAction } from '../../actions';
 import type { MailingCampaignDetail } from '@/lib/mailing';
+import { campaignEtiquetasDownloadPath } from '@/lib/mailing/paths';
 
 const BUTTON_CLASS =
   'inline-flex min-h-11 items-center gap-2 rounded-[8px] border px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50';
@@ -28,7 +29,7 @@ export function CampaignActions({ campaign }: { campaign: MailingCampaignDetail 
 
   function downloadEtiquetas(kind: 'pdf' | 'csv') {
     run(async () => {
-      const response = await fetch(`/app/mala-direta/${campaign.id}/etiquetas/${kind}`, {
+      const response = await fetch(campaignEtiquetasDownloadPath(campaign.id, kind), {
         method: 'POST',
       });
       if (!response.ok) {

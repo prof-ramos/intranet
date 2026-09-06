@@ -278,9 +278,14 @@ export function NovaCampanhaForm() {
                 </span>
               )}
               {preview.sample.length > 0 && (
-                <p className="mt-1 text-xs">
-                  Ex.: {preview.sample.map((member) => member.name).join(', ')}
-                </p>
+                <ul className="mt-2 max-h-40 overflow-y-auto text-xs" style={{ color: textMuted }}>
+                  {preview.sample.map((member) => (
+                    <li key={member.associateId}>{member.name}</li>
+                  ))}
+                  {preview.count > preview.sample.length && (
+                    <li>… e mais {preview.count - preview.sample.length}</li>
+                  )}
+                </ul>
               )}
             </>
           )}
