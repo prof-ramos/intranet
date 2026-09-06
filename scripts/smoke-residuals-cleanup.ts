@@ -140,9 +140,7 @@ async function applyCleanup(sql: postgres.Sql): Promise<Counts> {
 async function main() {
   const url = requireMigrationUrl();
   if (APPLY && process.env[CONFIRM_ENV] !== CONFIRM_VALUE) {
-    throw new Error(
-      `--apply requer ${CONFIRM_ENV}=${CONFIRM_VALUE} (audit_logs não é tocado).`,
-    );
+    throw new Error(`--apply requer ${CONFIRM_ENV}=${CONFIRM_VALUE} (audit_logs não é tocado).`);
   }
 
   const sql = postgres(url, {
