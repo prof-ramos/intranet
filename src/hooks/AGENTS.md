@@ -8,7 +8,7 @@ Shared React hooks.
 ## Key Files
 
 - `notifications-normalize.ts` — notification data normalization (with test)
-- `use-notifications.ts` — polling hook for persisted notifications (consumed by NotificationBell in the authenticated layout)
+- `use-notifications.ts` — polling hook for the open panel; identity comes from the session. The closed-shell badge is `initialUnreadCount` from the server layout, not this hook.
 - `use-escape-key.ts` — hook for closing overlays/modals on Escape
 
 ## For AI Agents

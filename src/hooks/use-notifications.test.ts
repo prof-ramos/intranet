@@ -5,7 +5,10 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { useNotifications } from './use-notifications';
-import { listNotificationsAction } from '@/app/app/notifications/actions';
+import {
+  listNotificationsAction,
+  markNotificationReadAction,
+} from '@/app/app/notifications/actions';
 
 // Mock the actions
 vi.mock('@/app/app/notifications/actions', () => ({
@@ -26,7 +29,7 @@ describe('use-notifications', () => {
         notifications: [{ id: '1', title: 'Test 1', createdAt: '2026-05-17T10:00:00.000Z' }],
       } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
 
-      const { result } = renderHook(() => useNotifications({ userId: 1 }));
+      const { result } = renderHook(() => useNotifications());
 
       // Initial load in useEffect will trigger, we await it
       await act(async () => {
@@ -57,7 +60,7 @@ describe('use-notifications', () => {
         notifications: [],
       } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
 
-      const { result } = renderHook(() => useNotifications({ userId: 1 }));
+      const { result } = renderHook(() => useNotifications());
 
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -83,7 +86,7 @@ describe('use-notifications', () => {
           notifications: [{ id: '1', title: 'Test 1', createdAt: '2026-05-17T10:00:00.000Z' }],
         } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
 
-        const { result } = renderHook(() => useNotifications({ userId: 1 }));
+        const { result } = renderHook(() => useNotifications());
 
         await act(async () => {
           await vi.advanceTimersByTimeAsync(0);
@@ -106,6 +109,60 @@ describe('use-notifications', () => {
       }
     });
 
+    it('não aplica um poll atrasado depois de markAsRead otimista', async () => {
+      vi.useFakeTimers();
+      try {
+        vi.mocked(listNotificationsAction).mockResolvedValueOnce({
+          notifications: [
+            { id: 12, title: 'Test 1', createdAt: '2026-05-17T10:00:00.000Z', readAt: null },
+          ],
+        } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
+        vi.mocked(markNotificationReadAction).mockResolvedValue(
+          undefined as unknown as Awaited<ReturnType<typeof markNotificationReadAction>>,
+        );
+
+        const { result } = renderHook(() => useNotifications());
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(result.current.unreadCount).toBe(1);
+
+        let resolveStalePoll: (value: unknown) => void = () => undefined;
+        const stalePoll = new Promise((resolve) => {
+          resolveStalePoll = resolve;
+        });
+        vi.mocked(listNotificationsAction).mockReturnValueOnce(
+          stalePoll as ReturnType<typeof listNotificationsAction>,
+        );
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(60_000);
+        });
+
+        await act(async () => {
+          await result.current.markAsRead(12);
+        });
+
+        expect(result.current.unreadCount).toBe(0);
+
+        await act(async () => {
+          resolveStalePoll({
+            notifications: [
+              { id: 12, title: 'Test 1', createdAt: '2026-05-17T10:00:00.000Z', readAt: null },
+            ],
+          });
+          await Promise.resolve();
+        });
+
+        expect(result.current.unreadCount).toBe(0);
+        expect(result.current.notifications[0]?.readAt).toBeTruthy();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('seta erro quando o poll falha com a lista vazia', async () => {
       vi.useFakeTimers();
       try {
@@ -113,7 +170,7 @@ describe('use-notifications', () => {
           notifications: [],
         } as unknown as Awaited<ReturnType<typeof listNotificationsAction>>);
 
-        const { result } = renderHook(() => useNotifications({ userId: 1 }));
+        const { result } = renderHook(() => useNotifications());
 
         await act(async () => {
           await vi.advanceTimersByTimeAsync(0);

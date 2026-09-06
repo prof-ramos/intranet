@@ -146,6 +146,15 @@ async function warmupJitRoutes() {
     const page = await context.newPage();
     await page.goto(`${E2E_BASE_URL}/app`);
 
+    // Compile the Bell chunk once. Clicking in a spec without this warmup
+    // competes with server actions and has killed the webpack :3001 process.
+    // Do not wait for the Bell on every loginAs — only here.
+    const bell = page.getByTestId('notification-bell');
+    await bell.click();
+    await page.getByRole('dialog', { name: 'Painel de notificações' }).waitFor({
+      timeout: 60_000,
+    });
+
     // Compile the filtered associados list so subsequent list navigations are
     // instant. The list links to the profile first; the edit route is exposed
     // from that profile (the listing no longer renders direct edit links).

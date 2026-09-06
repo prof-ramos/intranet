@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useEscapeKey } from '@/hooks/use-escape-key';
-import { Bell, CheckCheck, Loader2 } from 'lucide-react';
+import { CheckCheck, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/hooks/use-notifications';
+import { getSafeInternalHref } from '@/lib/notifications/safe-href';
+import { NotificationBellTrigger } from './NotificationBellTrigger';
 import {
   canvas,
   elevatedShadow,
-  error,
   focusRingClass,
   hairline,
   navy,
@@ -18,7 +19,6 @@ import {
 } from '@/lib/ui/tokens';
 
 interface NotificationBellProps {
-  userId: number;
   defaultOpen?: boolean;
 }
 
@@ -60,14 +60,6 @@ function formatTimestamp(value: string) {
   return dtf.format(date);
 }
 
-function getSafeInternalHref(href: string | null) {
-  if (!href || !href.startsWith('/') || href.startsWith('//')) {
-    return null;
-  }
-
-  return href;
-}
-
 export async function processNotificationClick(input: {
   notificationId: number;
   href: string | null;
@@ -86,7 +78,7 @@ export async function processNotificationClick(input: {
   return Boolean(safeHref);
 }
 
-export function NotificationBell({ userId, defaultOpen = false }: NotificationBellProps) {
+export function NotificationBell({ defaultOpen = false }: NotificationBellProps) {
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(defaultOpen);
@@ -98,15 +90,15 @@ export function NotificationBell({ userId, defaultOpen = false }: NotificationBe
     error: loadError,
     markAsRead,
     markAllAsRead,
-  } = useNotifications({ userId });
+  } = useNotifications();
 
-  const buttonLabel = useMemo(() => {
-    if (unreadCount > 0) {
-      return `Notificações - ${unreadCount} não lidas`;
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (defaultOpen) {
+      triggerRef.current?.focus();
     }
-
-    return 'Notificações';
-  }, [unreadCount]);
+  }, [defaultOpen]);
 
   useEscapeKey(() => setOpen(false), open);
 
@@ -152,29 +144,12 @@ export function NotificationBell({ userId, defaultOpen = false }: NotificationBe
 
   return (
     <div ref={panelRef} className="relative">
-      <button
-        type="button"
-        data-testid="notification-bell"
-        aria-label={buttonLabel}
-        aria-expanded={open}
-        aria-haspopup="dialog"
+      <NotificationBellTrigger
+        ref={triggerRef}
+        open={open}
+        unreadCount={unreadCount}
         onClick={() => setOpen((current) => !current)}
-        className={`relative grid h-11 w-11 place-items-center rounded-full border bg-white transition-colors hover:bg-[rgba(4,9,32,0.04)] ${focusRingClass}`}
-        style={{
-          borderColor: hairline,
-          boxShadow: unreadCount > 0 ? `0 0 0 3px ${skyBlue}24` : undefined,
-        }}
-      >
-        {unreadCount > 0 && (
-          <span
-            className="absolute -top-1 -right-1 z-10 grid h-5 min-w-[20px] place-items-center rounded-full px-1.5 text-[10px] font-bold text-white"
-            style={{ backgroundColor: error, boxShadow: `0 0 0 2px ${white}` }}
-          >
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
-        <Bell size={18} aria-hidden="true" style={{ color: navy }} />
-      </button>
+      />
 
       {open && (
         <div
