@@ -283,4 +283,33 @@ describe('associate identity reconciliation policy', () => {
     expect(plan.canApply).toBe(false);
     expect(JSON.stringify(plan.report)).not.toContain('future_table');
   });
+
+  it('makes the whole plan inapplicable when any duplicate-hash component is ambiguous', () => {
+    const plan = buildReconciliationPlan({
+      associates: [
+        official(1, { cpfHash: 'eligible' }),
+        official(2, { cpfHash: 'eligible' }),
+        official(3, { cpfHash: 'ambiguous', fullName: 'Nome Um' }),
+        official(4, { cpfHash: 'ambiguous', fullName: 'Nome Dois' }),
+      ],
+      relationships: new Map([
+        [1, EMPTY_RELATIONSHIPS],
+        [2, EMPTY_RELATIONSHIPS],
+        [3, { ...EMPTY_RELATIONSHIPS, monthlyPayments: [{ id: 11, year: 2025, month: 6 }] }],
+        [4, { ...EMPTY_RELATIONSHIPS, monthlyPayments: [{ id: 12, year: 2025, month: 6 }] }],
+      ]),
+      unknownForeignKeys: [],
+    });
+
+    expect(plan.canApply).toBe(false);
+    expect(
+      plan.report.components.find((component) => component.associateIds.includes(1)),
+    ).toMatchObject({ eligible: true });
+    expect(
+      plan.report.components.find((component) => component.associateIds.includes(3)),
+    ).toMatchObject({
+      eligible: false,
+      conflictCodes: ['MONTHLY_PAYMENT_PERIOD_CONFLICT', 'NORMALIZED_NAME_CONFLICT'],
+    });
+  });
 });
