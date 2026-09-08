@@ -42,7 +42,8 @@ export async function downloadAuthenticatedCsv(
   }
 
   const blob = await response.blob();
-  const filename = filenameFromDisposition(response.headers.get('Content-Disposition')) ?? 'mala-direta-gmail.csv';
+  const filename =
+    filenameFromDisposition(response.headers.get('Content-Disposition')) ?? 'mala-direta-gmail.csv';
   triggerBlobDownload(blob, filename);
   return { ok: true, filename };
 }

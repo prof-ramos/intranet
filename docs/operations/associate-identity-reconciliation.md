@@ -29,7 +29,7 @@ use exatamente o hash recém-produzido:
 npm run db:reconcile-associate-identities -- apply --evidence-hash <sha256>
 ```
 
-O comando adquire o advisory lock e um bloqueio temporário de escrita nas sete
+O comando adquire o advisory lock e um bloqueio temporário de escrita nas oito
 tabelas envolvidas antes de recalcular a evidência. Hash divergente, inventário
 de FK inesperado ou um único componente ambíguo aborta a transação completa.
 Não existe aplicação parcial.

@@ -9,6 +9,7 @@ import {
   Plus,
   Scale,
   Search,
+  Send,
   Settings,
   Shield,
   ShieldCheck,
@@ -140,7 +141,7 @@ export function Sidebar({ user }: SidebarProps) {
               },
               {
                 href: '/app/secretaria/mala-direta',
-                label: 'Mala direta',
+                label: 'Contatos Gmail',
                 icon: <Mail size={18} />,
               },
               ...(user.role !== 'diretoria'
@@ -168,6 +169,9 @@ export function Sidebar({ user }: SidebarProps) {
               Jurídico
             </NavLink>
           )}
+          <NavLink href="/app/mala-direta" icon={<Send size={20} />}>
+            Mala direta
+          </NavLink>
         </div>
 
         <div role="group" aria-labelledby="nav-administracao">

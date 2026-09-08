@@ -31,6 +31,7 @@ describe('Sidebar', () => {
     expect(screen.queryByRole('link', { name: 'Triagem de E-mails' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Financeiro' })).toBeNull();
     expect(screen.getByRole('link', { name: 'Jurídico' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Mala direta' })).toBeDefined();
   });
 
   it('marks Relatórios as current on the export route without marking Oficiais', () => {
@@ -61,6 +62,7 @@ describe('Sidebar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Secretaria' }));
 
     expect(screen.getByRole('link', { name: 'Pesquisa de oficiais' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Contatos Gmail' })).toBeDefined();
     expect(screen.getByRole('link', { name: 'Relatórios' })).toBeDefined();
   });
 

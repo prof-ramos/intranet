@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { OfficialLetter } from '@/lib/db/schema/oficios';
 import type { OfficialLetterListItem } from '@/lib/oficios/repository';
-import { serializeOfficialLetterDetail, serializeOfficialLetterListItem } from './serialize-letters';
+import {
+  serializeOfficialLetterDetail,
+  serializeOfficialLetterListItem,
+} from './serialize-letters';
 
 describe('serializeOfficialLetter', () => {
   const listItem: OfficialLetterListItem = {

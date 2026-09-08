@@ -13,6 +13,7 @@ export interface RelationshipSnapshot {
   legalProcesses: Array<{ id: number }>;
   dependents: Array<{ id: number }>;
   healthAgreements: Array<{ id: number }>;
+  mailingRecipients: Array<{ id: number; campaignId: number }>;
 }
 
 export type RelationshipName = keyof RelationshipSnapshot;
@@ -21,6 +22,7 @@ export type ConflictCode =
   | 'CADASTRAL_FIELD_CONFLICT'
   | 'IDENTIFIER_CONFLICT'
   | 'MONTHLY_PAYMENT_PERIOD_CONFLICT'
+  | 'MAILING_RECIPIENT_CAMPAIGN_CONFLICT'
   | 'NORMALIZED_NAME_CONFLICT';
 
 export interface SafeReconciliationComponent {
@@ -125,6 +127,7 @@ const RELATIONSHIP_NAMES: RelationshipName[] = [
   'legalProcesses',
   'dependents',
   'healthAgreements',
+  'mailingRecipients',
 ];
 
 function normalizedName(value: string): string {
@@ -240,11 +243,18 @@ export function buildReconciliationPlan(input: {
     if (hasCadastralConflict(rows)) conflicts.add('CADASTRAL_FIELD_CONFLICT');
 
     const periods = new Set<string>();
+    const mailingCampaigns = new Set<number>();
     for (const row of rows) {
       for (const payment of input.relationships.get(row.id)?.monthlyPayments ?? []) {
         const period = `${payment.year}-${payment.month}`;
         if (periods.has(period)) conflicts.add('MONTHLY_PAYMENT_PERIOD_CONFLICT');
         periods.add(period);
+      }
+      for (const recipient of input.relationships.get(row.id)?.mailingRecipients ?? []) {
+        if (mailingCampaigns.has(recipient.campaignId)) {
+          conflicts.add('MAILING_RECIPIENT_CAMPAIGN_CONFLICT');
+        }
+        mailingCampaigns.add(recipient.campaignId);
       }
     }
 
@@ -339,6 +349,7 @@ export function emptyRelationships(): RelationshipSnapshot {
     legalProcesses: [],
     dependents: [],
     healthAgreements: [],
+    mailingRecipients: [],
   };
 }
 

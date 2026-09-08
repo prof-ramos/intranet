@@ -19,7 +19,9 @@ export function WebMcpRegistry({ role }: WebMcpRegistryProps) {
     const controller = new AbortController();
     const allowed = new Set(listToolNamesFor(role, pathname));
     const officialId = officialIdFromProfilePath(pathname);
-    const tools = buildSecretariaTools(router, { officialId }).filter((tool) => allowed.has(tool.name));
+    const tools = buildSecretariaTools(router, { officialId }).filter((tool) =>
+      allowed.has(tool.name),
+    );
     void registerTools(tools, { signal: controller.signal });
     return () => controller.abort();
   }, [pathname, role, router]);

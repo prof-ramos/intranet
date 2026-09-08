@@ -198,6 +198,9 @@ async function warmupJitRoutes() {
       timeout: 60_000,
       waitUntil: 'domcontentloaded',
     });
+
+    await page.goto(`${E2E_BASE_URL}/app/mala-direta`, { timeout: 60_000 });
+    await page.goto(`${E2E_BASE_URL}/app/mala-direta/nova`, { timeout: 60_000 });
   } finally {
     await context.close();
     await browser.close();

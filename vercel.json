@@ -29,6 +29,10 @@
     {
       "path": "/api/v1/cron/cleanup-nonces",
       "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/v1/mailing/process",
+      "schedule": "0 7 * * *"
     }
   ]
 }

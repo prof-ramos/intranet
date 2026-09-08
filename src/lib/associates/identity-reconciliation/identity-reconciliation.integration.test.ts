@@ -13,6 +13,8 @@ import {
   healthAgreements,
   legalConsultations,
   legalProcesses,
+  mailingCampaigns,
+  mailingRecipients,
   monthlyPayments,
 } from '@/lib/db/schema';
 import { reconcileAssociateIdentities } from './index';
@@ -62,8 +64,10 @@ async function cleanup() {
     await db.delete(legalProcesses).where(inArray(legalProcesses.associateId, ids));
     await db.delete(dependents).where(inArray(dependents.associateId, ids));
     await db.delete(healthAgreements).where(inArray(healthAgreements.associateId, ids));
+    await db.delete(mailingRecipients).where(inArray(mailingRecipients.associateId, ids));
     await db.delete(associates).where(inArray(associates.id, ids));
   }
+  await db.delete(mailingCampaigns).where(like(mailingCampaigns.name, `${sourcePrefix}%`));
 }
 
 describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () => {
@@ -99,7 +103,7 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
 
   afterEach(cleanup);
 
-  it('reparents all six known relationships, fills nulls, audits, and becomes idempotent', async () => {
+  it('reparents all seven known relationships, fills nulls, audits, and becomes idempotent', async () => {
     const sharedIdentity = `cpf-int-${runId}-success`;
     const canonicalId = await createOfficial('success-canonical', {
       cpfHash: sharedIdentity,
@@ -144,6 +148,24 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
     await db
       .insert(healthAgreements)
       .values({ associateId: absorbedId, provider: 'Convênio sintético' });
+    const [campaign] = await db
+      .insert(mailingCampaigns)
+      .values({
+        name: `${sourcePrefix}-mailing`,
+        channel: 'email',
+        subject: 'Campanha sintética de reconciliação',
+        templateBody: 'Olá {{nome}}',
+        status: 'rascunho',
+        filters: {},
+        recipientCount: 1,
+        createdBy: adminId,
+      })
+      .returning({ id: mailingCampaigns.id });
+    await db.insert(mailingRecipients).values({
+      campaignId: campaign.id,
+      associateId: absorbedId,
+      recipientName: 'Oficial Sintético Reconciliação',
+    });
 
     const before = await reconcileAssociateIdentities();
     const target = before.components.find((component) =>
@@ -168,6 +190,7 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
       legalProcesses,
       dependents,
       healthAgreements,
+      mailingRecipients,
     ]) {
       expect(await db.select().from(table).where(eq(table.associateId, canonicalId))).toHaveLength(
         1,
@@ -189,6 +212,7 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
           legalProcesses: 1,
           dependents: 1,
           healthAgreements: 1,
+          mailingRecipients: 1,
         },
       },
     });

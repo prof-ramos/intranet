@@ -14,7 +14,10 @@ describe('webmcp result helpers', () => {
   });
 
   it('surfaces success:false payloads as errors', async () => {
-    const result = await runTool(async () => ({ success: false, error: 'Muitas solicitações de IA.' }));
+    const result = await runTool(async () => ({
+      success: false,
+      error: 'Muitas solicitações de IA.',
+    }));
     expect(result.content[0]?.text).toBe('Erro: Muitas solicitações de IA.');
   });
 

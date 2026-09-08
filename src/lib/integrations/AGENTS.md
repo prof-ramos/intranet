@@ -9,21 +9,21 @@ Infrastructure for authenticated machine-to-machine requests, API keys, replay p
 
 ## Key Files
 
-| File | Description |
-|---|---|
-| `verify-request.ts` | Dual env/table-backed API authentication, nonce verification and rate limiting |
-| `auth.ts` | Integration authentication helpers |
-| `rate-limit.ts` | PostgreSQL-backed integration rate limiting |
-| `sign-request.ts` | Outbound request signing |
-| `http.ts` | Hardened outbound HTTP transport and public-URL validation |
-| `outbox.ts` | Transactional event outbox and dispatch |
-| `webhook-handler.ts` | Shared inbound webhook handling |
+| File                 | Description                                                                    |
+| -------------------- | ------------------------------------------------------------------------------ |
+| `verify-request.ts`  | Dual env/table-backed API authentication, nonce verification and rate limiting |
+| `auth.ts`            | Integration authentication helpers                                             |
+| `rate-limit.ts`      | PostgreSQL-backed integration rate limiting                                    |
+| `sign-request.ts`    | Outbound request signing                                                       |
+| `http.ts`            | Hardened outbound HTTP transport and public-URL validation                     |
+| `outbox.ts`          | Transactional event outbox and dispatch                                        |
+| `webhook-handler.ts` | Shared inbound webhook handling                                                |
 
 ## Subdirectories
 
-| Directory | Purpose |
-|---|---|
-| `keys/` | API-key repository, service and signing-secret lifecycle |
+| Directory   | Purpose                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------ |
+| `keys/`     | API-key repository, service and signing-secret lifecycle                                   |
 | `webhooks/` | Subscription validation, secret management, concurrency, repository, service and transport |
 
 ## For AI Agents

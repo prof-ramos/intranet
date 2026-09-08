@@ -127,6 +127,8 @@ Contagem = número de entradas em `drizzle/postgres/meta/_journal.json` (fonte d
 | 0027 | `0027_add_associates_name_translated_trgm_index.sql` | Índice GIN trigram transliterado para busca de nome sem acentos                                                                  |
 | 0028 | `0028_activity_domain_events.sql`                    | ADR 018: eventos de domínio `activity.*` no outbox (6 valores em `domain_event_type` + `activity` em `domain_event_entity_type`) |
 | 0029 | `0029_pagination_count_index.sql`                    | Índice composto em associates para paginação otimizada                                                                           |
+| 0034 | `0034_performance_query_indexes.sql`                 | Índices de performance (Wave E) em activities, audit e jurídico                                                                  |
+| 0035 | `0035_mailing_campaigns.sql`                         | Campanhas de mala direta (`mailing_campaigns`, `mailing_recipients`) e enum `enviando`                                           |
 
 ### Nomenclatura
 
@@ -136,7 +138,7 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 ## Schema (`src/lib/db/schema/`)
 
-### Tabelas (30)
+### Tabelas (32)
 
 #### Core
 
@@ -178,10 +180,12 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 #### Secretaria
 
-| Tabela      | Arquivo        | Finalidade                          |
-| ----------- | -------------- | ----------------------------------- |
-| `oficios`   | `oficios.ts`   | Ofícios (documentos oficiais, PDF)  |
-| `documents` | `documents.ts` | Documentos institucionais (uploads) |
+| Tabela               | Arquivo        | Finalidade                                                       |
+| -------------------- | -------------- | ---------------------------------------------------------------- |
+| `oficios`            | `oficios.ts`   | Ofícios (documentos oficiais, PDF)                               |
+| `documents`          | `documents.ts` | Documentos institucionais (uploads)                              |
+| `mailing_campaigns`  | `mailing.ts`   | Campanhas de mala direta (e-mail em lote e etiquetas)            |
+| `mailing_recipients` | `mailing.ts`   | Destinatários por campanha, com e-mail cifrado e status de envio |
 
 #### Email Triage
 
@@ -442,6 +446,8 @@ associates 1──N activities
 associates 1──N monthly_payments
 associates 1──N legal_consultations
 associates 1──N documents
+associates 1──N mailing_recipients
+mailing_campaigns 1──N mailing_recipients
 associates 1──N dependents (onDelete CASCADE)
 associates 1──N health_agreements (onDelete CASCADE)
 

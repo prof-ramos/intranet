@@ -12,7 +12,7 @@
   - `migrate-production.yml` — confirmação `MIGRATE-PRODUCTION`; checa duplicatas de hash; `guarded-migrate`
   - `reconcile-production-identities.yml` — report/apply (apply só com `eligibleCount` + evidence)
   - `clear-duplicate-identity-hashes.yml` — limpa hashes duplicados para desbloquear unique indexes
-  Secret: `NEON_API_KEY` (projeto, não org-wide). Mascarar URL; nunca imprimir senha.
+    Secret: `NEON_API_KEY` (projeto, não org-wide). Mascarar URL; nunca imprimir senha.
 - **Evidência**: Sessão 2026-09-03 — migration 0033 aplicada via GHA após clear de 11 linhas.
 - **Confiança**: alta
 

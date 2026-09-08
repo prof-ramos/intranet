@@ -9,14 +9,14 @@ Administrator-facing configuration for audit visibility, integrations, assignmen
 
 ## Key Areas
 
-| Directory | Purpose |
-|---|---|
-| `auditoria/` | Paginated audit-log view and formatting benchmark |
+| Directory               | Purpose                                                  |
+| ----------------------- | -------------------------------------------------------- |
+| `auditoria/`            | Paginated audit-log view and formatting benchmark        |
 | `integracoes/api-keys/` | Integration API-key creation, rotation and revocation UI |
-| `integracoes/ia/` | Gemini API-key settings |
-| `integracoes/webhooks/` | Webhook subscription lifecycle |
-| `lotacoes/` | Assignment/post management |
-| `usuarios/` | Admin, diretoria and secretaria account management |
+| `integracoes/ia/`       | Gemini API-key settings                                  |
+| `integracoes/webhooks/` | Webhook subscription lifecycle                           |
+| `lotacoes/`             | Assignment/post management                               |
+| `usuarios/`             | Admin, diretoria and secretaria account management       |
 
 ## For AI Agents
 

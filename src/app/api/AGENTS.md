@@ -9,16 +9,16 @@ Next.js route handlers for authenticated downloads, versioned integration APIs, 
 
 ## Key Areas
 
-| Directory | Purpose |
-|---|---|
-| `oficios/[id]/download/` | Authorized PDF download for an oficio |
-| `v1/cron/` | Secret-protected scheduled maintenance, Gmail watch, LGPD retention and overdue-payment jobs |
-| `v1/email-triage/process/` | Controlled email-triage processing endpoint |
-| `v1/events/` | Authenticated domain-event ingestion, routing and dispatch |
-| `v1/gmail-webhook/` | Gmail push notification receiver |
-| `v1/health/` | Operational health endpoint with intentionally limited disclosure |
-| `v1/juridico/sla-warnings/` | Legal SLA warning job |
-| `webhooks/assinafy/` | Assinafy signature webhook receiver |
+| Directory                   | Purpose                                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------------------- |
+| `oficios/[id]/download/`    | Authorized PDF download for an oficio                                                        |
+| `v1/cron/`                  | Secret-protected scheduled maintenance, Gmail watch, LGPD retention and overdue-payment jobs |
+| `v1/email-triage/process/`  | Controlled email-triage processing endpoint                                                  |
+| `v1/events/`                | Authenticated domain-event ingestion, routing and dispatch                                   |
+| `v1/gmail-webhook/`         | Gmail push notification receiver                                                             |
+| `v1/health/`                | Operational health endpoint with intentionally limited disclosure                            |
+| `v1/juridico/sla-warnings/` | Legal SLA warning job                                                                        |
+| `webhooks/assinafy/`        | Assinafy signature webhook receiver                                                          |
 
 ## For AI Agents
 
