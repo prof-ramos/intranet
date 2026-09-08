@@ -91,6 +91,8 @@ const expectedColumns = {
     'association_category:text:YES',
     'contribution_status:contribution_status:NO',
     'secondary_email:text:YES',
+    'secondary_email_ciphertext:text:YES',
+    'secondary_email_hash:text:YES',
     'internal_notes:text:YES',
     'sex:sex:YES',
     'marital_status:marital_status:YES',
@@ -689,6 +691,7 @@ const expectedIndexes = {
     'idx_associates_primary_email',
     'idx_associates_primary_email_hash',
     'idx_associates_rg_hash',
+    'idx_associates_secondary_email_hash',
     'idx_associates_siape',
     'idx_associates_siape_hash',
     'idx_associates_source_row_number',
@@ -1012,13 +1015,15 @@ describe('database schema contract', () => {
         and i.relname in (
           'idx_associates_cpf_hash',
           'idx_associates_siape_hash',
-          'idx_associates_primary_email_hash'
+          'idx_associates_primary_email_hash',
+          'idx_associates_secondary_email_hash'
         )
       order by i.relname
     `;
     expect(rows).toEqual([
       { indexname: 'idx_associates_cpf_hash', indisunique: true },
       { indexname: 'idx_associates_primary_email_hash', indisunique: true },
+      { indexname: 'idx_associates_secondary_email_hash', indisunique: true },
       { indexname: 'idx_associates_siape_hash', indisunique: true },
     ]);
   });

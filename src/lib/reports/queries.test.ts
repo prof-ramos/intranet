@@ -211,6 +211,21 @@ describe('reports queries', () => {
       expect(results[0].primaryEmail).toBe('DEC:enc:email');
     });
 
+    it('decrypts secondaryEmail when selectedKeys includes it', async () => {
+      const row = {
+        ...MOCK_ASSOCIATE,
+        secondaryEmailCiphertext: 'enc:alt',
+        secondaryEmail: 'plain-alt@example.com',
+      };
+      dbMock.setSelectResult([row]);
+
+      const results = await getAssociatesForReport({}, 5000, ['secondaryEmail']);
+
+      expect(decryptPiiFieldMock).toHaveBeenCalledWith('enc:alt', 'plain-alt@example.com');
+      expect(results[0].secondaryEmail).toBe('DEC:enc:alt');
+      expect(results[0].primaryEmail).toBeNull();
+    });
+
     it('propagates decrypt errors without leaking ciphertext into logger calls', async () => {
       const row = {
         ...MOCK_ASSOCIATE,

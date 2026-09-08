@@ -88,6 +88,7 @@ describe('buildPiiPatch', () => {
       cpf: '1',
       siape: '2',
       primaryEmail: '3',
+      secondaryEmail: 'alt@b.com',
       phone: '4',
       whatsapp: '5',
       address: '6',
@@ -96,20 +97,32 @@ describe('buildPiiPatch', () => {
     expect(patch.cpfCiphertext).toBe('enc:1');
     expect(patch.siapeCiphertext).toBe('enc:2');
     expect(patch.primaryEmailCiphertext).toBe('enc:3');
+    expect(patch.secondaryEmail).toBeNull();
+    expect(patch.secondaryEmailCiphertext).toBe('enc:alt@b.com');
+    expect(patch.secondaryEmailHash).toBe('hash:alt@b.com');
     expect(patch.phoneCiphertext).toBe('enc:4');
     expect(patch.whatsappCiphertext).toBe('enc:5');
     expect(patch.addressCiphertext).toBe('enc:6');
   });
+
+  it('clears secondaryEmail without hashing blank values', () => {
+    const patch = buildPiiPatch({ secondaryEmail: '' });
+
+    expect(patch.secondaryEmail).toBeNull();
+    expect(patch.secondaryEmailCiphertext).toBeNull();
+    expect(patch.secondaryEmailHash).toBeNull();
+  });
 });
 
 describe('PII_FIELDS registry', () => {
-  it('contains exactly 7 fields', () => {
-    expect(PII_FIELDS).toHaveLength(7);
+  it('contains exactly 8 fields', () => {
+    expect(PII_FIELDS).toHaveLength(8);
   });
 
   it('has unique names across all entries', () => {
     const names = PII_FIELDS.map((f) => f.name);
     expect(new Set(names).size).toBe(names.length);
+    expect(names).toContain('secondaryEmail');
   });
 
   it('has unique columns across all entries', () => {
@@ -130,6 +143,9 @@ describe('decryptAssociatePii', () => {
       primaryEmail: null,
       primaryEmailCiphertext: 'enc:3',
       primaryEmailHash: 'hash:3',
+      secondaryEmail: null,
+      secondaryEmailCiphertext: 'enc:alt',
+      secondaryEmailHash: 'hash:alt',
       phone: null,
       phoneCiphertext: 'enc:4',
       phoneHash: 'hash:4',
@@ -148,6 +164,7 @@ describe('decryptAssociatePii', () => {
       cpf: '1',
       siape: '2',
       primaryEmail: '3',
+      secondaryEmail: 'alt',
       phone: '4',
       whatsapp: '5',
       address: '6',
@@ -166,6 +183,9 @@ describe('decryptAssociatePii', () => {
       primaryEmail: '3',
       primaryEmailCiphertext: null,
       primaryEmailHash: null,
+      secondaryEmail: 'alt',
+      secondaryEmailCiphertext: null,
+      secondaryEmailHash: null,
       phone: '4',
       phoneCiphertext: null,
       phoneHash: null,
@@ -184,6 +204,7 @@ describe('decryptAssociatePii', () => {
       cpf: '1',
       siape: '2',
       primaryEmail: '3',
+      secondaryEmail: 'alt',
       phone: '4',
       whatsapp: '5',
       address: '6',

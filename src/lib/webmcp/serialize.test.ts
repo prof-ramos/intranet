@@ -8,6 +8,7 @@ vi.mock('@/lib/associates/pii-mapping', () => ({
     rg: '123',
     siape: '1234567',
     primaryEmail: 'ana@asof.local',
+    secondaryEmail: 'ana.alt@asof.local',
     phone: '61999990000',
     whatsapp: '61999990000',
     address: 'SQS 100',

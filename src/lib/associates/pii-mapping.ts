@@ -29,6 +29,9 @@ type PiiPatchKeys =
   | 'primaryEmail'
   | 'primaryEmailCiphertext'
   | 'primaryEmailHash'
+  | 'secondaryEmail'
+  | 'secondaryEmailCiphertext'
+  | 'secondaryEmailHash'
   | 'phone'
   | 'phoneCiphertext'
   | 'phoneHash'
@@ -47,7 +50,7 @@ type PiiPatchKeys =
  */
 type PiiInputShape = Pick<
   UpdateAssociateValues,
-  'cpf' | 'siape' | 'primaryEmail' | 'phone' | 'whatsapp' | 'address' | 'rg'
+  'cpf' | 'siape' | 'primaryEmail' | 'secondaryEmail' | 'phone' | 'whatsapp' | 'address' | 'rg'
 >;
 
 type PiiDecryptedShape = Record<keyof PiiInputShape, string | null>;
@@ -65,6 +68,12 @@ const PII_FIELDS: PiiFieldDescriptor[] = [
     plaintextCol: 'primaryEmail',
     ciphertextCol: 'primaryEmailCiphertext',
     hashCol: 'primaryEmailHash',
+  },
+  {
+    name: 'secondaryEmail',
+    plaintextCol: 'secondaryEmail',
+    ciphertextCol: 'secondaryEmailCiphertext',
+    hashCol: 'secondaryEmailHash',
   },
   { name: 'phone', plaintextCol: 'phone', ciphertextCol: 'phoneCiphertext', hashCol: 'phoneHash' },
   {
