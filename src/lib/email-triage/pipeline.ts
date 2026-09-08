@@ -9,8 +9,8 @@
  *  - processBatch()   — concurrent batch with semaphore (max 3)
  *  - summarizeResults() — structured summary string
  */
-import { env } from '@/lib/env';
 import { EMAIL_TRIAGE_MODEL } from '@/lib/ai/constants';
+import { getGeminiApiKey } from '@/lib/ai/settings';
 import { correlate } from './correlate';
 import { createLogger } from '@/lib/logger';
 import { redactPiiString } from '@/lib/sanitize-pii';
@@ -145,7 +145,7 @@ export async function processEmail(
   };
 
   // ── Step 4: Gemini analysis ───────────────────────────────────────────
-  const apiKey = env.GEMINI_API_KEY;
+  const apiKey = await getGeminiApiKey();
   if (!apiKey) {
     const error = 'GEMINI_API_KEY nao configurada.';
     log.error(error);
