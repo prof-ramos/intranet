@@ -18,7 +18,7 @@ Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de 
 - **Primeira execução local:** siga [Início rápido](#início-rápido).
 - **Variáveis e banco:** veja [Variáveis de ambiente](#variáveis-de-ambiente) e [Banco de dados](#banco-de-dados).
 - **Comandos de trabalho:** use [Comandos](#comandos), especialmente `npm run validate:quick`, `npm run validate:full` e `npm run pr:check`.
-- **Arquitetura:** comece pelo mapa de módulos em [`ARCHITECTURE.md`](./ARCHITECTURE.md#21-domain-module-and-caller-map).
+- **Arquitetura:** comece pelo mapa de módulos em [`ARCHITECTURE.md`](./ARCHITECTURE.md#modulos-de-dominio).
 - **Ambientes e bancos:** a fonte oficial é [`docs/environments.md`](./docs/environments.md).
 - **Operação e deploy:** use [`docs/runbook.md`](./docs/runbook.md) e a seção 6 de [`ARCHITECTURE.md`](./ARCHITECTURE.md#6-deployment--infrastructure).
 - **Go-live Release 1.0:** use [`docs/release-1-operational-go-live.md`](./docs/release-1-operational-go-live.md) para smoke manual, backup Nivel 1 Neon/PostgreSQL, restore de teste e revisão de integrações.

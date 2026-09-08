@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-09-04 | Updated: 2026-09-06 -->
+<!-- Generated: 2026-09-04 | Updated: 2026-09-08 -->
 
 # Authenticated Dashboard
 
@@ -16,7 +16,7 @@ Authenticated dashboard — main app area after login. All routes require auth v
 | `error.tsx`   | Error boundary                                                      |
 | `layout.tsx`  | Dashboard layout with sidebar, `NotificationBellWrapper` and WebMCP |
 | `loading.tsx` | Loading state                                                       |
-| `page.tsx`    | Redirects to atividades                                             |
+| `page.tsx`    | Dashboard (WelcomeBanner, indicadores, filas)                       |
 
 ## Subdirectories
 

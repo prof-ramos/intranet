@@ -1,6 +1,6 @@
 # Checklist LGPD-ready
 
-Versao: 2026-07-18
+Versao: 2026-09-08
 
 Escopo: intranet ASOF com Next.js, PostgreSQL gerenciado, auth server-side propria e Mailjet para email transacional.
 
@@ -9,7 +9,7 @@ Escopo: intranet ASOF com Next.js, PostgreSQL gerenciado, auth server-side propr
 - Autorizacao server-side com `requireAuth()` e `requireRole()`.
 - Senhas administrativas com hash bcrypt em `admins.password_hash`.
 - Sessao por cookie `httpOnly` assinado com `SESSION_SECRET`.
-- Mascaramento por role para campos sensiveis.
+- Staff autenticado tem visibilidade operacional integral de PII; `sanitizePii()` nos logs. Não reintroduzir máscara por role sem nova decisão de produto.
 - Criptografia e indices cegos para dados sensiveis quando a camada de escrita suporta.
   - Implementado nas rotas de escrita atuais: pares `*Ciphertext` e `*Hash` para CPF, SIAPE, email primario, telefone, WhatsApp e endereco em `associates`.
   - Plaintext legado/importado ainda existe para campos operacionais como `fullName`, `primaryEmail`, `secondaryEmail`, `cpf`, `siape`, `phone`, `whatsapp`, `address` e `birthDate`; o risco aceito e mitigado por app server, controle de acesso ao Neon, auditoria e sanitizacao de logs.

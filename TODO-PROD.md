@@ -264,9 +264,7 @@ continuam pertencendo ao inventario e a limpeza controlada do Plano 057._
   [CI run 34240612560](https://github.com/prof-ramos/intranet/actions/runs/34240612560).
 - **Webhook tests:** issue [#436](https://github.com/prof-ramos/intranet/issues/436)
   encerrada; a correção efetiva está no PR [#439](https://github.com/prof-ramos/intranet/pull/439), já incorporado ao `main`. O PR duplicado #438 foi encerrado.
-- **Em aberto:** drafts #432 (MCP operador) e #428 (Cloud Agent env) continuam
-  fora do gate de produção; a atualização do `undici` permanece na pendência
-  acima.
+- **PRs laterais encerrados:** os drafts [#432](https://github.com/prof-ramos/intranet/pull/432) (MCP operador) e [#428](https://github.com/prof-ramos/intranet/pull/428) (Cloud Agent env) foram fechados sem merge em 2026-09-03 e permanecem fora do gate de produção. A atualização do `undici` (`6.28.1`) está concluída na seção Pendências atuais.
 
 ### Validação de branches e PRs (2026-09-08)
 
