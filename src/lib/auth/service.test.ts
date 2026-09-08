@@ -2,8 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SQL } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
 
-const { mockLogger } = vi.hoisted(() => ({
+const { mockLogger, mockEnv, mockSendEmail } = vi.hoisted(() => ({
   mockLogger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
+  mockEnv: {
+    MAILJET_API_KEY: undefined as string | undefined,
+    MAILJET_SECRET_KEY: undefined as string | undefined,
+    MAILJET_SENDER_EMAIL: undefined as string | undefined,
+    MAILJET_SENDER_VALIDATED: false,
+  },
+  mockSendEmail: vi.fn(),
 }));
 
 vi.mock('@/lib/logger', () => ({
@@ -71,15 +78,11 @@ vi.mock('@/lib/db/retry', () => ({
 }));
 
 vi.mock('@/lib/env', () => ({
-  env: {
-    MAILJET_API_KEY: undefined,
-    MAILJET_SECRET_KEY: undefined,
-    MAILJET_SENDER_VALIDATED: false,
-  },
+  env: mockEnv,
 }));
 
 vi.mock('@/lib/email', () => ({
-  sendEmail: vi.fn(),
+  sendEmail: (...args: unknown[]) => mockSendEmail(...args),
 }));
 
 vi.mock('@/lib/email/templates', () => ({
@@ -87,10 +90,22 @@ vi.mock('@/lib/email/templates', () => ({
   temporaryPasswordEmailText: vi.fn(() => 'text'),
 }));
 
+function configureMailjet() {
+  mockEnv.MAILJET_API_KEY = 'key';
+  mockEnv.MAILJET_SECRET_KEY = 'secret';
+  mockEnv.MAILJET_SENDER_EMAIL = 'no-reply@asof.org.br';
+  mockEnv.MAILJET_SENDER_VALIDATED = true;
+}
+
 describe('auth service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     selectQueue.length = 0;
+    mockEnv.MAILJET_API_KEY = undefined;
+    mockEnv.MAILJET_SECRET_KEY = undefined;
+    mockEnv.MAILJET_SENDER_EMAIL = undefined;
+    mockEnv.MAILJET_SENDER_VALIDATED = false;
+    mockSendEmail.mockResolvedValue(undefined);
   });
 
   describe('authenticate', () => {
@@ -212,7 +227,35 @@ describe('auth service', () => {
   });
 
   describe('resetPassword', () => {
-    it('generates temp password, updates DB, and audits', async () => {
+    it('does not rotate the password when Mailjet is unconfigured', async () => {
+      selectQueue.push([
+        { id: 10, name: 'Maria', email: 'maria@asof.local', role: 'secretaria', isActive: true },
+      ]);
+
+      const { resetPassword, EmailDeliveryNotConfiguredError } = await import('./service');
+      await expect(resetPassword(10, 7)).rejects.toThrow(EmailDeliveryNotConfiguredError);
+      expect(mockBcryptHash).not.toHaveBeenCalled();
+      expect(mockUpdateSet).not.toHaveBeenCalled();
+      expect(mockInsertValues).not.toHaveBeenCalled();
+      expect(mockSendEmail).not.toHaveBeenCalled();
+    });
+
+    it('does not rotate the password when Mailjet sender is missing', async () => {
+      mockEnv.MAILJET_API_KEY = 'key';
+      mockEnv.MAILJET_SECRET_KEY = 'secret';
+      mockEnv.MAILJET_SENDER_VALIDATED = true;
+      selectQueue.push([
+        { id: 10, name: 'Maria', email: 'maria@asof.local', role: 'secretaria', isActive: true },
+      ]);
+
+      const { resetPassword, EmailDeliveryNotConfiguredError } = await import('./service');
+      await expect(resetPassword(10, 7)).rejects.toThrow(EmailDeliveryNotConfiguredError);
+      expect(mockBcryptHash).not.toHaveBeenCalled();
+      expect(mockUpdateSet).not.toHaveBeenCalled();
+    });
+
+    it('generates temp password, updates DB, audits, and delivers email', async () => {
+      configureMailjet();
       selectQueue.push([
         { id: 10, name: 'Maria', email: 'maria@asof.local', role: 'secretaria', isActive: true },
       ]);
@@ -222,9 +265,8 @@ describe('auth service', () => {
       const { resetPassword } = await import('./service');
       const result = await resetPassword(10, 7);
 
-      expect(result.tempPassword).toEqual(expect.any(String));
-      expect(result.tempPassword.length).toBeGreaterThanOrEqual(8);
-      expect(result.emailDelivered).toBe(false);
+      expect(result).toEqual({ emailDelivered: true });
+      expect(result).not.toHaveProperty('tempPassword');
       expect(mockBcryptHash).toHaveBeenCalledWith(expect.any(String), 12);
       expect(mockUpdateSet).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -242,6 +284,34 @@ describe('auth service', () => {
           entityId: 10,
           performedBy: 7,
         }),
+      );
+      expect(mockSendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'maria@asof.local',
+          toName: 'Maria',
+          subject: 'Redefinição de senha — ASOF Intranet',
+        }),
+      );
+    });
+
+    it('reports emailDelivered false when send fails after password rotation', async () => {
+      configureMailjet();
+      selectQueue.push([
+        { id: 10, name: 'Maria', email: 'maria@asof.local', role: 'secretaria', isActive: true },
+      ]);
+      mockBcryptHash.mockResolvedValue('hashed-temp');
+      mockInsertValues.mockResolvedValue(undefined);
+      mockSendEmail.mockRejectedValue(new Error('mailjet unavailable'));
+
+      const { resetPassword } = await import('./service');
+      const result = await resetPassword(10, 7);
+
+      expect(result).toEqual({ emailDelivered: false });
+      expect(result).not.toHaveProperty('tempPassword');
+      expect(mockUpdateSet).toHaveBeenCalled();
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        '[resetPassword] Failed to deliver password reset email.',
+        expect.objectContaining({ targetId: 10 }),
       );
     });
 

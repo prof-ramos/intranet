@@ -25,6 +25,12 @@ vi.mock('@/lib/auth/service', () => ({
       this.name = 'InactiveAdminError';
     }
   },
+  EmailDeliveryNotConfiguredError: class EmailDeliveryNotConfiguredError extends Error {
+    constructor() {
+      super('Envio de e-mail não configurado. Não é possível resetar a senha.');
+      this.name = 'EmailDeliveryNotConfiguredError';
+    }
+  },
 }));
 
 vi.mock('@/lib/auth/authorization', () => ({
@@ -39,26 +45,11 @@ describe('config usuarios actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireRoleMock.mockResolvedValue({ userId: 7 });
-    resetPasswordMock.mockResolvedValue({ tempPassword: 'Temp123!', emailDelivered: false });
+    resetPasswordMock.mockResolvedValue({ emailDelivered: true });
     toggleAdminActiveMock.mockResolvedValue({ name: 'Carlos', isActive: true });
   });
 
-  it('generates a local temporary password, audits, and revalidates', async () => {
-    const formData = new FormData();
-    formData.set('userId', '10');
-
-    const result = await resetUserPassword(null, formData);
-
-    expect(result.success).toBe(true);
-    expect(result.message).toContain('Senha temporária gerada');
-    expect(result.tempPassword).toBe('Temp123!');
-    expect(resetPasswordMock).toHaveBeenCalledWith(10, 7);
-    expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/usuarios');
-  });
-
-  it('reports email delivery success', async () => {
-    resetPasswordMock.mockResolvedValue({ tempPassword: 'Temp123!', emailDelivered: true });
-
+  it('reports email delivery success without returning a password', async () => {
     const formData = new FormData();
     formData.set('userId', '10');
 
@@ -67,8 +58,41 @@ describe('config usuarios actions', () => {
     expect(result).toEqual({
       success: true,
       message: 'Senha temporária gerada e enviada ao usuário.',
-      tempPassword: undefined,
     });
+    expect(result).not.toHaveProperty('tempPassword');
+    expect(resetPasswordMock).toHaveBeenCalledWith(10, 7);
+    expect(revalidatePathMock).toHaveBeenCalledWith('/app/config/usuarios');
+  });
+
+  it('reports email delivery failure without returning a password', async () => {
+    resetPasswordMock.mockResolvedValue({ emailDelivered: false });
+
+    const formData = new FormData();
+    formData.set('userId', '10');
+
+    const result = await resetUserPassword(null, formData);
+
+    expect(result).toEqual({
+      success: false,
+      message: 'Não foi possível enviar o e-mail de redefinição. Tente novamente.',
+    });
+    expect(result).not.toHaveProperty('tempPassword');
+  });
+
+  it('rejects password reset when Mailjet is unconfigured', async () => {
+    const { EmailDeliveryNotConfiguredError } = await import('@/lib/auth/service');
+    resetPasswordMock.mockRejectedValueOnce(new EmailDeliveryNotConfiguredError());
+
+    const formData = new FormData();
+    formData.set('userId', '10');
+
+    const result = await resetUserPassword(null, formData);
+
+    expect(result).toEqual({
+      success: false,
+      message: 'Envio de e-mail não configurado. Não é possível resetar a senha.',
+    });
+    expect(result).not.toHaveProperty('tempPassword');
   });
 
   it('rejects password reset for the current actor', async () => {
@@ -103,6 +127,21 @@ describe('config usuarios actions', () => {
 
     expect(resetPasswordMock).not.toHaveBeenCalled();
     expect(toggleAdminActiveMock).not.toHaveBeenCalled();
+  });
+
+  it('returns a fixed Portuguese error instead of driver messages', async () => {
+    resetPasswordMock.mockRejectedValueOnce(new Error('ECONNRESET from postgres'));
+
+    const formData = new FormData();
+    formData.set('userId', '10');
+
+    const result = await resetUserPassword(null, formData);
+
+    expect(result).toEqual({
+      success: false,
+      message: 'Falha ao resetar senha.',
+    });
+    expect(result).not.toHaveProperty('tempPassword');
   });
 
   it('rejects password reset for inactive users', async () => {

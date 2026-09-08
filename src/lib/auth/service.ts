@@ -53,9 +53,25 @@ export class InvalidCurrentPasswordError extends AuthError {
   }
 }
 
+export class EmailDeliveryNotConfiguredError extends AuthError {
+  constructor() {
+    super('Envio de e-mail não configurado. Não é possível resetar a senha.');
+    this.name = 'EmailDeliveryNotConfiguredError';
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+function isTransactionalEmailConfigured(): boolean {
+  return Boolean(
+    env.MAILJET_API_KEY &&
+      env.MAILJET_SECRET_KEY &&
+      env.MAILJET_SENDER_EMAIL &&
+      env.MAILJET_SENDER_VALIDATED,
+  );
+}
 
 function generateTemporaryPassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -167,7 +183,6 @@ export async function changePassword(
 // ---------------------------------------------------------------------------
 
 export interface ResetPasswordResult {
-  tempPassword: string;
   emailDelivered: boolean;
 }
 
@@ -256,6 +271,10 @@ export async function resetPassword(
     throw new InactiveAdminError();
   }
 
+  if (!isTransactionalEmailConfigured()) {
+    throw new EmailDeliveryNotConfiguredError();
+  }
+
   const tempPassword = generateTemporaryPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 12);
 
@@ -279,23 +298,21 @@ export async function resetPassword(
   });
 
   let emailDelivered = false;
-  if (env.MAILJET_API_KEY && env.MAILJET_SECRET_KEY && env.MAILJET_SENDER_VALIDATED) {
-    try {
-      await sendEmail({
-        to: target.email,
-        toName: target.name,
-        subject: 'Redefinição de senha — ASOF Intranet',
-        htmlBody: temporaryPasswordEmailHtml(target.name, tempPassword),
-        textBody: temporaryPasswordEmailText(target.name, tempPassword),
-      });
-      emailDelivered = true;
-    } catch (emailError) {
-      logger.error('[resetPassword] Failed to deliver password reset email.', {
-        targetId,
-        error: toSafeErrorLog(emailError),
-      });
-    }
+  try {
+    await sendEmail({
+      to: target.email,
+      toName: target.name,
+      subject: 'Redefinição de senha — ASOF Intranet',
+      htmlBody: temporaryPasswordEmailHtml(target.name, tempPassword),
+      textBody: temporaryPasswordEmailText(target.name, tempPassword),
+    });
+    emailDelivered = true;
+  } catch (emailError) {
+    logger.error('[resetPassword] Failed to deliver password reset email.', {
+      targetId,
+      error: toSafeErrorLog(emailError),
+    });
   }
 
-  return { tempPassword, emailDelivered };
+  return { emailDelivered };
 }

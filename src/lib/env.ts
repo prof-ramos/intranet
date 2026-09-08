@@ -219,6 +219,22 @@ export const envSchema = z
       message: 'ASSINAFY_BASE_URL must not use the Assinafy sandbox host in production.',
       path: ['ASSINAFY_BASE_URL'],
     },
+  )
+  .refine(
+    (data) => {
+      if (data.VERCEL_ENV !== 'production') return true;
+      return (
+        !!data.MAILJET_API_KEY &&
+        !!data.MAILJET_SECRET_KEY &&
+        !!data.MAILJET_SENDER_EMAIL &&
+        data.MAILJET_SENDER_VALIDATED === true
+      );
+    },
+    {
+      message:
+        'MAILJET_API_KEY, MAILJET_SECRET_KEY, MAILJET_SENDER_EMAIL and MAILJET_SENDER_VALIDATED=true are required for production transactional email.',
+      path: ['MAILJET_SENDER_VALIDATED'],
+    },
   );
 
 const parsed = envSchema.safeParse(process.env);
