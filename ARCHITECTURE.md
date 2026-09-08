@@ -12,9 +12,9 @@ O produto é um CRM administrativo enxuto: dois usuários internos mantêm o cad
 
 Por isso, a operação deve priorizar integridade, autorização, auditoria, LGPD, backup e restauração. Uma implantação self-hosted pode começar com a aplicação, PostgreSQL e proxy reverso em containers separados, mantendo os backups fora da máquina. Uma VPS inicial de 2 vCPU e 4 GB de RAM é compatível com esse perfil, desde que o build seja feito fora da máquina e os limites de conexão sejam ajustados.
 
-### Eventos de tarefas e integrações futuras
+### Eventos de tarefas e integrações
 
-Uma transição de status, como `em andamento` → `concluída`, pode gerar um evento de domínio persistido junto com a alteração da tarefa. Um worker pode então entregar esse evento a webhooks ou a um canal de push, com tentativas, assinatura e idempotência. Essa capacidade é uma extensão futura e não precisa introduzir filas ou serviços adicionais no fluxo síncrono atual.
+Os eventos de domínio de atividades (como `activity.completed`) já são persistidos transacionalmente no outbox `domain_events` junto com a mutação, e um dispatcher os entrega a webhooks outbound com assinatura HMAC, tentativas e idempotência (ver CONTEXT.md, "Eventos e integrações"). A extensão futura é a entrega a novos consumidores — como canais de push — que não precisa introduzir filas ou serviços adicionais no fluxo síncrono atual.
 
 ## Modulos De Dominio
 

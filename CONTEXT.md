@@ -8,7 +8,7 @@ A intranet é um CRM administrativo de baixa concorrência, usado atualmente por
 
 Um caso típico é criar em **Atividades** a tarefa “atualizar o endereço de um associado”, executar a alteração no cadastro e concluí-la após a conferência. O PostgreSQL é a fonte de verdade do cadastro; a tarefa registra o trabalho, o responsável, o prazo e o histórico operacional.
 
-Os módulos jurídico, financeiro, secretaria, relatórios e integrações continuam documentados porque fazem parte da superfície existente, mas não definem a escala necessária para o uso central atual. Uma evolução futura pode emitir eventos de domínio quando uma tarefa mudar de status, permitindo webhooks ou push sem alterar o modelo básico de cadastro e tarefas.
+Os módulos jurídico, financeiro, secretaria, relatórios e integrações continuam documentados porque fazem parte da superfície existente, mas não definem a escala necessária para o uso central atual. Os eventos de domínio de atividades já são emitidos para o outbox de webhooks (ver seção "Eventos e integrações"); a evolução futura é a entrega a novos consumidores, como push, sem alterar o modelo básico de cadastro e tarefas.
 
 ## Glossário do Domínio
 

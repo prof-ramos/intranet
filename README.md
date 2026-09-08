@@ -39,7 +39,7 @@ Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de 
 
 A carga prevista é de baixa concorrência e concentrada em leitura e atualização de registros. Para o uso atual, os requisitos de produção mais importantes são integridade dos dados, permissões, auditoria, LGPD e backup com restauração testada.
 
-Uma futura mudança de status de tarefa pode publicar um evento (por exemplo, `activity.completed`) para um webhook ou serviço de push. Isso é uma extensão incremental: o fluxo atual continua funcionando de forma síncrona, e a entrega externa pode ser adicionada com uma fila, tentativas e idempotência quando houver necessidade real.
+Os eventos de domínio de atividades (como `activity.completed`) já são emitidos hoje para o outbox de webhooks (ver CONTEXT.md, "Eventos e integrações"). O que é extensão futura é a entrega externa a novos consumidores — push ou automações além do webhook outbound existente — que pode ser adicionada com uma fila, tentativas e idempotência quando houver consumidor definido, sem alterar o fluxo síncrono atual.
 
 ### Melhorias de UX (Dashboard)
 
