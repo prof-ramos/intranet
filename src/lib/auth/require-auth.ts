@@ -13,16 +13,11 @@ import { resolvePersistedDevelopmentUser } from '@/lib/auth/development-identity
 const logger = createLogger('auth:require-auth');
 
 function pathnameFromHeaders(reqHeaders: Headers): string {
-  const nextUrl = reqHeaders.get('next-url');
-  if (!nextUrl) {
+  const pathname = reqHeaders.get('x-asof-pathname') ?? '';
+  if (!pathname.startsWith('/') || pathname.includes('://')) {
     return '';
   }
-
-  try {
-    return new URL(nextUrl).pathname;
-  } catch {
-    return '';
-  }
+  return pathname;
 }
 
 export const requireAuth = cache(async (): Promise<AuthUser> => {

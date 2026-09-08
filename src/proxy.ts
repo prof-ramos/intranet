@@ -28,7 +28,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/app', request.url));
   }
 
-  return NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.delete('x-asof-pathname');
+  requestHeaders.set('x-asof-pathname', request.nextUrl.pathname);
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {
