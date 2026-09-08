@@ -6,6 +6,16 @@ Atualizado em 2026-07-18 para refletir a higiene operacional do Plano 057, conte
 
 A intranet ASOF e uma aplicacao Next.js 16 App Router, server-side, com Drizzle ORM e PostgreSQL gerenciado (Neon). O repo atual e a fonte canonica de dominio, schema e UI.
 
+## Escopo e perfil de carga
+
+O produto é um CRM administrativo enxuto: dois usuários internos mantêm o cadastro dos Oficiais de Chancelaria e usam o módulo **Atividades** para controlar pendências de atualização. A carga esperada é de baixa concorrência, com operações de leitura e escrita no PostgreSQL; não há requisito atual de escala horizontal ou de processamento distribuído.
+
+Por isso, a operação deve priorizar integridade, autorização, auditoria, LGPD, backup e restauração. Uma implantação self-hosted pode começar com a aplicação, PostgreSQL e proxy reverso em containers separados, mantendo os backups fora da máquina. Uma VPS inicial de 2 vCPU e 4 GB de RAM é compatível com esse perfil, desde que o build seja feito fora da máquina e os limites de conexão sejam ajustados.
+
+### Eventos de tarefas e integrações
+
+Os eventos de domínio de atividades (como `activity.completed`) já são persistidos transacionalmente no outbox `domain_events` junto com a mutação, e um dispatcher os entrega a webhooks outbound com assinatura HMAC, tentativas e idempotência (ver CONTEXT.md, "Eventos e integrações"). A extensão futura é a entrega a novos consumidores — como canais de push — que não precisa introduzir filas ou serviços adicionais no fluxo síncrono atual.
+
 ## Modulos De Dominio
 
 - `src/app/app/associados` e `src/lib/associates`: Cadastro de Oficiais, lotacao/posto, situacao funcional, vínculo ASOF e contribuicao. A rota permanece `/app/associados` por compatibilidade historica.

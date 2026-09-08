@@ -2,6 +2,14 @@
 
 Este documento descreve os termos de domínio e regras de negócio da Intranet da ASOF (Associação Nacional dos Oficiais de Chancelaria).
 
+## Escopo operacional
+
+A intranet é um CRM administrativo de baixa concorrência, usado atualmente por dois usuários internos. O objetivo principal é manter o cadastro dos Oficiais de Chancelaria e acompanhar as pendências de atualização por meio de tarefas.
+
+Um caso típico é criar em **Atividades** a tarefa “atualizar o endereço de um associado”, executar a alteração no cadastro e concluí-la após a conferência. O PostgreSQL é a fonte de verdade do cadastro; a tarefa registra o trabalho, o responsável, o prazo e o histórico operacional.
+
+Os módulos jurídico, financeiro, secretaria, relatórios e integrações continuam documentados porque fazem parte da superfície existente, mas não definem a escala necessária para o uso central atual. Os eventos de domínio de atividades já são emitidos para o outbox de webhooks (ver seção "Eventos e integrações"); a evolução futura é a entrega a novos consumidores, como push, sem alterar o modelo básico de cadastro e tarefas.
+
 ## Glossário do Domínio
 
 ### Secretaria e Documentação
