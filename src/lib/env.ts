@@ -26,7 +26,7 @@ export const envSchema = z
 
     MAILJET_API_KEY: z.string().optional(),
     MAILJET_SECRET_KEY: z.string().optional(),
-    MAILJET_SENDER_EMAIL: optionalString.default('gabriel@asof.org.br'),
+    MAILJET_SENDER_EMAIL: optionalString,
     MAILJET_SENDER_NAME: optionalString.default('ASOF Intranet'),
     MAILJET_SENDER_VALIDATED: optionalBooleanString.default('false').transform((v) => v === 'true'),
     ASOF_INTRANET_URL: optionalUrl,

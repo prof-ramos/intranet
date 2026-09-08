@@ -20,6 +20,11 @@ export class EmailSendError extends Error {
 }
 
 export async function sendEmail(message: EmailMessage): Promise<void> {
+  const senderEmail = env.MAILJET_SENDER_EMAIL;
+  if (!senderEmail) {
+    throw new Error('MAILJET_SENDER_EMAIL is required to send email');
+  }
+
   const response = await fetch('https://api.mailjet.com/v3.1/send', {
     method: 'POST',
     headers: {
@@ -32,7 +37,7 @@ export async function sendEmail(message: EmailMessage): Promise<void> {
       Messages: [
         {
           From: {
-            Email: env.MAILJET_SENDER_EMAIL,
+            Email: senderEmail,
             Name: env.MAILJET_SENDER_NAME,
           },
           To: [{ Email: message.to, Name: message.toName }],

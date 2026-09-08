@@ -138,13 +138,35 @@ describe('envSchema', () => {
     }
   });
 
-  test('aplica remetente Mailjet validado por padrão', () => {
+  test('não aplica default para MAILJET_SENDER_EMAIL', () => {
     const result = envSchema.safeParse(validEnv);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.MAILJET_SENDER_EMAIL).toBe('gabriel@asof.org.br');
+      expect(result.data.MAILJET_SENDER_EMAIL).toBeUndefined();
       expect(result.data.MAILJET_SENDER_NAME).toBe('ASOF Intranet');
       expect(result.data.MAILJET_SENDER_VALIDATED).toBe(false);
+    }
+  });
+
+  test('trata MAILJET_SENDER_EMAIL vazio como ausente', () => {
+    const result = envSchema.safeParse({
+      ...validEnv,
+      MAILJET_SENDER_EMAIL: '',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.MAILJET_SENDER_EMAIL).toBeUndefined();
+    }
+  });
+
+  test('aceita MAILJET_SENDER_EMAIL quando informado', () => {
+    const result = envSchema.safeParse({
+      ...validEnv,
+      MAILJET_SENDER_EMAIL: 'no-reply@asof.org.br',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.MAILJET_SENDER_EMAIL).toBe('no-reply@asof.org.br');
     }
   });
 
