@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import {
   FileSpreadsheet,
   Kanban,
@@ -37,6 +38,27 @@ const quickActionClass = [
   'transition-colors hover:bg-white/10 hover:text-white',
   focusRingClass,
 ].join(' ');
+
+function NavSection({
+  id,
+  title,
+  first = false,
+  children,
+}: {
+  id: string;
+  title: string;
+  first?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div role="group" aria-labelledby={id}>
+      <p id={id} className={`${navSectionLabelClass} ${first ? 'pt-4' : 'pt-5'}`}>
+        {title}
+      </p>
+      {children}
+    </div>
+  );
+}
 
 export function Sidebar({ user }: SidebarProps) {
   return (
@@ -94,28 +116,19 @@ export function Sidebar({ user }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex flex-1 flex-col py-2" aria-label="Navegação principal">
-        <div role="group" aria-labelledby="nav-inicio">
-          <p id="nav-inicio" className={`${navSectionLabelClass} pt-4`}>
-            Início
-          </p>
+        <NavSection id="nav-inicio" title="Início" first>
           <NavLink href="/app" icon={<LayoutDashboard size={20} />}>
             Visão geral
           </NavLink>
-        </div>
+        </NavSection>
 
-        <div role="group" aria-labelledby="nav-trabalho">
-          <p id="nav-trabalho" className={`${navSectionLabelClass} pt-5`}>
-            Trabalho
-          </p>
+        <NavSection id="nav-trabalho" title="Trabalho">
           <NavLink href="/app/atividades" icon={<Kanban size={20} />}>
             Atividades
           </NavLink>
-        </div>
+        </NavSection>
 
-        <div role="group" aria-labelledby="nav-cadastro">
-          <p id="nav-cadastro" className={`${navSectionLabelClass} pt-5`}>
-            Cadastro
-          </p>
+        <NavSection id="nav-cadastro" title="Cadastro">
           <NavLink
             href="/app/associados"
             exclude={['/app/associados/relatorio']}
@@ -123,12 +136,9 @@ export function Sidebar({ user }: SidebarProps) {
           >
             Oficiais
           </NavLink>
-        </div>
+        </NavSection>
 
-        <div role="group" aria-labelledby="nav-gestao">
-          <p id="nav-gestao" className={`${navSectionLabelClass} pt-5`}>
-            Gestão
-          </p>
+        <NavSection id="nav-gestao" title="Gestão">
           <NavGroup
             basePath="/app/secretaria"
             activePaths={['/app/associados']}
@@ -178,12 +188,9 @@ export function Sidebar({ user }: SidebarProps) {
           <NavLink href="/app/mala-direta" icon={<Send size={20} />}>
             Mala direta
           </NavLink>
-        </div>
+        </NavSection>
 
-        <div role="group" aria-labelledby="nav-administracao">
-          <p id="nav-administracao" className={`${navSectionLabelClass} pt-5`}>
-            Administração
-          </p>
+        <NavSection id="nav-administracao" title="Administração">
           <NavLink href="/app/privacidade" icon={<Shield size={20} />}>
             Privacidade
           </NavLink>
@@ -208,7 +215,7 @@ export function Sidebar({ user }: SidebarProps) {
               ]}
             />
           )}
-        </div>
+        </NavSection>
       </nav>
 
       {/* Footer */}
