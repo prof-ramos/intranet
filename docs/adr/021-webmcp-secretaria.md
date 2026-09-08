@@ -22,9 +22,10 @@ Isto é complementar, não substituto, de um eventual **MCP operador** no servid
 
 - O agente futuro descobre tools só com a intranet aberta e o browser compatível (flag local ou Origin Trial).
 - Playwright E2E não cobre WebMCP nativo; a garantia é unitária com `document.modelContext` mockado + checklist manual no Chrome.
-- Ampliar o catálogo (atividades, jurídico) exige nova decisão de orçamento de tools e de role.
+- Atividades (2026-09-08): 5 tools no orçamento — `open-activities`, `open-activity`, `start-create-activity`, `complete-activity`, `assign-activity`. Jurídico continua deferido; nova decisão de orçamento/role. Sem UI de chat.
 
 ## Follow-ups
 
 - Token de Origin Trial de produção quando o domínio `intranet.asof.com.br` for inscrito no trial do Chrome/Edge.
 - Agente da Secretaria: projeto separado; este ADR não autoriza UI de chat nem MCP servidor.
+- Atividades (2026-09-08): o catálogo expõe `open-activities` e `open-activity` (gaveta `/app/atividades?open=:id` — não há rota `/app/atividades/[id]`), `start-create-activity` (navega para `/app/atividades/nova`; o form completo não é POST pelo tool), `complete-activity` e `assign-activity` (ambos chamam `updateActivityAction` existente, com `status: 'concluido'` e `assigneeId`). Não há `list-activities`: não existe server action de leitura limitada, e o tool não dispara uma segunda query do quadro. Jurídico continua fora do orçamento.

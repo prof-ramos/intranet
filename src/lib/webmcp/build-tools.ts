@@ -22,6 +22,7 @@ import {
 } from '@/app/app/secretaria/oficios/actions';
 import { countMalaDiretaAudienceAction } from '@/app/app/secretaria/mala-direta/actions';
 import { generateEmailAction } from '@/app/app/secretaria/emails/gerar/actions';
+import { updateActivityAction } from '@/app/app/atividades/actions';
 import {
   serializeOfficialLetterDetail,
   serializeOfficialLetterListItem,
@@ -468,6 +469,88 @@ export function buildSecretariaTools(router: RouterLike, context: ToolContext = 
       annotations: { readOnlyHint: true },
       execute: async () =>
         navigate('/app/secretaria/emails/gerar', 'Abrindo o gerador de e-mails.'),
+    },
+    {
+      name: 'open-activities',
+      description: 'Abre o quadro de atividades administrativas na UI.',
+      inputSchema: { type: 'object', properties: {} },
+      annotations: { readOnlyHint: true },
+      execute: async () => navigate('/app/atividades', 'Abrindo o quadro de atividades.'),
+    },
+    {
+      name: 'open-activity',
+      description:
+        'Abre uma atividade no quadro (gaveta) para revisão humana. Não existe rota /app/atividades/[id].',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', description: 'ID numérico da atividade.' },
+        },
+        required: ['id'],
+      },
+      annotations: { readOnlyHint: true },
+      execute: async (input) => {
+        const id = requiredPositiveInt(input.id, 'ID da atividade');
+        return navigate(`/app/atividades?open=${id}`, `Abrindo a atividade ${id} no quadro.`);
+      },
+    },
+    {
+      name: 'start-create-activity',
+      description:
+        'Abre o formulário humano de nova atividade. Não grava dados — a secretaria revisa e envia o formulário.',
+      inputSchema: { type: 'object', properties: {} },
+      execute: async () =>
+        navigate('/app/atividades/nova', 'Abrindo o formulário de nova atividade.'),
+    },
+    {
+      name: 'complete-activity',
+      description:
+        'Conclui uma atividade existente (status concluído), pela mesma action da UI do quadro.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', description: 'ID numérico da atividade.' },
+        },
+        required: ['id'],
+      },
+      execute: async (input) => {
+        const result = await runTool(() =>
+          updateActivityAction({
+            id: requiredPositiveInt(input.id, 'ID da atividade'),
+            status: 'concluido',
+          }),
+        );
+        router.refresh();
+        return result;
+      },
+    },
+    {
+      name: 'assign-activity',
+      description:
+        'Atribui uma atividade a um responsável, pela mesma action da UI do quadro.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', description: 'ID numérico da atividade.' },
+          assigneeId: { type: 'integer', description: 'ID do responsável (admin da intranet).' },
+          reassignmentMessage: {
+            type: 'string',
+            description: 'Mensagem opcional de reatribuição.',
+          },
+        },
+        required: ['id', 'assigneeId'],
+      },
+      execute: async (input) => {
+        const result = await runTool(() =>
+          updateActivityAction({
+            id: requiredPositiveInt(input.id, 'ID da atividade'),
+            assigneeId: requiredPositiveInt(input.assigneeId, 'ID do responsável'),
+            reassignmentMessage: optionalString(input.reassignmentMessage),
+          }),
+        );
+        router.refresh();
+        return result;
+      },
     },
     {
       name: 'add-dependent',

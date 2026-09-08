@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { isOfficialProfilePath, listToolNamesFor, officialIdFromProfilePath } from './catalog';
+import {
+  isOfficialProfilePath,
+  listToolNamesFor,
+  officialIdFromProfilePath,
+  WEBMCP_CATALOG,
+} from './catalog';
+
+const ACTIVITY_TOOLS = [
+  'open-activities',
+  'open-activity',
+  'start-create-activity',
+  'complete-activity',
+  'assign-activity',
+] as const;
 
 describe('isOfficialProfilePath', () => {
   it('matches the official profile route', () => {
@@ -54,5 +67,23 @@ describe('listToolNamesFor', () => {
         'count-mailing-audience',
       ]),
     );
+  });
+
+  it('exposes activity tools to all staff roles app-wide and omits list-activities', () => {
+    expect(WEBMCP_CATALOG.filter((entry) => entry.name.includes('activit'))).toHaveLength(5);
+
+    for (const role of ['admin', 'diretoria', 'secretaria'] as const) {
+      const names = listToolNamesFor(role, '/app/atividades');
+      expect(names).toEqual(expect.arrayContaining([...ACTIVITY_TOOLS]));
+      expect(names).not.toContain('list-activities');
+    }
+  });
+
+  it('keeps activity writes aligned with updateActivityAction roles, not a narrower subset', () => {
+    const diretoria = listToolNamesFor('diretoria', '/app');
+    expect(diretoria).toContain('complete-activity');
+    expect(diretoria).toContain('assign-activity');
+    expect(diretoria).toContain('start-create-activity');
+    expect(diretoria).not.toContain('generate-institutional-email');
   });
 });

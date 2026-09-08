@@ -33,6 +33,24 @@ export const WEBMCP_CATALOG: readonly WebMcpCatalogEntry[] = [
   { name: 'generate-institutional-email', roles: ['admin', 'secretaria'], scope: 'app' },
   { name: 'open-mala-direta', roles: ['admin', 'diretoria', 'secretaria'], scope: 'app' },
   { name: 'open-email-generator', roles: ['admin', 'secretaria'], scope: 'app' },
+  // Atividades: no list-activities — board loader is page-only; do not add a second query.
+  { name: 'open-activities', roles: 'any', scope: 'app' },
+  { name: 'open-activity', roles: 'any', scope: 'app' },
+  {
+    name: 'start-create-activity',
+    roles: ['admin', 'diretoria', 'secretaria'],
+    scope: 'app',
+  },
+  {
+    name: 'complete-activity',
+    roles: ['admin', 'diretoria', 'secretaria'],
+    scope: 'app',
+  },
+  {
+    name: 'assign-activity',
+    roles: ['admin', 'diretoria', 'secretaria'],
+    scope: 'app',
+  },
   { name: 'add-dependent', roles: ['admin', 'diretoria', 'secretaria'], scope: 'official-profile' },
   {
     name: 'edit-dependent',
