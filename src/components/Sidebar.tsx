@@ -14,6 +14,7 @@ import {
   Settings,
   Shield,
   ShieldCheck,
+  Tag,
   Users,
   Webhook,
 } from 'lucide-react';
@@ -141,7 +142,7 @@ export function Sidebar({ user }: SidebarProps) {
         <NavSection id="nav-gestao" title="Gestão">
           <NavGroup
             basePath="/app/secretaria"
-            activePaths={['/app/associados']}
+            activePaths={['/app/associados', '/app/etiquetas']}
             icon={<FileSpreadsheet size={20} />}
             label="Secretaria"
             items={[
@@ -154,6 +155,11 @@ export function Sidebar({ user }: SidebarProps) {
                 href: '/app/secretaria/oficios',
                 label: 'Ofícios',
                 icon: <FileSpreadsheet size={18} />,
+              },
+              {
+                href: '/app/etiquetas',
+                label: 'Etiquetas',
+                icon: <Tag size={18} />,
               },
               {
                 href: '/app/secretaria/mala-direta',

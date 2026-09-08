@@ -63,8 +63,21 @@ describe('Sidebar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Secretaria' }));
 
     expect(screen.getByRole('link', { name: 'Pesquisa de oficiais' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Ofícios' })).toBeDefined();
+    expect(screen.getByRole('link', { name: 'Etiquetas' })).toBeDefined();
     expect(screen.getByRole('link', { name: 'Contatos Gmail' })).toBeDefined();
     expect(screen.getByRole('link', { name: 'Relatórios' })).toBeDefined();
+    expect(screen.queryByRole('link', { name: 'Triagem de E-mails' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Financeiro' })).toBeNull();
+  });
+
+  it('marks Etiquetas as current on the labels route', () => {
+    usePathnameMock.mockReturnValue('/app/etiquetas');
+    render(<Sidebar user={{ name: 'Ana Silva', role: 'admin' }} />);
+
+    expect(screen.getByRole('link', { name: 'Etiquetas' }).getAttribute('aria-current')).toBe(
+      'page',
+    );
   });
 
   it('keeps restricted entries hidden from secretaria', () => {
