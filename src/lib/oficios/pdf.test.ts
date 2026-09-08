@@ -3,10 +3,35 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import {
   htmlToPlainText,
   generateOfficialLetterPdf,
+  oficioPublicAssetBaseUrl,
   resetOficioPdfAssetCacheForTests,
 } from './pdf';
 import { type OfficialLetter } from '@/lib/db/schema/oficios';
 import { PDFDocument } from 'pdf-lib';
+
+const mockEnv = vi.hoisted(() => ({
+  ASOF_INTRANET_URL: undefined as string | undefined,
+}));
+
+vi.mock('@/lib/env', () => ({
+  env: mockEnv,
+}));
+
+describe('oficioPublicAssetBaseUrl', () => {
+  afterEach(() => {
+    mockEnv.ASOF_INTRANET_URL = undefined;
+  });
+
+  it('returns ASOF_INTRANET_URL when set', () => {
+    mockEnv.ASOF_INTRANET_URL = 'https://intranet.asof.com.br';
+    expect(oficioPublicAssetBaseUrl()).toBe('https://intranet.asof.com.br');
+  });
+
+  it('returns localhost when ASOF_INTRANET_URL is unset', () => {
+    mockEnv.ASOF_INTRANET_URL = undefined;
+    expect(oficioPublicAssetBaseUrl()).toBe('http://localhost:3000');
+  });
+});
 
 describe('htmlToPlainText', () => {
   it('converts rich text html to readable text for PDF rendering', () => {
@@ -64,11 +89,12 @@ describe('generateOfficialLetterPdf', () => {
   };
 
   beforeEach(() => {
-    vi.stubEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000');
+    resetOficioPdfAssetCacheForTests();
+    mockEnv.ASOF_INTRANET_URL = undefined;
   });
 
   afterEach(() => {
-    vi.unstubAllEnvs();
+    mockEnv.ASOF_INTRANET_URL = undefined;
     vi.restoreAllMocks();
   });
 
@@ -153,8 +179,26 @@ describe('generateOfficialLetterPdf', () => {
     expect(pdfBytes.length).toBeGreaterThan(10_000);
   });
 
+  it('fetches fonts and logo from ASOF_INTRANET_URL when local files are missing', async () => {
+    mockEnv.ASOF_INTRANET_URL = 'https://intranet.asof.com.br';
+    vi.spyOn(fs, 'readFileSync').mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 404 }));
+
+    await generateOfficialLetterPdf(mockOficio);
+
+    const urls = fetchSpy.mock.calls.map(([input]) => String(input));
+    expect(urls).toEqual(
+      expect.arrayContaining([
+        'https://intranet.asof.com.br/fonts/carlito/Carlito-Regular.ttf',
+        'https://intranet.asof.com.br/fonts/carlito/Carlito-Bold.ttf',
+        'https://intranet.asof.com.br/logo.png',
+      ]),
+    );
+  });
+
   it('reuses cached Carlito font bytes across generations', async () => {
-    resetOficioPdfAssetCacheForTests();
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network error'));
     const readSpy = vi.spyOn(fs, 'readFileSync');
 
