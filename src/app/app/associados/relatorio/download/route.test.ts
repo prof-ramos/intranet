@@ -32,6 +32,22 @@ describe('report download route', () => {
     generateReportMock.mockResolvedValue({ csv: '"Nome"\r\n"Maria"', rowCount: 1 });
   });
 
+  it('returns 400 and does not generate a report when no fields are selected', async () => {
+    requireReportAccessMock.mockResolvedValue({ userId: 1 });
+    parseReportExportParamsMock.mockReturnValue({ filters: {}, selectedKeys: [] });
+    generateReportMock.mockImplementation(() => {
+      throw new Error('generateReport must not be called for empty selectedKeys');
+    });
+
+    const response = await GET(
+      new Request('https://asof.local/app/associados/relatorio/download') as never,
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.text()).toBe('Selecione ao menos um campo para exportar.');
+    expect(generateReportMock).not.toHaveBeenCalled();
+  });
+
   it('returns CSV response on success', async () => {
     const response = await GET(
       new Request('https://asof.local/app/associados/relatorio/download') as never,

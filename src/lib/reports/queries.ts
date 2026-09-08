@@ -186,7 +186,7 @@ const PII_DECRYPT_FIELDS = [
 type PiiDecryptField = (typeof PII_DECRYPT_FIELDS)[number];
 
 function shouldDecryptPii(field: PiiDecryptField, selectedKeys?: string[]): boolean {
-  if (!selectedKeys || selectedKeys.length === 0) return true;
+  if (!selectedKeys || selectedKeys.length === 0) return false;
   return selectedKeys.includes(field);
 }
 
