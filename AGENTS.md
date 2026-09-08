@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-26 | Updated: 2026-09-04 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-09-06 -->
 <!-- Parent: none (root) -->
 
 # ASOF Intranet — AI Agent Directory
@@ -158,6 +158,57 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 - E2E: Playwright, `http://127.0.0.1:3001` (não 3000), database `asof_test` criado por `e2e/global-setup.ts`.
 - `npm run test:db` — schema contract contra PostgreSQL ao vivo (valida tables, columns, enums, indexes, extensions e alinhamento de migrations). **Importante:** ao mudar qualquer schema Drizzle ou migração SQL, atualizar também `src/lib/db/schema.integration.test.ts` (expectedColumns, expectedEnums, expectedIndexes). Enums do banco usam valores em português (ex: `activity_priority: ['baixa', 'normal', 'alta', 'urgente']`), nunca assumir valores em inglês.
 - `npm run test:e2e` nunca contra `http://localhost:3000`; apontar para `3001` com `NEXT_E2E=1` e `.next-e2e` como `distDir`. Gotchas não-triviais (JIT warmup, órfãos EADDRINUSE, filtros de vínculo ASOF) estão em `e2e/AGENTS.md` — leia antes de tocar em specs.
+
+## Decisão UX / DX / AX
+
+Toda mudança deve passar este checklist. Se um item falhar, não expandir o escopo — reduzir a solução ou registrar o trade-off no PR.
+
+### 1. Decidir
+
+- A mudança melhora UX, DX ou AX?
+- Ela maximiza o ganho conjunto entre as três dimensões?
+- Existe uma alternativa mais simples com benefício equivalente?
+- O impacto em compatibilidade, manutenção e reversibilidade foi avaliado?
+- O trade-off foi identificado e, se relevante, registrado?
+
+### 2. Preservar
+
+- O comportamento existente continua funcionando?
+- APIs, rotas, contratos, formatos, configurações e integrações foram preservados?
+- Persistência, automações e fluxos de usuários, desenvolvedores e agentes continuam compatíveis?
+- Nenhuma remoção, renomeação ou alteração de comportamento foi feita sem necessidade comprovada?
+
+### 3. Implementar
+
+- A solução é incremental, simples e explícita?
+- Ela segue padrões já existentes no projeto?
+- Evita abstrações prematuras, dependências desnecessárias e duplicação?
+- Mantém baixo acoplamento e interfaces previsíveis?
+- Inclui documentação próxima do código e contexto suficiente para humanos e agentes?
+
+### 4. Validar
+
+- Foram executados testes ou outras validações automatizadas?
+- Os testes protegem o comportamento existente?
+- Não há regressões conhecidas?
+- A mudança melhora pelo menos uma dimensão sem prejudicar materialmente as outras?
+- O resultado é tão ou mais compreensível, sustentável e operável do que antes?
+- Há evidência objetiva por meio de testes, inspeção ou execução?
+
+### Princípio final
+
+A mudança evolui o sistema com segurança e incrementalidade, melhorando UX, DX e AX sem sacrificar estabilidade, simplicidade ou compatibilidade.
+
+## Cursor Cloud specific instructions
+
+O ambiente Cloud Agent usa Postgres local + seed sintético (`bash .cursor/install.sh` / `bash .cursor/start.sh`). Não puxar Neon/Vercel Storage para o agente.
+
+- App de verificação manual: `npm run dev` em `http://127.0.0.1:3000` com `SKIP_AUTH=true` (`.env.local`). Playwright/E2E continua em `127.0.0.1:3001`.
+- Identidade de dev: `DEV_USER_ID=1`, `DEV_USER_ROLE=admin`. Se `requireAuth` reclamar de e-mail/role, rode `npm run db:seed:dev`.
+- `ENCRYPTION_MASTER_KEY` precisa existir no `.env.local` do Cloud Agent — a busca por CPF/SIAPE usa blind index. O `install.sh` define uma chave local se estiver ausente.
+- Cadastro de oficiais (`/app/associados`): a busca humana e a tool WebMCP `search-officials` compartilham `searchBy=name|cpf|siape`. Não apague `searchBy` da query string. Nome é parcial (≥ 2 caracteres); CPF/SIAPE são match exato por hash (CPF com 11 dígitos; SIAPE com ≥ 5 dígitos).
+- Trade-off registrado: deep links com CPF/SIAPE incompletos (`?q=123&searchBy=cpf`) deixam de disparar lookup de hash (que sempre voltava 0) e mostram o texto de ajuda até o identificador estar completo. Seed local antigo sem `cpf_hash`/`siape_hash` precisa de `npm run db:seed:dev`.
+- Ao mudar UI, verifique o fluxo no browser (não só screenshot): nome, troca de modo, CPF/SIAPE e `returnTo`. Preferir `form [role="alert"]` e controles com nome acessível.
 
 ### Gotchas
 

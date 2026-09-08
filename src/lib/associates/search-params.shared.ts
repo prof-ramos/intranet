@@ -6,6 +6,14 @@
 export type AssociateSearchMode = 'name' | 'cpf' | 'siape';
 
 export const MIN_SEARCH_CHARS = 2;
+export const CPF_SEARCH_DIGITS = 11;
+export const MIN_SIAPE_SEARCH_DIGITS = 5;
+
+export const ASSOCIATE_SEARCH_MODES: readonly { value: AssociateSearchMode; label: string }[] = [
+  { value: 'name', label: 'Nome' },
+  { value: 'cpf', label: 'CPF' },
+  { value: 'siape', label: 'SIAPE' },
+];
 
 export interface AssociatesSearchParams {
   q: string;
@@ -55,4 +63,32 @@ export function normalizeAssociateNameForSearch(raw: string): string {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
+}
+
+export function isAssociateSearchReady(query: string, searchBy: AssociateSearchMode): boolean {
+  const trimmed = query.trim();
+  if (searchBy === 'name') {
+    return trimmed.length >= MIN_SEARCH_CHARS;
+  }
+
+  const digits =
+    searchBy === 'cpf' ? normalizeCpfForSearch(trimmed) : normalizeSiapeForSearch(trimmed);
+
+  if (searchBy === 'cpf') {
+    return digits.length === CPF_SEARCH_DIGITS;
+  }
+
+  return digits.length >= MIN_SIAPE_SEARCH_DIGITS;
+}
+
+export function associateSearchPlaceholder(searchBy: AssociateSearchMode): string {
+  if (searchBy === 'cpf') return '000.000.000-00';
+  if (searchBy === 'siape') return 'Matrícula SIAPE';
+  return 'Digite o nome ou parte do nome…';
+}
+
+export function associateSearchHelp(searchBy: AssociateSearchMode): string {
+  if (searchBy === 'cpf') return 'Informe o CPF completo. Pontuação é ignorada.';
+  if (searchBy === 'siape') return 'Informe a matrícula SIAPE completa. Pontuação é ignorada.';
+  return `Digite pelo menos ${MIN_SEARCH_CHARS} caracteres.`;
 }

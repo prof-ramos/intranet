@@ -4,6 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
+bash "$SCRIPT_DIR/ensure-dev-env.sh"
+
 # Fresh Cloud Agent images have no PostgreSQL. Provision before starting it.
 bash "$SCRIPT_DIR/provision-postgres.sh"
 
@@ -37,6 +39,10 @@ if [[ -f package.json && -d node_modules ]]; then
     npm run db:seed:dev
   else
     echo "[cloud-agent] Database already seeded; skipping db:seed:dev."
+    missing_hashes="$(psql -h localhost -d asof_intranet -tAc "SELECT COUNT(*) FROM associates WHERE cpf IS NOT NULL AND cpf <> '' AND cpf_hash IS NULL" 2>/dev/null || echo 0)"
+    if [[ "${missing_hashes:-0}" != "0" ]]; then
+      echo "[cloud-agent] WARNING: ${missing_hashes} oficiais com CPF sem hash. Busca por CPF/SIAPE exige: npm run db:seed:dev" >&2
+    fi
   fi
 fi
 

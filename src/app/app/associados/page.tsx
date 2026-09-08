@@ -1,9 +1,10 @@
 import { requireAuth } from '@/lib/auth/require-auth';
 import { getAssociatesListPage } from '@/lib/associates/service';
 import {
+  associateSearchHelp,
   buildAssociatesSearchParams,
+  isAssociateSearchReady,
   parseAssociatesSearchParams,
-  MIN_SEARCH_CHARS,
 } from '@/lib/associates/search-params';
 import { AssociatesTable } from './components/AssociatesTable';
 import { OfficialsSearchBox } from './components/OfficialsSearchBox';
@@ -32,7 +33,7 @@ export default async function AssociadosPage({
   const parsed = parseAssociatesSearchParams(rawSearchParams);
   const { q, searchBy, contributionStatus, functionalStatus, associationStatus, location } = parsed;
   const canCreateOfficial = user.role === 'admin' || user.role === 'secretaria';
-  const hasSearch = q.length >= MIN_SEARCH_CHARS;
+  const hasSearch = isAssociateSearchReady(q, searchBy);
   const filters = { contributionStatus, functionalStatus, associationStatus, location };
   const hasFilters = Object.values(filters).some(Boolean);
   const hasListRequest = hasSearch || hasFilters;
@@ -57,7 +58,7 @@ export default async function AssociadosPage({
       <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-8 sm:px-8 lg:px-10">
         <PageHeader
           title="Oficiais"
-          description="Localize um Oficial de Chancelaria pelo nome."
+          description="Localize um Oficial de Chancelaria por nome, CPF ou SIAPE."
           actions={
             canCreateOfficial ? (
               <Link
@@ -72,20 +73,24 @@ export default async function AssociadosPage({
         />
 
         <section className="mb-6">
-          <OfficialsSearchBox key={q} initialQuery={q} />
+          <OfficialsSearchBox
+            key={`${searchBy}:${q}`}
+            initialQuery={q}
+            initialSearchBy={searchBy}
+          />
         </section>
 
         <section aria-live="polite">
           {!hasListRequest ? (
             <div className="rounded-[8px] border border-[rgba(4,9,32,0.08)] bg-white p-8 text-center">
               <p className="text-sm" style={{ color: textMuted }}>
-                Busque pelo nome ou parte do nome de um oficial.
+                Busque pelo nome, CPF ou SIAPE de um oficial.
               </p>
             </div>
           ) : q && !hasSearch ? (
             <div className="rounded-[8px] border border-[rgba(4,9,32,0.08)] bg-white p-8 text-center">
               <p className="text-sm" style={{ color: textMuted }}>
-                Digite pelo menos {MIN_SEARCH_CHARS} caracteres para buscar.
+                {associateSearchHelp(searchBy)}
               </p>
             </div>
           ) : total === 0 ? (
