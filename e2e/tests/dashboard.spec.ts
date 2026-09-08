@@ -4,7 +4,8 @@ import type { Page } from '@playwright/test';
 async function expectNavigationSections(page: Page) {
   const navigation = page.getByRole('navigation', { name: 'Navegação principal' });
   await expect(navigation.locator('[role="group"] > p')).toHaveText([
-    'Operação',
+    'Início',
+    'Trabalho',
     'Cadastro',
     'Gestão',
     'Administração',

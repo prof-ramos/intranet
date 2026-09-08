@@ -94,13 +94,19 @@ export function Sidebar({ user }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex flex-1 flex-col py-2" aria-label="Navegação principal">
-        <div role="group" aria-labelledby="nav-operacao">
-          <p id="nav-operacao" className={`${navSectionLabelClass} pt-4`}>
-            Operação
+        <div role="group" aria-labelledby="nav-inicio">
+          <p id="nav-inicio" className={`${navSectionLabelClass} pt-4`}>
+            Início
           </p>
           <NavLink href="/app" icon={<LayoutDashboard size={20} />}>
-            Dashboard
+            Visão geral
           </NavLink>
+        </div>
+
+        <div role="group" aria-labelledby="nav-trabalho">
+          <p id="nav-trabalho" className={`${navSectionLabelClass} pt-5`}>
+            Trabalho
+          </p>
           <NavLink href="/app/atividades" icon={<Kanban size={20} />}>
             Atividades
           </NavLink>

@@ -10,7 +10,7 @@ O dashboard inicial deve funcionar como uma área de despacho operacional para a
 - O bloco de pendências vencidas exibe título, prioridade, responsável e prazo quando disponíveis.
 - O link geral do bloco abre `/app/atividades?dueLate=1`; cada pendência abre a mesma fila com `open=<id>` para permitir a retomada do item.
 - Não há cartão de placeholder para uma comunicação ainda não implementada.
-- A navegação lateral é agrupada em `Operação`, `Cadastro` e `Gestão`, preservando a visibilidade condicionada ao papel do usuário.
+- A navegação lateral é agrupada em `Início`, `Trabalho`, `Cadastro`, `Gestão` e `Administração`, preservando a visibilidade condicionada ao papel do usuário.
 
 ## Limites de acesso
 
@@ -22,7 +22,7 @@ O agrupamento visual não altera autorização. As rotas continuam protegidas pe
 
 ## Critérios de QA
 
-- Para `admin`, `diretoria` e `secretaria`, o dashboard carrega sem erro e a ordem dos grupos laterais permanece `Operação`, `Cadastro`, `Gestão`.
+- Para `admin`, `diretoria` e `secretaria`, o dashboard carrega sem erro e a ordem dos grupos laterais permanece `Início`, `Trabalho`, `Cadastro`, `Gestão` (e `Administração` quando aplicável ao papel).
 - Cada indicador tem nome acessível e destino navegável.
 - O bloco de pendências vencidas mantém alvo de toque confortável no mobile e densidade reduzida no desktop.
 - O conteúdo de responsável só é renderizado dentro da área autenticada do dashboard.

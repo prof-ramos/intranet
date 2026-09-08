@@ -15,7 +15,7 @@ test.describe('Login', () => {
     await page.fill('input[name="password"]', E2E_ADMIN_PASSWORD);
     await page.click('button[type="submit"]');
     await page.waitForURL('/app');
-    await expect(page.locator('text=Dashboard')).toBeVisible();
+    await expect(page.locator('text=Visão geral')).toBeVisible();
   });
 
   test('shows error on invalid credentials', async ({ page }) => {
