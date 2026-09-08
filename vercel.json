@@ -23,10 +23,6 @@
       "schedule": "0 3 * * *"
     },
     {
-      "path": "/api/v1/cron/gmail-watch",
-      "schedule": "0 2 * * 0"
-    },
-    {
       "path": "/api/v1/cron/cleanup-nonces",
       "schedule": "0 1 * * *"
     },
