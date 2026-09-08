@@ -55,6 +55,11 @@ export const legalConsultations = pgTable(
     index('idx_legal_consultations_created_at').on(table.createdAt),
     index('idx_legal_consultations_lawyer').on(table.lawyerId),
     index('idx_legal_consultations_thread').on(table.threadId),
+    index('idx_legal_consultations_title_trgm').using('gin', table.title.op('gin_trgm_ops')),
+    index('idx_legal_consultations_internal_number_trgm').using(
+      'gin',
+      table.internalNumber.op('gin_trgm_ops'),
+    ),
   ],
 );
 

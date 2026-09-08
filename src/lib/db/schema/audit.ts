@@ -37,6 +37,8 @@ export const auditLogs = pgTable(
     index('idx_audit_entity').on(table.entityType, table.entityId),
     index('idx_audit_performed_by').on(table.performedBy),
     index('idx_audit_created_at').on(table.createdAt),
+    index('idx_audit_entity_created').on(table.entityType, table.createdAt.desc(), table.id.desc()),
+    index('idx_audit_action_trgm').using('gin', table.action.op('gin_trgm_ops')),
   ],
 );
 
