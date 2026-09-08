@@ -31,7 +31,7 @@ export interface MailingAudienceFilters {
 export interface MailingAudienceMember {
   associateId: number;
   name: string;
-  email: string | null;
+  emailCiphertext: string | null;
 }
 
 export interface MailingCampaignHistoryRow {
@@ -83,7 +83,6 @@ export interface MailingRecipientRow {
   id: number;
   associateId: number | null;
   name: string;
-  email: string | null;
   status: MailingRecipientStatus;
   attempts: number;
   lastError: string | null;

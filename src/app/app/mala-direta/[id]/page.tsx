@@ -120,7 +120,6 @@ export default async function CampanhaDetailPage({ params }: { params: Promise<{
             <thead>
               <tr className="border-t text-xs tracking-wide text-[#5b6b80] uppercase">
                 <th className="px-5 py-3 font-semibold">Nome</th>
-                <th className="px-5 py-3 font-semibold">E-mail</th>
                 <th className="px-5 py-3 font-semibold">Status</th>
                 <th className="px-5 py-3 text-right font-semibold">Tentativas</th>
                 <th className="px-5 py-3 font-semibold">Último erro</th>
@@ -129,7 +128,7 @@ export default async function CampanhaDetailPage({ params }: { params: Promise<{
             <tbody>
               {recipients.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-6 text-center text-[#5b6b80]">
+                  <td colSpan={4} className="px-5 py-6 text-center text-[#5b6b80]">
                     Nenhum destinatário nesta campanha.
                   </td>
                 </tr>
@@ -137,7 +136,6 @@ export default async function CampanhaDetailPage({ params }: { params: Promise<{
                 recipients.map((recipient) => (
                   <tr key={recipient.id} className="border-t border-[rgba(4,9,32,0.06)]">
                     <td className="px-5 py-3 font-medium text-[#040920]">{recipient.name}</td>
-                    <td className="px-5 py-3 text-[#5b6b80]">{recipient.email ?? '—'}</td>
                     <td className="px-5 py-3">
                       {MAILING_RECIPIENT_STATUS_LABEL[recipient.status] ?? recipient.status}
                     </td>

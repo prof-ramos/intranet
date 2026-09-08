@@ -7,7 +7,7 @@ import {
   mailingCampaigns,
   mailingRecipients,
 } from '@/lib/db/schema';
-import { decryptPiiField } from '@/lib/crypto/pii';
+import { decryptPiiField, encryptPii } from '@/lib/crypto/pii';
 import { assignmentLocationTypeSql } from '@/lib/associates/location-country';
 import type {
   MailingAudienceFilters,
@@ -95,7 +95,10 @@ export async function fetchAudience(
   return rows.map((row) => ({
     associateId: row.id,
     name: row.fullName,
-    email: decryptPiiField(row.primaryEmailCiphertext, row.primaryEmail),
+    emailCiphertext:
+      channel === 'email'
+        ? (row.primaryEmailCiphertext ?? (row.primaryEmail ? encryptPii(row.primaryEmail) : null))
+        : null,
   }));
 }
 
@@ -251,7 +254,6 @@ export async function listCampaignRecipients(campaignId: number): Promise<Mailin
       id: mailingRecipients.id,
       associateId: mailingRecipients.associateId,
       name: mailingRecipients.recipientName,
-      emailCiphertext: mailingRecipients.emailCiphertext,
       status: mailingRecipients.status,
       attempts: mailingRecipients.attempts,
       lastError: mailingRecipients.lastError,
@@ -265,7 +267,6 @@ export async function listCampaignRecipients(campaignId: number): Promise<Mailin
     id: row.id,
     associateId: row.associateId,
     name: row.name,
-    email: row.emailCiphertext ? decryptPiiField(row.emailCiphertext, null) : null,
     status: row.status,
     attempts: row.attempts,
     lastError: row.lastError,
