@@ -178,7 +178,17 @@ export const envSchema = z
   .refine(
     (data) => {
       if (!data.ASSINAFY_API_KEY) return true;
-      if (!data.ASSINAFY_BASE_URL) return false;
+      return !!data.ASSINAFY_BASE_URL;
+    },
+    {
+      message: 'ASSINAFY_BASE_URL is required when ASSINAFY_API_KEY is set.',
+      path: ['ASSINAFY_BASE_URL'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.VERCEL_ENV !== 'production') return true;
+      if (!data.ASSINAFY_BASE_URL) return true;
       try {
         return new URL(data.ASSINAFY_BASE_URL).protocol === 'https:';
       } catch {
@@ -186,8 +196,7 @@ export const envSchema = z
       }
     },
     {
-      message:
-        'ASSINAFY_BASE_URL is required and must be a valid https URL when ASSINAFY_API_KEY is set.',
+      message: 'ASSINAFY_BASE_URL must be a valid https URL in production.',
       path: ['ASSINAFY_BASE_URL'],
     },
   )
