@@ -24,7 +24,8 @@ describe('Sidebar', () => {
   it('orders the primary sections and hides unsupported operator entries', () => {
     render(<Sidebar user={{ name: 'Ana Silva', role: 'admin' }} />);
 
-    expect(screen.getByText('Operação')).toBeDefined();
+    expect(screen.getByText('Início')).toBeDefined();
+    expect(screen.getByText('Trabalho')).toBeDefined();
     expect(screen.getByText('Cadastro')).toBeDefined();
     expect(screen.getByText('Gestão')).toBeDefined();
     expect(screen.getByText('Administração')).toBeDefined();
