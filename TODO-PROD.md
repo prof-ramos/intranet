@@ -17,6 +17,9 @@ de staging/dev/preview.
 
 ## Decisao Atual
 
+- **Escopo operacional:** CRM cadastral de baixa concorrência para dois usuários internos. O fluxo principal é atualizar registros de oficiais e acompanhar pendências em **Atividades**; os requisitos prioritários são integridade, permissões, auditoria, LGPD e recuperação de dados.
+- **Integrações futuras:** uma mudança de status de tarefa poderá emitir um evento para webhook ou push. Implementar isso somente quando houver consumidor definido, preservando o fluxo síncrono atual e exigindo idempotência, tentativas e observabilidade.
+
 - Banco de producao: PostgreSQL gerenciado novo, inicialmente limpo.
 - Fonte canonica de schema: `src/lib/db/schema` + historico Drizzle em `drizzle/postgres/` iniciado pelo baseline `0000_green_glorian.sql`.
 - Fonte canonica de ambientes/dados/migrations: `docs/environments.md`.

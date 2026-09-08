@@ -7,6 +7,8 @@
 
 Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de Chancelaria do Ministério das Relações Exteriores do Brasil. Gerencia o cadastro de Oficiais de Chancelaria, associados ASOF, atividades administrativas e comunicações internas da diretoria.
 
+> **Escopo operacional atual:** a intranet funciona como um CRM administrativo enxuto, usado por dois usuários internos para manter o cadastro dos Oficiais de Chancelaria. O fluxo central é registrar ou atualizar dados e criar tarefas em **Atividades** para acompanhar pendências, como atualizar o endereço de um associado. Os demais módulos permanecem como capacidades complementares do sistema.
+
 **Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · DaisyUI 5 · Drizzle ORM · PostgreSQL gerenciado · auth server-side própria
 
 ---
@@ -23,15 +25,21 @@ Sistema interno da [ASOF](https://asof.org.br) — Associação dos Oficiais de 
 
 ## Módulos principais
 
-| Módulo               | Rota principal              | Responsabilidade                                                                     |
-| -------------------- | --------------------------- | ------------------------------------------------------------------------------------ |
-| Dashboard            | `/app`                      | Visão operacional de associados ASOF, atividades e jurídico.                         |
-| Cadastro de Oficiais | `/app/associados`           | Cadastro, perfil, lotação/posto, situação funcional, vínculo ASOF e contribuição.    |
-| Atividades           | `/app/atividades`           | Kanban administrativo com responsáveis, prioridades, prazos e vínculos com oficiais. |
-| Jurídico             | `/app/juridico`             | Consultas jurídicas, notas, SLA e histórico de atendimento.                          |
-| Secretaria / Ofícios | `/app/secretaria/oficios`   | Geração, edição, cancelamento e download de ofícios.                                 |
-| Relatórios           | `/app/associados/relatorio` | Exportação auditada de dados de oficiais para `admin` e `diretoria`.                 |
-| Configurações        | `/app/config`               | Usuários, lotações, auditoria, API keys e webhooks outbound.                         |
+| Módulo               | Rota principal              | Responsabilidade                                                                                |
+| -------------------- | --------------------------- | ----------------------------------------------------------------------------------------------- |
+| Dashboard            | `/app`                      | Visão operacional de associados ASOF, atividades e jurídico.                                    |
+| Cadastro de Oficiais | `/app/associados`           | Cadastro, perfil, lotação/posto, situação funcional, vínculo ASOF e contribuição.               |
+| Atividades           | `/app/atividades`           | Controle de tarefas operacionais com responsáveis, prioridades, prazos e vínculos com oficiais. |
+| Jurídico             | `/app/juridico`             | Consultas jurídicas, notas, SLA e histórico de atendimento.                                     |
+| Secretaria / Ofícios | `/app/secretaria/oficios`   | Geração, edição, cancelamento e download de ofícios.                                            |
+| Relatórios           | `/app/associados/relatorio` | Exportação auditada de dados de oficiais para `admin` e `diretoria`.                            |
+| Configurações        | `/app/config`               | Usuários, lotações, auditoria, API keys e webhooks outbound.                                    |
+
+## Escala e integrações
+
+A carga prevista é de baixa concorrência e concentrada em leitura e atualização de registros. Para o uso atual, os requisitos de produção mais importantes são integridade dos dados, permissões, auditoria, LGPD e backup com restauração testada.
+
+Uma futura mudança de status de tarefa pode publicar um evento (por exemplo, `activity.completed`) para um webhook ou serviço de push. Isso é uma extensão incremental: o fluxo atual continua funcionando de forma síncrona, e a entrega externa pode ser adicionada com uma fila, tentativas e idempotência quando houver necessidade real.
 
 ### Melhorias de UX (Dashboard)
 
