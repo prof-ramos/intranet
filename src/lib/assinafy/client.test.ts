@@ -17,12 +17,12 @@ describe('AssinafyClient', () => {
 
   describe('constructor', () => {
     it('throws when API key is missing', () => {
-      expect(() => new AssinafyClient({ apiKey: '' })).toThrow('API key is required');
+      expect(() => new AssinafyClient({ apiKey: '', baseUrl: BASE_URL })).toThrow('API key is required');
     });
 
-    it('uses sandbox URL by default', () => {
-      const client = new AssinafyClient({ apiKey: API_KEY });
-      expect(client.baseUrl).toBe(BASE_URL);
+    it('throws when base URL is missing', () => {
+      expect(() => new AssinafyClient({ apiKey: API_KEY })).toThrow(AssinafyError);
+      expect(() => new AssinafyClient({ apiKey: API_KEY })).toThrow('Base URL is required');
     });
 
     it('accepts custom base URL', () => {
@@ -37,7 +37,7 @@ describe('AssinafyClient', () => {
       const mockResponse = { status: 200, data: mockPayload };
       fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify(mockResponse), { status: 200 }));
 
-      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
+      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123', baseUrl: BASE_URL });
       const pdf = Buffer.from('fake-pdf');
       const result = await client.uploadDocument(pdf, 'test.pdf');
 
@@ -54,7 +54,7 @@ describe('AssinafyClient', () => {
     it('throws AssinafyError on non-JSON response (502)', async () => {
       fetchSpy.mockResolvedValueOnce(new Response('<html>Bad Gateway</html>', { status: 502 }));
 
-      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
+      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123', baseUrl: BASE_URL });
       await expect(client.uploadDocument(Buffer.from('x'), 'f.pdf')).rejects.toThrow(AssinafyError);
     });
 
@@ -63,14 +63,14 @@ describe('AssinafyClient', () => {
         new Response(JSON.stringify({ status: 400, message: 'Invalid file' }), { status: 400 }),
       );
 
-      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
+      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123', baseUrl: BASE_URL });
       await expect(client.uploadDocument(Buffer.from('x'), 'f.pdf')).rejects.toThrow('Invalid file');
     });
 
     it('rejects an oversized provider response before JSON parsing', async () => {
       fetchSpy.mockResolvedValueOnce(new Response('x'.repeat(256 * 1024 + 1), { status: 200 }));
 
-      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
+      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123', baseUrl: BASE_URL });
       await expect(client.uploadDocument(Buffer.from('x'), 'f.pdf')).rejects.toThrow(
         'Response body exceeds the allowed size.',
       );
@@ -82,7 +82,7 @@ describe('AssinafyClient', () => {
       const mockResponse = { status: 200, data: { id: 'signer1', full_name: 'João', email: 'j@x.com' } };
       fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify(mockResponse), { status: 200 }));
 
-      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
+      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123', baseUrl: BASE_URL });
       const result = await client.createSigner('João', 'j@x.com');
 
       expect(fetchSpy).toHaveBeenCalledWith(
@@ -111,7 +111,7 @@ describe('AssinafyClient', () => {
       const mockResponse = { status: 200, data: mockPayload };
       fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify(mockResponse), { status: 200 }));
 
-      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
+      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123', baseUrl: BASE_URL });
       const result = await client.createAssignment('doc123', {
         method: 'virtual',
         signers: [{ id: 'signer1', verification_method: 'Email', notification_methods: ['Email'], step: 1 }],
@@ -128,7 +128,7 @@ describe('AssinafyClient', () => {
       const mockResponse = { status: 200, data: mockPayload };
       fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify(mockResponse), { status: 200 }));
 
-      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
+      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123', baseUrl: BASE_URL });
       const result = await client.getDocumentStatus('doc123');
 
       expect(fetchSpy).toHaveBeenCalledWith(
@@ -147,7 +147,7 @@ describe('AssinafyClient', () => {
         new Response('<html><body>502 Bad Gateway</body></html>', { status: 502 }),
       );
 
-      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
+      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123', baseUrl: BASE_URL });
       await expect(client.getDocumentStatus('doc123')).rejects.toThrow(AssinafyError);
     });
 
@@ -156,7 +156,7 @@ describe('AssinafyClient', () => {
         new Response(JSON.stringify({ status: 404, message: 'Not found' }), { status: 404 }),
       );
 
-      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123' });
+      const client = new AssinafyClient({ apiKey: API_KEY, accountId: 'acc123', baseUrl: BASE_URL });
       try {
         await client.getDocumentStatus('doc123');
         expect.fail('should throw');

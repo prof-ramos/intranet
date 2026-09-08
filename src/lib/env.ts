@@ -174,6 +174,37 @@ export const envSchema = z
         'INITIAL_ADMIN_PASSWORD contém placeholder de exemplo — defina um valor real para produção',
       path: ['INITIAL_ADMIN_PASSWORD'],
     },
+  )
+  .refine(
+    (data) => {
+      if (!data.ASSINAFY_API_KEY) return true;
+      if (!data.ASSINAFY_BASE_URL) return false;
+      try {
+        return new URL(data.ASSINAFY_BASE_URL).protocol === 'https:';
+      } catch {
+        return false;
+      }
+    },
+    {
+      message:
+        'ASSINAFY_BASE_URL is required and must be a valid https URL when ASSINAFY_API_KEY is set.',
+      path: ['ASSINAFY_BASE_URL'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.VERCEL_ENV !== 'production') return true;
+      if (!data.ASSINAFY_BASE_URL) return true;
+      try {
+        return new URL(data.ASSINAFY_BASE_URL).hostname !== 'sandbox.assinafy.com.br';
+      } catch {
+        return true;
+      }
+    },
+    {
+      message: 'ASSINAFY_BASE_URL must not use the Assinafy sandbox host in production.',
+      path: ['ASSINAFY_BASE_URL'],
+    },
   );
 
 const parsed = envSchema.safeParse(process.env);
