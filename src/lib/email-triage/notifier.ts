@@ -45,7 +45,6 @@ export async function notifyNeedsValidation(
             title: 'Nova triagem aguardando revisão operacional',
             message: `E-mail "${payload.subject}" foi classificado como ${triageResult.categoria} (risco ${triageResult.nivel_risco}) e exige revisao operacional.`,
             dedupeKey: `email_triage_pending:${triageId}:${admin.id}`,
-            href: `/app/email-triage/${triageId}`,
             entityType: 'email_triagem',
             entityId: triageId,
           },

@@ -138,7 +138,8 @@ describe('finance service', () => {
             paymentMethod: 'boleto',
             paidAt: null,
             links: {
-              app: '/app/financeiro/mensalidades?year=2026&month=4',
+              // V2 #429: operator UI hidden; do not link to /app/email-triage or /app/financeiro
+              app: '/app',
             },
           },
         }),
@@ -217,7 +218,8 @@ describe('finance service', () => {
           paymentMethod: 'boleto',
           paidAt: expect.any(String),
           links: {
-            app: '/app/financeiro/mensalidades?year=2026&month=5',
+            // V2 #429: operator UI hidden; do not link to /app/email-triage or /app/financeiro
+            app: '/app',
           },
         }),
       }),

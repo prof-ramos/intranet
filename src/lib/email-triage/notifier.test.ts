@@ -109,6 +109,9 @@ describe('notifyNeedsValidation', () => {
       }),
       undefined,
     );
+    // V2 #429: operator UI hidden; do not link to /app/email-triage or /app/financeiro
+    expect(vi.mocked(createNotificationFromEvent).mock.calls[0][1].href).toBeUndefined();
+    expect(vi.mocked(createNotificationFromEvent).mock.calls[1][1].href).toBeUndefined();
   });
 
   it('returns error when db.select throws', async () => {
