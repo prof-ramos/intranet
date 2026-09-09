@@ -1,14 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { sendEmail, EmailSendError } from './index';
 
-vi.mock('@/lib/env', () => ({
-  env: {
+const { mockEnv } = vi.hoisted(() => ({
+  mockEnv: {
     MAILJET_API_KEY: 'test-api-key',
     MAILJET_SECRET_KEY: 'test-secret-key',
-    MAILJET_SENDER_EMAIL: 'no-reply@asof.org.br',
+    MAILJET_SENDER_EMAIL: 'no-reply@asof.org.br' as string | undefined,
     MAILJET_SENDER_NAME: 'ASOF Intranet',
     MAILJET_SENDER_VALIDATED: true,
   },
+}));
+
+vi.mock('@/lib/env', () => ({
+  env: mockEnv,
 }));
 
 const message = {
@@ -22,6 +26,9 @@ const message = {
 describe('sendEmail', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    mockEnv.MAILJET_API_KEY = 'test-api-key';
+    mockEnv.MAILJET_SECRET_KEY = 'test-secret-key';
+    mockEnv.MAILJET_SENDER_EMAIL = 'no-reply@asof.org.br';
   });
 
   it('resolves without throwing on a successful HTTP response', async () => {
@@ -45,5 +52,15 @@ describe('sendEmail', () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new TypeError('fetch failed'));
 
     await expect(sendEmail(message)).rejects.toThrow('fetch failed');
+  });
+
+  it('does not call Mailjet when sender is missing', async () => {
+    mockEnv.MAILJET_SENDER_EMAIL = undefined;
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    await expect(sendEmail(message)).rejects.toThrow(
+      'MAILJET_SENDER_EMAIL is required to send email',
+    );
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

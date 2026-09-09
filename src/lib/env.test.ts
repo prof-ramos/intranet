@@ -104,7 +104,7 @@ describe('envSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  test('aceita produção sem Mailjet configurado', () => {
+  test('rejeita producao Vercel sem Mailjet configurado', () => {
     const result = envSchema.safeParse({
       DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
       DATABASE_MIGRATION_URL: 'postgres://user:pass@localhost:5432/db',
@@ -115,6 +115,58 @@ describe('envSchema', () => {
       CRON_SECRET: 'cron-secret-configurado',
       ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
       ENCRYPTION_MASTER_KEY: 'test-encryption-master-key-with-at-least-32-chars',
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path.includes('MAILJET_SENDER_VALIDATED'));
+      expect(issue?.message).toBe(
+        'MAILJET_API_KEY, MAILJET_SECRET_KEY, MAILJET_SENDER_EMAIL and MAILJET_SENDER_VALIDATED=true are required for production transactional email.',
+      );
+    }
+  });
+
+  test('rejeita producao Vercel com Mailjet sem remetente validado', () => {
+    const result = envSchema.safeParse({
+      DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+      DATABASE_MIGRATION_URL: 'postgres://user:pass@localhost:5432/db',
+      SKIP_AUTH: 'false',
+      SESSION_SECRET: 'test-session-secret-with-at-least-32-chars',
+      NODE_ENV: 'production',
+      VERCEL_ENV: 'production',
+      CRON_SECRET: 'cron-secret-configurado',
+      ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
+      ENCRYPTION_MASTER_KEY: 'test-encryption-master-key-with-at-least-32-chars',
+      MAILJET_API_KEY: 'mailjet-api-key',
+      MAILJET_SECRET_KEY: 'mailjet-secret-key',
+      MAILJET_SENDER_EMAIL: 'no-reply@asof.org.br',
+      MAILJET_SENDER_VALIDATED: 'false',
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path.includes('MAILJET_SENDER_VALIDATED'));
+      expect(issue?.message).toBe(
+        'MAILJET_API_KEY, MAILJET_SECRET_KEY, MAILJET_SENDER_EMAIL and MAILJET_SENDER_VALIDATED=true are required for production transactional email.',
+      );
+    }
+  });
+
+  test('aceita producao Vercel com Mailjet validado', () => {
+    const result = envSchema.safeParse({
+      DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+      DATABASE_MIGRATION_URL: 'postgres://user:pass@localhost:5432/db',
+      SKIP_AUTH: 'false',
+      SESSION_SECRET: 'test-session-secret-with-at-least-32-chars',
+      NODE_ENV: 'production',
+      VERCEL_ENV: 'production',
+      CRON_SECRET: 'cron-secret-configurado',
+      ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
+      ENCRYPTION_MASTER_KEY: 'test-encryption-master-key-with-at-least-32-chars',
+      MAILJET_API_KEY: 'mailjet-api-key',
+      MAILJET_SECRET_KEY: 'mailjet-secret-key',
+      MAILJET_SENDER_EMAIL: 'no-reply@asof.org.br',
+      MAILJET_SENDER_VALIDATED: 'true',
     });
 
     expect(result.success).toBe(true);
@@ -147,6 +199,10 @@ describe('envSchema', () => {
       CRON_SECRET: 'cron-secret-configurado',
       ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
       ENCRYPTION_MASTER_KEY: 'test-encryption-master-key-with-at-least-32-chars',
+      MAILJET_API_KEY: 'mailjet-api-key',
+      MAILJET_SECRET_KEY: 'mailjet-secret-key',
+      MAILJET_SENDER_EMAIL: 'no-reply@asof.org.br',
+      MAILJET_SENDER_VALIDATED: 'true',
     });
 
     expect(result.success).toBe(true);
@@ -161,13 +217,35 @@ describe('envSchema', () => {
     }
   });
 
-  test('aplica remetente Mailjet validado por padrão', () => {
+  test('não aplica default para MAILJET_SENDER_EMAIL', () => {
     const result = envSchema.safeParse(validEnv);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.MAILJET_SENDER_EMAIL).toBe('gabriel@asof.org.br');
+      expect(result.data.MAILJET_SENDER_EMAIL).toBeUndefined();
       expect(result.data.MAILJET_SENDER_NAME).toBe('ASOF Intranet');
       expect(result.data.MAILJET_SENDER_VALIDATED).toBe(false);
+    }
+  });
+
+  test('trata MAILJET_SENDER_EMAIL vazio como ausente', () => {
+    const result = envSchema.safeParse({
+      ...validEnv,
+      MAILJET_SENDER_EMAIL: '',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.MAILJET_SENDER_EMAIL).toBeUndefined();
+    }
+  });
+
+  test('aceita MAILJET_SENDER_EMAIL quando informado', () => {
+    const result = envSchema.safeParse({
+      ...validEnv,
+      MAILJET_SENDER_EMAIL: 'no-reply@asof.org.br',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.MAILJET_SENDER_EMAIL).toBe('no-reply@asof.org.br');
     }
   });
 
@@ -358,6 +436,10 @@ describe('envSchema', () => {
       CRON_SECRET: 'cron-secret-configurado',
       ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
       ENCRYPTION_MASTER_KEY: 'test-encryption-master-key-with-at-least-32-chars',
+      MAILJET_API_KEY: 'mailjet-api-key',
+      MAILJET_SECRET_KEY: 'mailjet-secret-key',
+      MAILJET_SENDER_EMAIL: 'noreply@asof.org.br',
+      MAILJET_SENDER_VALIDATED: 'true',
       ASSINAFY_API_KEY: 'assinafy-api-key',
       ASSINAFY_BASE_URL: 'https://api.assinafy.com.br/v1',
     });

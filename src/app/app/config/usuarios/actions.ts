@@ -7,6 +7,7 @@ import {
   toggleAdminActive,
   AdminNotFoundError,
   InactiveAdminError,
+  EmailDeliveryNotConfiguredError,
 } from '@/lib/auth/service';
 import { z } from 'zod';
 
@@ -22,7 +23,6 @@ function parseAdminId(raw: string): number {
 export interface ResetUserPasswordResult {
   success: boolean;
   message: string;
-  tempPassword?: string;
 }
 
 export const resetUserPassword = defineFormStateAction({
@@ -47,12 +47,16 @@ export const resetUserPassword = defineFormStateAction({
 
       revalidatePath('/app/config/usuarios');
 
+      if (!result.emailDelivered) {
+        return {
+          success: false,
+          message: 'Não foi possível enviar o e-mail de redefinição. Tente novamente.',
+        };
+      }
+
       return {
         success: true,
-        message: result.emailDelivered
-          ? 'Senha temporária gerada e enviada ao usuário.'
-          : 'Senha temporária gerada. Comunique-a ao usuário por canal seguro.',
-        tempPassword: result.emailDelivered ? undefined : result.tempPassword,
+        message: 'Senha temporária gerada e enviada ao usuário.',
       };
     } catch (error) {
       if (error instanceof AdminNotFoundError) {
@@ -61,12 +65,18 @@ export const resetUserPassword = defineFormStateAction({
       if (error instanceof InactiveAdminError) {
         return { success: false, message: 'Não é possível resetar a senha de um usuário inativo.' };
       }
+      if (error instanceof EmailDeliveryNotConfiguredError) {
+        return {
+          success: false,
+          message: 'Envio de e-mail não configurado. Não é possível resetar a senha.',
+        };
+      }
       throw error;
     }
   },
-  onError: (error): ResetUserPasswordResult => ({
+  onError: (): ResetUserPasswordResult => ({
     success: false,
-    message: error instanceof Error ? error.message : 'Falha ao resetar senha.',
+    message: 'Falha ao resetar senha.',
   }),
 });
 

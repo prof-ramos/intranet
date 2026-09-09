@@ -1,6 +1,6 @@
 # Exposição Temporária de Credenciais de Reset de Senha no Painel do Administrador
 
-Status: accepted (Technical Debt)
+Status: superseded (resolved 2026-09-08)
 
 Para evitar o travamento permanente de usuários ativos cujas senhas são redefinidas por administradores antes que a integração com o provedor de e-mail (Mailjet) esteja pronta para produção, as credenciais geradas (`tempPassword` e `resetLink`) serão exibidas temporariamente no painel do administrador (`UserActionsPanel`) imediatamente após o sucesso da ação de redefinição de senha. O administrador é responsável por copiar essas informações e enviá-las ao usuário final por meio de um canal de comunicação seguro de sua preferência.
 
@@ -29,3 +29,12 @@ A exposição de credenciais temporárias no painel administrativo representa um
 - O administrador deve estar ciente da responsabilidade e do risco de segurança associado ao manusear as senhas temporárias de outros usuários. Uma mensagem de alerta destacada foi adicionada ao modal.
 - As credenciais geradas (`tempPassword` e `resetLink`) são transmitidas na resposta da Action e exibidas no navegador do administrador apenas uma vez (com botões interativos de cópia). Se o administrador fechar a tela ou recarregar a página sem copiá-las, o acesso precisará ser redefinido novamente.
 - Assim que a entrega por e-mail for implementada, o modal de visualização de credenciais será completamente desativado.
+
+## Resolution (2026-09-08)
+
+O débito foi encerrado: e-mail transacional via Mailjet é o único caminho de reset de senha em produção.
+
+- Produção exige `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`, `MAILJET_SENDER_EMAIL` e `MAILJET_SENDER_VALIDATED=true` (o build falha se faltar qualquer um).
+- A UI administrativa nunca exibe senhas. `UserActionsPanel` mostra apenas "Senha temporária gerada e enviada ao usuário." ou um erro em português se o envio não puder ocorrer.
+- O reset administrativo verifica a configuração do Mailjet **antes** de hashear/atualizar a senha; sem e-mail configurado a senha não é rotacionada.
+- O self-service `/forgot-password` continua respondendo de forma genérica com `?sent=1` (sem enumeração de contas).

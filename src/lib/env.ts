@@ -31,7 +31,7 @@ export const envSchema = z
 
     MAILJET_API_KEY: z.string().optional(),
     MAILJET_SECRET_KEY: z.string().optional(),
-    MAILJET_SENDER_EMAIL: optionalString.default('gabriel@asof.org.br'),
+    MAILJET_SENDER_EMAIL: optionalString,
     MAILJET_SENDER_NAME: optionalString.default('ASOF Intranet'),
     MAILJET_SENDER_VALIDATED: optionalBooleanString.default('false').transform((v) => v === 'true'),
     ASOF_INTRANET_URL: optionalUrl,
@@ -218,6 +218,22 @@ export const envSchema = z
     {
       message: 'ASSINAFY_BASE_URL must not use the Assinafy sandbox host in production.',
       path: ['ASSINAFY_BASE_URL'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.VERCEL_ENV !== 'production') return true;
+      return (
+        !!data.MAILJET_API_KEY &&
+        !!data.MAILJET_SECRET_KEY &&
+        !!data.MAILJET_SENDER_EMAIL &&
+        data.MAILJET_SENDER_VALIDATED === true
+      );
+    },
+    {
+      message:
+        'MAILJET_API_KEY, MAILJET_SECRET_KEY, MAILJET_SENDER_EMAIL and MAILJET_SENDER_VALIDATED=true are required for production transactional email.',
+      path: ['MAILJET_SENDER_VALIDATED'],
     },
   );
 
