@@ -30,9 +30,15 @@ ou instrução de migration sem atualizar esta matriz e o ADR correspondente.
 
 ## Produção E Pré-Go-Live
 
-Enquanto a intranet ainda não estiver em uso real pela ASOF, o Neon `main` é o
-banco oficial de **pré-go-live**. Ele pode ser resetado de forma controlada para
-eliminar estados inválidos criados durante vibe coding, desde que existam:
+**Estado em 2026-09-08:** go-live executado. Reset destrutivo do Neon `main` é
+**proibido**. Recuperação usa PITR / branch de restauração (ADR 010), migration
+corretiva ou plano de manutenção aprovado. O ADR 016 permanece como histórico do
+reset pré-go-live; não é procedimento vigente.
+
+Histórico (pré-go-live, ADR 016): enquanto a intranet ainda não estava em uso
+real pela ASOF, o Neon `main` era o banco oficial de **pré-go-live**. Ele podia
+ser resetado de forma controlada para eliminar estados inválidos criados durante
+vibe coding, desde que existissem:
 
 - branch backup Neon criado antes da mudança;
 - dump local comprimido usando conexão direta;
@@ -41,8 +47,8 @@ eliminar estados inválidos criados durante vibe coding, desde que existam:
 - seed administrativo executado;
 - validação posterior com `npm run test:db`.
 
-Depois do go-live real, reset destrutivo do `main` fica proibido; usar restore,
-migration corretiva ou plano de manutenção aprovado.
+Reset destrutivo do `main` fica proibido; usar restore, migration corretiva ou
+plano de manutenção aprovado.
 
 Produção/pré-go-live usa como contrato oficial:
 
@@ -67,10 +73,10 @@ explicitamente.
 ### Neon Free Tier
 
 No Free Tier, a janela máxima de Instant Restore/Time Travel é 6 horas. Por isso,
-não confie só em PITR para mudanças destrutivas. Antes de resetar ou reimportar
-o `main`, crie um branch backup copy-on-write e um dump local comprimido. Após a
-validação do novo estado, mantenha apenas backups necessários e nunca commite
-dumps.
+não confie só em PITR para rollback. Reset destrutivo do `main` é proibido após
+o go-live. Antes de restore, reimport autorizado ou manutenção aprovada, crie um
+branch backup copy-on-write e um dump local comprimido. Após a validação do novo
+estado, mantenha apenas backups necessários e nunca commite dumps.
 
 **Branch protection (`protected: true`)** só está nos **planos pagos** Neon
 (até 5 branches protegidas). No Free a API recusa proteger `main`. Mitigações:

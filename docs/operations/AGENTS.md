@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-09-04 | Updated: 2026-09-04 -->
+<!-- Generated: 2026-09-04 | Updated: 2026-09-08 -->
 
 # Operations
 
@@ -9,13 +9,14 @@ Focused operational procedures and follow-up plans for production data hygiene, 
 
 ## Key Files
 
-| File                                   | Description                                                        |
-| -------------------------------------- | ------------------------------------------------------------------ |
-| `associate-identity-reconciliation.md` | Diagnosis and controlled handling of duplicate official identities |
-| `pii-plaintext-sunset.md`              | Plan for retiring accepted legacy plaintext PII                    |
-| `secrets-hygiene.md`                   | Secret inventory, handling and remediation guidance                |
-| `post-merge-smoke-observation.md`      | Production smoke observation after merge/deploy                    |
-| `archive/`                             | Historical analysis retained for context, not current procedure    |
+| File                                               | Description                                                                        |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `associate-identity-reconciliation.md`             | Diagnosis and controlled handling of duplicate official identities                 |
+| `pii-plaintext-sunset.md`                          | Plan for retiring accepted legacy plaintext PII                                    |
+| `secrets-hygiene.md`                               | Secret inventory, handling and remediation guidance                                |
+| `post-merge-smoke-observation.md`                  | Production smoke observation after merge/deploy                                    |
+| `archive/`                                         | Historical analysis retained for context, not current procedure                    |
+| `archive/auditoria-tecnica-residuos-2026-09-05.md` | Superseded 2026-09-06+ residual audit; Bell is mounted, Novu removed (PR #465)     |
 
 ## For AI Agents
 

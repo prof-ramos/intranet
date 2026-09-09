@@ -1,3 +1,7 @@
+> **Superseded (2026-09-06+).** NotificationBell is mounted (`src/app/app/layout.tsx`).
+> Novu client removed (PR #465). Do not follow cleanup item “Bell morto”.
+> This file is historical diagnosis from 2026-09-05; it is not current procedure.
+
 # Auditoria técnica de resíduos — ASOF Intranet
 
 **Data:** 2026-09-05  

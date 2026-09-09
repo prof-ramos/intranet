@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-09-04 | Updated: 2026-09-04 -->
+<!-- Generated: 2026-09-04 | Updated: 2026-09-08 -->
 
 # Authentication
 
@@ -9,16 +9,17 @@ Server-side authentication, authorization, password lifecycle, session cookies, 
 
 ## Key Files
 
-| File                      | Description                                                 |
-| ------------------------- | ----------------------------------------------------------- |
-| `session.ts`              | Signed HTTP-only session creation, reading and invalidation |
-| `require-auth.ts`         | Page/action authentication and role guards                  |
-| `authorization.ts`        | Canonical role and permission checks                        |
-| `actions.ts`              | Login/logout and account-related Server Actions             |
-| `password.ts`             | Argon2 password hashing and verification                    |
-| `password-reset.ts`       | Temporary token-based password reset flow                   |
-| `login-rate-limit.ts`     | Database-backed login attempt throttling                    |
-| `development-identity.ts` | Fail-closed `SKIP_AUTH` development identity handling       |
+| File                      | Description                                                             |
+| ------------------------- | ----------------------------------------------------------------------- |
+| `session.ts`              | HMAC-SHA256 signed HTTP-only session creation, reading and invalidation |
+| `require-auth.ts`         | Page/action authentication and role guards                              |
+| `authorization.ts`        | Canonical role and permission checks                                    |
+| `actions.ts`              | Login/logout and account-related Server Actions                         |
+| `password.ts`             | Password complexity rules (bcryptjs hash lives in `service.ts`)         |
+| `service.ts`              | Auth domain service — bcryptjs hash/verify, login, password change      |
+| `password-reset.ts`       | Temporary token-based password reset flow                               |
+| `login-rate-limit.ts`     | Database-backed login attempt throttling                                |
+| `development-identity.ts` | Fail-closed `SKIP_AUTH` development identity handling                   |
 
 ## For AI Agents
 
@@ -46,6 +47,7 @@ Server-side authentication, authorization, password lifecycle, session cookies, 
 - `src/lib/db/` — admins, sessions/versioning, login attempts and reset-token storage
 - `src/lib/crypto/safe-compare.ts` — timing-safe comparison
 - `src/proxy.ts` — early route guard
-- `argon2` and `jose` — password hashing and session signing
+- `bcryptjs` — password hashing and verification in `service.ts`
+- HMAC-SHA256 in `session.ts` — session cookie signing
 
 <!-- MANUAL: -->

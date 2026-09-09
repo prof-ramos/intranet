@@ -53,7 +53,8 @@ export default async function PrivacidadePage() {
           Você tem o direito de solicitar uma cópia de todos os seus dados pessoais e transacionais
           armazenados pela ASOF. Ao solicitar, a Secretaria irá compilar um relatório estruturado
           contendo suas informações cadastrais, histórico de contribuições e demais registros
-          vinculados ao seu titular, e os enviará para o seu e-mail cadastrado.
+          vinculados ao seu titular, e os enviará para o seu e-mail cadastrado. A Secretaria tem até
+          15 dias corridos para compilar e enviar essa exportação.
         </p>
         <form action={wrappedRequestDataDownload}>
           <button

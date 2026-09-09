@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-26 | Updated: 2026-09-06 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-09-08 -->
 <!-- Parent: none (root) -->
 
 # ASOF Intranet — AI Agent Directory
@@ -24,7 +24,7 @@ Next.js 16 App Router application for ASOF (associação) internal management �
 | `playwright.config.ts`         | baseURL `http://127.0.0.1:3001`, `expect.timeout: 30_000`, workers=1, retries 2 in CI                                 |
 | `vitest.config.ts`             | Unit config — `src/**/*.test.{ts,tsx}` + `scripts/**/*.test.ts`; mocks `server-only`                                  |
 | `vitest.integration.config.ts` | Integration config — `src/**/*.integration.test.{ts,tsx}`                                                             |
-| `vercel.json`                  | Vercel deployment + cron schedules (7 cron jobs)                                                                      |
+| `vercel.json`                  | Vercel deployment + cron schedules (8 cron jobs)                                                                      |
 
 ## Subdirectories
 
