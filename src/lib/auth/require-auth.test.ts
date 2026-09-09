@@ -268,7 +268,7 @@ describe('requireAuth', () => {
     });
   });
 
-  it('redirects to /change-password when user must change password and not on change page', async () => {
+  it('redirects to /change-password when user must change password and pathname is omitted', async () => {
     mockSession = {
       userId: 7,
       name: 'Updated Name',
@@ -285,7 +285,28 @@ describe('requireAuth', () => {
       isActive: true,
       mustChangePassword: true,
     };
-    mockHeaders.set('x-pathname', '/app/dashboard');
+
+    await expect(requireAuth()).rejects.toThrow('NEXT_REDIRECT:/change-password');
+  });
+
+  it('redirects to /change-password when user must change password and pathname is /app', async () => {
+    mockSession = {
+      userId: 7,
+      name: 'Updated Name',
+      email: 'updated@asof.local',
+      role: 'diretoria',
+      mustChangePassword: false,
+      isLoggedIn: true,
+    };
+    mockDbAdmin = {
+      id: 7,
+      name: 'Updated Name',
+      email: 'updated@asof.local',
+      role: 'diretoria',
+      isActive: true,
+      mustChangePassword: true,
+    };
+    mockHeaders.set('x-asof-pathname', '/app');
 
     await expect(requireAuth()).rejects.toThrow('NEXT_REDIRECT:/change-password');
   });
@@ -307,7 +328,7 @@ describe('requireAuth', () => {
       isActive: true,
       mustChangePassword: true,
     };
-    mockHeaders.set('next-url', 'http://localhost/change-password');
+    mockHeaders.set('x-asof-pathname', '/change-password');
 
     await expect(requireAuth()).resolves.toEqual({
       userId: 7,
@@ -318,29 +339,7 @@ describe('requireAuth', () => {
     });
   });
 
-  it('redirects to /change-password when user must change password and is elsewhere', async () => {
-    mockSession = {
-      userId: 7,
-      name: 'Updated Name',
-      email: 'updated@asof.local',
-      role: 'diretoria',
-      mustChangePassword: false,
-      isLoggedIn: true,
-    };
-    mockDbAdmin = {
-      id: 7,
-      name: 'Updated Name',
-      email: 'updated@asof.local',
-      role: 'diretoria',
-      isActive: true,
-      mustChangePassword: true,
-    };
-    mockHeaders.set('x-pathname', '/app/dashboard');
-
-    await expect(requireAuth()).rejects.toThrow('NEXT_REDIRECT:/change-password');
-  });
-
-  it('allows access when next-url is an absolute /change-password URL', async () => {
+  it('ignores next-url and redirects when x-asof-pathname is missing', async () => {
     mockSession = {
       userId: 7,
       name: 'Updated Name',
@@ -359,10 +358,7 @@ describe('requireAuth', () => {
     };
     mockHeaders.set('next-url', 'https://intranet.asof.com.br/change-password?from=reset');
 
-    await expect(requireAuth()).resolves.toMatchObject({
-      userId: 7,
-      mustChangePassword: true,
-    });
+    await expect(requireAuth()).rejects.toThrow('NEXT_REDIRECT:/change-password');
   });
 
   it('logs a safe error and redirects when the DB query fails', async () => {
