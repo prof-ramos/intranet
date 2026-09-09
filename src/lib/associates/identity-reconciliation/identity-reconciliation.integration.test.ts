@@ -18,7 +18,7 @@ import {
   monthlyPayments,
 } from '@/lib/db/schema';
 import { reconcileAssociateIdentities } from './index';
-import { buildReconciliationPlan } from './policy';
+import type { AssociateIdentitySnapshot, ReconciliationPlan } from './policy';
 import {
   acquireReconciliationWriteBarrier,
   applyReconciliationPlan,
@@ -48,6 +48,61 @@ async function createOfficial(
   return row.id;
 }
 
+function uniqueHash(kind: 'cpf' | 'siape' | 'email', suffix: string): string {
+  return `${kind}-${sourcePrefix}-${suffix}`;
+}
+
+function directedMergePlan(
+  canonical: AssociateIdentitySnapshot,
+  absorbed: AssociateIdentitySnapshot,
+): ReconciliationPlan {
+  return {
+    report: {
+      version: 1,
+      summary: {
+        componentCount: 1,
+        eligibleCount: 1,
+        ambiguousCount: 0,
+        associateCount: 2,
+      },
+      components: [
+        {
+          associateIds: [canonical.id, absorbed.id],
+          canonicalId: canonical.id,
+          absorbedIds: [absorbed.id],
+          eligible: true,
+          relationCounts: {
+            activities: 0,
+            monthlyPayments: 0,
+            legalConsultations: 0,
+            legalProcesses: 0,
+            dependents: 0,
+            healthAgreements: 0,
+            mailingRecipients: 0,
+          },
+          conflictCodes: [],
+        },
+      ],
+      globalConflictCodes: [],
+      evidenceHash: 'a'.repeat(64),
+    },
+    canApply: true,
+    executionComponents: [{ canonical, absorbed: [absorbed] }],
+  };
+}
+
+async function loadDirectedOfficials(
+  tx: Parameters<typeof loadReconciliationSnapshot>[0],
+  canonicalId: number,
+  absorbedId: number,
+): Promise<{ canonical: AssociateIdentitySnapshot; absorbed: AssociateIdentitySnapshot }> {
+  const snapshot = await loadReconciliationSnapshot(tx, { forUpdate: true });
+  const canonical = snapshot.associates.find((row) => row.id === canonicalId);
+  const absorbed = snapshot.associates.find((row) => row.id === absorbedId);
+  if (!canonical || !absorbed) throw new Error('SYNTHETIC_OFFICIALS_MISSING');
+  return { canonical, absorbed };
+}
+
 async function cleanup() {
   const rows = await db
     .select({ id: associates.id })
@@ -72,9 +127,6 @@ async function cleanup() {
 
 describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () => {
   beforeAll(async () => {
-    await db.execute(sql`DROP INDEX IF EXISTS idx_associates_cpf_hash`);
-    await db.execute(sql`DROP INDEX IF EXISTS idx_associates_siape_hash`);
-    await db.execute(sql`DROP INDEX IF EXISTS idx_associates_primary_email_hash`);
     const [admin] = await db
       .insert(admins)
       .values({
@@ -90,23 +142,13 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
   afterAll(async () => {
     await cleanup();
     if (adminId) await db.delete(admins).where(eq(admins.id, adminId));
-    await db.execute(
-      sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_associates_cpf_hash ON associates (cpf_hash)`,
-    );
-    await db.execute(
-      sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_associates_siape_hash ON associates (siape_hash)`,
-    );
-    await db.execute(
-      sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_associates_primary_email_hash ON associates (primary_email_hash)`,
-    );
   });
 
   afterEach(cleanup);
 
-  it('reparents all seven known relationships, fills nulls, audits, and becomes idempotent', async () => {
-    const sharedIdentity = `cpf-int-${runId}-success`;
+  it('reparents all seven known relationships, fills nulls, audits, and stays canonical', async () => {
     const canonicalId = await createOfficial('success-canonical', {
-      cpfHash: sharedIdentity,
+      cpfHash: uniqueHash('cpf', 'success-canonical'),
       assignment: 'SERE',
       assignmentStartDate: '2020-01-01',
       locationCity: 'Brasília',
@@ -118,7 +160,7 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
       createdAt: new Date('2018-01-01T00:00:00Z'),
     });
     const absorbedId = await createOfficial('success-absorbed', {
-      cpfHash: sharedIdentity,
+      cpfHash: uniqueHash('cpf', 'success-absorbed'),
       secondaryEmail: `synthetic-${runId}@test.local`,
       createdAt: new Date('2020-01-01T00:00:00Z'),
     });
@@ -167,17 +209,10 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
       recipientName: 'Oficial Sintético Reconciliação',
     });
 
-    const before = await reconcileAssociateIdentities();
-    const target = before.components.find((component) =>
-      component.associateIds.includes(canonicalId),
-    );
-    expect(target).toMatchObject({ canonicalId, absorbedIds: [absorbedId], eligible: true });
-
-    const after = await reconcileAssociateIdentities({
-      mode: 'apply',
-      evidenceHash: before.evidenceHash,
+    await db.transaction(async (tx) => {
+      const officials = await loadDirectedOfficials(tx, canonicalId, absorbedId);
+      await applyReconciliationPlan(tx, directedMergePlan(officials.canonical, officials.absorbed));
     });
-    expect(after.summary.componentCount).toBe(0);
 
     const [canonical] = await db.select().from(associates).where(eq(associates.id, canonicalId));
     expect(canonical.secondaryEmail).toBe(`synthetic-${runId}@test.local`);
@@ -217,14 +252,15 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
       },
     });
 
-    const secondReport = await reconcileAssociateIdentities();
-    expect(secondReport.summary.componentCount).toBe(0);
+    const report = await reconcileAssociateIdentities();
+    expect(
+      report.components.some((component) => component.associateIds.includes(canonicalId)),
+    ).toBe(false);
   });
 
-  it('rejects drifted evidence without changing either duplicate', async () => {
-    const sharedIdentity = `cpf-int-${runId}-drift`;
-    const first = await createOfficial('drift-a', { cpfHash: sharedIdentity });
-    const second = await createOfficial('drift-b', { cpfHash: sharedIdentity });
+  it('rejects drifted evidence without changing either official', async () => {
+    const first = await createOfficial('drift-a', { cpfHash: uniqueHash('cpf', 'drift-a') });
+    const second = await createOfficial('drift-b', { cpfHash: uniqueHash('cpf', 'drift-b') });
     const report = await reconcileAssociateIdentities();
     const wrongHash = report.evidenceHash.replace(/^./, report.evidenceHash[0] === 'a' ? 'b' : 'a');
 
@@ -242,14 +278,13 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
   });
 
   it('rolls back PostgreSQL writes when execution fails after reparenting', async () => {
-    const sharedIdentity = `cpf-int-${runId}-rollback`;
     const canonicalId = await createOfficial('rollback-canonical', {
-      cpfHash: sharedIdentity,
+      cpfHash: uniqueHash('cpf', 'rollback-canonical'),
       assignment: 'SERE',
       createdAt: new Date('2018-01-01T00:00:00Z'),
     });
     const absorbedId = await createOfficial('rollback-absorbed', {
-      cpfHash: sharedIdentity,
+      cpfHash: uniqueHash('cpf', 'rollback-absorbed'),
       createdAt: new Date('2020-01-01T00:00:00Z'),
     });
     await db
@@ -258,17 +293,16 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
 
     await expect(
       db.transaction(async (tx) => {
-        const snapshot = await loadReconciliationSnapshot(tx, { forUpdate: true });
-        const plan = buildReconciliationPlan({
-          associates: snapshot.associates,
-          relationships: snapshot.relationships,
-          unknownForeignKeys: snapshot.foreignKeyInventoryMismatch,
-        });
-        await applyReconciliationPlan(tx, plan, {
-          afterReparent: async () => {
-            throw new Error('SYNTHETIC_ROLLBACK');
+        const officials = await loadDirectedOfficials(tx, canonicalId, absorbedId);
+        await applyReconciliationPlan(
+          tx,
+          directedMergePlan(officials.canonical, officials.absorbed),
+          {
+            afterReparent: async () => {
+              throw new Error('SYNTHETIC_ROLLBACK');
+            },
           },
-        });
+        );
       }),
     ).rejects.toThrow('SYNTHETIC_ROLLBACK');
 
@@ -286,14 +320,13 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
   });
 
   it('rolls back the entire apply when the mandatory audit insert fails', async () => {
-    const sharedIdentity = `cpf-int-${runId}-audit-rollback`;
     const canonicalId = await createOfficial('audit-rollback-canonical', {
-      cpfHash: sharedIdentity,
+      cpfHash: uniqueHash('cpf', 'audit-rollback-canonical'),
       assignment: 'SERE',
       createdAt: new Date('2018-01-01T00:00:00Z'),
     });
     const absorbedId = await createOfficial('audit-rollback-absorbed', {
-      cpfHash: sharedIdentity,
+      cpfHash: uniqueHash('cpf', 'audit-rollback-absorbed'),
       createdAt: new Date('2020-01-01T00:00:00Z'),
     });
     await db.insert(activities).values({
@@ -301,7 +334,6 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
       associateId: absorbedId,
       createdBy: adminId,
     });
-    const report = await reconcileAssociateIdentities();
 
     await db.execute(sql`
       create or replace function reconciliation_reject_audit_test()
@@ -321,7 +353,13 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
     `);
     try {
       await expect(
-        reconcileAssociateIdentities({ mode: 'apply', evidenceHash: report.evidenceHash }),
+        db.transaction(async (tx) => {
+          const officials = await loadDirectedOfficials(tx, canonicalId, absorbedId);
+          await applyReconciliationPlan(
+            tx,
+            directedMergePlan(officials.canonical, officials.absorbed),
+          );
+        }),
       ).rejects.toBeDefined();
     } finally {
       await db.execute(sql`drop trigger if exists reconciliation_reject_audit_test on audit_logs`);
@@ -341,44 +379,6 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
     ).toHaveLength(2);
   });
 
-  it('blocks every component when one duplicate identity is ambiguous', async () => {
-    const eligibleIdentity = `cpf-int-${runId}-eligible-stop`;
-    const eligibleIds = [
-      await createOfficial('eligible-stop-a', { cpfHash: eligibleIdentity }),
-      await createOfficial('eligible-stop-b', { cpfHash: eligibleIdentity }),
-    ];
-    const ambiguousIdentity = `cpf-int-${runId}-ambiguous-stop`;
-    const ambiguousIds = [
-      await createOfficial('ambiguous-stop-a', { cpfHash: ambiguousIdentity, fullName: 'Nome Um' }),
-      await createOfficial('ambiguous-stop-b', {
-        cpfHash: ambiguousIdentity,
-        fullName: 'Nome Dois',
-      }),
-    ];
-    await db.insert(monthlyPayments).values([
-      { associateId: ambiguousIds[0], year: 2025, month: 6 },
-      { associateId: ambiguousIds[1], year: 2025, month: 6 },
-    ]);
-
-    const report = await reconcileAssociateIdentities();
-    const ambiguous = report.components.find((component) =>
-      component.associateIds.includes(ambiguousIds[0]),
-    );
-    expect(ambiguous).toMatchObject({
-      eligible: false,
-      conflictCodes: ['MONTHLY_PAYMENT_PERIOD_CONFLICT', 'NORMALIZED_NAME_CONFLICT'],
-    });
-    await expect(
-      reconcileAssociateIdentities({ mode: 'apply', evidenceHash: report.evidenceHash }),
-    ).rejects.toMatchObject({ code: 'AMBIGUOUS_COMPONENTS' });
-    expect(
-      await db
-        .select({ id: associates.id })
-        .from(associates)
-        .where(inArray(associates.id, [...eligibleIds, ...ambiguousIds])),
-    ).toHaveLength(4);
-  });
-
   it('fails closed when the PostgreSQL catalog contains an unknown associate foreign key', async () => {
     await db.execute(sql`drop table if exists reconciliation_unknown_fk_test`);
     try {
@@ -391,6 +391,9 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
       const report = await reconcileAssociateIdentities();
       expect(report.globalConflictCodes).toEqual(['UNKNOWN_ASSOCIATE_FOREIGN_KEY']);
       expect(JSON.stringify(report)).not.toContain('reconciliation_unknown_fk_test');
+      await expect(
+        reconcileAssociateIdentities({ mode: 'apply', evidenceHash: report.evidenceHash }),
+      ).rejects.toMatchObject({ code: 'AMBIGUOUS_COMPONENTS' });
     } finally {
       await db.execute(sql`drop table if exists reconciliation_unknown_fk_test`);
     }
@@ -399,9 +402,11 @@ describe.skipIf(!hasTestEnv)('associate identity reconciliation PostgreSQL', () 
   it('waits for the transaction advisory lock before applying a matching report', async () => {
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) throw new Error('DATABASE_URL is required');
-    const sharedIdentity = `cpf-int-${runId}-lock`;
-    await createOfficial('lock-a', { cpfHash: sharedIdentity, assignment: 'SERE' });
-    await createOfficial('lock-b', { cpfHash: sharedIdentity });
+    await createOfficial('lock-a', {
+      cpfHash: uniqueHash('cpf', 'lock-a'),
+      assignment: 'SERE',
+    });
+    await createOfficial('lock-b', { cpfHash: uniqueHash('cpf', 'lock-b') });
     const report = await reconcileAssociateIdentities();
     const barrier = postgres(databaseUrl, {
       max: 1,
