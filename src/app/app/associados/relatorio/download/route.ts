@@ -36,6 +36,10 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const { filters, selectedKeys } = parseReportExportParams(searchParams);
 
+  if (selectedKeys.length === 0) {
+    return new Response('Selecione ao menos um campo para exportar.', { status: 400 });
+  }
+
   let csv: string;
   try {
     const result = await generateReport(access.userId, filters, selectedKeys);

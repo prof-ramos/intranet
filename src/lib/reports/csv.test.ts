@@ -185,11 +185,9 @@ describe('generateCsv', () => {
     expect(lines[1]).toBe('"João Silva"');
   });
 
-  it('uses ALL_FIELDS when selectedKeys is empty', () => {
-    const csv = generateCsv([mockRow], []);
-    const lines = csv.replace(/^﻿/, '').split('\r\n');
-    const headerParts = lines[0].split(',').length;
-    expect(headerParts).toBe(ALL_FIELDS.length);
+  it('throws instead of emitting all columns when selectedKeys is empty', () => {
+    expect(() => generateCsv([mockRow], [])).toThrow('Selecione ao menos um campo para exportar.');
+    expect(() => generateCsv([], [])).toThrow('Selecione ao menos um campo para exportar.');
   });
 
   it('handles empty rows array', () => {

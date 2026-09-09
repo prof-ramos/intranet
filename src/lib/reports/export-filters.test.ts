@@ -51,6 +51,7 @@ describe('parseReportExportParams', () => {
   });
 
   it('returns empty filters and fields for empty params', () => {
+    // Parser stays permissive; the download route rejects selectedKeys: [] with 400.
     expect(parseReportExportParams(new URLSearchParams())).toEqual({
       filters: {},
       selectedKeys: [],

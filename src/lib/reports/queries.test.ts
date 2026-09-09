@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Drizzle mock chains require any for self-referencing builders */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { countAssociatesForReport, getAssociatesForReport } from './queries';
+import {
+  countAssociatesForReport,
+  getAssociatesForReport,
+  REPORT_DEFAULT_LIMIT,
+} from './queries';
 
 const { dbMock, MOCK_ASSOCIATE, loggerMock, decryptPiiFieldMock } = vi.hoisted(() => {
   const MOCK_ASSOCIATE = {
@@ -113,6 +117,22 @@ describe('reports queries', () => {
       expect(results).toHaveLength(0);
     });
 
+    it('does not decrypt PII when selectedKeys lists only non-PII fields', async () => {
+      const results = await getAssociatesForReport({}, REPORT_DEFAULT_LIMIT, ['fullName']);
+
+      expect(decryptPiiFieldMock).not.toHaveBeenCalled();
+      expect(results[0].cpf).toBeNull();
+      expect(results[0].siape).toBeNull();
+      expect(results[0].primaryEmail).toBeNull();
+    });
+
+    it('does not decrypt PII when selectedKeys is empty', async () => {
+      const results = await getAssociatesForReport({}, REPORT_DEFAULT_LIMIT, []);
+
+      expect(decryptPiiFieldMock).not.toHaveBeenCalled();
+      expect(results[0].cpf).toBeNull();
+    });
+
     it('counts matching associates without selecting rows', async () => {
       dbMock.setSelectResult([{ total: 7 }]);
       await expect(countAssociatesForReport({ functionalStatus: 'ativo' })).resolves.toBe(7);
@@ -161,7 +181,7 @@ describe('reports queries', () => {
       const row = { ...MOCK_ASSOCIATE, cpfCiphertext: 'enc:cpf', cpf: null };
       dbMock.setSelectResult([row]);
 
-      const results = await getAssociatesForReport();
+      const results = await getAssociatesForReport({}, REPORT_DEFAULT_LIMIT, ['cpf']);
 
       expect(decryptPiiFieldMock).toHaveBeenCalledWith('enc:cpf', null);
       expect(results[0].cpf).toBe('DEC:enc:cpf');
@@ -171,7 +191,7 @@ describe('reports queries', () => {
       const row = { ...MOCK_ASSOCIATE, cpfCiphertext: null, cpf: '12345678901' };
       dbMock.setSelectResult([row]);
 
-      const results = await getAssociatesForReport();
+      const results = await getAssociatesForReport({}, REPORT_DEFAULT_LIMIT, ['cpf']);
 
       expect(decryptPiiFieldMock).toHaveBeenCalledWith(null, '12345678901');
       expect(results[0].cpf).toBe('12345678901');
@@ -181,7 +201,7 @@ describe('reports queries', () => {
       const row = { ...MOCK_ASSOCIATE, cpfCiphertext: 'enc:cpf', cpf: 'PLAIN' };
       dbMock.setSelectResult([row]);
 
-      const results = await getAssociatesForReport();
+      const results = await getAssociatesForReport({}, REPORT_DEFAULT_LIMIT, ['cpf']);
 
       expect(decryptPiiFieldMock).toHaveBeenCalledWith('enc:cpf', 'PLAIN');
       expect(results[0].cpf).toBe('DEC:enc:cpf');
@@ -191,7 +211,7 @@ describe('reports queries', () => {
       const row = { ...MOCK_ASSOCIATE, cpfCiphertext: null, cpf: null };
       dbMock.setSelectResult([row]);
 
-      const results = await getAssociatesForReport();
+      const results = await getAssociatesForReport({}, REPORT_DEFAULT_LIMIT, ['cpf']);
 
       expect(decryptPiiFieldMock).toHaveBeenCalledWith(null, null);
       expect(results[0].cpf).toBeNull();
@@ -205,7 +225,7 @@ describe('reports queries', () => {
       };
       dbMock.setSelectResult([row]);
 
-      const results = await getAssociatesForReport();
+      const results = await getAssociatesForReport({}, REPORT_DEFAULT_LIMIT, ['primaryEmail']);
 
       expect(decryptPiiFieldMock).toHaveBeenCalledWith('enc:email', 'plain@example.com');
       expect(results[0].primaryEmail).toBe('DEC:enc:email');
@@ -222,7 +242,9 @@ describe('reports queries', () => {
         throw new Error('decrypt-failed');
       });
 
-      await expect(getAssociatesForReport()).rejects.toThrow('decrypt-failed');
+      await expect(getAssociatesForReport({}, REPORT_DEFAULT_LIMIT, ['cpf'])).rejects.toThrow(
+        'decrypt-failed',
+      );
 
       // Guard against a future catch-and-log that leaks ciphertext/plaintext into logs.
       const allLoggerCalls = JSON.stringify([

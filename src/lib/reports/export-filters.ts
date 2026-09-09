@@ -86,6 +86,7 @@ export function parseReportExportParams(searchParams: URLSearchParams): {
     }
   }
 
+  // Empty selectedKeys is a valid parse; the download route rejects it with 400.
   return {
     filters,
     selectedKeys: searchParams
