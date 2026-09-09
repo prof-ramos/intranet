@@ -11,6 +11,8 @@ const buildSecretariaToolsMock = vi.hoisted(() =>
     { name: 'global-search', description: 'x', execute: async () => ({}) },
     { name: 'add-dependent', description: 'y', execute: async () => ({}) },
     { name: 'generate-institutional-email', description: 'z', execute: async () => ({}) },
+    { name: 'open-activities', description: 'a', execute: async () => ({}) },
+    { name: 'complete-activity', description: 'b', execute: async () => ({}) },
   ]),
 );
 
@@ -46,8 +48,24 @@ describe('WebMcpRegistry', () => {
     const [tools] = registerToolsMock.mock.calls[0] as [{ name: string }[]];
     const names = tools.map((tool) => tool.name);
     expect(names).toContain('global-search');
+    expect(names).toContain('open-activities');
+    expect(names).toContain('complete-activity');
     expect(names).not.toContain('generate-institutional-email');
     expect(names).not.toContain('add-dependent');
+  });
+
+  it('registers activity tools for secretaria on the atividades board', async () => {
+    usePathnameMock.mockReturnValue('/app/atividades');
+    render(<WebMcpRegistry role="secretaria" />);
+
+    await vi.waitFor(() => {
+      expect(registerToolsMock).toHaveBeenCalled();
+    });
+
+    const [tools] = registerToolsMock.mock.calls[0] as [{ name: string }[]];
+    const names = tools.map((tool) => tool.name);
+    expect(names).toContain('open-activities');
+    expect(names).toContain('complete-activity');
   });
 
   it('passes the open official id into the tool builder on the ficha', async () => {

@@ -15,6 +15,7 @@ const {
   addDependentActionMock,
   removeDependentActionMock,
   downloadAuthenticatedCsvMock,
+  updateActivityActionMock,
 } = vi.hoisted(() => ({
   globalSearchActionMock: vi.fn(),
   searchOfficialsActionMock: vi.fn(),
@@ -29,6 +30,7 @@ const {
   addDependentActionMock: vi.fn(),
   removeDependentActionMock: vi.fn(),
   downloadAuthenticatedCsvMock: vi.fn(),
+  updateActivityActionMock: vi.fn(),
 }));
 
 vi.mock('@/app/app/search/actions', () => ({
@@ -67,6 +69,10 @@ vi.mock('@/app/app/secretaria/emails/gerar/actions', () => ({
 
 vi.mock('@/lib/webmcp/download-csv', () => ({
   downloadAuthenticatedCsv: (...args: unknown[]) => downloadAuthenticatedCsvMock(...args),
+}));
+
+vi.mock('@/app/app/atividades/actions', () => ({
+  updateActivityAction: (...args: unknown[]) => updateActivityActionMock(...args),
 }));
 
 function toolByName(name: string, officialId = 9) {
@@ -169,6 +175,63 @@ describe('buildSecretariaTools', () => {
     expect(toolByName('remove-health-agreement').tool.annotations).toMatchObject({
       destructiveHint: true,
     });
+  });
+
+  it('navigates to the atividades board and create form', async () => {
+    const board = toolByName('open-activities');
+    const boardResult = await board.tool.execute({}, { signal: new AbortController().signal });
+    expect(board.router.push).toHaveBeenCalledWith('/app/atividades');
+    expect(JSON.stringify(boardResult)).toContain('/app/atividades');
+
+    const create = toolByName('start-create-activity');
+    const createResult = await create.tool.execute({}, { signal: new AbortController().signal });
+    expect(create.router.push).toHaveBeenCalledWith('/app/atividades/nova');
+    expect(JSON.stringify(createResult)).toContain('/app/atividades/nova');
+  });
+
+  it('opens an activity via the board drawer query, not a missing /[id] route', async () => {
+    const { tool, router } = toolByName('open-activity');
+    const result = await tool.execute({ id: 12 }, { signal: new AbortController().signal });
+    expect(router.push).toHaveBeenCalledWith('/app/atividades?open=12');
+    expect(JSON.stringify(result)).toContain('/app/atividades?open=12');
+  });
+
+  it('completes an activity through the existing status-update action', async () => {
+    updateActivityActionMock.mockResolvedValue({
+      id: 12,
+      status: 'concluido',
+      priority: 'normal',
+      dueDate: null,
+      completedAt: '2026-09-08T12:00:00.000Z',
+      assigneeId: 7,
+    });
+    const { tool, router } = toolByName('complete-activity');
+    const result = await tool.execute({ id: 12 }, { signal: new AbortController().signal });
+    expect(updateActivityActionMock).toHaveBeenCalledWith({ id: 12, status: 'concluido' });
+    expect(router.refresh).toHaveBeenCalled();
+    expect(JSON.stringify(result)).toContain('concluido');
+  });
+
+  it('assigns an activity through the existing update action', async () => {
+    updateActivityActionMock.mockResolvedValue({
+      id: 12,
+      status: 'em_andamento',
+      priority: 'normal',
+      dueDate: null,
+      completedAt: null,
+      assigneeId: 7,
+    });
+    const { tool, router } = toolByName('assign-activity');
+    await tool.execute(
+      { id: 12, assigneeId: 7, reassignmentMessage: 'Assumir retorno' },
+      { signal: new AbortController().signal },
+    );
+    expect(updateActivityActionMock).toHaveBeenCalledWith({
+      id: 12,
+      assigneeId: 7,
+      reassignmentMessage: 'Assumir retorno',
+    });
+    expect(router.refresh).toHaveBeenCalled();
   });
 
   it('reports CSV export failures from the download response', async () => {
