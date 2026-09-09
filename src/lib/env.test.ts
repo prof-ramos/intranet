@@ -72,6 +72,29 @@ describe('envSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  test('rejeita SESSION_SECRET presente com menos de 32 caracteres', () => {
+    const result = envSchema.safeParse({
+      ...validEnv,
+      SKIP_AUTH: 'false',
+      SESSION_SECRET: 'short',
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path.includes('SESSION_SECRET'));
+      expect(issue).toBeDefined();
+    }
+  });
+
+  test('aceita SKIP_AUTH=true em desenvolvimento sem SESSION_SECRET', () => {
+    const result = envSchema.safeParse({
+      DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+      SKIP_AUTH: 'true',
+      NODE_ENV: 'development',
+      DEV_USER_ID: '1',
+    });
+    expect(result.success).toBe(true);
+  });
+
   test('aceita SKIP_AUTH=true sem DEV_USER_ID em produção', () => {
     const result = envSchema.safeParse({
       ...validEnv,

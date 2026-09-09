@@ -4,6 +4,11 @@ const emptyToUndefined = (v: string | undefined) => (v === '' ? undefined : v);
 const optionalString         = z.string().optional().transform(emptyToUndefined);
 const optionalNonEmptyString = z.string().optional().transform(emptyToUndefined);
 const optionalSecretString   = z.string().optional().transform(emptyToUndefined);
+const optionalSessionSecret  = z
+  .string()
+  .optional()
+  .transform(emptyToUndefined)
+  .pipe(z.string().min(32).optional());
 const optionalUrl            = z.string().optional().transform(emptyToUndefined).pipe(z.string().url().optional());
 const optionalBooleanString  = z.string().optional().transform(emptyToUndefined).pipe(z.enum(['true', 'false']).optional());
 
@@ -47,7 +52,7 @@ export const envSchema = z
       .transform((v) => v === 'true'),
 
     SKIP_AUTH: optionalString.default('false'),
-    SESSION_SECRET: optionalSecretString,
+    SESSION_SECRET: optionalSessionSecret,
     DEV_USER_ID: optionalString,
     DEV_USER_NAME: optionalString,
     DEV_USER_EMAIL: optionalString,
