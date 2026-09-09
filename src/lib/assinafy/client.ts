@@ -34,7 +34,6 @@ export interface AssignmentOptions {
 }
 
 const DEFAULT_TIMEOUT_MS = 30_000;
-const DEFAULT_BASE_URL = 'https://sandbox.assinafy.com.br/v1';
 const MAX_RESPONSE_BODY_BYTES = 256 * 1024;
 
 async function readResponseTextWithinLimit(response: Response): Promise<string> {
@@ -82,9 +81,12 @@ export class AssinafyClient {
     if (!options.apiKey) {
       throw new AssinafyError('API key is required');
     }
+    if (!options.baseUrl) {
+      throw new AssinafyError('Base URL is required');
+    }
     this.apiKey = options.apiKey;
     this.accountId = options.accountId ?? '';
-    this.baseUrl = options.baseUrl ?? DEFAULT_BASE_URL;
+    this.baseUrl = options.baseUrl;
   }
 
   private headers(extra?: Record<string, string>): Record<string, string> {

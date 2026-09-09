@@ -277,4 +277,91 @@ describe('envSchema', () => {
 
     expect(result.success).toBe(true);
   });
+
+  test('rejeita ASSINAFY_API_KEY sem ASSINAFY_BASE_URL', () => {
+    const result = envSchema.safeParse({
+      ...validEnv,
+      ASSINAFY_API_KEY: 'assinafy-api-key',
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path.includes('ASSINAFY_BASE_URL'));
+      expect(issue?.message).toBe('ASSINAFY_BASE_URL is required when ASSINAFY_API_KEY is set.');
+    }
+  });
+
+  test('aceita URL http do mock E2E fora de producao', () => {
+    const result = envSchema.safeParse({
+      ...validEnv,
+      ASSINAFY_API_KEY: 'assinafy-api-key',
+      ASSINAFY_BASE_URL: 'http://127.0.0.1:3099/v1',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  test('rejeita producao Vercel com URL http da Assinafy', () => {
+    const result = envSchema.safeParse({
+      DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+      DATABASE_MIGRATION_URL: 'postgres://user:pass@localhost:5432/db',
+      SKIP_AUTH: 'false',
+      SESSION_SECRET: 'test-session-secret-with-at-least-32-chars',
+      NODE_ENV: 'production',
+      VERCEL_ENV: 'production',
+      CRON_SECRET: 'cron-secret-configurado',
+      ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
+      ENCRYPTION_MASTER_KEY: 'test-encryption-master-key-with-at-least-32-chars',
+      ASSINAFY_API_KEY: 'assinafy-api-key',
+      ASSINAFY_BASE_URL: 'http://127.0.0.1:3099/v1',
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path.includes('ASSINAFY_BASE_URL'));
+      expect(issue?.message).toBe('ASSINAFY_BASE_URL must be a valid https URL in production.');
+    }
+  });
+
+  test('rejeita producao Vercel com host sandbox da Assinafy', () => {
+    const result = envSchema.safeParse({
+      DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+      DATABASE_MIGRATION_URL: 'postgres://user:pass@localhost:5432/db',
+      SKIP_AUTH: 'false',
+      SESSION_SECRET: 'test-session-secret-with-at-least-32-chars',
+      NODE_ENV: 'production',
+      VERCEL_ENV: 'production',
+      CRON_SECRET: 'cron-secret-configurado',
+      ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
+      ENCRYPTION_MASTER_KEY: 'test-encryption-master-key-with-at-least-32-chars',
+      ASSINAFY_API_KEY: 'assinafy-api-key',
+      ASSINAFY_BASE_URL: 'https://sandbox.assinafy.com.br/v1',
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path.includes('ASSINAFY_BASE_URL'));
+      expect(issue?.message).toBe(
+        'ASSINAFY_BASE_URL must not use the Assinafy sandbox host in production.',
+      );
+    }
+  });
+
+  test('aceita producao Vercel com URL https da Assinafy', () => {
+    const result = envSchema.safeParse({
+      DATABASE_URL: 'postgres://user:pass@localhost:5432/db',
+      DATABASE_MIGRATION_URL: 'postgres://user:pass@localhost:5432/db',
+      SKIP_AUTH: 'false',
+      SESSION_SECRET: 'test-session-secret-with-at-least-32-chars',
+      NODE_ENV: 'production',
+      VERCEL_ENV: 'production',
+      CRON_SECRET: 'cron-secret-configurado',
+      ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
+      ENCRYPTION_MASTER_KEY: 'test-encryption-master-key-with-at-least-32-chars',
+      ASSINAFY_API_KEY: 'assinafy-api-key',
+      ASSINAFY_BASE_URL: 'https://api.assinafy.com.br/v1',
+    });
+
+    expect(result.success).toBe(true);
+  });
 });
