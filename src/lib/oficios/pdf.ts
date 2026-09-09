@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, PageSizes, StandardFonts, type PDFPage, type PDFFont } from 'pdf-lib';
 import { type OfficialLetter } from '@/lib/db/schema/oficios';
+import { env } from '@/lib/env';
 
 const CARLITO_FONTS_DIR = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -52,6 +53,11 @@ export function resetOficioPdfAssetCacheForTests() {
   logoLoadAttempted = false;
 }
 
+/** Public origin for serverless font/logo fetch when `public/` is not on disk. */
+export function oficioPublicAssetBaseUrl(): string {
+  return env.ASOF_INTRANET_URL ?? 'http://localhost:3000';
+}
+
 async function getCarlitoFontBytes(): Promise<{ regular: Uint8Array; bold: Uint8Array } | null> {
   if (cachedCarlitoFonts) return cachedCarlitoFonts;
   if (carlitoFontsUnavailable) return null;
@@ -64,7 +70,7 @@ async function getCarlitoFontBytes(): Promise<{ regular: Uint8Array; bold: Uint8
     return cachedCarlitoFonts;
   } catch {
     // Serverless fallback: fetch fonts via HTTP from the app URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = oficioPublicAssetBaseUrl();
     try {
       const [regularResp, boldResp] = await Promise.all([
         fetch(`${baseUrl}/fonts/carlito/Carlito-Regular.ttf`, {
@@ -95,7 +101,7 @@ async function loadLogoBytes(): Promise<Uint8Array | ArrayBuffer> {
     return cachedLogoBytes;
   } catch {
     // Serverless fallback: fetch logo via HTTP from the app URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = oficioPublicAssetBaseUrl();
     try {
       const resp = await fetch(`${baseUrl}/logo.png`, { signal: AbortSignal.timeout(5000) });
       if (!resp.ok) throw new Error('Logo fetch failed');
