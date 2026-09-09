@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { type NewMailingCampaign } from '@/lib/db/schema';
-import { decryptPii, encryptPii } from '@/lib/crypto/pii';
+import { decryptPii } from '@/lib/crypto/pii';
 import { createLogger } from '@/lib/logger';
 import { toSafeErrorLog } from '@/lib/error-log';
 import { sendEmail } from '@/lib/email';
@@ -108,7 +108,7 @@ export async function createMailingCampaign(
       members.map((member) => ({
         associateId: member.associateId,
         name: member.name,
-        emailCiphertext: member.email ? encryptPii(member.email) : null,
+        emailCiphertext: member.emailCiphertext,
       })),
     );
     await logAuditAction({
@@ -229,6 +229,17 @@ export async function processMailingBatch(limit: number): Promise<ProcessMailing
       continue;
     }
 
+    const liveCampaign = await getCampaignById(db, campaign.id);
+    if (!liveCampaign || liveCampaign.status !== 'em_envio') {
+      for (const recipient of pending) {
+        remaining -= 1;
+        result.processed += 1;
+        await markRecipientCancelled(db, recipient.id);
+      }
+      await finalizeAndAuditCampaign(campaign.id);
+      continue;
+    }
+
     const associateIds = pending
       .map((recipient) => recipient.associateId)
       .filter((associateId): associateId is number => associateId !== null);
@@ -238,12 +249,6 @@ export async function processMailingBatch(limit: number): Promise<ProcessMailing
     for (const recipient of pending) {
       remaining -= 1;
       result.processed += 1;
-
-      const liveCampaign = await getCampaignById(db, campaign.id);
-      if (!liveCampaign || liveCampaign.status !== 'em_envio') {
-        await markRecipientCancelled(db, recipient.id);
-        continue;
-      }
 
       const associate =
         recipient.associateId !== null ? contextByAssociate.get(recipient.associateId) : undefined;

@@ -93,7 +93,7 @@ describe('previewMailingAudience', () => {
   it('retorna contagem e amostra', async () => {
     mockedQueries.countAudience.mockResolvedValue(3);
     mockedQueries.fetchAudience.mockResolvedValue([
-      { associateId: 10, name: 'Ana', email: 'ana@asof.org.br' },
+      { associateId: 10, name: 'Ana', emailCiphertext: 'enc:ana@asof.org.br' },
     ]);
 
     const result = await previewMailingAudience('email', { associationStatus: 'associado' });
@@ -120,8 +120,8 @@ describe('createMailingCampaign', () => {
   it('cria campanha com destinatários cifrados em transação', async () => {
     mockedQueries.countAudience.mockResolvedValue(2);
     mockedQueries.fetchAudience.mockResolvedValue([
-      { associateId: 1, name: 'Ana', email: 'ana@asof.org.br' },
-      { associateId: 2, name: 'Beto', email: 'beto@asof.org.br' },
+      { associateId: 1, name: 'Ana', emailCiphertext: 'enc:ana@asof.org.br' },
+      { associateId: 2, name: 'Beto', emailCiphertext: 'enc:beto@asof.org.br' },
     ]);
     mockedRepository.insertCampaignWithRecipients.mockResolvedValue(7);
 
@@ -153,7 +153,7 @@ describe('createMailingCampaign', () => {
         }),
       ]),
     );
-    expect(encryptPii).toHaveBeenCalledWith('ana@asof.org.br');
+    expect(encryptPii).not.toHaveBeenCalled();
     expect(logAuditAction).toHaveBeenCalledWith(
       expect.objectContaining({
         adminId: USER_ID,
@@ -280,6 +280,63 @@ describe('processMailingBatch', () => {
     vi.clearAllMocks();
     findSendingCampaigns.mockResolvedValue([campaign]);
     mockedRepository.getCampaignById.mockResolvedValue(campaign as never);
+  });
+
+  it('lê a campanha uma vez por lote, não por destinatário', async () => {
+    mockedRepository.claimPendingRecipients.mockResolvedValue([
+      {
+        id: 101,
+        associateId: 1,
+        recipientName: 'Ana',
+        emailCiphertext: 'enc:ana@asof.org.br',
+      },
+      {
+        id: 102,
+        associateId: 2,
+        recipientName: 'Beto',
+        emailCiphertext: 'enc:beto@asof.org.br',
+      },
+    ]);
+    mockedQueries.getMailingRecipientContexts.mockResolvedValue([
+      {
+        associateId: 1,
+        nome: 'Ana',
+        matricula: null,
+        categoria: null,
+        situacaoAssociativa: 'associado',
+        lotacao: 'SERE',
+        padrao: null,
+        enderecoCompleto: null,
+        bairro: null,
+        cidade: null,
+        uf: null,
+        cep: null,
+        email: 'ana@asof.org.br',
+        telefone: null,
+      },
+      {
+        associateId: 2,
+        nome: 'Beto',
+        matricula: null,
+        categoria: null,
+        situacaoAssociativa: 'associado',
+        lotacao: 'SERE',
+        padrao: null,
+        enderecoCompleto: null,
+        bairro: null,
+        cidade: null,
+        uf: null,
+        cep: null,
+        email: 'beto@asof.org.br',
+        telefone: null,
+      },
+    ]);
+
+    const result = await processMailingBatch(10);
+
+    expect(mockedRepository.getCampaignById).toHaveBeenCalledTimes(1);
+    expect(mockedSendEmail).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({ processed: 2, sent: 2, failed: 0 });
   });
 
   it('envia para não associado usando o snapshot e o contexto sem filtro de vínculo', async () => {
