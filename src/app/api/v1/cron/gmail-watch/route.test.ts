@@ -1,70 +1,67 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { DELETE, GET, POST } from './route';
 
-vi.mock('@/lib/email-triage/gmail', () => ({
-  getGmailAccessToken: vi.fn().mockResolvedValue('mock-token'),
-  watchGmail: vi.fn().mockResolvedValue({
-    historyId: '12345',
-    expiration: '1234567890',
-  }),
-}));
+const mockWatchGmail = vi.fn();
+const mockGetGmailAccessToken = vi.fn();
 
 vi.mock('@/lib/env', () => ({
   env: {
-    GMAIL_WATCH_TOPIC: 'projects/test/topics/gmail-inbox',
-    CRON_SECRET: 'test-secret',
+    CRON_SECRET: 'cron-secret',
   },
 }));
 
-describe('GET /api/v1/cron/gmail-watch', () => {
+vi.mock('@/lib/email-triage/gmail', () => ({
+  getGmailAccessToken: (...args: unknown[]) => mockGetGmailAccessToken(...args),
+  watchGmail: (...args: unknown[]) => mockWatchGmail(...args),
+}));
+
+describe('/api/v1/cron/gmail-watch route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('returns 200 for valid cron bearer authorization', async () => {
-    const { GET } = await import('./route');
-    const request = new Request('http://localhost/api/v1/cron/gmail-watch', {
-      method: 'GET',
-      headers: {
-        authorization: 'Bearer test-secret',
-      },
-    });
+  it('accepts Vercel Cron bearer authorization and skips while webhook is deactivated', async () => {
+    const response = await GET(
+      new Request('https://asof.local/api/v1/cron/gmail-watch', {
+        headers: {
+          authorization: 'Bearer cron-secret',
+          'x-request-id': 'cron-request',
+        },
+      }),
+    );
+    const body = await response.json();
 
-    const response = await GET(request);
     expect(response.status).toBe(200);
-
-    const text = await response.text();
-    const data = JSON.parse(text);
-    expect(data.data.status).toBe('ok');
-  });
-
-  it('returns 401 when no bearer token is provided', async () => {
-    const { GET } = await import('./route');
-    const request = new Request('http://localhost/api/v1/cron/gmail-watch', {
-      method: 'GET',
-    });
-
-    const response = await GET(request);
-    expect(response.status).toBe(401);
-
-    const text = await response.text();
-    const data = JSON.parse(text);
-    expect(data.error.code).toBe('unauthorized');
-  });
-
-  it('returns 401 for an invalid bearer token', async () => {
-    const { GET } = await import('./route');
-    const request = new Request('http://localhost/api/v1/cron/gmail-watch', {
-      method: 'GET',
-      headers: {
-        authorization: 'Bearer wrong-secret',
+    expect(mockWatchGmail).not.toHaveBeenCalled();
+    expect(mockGetGmailAccessToken).not.toHaveBeenCalled();
+    expect(body).toMatchObject({
+      ok: true,
+      data: {
+        mode: 'scheduled',
+        skipped: 'gmail_webhook_deactivated',
+      },
+      meta: {
+        requestId: 'cron-request',
       },
     });
+  });
 
-    const response = await GET(request);
+  it('rejects requests without cron bearer authorization', async () => {
+    const response = await GET(new Request('https://asof.local/api/v1/cron/gmail-watch'));
+    const body = await response.json();
+
     expect(response.status).toBe(401);
+    expect(mockWatchGmail).not.toHaveBeenCalled();
+    expect(body.error.code).toBe('unauthorized');
+  });
 
-    const text = await response.text();
-    const data = JSON.parse(text);
-    expect(data.error.code).toBe('unauthorized');
+  it('does not allow unsafe HTTP methods', async () => {
+    const post = await POST(new Request('https://asof.local/api/v1/cron/gmail-watch'));
+    const del = await DELETE(new Request('https://asof.local/api/v1/cron/gmail-watch'));
+
+    expect(post.status).toBe(405);
+    expect(post.headers.get('allow')).toBe('GET');
+    expect(del.status).toBe(405);
+    expect(del.headers.get('allow')).toBe('GET');
   });
 });
