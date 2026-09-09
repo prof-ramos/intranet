@@ -383,6 +383,8 @@ export interface UpdateAssociateValues {
   primaryEmailCiphertext?: string | null;
   primaryEmailHash?: string | null;
   secondaryEmail?: string | null;
+  secondaryEmailCiphertext?: string | null;
+  secondaryEmailHash?: string | null;
   phone?: string | null;
   phoneCiphertext?: string | null;
   phoneHash?: string | null;

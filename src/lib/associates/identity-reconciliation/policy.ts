@@ -70,7 +70,6 @@ const SCALAR_KEYS = [
   'associationCategory',
   'contributionStatus',
   'paymentMethod',
-  'secondaryEmail',
   'internalNotes',
   'sex',
   'maritalStatus',
@@ -98,6 +97,7 @@ const SCALAR_KEYS = [
 const PII_GROUPS = [
   ['cpf', 'cpfCiphertext', 'cpfHash'],
   ['primaryEmail', 'primaryEmailCiphertext', 'primaryEmailHash'],
+  ['secondaryEmail', 'secondaryEmailCiphertext', 'secondaryEmailHash'],
   ['phone', 'phoneCiphertext', 'phoneHash'],
   ['address', 'addressCiphertext', 'addressHash'],
   ['whatsapp', 'whatsappCiphertext', 'whatsappHash'],

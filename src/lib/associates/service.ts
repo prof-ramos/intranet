@@ -66,6 +66,8 @@ const IDENTITY_HASH_UNIQUE_INDEXES = {
   idx_associates_cpf_hash: 'Já existe um oficial cadastrado com este CPF.',
   idx_associates_siape_hash: 'Já existe um oficial cadastrado com este SIAPE.',
   idx_associates_primary_email_hash: 'Já existe um oficial cadastrado com este e-mail principal.',
+  idx_associates_secondary_email_hash:
+    'Já existe um oficial cadastrado com este e-mail secundário.',
 } as const;
 
 function postgresConstraintFields(error: unknown): { code?: unknown; constraint?: unknown } {
@@ -235,7 +237,7 @@ function mapRowToEditDTO(
     birthCity: row.birthCity,
     birthState: row.birthState,
     primaryEmail: decrypted.primaryEmail,
-    secondaryEmail: row.secondaryEmail,
+    secondaryEmail: decrypted.secondaryEmail,
     phone: decrypted.phone,
     whatsapp: decrypted.whatsapp,
     address: decrypted.address,
@@ -354,6 +356,7 @@ const PII_AUDIT_FIELDS = [
   'rg',
   'siape',
   'primaryEmail',
+  'secondaryEmail',
   'phone',
   'whatsapp',
   'address',
@@ -425,7 +428,6 @@ export async function updateAssociateData(
   // Normalização canônica de datas de domínio: só aqui (não no action).
   const values: UpdateAssociateValues = {
     fullName: input.fullName,
-    secondaryEmail: input.secondaryEmail,
     birthDate: input.birthDate,
     birthCity: input.birthCity,
     birthState: input.birthState,
@@ -452,6 +454,7 @@ export async function updateAssociateData(
       rg: input.rg,
       siape: input.siape,
       primaryEmail: input.primaryEmail,
+      secondaryEmail: input.secondaryEmail,
       phone: input.phone,
       whatsapp: input.whatsapp,
       address: input.address,
@@ -749,6 +752,7 @@ export async function createAssociateData(
     rg: emptyToNull(input.rg ?? null),
     siape: emptyToNull(input.siape ?? null),
     primaryEmail: emptyToNull(input.primaryEmail ?? null),
+    secondaryEmail: emptyToNull(input.secondaryEmail),
     phone: emptyToNull(input.phone ?? null),
     whatsapp: emptyToNull(input.whatsapp ?? null),
     address: emptyToNull(input.address ?? null),
@@ -781,7 +785,6 @@ export async function createAssociateData(
 
       const values: UpdateAssociateValues = {
         fullName: input.fullName,
-        secondaryEmail: emptyToNull(input.secondaryEmail),
         birthDate: emptyToNull(input.birthDate),
         birthCity: emptyToNull(input.birthCity),
         birthState: emptyToNull(input.birthState),

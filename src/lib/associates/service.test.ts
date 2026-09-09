@@ -107,6 +107,8 @@ const baseAssociate = {
   primaryEmailCiphertext: null,
   primaryEmailHash: null,
   secondaryEmail: null,
+  secondaryEmailCiphertext: null,
+  secondaryEmailHash: null,
   phone: null,
   phoneCiphertext: null,
   phoneHash: null,
@@ -263,6 +265,27 @@ describe('updateAssociateData', () => {
         siape: null,
         siapeCiphertext: null,
         siapeHash: null,
+      }),
+      { tx: true },
+    );
+  });
+
+  it('encrypts secondaryEmail and nulls plaintext on update', async () => {
+    await updateAssociateData(
+      {
+        id: 1,
+        fullName: 'Alice',
+        secondaryEmail: 'alt@example.com',
+      },
+      adminActor,
+    );
+
+    expect(mockUpdateAssociateById).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        secondaryEmail: null,
+        secondaryEmailCiphertext: expect.any(String),
+        secondaryEmailHash: 'hash-alt@example.com',
       }),
       { tx: true },
     );
@@ -477,6 +500,10 @@ describe('updateAssociateData', () => {
       'idx_associates_primary_email_hash',
       'Já existe um oficial cadastrado com este e-mail principal.',
     ],
+    [
+      'idx_associates_secondary_email_hash',
+      'Já existe um oficial cadastrado com este e-mail secundário.',
+    ],
   ] as const)('translates unique %s collisions to ValidationError', async (constraint, message) => {
     mockUpdateAssociateById.mockRejectedValueOnce(uniqueViolation(constraint));
 
@@ -653,20 +680,49 @@ describe('createAssociateData', () => {
         cpf: '',
         siape: '  ',
         primaryEmail: '',
+        secondaryEmail: '',
       },
       adminActor,
     );
 
     // Blank PII must not produce blind indexes (would collide across creates)
-    const blankPatch = buildPiiPatch({ cpf: '', siape: '  ', primaryEmail: '' });
+    const blankPatch = buildPiiPatch({
+      cpf: '',
+      siape: '  ',
+      primaryEmail: '',
+      secondaryEmail: '',
+    });
     expect(blankPatch.cpfHash).toBeNull();
     expect(blankPatch.siapeHash).toBeNull();
     expect(blankPatch.primaryEmailHash).toBeNull();
+    expect(blankPatch.secondaryEmailHash).toBeNull();
 
     expect(repository.findAssociateByCpfHash).not.toHaveBeenCalled();
     expect(repository.findAssociateBySiapeHash).not.toHaveBeenCalled();
     expect(repository.findAssociateByPrimaryEmailHash).not.toHaveBeenCalled();
     expect(repository.insertAssociate).toHaveBeenCalled();
+  });
+
+  it('encrypts secondaryEmail and nulls plaintext on create', async () => {
+    const repository = await import('./repository');
+    vi.mocked(repository.insertAssociate).mockResolvedValue(101);
+    vi.mocked(repository.findAssociateByCpfHash).mockResolvedValue(null as never);
+    vi.mocked(repository.findAssociateBySiapeHash).mockResolvedValue(null as never);
+    vi.mocked(repository.findAssociateByPrimaryEmailHash).mockResolvedValue(null as never);
+
+    await createAssociateData(
+      { fullName: 'Oficial Com Email Alt', secondaryEmail: 'alt@example.com' },
+      adminActor,
+    );
+
+    expect(repository.insertAssociate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        secondaryEmail: null,
+        secondaryEmailCiphertext: expect.any(String),
+        secondaryEmailHash: 'hash-alt@example.com',
+      }),
+      { tx: true },
+    );
   });
 
   it('drops internal notes from non-admin create callers', async () => {
@@ -698,6 +754,10 @@ describe('createAssociateData', () => {
     [
       'idx_associates_primary_email_hash',
       'Já existe um oficial cadastrado com este e-mail principal.',
+    ],
+    [
+      'idx_associates_secondary_email_hash',
+      'Já existe um oficial cadastrado com este e-mail secundário.',
     ],
   ] as const)('translates unique %s collisions to ValidationError', async (constraint, message) => {
     const repository = await import('./repository');

@@ -90,6 +90,7 @@ const reportColumns = {
   primaryEmail: associates.primaryEmail,
   primaryEmailCiphertext: associates.primaryEmailCiphertext,
   secondaryEmail: associates.secondaryEmail,
+  secondaryEmailCiphertext: associates.secondaryEmailCiphertext,
   phone: associates.phone,
   phoneCiphertext: associates.phoneCiphertext,
   whatsapp: associates.whatsapp,
@@ -177,6 +178,7 @@ const PII_DECRYPT_FIELDS = [
   'cpf',
   'rg',
   'primaryEmail',
+  'secondaryEmail',
   'phone',
   'whatsapp',
   'address',
@@ -235,7 +237,9 @@ export async function getAssociatesForReport(
     primaryEmail: shouldDecryptPii('primaryEmail', selectedKeys)
       ? decryptPiiField(row.primaryEmailCiphertext ?? null, row.primaryEmail ?? null)
       : null,
-    secondaryEmail: row.secondaryEmail,
+    secondaryEmail: shouldDecryptPii('secondaryEmail', selectedKeys)
+      ? decryptPiiField(row.secondaryEmailCiphertext ?? null, row.secondaryEmail ?? null)
+      : null,
     phone: shouldDecryptPii('phone', selectedKeys)
       ? decryptPiiField(row.phoneCiphertext ?? null, row.phone ?? null)
       : null,

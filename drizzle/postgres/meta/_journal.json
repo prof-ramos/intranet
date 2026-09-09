@@ -253,6 +253,13 @@
       "when": 1788675485031,
       "tag": "0035_mailing_campaigns",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1788883200000,
+      "tag": "0036_encrypt_secondary_email",
+      "breakpoints": true
     }
   ]
 }

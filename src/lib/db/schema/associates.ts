@@ -71,6 +71,8 @@ export const associates = pgTable(
     contributionStatus: contributionStatus('contribution_status').notNull().default('inadimplente'),
     paymentMethod: paymentMethod('payment_method').notNull().default('folha'),
     secondaryEmail: text('secondary_email'),
+    secondaryEmailCiphertext: text('secondary_email_ciphertext'),
+    secondaryEmailHash: text('secondary_email_hash'),
     internalNotes: text('internal_notes'),
     // Personal (non-PII) — legacy migration 0020
     sex: sex('sex'),
@@ -122,6 +124,7 @@ export const associates = pgTable(
     uniqueIndex('idx_associates_cpf_hash').on(table.cpfHash),
     uniqueIndex('idx_associates_siape_hash').on(table.siapeHash),
     uniqueIndex('idx_associates_primary_email_hash').on(table.primaryEmailHash),
+    uniqueIndex('idx_associates_secondary_email_hash').on(table.secondaryEmailHash),
     index('idx_associates_phone_hash').on(table.phoneHash),
     index('idx_associates_address_hash').on(table.addressHash),
     index('idx_associates_whatsapp_hash').on(table.whatsappHash),
@@ -145,6 +148,10 @@ export const associates = pgTable(
     check(
       'chk_associates_email_pii',
       sql`${table.primaryEmail} IS NULL OR ${table.primaryEmailCiphertext} IS NULL`,
+    ),
+    check(
+      'chk_associates_secondary_email_pii',
+      sql`${table.secondaryEmail} IS NULL OR ${table.secondaryEmailCiphertext} IS NULL`,
     ),
     check(
       'chk_associates_phone_pii',
