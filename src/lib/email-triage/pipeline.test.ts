@@ -5,10 +5,10 @@ import type { EmailTriageResult } from './schema';
 
 // ─── Module mocks ────────────────────────────────────────────────────────
 
-vi.mock('@/lib/env', () => ({
-  env: {
-    GEMINI_API_KEY: 'test-key',
-  },
+const mockGetGeminiApiKey = vi.fn();
+
+vi.mock('@/lib/ai/settings', () => ({
+  getGeminiApiKey: (...args: any[]) => mockGetGeminiApiKey(...args),
 }));
 
 vi.mock('@/lib/db', () => ({
@@ -105,7 +105,20 @@ vi.mock('./notifier', () => ({
 describe('processEmail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetGeminiApiKey.mockResolvedValue('test-key');
   });
+
+  function stubFetchedEmail(messageId: string) {
+    mockGetMessage.mockResolvedValue({
+      id: messageId,
+      threadId: `thread-${messageId}`,
+      historyId: 'hist-1',
+      payload: { headers: [], body: { data: '' } },
+    });
+    mockExtractTextAndAttachments.mockReturnValue({ text: 'test', attachments: [] });
+    mockRedactExcerpt.mockImplementation((text: string) => text);
+    mockBuildPersistedExcerpt.mockReturnValue('[short-body-redacted; sha256 stored]');
+  }
 
   it('processes a valid email end-to-end', async () => {
     const gmailMessage = {
@@ -397,6 +410,43 @@ describe('processEmail', () => {
     );
     expect(mockBuildCorrelationContext).not.toHaveBeenCalled();
     expect(mockApplyCorrelationActions).not.toHaveBeenCalled();
+  });
+
+  it('calls analyzeEmail when getGeminiApiKey returns a key', async () => {
+    stubFetchedEmail('msg-key-present');
+    mockAnalyzeEmail.mockResolvedValue({
+      categoria: 'juridico',
+      exige_validacao_humana: true,
+    });
+    mockPersistTriage.mockResolvedValue(42);
+    mockEnsureLabel.mockResolvedValue('label-id-123');
+    mockMarkAsTriaged.mockResolvedValue(undefined);
+
+    const result = await processEmail('fake-token', 'msg-key-present');
+
+    expect(result.success).toBe(true);
+    expect(mockGetGeminiApiKey).toHaveBeenCalledOnce();
+    expect(mockAnalyzeEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ message_id: 'msg-key-present' }),
+      'test-key',
+      expect.any(String),
+    );
+    expect(JSON.stringify(result)).not.toContain('test-key');
+  });
+
+  it('fails the message without calling Gemini when getGeminiApiKey returns null', async () => {
+    stubFetchedEmail('msg-key-missing');
+    mockGetGeminiApiKey.mockResolvedValue(null);
+
+    const result = await processEmail('fake-token', 'msg-key-missing');
+
+    expect(result).toEqual({
+      success: false,
+      messageId: 'msg-key-missing',
+      error: 'GEMINI_API_KEY nao configurada.',
+    });
+    expect(mockAnalyzeEmail).not.toHaveBeenCalled();
+    expect(mockPersistFailure).not.toHaveBeenCalled();
   });
 
   it('returns error when Gmail fetch fails', async () => {
