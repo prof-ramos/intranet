@@ -194,7 +194,7 @@ export async function autoMarkOverduePaymentsService(): Promise<number> {
             paymentMethod: payment.paymentMethod,
             paidAt: payment.paidAt ? payment.paidAt.toISOString() : null,
             links: {
-              app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
+              app: '/app',
             },
           },
         })),
@@ -439,7 +439,7 @@ export async function updateMonthlyPayment(
             paymentMethod: payment.paymentMethod,
             paidAt: paidAt ? paidAt.toISOString() : null,
             links: {
-              app: `/app/financeiro/mensalidades?year=${payment.year}&month=${payment.month}`,
+              app: '/app',
             },
           },
         },
@@ -514,7 +514,7 @@ export async function cancelMonthlyPayment(
           cancelledAt: cancelledAt.toISOString(),
           cancellationReason,
           links: {
-            app: `/app/financeiro/mensalidades?year=${updatedPayment.year}&month=${updatedPayment.month}`,
+            app: '/app',
           },
         },
       },

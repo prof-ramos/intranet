@@ -21,6 +21,25 @@ describe('processNotificationClick', () => {
     expect(close).toHaveBeenCalledOnce();
   });
 
+  it('does not navigate when href is missing but still closes after successful read', async () => {
+    const markAsRead = vi.fn().mockResolvedValue(undefined);
+    const navigate = vi.fn();
+    const close = vi.fn();
+
+    const navigated = await processNotificationClick({
+      notificationId: 12,
+      href: null,
+      markAsRead,
+      navigate,
+      close,
+    });
+
+    expect(navigated).toBe(false);
+    expect(markAsRead).toHaveBeenCalledWith(12);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(close).toHaveBeenCalledOnce();
+  });
+
   it('does not navigate to unsafe hrefs but still closes after successful read', async () => {
     const markAsRead = vi.fn().mockResolvedValue(undefined);
     const navigate = vi.fn();
