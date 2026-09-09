@@ -57,6 +57,10 @@ export const activities = pgTable(
     index('idx_activities_associate_id').on(table.associateId),
     index('idx_activities_associate_due_id').on(table.associateId, table.dueDate, table.id),
     index('idx_activities_created_by').on(table.createdBy),
+    index('idx_activities_open_updated')
+      .on(table.updatedAt.desc(), table.id.desc())
+      .where(sql`${table.status} <> 'concluido'`),
+    index('idx_activities_title_trgm').using('gin', table.title.op('gin_trgm_ops')),
   ],
 );
 

@@ -129,6 +129,13 @@ export const associates = pgTable(
     index('idx_associates_association_status').on(table.associationStatus),
     index('idx_associates_contribution_status').on(table.contributionStatus),
     index('idx_associates_status_name').on(table.associationStatus, table.fullName),
+    index('idx_associates_paginated_list').on(
+      table.associationStatus,
+      table.contributionStatus,
+      table.functionalStatus,
+      table.fullName,
+      table.id,
+    ),
     index('idx_associates_name_trgm').using('gin', table.fullName.op('gin_trgm_ops')),
     index('idx_associates_name_lower_trgm').using(
       'gin',

@@ -20,6 +20,12 @@ export const legalNotes = pgTable(
     index('idx_legal_notes_entity').on(table.entityType, table.entityId),
     index('idx_legal_notes_created_by').on(table.createdBy),
     index('idx_legal_notes_created_at').on(table.createdAt),
+    index('idx_legal_notes_entity_created').on(
+      table.entityType,
+      table.entityId,
+      table.createdAt,
+      table.id,
+    ),
   ],
 );
 
