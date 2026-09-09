@@ -1,6 +1,6 @@
 # ADR 020: Spike Comparativo de Object Storage — Cloudflare R2 versus Garage
 
-Status: accepted for isolated POC; provider decision pending
+Status: accepted for isolated POC; outcome blocked on POC credentials
 
 ## Contexto
 
@@ -70,6 +70,42 @@ Vercel ou fluxo de documentos real.
 Não haverá adoção em produção até um novo ADR (ou emenda explícita) escolher o
 provedor e um plano separado definir integração, lifecycle, backup/restore,
 políticas de acesso, migração e testes de documentos.
+
+## Outcome
+
+**Resultado: blocked-on-credentials** (2026-09-08). Nenhum provedor foi
+escolhido, rejeitado ou adiado com evidência operacional. Não há ADR 022.
+
+O spike **não foi executado** neste ambiente: `STORAGE_SPIKE_ALLOW_NETWORK` e
+as variáveis `R2_POC_*` / `GARAGE_POC_*` não estavam disponíveis. Sem PUT/GET
+presignados contra buckets de POC, a matriz (custo, operação, CORS, lifecycle,
+LGPD, compatibilidade S3) não tem evidência. Inventar latência ou sucesso
+violaria este ADR.
+
+Os critérios de encerramento abaixo **permanecem abertos**. Papra continua
+rejeitado ([ADR 012](./012-papra-dms-candidate-for-documents.md)) e não é
+reaberto. `@aws-sdk/client-s3` e `@aws-sdk/s3-request-presigner` seguem em
+`devDependencies` até um ADR posterior escolher provedor ou abandonar o spike.
+Esta emenda **não** integra storage na aplicação: sem rota, UI de Documentos,
+migration, variável Vercel, bucket de produção ou wiring de `@aws-sdk` em
+`src/`.
+
+Comentário secret-free já existe em
+[#423](https://github.com/prof-ramos/intranet/issues/423) (execução real
+pendente de credenciais de POC). O fechamento documental desta emenda é o
+issue [#481](https://github.com/prof-ramos/intranet/issues/481).
+
+### Próximo passo do operador
+
+1. Provisionar buckets privados de POC (nunca nomes `prod`, `production` ou
+   `main`).
+2. Exportar `STORAGE_SPIKE_ALLOW_NETWORK=true` e `R2_POC_*` / `GARAGE_POC_*`
+   conforme [`scripts/storage-spike/README.md`](../../scripts/storage-spike/README.md).
+3. Executar `npm run storage:spike -- --cleanup` (ou `--provider=r2` /
+   `--provider=garage`).
+4. Registrar a matriz sem segredos em #423 e emendar este ADR (`chosen` /
+   `rejected` / `deferred`). Só então abrir ADR 022 e um plano de integração,
+   se um provedor for escolhido.
 
 ## Critérios de encerramento
 
