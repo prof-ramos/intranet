@@ -436,6 +436,10 @@ describe('envSchema', () => {
       CRON_SECRET: 'cron-secret-configurado',
       ASOF_INTRANET_URL: 'https://intranet.asof.com.br',
       ENCRYPTION_MASTER_KEY: 'test-encryption-master-key-with-at-least-32-chars',
+      MAILJET_API_KEY: 'mailjet-api-key',
+      MAILJET_SECRET_KEY: 'mailjet-secret-key',
+      MAILJET_SENDER_EMAIL: 'noreply@asof.org.br',
+      MAILJET_SENDER_VALIDATED: 'true',
       ASSINAFY_API_KEY: 'assinafy-api-key',
       ASSINAFY_BASE_URL: 'https://api.assinafy.com.br/v1',
     });
