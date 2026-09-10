@@ -51,6 +51,13 @@ export const envSchema = z
       .pipe(z.enum(['true', 'false']).default('false'))
       .transform((v) => v === 'true'),
 
+    ACTIVITY_COMMENTS_ENABLED: z
+      .string()
+      .optional()
+      .transform(emptyToUndefined)
+      .pipe(z.enum(['true', 'false']).default('true'))
+      .transform((v) => v === 'true'),
+
     SKIP_AUTH: optionalString.default('false'),
     SESSION_SECRET: optionalSessionSecret,
     DEV_USER_ID: optionalString,

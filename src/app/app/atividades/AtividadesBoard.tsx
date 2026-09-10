@@ -11,6 +11,7 @@ import { focusRingClass } from '@/lib/ui/tokens';
 import {
   createQuickActivityAction,
   getActivityTimelineAction,
+  listCommentsAction,
   updateActivityAction,
 } from './actions';
 import { columns } from './_board/constants';
@@ -36,6 +37,7 @@ import { parsePositiveIntParam } from '@/lib/routing/params';
 import { createLogger } from '@/lib/logger';
 import { toSafeErrorLog } from '@/lib/error-log';
 import type {
+  ActivityCommentItem,
   ActivityTimelineItem,
   BoardActivity,
   BoardAssociate,
@@ -78,6 +80,9 @@ export function AtividadesBoard({
   const [drawerTimeline, setDrawerTimeline] = useState<ActivityTimelineItem[]>([]);
   const [loadedDrawerTimelineId, setLoadedDrawerTimelineId] = useState<number | null>(null);
   const [drawerTimelineError, setDrawerTimelineError] = useState<string | null>(null);
+  const [drawerComments, setDrawerComments] = useState<ActivityCommentItem[]>([]);
+  const [loadedDrawerCommentsId, setLoadedDrawerCommentsId] = useState<number | null>(null);
+  const [drawerCommentsError, setDrawerCommentsError] = useState<string | null>(null);
 
   const peopleById = useMemo(() => new Map(people.map((person) => [person.id, person])), [people]);
 
@@ -96,6 +101,11 @@ export function AtividadesBoard({
     drawerActivity !== null &&
     loadedDrawerTimelineId !== drawerId &&
     !drawerTimelineError;
+  const drawerCommentsLoading =
+    drawerId !== null &&
+    drawerActivity !== null &&
+    loadedDrawerCommentsId !== drawerId &&
+    !drawerCommentsError;
 
   const syncDrawerUrl = useCallback(
     (nextDrawerId: number | null) => {
@@ -125,10 +135,27 @@ export function AtividadesBoard({
     }
   }
 
+  async function loadDrawerComments(activityId: number) {
+    try {
+      const comments = await listCommentsAction(activityId);
+      setDrawerComments(comments);
+      setLoadedDrawerCommentsId(activityId);
+      setDrawerCommentsError(null);
+    } catch (err) {
+      logger.error('Failed to load drawer comments', { activityId, error: toSafeErrorLog(err) });
+      setDrawerComments([]);
+      setLoadedDrawerCommentsId(activityId);
+      setDrawerCommentsError('Não foi possível carregar os comentários desta atividade.');
+    }
+  }
+
   function openDrawer(activityId: number) {
     setDrawerTimeline([]);
     setLoadedDrawerTimelineId(null);
     setDrawerTimelineError(null);
+    setDrawerComments([]);
+    setLoadedDrawerCommentsId(null);
+    setDrawerCommentsError(null);
     syncDrawerUrl(activityId);
   }
 
@@ -144,6 +171,14 @@ export function AtividadesBoard({
       });
     }
   }, [drawerActivity, drawerTimelineError, drawerTimelineLoading, drawerTimeline.length]);
+
+  useEffect(() => {
+    if (drawerActivity && drawerCommentsLoading && !drawerCommentsError) {
+      queueMicrotask(() => {
+        void loadDrawerComments(drawerActivity.id);
+      });
+    }
+  }, [drawerActivity, drawerCommentsError, drawerCommentsLoading]);
 
   useEffect(() => {
     if (hasOpenActivity(drawerId, items)) return;
@@ -375,10 +410,23 @@ export function AtividadesBoard({
         timeline={drawerTimeline}
         timelineLoading={drawerTimelineLoading}
         timelineError={drawerTimelineError}
+        comments={drawerComments}
+        commentsLoading={drawerCommentsLoading}
+        commentsError={drawerCommentsError}
+        currentUserId={currentUser.id}
+        onCommentsChange={(nextComments) => setDrawerComments(nextComments)}
+        onCommentMutation={() => {
+          setDrawerTimeline([]);
+          setLoadedDrawerTimelineId(null);
+          setDrawerTimelineError(null);
+        }}
         onClose={() => {
           setDrawerTimeline([]);
           setLoadedDrawerTimelineId(null);
           setDrawerTimelineError(null);
+          setDrawerComments([]);
+          setLoadedDrawerCommentsId(null);
+          setDrawerCommentsError(null);
           syncDrawerUrl(null);
         }}
         onChange={handleDrawerChange}

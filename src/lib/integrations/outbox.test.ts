@@ -68,6 +68,27 @@ describe('emitDomainEvent', () => {
     );
   });
 
+  it('accepts activity comment event payloads', async () => {
+    await emitDomainEvent(
+      {
+        type: 'activity.comment_added',
+        entityType: 'activity',
+        entityId: 12,
+        actorAdminId: 3,
+        payload: { commentId: 7, activityId: 12, authorAdminId: 3 },
+      },
+      txSentinel as unknown as DbExecutor,
+    );
+
+    expect(txSentinel.insert).toHaveBeenCalled();
+    expect(txSentinel.values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'activity.comment_added',
+        payload: { commentId: 7, activityId: 12, authorAdminId: 3 },
+      }),
+    );
+  });
+
   it('rejects payloads with fields outside the event contract', async () => {
     await expect(
       emitDomainEvent({

@@ -32,6 +32,15 @@ export interface ActivityTimelineItem {
   summary: string;
 }
 
+export interface ActivityCommentItem {
+  id: number;
+  activityId: number;
+  authorAdminId: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface BoardActivity {
   id: number;
   title: string;

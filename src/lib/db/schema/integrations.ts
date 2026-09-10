@@ -28,6 +28,9 @@ export const domainEventType = pgEnum('domain_event_type', [
   'activity.completed',
   'activity.priority_changed',
   'activity.due_date_changed',
+  'activity.comment_added',
+  'activity.comment_edited',
+  'activity.comment_deleted',
 ]);
 
 export const domainEventEntityType = pgEnum('domain_event_entity_type', [

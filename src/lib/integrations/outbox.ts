@@ -135,6 +135,27 @@ const payloadSchemaByEventType = {
       links: linksSchema,
     })
     .strict(),
+  'activity.comment_added': z
+    .object({
+      commentId: z.number().int().positive(),
+      activityId: z.number().int().positive(),
+      authorAdminId: z.number().int().positive(),
+    })
+    .strict(),
+  'activity.comment_edited': z
+    .object({
+      commentId: z.number().int().positive(),
+      activityId: z.number().int().positive(),
+      authorAdminId: z.number().int().positive(),
+    })
+    .strict(),
+  'activity.comment_deleted': z
+    .object({
+      commentId: z.number().int().positive(),
+      activityId: z.number().int().positive(),
+      authorAdminId: z.number().int().positive(),
+    })
+    .strict(),
 } satisfies Record<DomainEventType, z.ZodType<Record<string, unknown>>>;
 
 export type DomainEventPayloadMap = {

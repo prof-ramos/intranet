@@ -3,9 +3,20 @@
 import { defineFormAction, defineServerAction } from '@/lib/server-actions/define-form-action';
 import { AREAS } from '@/lib/activities/constants';
 import { listActivityTimeline } from '@/lib/activities/repository';
+import {
+  addCommentService,
+  deleteCommentService,
+  editCommentService,
+  listCommentsService,
+} from '@/lib/activities/comments-service';
 import { createActivityService, updateActivityService } from '@/lib/activities/service';
 import { ACTIVITY_PRIORITY_LABELS, ACTIVITY_STATUS_LABELS } from '@/lib/activities/status';
-import type { ActivityTimelineItem, Priority, Status } from '@/lib/activities/types';
+import type {
+  ActivityCommentItem,
+  ActivityTimelineItem,
+  Priority,
+  Status,
+} from '@/lib/activities/types';
 import { ACTIVITY_PRIORITIES, ACTIVITY_STATUSES } from '@/lib/activities/types';
 import { z } from 'zod';
 
@@ -102,6 +113,34 @@ const updateActivitySchema = z.object({
     .optional(),
 });
 const activityIdSchema = z.number().int().positive('Atividade inválida.');
+const commentContentSchema = z
+  .string()
+  .min(1, 'O comentário é obrigatório.')
+  .max(10_000, 'O comentário não pode exceder 10.000 caracteres.');
+const addCommentSchema = z.object({
+  activityId: activityIdSchema,
+  content: commentContentSchema,
+});
+const editCommentSchema = z.object({
+  commentId: z.number().int().positive('Comentário inválido.'),
+  content: commentContentSchema,
+});
+const deleteCommentSchema = z.object({
+  commentId: z.number().int().positive('Comentário inválido.'),
+});
+
+function toActivityCommentItem(
+  comment: Awaited<ReturnType<typeof listCommentsService>>[number],
+): ActivityCommentItem {
+  return {
+    id: comment.id,
+    activityId: comment.activityId,
+    authorAdminId: comment.authorAdminId,
+    content: comment.content,
+    createdAt: comment.createdAt.toISOString(),
+    updatedAt: comment.updatedAt.toISOString(),
+  };
+}
 
 function describeTimelineEntry(
   entry: Awaited<ReturnType<typeof listActivityTimeline>>[number],
@@ -145,6 +184,10 @@ function describeTimelineEntry(
 
     return parts.length > 0 ? `Alterou ${parts.join(', ')}.` : 'Atividade atualizada.';
   }
+
+  if (entry.action === 'activity_comment_added') return 'Comentário adicionado.';
+  if (entry.action === 'activity_comment_edited') return 'Comentário editado.';
+  if (entry.action === 'activity_comment_deleted') return 'Comentário excluído.';
 
   return 'Atividade atualizada.';
 }
@@ -258,5 +301,63 @@ export const getActivityTimelineAction = defineServerAction({
       createdAt: row.createdAt.toISOString(),
       summary: describeTimelineEntry(row),
     }));
+  },
+});
+
+export const addCommentAction = defineServerAction({
+  auth: ['admin', 'diretoria', 'secretaria'],
+  schema: addCommentSchema,
+  service: async (input, user): Promise<ActivityCommentItem> =>
+    toActivityCommentItem(
+      await addCommentService({
+        activityId: input.activityId,
+        authorAdminId: user.userId,
+        content: input.content,
+      }),
+    ),
+  revalidate: {
+    path: '/app/atividades',
+  },
+});
+
+export const editCommentAction = defineServerAction({
+  auth: ['admin', 'diretoria', 'secretaria'],
+  schema: editCommentSchema,
+  service: async (input, user): Promise<ActivityCommentItem> =>
+    toActivityCommentItem(
+      await editCommentService({
+        commentId: input.commentId,
+        editorAdminId: user.userId,
+        content: input.content,
+      }),
+    ),
+  revalidate: {
+    path: '/app/atividades',
+  },
+});
+
+export const updateCommentAction = editCommentAction;
+
+export const deleteCommentAction = defineServerAction({
+  auth: ['admin', 'diretoria', 'secretaria'],
+  schema: deleteCommentSchema,
+  service: async (input, user) => {
+    const deleted = await deleteCommentService({
+      commentId: input.commentId,
+      actorAdminId: user.userId,
+    });
+    return { id: deleted.id };
+  },
+  revalidate: {
+    path: '/app/atividades',
+  },
+});
+
+export const listCommentsAction = defineServerAction({
+  auth: ['admin', 'diretoria', 'secretaria'],
+  schema: activityIdSchema,
+  service: async (activityId: number): Promise<ActivityCommentItem[]> => {
+    const comments = await listCommentsService(activityId);
+    return comments.map(toActivityCommentItem);
   },
 });

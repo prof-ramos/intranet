@@ -2,6 +2,7 @@ export * from './admins';
 export * from './app-settings';
 export * from './associates';
 export * from './activities';
+export * from './activity-comments';
 export * from './assignments';
 export * from './audit';
 export * from './enums';

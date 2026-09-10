@@ -1,14 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  addCommentAction,
   createActivity,
   createQuickActivityAction,
+  deleteCommentAction,
+  editCommentAction,
   getActivityTimelineAction,
+  listCommentsAction,
   updateActivityAction,
 } from './actions';
 
 const requireRoleMock = vi.fn();
 const createActivityServiceMock = vi.fn();
 const updateActivityServiceMock = vi.fn();
+const addCommentServiceMock = vi.fn();
+const editCommentServiceMock = vi.fn();
+const deleteCommentServiceMock = vi.fn();
+const listCommentsServiceMock = vi.fn();
 const listActivityTimelineMock = vi.fn();
 const revalidatePathMock = vi.fn();
 const revalidateTagMock = vi.fn();
@@ -20,6 +28,13 @@ vi.mock('@/lib/auth/authorization', () => ({
 vi.mock('@/lib/activities/service', () => ({
   createActivityService: (...args: unknown[]) => createActivityServiceMock(...args),
   updateActivityService: (...args: unknown[]) => updateActivityServiceMock(...args),
+}));
+
+vi.mock('@/lib/activities/comments-service', () => ({
+  addCommentService: (...args: unknown[]) => addCommentServiceMock(...args),
+  editCommentService: (...args: unknown[]) => editCommentServiceMock(...args),
+  deleteCommentService: (...args: unknown[]) => deleteCommentServiceMock(...args),
+  listCommentsService: (...args: unknown[]) => listCommentsServiceMock(...args),
 }));
 
 vi.mock('@/lib/activities/repository', () => ({
@@ -45,6 +60,22 @@ describe('atividades actions', () => {
       assigneeId: 7,
     });
     listActivityTimelineMock.mockResolvedValue([]);
+    const comment = {
+      id: 5,
+      activityId: 9,
+      authorAdminId: 7,
+      content: 'Comentário',
+      createdAt: new Date('2026-05-17T15:00:00.000Z'),
+      updatedAt: new Date('2026-05-17T15:00:00.000Z'),
+      deletedAt: null,
+    };
+    addCommentServiceMock.mockResolvedValue(comment);
+    editCommentServiceMock.mockResolvedValue({ ...comment, content: 'Editado' });
+    deleteCommentServiceMock.mockResolvedValue({
+      ...comment,
+      deletedAt: new Date('2026-05-17T16:00:00.000Z'),
+    });
+    listCommentsServiceMock.mockResolvedValue([comment]);
   });
 
   it('creates an activity from form data and revalidates the board', async () => {
@@ -359,5 +390,77 @@ describe('atividades actions', () => {
     const result = await getActivityTimelineAction(9);
 
     expect(result[0]?.summary).toBe('Alterou responsável.');
+  });
+
+  it('maps comment actions through the authenticated user and returns safe DTOs', async () => {
+    const added = await addCommentAction({ activityId: 9, content: 'Novo' });
+    expect(added).toEqual({
+      id: 5,
+      activityId: 9,
+      authorAdminId: 7,
+      content: 'Comentário',
+      createdAt: '2026-05-17T15:00:00.000Z',
+      updatedAt: '2026-05-17T15:00:00.000Z',
+    });
+    expect(addCommentServiceMock).toHaveBeenCalledWith({
+      activityId: 9,
+      authorAdminId: 7,
+      content: 'Novo',
+    });
+
+    const edited = await editCommentAction({ commentId: 5, content: 'Editado' });
+    expect(edited.content).toBe('Editado');
+    expect(editCommentServiceMock).toHaveBeenCalledWith({
+      commentId: 5,
+      editorAdminId: 7,
+      content: 'Editado',
+    });
+
+    await deleteCommentAction({ commentId: 5 });
+    expect(deleteCommentServiceMock).toHaveBeenCalledWith({ commentId: 5, actorAdminId: 7 });
+
+    await expect(listCommentsAction(9)).resolves.toEqual([
+      {
+        id: 5,
+        activityId: 9,
+        authorAdminId: 7,
+        content: 'Comentário',
+        createdAt: '2026-05-17T15:00:00.000Z',
+        updatedAt: '2026-05-17T15:00:00.000Z',
+      },
+    ]);
+  });
+
+  it('summarizes comment audit entries in the activity timeline', async () => {
+    listActivityTimelineMock.mockResolvedValue([
+      {
+        id: 4,
+        action: 'activity_comment_added',
+        actorName: 'Admin',
+        createdAt: new Date('2026-05-17T12:00:00.000Z'),
+        changes: { old: {}, new: { contentLength: 5 } },
+      },
+      {
+        id: 5,
+        action: 'activity_comment_edited',
+        actorName: 'Admin',
+        createdAt: new Date('2026-05-17T12:01:00.000Z'),
+        changes: { old: { contentLength: 5 }, new: { contentLength: 7 } },
+      },
+      {
+        id: 6,
+        action: 'activity_comment_deleted',
+        actorName: 'Admin',
+        createdAt: new Date('2026-05-17T12:02:00.000Z'),
+        changes: { old: { contentLength: 7 }, new: { deleted: true } },
+      },
+    ]);
+
+    const result = await getActivityTimelineAction(9);
+    expect(result.map((entry) => entry.summary)).toEqual([
+      'Comentário adicionado.',
+      'Comentário editado.',
+      'Comentário excluído.',
+    ]);
   });
 });

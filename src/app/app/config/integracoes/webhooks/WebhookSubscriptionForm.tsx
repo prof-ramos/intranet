@@ -31,6 +31,9 @@ const eventLabels: Record<DomainEventType, string> = {
   'activity.completed': 'Atividade concluída',
   'activity.priority_changed': 'Prioridade de atividade alterada',
   'activity.due_date_changed': 'Vencimento de atividade alterado',
+  'activity.comment_added': 'Comentário de atividade adicionado',
+  'activity.comment_edited': 'Comentário de atividade editado',
+  'activity.comment_deleted': 'Comentário de atividade excluído',
 };
 
 export function WebhookSubscriptionForm({

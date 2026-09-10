@@ -39,6 +39,7 @@ vi.mock('@hello-pangea/dnd', () => ({
 vi.mock('./actions', () => ({
   createQuickActivityAction: actionMocks.createQuickActivityAction,
   getActivityTimelineAction: vi.fn().mockResolvedValue([]),
+  listCommentsAction: vi.fn().mockResolvedValue([]),
   updateActivityAction: actionMocks.updateActivityAction,
 }));
 vi.mock('./_board/useBoardPreferences', () => ({
@@ -204,9 +205,9 @@ describe('AtividadesBoard quick add', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Adicionar' }));
 
     await waitFor(() =>
-      expect((screen.getByRole('button', { name: 'Salvando...' }) as HTMLButtonElement).disabled).toBe(
-        true,
-      ),
+      expect(
+        (screen.getByRole('button', { name: 'Salvando...' }) as HTMLButtonElement).disabled,
+      ).toBe(true),
     );
     expect(actionMocks.createQuickActivityAction).toHaveBeenCalledTimes(1);
   });

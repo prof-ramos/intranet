@@ -26,7 +26,7 @@ Repo is **public**. Security plans describe the pattern and the fix only — no 
 | 016 | Close ADR 020 storage spike (no Documentos build) | P3 | M | — | DONE | [#481](https://github.com/prof-ramos/intranet/issues/481) |
 | 017 | Etiquetas in Secretaria nav | P3 | S | — | DONE | [#482](https://github.com/prof-ramos/intranet/issues/482) |
 | 018 | WebMCP Atividades spike (≤6 tools, no chat) | P3 | M | — | DONE | [#483](https://github.com/prof-ramos/intranet/issues/483) |
-| 019 | Atividades institucional (comentários, labels, API, MCP) | P0 | XL | — | TODO | [#503](https://github.com/prof-ramos/intranet/issues/503) |
+| 019 | Atividades institucional (comentários, labels, API, MCP) | P0 | XL | — | IN PROGRESS | [#503](https://github.com/prof-ramos/intranet/issues/503) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED | REJECTED
 

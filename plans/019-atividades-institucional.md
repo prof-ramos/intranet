@@ -134,31 +134,32 @@ Nenhuma regra de negócio exclusiva no React, MCP, API ou Server Action.
 ## Fases (spec Parte IV)
 
 ### Fase 0 — Preparação
-- [ ] Revisar schema/service/timeline atuais (feito acima — registrar no PR).
-- [ ] Definir migrations aditivas (novas tabelas primeiro; nada destrutivo).
-- [ ] Confirmar contratos das Server Actions (não quebrar `actions.ts`).
-- [ ] Verificar licença AGPL do kanbn/kan: **não copiar código**; usar como
+- [x] Revisar schema/service/timeline atuais (feito acima — registrar no PR).
+- [x] Definir migrations aditivas (novas tabelas primeiro; nada destrutivo).
+- [x] Confirmar contratos das Server Actions (não quebrar `actions.ts`).
+- [x] Verificar licença AGPL do kanbn/kan: **não copiar código**; usar como
       referência funcional/UX apenas. Documentar em `docs/activities.md`.
-- [ ] Consolidar contratos do Activity Service (P0.1): garantir que a UI
+- [x] Consolidar contratos do Activity Service (P0.1): garantir que a UI
       atual opere exclusivamente sobre `service.ts` (sem regra de negócio
       duplicada em actions/componentes). Baseline de testes passando.
 
 ### Fase 1 — Comentários (P0.2)
-- [ ] Migration: `activity_comments` (id, activity_id FK, author_admin_id FK,
+- [x] Migration: `activity_comments` (id, activity_id FK, author_admin_id FK,
       content text, created_at, updated_at, deleted_at) + índices.
-- [ ] Schema Drizzle + tipos.
-- [ ] Repository (`src/lib/activities/comments-repository.ts`): insert, update,
+- [x] Schema Drizzle + tipos.
+- [x] Repository (`src/lib/activities/comments-repository.ts`): insert, update,
       soft-delete, list por activity (excluindo deleted).
-- [ ] Service (`src/lib/activities/comments-service.ts`): `addComment`,
+- [x] Service (`src/lib/activities/comments-service.ts`): `addComment`,
       `updateComment`, `deleteComment` — validação (tamanho, sanitização),
       autorização por papel, auditoria (`activity_comment_added/edited/deleted`),
       eventos de domínio (`activity.comment_added/edited/deleted` — adicionar
       tipos ao enum `domain_event_type`), transacional.
-- [ ] Server Actions: `addCommentAction`, `updateCommentAction`,
+- [x] Server Actions: `addCommentAction`, `updateCommentAction`,
       `deleteCommentAction` (auth admin/diretoria/secretaria).
-- [ ] UI: seção Comentários no Drawer (lista, autor/data, editar, excluir).
-- [ ] Testes: unit (service, repository, actions) + integração.
-- [ ] Feature flag `ACTIVITY_COMMENTS_ENABLED` (env, default on após estável).
+- [x] UI: seção Comentários no Drawer (lista, autor/data, editar, excluir).
+- [x] Testes unitários (service, repository e actions); integração com PostgreSQL
+      permanece dependente de `DATABASE_URL` e não foi executada neste ambiente.
+- [x] Feature flag `ACTIVITY_COMMENTS_ENABLED` (env, default on após estável).
 
 ### Fase 2 — Labels (P0.3)
 - [ ] Migration: `activity_labels` (id, name, slug unique, color_token,
