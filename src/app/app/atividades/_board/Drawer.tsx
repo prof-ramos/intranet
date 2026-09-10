@@ -22,9 +22,11 @@ import {
 } from '@/lib/ui/tokens';
 import { columns } from './constants';
 import { Avatar } from './ActivityCard';
+import { addLabelAction, removeLabelAction } from '../actions';
 import { addCommentAction, deleteCommentAction, editCommentAction } from '../actions';
 import type {
   ActivityCommentItem,
+  ActivityLabelItem,
   ActivityTimelineItem,
   BoardActivity,
   BoardPerson,
@@ -53,11 +55,16 @@ export function Drawer({
   commentsLoading,
   commentsError,
   currentUserId,
+  availableLabels,
+  labelsLoading,
+  labelsError,
   onClose,
   onChange,
   onRequestReassign,
   onCommentsChange,
   onCommentMutation,
+  onLabelsChange,
+  onLabelMutation,
 }: {
   activity: BoardActivity | null;
   people: BoardPerson[];
@@ -69,11 +76,16 @@ export function Drawer({
   commentsLoading: boolean;
   commentsError: string | null;
   currentUserId: number;
+  availableLabels: ActivityLabelItem[];
+  labelsLoading: boolean;
+  labelsError: string | null;
   onClose: () => void;
   onChange: (patch: Partial<BoardActivity>) => void;
   onRequestReassign: () => void;
   onCommentsChange: (comments: ActivityCommentItem[]) => void;
   onCommentMutation: () => void;
+  onLabelsChange: (labels: ActivityLabelItem[]) => void;
+  onLabelMutation: () => void;
 }) {
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const drawerRef = useRef<HTMLElement | null>(null);
@@ -82,6 +94,8 @@ export function Drawer({
   const [editingContent, setEditingContent] = useState('');
   const [commentError, setCommentError] = useState<string | null>(null);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [labelError, setLabelError] = useState<string | null>(null);
+  const [labelSubmitting, setLabelSubmitting] = useState(false);
 
   useEffect(() => {
     if (!activity) return;
@@ -193,6 +207,30 @@ export function Drawer({
       );
     } finally {
       setCommentSubmitting(false);
+    }
+  }
+
+  async function handleToggleLabel(label: ActivityLabelItem) {
+    if (!activity || labelSubmitting) return;
+    const isAssigned = activity.labels.some((current) => current.id === label.id);
+    setLabelSubmitting(true);
+    setLabelError(null);
+    try {
+      const input = { activityId: activity.id, labelId: label.id };
+      if (isAssigned) {
+        await removeLabelAction(input);
+      } else {
+        await addLabelAction(input);
+      }
+      const nextLabels = isAssigned
+        ? activity.labels.filter((current) => current.id !== label.id)
+        : [...activity.labels, label].sort((left, right) => left.name.localeCompare(right.name));
+      onLabelsChange(nextLabels);
+      onLabelMutation();
+    } catch (error) {
+      setLabelError(error instanceof Error ? error.message : 'Não foi possível alterar a label.');
+    } finally {
+      setLabelSubmitting(false);
     }
   }
 
@@ -352,6 +390,52 @@ export function Drawer({
                 ))
               ) : (
                 <span style={{ color: textFaint }}>-</span>
+              )}
+            </dd>
+            <dt style={labelStyle}>Labels</dt>
+            <dd className="m-0">
+              {labelsLoading && (
+                <p className="m-0 text-sm" style={{ color: textFaint }}>
+                  Carregando labels...
+                </p>
+              )}
+              {labelsError && (
+                <p className="m-0 text-sm" style={{ color: dangerText }}>
+                  {labelsError}
+                </p>
+              )}
+              {!labelsLoading && !labelsError && availableLabels.length === 0 && (
+                <span style={{ color: textFaint }}>Nenhuma label ativa.</span>
+              )}
+              {!labelsLoading && !labelsError && availableLabels.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {availableLabels.map((label) => {
+                    const selected = activity.labels.some((current) => current.id === label.id);
+                    return (
+                      <button
+                        key={label.id}
+                        type="button"
+                        onClick={() => void handleToggleLabel(label)}
+                        disabled={labelSubmitting}
+                        className={`rounded-full px-2.5 py-1 text-[10px] font-semibold transition-opacity ${focusRingClass}`}
+                        style={{
+                          color: selected ? '#ffffff' : label.colorToken,
+                          background: selected ? label.colorToken : `${label.colorToken}18`,
+                          opacity: labelSubmitting ? 0.65 : 1,
+                        }}
+                        aria-pressed={selected}
+                      >
+                        {selected ? '✓ ' : ''}
+                        {label.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {labelError && (
+                <p className="mt-2 text-sm" style={{ color: dangerText }}>
+                  {labelError}
+                </p>
               )}
             </dd>
           </dl>

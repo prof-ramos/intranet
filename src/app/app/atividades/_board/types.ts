@@ -1,5 +1,6 @@
 export type {
   ActivityCommentItem,
+  ActivityLabelItem,
   ActivityTimelineItem,
   BoardActivity,
   BoardAssociate,

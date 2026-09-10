@@ -89,6 +89,41 @@ describe('emitDomainEvent', () => {
     );
   });
 
+  it.each([
+    ['activity.label_added', 21],
+    ['activity.label_removed', 22],
+  ] as const)('accepts %s payloads', async (type, labelId) => {
+    await emitDomainEvent(
+      {
+        type,
+        entityType: 'activity',
+        entityId: 12,
+        actorAdminId: 3,
+        payload: { activityId: 12, labelId },
+      },
+      txSentinel as unknown as DbExecutor,
+    );
+
+    expect(txSentinel.values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: type,
+        payload: { activityId: 12, labelId },
+      }),
+    );
+  });
+
+  it('rejects label payloads with extra fields', async () => {
+    await expect(
+      emitDomainEvent({
+        type: 'activity.label_added',
+        entityType: 'activity',
+        entityId: 12,
+        actorAdminId: 3,
+        payload: { activityId: 12, labelId: 7, extra: true } as never,
+      }),
+    ).rejects.toBeInstanceOf(ZodError);
+  });
+
   it('rejects payloads with fields outside the event contract', async () => {
     await expect(
       emitDomainEvent({

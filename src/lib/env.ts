@@ -1,16 +1,24 @@
 import { z } from 'zod';
 
 const emptyToUndefined = (v: string | undefined) => (v === '' ? undefined : v);
-const optionalString         = z.string().optional().transform(emptyToUndefined);
+const optionalString = z.string().optional().transform(emptyToUndefined);
 const optionalNonEmptyString = z.string().optional().transform(emptyToUndefined);
-const optionalSecretString   = z.string().optional().transform(emptyToUndefined);
-const optionalSessionSecret  = z
+const optionalSecretString = z.string().optional().transform(emptyToUndefined);
+const optionalSessionSecret = z
   .string()
   .optional()
   .transform(emptyToUndefined)
   .pipe(z.string().min(32).optional());
-const optionalUrl            = z.string().optional().transform(emptyToUndefined).pipe(z.string().url().optional());
-const optionalBooleanString  = z.string().optional().transform(emptyToUndefined).pipe(z.enum(['true', 'false']).optional());
+const optionalUrl = z
+  .string()
+  .optional()
+  .transform(emptyToUndefined)
+  .pipe(z.string().url().optional());
+const optionalBooleanString = z
+  .string()
+  .optional()
+  .transform(emptyToUndefined)
+  .pipe(z.enum(['true', 'false']).optional());
 
 export const envSchema = z
   .object({
@@ -52,6 +60,13 @@ export const envSchema = z
       .transform((v) => v === 'true'),
 
     ACTIVITY_COMMENTS_ENABLED: z
+      .string()
+      .optional()
+      .transform(emptyToUndefined)
+      .pipe(z.enum(['true', 'false']).default('true'))
+      .transform((v) => v === 'true'),
+
+    ACTIVITY_LABELS_ENABLED: z
       .string()
       .optional()
       .transform(emptyToUndefined)

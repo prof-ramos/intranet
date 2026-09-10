@@ -3,6 +3,8 @@ export * from './app-settings';
 export * from './associates';
 export * from './activities';
 export * from './activity-comments';
+export * from './activity-label-assignments';
+export * from './activity-labels';
 export * from './assignments';
 export * from './audit';
 export * from './enums';

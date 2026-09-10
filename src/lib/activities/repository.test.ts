@@ -24,6 +24,7 @@ const { dbMock, MOCK_ACTIVITY, MOCK_ADMIN, MOCK_ASSOCIATE } = vi.hoisted(() => {
     associateId: 10,
     associateName: 'Associate',
     tags: ['urgent'],
+    labels: [],
   };
   const MOCK_ADMIN = { id: 1, name: 'Admin', role: 'admin' as const };
   const MOCK_ASSOCIATE = { id: 10, name: 'Associate' };
@@ -34,6 +35,7 @@ const { dbMock, MOCK_ACTIVITY, MOCK_ADMIN, MOCK_ASSOCIATE } = vi.hoisted(() => {
   const selectChain: Record<string, any> = {};
   selectChain.from = vi.fn().mockReturnValue(selectChain);
   selectChain.leftJoin = vi.fn().mockReturnValue(selectChain);
+  selectChain.innerJoin = vi.fn().mockReturnValue(selectChain);
   selectChain.where = vi.fn().mockReturnValue(selectChain);
   selectChain.orderBy = vi.fn().mockReturnValue(selectChain);
   selectChain.groupBy = vi.fn().mockReturnValue(selectChain);

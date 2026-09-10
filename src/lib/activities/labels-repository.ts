@@ -1,4 +1,4 @@
-import { and, asc, eq, getTableColumns } from 'drizzle-orm';
+import { and, asc, eq, getTableColumns, inArray } from 'drizzle-orm';
 import { db, type DbExecutor } from '@/lib/db';
 import { activityLabelAssignments } from '@/lib/db/schema/activity-label-assignments';
 import { activityLabels, type NewActivityLabel } from '@/lib/db/schema/activity-labels';
@@ -45,6 +45,20 @@ export async function findLabelsByActivityId(activityId: number, executor: DbExe
     .from(activityLabelAssignments)
     .innerJoin(activityLabels, eq(activityLabelAssignments.labelId, activityLabels.id))
     .where(eq(activityLabelAssignments.activityId, activityId))
+    .orderBy(asc(activityLabels.name));
+}
+
+export async function findLabelsByActivityIds(activityIds: number[], executor: DbExecutor = db) {
+  if (activityIds.length === 0) return [];
+
+  return executor
+    .select({
+      activityId: activityLabelAssignments.activityId,
+      ...getTableColumns(activityLabels),
+    })
+    .from(activityLabelAssignments)
+    .innerJoin(activityLabels, eq(activityLabelAssignments.labelId, activityLabels.id))
+    .where(inArray(activityLabelAssignments.activityId, activityIds))
     .orderBy(asc(activityLabels.name));
 }
 

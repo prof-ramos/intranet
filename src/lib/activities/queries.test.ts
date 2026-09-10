@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const findActivitiesMock = vi.fn();
 const findActiveAdminsMock = vi.fn();
 const findActiveAssociatesMock = vi.fn();
+const findActiveLabelsMock = vi.fn();
 const findActivityBoardRowByIdMock = vi.fn();
 const mapActivityRowToBoardActivityMock = vi.fn();
 
@@ -14,6 +15,10 @@ vi.mock('./repository', () => ({
   mapActivityRowToBoardActivity: (...args: unknown[]) => mapActivityRowToBoardActivityMock(...args),
 }));
 
+vi.mock('./labels-repository', () => ({
+  findActiveLabels: (...args: unknown[]) => findActiveLabelsMock(...args),
+}));
+
 import { buildPeopleList, getActivitiesBoardData, getActivitiesFormData } from './queries';
 
 describe('activities queries', () => {
@@ -22,6 +27,7 @@ describe('activities queries', () => {
     findActivitiesMock.mockResolvedValue([]);
     findActiveAdminsMock.mockResolvedValue([]);
     findActiveAssociatesMock.mockResolvedValue([]);
+    findActiveLabelsMock.mockResolvedValue([]);
     findActivityBoardRowByIdMock.mockResolvedValue(null);
     mapActivityRowToBoardActivityMock.mockImplementation((row: unknown) => row);
   });
@@ -65,6 +71,7 @@ describe('activities queries', () => {
     });
     expect(result).toEqual({
       initialActivities: [{ id: 1, title: 'Mapeada' }],
+      labels: [],
       people: [
         { id: 7, name: 'Sessao Atual', role: 'diretoria' },
         { id: 8, name: 'Maria', role: 'admin' },

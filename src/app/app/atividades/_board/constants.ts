@@ -23,6 +23,7 @@ export const defaultFilters: Filters = {
   priority: '',
   status: '',
   associate: '',
+  label: '',
   dueWeek: false,
   dueLate: false,
   openOnly: false,

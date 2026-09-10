@@ -40,6 +40,7 @@ vi.mock('./actions', () => ({
   createQuickActivityAction: actionMocks.createQuickActivityAction,
   getActivityTimelineAction: vi.fn().mockResolvedValue([]),
   listCommentsAction: vi.fn().mockResolvedValue([]),
+  listLabelsAction: vi.fn().mockResolvedValue([]),
   updateActivityAction: actionMocks.updateActivityAction,
 }));
 vi.mock('./_board/useBoardPreferences', () => ({
@@ -104,9 +105,11 @@ describe('AtividadesBoard quick add', () => {
             associateId: null,
             associateName: null,
             tags: [],
+            labels: [],
             dueOffset: -1,
           },
         ]}
+        labels={[]}
         people={[{ id: 1, name: 'Dev', role: 'admin' }]}
         associates={[]}
         currentUser={{ id: 1, name: 'Dev', role: 'admin' }}
@@ -125,6 +128,7 @@ describe('AtividadesBoard quick add', () => {
     render(
       <AtividadesBoard
         initialActivities={[]}
+        labels={[]}
         people={[{ id: 1, name: 'Dev', role: 'admin' }]}
         associates={[]}
         currentUser={{ id: 1, name: 'Dev', role: 'admin' }}
@@ -161,11 +165,13 @@ describe('AtividadesBoard quick add', () => {
       associateId: null,
       associateName: null,
       tags: [],
+      labels: [],
       dueOffset: null,
     });
     render(
       <AtividadesBoard
         initialActivities={[]}
+        labels={[]}
         people={[{ id: 1, name: 'Dev', role: 'admin' }]}
         associates={[]}
         currentUser={{ id: 1, name: 'Dev', role: 'admin' }}
@@ -192,6 +198,7 @@ describe('AtividadesBoard quick add', () => {
     render(
       <AtividadesBoard
         initialActivities={[]}
+        labels={[]}
         people={[{ id: 1, name: 'Dev', role: 'admin' }]}
         associates={[]}
         currentUser={{ id: 1, name: 'Dev', role: 'admin' }}
@@ -217,6 +224,7 @@ describe('AtividadesBoard quick add', () => {
     render(
       <AtividadesBoard
         initialActivities={[]}
+        labels={[]}
         people={[{ id: 1, name: 'Dev', role: 'admin' }]}
         associates={[]}
         currentUser={{ id: 1, name: 'Dev', role: 'admin' }}

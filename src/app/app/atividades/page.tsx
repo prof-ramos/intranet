@@ -7,7 +7,13 @@ import { isActivityStatus } from '@/lib/activities/status';
 export default async function AtividadesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ open?: string; dueLate?: string; openOnly?: string; status?: string }>;
+  searchParams: Promise<{
+    open?: string;
+    dueLate?: string;
+    openOnly?: string;
+    status?: string;
+    label?: string;
+  }>;
 }) {
   const [user, params] = await Promise.all([requireAuth(), searchParams]);
   const dueLate = params.dueLate === '1';
@@ -24,6 +30,7 @@ export default async function AtividadesPage({
     <AtividadesBoard
       key={`activities-${dueLate ? 'late' : 'all'}-${openOnly ? 'open' : 'all'}-${status ?? 'all'}`}
       initialActivities={boardData.initialActivities}
+      labels={boardData.labels}
       people={boardData.people}
       associates={boardData.associates}
       currentUser={boardData.currentUser}

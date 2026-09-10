@@ -14,6 +14,8 @@ const {
   repositoryMocks,
   labelRepositoryMocks,
   auditMock,
+  outboxMock,
+  dispatchMock,
   MOCK_LABEL,
   MOCK_ASSIGNMENT,
 } = vi.hoisted(() => {
@@ -47,6 +49,10 @@ const {
   const auditMock = {
     logAuditAction: vi.fn(),
   };
+  const outboxMock = {
+    emitDomainEvent: vi.fn(),
+  };
+  const dispatchMock = vi.fn();
   const dbMock = {
     transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback(txMock)),
   };
@@ -57,6 +63,8 @@ const {
     repositoryMocks,
     labelRepositoryMocks,
     auditMock,
+    outboxMock,
+    dispatchMock,
     MOCK_LABEL,
     MOCK_ASSIGNMENT,
   };
@@ -66,6 +74,10 @@ vi.mock('@/lib/db', () => ({ db: dbMock }));
 vi.mock('./repository', () => repositoryMocks);
 vi.mock('./labels-repository', () => labelRepositoryMocks);
 vi.mock('@/lib/audit/service', () => auditMock);
+vi.mock('@/lib/integrations/outbox', () => outboxMock);
+vi.mock('@/lib/integrations/webhooks/service', () => ({
+  dispatchDomainEventById: (...args: unknown[]) => dispatchMock(...args),
+}));
 
 describe('activity labels service', () => {
   beforeEach(() => {
@@ -83,6 +95,8 @@ describe('activity labels service', () => {
       MOCK_ASSIGNMENT as any,
     );
     vi.mocked(auditMock.logAuditAction).mockResolvedValue(undefined);
+    vi.mocked(outboxMock.emitDomainEvent).mockResolvedValue({ id: 123 } as never);
+    dispatchMock.mockResolvedValue(undefined);
   });
 
   it('creates a label with a normalized slug and strict in-transaction audit', async () => {
@@ -197,6 +211,16 @@ describe('activity labels service', () => {
       changes: { new: { labelId: 7 } },
       executor: txMock,
     });
+    expect(outboxMock.emitDomainEvent).toHaveBeenCalledWith(
+      {
+        type: 'activity.label_added',
+        entityType: 'activity',
+        entityId: 42,
+        actorAdminId: 9,
+        payload: { activityId: 42, labelId: 7 },
+      },
+      txMock,
+    );
   });
 
   it('removes a label assignment and audits the removal in the transaction', async () => {
@@ -212,6 +236,16 @@ describe('activity labels service', () => {
       changes: { new: { labelId: 7 } },
       executor: txMock,
     });
+    expect(outboxMock.emitDomainEvent).toHaveBeenCalledWith(
+      {
+        type: 'activity.label_removed',
+        entityType: 'activity',
+        entityId: 42,
+        actorAdminId: 9,
+        payload: { activityId: 42, labelId: 7 },
+      },
+      txMock,
+    );
   });
 
   it('lists active labels', async () => {

@@ -1,6 +1,10 @@
 import { db } from '@/lib/db';
+import { env } from '@/lib/env';
 import { logAuditAction } from '@/lib/audit/service';
 import { NotFoundError, ValidationError } from '@/lib/errors';
+import { emitDomainEvent } from '@/lib/integrations/outbox';
+import { dispatchDomainEventById } from '@/lib/integrations/webhooks/service';
+import { createLogger } from '@/lib/logger';
 import { findActivityById } from './repository';
 import {
   assignLabelToActivity,
@@ -13,6 +17,20 @@ import {
 import type { ActivityLabel } from '@/lib/db/schema/activity-labels';
 
 type AuditChanges = Parameters<typeof logAuditAction>[0]['changes'];
+
+const logger = createLogger('activities:labels-service');
+
+function assertLabelsEnabled(): void {
+  if (!env.ACTIVITY_LABELS_ENABLED) {
+    throw new ValidationError('Labels de atividades estão desabilitadas.');
+  }
+}
+
+function dispatchLabelEvent(eventId: number, eventType: string): void {
+  void dispatchDomainEventById(eventId).catch((error) => {
+    logger.error(`inline dispatch failed (${eventType})`, { eventId, error });
+  });
+}
 
 interface CreateLabelInput {
   name: string;
@@ -56,10 +74,12 @@ function newOnlyChanges(value: Record<string, unknown>): AuditChanges {
 }
 
 export async function listLabelsService(): Promise<ActivityLabel[]> {
+  assertLabelsEnabled();
   return findActiveLabels();
 }
 
 export async function createLabelService(input: CreateLabelInput) {
+  assertLabelsEnabled();
   if (typeof input.name !== 'string') {
     throw new ValidationError('Nome do rótulo inválido.');
   }
@@ -103,6 +123,7 @@ export async function createLabelService(input: CreateLabelInput) {
 }
 
 export async function deactivateLabelService(input: DeactivateLabelInput) {
+  assertLabelsEnabled();
   assertPositiveInteger(input.id, 'Rótulo');
   assertPositiveInteger(input.actorId, 'Usuário responsável');
 
@@ -126,11 +147,12 @@ export async function deactivateLabelService(input: DeactivateLabelInput) {
 }
 
 export async function addLabelToActivityService(input: ActivityLabelMutationInput) {
+  assertLabelsEnabled();
   assertPositiveInteger(input.activityId, 'Atividade');
   assertPositiveInteger(input.labelId, 'Rótulo');
   assertPositiveInteger(input.actorId, 'Usuário responsável');
 
-  return db.transaction(async (tx) => {
+  const { assignment, eventId } = await db.transaction(async (tx) => {
     const activity = await findActivityById(input.activityId, tx);
     if (!activity) {
       throw new NotFoundError('Atividade');
@@ -152,6 +174,20 @@ export async function addLabelToActivityService(input: ActivityLabelMutationInpu
       throw new Error('Falha ao associar rótulo à atividade.');
     }
 
+    const event = await emitDomainEvent(
+      {
+        type: 'activity.label_added',
+        entityType: 'activity',
+        entityId: input.activityId,
+        actorAdminId: input.actorId,
+        payload: {
+          activityId: input.activityId,
+          labelId: input.labelId,
+        },
+      },
+      tx,
+    );
+
     await logAuditAction({
       adminId: input.actorId,
       action: 'activity_label_added',
@@ -161,20 +197,38 @@ export async function addLabelToActivityService(input: ActivityLabelMutationInpu
       executor: tx,
     });
 
-    return assignment;
+    return { assignment, eventId: event.id };
   });
+
+  dispatchLabelEvent(eventId, 'activity.label_added');
+  return assignment;
 }
 
 export async function removeLabelFromActivityService(input: ActivityLabelMutationInput) {
+  assertLabelsEnabled();
   assertPositiveInteger(input.activityId, 'Atividade');
   assertPositiveInteger(input.labelId, 'Rótulo');
   assertPositiveInteger(input.actorId, 'Usuário responsável');
 
-  return db.transaction(async (tx) => {
+  const { removed, eventId } = await db.transaction(async (tx) => {
     const removed = await removeLabelFromActivity(input.activityId, input.labelId, tx);
     if (!removed) {
       throw new NotFoundError('Rótulo associado à atividade');
     }
+
+    const event = await emitDomainEvent(
+      {
+        type: 'activity.label_removed',
+        entityType: 'activity',
+        entityId: input.activityId,
+        actorAdminId: input.actorId,
+        payload: {
+          activityId: input.activityId,
+          labelId: input.labelId,
+        },
+      },
+      tx,
+    );
 
     await logAuditAction({
       adminId: input.actorId,
@@ -185,6 +239,9 @@ export async function removeLabelFromActivityService(input: ActivityLabelMutatio
       executor: tx,
     });
 
-    return removed;
+    return { removed, eventId: event.id };
   });
+
+  dispatchLabelEvent(eventId, 'activity.label_removed');
+  return removed;
 }

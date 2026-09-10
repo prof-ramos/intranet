@@ -31,6 +31,8 @@ export const domainEventType = pgEnum('domain_event_type', [
   'activity.comment_added',
   'activity.comment_edited',
   'activity.comment_deleted',
+  'activity.label_added',
+  'activity.label_removed',
 ]);
 
 export const domainEventEntityType = pgEnum('domain_event_entity_type', [

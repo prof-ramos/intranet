@@ -34,6 +34,8 @@ const eventLabels: Record<DomainEventType, string> = {
   'activity.comment_added': 'Comentário de atividade adicionado',
   'activity.comment_edited': 'Comentário de atividade editado',
   'activity.comment_deleted': 'Comentário de atividade excluído',
+  'activity.label_added': 'Label adicionada à atividade',
+  'activity.label_removed': 'Label removida da atividade',
 };
 
 export function WebhookSubscriptionForm({

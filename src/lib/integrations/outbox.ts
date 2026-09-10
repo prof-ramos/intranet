@@ -156,6 +156,18 @@ const payloadSchemaByEventType = {
       authorAdminId: z.number().int().positive(),
     })
     .strict(),
+  'activity.label_added': z
+    .object({
+      activityId: z.number().int().positive(),
+      labelId: z.number().int().positive(),
+    })
+    .strict(),
+  'activity.label_removed': z
+    .object({
+      activityId: z.number().int().positive(),
+      labelId: z.number().int().positive(),
+    })
+    .strict(),
 } satisfies Record<DomainEventType, z.ZodType<Record<string, unknown>>>;
 
 export type DomainEventPayloadMap = {
