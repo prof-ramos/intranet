@@ -10,6 +10,7 @@ import {
   assignLabelToActivity,
   deactivateLabel,
   findActiveLabels,
+  findActivityLabelAssignment,
   findLabelBySlug,
   insertLabel,
   removeLabelFromActivity,
@@ -78,6 +79,12 @@ export async function listLabelsService(): Promise<ActivityLabel[]> {
   return findActiveLabels();
 }
 
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' && error !== null && (error as Record<string, unknown>).code === '23505'
+  );
+}
+
 export async function createLabelService(input: CreateLabelInput) {
   assertLabelsEnabled();
   if (typeof input.name !== 'string') {
@@ -104,7 +111,15 @@ export async function createLabelService(input: CreateLabelInput) {
       throw new ValidationError('Já existe um rótulo com esse slug.');
     }
 
-    const created = await insertLabel({ name, slug, colorToken: input.colorToken }, tx);
+    let created: ActivityLabel | undefined;
+    try {
+      created = await insertLabel({ name, slug, colorToken: input.colorToken }, tx);
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ValidationError('Já existe um rótulo com esse slug.');
+      }
+      throw error;
+    }
     if (!created) {
       throw new Error('Falha ao criar rótulo.');
     }
@@ -158,18 +173,33 @@ export async function addLabelToActivityService(input: ActivityLabelMutationInpu
       throw new NotFoundError('Atividade');
     }
 
+    const existingAssignment = await findActivityLabelAssignment(
+      input.activityId,
+      input.labelId,
+      tx,
+    );
+    if (existingAssignment) {
+      return { assignment: existingAssignment, eventId: null };
+    }
+
     const activeLabels = await findActiveLabels(tx);
     const labelIsActive = activeLabels.some((label) => label.id === input.labelId);
     if (!labelIsActive) {
       throw new ValidationError('O rótulo não está ativo.');
     }
 
-    const assignment = await assignLabelToActivity(
-      input.activityId,
-      input.labelId,
-      input.actorId,
-      tx,
-    );
+    let assignment;
+    try {
+      assignment = await assignLabelToActivity(input.activityId, input.labelId, input.actorId, tx);
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        const existing = await findActivityLabelAssignment(input.activityId, input.labelId, tx);
+        if (existing) {
+          return { assignment: existing, eventId: null };
+        }
+      }
+      throw error;
+    }
     if (!assignment) {
       throw new Error('Falha ao associar rótulo à atividade.');
     }
@@ -200,7 +230,9 @@ export async function addLabelToActivityService(input: ActivityLabelMutationInpu
     return { assignment, eventId: event.id };
   });
 
-  dispatchLabelEvent(eventId, 'activity.label_added');
+  if (eventId !== null) {
+    dispatchLabelEvent(eventId, 'activity.label_added');
+  }
   return assignment;
 }
 

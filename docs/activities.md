@@ -162,7 +162,7 @@ O baseline continuará com auditoria best-effort pós-commit nos fluxos já exis
 - `ACTIVITY_LABELS_ENABLED`: controla labels, associações, filtro e administração. Tags legadas continuam funcionando quando a flag estiver desligada.
 - `ACTIVITY_MCP_ENABLED`: controla publicação do servidor/adaptador MCP. Não habilita acesso direto ao banco nem concede scopes.
 
-As flags devem iniciar desativadas durante a estabilização quando o deploy exigir rollout gradual e podem ter default ligado após a capacidade estar estável. A decisão da flag deve ocorrer no servidor para rotas e services, além de esconder a UI; esconder apenas o componente não é controle de segurança.
+As flags `ACTIVITY_COMMENTS_ENABLED` e `ACTIVITY_LABELS_ENABLED` têm default `true` (capacidade estável e auth-gated); `ACTIVITY_MCP_ENABLED` deve iniciar desativada até o servidor MCP existir. Em rollout gradual, as flags podem iniciar desativadas durante a estabilização. A decisão da flag deve ocorrer no servidor para rotas e services, além de esconder a UI; esconder apenas o componente não é controle de segurança.
 
 ### Rollback
 

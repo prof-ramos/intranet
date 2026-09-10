@@ -124,12 +124,13 @@ export async function addCommentService(input: AddCommentInput): Promise<Activit
 export async function editCommentService(input: EditCommentInput): Promise<ActivityComment> {
   assertCommentsEnabled();
   assertPositiveInteger(input.editorAdminId, 'Editor do comentário inválido.');
-  const content = normalizeCommentContent(input.content);
   const { comment } = await requireCommentWithActivity(input.commentId);
 
   if (comment.authorAdminId !== input.editorAdminId) {
     throw new ValidationError('Somente o autor pode editar o comentário.');
   }
+
+  const content = normalizeCommentContent(input.content);
 
   const { updated, eventId } = await db.transaction(async (tx) => {
     const changed = await updateComment(input.commentId, content, tx);
@@ -172,6 +173,10 @@ export async function deleteCommentService(input: DeleteCommentInput): Promise<A
   assertPositiveInteger(input.actorAdminId, 'Exclusor do comentário inválido.');
   const { comment } = await requireCommentWithActivity(input.commentId);
 
+  if (comment.authorAdminId !== input.actorAdminId) {
+    throw new ValidationError('Somente o autor pode excluir o comentário.');
+  }
+
   const { deleted, eventId } = await db.transaction(async (tx) => {
     const changed = await softDeleteComment(input.commentId, tx);
     if (!changed) throw new NotFoundError('Comentário');
@@ -208,5 +213,7 @@ export async function deleteCommentService(input: DeleteCommentInput): Promise<A
 export async function listCommentsService(activityId: number): Promise<ActivityComment[]> {
   assertCommentsEnabled();
   assertPositiveInteger(activityId, 'Atividade inválida.');
+  const activity = await findActivityById(activityId);
+  if (!activity) throw new NotFoundError('Atividade');
   return findCommentsByActivityId(activityId);
 }

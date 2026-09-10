@@ -44,7 +44,12 @@ export async function findLabelsByActivityId(activityId: number, executor: DbExe
     .select(getTableColumns(activityLabels))
     .from(activityLabelAssignments)
     .innerJoin(activityLabels, eq(activityLabelAssignments.labelId, activityLabels.id))
-    .where(eq(activityLabelAssignments.activityId, activityId))
+    .where(
+      and(
+        eq(activityLabelAssignments.activityId, activityId),
+        eq(activityLabels.active, true),
+      ),
+    )
     .orderBy(asc(activityLabels.name));
 }
 
@@ -58,7 +63,12 @@ export async function findLabelsByActivityIds(activityIds: number[], executor: D
     })
     .from(activityLabelAssignments)
     .innerJoin(activityLabels, eq(activityLabelAssignments.labelId, activityLabels.id))
-    .where(inArray(activityLabelAssignments.activityId, activityIds))
+    .where(
+      and(
+        inArray(activityLabelAssignments.activityId, activityIds),
+        eq(activityLabels.active, true),
+      ),
+    )
     .orderBy(asc(activityLabels.name));
 }
 

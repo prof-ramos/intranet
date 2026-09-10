@@ -28,3 +28,10 @@ export const defaultFilters: Filters = {
   dueLate: false,
   openOnly: false,
 };
+
+const COLOR_TOKEN_PATTERN = /^#[0-9a-fA-F]{6}$/;
+const FALLBACK_COLOR_TOKEN = '#64748b';
+
+export function safeColorToken(token: string): string {
+  return COLOR_TOKEN_PATTERN.test(token) ? token : FALLBACK_COLOR_TOKEN;
+}

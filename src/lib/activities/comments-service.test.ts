@@ -150,12 +150,21 @@ describe('activity comments service', () => {
     );
   });
 
-  it('soft-deletes a comment and emits the deleted event', async () => {
+  it('prevents an administrator other than the author from deleting', async () => {
+    const commentsRepository = await import('./comments-repository');
+
+    await expect(
+      deleteCommentService({ commentId: 7, actorAdminId: 8 }),
+    ).rejects.toThrow('autor');
+    expect(commentsRepository.softDeleteComment).not.toHaveBeenCalled();
+  });
+
+  it('soft-deletes an authored comment and emits the deleted event', async () => {
     const commentsRepository = await import('./comments-repository');
     const outbox = await import('@/lib/integrations/outbox');
     const audit = await import('@/lib/audit/service');
 
-    await deleteCommentService({ commentId: 7, actorAdminId: 8 });
+    await deleteCommentService({ commentId: 7, actorAdminId: 3 });
     expect(commentsRepository.softDeleteComment).toHaveBeenCalledWith(7, txMock);
     expect(outbox.emitDomainEvent).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -169,9 +178,25 @@ describe('activity comments service', () => {
     );
   });
 
+  it('checks authorship before validating content on edit', async () => {
+    const commentsRepository = await import('./comments-repository');
+
+    await expect(
+      editCommentService({ commentId: 7, editorAdminId: 8, content: '   ' }),
+    ).rejects.toThrow('autor');
+    expect(commentsRepository.updateComment).not.toHaveBeenCalled();
+  });
+
   it('lists active comments for an activity', async () => {
     const commentsRepository = await import('./comments-repository');
     await expect(listCommentsService(12)).resolves.toEqual([comment]);
     expect(commentsRepository.findCommentsByActivityId).toHaveBeenCalledWith(12);
+  });
+
+  it('rejects listing comments for a nonexistent activity', async () => {
+    const repository = await import('./repository');
+    vi.mocked(repository.findActivityById).mockResolvedValue(null);
+
+    await expect(listCommentsService(999)).rejects.toThrow('Atividade não encontrado');
   });
 });

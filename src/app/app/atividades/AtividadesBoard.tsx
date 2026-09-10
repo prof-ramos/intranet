@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { ArrowRight, Clock, Plus } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { DragDropContext } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
@@ -91,6 +91,11 @@ export function AtividadesBoard({
   const [loadedDrawerLabelsId, setLoadedDrawerLabelsId] = useState<number | null>(null);
   const [drawerLabelsError, setDrawerLabelsError] = useState<string | null>(null);
 
+  const drawerIdRef = useRef<number | null>(drawerId);
+  useEffect(() => {
+    drawerIdRef.current = drawerId;
+  }, [drawerId]);
+
   const peopleById = useMemo(() => new Map(people.map((person) => [person.id, person])), [people]);
 
   const filtered = useMemo(
@@ -136,11 +141,13 @@ export function AtividadesBoard({
   async function loadDrawerTimeline(activityId: number) {
     try {
       const timeline = await getActivityTimelineAction(activityId);
+      if (drawerIdRef.current !== activityId) return;
       setDrawerTimeline(timeline);
       setLoadedDrawerTimelineId(activityId);
       setDrawerTimelineError(null);
     } catch (err) {
       logger.error('Failed to load drawer timeline', { activityId, error: toSafeErrorLog(err) });
+      if (drawerIdRef.current !== activityId) return;
       setDrawerTimeline([]);
       setLoadedDrawerTimelineId(activityId);
       setDrawerTimelineError('Não foi possível carregar o histórico desta atividade.');
@@ -150,11 +157,13 @@ export function AtividadesBoard({
   async function loadDrawerComments(activityId: number) {
     try {
       const comments = await listCommentsAction(activityId);
+      if (drawerIdRef.current !== activityId) return;
       setDrawerComments(comments);
       setLoadedDrawerCommentsId(activityId);
       setDrawerCommentsError(null);
     } catch (err) {
       logger.error('Failed to load drawer comments', { activityId, error: toSafeErrorLog(err) });
+      if (drawerIdRef.current !== activityId) return;
       setDrawerComments([]);
       setLoadedDrawerCommentsId(activityId);
       setDrawerCommentsError('Não foi possível carregar os comentários desta atividade.');
@@ -164,11 +173,13 @@ export function AtividadesBoard({
   async function loadDrawerLabels(activityId: number) {
     try {
       const available = await listLabelsAction();
+      if (drawerIdRef.current !== activityId) return;
       setDrawerLabels(available);
       setLoadedDrawerLabelsId(activityId);
       setDrawerLabelsError(null);
     } catch (err) {
       logger.error('Failed to load drawer labels', { activityId, error: toSafeErrorLog(err) });
+      if (drawerIdRef.current !== activityId) return;
       setDrawerLabels([]);
       setLoadedDrawerLabelsId(activityId);
       setDrawerLabelsError('Não foi possível carregar as labels desta atividade.');

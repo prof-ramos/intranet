@@ -18,6 +18,7 @@ import {
   warningText,
 } from '@/lib/ui/tokens';
 import { formatDueDate, initials } from './helpers';
+import { safeColorToken } from './constants';
 import type { BoardActivity, BoardPerson } from './types';
 
 // Memoized to prevent re-renders of identical avatars when board items are dragged
@@ -125,7 +126,7 @@ export const ActivityCardContent = memo(function ActivityCardContent({
               className="inline-flex max-w-full items-center rounded-full px-2 py-0.5 text-[10px] font-semibold"
               style={{
                 color: '#ffffff',
-                background: label.colorToken,
+                background: safeColorToken(label.colorToken),
                 overflowWrap: 'anywhere',
               }}
               title={label.name}

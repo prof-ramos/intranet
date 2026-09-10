@@ -7,6 +7,7 @@ import {
   findActivityLabelAssignment,
   findLabelBySlug,
   findLabelsByActivityId,
+  findLabelsByActivityIds,
   insertLabel,
   removeLabelFromActivity,
 } from './labels-repository';
@@ -86,6 +87,20 @@ const { dbMock, MOCK_LABEL, MOCK_ASSIGNMENT } = vi.hoisted(() => {
 
 vi.mock('@/lib/db', () => ({ db: dbMock }));
 
+function referencesActiveColumn(whereArg: unknown): boolean {
+  const seen = new Set<object>();
+  const walk = (node: unknown): boolean => {
+    if (node === null || node === undefined || typeof node !== 'object') return false;
+    if (seen.has(node)) return false;
+    seen.add(node);
+    const record = node as Record<string, unknown>;
+    if (typeof record.name === 'string' && record.name === 'active' && record.table) return true;
+    if (Array.isArray(record.queryChunks)) return record.queryChunks.some(walk);
+    return Object.values(record).some(walk);
+  };
+  return walk(whereArg);
+}
+
 describe('activity labels repository', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -133,6 +148,18 @@ describe('activity labels repository', () => {
       expect.anything(),
     );
     expect(dbMock._selectChain.where).toHaveBeenCalledWith(expect.anything());
+  });
+
+  it('filters out deactivated labels when listing by activity', async () => {
+    await findLabelsByActivityId(42);
+    const whereArg = dbMock._selectChain.where.mock.calls[0][0];
+    expect(referencesActiveColumn(whereArg)).toBe(true);
+  });
+
+  it('filters out deactivated labels when listing by activity ids', async () => {
+    await findLabelsByActivityIds([42, 43]);
+    const whereArg = dbMock._selectChain.where.mock.calls[0][0];
+    expect(referencesActiveColumn(whereArg)).toBe(true);
   });
 
   it('assigns a label to an activity with the creator id', async () => {

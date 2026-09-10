@@ -45,6 +45,7 @@ const {
     deactivateLabel: vi.fn(),
     assignLabelToActivity: vi.fn(),
     removeLabelFromActivity: vi.fn(),
+    findActivityLabelAssignment: vi.fn(),
   };
   const auditMock = {
     logAuditAction: vi.fn(),
@@ -94,6 +95,7 @@ describe('activity labels service', () => {
     vi.mocked(labelRepositoryMocks.removeLabelFromActivity).mockResolvedValue(
       MOCK_ASSIGNMENT as any,
     );
+    vi.mocked(labelRepositoryMocks.findActivityLabelAssignment).mockResolvedValue(null);
     vi.mocked(auditMock.logAuditAction).mockResolvedValue(undefined);
     vi.mocked(outboxMock.emitDomainEvent).mockResolvedValue({ id: 123 } as never);
     dispatchMock.mockResolvedValue(undefined);
@@ -135,6 +137,19 @@ describe('activity labels service', () => {
       createLabelService({ name: 'Financeiro', colorToken: '#123456', createdBy: 7 }),
     ).rejects.toThrow('Já existe um rótulo com esse slug.');
     expect(labelRepositoryMocks.insertLabel).not.toHaveBeenCalled();
+    expect(auditMock.logAuditAction).not.toHaveBeenCalled();
+  });
+
+  it('maps a concurrent unique slug violation to a validation error', async () => {
+    const uniqueViolation = Object.assign(
+      new Error('duplicate key value violates unique constraint "activity_labels_slug_unique"'),
+      { code: '23505' },
+    );
+    vi.mocked(labelRepositoryMocks.insertLabel).mockRejectedValueOnce(uniqueViolation);
+
+    await expect(
+      createLabelService({ name: 'Financeiro', colorToken: '#123456', createdBy: 7 }),
+    ).rejects.toThrow('Já existe um rótulo com esse slug.');
     expect(auditMock.logAuditAction).not.toHaveBeenCalled();
   });
 
@@ -221,6 +236,19 @@ describe('activity labels service', () => {
       },
       txMock,
     );
+  });
+
+  it('is idempotent when the label is already assigned', async () => {
+    vi.mocked(labelRepositoryMocks.findActivityLabelAssignment).mockResolvedValue(
+      MOCK_ASSIGNMENT as any,
+    );
+
+    const result = await addLabelToActivityService({ activityId: 42, labelId: 7, actorId: 9 });
+
+    expect(result).toEqual(MOCK_ASSIGNMENT);
+    expect(labelRepositoryMocks.assignLabelToActivity).not.toHaveBeenCalled();
+    expect(auditMock.logAuditAction).not.toHaveBeenCalled();
+    expect(outboxMock.emitDomainEvent).not.toHaveBeenCalled();
   });
 
   it('removes a label assignment and audits the removal in the transaction', async () => {

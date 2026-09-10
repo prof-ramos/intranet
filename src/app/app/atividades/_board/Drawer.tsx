@@ -20,7 +20,7 @@ import {
   textPrimary,
   textSecondary,
 } from '@/lib/ui/tokens';
-import { columns } from './constants';
+import { columns, safeColorToken } from './constants';
 import { Avatar } from './ActivityCard';
 import { addLabelAction, removeLabelAction } from '../actions';
 import { addCommentAction, deleteCommentAction, editCommentAction } from '../actions';
@@ -96,6 +96,14 @@ export function Drawer({
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [labelError, setLabelError] = useState<string | null>(null);
   const [labelSubmitting, setLabelSubmitting] = useState(false);
+
+  useEffect(() => {
+    setCommentDraft('');
+    setEditingCommentId(null);
+    setEditingContent('');
+    setCommentError(null);
+    setLabelError(null);
+  }, [activity?.id]);
 
   useEffect(() => {
     if (!activity) return;
@@ -400,7 +408,7 @@ export function Drawer({
                 </p>
               )}
               {labelsError && (
-                <p className="m-0 text-sm" style={{ color: dangerText }}>
+                <p role="alert" className="m-0 text-sm" style={{ color: dangerText }}>
                   {labelsError}
                 </p>
               )}
@@ -419,8 +427,10 @@ export function Drawer({
                         disabled={labelSubmitting}
                         className={`rounded-full px-2.5 py-1 text-[10px] font-semibold transition-opacity ${focusRingClass}`}
                         style={{
-                          color: selected ? '#ffffff' : label.colorToken,
-                          background: selected ? label.colorToken : `${label.colorToken}18`,
+                          color: selected ? '#ffffff' : safeColorToken(label.colorToken),
+                          background: selected
+                            ? safeColorToken(label.colorToken)
+                            : `${safeColorToken(label.colorToken)}18`,
                           opacity: labelSubmitting ? 0.65 : 1,
                         }}
                         aria-pressed={selected}
@@ -467,7 +477,7 @@ export function Drawer({
               </p>
             )}
             {commentsError && (
-              <p className="mt-2 text-sm" style={{ color: dangerText }}>
+              <p role="alert" className="mt-2 text-sm" style={{ color: dangerText }}>
                 {commentsError}
               </p>
             )}
@@ -509,16 +519,18 @@ export function Drawer({
                               <Pencil size={14} aria-hidden="true" />
                             </button>
                           )}
-                          <button
-                            type="button"
-                            className={`inline-flex h-8 w-8 items-center justify-center rounded-[6px] hover:bg-[var(--activity-hover-bg)] ${focusRingClass}`}
-                            style={hoverBgStyle}
-                            onClick={() => void handleDeleteComment(comment.id)}
-                            disabled={commentSubmitting}
-                            aria-label="Excluir comentário"
-                          >
-                            <Trash2 size={14} aria-hidden="true" style={{ color: dangerText }} />
-                          </button>
+                          {comment.authorAdminId === currentUserId && (
+                            <button
+                              type="button"
+                              className={`inline-flex h-8 w-8 items-center justify-center rounded-[6px] hover:bg-[var(--activity-hover-bg)] ${focusRingClass}`}
+                              style={hoverBgStyle}
+                              onClick={() => void handleDeleteComment(comment.id)}
+                              disabled={commentSubmitting}
+                              aria-label="Excluir comentário"
+                            >
+                              <Trash2 size={14} aria-hidden="true" style={{ color: dangerText }} />
+                            </button>
+                          )}
                         </div>
                       </div>
                       <p className="mt-1 text-[11px]" style={{ color: textMuted }}>
@@ -601,7 +613,7 @@ export function Drawer({
               </div>
             </form>
             {commentError && (
-              <p className="mt-2 text-sm" style={{ color: dangerText }}>
+              <p role="alert" className="mt-2 text-sm" style={{ color: dangerText }}>
                 {commentError}
               </p>
             )}
@@ -617,7 +629,7 @@ export function Drawer({
               </p>
             )}
             {timelineError && (
-              <p className="mt-2 text-sm" style={{ color: dangerText }}>
+              <p role="alert" className="mt-2 text-sm" style={{ color: dangerText }}>
                 {timelineError}
               </p>
             )}

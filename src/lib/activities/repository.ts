@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, getTableColumns, ne, sql } from 'drizzle-orm';
 import { db, type DbExecutor } from '@/lib/db';
+import { env } from '@/lib/env';
 import { activities, admins, associates, auditLogs, type Activity } from '@/lib/db/schema';
 import { findLabelsByActivityIds } from './labels-repository';
 import type { BoardActivity, Priority, Status } from './types';
@@ -47,6 +48,10 @@ interface ActivityBoardRow {
 type ActivityBoardRowWithoutLabels = Omit<ActivityBoardRow, 'labels'>;
 
 async function attachLabels(rows: ActivityBoardRowWithoutLabels[]): Promise<ActivityBoardRow[]> {
+  if (!env.ACTIVITY_LABELS_ENABLED) {
+    return rows.map((row) => ({ ...row, labels: [] }));
+  }
+
   const labelRows = await findLabelsByActivityIds(rows.map((row) => row.id));
   const labelsByActivity = new Map<number, ActivityBoardLabel[]>();
 
