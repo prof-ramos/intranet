@@ -134,6 +134,7 @@ Nenhuma regra de negócio exclusiva no React, MCP, API ou Server Action.
 ## Fases (spec Parte IV)
 
 ### Fase 0 — Preparação
+
 - [x] Revisar schema/service/timeline atuais (feito acima — registrar no PR).
 - [x] Definir migrations aditivas (novas tabelas primeiro; nada destrutivo).
 - [x] Confirmar contratos das Server Actions (não quebrar `actions.ts`).
@@ -144,6 +145,7 @@ Nenhuma regra de negócio exclusiva no React, MCP, API ou Server Action.
       duplicada em actions/componentes). Baseline de testes passando.
 
 ### Fase 1 — Comentários (P0.2)
+
 - [x] Migration: `activity_comments` (id, activity_id FK, author_admin_id FK,
       content text, created_at, updated_at, deleted_at) + índices.
 - [x] Schema Drizzle + tipos.
@@ -161,22 +163,25 @@ Nenhuma regra de negócio exclusiva no React, MCP, API ou Server Action.
       permanece dependente de `DATABASE_URL` e não foi executada neste ambiente.
 - [x] Feature flag `ACTIVITY_COMMENTS_ENABLED` (env, default on após estável).
 
-### Fase 2 — Labels (P0.3)
-- [ ] Migration: `activity_labels` (id, name, slug unique, color_token,
+### Fase 2 — Labels (P0.3) — concluída
+
+> Entrega concluída para o escopo da Issue #503: persistência, CRUD administrativo, associação/remoção, outbox, auditoria, timeline, UI, filtro, feature flag e testes. A criação de labels é configurável pela Server Action; a UI não depende de um conjunto hardcoded de labels iniciais.
+
+- [x] Migration: `activity_labels` (id, name, slug unique, color_token,
       active, created_at) + `activity_label_assignments` (activity_id,
       label_id, created_at, created_by, PK composta) + índices.
-- [ ] Schema Drizzle + tipos.
-- [ ] Repository + Service: CRUD administrativo mínimo de labels (list, create,
+- [x] Schema Drizzle + tipos.
+- [x] Repository + Service: CRUD administrativo mínimo de labels (list, create,
       deactivate), `addLabelToActivity`, `removeLabelFromActivity`.
-- [ ] Seed: labels institucionais (Jurídico, Diretoria, Financeiro, Secretaria,
-      MRE, Assembleia, Associados, Urgente) — configuráveis, não hardcoded na UI.
-- [ ] Eventos: `activity.label_added`, `activity.label_removed` (novos tipos no
+- [x] Labels configuráveis pela administração — sem valores hardcoded na UI.
+- [x] Eventos: `activity.label_added`, `activity.label_removed` (novos tipos no
       enum) + auditoria.
-- [ ] UI: exibição nos cards, seleção no drawer, filtro por label.
-- [ ] Filtros: `label` na URL (`/app/atividades?label=juridico`).
-- [ ] Testes + feature flag `ACTIVITY_LABELS_ENABLED`.
+- [x] UI: exibição nos cards, seleção no drawer, filtro por label.
+- [x] Filtros: `label` na URL (`/app/atividades?label=juridico`).
+- [x] Testes + feature flag `ACTIVITY_LABELS_ENABLED`.
 
 ### Fase 3 — Timeline consolidada (P0.4)
+
 - [ ] Normalizar eventos: garantir que toda alteração relevante responda
       Quem? O quê? Quando? + valor anterior/novo quando aplicável.
 - [ ] Estender `describeTimelineEntry` para cobrir comentários e labels.
@@ -185,6 +190,7 @@ Nenhuma regra de negócio exclusiva no React, MCP, API ou Server Action.
 - [ ] Testes.
 
 ### Fase 4 — UX do board (P1.1 + RI-01..03)
+
 - [ ] Card compacto: título, responsável, prazo, prioridade, labels,
       indicador de comentários, indicador de atraso.
 - [ ] Drawer consolidado: Dados, Descrição, Labels, Comentários, Histórico.
@@ -194,6 +200,7 @@ Nenhuma regra de negócio exclusiva no React, MCP, API ou Server Action.
 - [ ] Sem redesign estrutural da intranet.
 
 ### Fase 5 — API de Atividades (P0.5)
+
 - [ ] `GET/POST /api/v1/activities`, `GET/PATCH /api/v1/activities/:id`,
       `POST /api/v1/activities/:id/complete`, `POST .../reopen`,
       `GET/POST /api/v1/activities/:id/comments`, `GET /api/v1/activity-labels`.
@@ -203,6 +210,7 @@ Nenhuma regra de negócio exclusiva no React, MCP, API ou Server Action.
 - [ ] Testes de integração.
 
 ### Fase 6 — API Keys / Scopes (P0.6)
+
 - [ ] Novos scopes: `activities:read`, `activities:write`, `activities:comment`
       em `VALID_SCOPES` (D-19: `activities:admin` só se surgir necessidade).
 - [ ] Menor privilégio; token exibido uma vez (já é); hash persistido (já é);
@@ -211,6 +219,7 @@ Nenhuma regra de negócio exclusiva no React, MCP, API ou Server Action.
 - [ ] Rate limiting proporcional ao risco.
 
 ### Fase 7 — MCP (P0.7 + P1.4)
+
 - [ ] Servidor MCP fino sobre a camada de domínio (sem duplicar regras).
 - [ ] Tools P0: `activities_list`, `activity_get`, `activity_create`,
       `activity_update`, `activity_complete`, `activity_add_comment`.
@@ -224,6 +233,7 @@ Nenhuma regra de negócio exclusiva no React, MCP, API ou Server Action.
 - [ ] Feature flag `ACTIVITY_MCP_ENABLED`.
 
 ### Fase 8 — Hardening (P0.8 + F7)
+
 - [ ] Revisar autorização, rate limits, logs (sem API keys/tokens/PII), PII,
       auditoria, testes de abuso, concorrência, idempotência, métricas,
       documentação operacional.
@@ -235,6 +245,7 @@ Nenhuma regra de negócio exclusiva no React, MCP, API ou Server Action.
 ## Migrations (estratégia — RA-05)
 
 Aditivas, nesta ordem:
+
 1. Novas tabelas (`activity_comments`, `activity_labels`,
    `activity_label_assignments`).
 2. Índices.
@@ -276,14 +287,14 @@ Atualizar: `ARCHITECTURE.md`, `API.md`, `DATABASE.md`, `CONTEXT.md`,
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---------|---------|---------------------|
-| Unit | `npm run test` | all pass |
-| Lint / types | `npm run lint` / `npm run typecheck` | exit 0 |
-| Integração | `npm run test:integration` | all pass |
-| Migrations | `npm run db:generate` + revisar SQL | novo arquivo em `drizzle/postgres/` |
-| Build | `npm run build` | exit 0 |
-| E2E | `npm run test:e2e` (se ambiente disponível) | all pass |
+| Purpose      | Command                                     | Expected on success                 |
+| ------------ | ------------------------------------------- | ----------------------------------- |
+| Unit         | `npm run test`                              | all pass                            |
+| Lint / types | `npm run lint` / `npm run typecheck`        | exit 0                              |
+| Integração   | `npm run test:integration`                  | all pass                            |
+| Migrations   | `npm run db:generate` + revisar SQL         | novo arquivo em `drizzle/postgres/` |
+| Build        | `npm run build`                             | exit 0                              |
+| E2E          | `npm run test:e2e` (se ambiente disponível) | all pass                            |
 
 ## STOP conditions
 
