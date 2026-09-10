@@ -32,6 +32,22 @@ export interface ActivityTimelineItem {
   summary: string;
 }
 
+export interface ActivityCommentItem {
+  id: number;
+  activityId: number;
+  authorAdminId: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ActivityLabelItem {
+  id: number;
+  name: string;
+  slug: string;
+  colorToken: string;
+}
+
 export interface BoardActivity {
   id: number;
   title: string;
@@ -45,6 +61,7 @@ export interface BoardActivity {
   associateId: number | null;
   associateName: string | null;
   tags: string[];
+  labels: ActivityLabelItem[];
   dueOffset: number | null;
 }
 
@@ -55,6 +72,7 @@ export interface Filters {
   priority: '' | Priority;
   status: '' | Status;
   associate: string;
+  label: string;
   dueWeek: boolean;
   dueLate: boolean;
   openOnly: boolean;
@@ -62,6 +80,7 @@ export interface Filters {
 
 export interface ActivitiesBoardData {
   initialActivities: BoardActivity[];
+  labels: ActivityLabelItem[];
   people: BoardPerson[];
   associates: BoardAssociate[];
   currentUser: BoardPerson;

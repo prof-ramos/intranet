@@ -1,6 +1,8 @@
 import { and, asc, desc, eq, getTableColumns, ne, sql } from 'drizzle-orm';
 import { db, type DbExecutor } from '@/lib/db';
+import { env } from '@/lib/env';
 import { activities, admins, associates, auditLogs, type Activity } from '@/lib/db/schema';
+import { findLabelsByActivityIds } from './labels-repository';
 import type { BoardActivity, Priority, Status } from './types';
 
 const DEFAULT_ACTIVITY_LIMIT = 200;
@@ -20,6 +22,13 @@ const STATUS_ORDER = {
   concluido: 3,
 } as const satisfies Record<Status, number>;
 
+interface ActivityBoardLabel {
+  id: number;
+  name: string;
+  slug: string;
+  colorToken: string;
+}
+
 interface ActivityBoardRow {
   id: number;
   title: string;
@@ -33,6 +42,35 @@ interface ActivityBoardRow {
   associateId: number | null;
   associateName: string | null;
   tags: string[] | null;
+  labels: ActivityBoardLabel[];
+}
+
+type ActivityBoardRowWithoutLabels = Omit<ActivityBoardRow, 'labels'>;
+
+async function attachLabels(rows: ActivityBoardRowWithoutLabels[]): Promise<ActivityBoardRow[]> {
+  if (!env.ACTIVITY_LABELS_ENABLED) {
+    return rows.map((row) => ({ ...row, labels: [] }));
+  }
+
+  const labelRows = await findLabelsByActivityIds(rows.map((row) => row.id));
+  const labelsByActivity = new Map<number, ActivityBoardLabel[]>();
+
+  for (const label of labelRows) {
+    if (label.activityId == null) continue;
+    const labels = labelsByActivity.get(label.activityId) ?? [];
+    labels.push({
+      id: label.id,
+      name: label.name,
+      slug: label.slug,
+      colorToken: label.colorToken,
+    });
+    labelsByActivity.set(label.activityId, labels);
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    labels: labelsByActivity.get(row.id) ?? [],
+  }));
 }
 
 function compareBoardRows(left: ActivityBoardRow, right: ActivityBoardRow): number {
@@ -66,6 +104,7 @@ export function mapActivityRowToBoardActivity(activity: ActivityBoardRow): Board
     associateId: activity.associateId,
     associateName: activity.associateName,
     tags: activity.tags ?? [],
+    labels: activity.labels ?? [],
     dueOffset: null,
   };
 }
@@ -124,8 +163,9 @@ export async function findActivities(options: FindActivitiesOptions = {}) {
   // aggregate queries. The board itself is always bounded so filtered views
   // (open / overdue / status) cannot grow unbounded in memory or transfer.
   const rows = await query.limit(limit).offset(offset);
+  const rowsWithLabels = await attachLabels(rows);
 
-  return rows.sort(compareBoardRows);
+  return rowsWithLabels.sort(compareBoardRows);
 }
 
 export async function findActivityBoardRowById(id: number): Promise<ActivityBoardRow | null> {
@@ -150,7 +190,9 @@ export async function findActivityBoardRowById(id: number): Promise<ActivityBoar
     .where(eq(activities.id, id))
     .limit(1);
 
-  return row ?? null;
+  if (!row) return null;
+  const [rowWithLabels] = await attachLabels([row]);
+  return rowWithLabels ?? null;
 }
 
 export async function findActiveAdmins() {

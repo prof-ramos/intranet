@@ -1,11 +1,34 @@
 'use server';
 
-import { defineFormAction, defineServerAction } from '@/lib/server-actions/define-form-action';
+import {
+  defineFormAction,
+  defineNoInputServerAction,
+  defineServerAction,
+} from '@/lib/server-actions/define-form-action';
 import { AREAS } from '@/lib/activities/constants';
 import { listActivityTimeline } from '@/lib/activities/repository';
+import {
+  addCommentService,
+  deleteCommentService,
+  editCommentService,
+  listCommentsService,
+} from '@/lib/activities/comments-service';
+import {
+  addLabelToActivityService,
+  createLabelService,
+  deactivateLabelService,
+  listLabelsService,
+  removeLabelFromActivityService,
+} from '@/lib/activities/labels-service';
 import { createActivityService, updateActivityService } from '@/lib/activities/service';
 import { ACTIVITY_PRIORITY_LABELS, ACTIVITY_STATUS_LABELS } from '@/lib/activities/status';
-import type { ActivityTimelineItem, Priority, Status } from '@/lib/activities/types';
+import type {
+  ActivityCommentItem,
+  ActivityLabelItem,
+  ActivityTimelineItem,
+  Priority,
+  Status,
+} from '@/lib/activities/types';
 import { ACTIVITY_PRIORITIES, ACTIVITY_STATUSES } from '@/lib/activities/types';
 import { z } from 'zod';
 
@@ -102,6 +125,56 @@ const updateActivitySchema = z.object({
     .optional(),
 });
 const activityIdSchema = z.number().int().positive('Atividade inválida.');
+const commentContentSchema = z
+  .string()
+  .min(1, 'O comentário é obrigatório.')
+  .max(10_000, 'O comentário não pode exceder 10.000 caracteres.');
+const addCommentSchema = z.object({
+  activityId: activityIdSchema,
+  content: commentContentSchema,
+});
+const editCommentSchema = z.object({
+  commentId: z.number().int().positive('Comentário inválido.'),
+  content: commentContentSchema,
+});
+const deleteCommentSchema = z.object({
+  commentId: z.number().int().positive('Comentário inválido.'),
+});
+const createLabelSchema = z.object({
+  name: z.string().trim().min(1).max(64),
+  colorToken: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Cor de label inválida.'),
+});
+const deactivateLabelSchema = z.object({
+  id: z.number().int().positive('Label inválida.'),
+});
+const activityLabelMutationSchema = z.object({
+  activityId: activityIdSchema,
+  labelId: z.number().int().positive('Label inválida.'),
+});
+
+function toActivityCommentItem(
+  comment: Awaited<ReturnType<typeof listCommentsService>>[number],
+): ActivityCommentItem {
+  return {
+    id: comment.id,
+    activityId: comment.activityId,
+    authorAdminId: comment.authorAdminId,
+    content: comment.content,
+    createdAt: comment.createdAt.toISOString(),
+    updatedAt: comment.updatedAt.toISOString(),
+  };
+}
+
+function toActivityLabelItem(
+  label: Awaited<ReturnType<typeof listLabelsService>>[number],
+): ActivityLabelItem {
+  return {
+    id: label.id,
+    name: label.name,
+    slug: label.slug,
+    colorToken: label.colorToken,
+  };
+}
 
 function describeTimelineEntry(
   entry: Awaited<ReturnType<typeof listActivityTimeline>>[number],
@@ -145,6 +218,12 @@ function describeTimelineEntry(
 
     return parts.length > 0 ? `Alterou ${parts.join(', ')}.` : 'Atividade atualizada.';
   }
+
+  if (entry.action === 'activity_comment_added') return 'Comentário adicionado.';
+  if (entry.action === 'activity_comment_edited') return 'Comentário editado.';
+  if (entry.action === 'activity_comment_deleted') return 'Comentário excluído.';
+  if (entry.action === 'activity_label_added') return 'Label adicionada.';
+  if (entry.action === 'activity_label_removed') return 'Label removida.';
 
   return 'Atividade atualizada.';
 }
@@ -208,6 +287,7 @@ export const createQuickActivityAction = defineServerAction({
       associateId: created.associateId,
       associateName: null,
       tags: created.tags ?? [],
+      labels: [],
       dueOffset: null,
     };
   },
@@ -258,5 +338,131 @@ export const getActivityTimelineAction = defineServerAction({
       createdAt: row.createdAt.toISOString(),
       summary: describeTimelineEntry(row),
     }));
+  },
+});
+
+export const addCommentAction = defineServerAction({
+  auth: ['admin', 'diretoria', 'secretaria'],
+  schema: addCommentSchema,
+  service: async (input, user): Promise<ActivityCommentItem> =>
+    toActivityCommentItem(
+      await addCommentService({
+        activityId: input.activityId,
+        authorAdminId: user.userId,
+        content: input.content,
+      }),
+    ),
+  revalidate: {
+    path: '/app/atividades',
+  },
+});
+
+export const editCommentAction = defineServerAction({
+  auth: ['admin', 'diretoria', 'secretaria'],
+  schema: editCommentSchema,
+  service: async (input, user): Promise<ActivityCommentItem> =>
+    toActivityCommentItem(
+      await editCommentService({
+        commentId: input.commentId,
+        editorAdminId: user.userId,
+        content: input.content,
+      }),
+    ),
+  revalidate: {
+    path: '/app/atividades',
+  },
+});
+
+export const updateCommentAction = editCommentAction;
+
+export const deleteCommentAction = defineServerAction({
+  auth: ['admin', 'diretoria', 'secretaria'],
+  schema: deleteCommentSchema,
+  service: async (input, user) => {
+    const deleted = await deleteCommentService({
+      commentId: input.commentId,
+      actorAdminId: user.userId,
+    });
+    return { id: deleted.id };
+  },
+  revalidate: {
+    path: '/app/atividades',
+  },
+});
+
+export const listCommentsAction = defineServerAction({
+  auth: ['admin', 'diretoria', 'secretaria'],
+  schema: activityIdSchema,
+  service: async (activityId: number): Promise<ActivityCommentItem[]> => {
+    const comments = await listCommentsService(activityId);
+    return comments.map(toActivityCommentItem);
+  },
+});
+
+export const listLabelsAction = defineNoInputServerAction({
+  auth: ['admin', 'diretoria', 'secretaria'],
+  service: async (): Promise<ActivityLabelItem[]> => {
+    const labels = await listLabelsService();
+    return labels.map(toActivityLabelItem);
+  },
+});
+
+export const createLabelAction = defineServerAction({
+  auth: ['admin', 'diretoria', 'secretaria'],
+  schema: createLabelSchema,
+  service: async (input, user): Promise<ActivityLabelItem> => {
+    const label = await createLabelService({
+      name: input.name,
+      colorToken: input.colorToken,
+      createdBy: user.userId,
+    });
+    return toActivityLabelItem(label);
+  },
+  revalidate: {
+    path: '/app/atividades',
+  },
+});
+
+export const deactivateLabelAction = defineServerAction({
+  auth: ['admin', 'diretoria', 'secretaria'],
+  schema: deactivateLabelSchema,
+  service: async (input, user) => {
+    const label = await deactivateLabelService({ id: input.id, actorId: user.userId });
+    return { id: label.id, active: label.active };
+  },
+  revalidate: {
+    path: '/app/atividades',
+  },
+});
+
+export const addLabelAction = defineServerAction({
+  auth: ['admin', 'diretoria', 'secretaria'],
+  schema: activityLabelMutationSchema,
+  service: async (input, user) => {
+    const assignment = await addLabelToActivityService({
+      activityId: input.activityId,
+      labelId: input.labelId,
+      actorId: user.userId,
+    });
+    return { activityId: assignment.activityId, labelId: assignment.labelId };
+  },
+  revalidate: {
+    path: '/app/atividades',
+  },
+});
+
+export const removeLabelAction = defineServerAction({
+  auth: ['admin', 'diretoria', 'secretaria'],
+  schema: activityLabelMutationSchema,
+  service: async (input, user) => {
+    const assignment = await removeLabelFromActivityService({
+      activityId: input.activityId,
+      labelId: input.labelId,
+      actorId: user.userId,
+    });
+    return { activityId: assignment.activityId, labelId: assignment.labelId };
+  },
+  revalidate: {
+    path: '/app/atividades',
   },
 });

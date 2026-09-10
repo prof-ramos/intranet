@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { ArrowRight, Clock, Plus } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { DragDropContext } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
@@ -11,6 +11,8 @@ import { focusRingClass } from '@/lib/ui/tokens';
 import {
   createQuickActivityAction,
   getActivityTimelineAction,
+  listCommentsAction,
+  listLabelsAction,
   updateActivityAction,
 } from './actions';
 import { columns } from './_board/constants';
@@ -36,6 +38,8 @@ import { parsePositiveIntParam } from '@/lib/routing/params';
 import { createLogger } from '@/lib/logger';
 import { toSafeErrorLog } from '@/lib/error-log';
 import type {
+  ActivityCommentItem,
+  ActivityLabelItem,
   ActivityTimelineItem,
   BoardActivity,
   BoardAssociate,
@@ -52,6 +56,7 @@ const ReassignModal = dynamic(() =>
 
 interface AtividadesBoardProps {
   initialActivities: BoardActivity[];
+  labels: ActivityLabelItem[];
   people: BoardPerson[];
   associates: BoardAssociate[];
   currentUser: BoardPerson;
@@ -59,6 +64,7 @@ interface AtividadesBoardProps {
 
 export function AtividadesBoard({
   initialActivities,
+  labels,
   people,
   associates,
   currentUser,
@@ -78,6 +84,22 @@ export function AtividadesBoard({
   const [drawerTimeline, setDrawerTimeline] = useState<ActivityTimelineItem[]>([]);
   const [loadedDrawerTimelineId, setLoadedDrawerTimelineId] = useState<number | null>(null);
   const [drawerTimelineError, setDrawerTimelineError] = useState<string | null>(null);
+  const [drawerComments, setDrawerComments] = useState<ActivityCommentItem[]>([]);
+  const [loadedDrawerCommentsId, setLoadedDrawerCommentsId] = useState<number | null>(null);
+  const [drawerCommentsError, setDrawerCommentsError] = useState<string | null>(null);
+  const [drawerLabels, setDrawerLabels] = useState<ActivityLabelItem[]>([]);
+  const [loadedDrawerLabelsId, setLoadedDrawerLabelsId] = useState<number | null>(null);
+  const [drawerLabelsError, setDrawerLabelsError] = useState<string | null>(null);
+
+  const drawerIdRef = useRef<number | null>(drawerId);
+  useEffect(() => {
+    drawerIdRef.current = drawerId;
+  }, [drawerId]);
+
+  const isStaleDrawerRequest = useCallback(
+    (activityId: number) => drawerIdRef.current !== activityId,
+    [],
+  );
 
   const peopleById = useMemo(() => new Map(people.map((person) => [person.id, person])), [people]);
 
@@ -96,6 +118,16 @@ export function AtividadesBoard({
     drawerActivity !== null &&
     loadedDrawerTimelineId !== drawerId &&
     !drawerTimelineError;
+  const drawerCommentsLoading =
+    drawerId !== null &&
+    drawerActivity !== null &&
+    loadedDrawerCommentsId !== drawerId &&
+    !drawerCommentsError;
+  const drawerLabelsLoading =
+    drawerId !== null &&
+    drawerActivity !== null &&
+    loadedDrawerLabelsId !== drawerId &&
+    !drawerLabelsError;
 
   const syncDrawerUrl = useCallback(
     (nextDrawerId: number | null) => {
@@ -114,14 +146,48 @@ export function AtividadesBoard({
   async function loadDrawerTimeline(activityId: number) {
     try {
       const timeline = await getActivityTimelineAction(activityId);
+      if (isStaleDrawerRequest(activityId)) return;
       setDrawerTimeline(timeline);
       setLoadedDrawerTimelineId(activityId);
       setDrawerTimelineError(null);
     } catch (err) {
       logger.error('Failed to load drawer timeline', { activityId, error: toSafeErrorLog(err) });
+      if (isStaleDrawerRequest(activityId)) return;
       setDrawerTimeline([]);
       setLoadedDrawerTimelineId(activityId);
       setDrawerTimelineError('Não foi possível carregar o histórico desta atividade.');
+    }
+  }
+
+  async function loadDrawerComments(activityId: number) {
+    try {
+      const comments = await listCommentsAction(activityId);
+      if (isStaleDrawerRequest(activityId)) return;
+      setDrawerComments(comments);
+      setLoadedDrawerCommentsId(activityId);
+      setDrawerCommentsError(null);
+    } catch (err) {
+      logger.error('Failed to load drawer comments', { activityId, error: toSafeErrorLog(err) });
+      if (isStaleDrawerRequest(activityId)) return;
+      setDrawerComments([]);
+      setLoadedDrawerCommentsId(activityId);
+      setDrawerCommentsError('Não foi possível carregar os comentários desta atividade.');
+    }
+  }
+
+  async function loadDrawerLabels(activityId: number) {
+    try {
+      const available = await listLabelsAction();
+      if (isStaleDrawerRequest(activityId)) return;
+      setDrawerLabels(available);
+      setLoadedDrawerLabelsId(activityId);
+      setDrawerLabelsError(null);
+    } catch (err) {
+      logger.error('Failed to load drawer labels', { activityId, error: toSafeErrorLog(err) });
+      if (isStaleDrawerRequest(activityId)) return;
+      setDrawerLabels([]);
+      setLoadedDrawerLabelsId(activityId);
+      setDrawerLabelsError('Não foi possível carregar as labels desta atividade.');
     }
   }
 
@@ -129,6 +195,12 @@ export function AtividadesBoard({
     setDrawerTimeline([]);
     setLoadedDrawerTimelineId(null);
     setDrawerTimelineError(null);
+    setDrawerComments([]);
+    setLoadedDrawerCommentsId(null);
+    setDrawerCommentsError(null);
+    setDrawerLabels([]);
+    setLoadedDrawerLabelsId(null);
+    setDrawerLabelsError(null);
     syncDrawerUrl(activityId);
   }
 
@@ -144,6 +216,22 @@ export function AtividadesBoard({
       });
     }
   }, [drawerActivity, drawerTimelineError, drawerTimelineLoading, drawerTimeline.length]);
+
+  useEffect(() => {
+    if (drawerActivity && drawerCommentsLoading && !drawerCommentsError) {
+      queueMicrotask(() => {
+        void loadDrawerComments(drawerActivity.id);
+      });
+    }
+  }, [drawerActivity, drawerCommentsError, drawerCommentsLoading]);
+
+  useEffect(() => {
+    if (drawerActivity && drawerLabelsLoading && !drawerLabelsError) {
+      queueMicrotask(() => {
+        void loadDrawerLabels(drawerActivity.id);
+      });
+    }
+  }, [drawerActivity, drawerLabelsError, drawerLabelsLoading]);
 
   useEffect(() => {
     if (hasOpenActivity(drawerId, items)) return;
@@ -312,6 +400,7 @@ export function AtividadesBoard({
         filters={filters}
         people={people}
         associates={associates}
+        labels={labels}
         compact={compact}
         setCompact={setCompact}
         setFilters={setFilters}
@@ -375,10 +464,37 @@ export function AtividadesBoard({
         timeline={drawerTimeline}
         timelineLoading={drawerTimelineLoading}
         timelineError={drawerTimelineError}
+        comments={drawerComments}
+        commentsLoading={drawerCommentsLoading}
+        commentsError={drawerCommentsError}
+        availableLabels={drawerLabels}
+        labelsLoading={drawerLabelsLoading}
+        labelsError={drawerLabelsError}
+        currentUserId={currentUser.id}
+        onCommentsChange={(nextComments) => setDrawerComments(nextComments)}
+        onCommentMutation={() => {
+          setDrawerTimeline([]);
+          setLoadedDrawerTimelineId(null);
+          setDrawerTimelineError(null);
+        }}
+        onLabelsChange={(nextLabels) => {
+          if (drawerId !== null) updateActivity(drawerId, { labels: nextLabels });
+        }}
+        onLabelMutation={() => {
+          setDrawerTimeline([]);
+          setLoadedDrawerTimelineId(null);
+          setDrawerTimelineError(null);
+        }}
         onClose={() => {
           setDrawerTimeline([]);
           setLoadedDrawerTimelineId(null);
           setDrawerTimelineError(null);
+          setDrawerComments([]);
+          setLoadedDrawerCommentsId(null);
+          setDrawerCommentsError(null);
+          setDrawerLabels([]);
+          setLoadedDrawerLabelsId(null);
+          setDrawerLabelsError(null);
           syncDrawerUrl(null);
         }}
         onChange={handleDrawerChange}

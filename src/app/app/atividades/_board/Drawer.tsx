@@ -1,8 +1,8 @@
 'use client';
 
-import { X } from 'lucide-react';
+import { Pencil, Trash2, X } from 'lucide-react';
 import type { CSSProperties } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useEscapeKey } from '@/hooks/use-escape-key';
 import {
   buttonOutlineBorder,
@@ -20,9 +20,17 @@ import {
   textPrimary,
   textSecondary,
 } from '@/lib/ui/tokens';
-import { columns } from './constants';
+import { columns, safeColorToken } from './constants';
 import { Avatar } from './ActivityCard';
-import type { ActivityTimelineItem, BoardActivity, BoardPerson } from './types';
+import { addLabelAction, removeLabelAction } from '../actions';
+import { addCommentAction, deleteCommentAction, editCommentAction } from '../actions';
+import type {
+  ActivityCommentItem,
+  ActivityLabelItem,
+  ActivityTimelineItem,
+  BoardActivity,
+  BoardPerson,
+} from './types';
 import { isActivityPriority, isActivityStatus } from '@/lib/activities/status';
 
 // ⚡ Bolt: Cache Intl.DateTimeFormat instance to avoid expensive object creation on every render cycle.
@@ -43,9 +51,20 @@ export function Drawer({
   timeline,
   timelineLoading,
   timelineError,
+  comments,
+  commentsLoading,
+  commentsError,
+  currentUserId,
+  availableLabels,
+  labelsLoading,
+  labelsError,
   onClose,
   onChange,
   onRequestReassign,
+  onCommentsChange,
+  onCommentMutation,
+  onLabelsChange,
+  onLabelMutation,
 }: {
   activity: BoardActivity | null;
   people: BoardPerson[];
@@ -53,12 +72,38 @@ export function Drawer({
   timeline: ActivityTimelineItem[];
   timelineLoading: boolean;
   timelineError: string | null;
+  comments: ActivityCommentItem[];
+  commentsLoading: boolean;
+  commentsError: string | null;
+  currentUserId: number;
+  availableLabels: ActivityLabelItem[];
+  labelsLoading: boolean;
+  labelsError: string | null;
   onClose: () => void;
   onChange: (patch: Partial<BoardActivity>) => void;
   onRequestReassign: () => void;
+  onCommentsChange: (comments: ActivityCommentItem[]) => void;
+  onCommentMutation: () => void;
+  onLabelsChange: (labels: ActivityLabelItem[]) => void;
+  onLabelMutation: () => void;
 }) {
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const drawerRef = useRef<HTMLElement | null>(null);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [labelError, setLabelError] = useState<string | null>(null);
+  const [labelSubmitting, setLabelSubmitting] = useState(false);
+
+  useEffect(() => {
+    setCommentDraft('');
+    setEditingCommentId(null);
+    setEditingContent('');
+    setCommentError(null);
+    setLabelError(null);
+  }, [activity?.id]);
 
   useEffect(() => {
     if (!activity) return;
@@ -86,6 +131,7 @@ export function Drawer({
       'button:not([disabled])',
       'input:not([disabled])',
       'select:not([disabled])',
+      'textarea:not([disabled])',
       '[tabindex]:not([tabindex="-1"])',
     ].join(',');
 
@@ -114,6 +160,87 @@ export function Drawer({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [activity, onClose]);
+
+  async function handleAddComment() {
+    if (!activity || !commentDraft.trim() || commentSubmitting) return;
+    setCommentSubmitting(true);
+    setCommentError(null);
+    try {
+      const created = await addCommentAction({
+        activityId: activity.id,
+        content: commentDraft,
+      });
+      onCommentsChange([...comments, created]);
+      onCommentMutation();
+      setCommentDraft('');
+    } catch (error) {
+      setCommentError(
+        error instanceof Error ? error.message : 'Não foi possível adicionar o comentário.',
+      );
+    } finally {
+      setCommentSubmitting(false);
+    }
+  }
+
+  async function handleEditComment(commentId: number) {
+    if (!editingContent.trim() || commentSubmitting) return;
+    setCommentSubmitting(true);
+    setCommentError(null);
+    try {
+      const updated = await editCommentAction({ commentId, content: editingContent });
+      onCommentsChange(comments.map((comment) => (comment.id === commentId ? updated : comment)));
+      onCommentMutation();
+      setEditingCommentId(null);
+      setEditingContent('');
+    } catch (error) {
+      setCommentError(
+        error instanceof Error ? error.message : 'Não foi possível editar o comentário.',
+      );
+    } finally {
+      setCommentSubmitting(false);
+    }
+  }
+
+  async function handleDeleteComment(commentId: number) {
+    if (commentSubmitting) return;
+    setCommentSubmitting(true);
+    setCommentError(null);
+    try {
+      await deleteCommentAction({ commentId });
+      onCommentsChange(comments.filter((comment) => comment.id !== commentId));
+      onCommentMutation();
+    } catch (error) {
+      setCommentError(
+        error instanceof Error ? error.message : 'Não foi possível excluir o comentário.',
+      );
+    } finally {
+      setCommentSubmitting(false);
+    }
+  }
+
+  async function handleToggleLabel(label: ActivityLabelItem) {
+    if (!activity || labelSubmitting) return;
+    const isAssigned = activity.labels.some((current) => current.id === label.id);
+    setLabelSubmitting(true);
+    setLabelError(null);
+    try {
+      const input = { activityId: activity.id, labelId: label.id };
+      if (isAssigned) {
+        await removeLabelAction(input);
+      } else {
+        await addLabelAction(input);
+      }
+      const nextLabels = isAssigned
+        ? activity.labels.filter((current) => current.id !== label.id)
+        : [...activity.labels, label].sort((left, right) => left.name.localeCompare(right.name));
+      onLabelsChange(nextLabels);
+      onLabelMutation();
+    } catch (error) {
+      setLabelError(error instanceof Error ? error.message : 'Não foi possível alterar a label.');
+    } finally {
+      setLabelSubmitting(false);
+    }
+  }
 
   if (!activity) return null;
 
@@ -273,6 +400,54 @@ export function Drawer({
                 <span style={{ color: textFaint }}>-</span>
               )}
             </dd>
+            <dt style={labelStyle}>Labels</dt>
+            <dd className="m-0">
+              {labelsLoading && (
+                <p className="m-0 text-sm" style={{ color: textFaint }}>
+                  Carregando labels...
+                </p>
+              )}
+              {labelsError && (
+                <p role="alert" className="m-0 text-sm" style={{ color: dangerText }}>
+                  {labelsError}
+                </p>
+              )}
+              {!labelsLoading && !labelsError && availableLabels.length === 0 && (
+                <span style={{ color: textFaint }}>Nenhuma label ativa.</span>
+              )}
+              {!labelsLoading && !labelsError && availableLabels.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {availableLabels.map((label) => {
+                    const selected = activity.labels.some((current) => current.id === label.id);
+                    return (
+                      <button
+                        key={label.id}
+                        type="button"
+                        onClick={() => void handleToggleLabel(label)}
+                        disabled={labelSubmitting}
+                        className={`rounded-full px-2.5 py-1 text-[10px] font-semibold transition-opacity ${focusRingClass}`}
+                        style={{
+                          color: selected ? '#ffffff' : safeColorToken(label.colorToken),
+                          background: selected
+                            ? safeColorToken(label.colorToken)
+                            : `${safeColorToken(label.colorToken)}18`,
+                          opacity: labelSubmitting ? 0.65 : 1,
+                        }}
+                        aria-pressed={selected}
+                      >
+                        {selected ? '✓ ' : ''}
+                        {label.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {labelError && (
+                <p role="alert" className="mt-2 text-sm" style={{ color: dangerText }}>
+                  {labelError}
+                </p>
+              )}
+            </dd>
           </dl>
 
           <section className="mt-6">
@@ -288,6 +463,162 @@ export function Drawer({
             </p>
           </section>
 
+          <section className="mt-6" aria-labelledby="activity-comments-title">
+            <p
+              id="activity-comments-title"
+              className="m-0 text-[11px] font-bold tracking-[0.16em] uppercase"
+              style={labelStyle}
+            >
+              Comentários
+            </p>
+            {commentsLoading && (
+              <p className="mt-2 text-sm" style={{ color: textFaint }}>
+                Carregando comentários...
+              </p>
+            )}
+            {commentsError && (
+              <p role="alert" className="mt-2 text-sm" style={{ color: dangerText }}>
+                {commentsError}
+              </p>
+            )}
+            {!commentsLoading && !commentsError && comments.length === 0 && (
+              <p className="mt-2 text-sm" style={{ color: textFaint }}>
+                Nenhum comentário ainda.
+              </p>
+            )}
+            {!commentsLoading && !commentsError && comments.length > 0 && (
+              <ol className="mt-3 flex list-none flex-col gap-3 p-0">
+                {comments.map((comment) => {
+                  const author =
+                    peopleById.get(comment.authorAdminId)?.name ??
+                    `Usuário #${comment.authorAdminId}`;
+                  const isEditing = editingCommentId === comment.id;
+                  return (
+                    <li
+                      key={comment.id}
+                      className="rounded-[8px] border px-3 py-2.5"
+                      style={{ borderColor: hairline, background: canvas }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="m-0 text-[12px] font-semibold" style={{ color: textPrimary }}>
+                          {author}
+                        </p>
+                        <div className="flex shrink-0 items-center gap-1">
+                          {comment.authorAdminId === currentUserId && !isEditing && (
+                            <button
+                              type="button"
+                              className={`inline-flex h-8 w-8 items-center justify-center rounded-[6px] hover:bg-[var(--activity-hover-bg)] ${focusRingClass}`}
+                              style={hoverBgStyle}
+                              onClick={() => {
+                                setEditingCommentId(comment.id);
+                                setEditingContent(comment.content);
+                                setCommentError(null);
+                              }}
+                              aria-label="Editar comentário"
+                            >
+                              <Pencil size={14} aria-hidden="true" />
+                            </button>
+                          )}
+                          {comment.authorAdminId === currentUserId && (
+                            <button
+                              type="button"
+                              className={`inline-flex h-8 w-8 items-center justify-center rounded-[6px] hover:bg-[var(--activity-hover-bg)] ${focusRingClass}`}
+                              style={hoverBgStyle}
+                              onClick={() => void handleDeleteComment(comment.id)}
+                              disabled={commentSubmitting}
+                              aria-label="Excluir comentário"
+                            >
+                              <Trash2 size={14} aria-hidden="true" style={{ color: dangerText }} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="mt-1 text-[11px]" style={{ color: textMuted }}>
+                        {dateTimeFormatter.format(new Date(comment.createdAt))}
+                      </p>
+                      {isEditing ? (
+                        <div className="mt-2">
+                          <textarea
+                            aria-label="Editar comentário"
+                            value={editingContent}
+                            onChange={(event) => setEditingContent(event.target.value)}
+                            className="min-h-20 w-full rounded-[8px] border p-2 text-sm leading-relaxed"
+                            style={inputStyle}
+                            maxLength={10_000}
+                          />
+                          <div className="mt-2 flex justify-end gap-2">
+                            <button
+                              type="button"
+                              className={`inline-flex h-8 items-center rounded-[8px] px-3 text-xs font-semibold hover:bg-[var(--activity-hover-bg)] ${focusRingClass}`}
+                              style={hoverBgStyle}
+                              onClick={() => {
+                                setEditingCommentId(null);
+                                setEditingContent('');
+                              }}
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              className={`inline-flex h-8 items-center rounded-[8px] bg-[#040920] px-3 text-xs font-semibold text-white hover:bg-[#0d3260] ${focusRingClass}`}
+                              onClick={() => void handleEditComment(comment.id)}
+                              disabled={commentSubmitting || !editingContent.trim()}
+                            >
+                              Salvar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p
+                          className="mt-2 text-sm leading-relaxed break-words whitespace-pre-wrap"
+                          style={{ color: textSecondary }}
+                        >
+                          {comment.content}
+                        </p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+            <form
+              className="mt-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleAddComment();
+              }}
+            >
+              <label htmlFor="activity-comment-input" className="sr-only">
+                Novo comentário
+              </label>
+              <textarea
+                id="activity-comment-input"
+                aria-label="Novo comentário"
+                value={commentDraft}
+                onChange={(event) => setCommentDraft(event.target.value)}
+                className="min-h-20 w-full rounded-[8px] border p-2 text-sm leading-relaxed"
+                style={inputStyle}
+                placeholder="Escreva um comentário..."
+                maxLength={10_000}
+                disabled={commentSubmitting}
+              />
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="submit"
+                  className={`inline-flex h-9 items-center rounded-[8px] bg-[#040920] px-4 text-xs font-semibold text-white hover:bg-[#0d3260] ${focusRingClass}`}
+                  disabled={commentSubmitting || !commentDraft.trim()}
+                >
+                  {commentSubmitting ? 'Salvando...' : 'Adicionar comentário'}
+                </button>
+              </div>
+            </form>
+            {commentError && (
+              <p role="alert" className="mt-2 text-sm" style={{ color: dangerText }}>
+                {commentError}
+              </p>
+            )}
+          </section>
+
           <section className="mt-6">
             <p className="m-0 text-[11px] font-bold tracking-[0.16em] uppercase" style={labelStyle}>
               Histórico
@@ -298,7 +629,7 @@ export function Drawer({
               </p>
             )}
             {timelineError && (
-              <p className="mt-2 text-sm" style={{ color: dangerText }}>
+              <p role="alert" className="mt-2 text-sm" style={{ color: dangerText }}>
                 {timelineError}
               </p>
             )}

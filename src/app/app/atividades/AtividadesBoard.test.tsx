@@ -10,8 +10,11 @@ const actionMocks = vi.hoisted(() => ({
   createQuickActivityAction: vi.fn(),
   routerReplace: vi.fn(),
   updateActivityAction: vi.fn(),
+  listCommentsAction: vi.fn(),
   searchParams: new URLSearchParams(),
 }));
+
+const drawerPropsMock = vi.hoisted(() => ({ current: null as Record<string, unknown> | null }));
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/app/atividades',
@@ -39,6 +42,8 @@ vi.mock('@hello-pangea/dnd', () => ({
 vi.mock('./actions', () => ({
   createQuickActivityAction: actionMocks.createQuickActivityAction,
   getActivityTimelineAction: vi.fn().mockResolvedValue([]),
+  listCommentsAction: actionMocks.listCommentsAction,
+  listLabelsAction: vi.fn().mockResolvedValue([]),
   updateActivityAction: actionMocks.updateActivityAction,
 }));
 vi.mock('./_board/useBoardPreferences', () => ({
@@ -65,10 +70,18 @@ vi.mock('./_board/BoardColumn', () => ({
         <button type="button" onClick={() => openDrawer(7)}>
           Abrir atividade
         </button>
+        <button type="button" onClick={() => openDrawer(8)}>
+          Abrir atividade 8
+        </button>
       </>
     ) : null,
 }));
-vi.mock('./_board/Drawer', () => ({ Drawer: () => null }));
+vi.mock('./_board/Drawer', () => ({
+  Drawer: (props: Record<string, unknown>) => {
+    drawerPropsMock.current = props;
+    return null;
+  },
+}));
 vi.mock('./_board/FilterBar', () => ({ FilterBar: () => null }));
 vi.mock('./_board/SummaryStrip', () => ({
   SummaryStrip: ({ onLateClick }: { onLateClick: () => void }) => (
@@ -103,9 +116,11 @@ describe('AtividadesBoard quick add', () => {
             associateId: null,
             associateName: null,
             tags: [],
+            labels: [],
             dueOffset: -1,
           },
         ]}
+        labels={[]}
         people={[{ id: 1, name: 'Dev', role: 'admin' }]}
         associates={[]}
         currentUser={{ id: 1, name: 'Dev', role: 'admin' }}
@@ -124,6 +139,7 @@ describe('AtividadesBoard quick add', () => {
     render(
       <AtividadesBoard
         initialActivities={[]}
+        labels={[]}
         people={[{ id: 1, name: 'Dev', role: 'admin' }]}
         associates={[]}
         currentUser={{ id: 1, name: 'Dev', role: 'admin' }}
@@ -146,6 +162,122 @@ describe('AtividadesBoard quick add', () => {
     expect(actionMocks.updateActivityAction).not.toHaveBeenCalled();
   });
 
+  it('does not apply stale comments when the drawer switches activities', async () => {
+    let resolveA!: (value: unknown) => void;
+    actionMocks.listCommentsAction
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveA = resolve;
+          }),
+      )
+      .mockResolvedValueOnce([
+        {
+          id: 2,
+          activityId: 8,
+          authorAdminId: 1,
+          content: 'Comentário B',
+          createdAt: '2026-09-10T10:00:00.000Z',
+          updatedAt: '2026-09-10T10:00:00.000Z',
+        },
+      ]);
+
+    const activities = [
+      {
+        id: 7,
+        title: 'Atividade A',
+        description: null,
+        status: 'a_fazer' as const,
+        priority: 'normal' as const,
+        dueDate: null,
+        completedAt: null,
+        assigneeId: null,
+        assigneeName: null,
+        associateId: null,
+        associateName: null,
+        tags: [],
+        labels: [],
+        dueOffset: null,
+      },
+      {
+        id: 8,
+        title: 'Atividade B',
+        description: null,
+        status: 'a_fazer' as const,
+        priority: 'normal' as const,
+        dueDate: null,
+        completedAt: null,
+        assigneeId: null,
+        assigneeName: null,
+        associateId: null,
+        associateName: null,
+        tags: [],
+        labels: [],
+        dueOffset: null,
+      },
+    ];
+
+    actionMocks.searchParams = new URLSearchParams('open=7');
+    const { rerender } = render(
+      <AtividadesBoard
+        initialActivities={activities}
+        labels={[]}
+        people={[{ id: 1, name: 'Dev', role: 'admin' }]}
+        associates={[]}
+        currentUser={{ id: 1, name: 'Dev', role: 'admin' }}
+      />,
+    );
+
+    await waitFor(() => expect(actionMocks.listCommentsAction).toHaveBeenCalledWith(7));
+
+    actionMocks.searchParams = new URLSearchParams('open=8');
+    rerender(
+      <AtividadesBoard
+        initialActivities={activities}
+        labels={[]}
+        people={[{ id: 1, name: 'Dev', role: 'admin' }]}
+        associates={[]}
+        currentUser={{ id: 1, name: 'Dev', role: 'admin' }}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(drawerPropsMock.current?.comments).toEqual([
+        {
+          id: 2,
+          activityId: 8,
+          authorAdminId: 1,
+          content: 'Comentário B',
+          createdAt: '2026-09-10T10:00:00.000Z',
+          updatedAt: '2026-09-10T10:00:00.000Z',
+        },
+      ]),
+    );
+
+    resolveA([
+      {
+        id: 1,
+        activityId: 7,
+        authorAdminId: 1,
+        content: 'Comentário A',
+        createdAt: '2026-09-10T09:00:00.000Z',
+        updatedAt: '2026-09-10T09:00:00.000Z',
+      },
+    ]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(drawerPropsMock.current?.comments).toEqual([
+      {
+        id: 2,
+        activityId: 8,
+        authorAdminId: 1,
+        content: 'Comentário B',
+        createdAt: '2026-09-10T10:00:00.000Z',
+        updatedAt: '2026-09-10T10:00:00.000Z',
+      },
+    ]);
+  });
+
   it('closes the editor after the activity is created successfully', async () => {
     actionMocks.createQuickActivityAction.mockResolvedValueOnce({
       id: 7,
@@ -160,11 +292,13 @@ describe('AtividadesBoard quick add', () => {
       associateId: null,
       associateName: null,
       tags: [],
+      labels: [],
       dueOffset: null,
     });
     render(
       <AtividadesBoard
         initialActivities={[]}
+        labels={[]}
         people={[{ id: 1, name: 'Dev', role: 'admin' }]}
         associates={[]}
         currentUser={{ id: 1, name: 'Dev', role: 'admin' }}
@@ -191,6 +325,7 @@ describe('AtividadesBoard quick add', () => {
     render(
       <AtividadesBoard
         initialActivities={[]}
+        labels={[]}
         people={[{ id: 1, name: 'Dev', role: 'admin' }]}
         associates={[]}
         currentUser={{ id: 1, name: 'Dev', role: 'admin' }}
@@ -204,9 +339,9 @@ describe('AtividadesBoard quick add', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Adicionar' }));
 
     await waitFor(() =>
-      expect((screen.getByRole('button', { name: 'Salvando...' }) as HTMLButtonElement).disabled).toBe(
-        true,
-      ),
+      expect(
+        (screen.getByRole('button', { name: 'Salvando...' }) as HTMLButtonElement).disabled,
+      ).toBe(true),
     );
     expect(actionMocks.createQuickActivityAction).toHaveBeenCalledTimes(1);
   });
@@ -216,6 +351,7 @@ describe('AtividadesBoard quick add', () => {
     render(
       <AtividadesBoard
         initialActivities={[]}
+        labels={[]}
         people={[{ id: 1, name: 'Dev', role: 'admin' }]}
         associates={[]}
         currentUser={{ id: 1, name: 'Dev', role: 'admin' }}

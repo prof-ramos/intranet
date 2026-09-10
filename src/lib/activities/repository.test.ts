@@ -10,7 +10,8 @@ import {
   updateActivityById,
 } from './repository';
 
-const { dbMock, MOCK_ACTIVITY, MOCK_ADMIN, MOCK_ASSOCIATE } = vi.hoisted(() => {
+const { dbMock, MOCK_ACTIVITY, MOCK_ADMIN, MOCK_ASSOCIATE, envMock, labelsRepositoryMocks } =
+  vi.hoisted(() => {
   const MOCK_ACTIVITY = {
     id: 1,
     title: 'Test Activity',
@@ -24,6 +25,7 @@ const { dbMock, MOCK_ACTIVITY, MOCK_ADMIN, MOCK_ASSOCIATE } = vi.hoisted(() => {
     associateId: 10,
     associateName: 'Associate',
     tags: ['urgent'],
+    labels: [],
   };
   const MOCK_ADMIN = { id: 1, name: 'Admin', role: 'admin' as const };
   const MOCK_ASSOCIATE = { id: 10, name: 'Associate' };
@@ -34,6 +36,7 @@ const { dbMock, MOCK_ACTIVITY, MOCK_ADMIN, MOCK_ASSOCIATE } = vi.hoisted(() => {
   const selectChain: Record<string, any> = {};
   selectChain.from = vi.fn().mockReturnValue(selectChain);
   selectChain.leftJoin = vi.fn().mockReturnValue(selectChain);
+  selectChain.innerJoin = vi.fn().mockReturnValue(selectChain);
   selectChain.where = vi.fn().mockReturnValue(selectChain);
   selectChain.orderBy = vi.fn().mockReturnValue(selectChain);
   selectChain.groupBy = vi.fn().mockReturnValue(selectChain);
@@ -66,14 +69,25 @@ const { dbMock, MOCK_ACTIVITY, MOCK_ADMIN, MOCK_ASSOCIATE } = vi.hoisted(() => {
     },
   };
 
-  return { dbMock, MOCK_ACTIVITY, MOCK_ADMIN, MOCK_ASSOCIATE };
+  return {
+    dbMock,
+    MOCK_ACTIVITY,
+    MOCK_ADMIN,
+    MOCK_ASSOCIATE,
+    envMock: { ACTIVITY_LABELS_ENABLED: true },
+    labelsRepositoryMocks: { findLabelsByActivityIds: vi.fn() },
+  };
 });
 
 vi.mock('@/lib/db', () => ({ db: dbMock }));
+vi.mock('@/lib/env', () => ({ env: envMock }));
+vi.mock('./labels-repository', () => labelsRepositoryMocks);
 
 describe('activities repository', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    envMock.ACTIVITY_LABELS_ENABLED = true;
+    vi.mocked(labelsRepositoryMocks.findLabelsByActivityIds).mockResolvedValue([]);
     dbMock.setSelectResult([MOCK_ACTIVITY]);
     dbMock.setInsertResult([MOCK_ACTIVITY]);
   });
@@ -148,6 +162,26 @@ describe('activities repository', () => {
         expect.anything(),
         expect.anything(),
       );
+    });
+
+    it('returns no labels when ACTIVITY_LABELS_ENABLED is false', async () => {
+      envMock.ACTIVITY_LABELS_ENABLED = false;
+      vi.mocked(labelsRepositoryMocks.findLabelsByActivityIds).mockResolvedValue([
+        {
+          activityId: 1,
+          id: 7,
+          name: 'Financeiro',
+          slug: 'financeiro',
+          colorToken: '#123456',
+          active: true,
+          createdAt: new Date('2026-09-01T00:00:00.000Z'),
+        },
+      ] as never);
+
+      const results = await findActivities();
+
+      expect(results[0].labels).toEqual([]);
+      expect(labelsRepositoryMocks.findLabelsByActivityIds).not.toHaveBeenCalled();
     });
   });
 
