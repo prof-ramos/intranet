@@ -96,6 +96,11 @@ export function AtividadesBoard({
     drawerIdRef.current = drawerId;
   }, [drawerId]);
 
+  const isStaleDrawerRequest = useCallback(
+    (activityId: number) => drawerIdRef.current !== activityId,
+    [],
+  );
+
   const peopleById = useMemo(() => new Map(people.map((person) => [person.id, person])), [people]);
 
   const filtered = useMemo(
@@ -141,13 +146,13 @@ export function AtividadesBoard({
   async function loadDrawerTimeline(activityId: number) {
     try {
       const timeline = await getActivityTimelineAction(activityId);
-      if (drawerIdRef.current !== activityId) return;
+      if (isStaleDrawerRequest(activityId)) return;
       setDrawerTimeline(timeline);
       setLoadedDrawerTimelineId(activityId);
       setDrawerTimelineError(null);
     } catch (err) {
       logger.error('Failed to load drawer timeline', { activityId, error: toSafeErrorLog(err) });
-      if (drawerIdRef.current !== activityId) return;
+      if (isStaleDrawerRequest(activityId)) return;
       setDrawerTimeline([]);
       setLoadedDrawerTimelineId(activityId);
       setDrawerTimelineError('Não foi possível carregar o histórico desta atividade.');
@@ -157,13 +162,13 @@ export function AtividadesBoard({
   async function loadDrawerComments(activityId: number) {
     try {
       const comments = await listCommentsAction(activityId);
-      if (drawerIdRef.current !== activityId) return;
+      if (isStaleDrawerRequest(activityId)) return;
       setDrawerComments(comments);
       setLoadedDrawerCommentsId(activityId);
       setDrawerCommentsError(null);
     } catch (err) {
       logger.error('Failed to load drawer comments', { activityId, error: toSafeErrorLog(err) });
-      if (drawerIdRef.current !== activityId) return;
+      if (isStaleDrawerRequest(activityId)) return;
       setDrawerComments([]);
       setLoadedDrawerCommentsId(activityId);
       setDrawerCommentsError('Não foi possível carregar os comentários desta atividade.');
@@ -173,13 +178,13 @@ export function AtividadesBoard({
   async function loadDrawerLabels(activityId: number) {
     try {
       const available = await listLabelsAction();
-      if (drawerIdRef.current !== activityId) return;
+      if (isStaleDrawerRequest(activityId)) return;
       setDrawerLabels(available);
       setLoadedDrawerLabelsId(activityId);
       setDrawerLabelsError(null);
     } catch (err) {
       logger.error('Failed to load drawer labels', { activityId, error: toSafeErrorLog(err) });
-      if (drawerIdRef.current !== activityId) return;
+      if (isStaleDrawerRequest(activityId)) return;
       setDrawerLabels([]);
       setLoadedDrawerLabelsId(activityId);
       setDrawerLabelsError('Não foi possível carregar as labels desta atividade.');

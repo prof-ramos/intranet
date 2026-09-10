@@ -443,7 +443,7 @@ export function Drawer({
                 </div>
               )}
               {labelError && (
-                <p className="mt-2 text-sm" style={{ color: dangerText }}>
+                <p role="alert" className="mt-2 text-sm" style={{ color: dangerText }}>
                   {labelError}
                 </p>
               )}

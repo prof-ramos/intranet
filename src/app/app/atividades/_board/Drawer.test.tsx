@@ -56,6 +56,7 @@ vi.mock('./constants', () => ({
     { key: 'aguardando_terceiros', title: 'Aguardando terceiros' },
     { key: 'concluido', title: 'Concluído' },
   ],
+  safeColorToken: (token: string) => token,
 }));
 
 const activity: BoardActivity = {
