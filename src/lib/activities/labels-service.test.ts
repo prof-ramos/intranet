@@ -89,7 +89,7 @@ describe('activity labels service', () => {
       ...MOCK_LABEL,
       active: false,
     } as any);
-    vi.mocked(repositoryMocks.findActivityById).mockResolvedValue({ id: 42 } as any);
+    vi.mocked(repositoryMocks.findActivityById).mockResolvedValue({ id: 42, createdBy: 5 } as any);
     vi.mocked(labelRepositoryMocks.findActiveLabels).mockResolvedValue([MOCK_LABEL] as any);
     vi.mocked(labelRepositoryMocks.assignLabelToActivity).mockResolvedValue(MOCK_ASSIGNMENT as any);
     vi.mocked(labelRepositoryMocks.removeLabelFromActivity).mockResolvedValue(
@@ -232,7 +232,12 @@ describe('activity labels service', () => {
         entityType: 'activity',
         entityId: 42,
         actorAdminId: 9,
-        payload: { activityId: 42, labelId: 7 },
+        payload: {
+          activityId: 42,
+          labelId: 7,
+          createdById: 5,
+          links: { app: '/app/atividades/42' },
+        },
       },
       txMock,
     );
@@ -270,7 +275,12 @@ describe('activity labels service', () => {
         entityType: 'activity',
         entityId: 42,
         actorAdminId: 9,
-        payload: { activityId: 42, labelId: 7 },
+        payload: {
+          activityId: 42,
+          labelId: 7,
+          createdById: 5,
+          links: { app: '/app/atividades/42' },
+        },
       },
       txMock,
     );

@@ -7,7 +7,7 @@ import {
 } from './comments-service';
 
 const { txMock, activity, comment, insertedComment, dbMock } = vi.hoisted(() => {
-  const activity = { id: 12 };
+  const activity = { id: 12, createdBy: 5 };
   const comment = {
     id: 7,
     activityId: 12,
@@ -97,7 +97,13 @@ describe('activity comments service', () => {
         entityType: 'activity',
         entityId: 12,
         actorAdminId: 3,
-        payload: { commentId: 7, activityId: 12, authorAdminId: 3 },
+        payload: {
+          commentId: 7,
+          activityId: 12,
+          authorAdminId: 3,
+          createdById: 5,
+          links: { app: '/app/atividades/12' },
+        },
       }),
       txMock,
     );
@@ -169,7 +175,13 @@ describe('activity comments service', () => {
     expect(outbox.emitDomainEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'activity.comment_deleted',
-        payload: { commentId: 7, activityId: 12, authorAdminId: 3 },
+        payload: {
+          commentId: 7,
+          activityId: 12,
+          authorAdminId: 3,
+          createdById: 5,
+          links: { app: '/app/atividades/12' },
+        },
       }),
       txMock,
     );

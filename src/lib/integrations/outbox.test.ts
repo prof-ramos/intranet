@@ -75,7 +75,13 @@ describe('emitDomainEvent', () => {
         entityType: 'activity',
         entityId: 12,
         actorAdminId: 3,
-        payload: { commentId: 7, activityId: 12, authorAdminId: 3 },
+        payload: {
+          commentId: 7,
+          activityId: 12,
+          authorAdminId: 3,
+          createdById: 5,
+          links: { app: '/app/atividades/12' },
+        },
       },
       txSentinel as unknown as DbExecutor,
     );
@@ -84,7 +90,13 @@ describe('emitDomainEvent', () => {
     expect(txSentinel.values).toHaveBeenCalledWith(
       expect.objectContaining({
         eventType: 'activity.comment_added',
-        payload: { commentId: 7, activityId: 12, authorAdminId: 3 },
+        payload: {
+          commentId: 7,
+          activityId: 12,
+          authorAdminId: 3,
+          createdById: 5,
+          links: { app: '/app/atividades/12' },
+        },
       }),
     );
   });
@@ -99,7 +111,12 @@ describe('emitDomainEvent', () => {
         entityType: 'activity',
         entityId: 12,
         actorAdminId: 3,
-        payload: { activityId: 12, labelId },
+        payload: {
+          activityId: 12,
+          labelId,
+          createdById: 5,
+          links: { app: '/app/atividades/12' },
+        },
       },
       txSentinel as unknown as DbExecutor,
     );
@@ -107,7 +124,12 @@ describe('emitDomainEvent', () => {
     expect(txSentinel.values).toHaveBeenCalledWith(
       expect.objectContaining({
         eventType: type,
-        payload: { activityId: 12, labelId },
+        payload: {
+          activityId: 12,
+          labelId,
+          createdById: 5,
+          links: { app: '/app/atividades/12' },
+        },
       }),
     );
   });
@@ -119,7 +141,13 @@ describe('emitDomainEvent', () => {
         entityType: 'activity',
         entityId: 12,
         actorAdminId: 3,
-        payload: { activityId: 12, labelId: 7, extra: true } as never,
+        payload: {
+          activityId: 12,
+          labelId: 7,
+          createdById: 5,
+          links: { app: '/app/atividades/12' },
+          extra: true,
+        } as never,
       }),
     ).rejects.toBeInstanceOf(ZodError);
   });

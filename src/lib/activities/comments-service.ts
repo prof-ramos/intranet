@@ -45,6 +45,13 @@ function assertPositiveInteger(value: number, message: string): void {
   if (!Number.isInteger(value) || value <= 0) throw new ValidationError(message);
 }
 
+function activityRoutingFields(activity: { id: number; createdBy: number }) {
+  return {
+    createdById: activity.createdBy,
+    links: { app: `/app/atividades/${activity.id}` },
+  };
+}
+
 function normalizeCommentContent(content: string): string {
   if (typeof content !== 'string') {
     throw new ValidationError('O comentário é obrigatório.');
@@ -102,6 +109,7 @@ export async function addCommentService(input: AddCommentInput): Promise<Activit
           commentId: inserted.id,
           activityId: input.activityId,
           authorAdminId: input.authorAdminId,
+          ...activityRoutingFields(activity),
         },
       },
       tx,
@@ -124,7 +132,7 @@ export async function addCommentService(input: AddCommentInput): Promise<Activit
 export async function editCommentService(input: EditCommentInput): Promise<ActivityComment> {
   assertCommentsEnabled();
   assertPositiveInteger(input.editorAdminId, 'Editor do comentário inválido.');
-  const { comment } = await requireCommentWithActivity(input.commentId);
+  const { comment, activity } = await requireCommentWithActivity(input.commentId);
 
   if (comment.authorAdminId !== input.editorAdminId) {
     throw new ValidationError('Somente o autor pode editar o comentário.');
@@ -146,6 +154,7 @@ export async function editCommentService(input: EditCommentInput): Promise<Activ
           commentId: changed.id,
           activityId: comment.activityId,
           authorAdminId: comment.authorAdminId,
+          ...activityRoutingFields(activity),
         },
       },
       tx,
@@ -171,7 +180,7 @@ export async function editCommentService(input: EditCommentInput): Promise<Activ
 export async function deleteCommentService(input: DeleteCommentInput): Promise<ActivityComment> {
   assertCommentsEnabled();
   assertPositiveInteger(input.actorAdminId, 'Exclusor do comentário inválido.');
-  const { comment } = await requireCommentWithActivity(input.commentId);
+  const { comment, activity } = await requireCommentWithActivity(input.commentId);
 
   if (comment.authorAdminId !== input.actorAdminId) {
     throw new ValidationError('Somente o autor pode excluir o comentário.');
@@ -191,6 +200,7 @@ export async function deleteCommentService(input: DeleteCommentInput): Promise<A
           commentId: changed.id,
           activityId: comment.activityId,
           authorAdminId: comment.authorAdminId,
+          ...activityRoutingFields(activity),
         },
       },
       tx,

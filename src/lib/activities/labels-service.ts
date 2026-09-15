@@ -56,6 +56,13 @@ function assertPositiveInteger(value: number, fieldName: string): void {
   }
 }
 
+function activityRoutingFields(activity: { id: number; createdBy: number }) {
+  return {
+    createdById: activity.createdBy,
+    links: { app: `/app/atividades/${activity.id}` },
+  };
+}
+
 function generateLabelSlug(name: string): string {
   return name
     .normalize('NFD')
@@ -213,6 +220,7 @@ export async function addLabelToActivityService(input: ActivityLabelMutationInpu
         payload: {
           activityId: input.activityId,
           labelId: input.labelId,
+          ...activityRoutingFields(activity),
         },
       },
       tx,
@@ -243,6 +251,11 @@ export async function removeLabelFromActivityService(input: ActivityLabelMutatio
   assertPositiveInteger(input.actorId, 'Usuário responsável');
 
   const { removed, eventId } = await db.transaction(async (tx) => {
+    const activity = await findActivityById(input.activityId, tx);
+    if (!activity) {
+      throw new NotFoundError('Atividade');
+    }
+
     const removed = await removeLabelFromActivity(input.activityId, input.labelId, tx);
     if (!removed) {
       throw new NotFoundError('Rótulo associado à atividade');
@@ -257,6 +270,7 @@ export async function removeLabelFromActivityService(input: ActivityLabelMutatio
         payload: {
           activityId: input.activityId,
           labelId: input.labelId,
+          ...activityRoutingFields(activity),
         },
       },
       tx,
