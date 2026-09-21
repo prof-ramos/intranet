@@ -260,6 +260,34 @@
       "when": 1788883200000,
       "tag": "0036_encrypt_secondary_email",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1789020427442,
+      "tag": "0037_wealthy_paper_doll",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1789020460095,
+      "tag": "0038_activity_comment_event_types",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1789022518978,
+      "tag": "0039_clever_the_liberteens",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1789022518979,
+      "tag": "0040_activity_label_event_types",
+      "breakpoints": true
     }
   ]
 }

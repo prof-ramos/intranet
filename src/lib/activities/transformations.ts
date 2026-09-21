@@ -22,6 +22,7 @@ export function normalizeActivity(activity: BoardActivity): BoardActivity {
     dueDate,
     completedAt: dateOnly(activity.completedAt),
     tags: Array.isArray(activity.tags) ? activity.tags : [],
+    labels: Array.isArray(activity.labels) ? activity.labels : [],
     dueOffset: daysFromToday(dueDate),
   };
 }
@@ -48,6 +49,8 @@ export function filterActivities(
       const associateId = parsePositiveIntParam(filters.associate);
       if (associateId !== null && activity.associateId !== associateId) return false;
     }
+    if (filters.label && !activity.labels.some((label) => label.slug === filters.label))
+      return false;
     if (filters.dueWeek) {
       const offset = activity.dueOffset;
       if (offset == null || offset < 0 || offset > 7) return false;

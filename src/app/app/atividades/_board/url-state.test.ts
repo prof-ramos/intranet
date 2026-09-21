@@ -111,10 +111,13 @@ describe('activity board url state', () => {
       expect(result.openOnly).toBe(false);
     });
 
-    it('parses string filters like assignee and associate', () => {
-      const result = parseFiltersFromUrl(new URLSearchParams('assignee=5&associate=10'));
+    it('parses string filters like assignee, associate, and label', () => {
+      const result = parseFiltersFromUrl(
+        new URLSearchParams('assignee=5&associate=10&label=juridico'),
+      );
       expect(result.assignee).toBe('5');
       expect(result.associate).toBe('10');
+      expect(result.label).toBe('juridico');
     });
 
     it('always resets query to default (transient)', () => {
@@ -146,10 +149,16 @@ describe('activity board url state', () => {
       expect(params.get('openOnly')).toBe('1');
     });
 
-    it('serializes priority and assignee', () => {
-      const params = serializeFiltersToUrl({ ...defaultFilters, priority: 'alta', assignee: '3' });
+    it('serializes priority, assignee, and label', () => {
+      const params = serializeFiltersToUrl({
+        ...defaultFilters,
+        priority: 'alta',
+        assignee: '3',
+        label: 'juridico',
+      });
       expect(params.get('priority')).toBe('alta');
       expect(params.get('assignee')).toBe('3');
+      expect(params.get('label')).toBe('juridico');
     });
 
     it('roundtrips through parse and serialize', () => {

@@ -1,5 +1,12 @@
 import type { AuthUser } from '@/lib/auth/config';
-import type { ActivitiesBoardData, BoardAssociate, BoardPerson, Status } from './types';
+import type {
+  ActivityLabelItem,
+  ActivitiesBoardData,
+  BoardAssociate,
+  BoardPerson,
+  Status,
+} from './types';
+import { env } from '@/lib/env';
 import {
   findActivities,
   findActivityBoardRowById,
@@ -7,6 +14,7 @@ import {
   findActiveAssociates,
   mapActivityRowToBoardActivity,
 } from './repository';
+import { findActiveLabels } from './labels-repository';
 
 function buildPeopleList(
   user: Pick<AuthUser, 'userId' | 'name' | 'role'>,
@@ -50,7 +58,7 @@ export async function getActivitiesBoardData(
     status?: Status;
   } = {},
 ): Promise<ActivitiesBoardData> {
-  const [activityRows, openedActivityRow, adminRows, associateRows] = await Promise.all([
+  const [activityRows, openedActivityRow, adminRows, associateRows, labelRows] = await Promise.all([
     findActivities({
       limit: options.limit,
       offset: options.offset,
@@ -63,6 +71,7 @@ export async function getActivitiesBoardData(
       : Promise.resolve(null),
     findActiveAdmins(),
     findActiveAssociates(),
+    env.ACTIVITY_LABELS_ENABLED ? findActiveLabels() : Promise.resolve([]),
   ]);
   const completeActivityRows =
     openedActivityRow && !activityRows.some((activity) => activity.id === openedActivityRow.id)
@@ -70,9 +79,16 @@ export async function getActivitiesBoardData(
       : activityRows;
 
   const { currentUser, people } = buildPeopleList(user, adminRows);
+  const labels: ActivityLabelItem[] = labelRows.map((label) => ({
+    id: label.id,
+    name: label.name,
+    slug: label.slug,
+    colorToken: label.colorToken,
+  }));
 
   return {
     initialActivities: completeActivityRows.map(mapActivityRowToBoardActivity),
+    labels,
     people,
     associates: associateRows as BoardAssociate[],
     currentUser,

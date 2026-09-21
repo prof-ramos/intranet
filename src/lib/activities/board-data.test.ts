@@ -16,6 +16,7 @@ describe('mapActivityRowToBoardActivity', () => {
       associateId: 3,
       associateName: 'João',
       tags: null,
+      labels: [],
     });
 
     expect(result).toEqual({
@@ -31,6 +32,7 @@ describe('mapActivityRowToBoardActivity', () => {
       associateId: 3,
       associateName: 'João',
       tags: [],
+      labels: [],
       dueOffset: null,
     });
   });

@@ -18,6 +18,7 @@ import {
   warningText,
 } from '@/lib/ui/tokens';
 import { formatDueDate, initials } from './helpers';
+import { safeColorToken } from './constants';
 import type { BoardActivity, BoardPerson } from './types';
 
 // Memoized to prevent re-renders of identical avatars when board items are dragged
@@ -114,6 +115,30 @@ export const ActivityCardContent = memo(function ActivityCardContent({
               #{tag}
             </span>
           ))}
+        </div>
+      )}
+
+      {activity.labels.length > 0 && (
+        <div className="flex flex-wrap gap-1" aria-label="Labels">
+          {activity.labels.slice(0, compact ? 2 : 4).map((label) => (
+            <span
+              key={label.id}
+              className="inline-flex max-w-full items-center rounded-full px-2 py-0.5 text-[10px] font-semibold"
+              style={{
+                color: '#ffffff',
+                background: safeColorToken(label.colorToken),
+                overflowWrap: 'anywhere',
+              }}
+              title={label.name}
+            >
+              {label.name}
+            </span>
+          ))}
+          {activity.labels.length > (compact ? 2 : 4) && (
+            <span className="text-[10px] font-semibold" style={{ color: slateText }}>
+              +{activity.labels.length - (compact ? 2 : 4)}
+            </span>
+          )}
         </div>
       )}
 

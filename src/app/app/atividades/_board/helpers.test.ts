@@ -49,6 +49,7 @@ function activity(overrides: Partial<BoardActivity> = {}): BoardActivity {
     associateId: 100,
     associateName: 'Associado A',
     tags: [],
+    labels: [],
     dueOffset: null,
     ...overrides,
   };
@@ -153,6 +154,22 @@ describe('activity board filters', () => {
     const zeroAssociate = activity({ id: 5, associateId: 0 });
 
     expect(filterWith([zeroAssociate], { associate: '__any' }).map((item) => item.id)).toEqual([5]);
+  });
+
+  it('filters by structured label slug', () => {
+    const items = [
+      activity({
+        id: 1,
+        labels: [{ id: 1, name: 'Jurídico', slug: 'juridico', colorToken: '#123456' }],
+      }),
+      activity({
+        id: 2,
+        labels: [{ id: 2, name: 'Financeiro', slug: 'financeiro', colorToken: '#654321' }],
+      }),
+    ];
+
+    expect(filterWith(items, { label: 'juridico' }).map((item) => item.id)).toEqual([1]);
+    expect(filterWith(items, { label: 'inexistente' })).toEqual([]);
   });
 
   it('filters due this week and overdue open activities', () => {

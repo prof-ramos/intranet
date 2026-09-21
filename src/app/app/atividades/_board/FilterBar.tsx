@@ -17,7 +17,7 @@ import {
   textSecondary,
   textSubtle,
 } from '@/lib/ui/tokens';
-import type { BoardAssociate, BoardPerson, Filters } from './types';
+import type { ActivityLabelItem, BoardAssociate, BoardPerson, Filters } from './types';
 import { defaultFilters } from './constants';
 import { ACTIVITY_STATUS_OPTIONS } from '@/lib/activities/status';
 
@@ -29,6 +29,7 @@ export const FilterBar = memo(function FilterBar({
   filters,
   people,
   associates,
+  labels,
   compact,
   setCompact,
   setFilters,
@@ -36,6 +37,7 @@ export const FilterBar = memo(function FilterBar({
   filters: Filters;
   people: BoardPerson[];
   associates: BoardAssociate[];
+  labels: ActivityLabelItem[];
   compact: boolean;
   setCompact: (compact: boolean) => void;
   setFilters: (filters: Filters) => void;
@@ -47,6 +49,7 @@ export const FilterBar = memo(function FilterBar({
     filters.priority ||
     filters.status ||
     filters.associate ||
+    filters.label ||
     filters.dueWeek ||
     filters.dueLate ||
     filters.openOnly;
@@ -184,6 +187,25 @@ export const FilterBar = memo(function FilterBar({
         {associates.map((associate) => (
           <option key={associate.id} value={associate.id}>
             {associate.name}
+          </option>
+        ))}
+      </select>
+
+      <select
+        aria-label="Filtrar por label"
+        value={filters.label}
+        onChange={(event) => setFilters({ ...filters, label: event.target.value })}
+        className={[
+          'rounded-[8px] border bg-white px-2 text-xs',
+          desktopDenseControlClass,
+          focusRingClass,
+        ].join(' ')}
+        style={{ borderColor: hairline }}
+      >
+        <option value="">Qualquer label</option>
+        {labels.map((label) => (
+          <option key={label.id} value={label.slug}>
+            {label.name}
           </option>
         ))}
       </select>

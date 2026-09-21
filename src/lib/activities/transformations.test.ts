@@ -21,6 +21,7 @@ function makeActivity(overrides: Partial<BoardActivity> = {}): BoardActivity {
     associateId: 20,
     associateName: 'João',
     tags: [],
+    labels: [],
     dueOffset: 3,
     ...overrides,
   };
@@ -62,6 +63,7 @@ describe('filterActivities', () => {
     priority: '',
     status: '',
     associate: '',
+    label: '',
     dueWeek: false,
     dueLate: false,
     openOnly: false,
