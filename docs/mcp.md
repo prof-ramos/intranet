@@ -1,16 +1,23 @@
 # Integração MCP para Atividades
 
 **Status:** rascunho de arquitetura para F7 / P0.7–P1.4.
-**Escopo:** tools institucionais de Atividades sobre a API autenticada. Não implementa um servidor MCP nem altera o WebMCP existente.
+**Escopo:** tools institucionais de Atividades sobre a API autenticada. Esta página não implementa nada e não altera o WebMCP existente; o servidor MCP da intranet está em [ADR 022](./adr/022-servidor-mcp-http-bearer.md).
+
+O catálogo vivo do WebMCP de navegador (oficiais, ofícios, mala direta, atividades, overlay da ficha) está em [webmcp.md](./webmcp.md).
 
 ## 1. Limites da solução
 
-Há duas superfícies diferentes no repositório:
+Há três superfícies diferentes no repositório. Não misturar nomes nem contratos:
 
-- **WebMCP de navegador já existente:** `src/lib/webmcp/catalog.ts` registra tools no `document.modelContext`; `src/lib/webmcp/register.ts` faz o registro e `src/lib/webmcp/build-tools.ts` constrói tools que navegam ou chamam Server Actions. Hoje existem `open-activities`, `open-activity`, `start-create-activity`, `complete-activity` e `assign-activity`.
-- **MCP externo previsto nesta evolução:** servidor/adaptador para agentes, autenticado por API key e scopes, que expõe as tools com nomes `activities_*` abaixo. A Issue #432, referente ao servidor MCP externo, continua fora do baseline; os nomes desta página são contrato-alvo, não APIs já disponíveis.
+- **WebMCP de navegador:** ver [webmcp.md](./webmcp.md). `src/lib/webmcp/catalog.ts` registra tools no `document.modelContext`; `src/lib/webmcp/register.ts` faz o registro e `src/lib/webmcp/build-tools.ts` constrói tools que navegam ou chamam Server Actions. Nomes com **hífen**, client-side, com cookie de sessão. Em Atividades o orçamento é `open-activities`, `open-activity`, `start-create-activity`, `complete-activity` e `assign-activity`.
+- **Servidor MCP da intranet:** Streamable HTTP em `/api/mcp`, autenticado por token de operador (`Authorization: Bearer asof_mcp_…`), nomes com **underscore** (`officials_search`, `official_get`, `global_search`). Onda 1 somente leitura sobre o Cadastro de Oficiais. Decisão em [ADR 022](./adr/022-servidor-mcp-http-bearer.md). A tela de admin fica em `/app/config/integracoes/mcp`. É uma superfície distinta das tools `activities_*` desta página.
+- **MCP externo de Atividades previsto nesta evolução:** servidor/adaptador para agentes, autenticado por API key e scopes, que expõe as tools com nomes `activities_*` abaixo. Os nomes desta página são contrato-alvo, não APIs já disponíveis: as rotas `/api/v1/activities*` ainda não existem.
 
-O MCP não é uma camada alternativa de domínio. Ele traduz a chamada de uma tool para a API de Atividades (ou para uma interface de integração equivalente), e a API chama os services de `src/lib/activities/`. O adaptador não acessa PostgreSQL, Drizzle, `domain_events` ou `audit_logs` diretamente.
+O PR #432 ("control plane MCP de operador com PAT") implementava o servidor MCP da intranet e foi **fechado**, sem ter sido revisado; seu código não está em `main`. Ele serve como referência de desenho, não como entrega.
+
+O MCP não é uma camada alternativa de domínio. No **adaptador externo de Atividades**, ele traduz a chamada de uma tool para a API de Atividades (ou para uma interface de integração equivalente), e a API chama os services de `src/lib/activities/`. Esse adaptador não acessa PostgreSQL, Drizzle, `domain_events` ou `audit_logs` diretamente.
+
+O **servidor MCP da intranet** segue a mesma regra de não duplicar domínio por outro caminho: chama os services e repositories de `src/lib/*/` em processo, sem montar SQL próprio. A proibição de acesso direto a tabelas vale para o adaptador externo; para o servidor da intranet, a regra é reusar a camada de serviço existente em vez de reimplementar consulta.
 
 ## 2. Arquitetura alvo
 
@@ -176,6 +183,8 @@ A publicação de uma tool destrutiva exige revisão adicional. Nesta fase, não
 
 ## Referências verificadas
 
+- [webmcp.md](./webmcp.md) — catálogo e operação do WebMCP de navegador.
+- [ADR 022](./adr/022-servidor-mcp-http-bearer.md) — servidor MCP da intranet (HTTP + token de operador).
 - `src/lib/webmcp/catalog.ts`, `register.ts`, `build-tools.ts` e `types.ts` — WebMCP de navegador atual.
 - `src/lib/activities/service.ts`, `repository.ts` e `domain-events.ts` — service, lock otimista e outbox atuais.
 - `src/app/app/atividades/actions.ts` — actions existentes e papéis de sessão.

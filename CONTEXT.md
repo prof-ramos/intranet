@@ -424,7 +424,7 @@ Além dos módulos de domínio listados acima, o sistema inclui módulos auxilia
 - **`storage/`** — Interface de armazenamento de documentos; o provedor de objetos privado é decisão de infraestrutura.
 - **`assinafy/`** — Cliente Assinafy, webhook handler, repository e service para assinatura digital de ofícios.
 - **`errors/`** — Hierarquia de erros tipados (`DomainError`, `ConcurrencyConflictError`, `NotFoundError`, `ValidationError`, `RateLimitError`, `ExternalServiceError`, `UnauthorizedError`) com handlers globais `unhandledRejection`/`uncaughtException`.
-- **`webmcp/`** — Tools WebMCP da Secretaria (`document.modelContext`) para um agente futuro no browser. Só staff autenticado em `/app/*`; associados não usam. Ver ADR 021.
+- **`webmcp/`** — Tools WebMCP da Secretaria (`document.modelContext`) para um agente futuro no browser. Só staff autenticado em `/app/*`; associados não usam. Ver [ADR 021](docs/adr/021-webmcp-secretaria.md) e o catálogo em [docs/webmcp.md](docs/webmcp.md).
 
 ---
 

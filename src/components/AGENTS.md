@@ -23,7 +23,7 @@ Shared React UI components used across the app.
 - Flat shared UI at this root
 - `auth/` — shared authentication shells, fields and submit controls
 - `ui/` — reusable form controls, alerts and KPI presentation
-- `webmcp/` — `WebMcpRegistry` / wrapper (progressive enhancement; tools só em `/app`)
+- `webmcp/` — `WebMcpRegistry` / wrapper (progressive enhancement; tools só em `/app`). Catálogo: `docs/webmcp.md`.
 
 ## For AI Agents
 

@@ -13,6 +13,8 @@ Documentation directory covering architecture decisions, design guidelines, comp
 | --------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `runbook.md`                                  | Operations runbook — deployment, monitoring, troubleshooting, and rollback procedures    |
 | `environments.md`                             | Official source for environments, databases, data classes, migrations, and CI/CD         |
+| `webmcp.md`                                   | Catálogo e operação do WebMCP de navegador da Secretaria (`document.modelContext`)       |
+| `mcp.md`                                      | Rascunho do MCP externo de Atividades (F7 / issue #432); não é o WebMCP                  |
 | `release-1-operational-go-live.md`            | Roteiro detalhado de go-live referenciado ativamente por `runbook.md`                     |
 | `../CONTRIBUTING.md`                          | Guia canônico para desenvolvedores (configuração, estrutura, fluxo, testes)              |
 | `development/performance-audit-2026-09-03.md` | Auditoria de desempenho (gargalos, pool, cache, bundles) e plano de otimização por ondas |

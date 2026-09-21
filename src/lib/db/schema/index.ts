@@ -27,3 +27,4 @@ export * from './password-reset-attempts';
 export * from './dependents';
 export * from './health-agreements';
 export * from './mailing';
+export * from './mcp-tokens';

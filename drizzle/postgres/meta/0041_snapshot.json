@@ -1,6 +1,6 @@
 {
-  "id": "ea8f4e3f-47ed-4f7b-b581-0d7fbb40bd38",
-  "prevId": "41a85f72-9104-464f-aca8-80652d9c91fe",
+  "id": "a4ca3221-bd7d-48c3-a3d7-0cdd56a8104b",
+  "prevId": "ea8f4e3f-47ed-4f7b-b581-0d7fbb40bd38",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -93,7 +93,9 @@
         "admins_email_unique": {
           "name": "admins_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         }
       },
       "policies": {},
@@ -152,8 +154,12 @@
           "name": "app_settings_updated_by_admins_id_fk",
           "tableFrom": "app_settings",
           "tableTo": "admins",
-          "columnsFrom": ["updated_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1190,8 +1196,12 @@
           "name": "activities_assignee_id_admins_id_fk",
           "tableFrom": "activities",
           "tableTo": "admins",
-          "columnsFrom": ["assignee_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "assignee_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1199,8 +1209,12 @@
           "name": "activities_associate_id_associates_id_fk",
           "tableFrom": "activities",
           "tableTo": "associates",
-          "columnsFrom": ["associate_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "associate_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1208,8 +1222,12 @@
           "name": "activities_created_by_admins_id_fk",
           "tableFrom": "activities",
           "tableTo": "admins",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1330,8 +1348,12 @@
           "name": "activity_comments_activity_id_activities_id_fk",
           "tableFrom": "activity_comments",
           "tableTo": "activities",
-          "columnsFrom": ["activity_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "activity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1339,8 +1361,12 @@
           "name": "activity_comments_author_admin_id_admins_id_fk",
           "tableFrom": "activity_comments",
           "tableTo": "admins",
-          "columnsFrom": ["author_admin_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "author_admin_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1387,8 +1413,12 @@
           "name": "activity_label_assignments_activity_id_activities_id_fk",
           "tableFrom": "activity_label_assignments",
           "tableTo": "activities",
-          "columnsFrom": ["activity_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "activity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1396,8 +1426,12 @@
           "name": "activity_label_assignments_label_id_activity_labels_id_fk",
           "tableFrom": "activity_label_assignments",
           "tableTo": "activity_labels",
-          "columnsFrom": ["label_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "label_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1405,8 +1439,12 @@
           "name": "activity_label_assignments_created_by_admins_id_fk",
           "tableFrom": "activity_label_assignments",
           "tableTo": "admins",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1414,7 +1452,10 @@
       "compositePrimaryKeys": {
         "activity_label_assignments_activity_id_label_id_pk": {
           "name": "activity_label_assignments_activity_id_label_id_pk",
-          "columns": ["activity_id", "label_id"]
+          "columns": [
+            "activity_id",
+            "label_id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -1499,7 +1540,9 @@
         "activity_labels_slug_unique": {
           "name": "activity_labels_slug_unique",
           "nullsNotDistinct": false,
-          "columns": ["slug"]
+          "columns": [
+            "slug"
+          ]
         }
       },
       "policies": {},
@@ -1569,7 +1612,9 @@
         "assignments_name_unique": {
           "name": "assignments_name_unique",
           "nullsNotDistinct": false,
-          "columns": ["name"]
+          "columns": [
+            "name"
+          ]
         }
       },
       "policies": {},
@@ -1743,8 +1788,12 @@
           "name": "audit_logs_performed_by_admins_id_fk",
           "tableFrom": "audit_logs",
           "tableTo": "admins",
-          "columnsFrom": ["performed_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "performed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1984,8 +2033,12 @@
           "name": "domain_events_actor_admin_id_admins_id_fk",
           "tableFrom": "domain_events",
           "tableTo": "admins",
-          "columnsFrom": ["actor_admin_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "actor_admin_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2144,8 +2197,12 @@
           "name": "integration_api_keys_created_by_admins_id_fk",
           "tableFrom": "integration_api_keys",
           "tableTo": "admins",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -2467,8 +2524,12 @@
           "name": "webhook_deliveries_domain_event_id_domain_events_id_fk",
           "tableFrom": "webhook_deliveries",
           "tableTo": "domain_events",
-          "columnsFrom": ["domain_event_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "domain_event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -2476,8 +2537,12 @@
           "name": "webhook_deliveries_webhook_subscription_id_webhook_subscriptions_id_fk",
           "tableFrom": "webhook_deliveries",
           "tableTo": "webhook_subscriptions",
-          "columnsFrom": ["webhook_subscription_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "webhook_subscription_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -2665,8 +2730,12 @@
           "name": "webhook_subscriptions_created_by_admins_id_fk",
           "tableFrom": "webhook_subscriptions",
           "tableTo": "admins",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -2859,7 +2928,9 @@
         "lawyers_email_unique": {
           "name": "lawyers_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         }
       },
       "policies": {},
@@ -3155,8 +3226,12 @@
           "name": "legal_consultations_associate_id_associates_id_fk",
           "tableFrom": "legal_consultations",
           "tableTo": "associates",
-          "columnsFrom": ["associate_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "associate_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -3164,8 +3239,12 @@
           "name": "legal_consultations_answered_by_admins_id_fk",
           "tableFrom": "legal_consultations",
           "tableTo": "admins",
-          "columnsFrom": ["answered_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "answered_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -3173,8 +3252,12 @@
           "name": "legal_consultations_lawyer_id_lawyers_id_fk",
           "tableFrom": "legal_consultations",
           "tableTo": "lawyers",
-          "columnsFrom": ["lawyer_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "lawyer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -3182,8 +3265,12 @@
           "name": "legal_consultations_created_by_admins_id_fk",
           "tableFrom": "legal_consultations",
           "tableTo": "admins",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -3193,7 +3280,9 @@
         "legal_consultations_internal_number_unique": {
           "name": "legal_consultations_internal_number_unique",
           "nullsNotDistinct": false,
-          "columns": ["internal_number"]
+          "columns": [
+            "internal_number"
+          ]
         }
       },
       "policies": {},
@@ -3402,8 +3491,12 @@
           "name": "legal_processes_associate_id_associates_id_fk",
           "tableFrom": "legal_processes",
           "tableTo": "associates",
-          "columnsFrom": ["associate_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "associate_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -3411,8 +3504,12 @@
           "name": "legal_processes_created_by_admins_id_fk",
           "tableFrom": "legal_processes",
           "tableTo": "admins",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -3422,7 +3519,9 @@
         "legal_processes_internal_number_unique": {
           "name": "legal_processes_internal_number_unique",
           "nullsNotDistinct": false,
-          "columns": ["internal_number"]
+          "columns": [
+            "internal_number"
+          ]
         }
       },
       "policies": {},
@@ -3581,8 +3680,12 @@
           "name": "legal_notes_created_by_admins_id_fk",
           "tableFrom": "legal_notes",
           "tableTo": "admins",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -3651,7 +3754,9 @@
         "legal_opinion_tags_name_unique": {
           "name": "legal_opinion_tags_name_unique",
           "nullsNotDistinct": false,
-          "columns": ["name"]
+          "columns": [
+            "name"
+          ]
         }
       },
       "policies": {},
@@ -3784,8 +3889,12 @@
           "name": "legal_opinions_related_process_id_legal_processes_id_fk",
           "tableFrom": "legal_opinions",
           "tableTo": "legal_processes",
-          "columnsFrom": ["related_process_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "related_process_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -3793,8 +3902,12 @@
           "name": "legal_opinions_created_by_admins_id_fk",
           "tableFrom": "legal_opinions",
           "tableTo": "admins",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -4207,8 +4320,12 @@
           "name": "monthly_payments_associate_id_associates_id_fk",
           "tableFrom": "monthly_payments",
           "tableTo": "associates",
-          "columnsFrom": ["associate_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "associate_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -4216,8 +4333,12 @@
           "name": "monthly_payments_cancelled_by_admins_id_fk",
           "tableFrom": "monthly_payments",
           "tableTo": "admins",
-          "columnsFrom": ["cancelled_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "cancelled_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -4225,8 +4346,12 @@
           "name": "monthly_payments_updated_by_admins_id_fk",
           "tableFrom": "monthly_payments",
           "tableTo": "admins",
-          "columnsFrom": ["updated_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4429,8 +4554,12 @@
           "name": "notifications_user_id_admins_id_fk",
           "tableFrom": "notifications",
           "tableTo": "admins",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -4438,8 +4567,12 @@
           "name": "notifications_actor_id_admins_id_fk",
           "tableFrom": "notifications",
           "tableTo": "admins",
-          "columnsFrom": ["actor_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "actor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -4761,8 +4894,12 @@
           "name": "oficios_created_by_admins_id_fk",
           "tableFrom": "oficios",
           "tableTo": "admins",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -4770,8 +4907,12 @@
           "name": "oficios_updated_by_admins_id_fk",
           "tableFrom": "oficios",
           "tableTo": "admins",
-          "columnsFrom": ["updated_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -4781,17 +4922,24 @@
         "oficios_number_unique": {
           "name": "oficios_number_unique",
           "nullsNotDistinct": false,
-          "columns": ["number"]
+          "columns": [
+            "number"
+          ]
         },
         "oficios_assinafy_document_id_unique": {
           "name": "oficios_assinafy_document_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["assinafy_document_id"]
+          "columns": [
+            "assinafy_document_id"
+          ]
         },
         "uq_oficios_year_sequence": {
           "name": "uq_oficios_year_sequence",
           "nullsNotDistinct": false,
-          "columns": ["year", "sequence"]
+          "columns": [
+            "year",
+            "sequence"
+          ]
         }
       },
       "policies": {},
@@ -4970,8 +5118,12 @@
           "name": "documents_uploaded_by_admins_id_fk",
           "tableFrom": "documents",
           "tableTo": "admins",
-          "columnsFrom": ["uploaded_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "uploaded_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -5434,8 +5586,12 @@
           "name": "email_triagens_consultation_id_legal_consultations_id_fk",
           "tableFrom": "email_triagens",
           "tableTo": "legal_consultations",
-          "columnsFrom": ["consultation_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "consultation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -5443,8 +5599,12 @@
           "name": "email_triagens_lawyer_id_lawyers_id_fk",
           "tableFrom": "email_triagens",
           "tableTo": "lawyers",
-          "columnsFrom": ["lawyer_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "lawyer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -5452,8 +5612,12 @@
           "name": "email_triagens_usuario_validador_id_admins_id_fk",
           "tableFrom": "email_triagens",
           "tableTo": "admins",
-          "columnsFrom": ["usuario_validador_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "usuario_validador_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -5463,7 +5627,9 @@
         "email_triagens_message_id_unique": {
           "name": "email_triagens_message_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["message_id"]
+          "columns": [
+            "message_id"
+          ]
         }
       },
       "policies": {},
@@ -5617,8 +5783,12 @@
           "name": "test_results_run_id_test_runs_run_id_fk",
           "tableFrom": "test_results",
           "tableTo": "test_runs",
-          "columnsFrom": ["run_id"],
-          "columnsTo": ["run_id"],
+          "columnsFrom": [
+            "run_id"
+          ],
+          "columnsTo": [
+            "run_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -5880,8 +6050,12 @@
           "name": "password_reset_tokens_admin_id_admins_id_fk",
           "tableFrom": "password_reset_tokens",
           "tableTo": "admins",
-          "columnsFrom": ["admin_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "admin_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -6062,8 +6236,12 @@
           "name": "dependents_associate_id_associates_id_fk",
           "tableFrom": "dependents",
           "tableTo": "associates",
-          "columnsFrom": ["associate_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "associate_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -6156,8 +6334,12 @@
           "name": "health_agreements_associate_id_associates_id_fk",
           "tableFrom": "health_agreements",
           "tableTo": "associates",
-          "columnsFrom": ["associate_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "associate_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -6329,8 +6511,12 @@
           "name": "mailing_campaigns_created_by_admins_id_fk",
           "tableFrom": "mailing_campaigns",
           "tableTo": "admins",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -6493,8 +6679,12 @@
           "name": "mailing_recipients_campaign_id_mailing_campaigns_id_fk",
           "tableFrom": "mailing_recipients",
           "tableTo": "mailing_campaigns",
-          "columnsFrom": ["campaign_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "campaign_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -6502,9 +6692,159 @@
           "name": "mailing_recipients_associate_id_associates_id_fk",
           "tableFrom": "mailing_recipients",
           "tableTo": "associates",
-          "columnsFrom": ["associate_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "associate_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.operator_mcp_tokens": {
+      "name": "operator_mcp_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "operator_mcp_tokens_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "admin_id": {
+          "name": "admin_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lgpd_acknowledged_at": {
+          "name": "lgpd_acknowledged_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_used_at": {
+          "name": "last_used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_operator_mcp_tokens_token_hash_unique": {
+          "name": "idx_operator_mcp_tokens_token_hash_unique",
+          "columns": [
+            {
+              "expression": "token_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_operator_mcp_tokens_admin_id": {
+          "name": "idx_operator_mcp_tokens_admin_id",
+          "columns": [
+            {
+              "expression": "admin_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_operator_mcp_tokens_active": {
+          "name": "idx_operator_mcp_tokens_active",
+          "columns": [
+            {
+              "expression": "admin_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"operator_mcp_tokens\".\"revoked_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "operator_mcp_tokens_admin_id_admins_id_fk": {
+          "name": "operator_mcp_tokens_admin_id_admins_id_fk",
+          "tableFrom": "operator_mcp_tokens",
+          "tableTo": "admins",
+          "columnsFrom": [
+            "admin_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -6519,57 +6859,102 @@
     "public.admin_role": {
       "name": "admin_role",
       "schema": "public",
-      "values": ["admin", "diretoria", "secretaria"]
+      "values": [
+        "admin",
+        "diretoria",
+        "secretaria"
+      ]
     },
     "public.association_status": {
       "name": "association_status",
       "schema": "public",
-      "values": ["associado", "nao_associado"]
+      "values": [
+        "associado",
+        "nao_associado"
+      ]
     },
     "public.career_origin": {
       "name": "career_origin",
       "schema": "public",
-      "values": ["brasil", "exterior", "outros_orgaos"]
+      "values": [
+        "brasil",
+        "exterior",
+        "outros_orgaos"
+      ]
     },
     "public.contribution_status": {
       "name": "contribution_status",
       "schema": "public",
-      "values": ["em_dia", "inadimplente"]
+      "values": [
+        "em_dia",
+        "inadimplente"
+      ]
     },
     "public.functional_status": {
       "name": "functional_status",
       "schema": "public",
-      "values": ["ativo", "aposentado", "cedido", "em_licenca"]
+      "values": [
+        "ativo",
+        "aposentado",
+        "cedido",
+        "em_licenca"
+      ]
     },
     "public.marital_status": {
       "name": "marital_status",
       "schema": "public",
-      "values": ["solteiro", "casado", "divorciado", "viuvo", "separado", "outros"]
+      "values": [
+        "solteiro",
+        "casado",
+        "divorciado",
+        "viuvo",
+        "separado",
+        "outros"
+      ]
     },
     "public.mission_type": {
       "name": "mission_type",
       "schema": "public",
-      "values": ["permanente", "transitoria"]
+      "values": [
+        "permanente",
+        "transitoria"
+      ]
     },
     "public.sex": {
       "name": "sex",
       "schema": "public",
-      "values": ["M", "F"]
+      "values": [
+        "M",
+        "F"
+      ]
     },
     "public.activity_priority": {
       "name": "activity_priority",
       "schema": "public",
-      "values": ["baixa", "normal", "alta", "urgente"]
+      "values": [
+        "baixa",
+        "normal",
+        "alta",
+        "urgente"
+      ]
     },
     "public.activity_status": {
       "name": "activity_status",
       "schema": "public",
-      "values": ["a_fazer", "em_andamento", "aguardando_terceiros", "concluido"]
+      "values": [
+        "a_fazer",
+        "em_andamento",
+        "aguardando_terceiros",
+        "concluido"
+      ]
     },
     "public.assignment_type": {
       "name": "assignment_type",
       "schema": "public",
-      "values": ["nacional", "exterior"]
+      "values": [
+        "nacional",
+        "exterior"
+      ]
     },
     "public.audit_entity_type": {
       "name": "audit_entity_type",
@@ -6592,22 +6977,43 @@
     "public.legal_satisfaction": {
       "name": "legal_satisfaction",
       "schema": "public",
-      "values": ["satisfeito", "insatisfeito", "sem_resposta"]
+      "values": [
+        "satisfeito",
+        "insatisfeito",
+        "sem_resposta"
+      ]
     },
     "public.payment_method": {
       "name": "payment_method",
       "schema": "public",
-      "values": ["folha", "boleto", "pix", "transferencia", "outros"]
+      "values": [
+        "folha",
+        "boleto",
+        "pix",
+        "transferencia",
+        "outros"
+      ]
     },
     "public.payment_origin": {
       "name": "payment_origin",
       "schema": "public",
-      "values": ["sigepe", "itamaraty", "comprovante", "outros"]
+      "values": [
+        "sigepe",
+        "itamaraty",
+        "comprovante",
+        "outros"
+      ]
     },
     "public.domain_event_delivery_status": {
       "name": "domain_event_delivery_status",
       "schema": "public",
-      "values": ["pending", "processing", "delivered", "partially_delivered", "failed"]
+      "values": [
+        "pending",
+        "processing",
+        "delivered",
+        "partially_delivered",
+        "failed"
+      ]
     },
     "public.domain_event_entity_type": {
       "name": "domain_event_entity_type",
@@ -6647,47 +7053,87 @@
     "public.webhook_delivery_status": {
       "name": "webhook_delivery_status",
       "schema": "public",
-      "values": ["pending", "delivered", "failed", "retry_scheduled"]
+      "values": [
+        "pending",
+        "delivered",
+        "failed",
+        "retry_scheduled"
+      ]
     },
     "public.lawyer_status": {
       "name": "lawyer_status",
       "schema": "public",
-      "values": ["ativo", "inativo"]
+      "values": [
+        "ativo",
+        "inativo"
+      ]
     },
     "public.legal_consultation_status": {
       "name": "legal_consultation_status",
       "schema": "public",
-      "values": ["aberta", "aguardando_escritorio", "respondida", "arquivada"]
+      "values": [
+        "aberta",
+        "aguardando_escritorio",
+        "respondida",
+        "arquivada"
+      ]
     },
     "public.legal_process_status": {
       "name": "legal_process_status",
       "schema": "public",
-      "values": ["ativo", "concluido", "suspenso"]
+      "values": [
+        "ativo",
+        "concluido",
+        "suspenso"
+      ]
     },
     "public.legal_process_subtype": {
       "name": "legal_process_subtype",
       "schema": "public",
-      "values": ["justica_federal", "stf", "mre", "cgu", "tcu"]
+      "values": [
+        "justica_federal",
+        "stf",
+        "mre",
+        "cgu",
+        "tcu"
+      ]
     },
     "public.legal_process_type": {
       "name": "legal_process_type",
       "schema": "public",
-      "values": ["judicial", "administrativo"]
+      "values": [
+        "judicial",
+        "administrativo"
+      ]
     },
     "public.legal_note_entity_type": {
       "name": "legal_note_entity_type",
       "schema": "public",
-      "values": ["consultation", "process"]
+      "values": [
+        "consultation",
+        "process"
+      ]
     },
     "public.payment_status": {
       "name": "payment_status",
       "schema": "public",
-      "values": ["pago", "pendente", "atrasado", "isento", "cancelado"]
+      "values": [
+        "pago",
+        "pendente",
+        "atrasado",
+        "isento",
+        "cancelado"
+      ]
     },
     "public.notification_entity_type": {
       "name": "notification_entity_type",
       "schema": "public",
-      "values": ["activity", "legal_consultation", "email_triagem", "oficio"]
+      "values": [
+        "activity",
+        "legal_consultation",
+        "email_triagem",
+        "oficio"
+      ]
     },
     "public.notification_type": {
       "name": "notification_type",
@@ -6723,7 +7169,11 @@
     "public.official_letter_status": {
       "name": "official_letter_status",
       "schema": "public",
-      "values": ["gerado", "cancelado", "rascunho"]
+      "values": [
+        "gerado",
+        "cancelado",
+        "rascunho"
+      ]
     },
     "public.document_category": {
       "name": "document_category",
@@ -6757,17 +7207,31 @@
     "public.email_confianca": {
       "name": "email_confianca",
       "schema": "public",
-      "values": ["baixa", "media", "alta"]
+      "values": [
+        "baixa",
+        "media",
+        "alta"
+      ]
     },
     "public.email_nivel_risco": {
       "name": "email_nivel_risco",
       "schema": "public",
-      "values": ["baixo", "medio", "alto", "critico"]
+      "values": [
+        "baixo",
+        "medio",
+        "alto",
+        "critico"
+      ]
     },
     "public.email_responsavel": {
       "name": "email_responsavel",
       "schema": "public",
-      "values": ["juridico", "administrativo", "financeiro", "diretoria"]
+      "values": [
+        "juridico",
+        "administrativo",
+        "financeiro",
+        "diretoria"
+      ]
     },
     "public.email_status_triagem": {
       "name": "email_status_triagem",
@@ -6804,32 +7268,61 @@
     "public.test_environment": {
       "name": "test_environment",
       "schema": "public",
-      "values": ["ci", "local"]
+      "values": [
+        "ci",
+        "local"
+      ]
     },
     "public.test_result_status": {
       "name": "test_result_status",
       "schema": "public",
-      "values": ["passed", "failed", "skipped", "todo", "timed_out", "interrupted", "unknown"]
+      "values": [
+        "passed",
+        "failed",
+        "skipped",
+        "todo",
+        "timed_out",
+        "interrupted",
+        "unknown"
+      ]
     },
     "public.test_runner": {
       "name": "test_runner",
       "schema": "public",
-      "values": ["vitest", "playwright"]
+      "values": [
+        "vitest",
+        "playwright"
+      ]
     },
     "public.mailing_campaign_status": {
       "name": "mailing_campaign_status",
       "schema": "public",
-      "values": ["rascunho", "em_envio", "concluida", "falhou", "cancelada"]
+      "values": [
+        "rascunho",
+        "em_envio",
+        "concluida",
+        "falhou",
+        "cancelada"
+      ]
     },
     "public.mailing_channel": {
       "name": "mailing_channel",
       "schema": "public",
-      "values": ["email", "etiquetas"]
+      "values": [
+        "email",
+        "etiquetas"
+      ]
     },
     "public.mailing_recipient_status": {
       "name": "mailing_recipient_status",
       "schema": "public",
-      "values": ["pendente", "enviando", "enviado", "falhou", "cancelado"]
+      "values": [
+        "pendente",
+        "enviando",
+        "enviado",
+        "falhou",
+        "cancelado"
+      ]
     }
   },
   "schemas": {},
