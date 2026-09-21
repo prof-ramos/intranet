@@ -58,11 +58,13 @@ Inicialize o banco e a aplicação:
 createdb asof_intranet
 
 npm run db:migrate
-npm run db:seed
+npm run db:seed:dev
 npm run dev
 ```
 
 Acesse `http://localhost:3000`.
+
+> Nota: `npm run db:seed:dev` popula o banco local com o dataset sintético necessário para o desenvolvimento diário (oficiais, mensalidades, atividades, jurídico e ofícios). O comando `npm run db:seed` cria apenas o admin inicial e dados mínimos.
 
 ### Banco de Produção e ambientes
 
@@ -72,7 +74,7 @@ Acesse `http://localhost:3000`.
 - Autenticação: O app possui auth própria via cookie de sessão assinado por `SESSION_SECRET` (httpOnly). O login de administradores usa `admins.email` e `admins.password_hash` (bcryptjs), conforme `ARCHITECTURE.md`.
 - Staging/preview deve usar banco separado e nunca herdar envs gerais de produção.
 - `npm run db:migrate` passa por `scripts/guarded-migrate.ts` e bloqueia produção sem `ALLOW_PRODUCTION_MIGRATIONS=true`.
-- Para o fluxo de reset de senha (senha temporária), `ASOF_INTRANET_URL` deve apontar para `https://intranet.asof.com.br`.
+- Para os fluxos de reset de senha (e-mail transacional via Mailjet e links de autoatendimento), `ASOF_INTRANET_URL` deve apontar para a URL canônica (ex.: `https://intranet.asof.com.br` ou `http://localhost:3000` em testes).
 
 Use o runbook para operações reais de deploy, backup, rollback e smoke test: [`docs/runbook.md`](./docs/runbook.md).
 
@@ -391,13 +393,9 @@ Server Components não podem passar `onClick`, `onChange` ou closures interativa
 
 ### Fluxo de reset de senha apresenta problemas
 
-Confirme:
+Confirme que as credenciais do Mailjet estão configuradas (`MAILJET_API_KEY`, `MAILJET_SECRET_KEY`, `MAILJET_SENDER_EMAIL` e `MAILJET_SENDER_VALIDATED=true`) e que `ASOF_INTRANET_URL` está preenchida.
 
-```bash
-ASOF_INTRANET_URL=https://intranet.asof.com.br
-```
-
-O sistema gera uma senha temporária no backend e a entrega à UI/usuário conforme o fluxo atual. Não há geração de link com token mágico.
+No fluxo administrativo, o backend gera uma senha temporária e a despacha diretamente para o e-mail do usuário via Mailjet (o ADR 005 foi encerrado pelo PR #490 e a UI admin não exibe senhas). No autoatendimento (`/forgot-password`), um token de uso único com expiração de 1h é emitido e enviado por e-mail com link para `/reset-password?token=...`.
 
 ### E2E falha em `/login`
 

@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-09-04 | Updated: 2026-09-04 -->
+<!-- Generated: 2026-09-04 | Updated: 2026-09-21 -->
 
 # App Router Root
 
@@ -13,7 +13,7 @@ Next.js App Router root — serves public routes and provides the root layout.
 
 | File               | Purpose                               |
 | ------------------ | ------------------------------------- |
-| `favicon.ico`      | Site favicon                          |
+| `icon.svg`         | Next.js App Router dynamic icon       |
 | `global-error.tsx` | Global error boundary                 |
 | `globals.css`      | Global styles                         |
 | `layout.tsx`       | Root layout                           |

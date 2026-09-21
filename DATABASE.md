@@ -91,7 +91,7 @@ Preview não deve herdar envs gerais de banco de produção.
 
 `CREATE INDEX CONCURRENTLY` e `DROP INDEX CONCURRENTLY` **não** podem ser executados dentro de transações PostgreSQL. Como o Drizzle Kit (`npm run db:migrate`) aplica migrações envolvendo cada statement em uma transação, esses comandos falham nesse fluxo. Para esses casos: backup → teste em staging → execução direta via `psql "$DATABASE_MIGRATION_URL"` → validação com `npm run test:db`.
 
-### Migrações aplicadas (29)
+### Migrações aplicadas (37)
 
 Contagem = número de entradas em `drizzle/postgres/meta/_journal.json` (fonte de verdade), não a listagem do diretório.
 
@@ -127,8 +127,13 @@ Contagem = número de entradas em `drizzle/postgres/meta/_journal.json` (fonte d
 | 0027 | `0027_add_associates_name_translated_trgm_index.sql` | Índice GIN trigram transliterado para busca de nome sem acentos                                                                  |
 | 0028 | `0028_activity_domain_events.sql`                    | ADR 018: eventos de domínio `activity.*` no outbox (6 valores em `domain_event_type` + `activity` em `domain_event_entity_type`) |
 | 0029 | `0029_pagination_count_index.sql`                    | Índice composto em associates para paginação otimizada                                                                           |
+| 0030 | `0030_add_associate_leave_date.sql`                  | Adiciona coluna `leave_date` em associates                                                                                       |
+| 0031 | `0031_reconcile_snapshot_baseline.sql`               | Reconciliação e avanço do baseline de snapshot do Drizzle Kit                                                                    |
+| 0032 | `0032_opposite_zarek.sql`                            | Cria enum `payment_origin`, adiciona `amount`, `origin`, `notes` e constraints em monthly_payments                               |
+| 0033 | `0033_unique_associate_identity_hashes.sql`          | Converte índices de hash de identidade em `UNIQUE` (cpf_hash, siape_hash, primary_email_hash)                                    |
 | 0034 | `0034_performance_query_indexes.sql`                 | Índices de performance (Wave E) em activities, audit e jurídico                                                                  |
-| 0035 | `0035_mailing_campaigns.sql`                         | Campanhas de mala direta (`mailing_campaigns`, `mailing_recipients`) e enum `enviando`                                           |
+| 0035 | `0035_mailing_campaigns.sql`                         | Campanhas de mala direta (`mailing_campaigns`, `mailing_recipients`) e enums de canal e status                                   |
+| 0036 | `0036_encrypt_secondary_email.sql`                   | Criptografia de email secundário (`secondary_email_ciphertext`, `secondary_email_hash`, índice único e check)                     |
 
 ### Nomenclatura
 
@@ -145,8 +150,8 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 | Tabela        | Arquivo          | Finalidade                                                                                                    |
 | ------------- | ---------------- | ------------------------------------------------------------------------------------------------------------- |
 | `admins`      | `admins.ts`      | Usuários administrativos (login, roles, password_hash)                                                        |
-| `associates`  | `associates.ts`  | Cadastro de Oficiais de Chancelaria (dados pessoais, PII, situação funcional, vínculo ASOF, dados funcionais) |
-| `assignments` | `assignments.ts` | Lotações/postos (domestic/abroad)                                                                             |
+| `associates`  | `associates.ts`  | Cadastro de Oficiais de Chancelaria (dados pessoais, PII, situação funcional, vínculo ASOF, dados funcionais, `leave_date`, `payment_method`, e-mail secundário cifrado) |
+| `assignments` | `assignments.ts` | Lotações/postos (domestic/abroad)                                                                                                           |
 
 #### Atividades
 
@@ -156,9 +161,9 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 
 #### Financeiro
 
-| Tabela             | Arquivo      | Finalidade                                     |
-| ------------------ | ------------ | ---------------------------------------------- |
-| `monthly_payments` | `finance.ts` | Registros mensais de pagamento de mensalidades |
+| Tabela             | Arquivo      | Finalidade                                                                                  |
+| ------------------ | ------------ | ------------------------------------------------------------------------------------------- |
+| `monthly_payments` | `finance.ts` | Registros mensais de pagamento de mensalidades (`amount`, `origin`, `notes`, status, método) |
 
 #### Associados (relacionamentos)
 
@@ -237,17 +242,11 @@ Migrations seguem o padrão `NNNN_descricao.sql` com zero-padding de 4 dígitos.
 | `test_results` | `test-metrics.ts` | Legado — sem produtor ativo; mantido por compatibilidade histórica. |
 | `test_runs`    | `test-metrics.ts` | Legado — sem produtor ativo; mantido por compatibilidade histórica. |
 
-Ver [`docs/development/test-metrics.md`](docs/development/test-metrics.md).
-
-### Views
-
-| View                      | Arquivo    | Finalidade                  |
-| ------------------------- | ---------- | --------------------------- |
-| `vw_associates_dashboard` | `views.ts` | Agregações para o dashboard |
+> Nota: Não são utilizadas views no banco de dados; agregações e relatórios do dashboard são calculados diretamente via queries Drizzle ORM nos serviços da aplicação (ex.: `src/lib/dashboard/service.ts`).
 
 ---
 
-## Enums (39)
+## Enums (43)
 
 ### Associados
 
@@ -267,6 +266,7 @@ Ver [`docs/development/test-metrics.md`](docs/development/test-metrics.md).
 | Enum             | Valores                                               | Uso                   |
 | ---------------- | ----------------------------------------------------- | --------------------- |
 | `payment_method` | `folha`, `boleto`, `pix`, `transferencia`, `outros`   | Método de pagamento   |
+| `payment_origin` | `sigepe`, `itamaraty`, `comprovante`, `outros`        | Origem do registro    |
 | `payment_status` | `pago`, `pendente`, `atrasado`, `isento`, `cancelado` | Status da mensalidade |
 
 ### Atividades
@@ -301,6 +301,14 @@ Ver [`docs/development/test-metrics.md`](docs/development/test-metrics.md).
 | `official_letter_status`   | `gerado`, `cancelado`, `rascunho`                                                                                                                                                                              | Status do ofício |
 | `assinafy_document_status` | `uploading`, `uploaded`, `metadata_processing`, `metadata_ready`, `pending_signature`, `certificating`, `certificated`, `expired`, `partially_signed`, `rejected_by_signer`, `rejected_by_user`, `failed` (12) | Status Assinafy  |
 
+### Mala Direta
+
+| Enum                       | Valores                                                    | Uso                    |
+| -------------------------- | ---------------------------------------------------------- | ---------------------- |
+| `mailing_channel`          | `email`, `etiquetas`                                       | Canal de mala direta   |
+| `mailing_campaign_status`  | `rascunho`, `em_envio`, `concluida`, `falhou`, `cancelada` | Status da campanha     |
+| `mailing_recipient_status` | `pendente`, `enviando`, `enviado`, `falhou`, `cancelado`   | Status do destinatário |
+
 ### Documentos
 
 | Enum                | Valores                                                                                                                     | Uso       |
@@ -323,7 +331,7 @@ Ver [`docs/development/test-metrics.md`](docs/development/test-metrics.md).
 | Enum                       | Valores                                                                                                                                                                     | Uso                  |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
 | `notification_type`        | `activity.completed`, `legal_consultation.answered`, `activity.assigned`, `legal_consultation.sla_warning`, `email_triage_pending`, `lgpd_request`, `oficio.status_changed` | Categoria            |
-| `notification_entity_type` | `activity`, `legal_consultation`, `email_triagem`                                                                                                                           | Entidade relacionada |
+| `notification_entity_type` | `activity`, `legal_consultation`, `email_triagem`, `oficio`                                                                                                                 | Entidade relacionada |
 
 ### Auditoria
 
@@ -366,9 +374,13 @@ Ver [`docs/development/test-metrics.md`](docs/development/test-metrics.md).
 | `associates`        | `idx_associates_paginated_list`      | Composto | Listagem com paginação e ordenação                 |
 | `associates`        | `idx_associates_name_trgm`           | GIN      | Busca textual por nome                             |
 | `associates`        | `idx_associates_name_lower_trgm`     | GIN      | Busca textual por nome transliterado (sem acentos) |
-| `associates`        | `idx_associates_cpf`                 | UNIQUE   | CPF único                                          |
-| `associates`        | `idx_associates_siape`               | UNIQUE   | SIAPE único                                        |
-| `associates`        | `idx_associates_primary_email`       | UNIQUE   | Email único                                        |
+| `associates`        | `idx_associates_cpf`                 | UNIQUE   | CPF único (plaintext)                              |
+| `associates`        | `idx_associates_siape`               | UNIQUE   | SIAPE único (plaintext)                            |
+| `associates`        | `idx_associates_primary_email`       | UNIQUE   | Email único (plaintext)                            |
+| `associates`        | `idx_associates_cpf_hash`            | UNIQUE   | Blind index único de CPF (migração 0033)           |
+| `associates`        | `idx_associates_siape_hash`          | UNIQUE   | Blind index único de SIAPE (migração 0033)         |
+| `associates`        | `idx_associates_primary_email_hash`  | UNIQUE   | Blind index único de e-mail primário (0033)        |
+| `associates`        | `idx_associates_secondary_email_hash`| UNIQUE   | Blind index único de e-mail secundário (0036)      |
 | `associates`        | `idx_associates_status_name`         | Composto | Listagem por status + nome                         |
 | `associates`        | `idx_associates_rg_hash`             | B-tree   | Lookups por RG (blind index)                       |
 | `monthly_payments`  | `idx_monthly_payments_unique`        | UNIQUE   | Um pagamento por (associate, year, month)          |
@@ -385,7 +397,7 @@ Ver [`docs/development/test-metrics.md`](docs/development/test-metrics.md).
 
 ### Campos protegidos (LGPD)
 
-`cpf`, `siape`, `email`, `phone`, `whatsapp`, `address`, `birthDate`, `rg`, `internalNotes`
+`cpf`, `siape`, `primary_email`, `secondary_email`, `phone`, `whatsapp`, `address`, `birth_date`, `rg`, `internal_notes`
 
 ### Helpers (`src/lib/crypto/`)
 
@@ -400,16 +412,22 @@ Ver [`docs/development/test-metrics.md`](docs/development/test-metrics.md).
 - Plaintext nunca em logs, erros ou respostas de API
 - Dados legados/importados em plaintext são risco operacional aceito, controlados via acesso ao Neon + auditoria
 - Usuários autenticados da intranet têm visibilidade operacional integral de PII
-- Campos RG seguem padrão triple-column: `rg` (plaintext, nullable) + `rgCiphertext` + `rgHash` com CHECK constraint (`rg IS NULL OR rgCiphertext IS NULL`)
+- Campos RG seguem padrão triple-column: `rg` (plaintext, nullable) + `rg_ciphertext` + `rg_hash` com CHECK constraint (`rg IS NULL OR rg_ciphertext IS NULL`)
 
 ### Colunas PII com triple-column pattern
 
-| Campo plaintext | Ciphertext        | Blind index (hash) | CHECK constraint                               |
-| --------------- | ----------------- | ------------------ | ---------------------------------------------- |
-| `cpf`           | `cpfCiphertext`   | `cpfHash`          | `cpf IS NULL OR cpfCiphertext IS NULL`         |
-| `siape`         | `siapeCiphertext` | `siapeHash`        | `siape IS NULL OR siapeCiphertext IS NULL`     |
-| `email`         | `emailCiphertext` | `emailHash`        | `emailHash` (unique, não-null se email existe) |
-| `rg`            | `rgCiphertext`    | `rgHash`           | `rg IS NULL OR rgCiphertext IS NULL`           |
+| Campo plaintext   | Ciphertext                   | Blind index (hash)              | CHECK constraint                                                |
+| ----------------- | ---------------------------- | ------------------------------- | --------------------------------------------------------------- |
+| `cpf`             | `cpf_ciphertext`             | `cpf_hash` (UNIQUE)             | `cpf IS NULL OR cpf_ciphertext IS NULL`                         |
+| `siape`           | `siape_ciphertext`           | `siape_hash` (UNIQUE)           | `siape IS NULL OR siape_ciphertext IS NULL`                     |
+| `primary_email`   | `primary_email_ciphertext`   | `primary_email_hash` (UNIQUE)   | `primary_email IS NULL OR primary_email_ciphertext IS NULL`     |
+| `secondary_email` | `secondary_email_ciphertext` | `secondary_email_hash` (UNIQUE) | `secondary_email IS NULL OR secondary_email_ciphertext IS NULL` |
+| `rg`              | `rg_ciphertext`              | `rg_hash`                       | `rg IS NULL OR rg_ciphertext IS NULL`                           |
+| `phone`           | `phone_ciphertext`           | `phone_hash`                    | —                                                               |
+| `address`         | `address_ciphertext`         | `address_hash`                  | —                                                               |
+| `whatsapp`        | `whatsapp_ciphertext`        | `whatsapp_hash`                 | —                                                               |
+
+> **Nota sobre Unicidade de Hashes:** Conforme as migrações `0033` e `0036`, os índices blind index de identidade (`cpf_hash`, `siape_hash`, `primary_email_hash` e `secondary_email_hash`) possuem constraints de unicidade (`UNIQUE INDEX`), prevenindo duplicidades cadastrais mesmo com os dados em repouso cifrados.
 
 ---
 
@@ -439,8 +457,10 @@ Valida tables, columns, enums, indexes, extensions e alinhamento de migrations c
 ```
 admins 1──N activities (assignee, created_by)
 admins 1──N audit_logs (performed_by)
-admins 1──N notifications (actor)
-admins 1──N oficios (created_by, cancelled_by, updated_by)
+admins 1──N notifications (actor, user_id)
+admins 1──N oficios (created_by, updated_by)
+admins 1──N monthly_payments (cancelled_by, updated_by)
+admins 1──N mailing_campaigns (created_by)
 
 associates 1──N activities
 associates 1──N monthly_payments
@@ -453,7 +473,10 @@ associates 1──N health_agreements (onDelete CASCADE)
 
 assignments 1──N associates (lotação)
 
+lawyers 1──N legal_consultations (lawyer_id)
+lawyers 1──N email_triagens (lawyer_id)
 legal_consultations 1──N legal_notes
+legal_consultations 1──N email_triagens (consultation_id)
 legal_processes 1──N legal_notes
 
 domain_events 1──N webhook_deliveries

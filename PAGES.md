@@ -1,6 +1,6 @@
 # PAGES.md — Intranet ASOF
 
-Funcionalidades de cada página e requisitos para que sejam consideradas funcionais.
+Funcionalidades de cada página (39 rotas no total) e requisitos para que sejam consideradas funcionais.
 
 **Roles:** `admin` · `diretoria` · `secretaria`  
 **Convenção de acesso:** `*` = qualquer autenticado · roles listadas = mínimo necessário
@@ -125,7 +125,9 @@ A área autenticada registra tools WebMCP (`document.modelContext`) para um **ag
 graph LR
     APP[/app<br/>Dashboard]
     ASSOC[/app/associados]
+    ASSOC_NOVO[/app/associados/novo]
     ASSOC_ID[/app/associados/id]
+    ASSOC_PRINT[/app/associados/id/imprimir]
     ASSOC_EDIT[/app/associados/id/editar]
     ASSOC_REL[/app/associados/relatorio]
     ATIV[/app/atividades]
@@ -155,6 +157,8 @@ graph LR
     PRIV[/app/privacidade]
 
     APP --> ASSOC --> ASSOC_ID --> ASSOC_EDIT
+    ASSOC --> ASSOC_NOVO
+    ASSOC_ID --> ASSOC_PRINT
     ASSOC --> ASSOC_REL
     APP --> ATIV --> ATIV_NOVA
     APP --> JUR --> JUR_LIST --> JUR_ID
@@ -216,7 +220,26 @@ graph LR
 - [ ] Busca por SIAPE retorna resultado exato (match por hash blind index)
 - [ ] Paginação navega corretamente sem perder o filtro de busca
 - [ ] Navegação para detalhe/editar preserva filtros via `returnTo`; botão "Voltar" retorna à lista com filtros intactos
-- [ ] Usuário `secretaria` não vê o link de edição
+- [ ] Link para novo associado visível para `admin` e `secretaria`
+
+---
+
+### `/app/associados/novo` — Novo Associado
+
+**Acesso:** `admin`, `secretaria`
+
+**Funcionalidades:**
+
+- Formulário estruturado de cadastro de novo Oficial de Chancelaria (`CriarAssociadoForm`)
+- Cadastro completo de identificação pessoal (nome, CPF, SIAPE, RG), endereço residencial, dados de contato e funcionais
+- Campo de observações internas habilitado condicionalmente apenas para `admin` (`canEditInternalNotes = role === 'admin'`)
+- Criptografia em repouso de dados sensíveis (PII) e cálculo automático de índices cegos (blind index) para busca
+
+**Funcional quando:**
+
+- [ ] Usuários com papel `admin` e `secretaria` acessam e submetem o formulário com sucesso
+- [ ] Validações de formato e integridade (CPF, SIAPE e e-mail) bloqueiam envios inválidos
+- [ ] Submissão com sucesso persiste o registro e redireciona para `/app/associados/[id]`
 
 ---
 
@@ -235,6 +258,7 @@ graph LR
 - Atividades vinculadas
 - Linha do tempo (adesão, última atualização)
 - Botão "Voltar" com `returnTo` preserva filtros da listagem de origem
+- Ação para visualização/impressão da ficha cadastral (`/app/associados/[id]/imprimir`)
 
 **Funcional quando:**
 
@@ -247,22 +271,40 @@ graph LR
 
 ---
 
-### `/app/associados/[id]/editar` — Edição de Associado
+### `/app/associados/[id]/imprimir` — Ficha de Impressão
 
-**Acesso:** `admin`, `diretoria`
+**Acesso:** `*`
 
 **Funcionalidades:**
 
-- Formulário expandido (17 campos novos): sexo, estado civil, naturalidade (cidade/UF), RG (número, órgão expedidor, UF, data de expedição), bairro, UF do endereço, CEP, tipo de missão, origem de carreira, data de admissão, data de posse, data de cancelamento, forma de pagamento, membro CEOC/CAOC, email secundário
+- Layout limpo e otimizado para impressão física e geração de PDF via navegador (`PrintableFicha`)
+- Barra de ferramentas superior (`PrintToolbar`) com botão para acionar impressão nativa (`window.print()`) e link para voltar ao perfil
+- Apresentação completa dos dados pessoais, funcionais, dependentes e convênios sem sidebar e navegação global (estilo print-ready)
+
+**Funcional quando:**
+
+- [ ] Página carrega com os dados completos do associado sem exibir a barra lateral
+- [ ] Botão de impressão aciona o diálogo nativo de impressão do navegador
+- [ ] ID inexistente retorna página `not-found`
+
+---
+
+### `/app/associados/[id]/editar` — Edição de Associado
+
+**Acesso:** `admin`, `diretoria`, `secretaria`
+
+**Funcionalidades:**
+
+- Formulário expandido: sexo, estado civil, naturalidade (cidade/UF), RG (número, órgão expedidor, UF, data de expedição), bairro, UF do endereço, CEP, tipo de missão, origem de carreira, data de admissão, data de posse, data de cancelamento, forma de pagamento, membro CEOC/CAOC, email secundário
 - Validação de CPF, SIAPE, RG, datas e emails
-- Observações internas (somente `admin`)
+- Observações internas protegidas (somente `admin` pode editar)
 - Auditoria automática ao salvar
 
 **Funcional quando:**
 
 - [ ] Dados inválidos (CPF malformado, email duplicado) bloqueiam o submit com mensagem específica
 - [ ] Salvar redireciona para o perfil e exibe feedback de sucesso
-- [ ] `secretaria` recebe 403 ao tentar acessar
+- [ ] Usuários `admin`, `diretoria` e `secretaria` podem editar os dados cadastrais normais; apenas `internalNotes` é restrito a `admin`
 
 ---
 
@@ -353,7 +395,7 @@ graph LR
 
 ### `/app/juridico` — Dashboard Jurídico
 
-**Acesso:** `admin`, `diretoria`
+**Acesso:** `admin`, `diretoria` (o layout ancestral `JuridicoLayout` bloqueia `secretaria` com HTTP 403)
 
 **Funcionalidades:**
 
@@ -365,12 +407,13 @@ graph LR
 
 - [ ] Contador "SLA vencendo" reflete consultas com `slaDeadline` nos próximos 2 dias
 - [ ] Consultas stale (> 7 dias sem nota) aparecem destacadas
+- [ ] Usuário com papel `secretaria` recebe 403 ao tentar acessar
 
 ---
 
 ### `/app/juridico/consultas` — Lista de Consultas
 
-**Acesso:** `admin`, `diretoria`
+**Acesso:** `admin`, `diretoria` (bloqueado para `secretaria` com HTTP 403 via layout)
 
 **Funcionalidades:**
 
@@ -383,12 +426,13 @@ graph LR
 
 - [ ] Busca funciona para número parcial (ex: `JUR-2026`)
 - [ ] Filtro de status preserva-se ao navegar entre páginas
+- [ ] Usuário `secretaria` recebe 403 ao tentar acessar
 
 ---
 
 ### `/app/juridico/consultas/nova` — Nova Consulta
 
-**Acesso:** `admin`, `diretoria`
+**Acesso:** `admin`, `diretoria` (bloqueado para `secretaria` com HTTP 403 via layout)
 
 **Funcionalidades:**
 
@@ -400,12 +444,13 @@ graph LR
 - [ ] Número gerado é único e sequencial dentro do ano
 - [ ] Prazo SLA calculado como `createdAt + slaDeadlineDays`
 - [ ] Salvar redireciona para o detalhe da consulta criada
+- [ ] Usuário `secretaria` recebe 403 ao tentar acessar
 
 ---
 
 ### `/app/juridico/consultas/[id]` — Detalhe de Consulta
 
-**Acesso:** `admin`, `diretoria`
+**Acesso:** `admin`, `diretoria` (bloqueado para `secretaria` com HTTP 403 via layout)
 
 **Funcionalidades:**
 
@@ -616,6 +661,46 @@ Não tratar esta seção como checklist de release até nova decisão de produto
 - [ ] Envio registra status por destinatário
 - [ ] PDF/CSV de etiquetas inclui o público filtrado (associados e não associados)
 - [ ] Cancelar não deixa a campanha como concluída
+
+---
+
+### `/app/mala-direta/nova` — Nova Campanha de Mala Direta
+
+**Acesso:** `admin`, `diretoria`, `secretaria`
+
+**Funcionalidades:**
+
+- Criação guiada de campanha de mala direta física (etiquetas) ou eletrônica (e-mail)
+- Filtros demográficos e funcionais para seleção do público-alvo (vínculo, situação, lotação, etc.)
+- Cálculo dinâmico de audiência estimada e pré-visualização dos destinatários
+- Composição de mensagem com interpolação de tags (`{{nome}}`, etc.) ou escolha de gabarito de etiquetas
+
+**Funcional quando:**
+
+- [ ] Formulário valida preenchimento de campos obrigatórios (nome, canal)
+- [ ] Contagem estimada de destinatários atualiza em tempo real com base nos filtros
+- [ ] Salvar cria a campanha com status `rascunho` e redireciona para `/app/mala-direta/[id]`
+
+---
+
+### `/app/mala-direta/[id]` — Detalhe e Execução de Mala Direta
+
+**Acesso:** `admin`, `diretoria`, `secretaria`
+
+**Funcionalidades:**
+
+- Painel de controle da campanha: metadados, canal, status atual e autor
+- Disparo e acompanhamento de envio para campanhas de e-mail (lotes via fila/cron)
+- Geração e download de etiquetas para campanhas postais: PDF Pimaco (`POST .../etiquetas/gerar`) e CSV (`POST .../etiquetas/csv`)
+- Tabela detalhada de destinatários com status individual (`pendente`, `enviando`, `enviado`, `falhou`, `cancelado`)
+- Ação auditável de cancelamento de campanha
+
+**Funcional quando:**
+
+- [ ] Permite disparar ou reprocessar lotes de envio para canal e-mail
+- [ ] Botões de download de PDF e CSV de etiquetas baixam os arquivos correspondentes
+- [ ] Cancelamento altera status da campanha para `cancelada` e impede novos disparos
+- [ ] ID inexistente retorna página `not-found`
 
 ---
 
@@ -850,13 +935,13 @@ Emite notificações de SLA vencendo para consultas jurídicas. Requer `CRON_SEC
 
 ### `POST /api/v1/gmail-webhook`
 
-Recebe push notifications do Gmail (Pub/Sub). Valida payload e enfileira para triagem.
+Endpoint de webhook do Google Pub/Sub desativado na arquitetura atual. Retorna incondicionalmente HTTP `410 Gone`.
 
 ---
 
-### `POST /api/v1/events/dispatch`
+### `GET /api/v1/events/dispatch`
 
-Endpoint alternativo para disparo manual de domain events.
+Endpoint agendado via Vercel Cron (`Authorization: Bearer <CRON_SECRET>`) para despachar pendências e retries de domain events outbound no outbox. Disparos manuais ocorrem via `POST /api/v1/events`.
 
 ---
 

@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-05-26 | Updated: 2026-09-04 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-09-21 -->
 
 # e2e
 
@@ -12,6 +12,8 @@ Playwright end-to-end test suite for the ASOF Intranet application. Spins up a s
 | File                      | Description                                                                                      |
 | ------------------------- | ------------------------------------------------------------------------------------------------ |
 | `../playwright.config.ts` | Main Playwright configuration — baseURL http://127.0.0.1:3001, headless, 30s expectation timeout |
+| `constants.ts`            | Shared constants for E2E tests (timeouts, default credentials, test URLs)                        |
+| `global-types.d.ts`       | Global TypeScript type declarations and custom matchers for Playwright                           |
 | `smoke-prod.spec.ts`      | Separately configured production smoke coverage; not part of the main local E2E suite            |
 | `global-setup.ts`         | Creates `asof_test` database, runs migrations via `npm run db:migrate`, seeds test data          |
 | `global-teardown.ts`      | Tears down test db and kills the e2e Next.js server process                                      |
@@ -19,11 +21,11 @@ Playwright end-to-end test suite for the ASOF Intranet application. Spins up a s
 
 ## Subdirectories
 
-| Directory  | Purpose                                                                                                                                     |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `helpers/` | Test utilities — `db.ts` wraps the seed/admin helper for resetting test data                                                                |
-| `mocks/`   | Local external-service mocks, currently the Assinafy server                                                                                 |
-| `tests/`   | Specs for associados, perfil/impressão, atividades, dashboard, financeiro, jurídico, login/logout, roles, secretaria, Assinafy and usuários |
+| Directory  | Purpose                                                                                                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `helpers/` | Test utilities — `db.ts` wraps the seed/admin helper for resetting test data                                                                                             |
+| `mocks/`   | Local external-service mocks, currently the Assinafy server                                                                                                              |
+| `tests/`   | Specs for associados, perfil/impressão, atividades, dashboard, financeiro, jurídico, login/logout, mala-direta, notifications, roles, secretaria, Assinafy and usuários |
 
 ## For AI Agents
 

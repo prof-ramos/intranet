@@ -35,6 +35,7 @@ npm run validate:quick   # lint + typecheck + testes unitários
 npm run validate:full    # validate:quick + test:db + test:integration + build
 npm run pr:check         # verificações de prontidão para PR
 npm run scope:check      # verifica escopo de arquivos alterados
+npm run docs:check       # verifica comandos e links relativos da documentação
 npm run db:generate      # drizzle-kit generate
 npm run db:migrate       # guarded — exige ALLOW_PRODUCTION_MIGRATIONS=true em produção
 npm run db:seed          # seed base mínimo: admin + advogados
@@ -88,7 +89,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 | `src/components/`    | UI components compartilhados                                                                                                                                        |
 | `src/lib/`           | Serviços, repositórios, schema Drizzle                                                                                                                              |
 | `src/hooks/`         | React hooks                                                                                                                                                         |
-| `src/lib/db/schema/` | Schemas Drizzle (admins, associates, activities, audit, finance, legal, monthly_payments, oficios, assignments, notifications, dependents, health_agreements, etc.) |
+| `src/lib/db/schema/` | Schemas Drizzle (admins, associates, activities, audit, finance, legal-consultations, legal-notes, legal-opinions, legal-processes, oficios, assignments, notifications, dependents, health-agreements, etc.) |
 | `drizzle/postgres/`  | Migrations SQL (baseline `0000_green_glorian.sql` + incrementais)                                                                                                   |
 | `docs/adr/`          | ADRs — decisões arquiteturais                                                                                                                                       |
 | `docs/`              | Runbook, compliance LGPD, design, jornadas                                                                                                                          |
@@ -102,23 +103,23 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 - `src/lib/logger.ts` — logger estruturado com redacao de PII
 - `src/lib/db/index.ts` — cliente Drizzle
 - `src/lib/db/schema/enums.ts` — enums compartilhados
-- `src/lib/associates/search-params.ts` — parâmetros de busca (searchBy: name/cpf/siape, returnTo)
+- `src/lib/associates/search-params.ts` — parâmetros de busca (searchBy: name/cpf/siape; paginação e filtros)
 - `src/lib/associates/lgpd.ts` — campos exportáveis, classificação PII/PUBLIC, mapeamento de descriptografia
 - `src/lib/reports/csv.ts` — geração CSV com formatação pt-BR, prevenção de injeção de fórmula, labels de enum
 - `src/lib/reports/queries.ts` — queries de relatório com descriptografia PII (ciphertext fallback)
 - `src/app/app/associados/[id]/actions.ts` — server actions CRUD para dependentes e convênios
 - `src/app/app/associados/[id]/DependentManager.tsx` — componente cliente para gerenciamento inline de dependentes e convênios
 - `scripts/seed-dev.ts` — massa sintética robusta para desenvolvimento local, sem PII real
-- `src/lib/notifications/` — persistência PostgreSQL via `emitEvent`; UI = `NotificationBell` (polling) no layout autenticado
+- `src/lib/notifications/` — repositório e serviço de notificações (eventos emitidos via `src/lib/events.ts`); UI = `NotificationBell` (polling) no layout autenticado
 - `src/lib/assinafy/service.ts` — orquestra webhook Assinafy; idempotência dentro de `db.transaction`; veja ADR 013
-- `src/lib/integrations/verify-request.ts` — autenticação M2M dual (env-var + table-backed), rate limiting, prevenção de replay via nonces
+- `src/lib/integrations/verify-request.ts` — autenticação M2M dual (env-var + table-backed), autorização por escopos e prevenção de replay via nonces
 - `next.config.ts` — Next.js config
 - `vercel.json` — deploy Vercel
 - `TODO-PROD.md` — checklist de go-live
 
 ## PII e LGPD
 
-- Campos protegidos: `cpf`, `siape`, `rg`, `email`, `phone`, `whatsapp`, `address`, `birthDate`, `internalNotes`.
+- Campos protegidos: `cpf`, `siape`, `rg`, `email`, `secondaryEmail`, `phone`, `whatsapp`, `address`, `birthDate`, `internalNotes`.
 - Usar `encryptPii()` para armazenamento, `piiBlindIndex()` para busca, `sanitizePii()` para logs.
 - Nunca expor plaintext em logs, erros ou respostas de API.
 - Desfiamento/anonimização: ver ADR 006.
@@ -140,7 +141,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 
 ## CI/CD
 
-- 4 jobs: Lint/Typecheck/Test, Database Contract, Build Verification, E2E Tests.
+- 5 jobs: Lint/Typecheck/Test (inclui `docs:check` e coverage), Database Contract, Build Verification, E2E Tests e Smoke Test — Production (em push para `main`).
 - Node 20.x nos runners GitHub Actions.
 - Deploy via push para `main` (produção) ou PR (preview).
 - Domínio: `intranet.asof.com.br`.
@@ -150,7 +151,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 - Não fazer downgrade do Next.js abaixo de Next.js 16. Versão exata em `package.json`.
 - `next.config.ts` fixa `turbopack.root` para evitar resolução de Tailwind pelo diretório pai.
 - Dev server pesado em 8 GB RAM: usar `scripts/run-dev-60s.sh` para diagnósticos de freeze.
-- E2E nunca aponta para `http://localhost:3000` (dev server); usa `3001` com `NEXT_E2E=1`.
+- E2E nunca aponta para `http://localhost:3000` (dev server); usa `3001` com `NEXT_E2E=1`. Se tentativas falhadas acumularem em `login_attempts` gerando `?error=rate-limit`, limpe a tabela com `DELETE FROM login_attempts WHERE email_hash IS NOT NULL;` ou `TRUNCATE login_attempts;` (o campo `email` é mantido NULL por conformidade LGPD).
 
 ## Documentação Relacionada
 

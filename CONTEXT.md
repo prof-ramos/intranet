@@ -352,7 +352,7 @@ Envio HTTP assíncrono de eventos de domínio para sistemas externos. Assinado c
 2. **Revalidação Local**: Cada sessão é revalidada contra `admins` para verificar `isActive`, `role` e `mustChangePassword`.
 3. **Rate Limit de Login**: 5 tentativas por email a cada 15 minutos, persistido em PostgreSQL.
 4. **Dev Bypass**: `SKIP_AUTH=true` permite desenvolvimento sem autenticação real, mas é ignorado em produção.
-5. **Redefinição de Senha**: Administradores podem resetar a senha de outros usuários. A exposição temporária de credenciais geradas no painel administrativo é tratada como um débito técnico documentado no ADR 005. Como política de segurança de dados, senhas temporárias nunca devem ser salvas em logs ou registros de auditoria.
+5. **Redefinição de Senha**: Administradores podem resetar a senha de outros usuários. Em conformidade com o encerramento do ADR 005 (PR #490), a senha temporária gerada é despachada diretamente para o e-mail cadastrado do usuário via Mailjet e nunca é exibida na interface administrativa. Adicionalmente, há suporte a self-service via `/forgot-password` com token temporário e link para `/reset-password`. Senhas e tokens nunca são salvos em logs ou auditoria.
 
 ### Auditoria e LGPD
 
@@ -384,7 +384,7 @@ O sistema suporta dois caminhos de autenticação para APIs:
 - Assinatura HMAC SHA-256 por subscription.
 - Secrets criptografados em repouso (`secret_ciphertext`).
 - Target URLs devem ser HTTPS públicos; localhost e redes privadas são rejeitados.
-- Dispatch agendado via Vercel Cron: eventos em `/api/v1/events/dispatch` (diário às 03:00 UTC) e alertas de SLA em `/api/v1/juridico/sla-warnings` (diário às 04:00 UTC).
+- Dispatch agendado via Vercel Cron: 7 jobs configurados em `vercel.json` (incluindo `/api/v1/events/dispatch` às 03:00 UTC, `/api/v1/juridico/sla-warnings` às 04:00 UTC, `/api/v1/cron/lgpd-retention` às 05:00 UTC, `/api/v1/email-triage/process` às 06:00 UTC, `/api/v1/cron/overdue-payments` às 03:00 UTC, `/api/v1/cron/cleanup-nonces` às 01:00 UTC e `/api/v1/mailing/process` às 07:00 UTC).
 
 ### Webhook Inbound Assinafy
 

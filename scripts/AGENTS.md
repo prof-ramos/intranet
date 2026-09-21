@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-09-04 | Updated: 2026-09-04 -->
+<!-- Generated: 2026-09-04 | Updated: 2026-09-21 -->
 
 # Scripts
 
@@ -15,13 +15,18 @@ Purpose: Operational scripts — database, migrations, seed, PII, and dev utilit
 | `seed-dev.ts`                            | Synthetic local seed for oficiais, mensalidades, atividades, jurídico e ofícios                       |
 | `dev-admin.ts`                           | Provisiona de forma fail-closed a identidade técnica usada por `SKIP_AUTH` no seed de desenvolvimento |
 | `dev-admin-store.ts`                     | Adapter PostgreSQL do provisionamento técnico, incluindo realinhamento da identity                    |
+| `dev-seed-safety.ts`                     | Módulo de validação de ambiente e proteção contra seed sintético em instâncias remotas                |
 | `seed-e2e.ts`                            | E2E test data seeding                                                                                 |
 | `backup-neon-level1.sh`                  | Backup Nível 1 (`pg_dump`) do Neon                                                                    |
-| `reconcile-associate-identities.ts`      | Reconciliação fail-closed de identidades duplicadas (Plano 064)                                       |
+| `reconcile-associate-identities.ts`      | Reconciliação fail-closed de identidades duplicadas                                                   |
 | `check-associate-identity-duplicates.ts` | Diagnóstico read-only de identidades cadastrais duplicadas                                            |
 | `clear-duplicate-identity-hashes.ts`     | Limpeza controlada de hashes duplicados, usada apenas pelo workflow autorizado                        |
+| `smoke-residuals-cleanup.ts`             | Inventário e limpeza controlada de registros residuais de smoke em produção (`SMOKE_%`)               |
 | `migrate-legacy.ts`                      | Migração de dados legados com transformações testadas                                                 |
+| `migrate-legacy-transforms.ts`           | Módulo com lógica de transformação e normalização de dados legados (+ test)                           |
+| `guard-integration-db.js`                | Guardrail de segurança para impedir testes de integração contra bancos remotos                        |
 | `run-integration-tests.mjs`              | Runner protegido para testes de integração em banco dedicado                                          |
+| `storage-spike.ts`                       | Script de benchmark e prova de conceito do spike de storage (ADR 020)                                 |
 | `check-docs.mjs`                         | Valida scripts npm, links Markdown e paths em fences shell                                            |
 | `check-pr-ready.sh`                      | PR readiness check                                                                                    |
 | `check-scope.sh`                         | Scope validation                                                                                      |
