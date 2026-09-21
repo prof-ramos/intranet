@@ -1,8 +1,10 @@
 # Guia do Desenvolvedor — ASOF Intranet
 
+> **Escopo deste guia:** repositório canônico [`prof-ramos/intranet`](https://github.com/prof-ramos/intranet) (ASOF Intranet). O CMS público `asof.org.br/cms` (Laravel/Inertia) é outro sistema; o checkout local `Developer/ASOF/CMS-ASOF` hoje só guarda credenciais de login, sem código-fonte.
+
 Este guia orienta a configuração local, a navegação pelo código, o fluxo de desenvolvimento, a abordagem de testes e os problemas mais comuns da ASOF Intranet.
 
-Última atualização: 2026-06-18 (matriz oficial de ambientes)
+Última atualização: 2026-09-16
 
 Fonte oficial de ambientes, bancos, dados, migrations e CI/CD:
 [`docs/environments.md`](./docs/environments.md). Se este guia divergir da
@@ -56,11 +58,13 @@ Inicialize o banco e a aplicação:
 createdb asof_intranet
 
 npm run db:migrate
-npm run db:seed
+npm run db:seed:dev
 npm run dev
 ```
 
 Acesse `http://localhost:3000`.
+
+> Nota: `npm run db:seed:dev` popula o banco local com o dataset sintético necessário para o desenvolvimento diário (oficiais, mensalidades, atividades, jurídico e ofícios). O comando `npm run db:seed` cria apenas o admin inicial e dados mínimos.
 
 ### Banco de Produção e ambientes
 
@@ -70,7 +74,7 @@ Acesse `http://localhost:3000`.
 - Autenticação: O app possui auth própria via cookie de sessão assinado por `SESSION_SECRET` (httpOnly). O login de administradores usa `admins.email` e `admins.password_hash` (bcryptjs), conforme `ARCHITECTURE.md`.
 - Staging/preview deve usar banco separado e nunca herdar envs gerais de produção.
 - `npm run db:migrate` passa por `scripts/guarded-migrate.ts` e bloqueia produção sem `ALLOW_PRODUCTION_MIGRATIONS=true`.
-- Para o fluxo de reset de senha (senha temporária), `ASOF_INTRANET_URL` deve apontar para `https://intranet.asof.com.br`.
+- Para os fluxos de reset de senha (e-mail transacional via Mailjet e links de autoatendimento), `ASOF_INTRANET_URL` deve apontar para a URL canônica (ex.: `https://intranet.asof.com.br` ou `http://localhost:3000` em testes).
 
 Use o runbook para operações reais de deploy, backup, rollback e smoke test: [`docs/runbook.md`](./docs/runbook.md).
 
@@ -114,36 +118,38 @@ O projeto é uma aplicação Next.js 16 App Router full-stack. Server Components
 ```text
 src/
   app/
-    app/                    # área autenticada (/app/*)
-      associados/           # cadastro, perfil, relatórios e exportação
-      atividades/           # kanban administrativo
-      config/               # usuários, lotações, auditoria e integrações
-      financeiro/           # mensalidades e pagamentos
-      juridico/             # consultas jurídicas, SLA e histórico
-      secretaria/oficios/   # geração e gestão de ofícios
-      search/               # busca global
-    login/                  # login com auth server-side e cookie HTTP-only
-    change-password/        # troca de senha obrigatória
-  components/               # componentes compartilhados
+    app/                      # área autenticada (/app/*)
+      associados/             # cadastro, perfil, relatórios e exportação
+      atividades/             # kanban administrativo
+      config/                 # usuários, lotações, auditoria e integrações
+      financeiro/             # mensalidades (UI oculta no ciclo atual, #429)
+      juridico/               # consultas jurídicas, SLA e histórico
+      secretaria/oficios/     # ofícios, PDF e Assinafy
+      email-triage/           # triagem Gmail + Gemini (UI oculta, #429)
+      etiquetas/              # etiquetas
+      mala-direta/            # mala direta
+      notifications/          # alertas
+      privacidade/            # LGPD / exportação
+      search/                 # busca global
+      _dashboard/             # componentes do dashboard
+    api/                      # Route Handlers (/api/v1, webhooks, ofícios)
+    login/                    # cookie HTTP-only
+    change-password/
+    forgot-password/
+    reset-password/
+  components/                 # UI compartilhada (+ webmcp)
   lib/
-    auth/                   # sessão, autorização, rate limit e senha
-    db/                     # cliente Drizzle e schema
-    crypto/                 # contextos de criptografia e master key
-    associates/             # domínio de associados
-    activities/             # domínio de atividades
-    juridico/               # repository, service e queries jurídicas
-    finance/                # repository, service e queries financeiras
-    oficios/                # ofícios, validações e PDF
-    integrations/           # API keys, webhooks e auth M2M
-    notifications/          # notificações e realtime
-    email/                  # Mailjet e templates
-    logger.ts               # logger estruturado com redação de PII
-    sanitize-pii.ts         # sanitização de CPF, SIAPE, email e tokens
-  proxy.ts                  # guarda de autenticação do Next.js 16
+    auth/ db/ crypto/
+    associates/ activities/ juridico/ finance/ oficios/
+    email-triage/ assinafy/ integrations/ notifications/
+    email/ audit/ lgpd/ cron/
+    logger.ts sanitize-pii.ts
+  proxy.ts                    # guarda de autenticação (Next.js 16)
 
-drizzle/postgres/           # migrations Drizzle/PostgreSQL
-scripts/                    # seed, diagnóstico e migrations
-docs/                       # runbooks, ADRs, compliance e notas operacionais
+drizzle/                      # migrations Drizzle/PostgreSQL
+e2e/                          # Playwright (+ smoke produção)
+scripts/                      # seed, migrate guardado, checks de PR
+docs/                         # environments, runbook, ADRs, development/
 ```
 
 Mapa mental para uma feature típica:
@@ -258,6 +264,7 @@ O PR deve ter uma responsabilidade clara. Explique impacto, validação executad
 | Typecheck  | `npm run typecheck` | Sempre antes de PR; pega contratos TypeScript e imports quebrados.                    |
 | Lint       | `npm run lint`      | Sempre antes de PR; mantém padrões Next/React/TS.                                     |
 | Banco real | `npm run test:db`   | Mudanças em schema, migrations, enums, RLS, índices e contrato Drizzle.               |
+| Integração | `npm run test:integration` | DML/fluxos com banco de teste local (`asof_intranet_test`).                          |
 | E2E        | `npm run test:e2e`  | Fluxos de login, navegação e workflows críticos.                                      |
 | Build      | `npm run build`     | Mudanças em Next.js, env, renderização, imports server/client e deploy readiness.     |
 
@@ -386,13 +393,9 @@ Server Components não podem passar `onClick`, `onChange` ou closures interativa
 
 ### Fluxo de reset de senha apresenta problemas
 
-Confirme:
+Confirme que as credenciais do Mailjet estão configuradas (`MAILJET_API_KEY`, `MAILJET_SECRET_KEY`, `MAILJET_SENDER_EMAIL` e `MAILJET_SENDER_VALIDATED=true`) e que `ASOF_INTRANET_URL` está preenchida.
 
-```bash
-ASOF_INTRANET_URL=https://intranet.asof.com.br
-```
-
-O sistema gera uma senha temporária no backend e a entrega à UI/usuário conforme o fluxo atual. Não há geração de link com token mágico.
+No fluxo administrativo, o backend gera uma senha temporária e a despacha diretamente para o e-mail do usuário via Mailjet (o ADR 005 foi encerrado pelo PR #490 e a UI admin não exibe senhas). No autoatendimento (`/forgot-password`), um token de uso único com expiração de 1h é emitido e enviado por e-mail com link para `/reset-password?token=...`.
 
 ### E2E falha em `/login`
 

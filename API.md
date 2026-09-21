@@ -9,25 +9,28 @@
 
 A superficie HTTP publica atual da ASOF Intranet e pequena e intencionalmente restrita.
 
-Hoje existem **15 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
+Hoje existem **18 endpoints HTTP expostos**, com superficie publica intencionalmente pequena:
 
-| Metodo        | Rota                                 | Finalidade                                                                                         |
-| ------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `GET`         | `/app/associados/relatorio/download` | Exportar associados filtrados em CSV                                                               |
-| `GET`         | `/api/oficios/[id]/download`         | Gerar e baixar PDF de um oficio                                                                    |
-| `GET`         | `/api/v1/health`                     | Healthcheck autenticado da fundacao de integracoes                                                 |
-| `GET`, `POST` | `/api/v1/events`                     | Superficie administrativa para dispatch outbound-only; sem ingestao inbound                        |
-| `GET`         | `/api/v1/events/dispatch`            | Dispatch agendado por cron bearer para pendencias e retries outbound                               |
-| `GET`         | `/api/v1/juridico/sla-warnings`      | Job agendado por cron bearer para emitir notificacoes de SLA juridico                              |
-| `POST`        | `/api/v1/email-triage/process`       | Processar emails pendentes na triagem (cron ou manual)                                             |
-| `POST`        | `/api/v1/gmail-webhook`              | Webhook de notificacao push do Gmail (Pub/Sub)                                                     |
-| `GET`         | `/api/v1/cron/gmail-watch`           | Renovacao semanal do watch Gmail (cron bearer)                                                     |
-| `GET`         | `/api/v1/cron/lgpd-retention`        | Job agendado de retencao e anonimizacao LGPD (cron bearer)                                         |
-| `GET`         | `/api/v1/cron/overdue-payments`      | Marca mensalidades vencidas pendente → atrasado via `autoMarkOverduePaymentsService` (cron bearer) |
-| `GET`         | `/api/v1/cron/cleanup-nonces`        | Limpa nonces expirados de replay protection (cron bearer, diário 01:00 UTC)                        |
-| `GET`         | `/api/v1/mailing/process`            | Processa a fila de campanhas de e-mail em lote (cron bearer, diário 07:00 UTC)                     |
-| `POST`        | `/app/etiquetas/gerar`               | Geracao administrativa de etiquetas Pimaco em PDF                                                  |
-| `POST`        | `/api/webhooks/assinafy`             | Webhook de retorno de assinatura digital (Assinafy)                                                |
+| Metodo        | Rota                                    | Finalidade                                                                                         |
+| ------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `GET`         | `/app/associados/relatorio/download`    | Exportar associados filtrados em CSV                                                               |
+| `GET`         | `/api/oficios/[id]/download`            | Gerar e baixar PDF de um oficio                                                                    |
+| `GET`         | `/api/v1/health`                        | Healthcheck autenticado da fundacao de integracoes                                                 |
+| `GET`, `POST` | `/api/v1/events`                        | Superficie administrativa para dispatch outbound-only; sem ingestao inbound                        |
+| `GET`         | `/api/v1/events/dispatch`               | Dispatch agendado por cron bearer para pendencias e retries outbound                               |
+| `GET`         | `/api/v1/juridico/sla-warnings`         | Job agendado por cron bearer para emitir notificacoes de SLA juridico                              |
+| `POST`        | `/api/v1/email-triage/process`          | Processar emails pendentes na triagem (cron ou manual)                                             |
+| `POST`        | `/api/v1/gmail-webhook`                 | Webhook de notificacao push do Gmail (desativado, retorna 410)                                      |
+| `GET`         | `/api/v1/cron/gmail-watch`              | Renovacao de watch Gmail (desativado, fora do vercel.json)                                         |
+| `GET`         | `/api/v1/cron/lgpd-retention`           | Job agendado de retencao e anonimizacao LGPD (cron bearer)                                         |
+| `GET`         | `/api/v1/cron/overdue-payments`         | Marca mensalidades vencidas pendente → atrasado via `autoMarkOverduePaymentsService` (cron bearer) |
+| `GET`         | `/api/v1/cron/cleanup-nonces`           | Limpa nonces expirados de replay protection (cron bearer, diário 01:00 UTC)                        |
+| `GET`         | `/api/v1/mailing/process`               | Processa a fila de campanhas de e-mail em lote (cron bearer, diário 07:00 UTC)                     |
+| `POST`        | `/app/etiquetas/gerar`                  | Geracao administrativa de etiquetas Pimaco em PDF                                                  |
+| `POST`        | `/app/mala-direta/[id]/etiquetas/csv`   | Exportar destinatários de campanha de mala direta em CSV                                           |
+| `POST`        | `/app/mala-direta/[id]/etiquetas/gerar` | Gerar PDF de etiquetas Pimaco de uma campanha de mala direta                                       |
+| `GET`         | `/app/secretaria/mala-direta/download`  | Exportar contatos para importação no Gmail (CSV)                                                   |
+| `POST`        | `/api/webhooks/assinafy`                | Webhook de retorno de assinatura digital (Assinafy)                                                |
 
 ### O que esta fora deste documento
 
@@ -621,52 +624,46 @@ Processa emails pendentes na fila de triagem. Busca emails nao lidos na caixa de
 
 ---
 
-### 8. Webhook de Notificacao Push do Gmail
+### 8. Webhook de Notificacao Push do Gmail (Desativado)
 
-**Metodo:** `POST`
+**Metodo:** `POST`, `GET`
 **Rota:** `/api/v1/gmail-webhook`
+**Status:** `410 Gone` (Desativado)
 
 #### Descricao
 
-Recebe notificacoes push do Gmail via Google Pub/Sub quando novos emails chegam na caixa controller@asof.org.br. Inicia o processamento da triagem para o email notificado. O endpoint e assincrono e nao exige resposta imediata de processamento completo.
+Endpoint de webhook do Google Pub/Sub desativado na arquitetura atual. Retorna HTTP `410 Gone` incondicionalmente (`{ "error": "deactivated", "message": "Gmail webhook está desativado. Reativar quando houver autenticação." }`). A ingestão e triagem de emails opera de forma segura e determinística via `/api/v1/email-triage/process`.
 
 #### Autorizacao
 
-- Verifica o token bearer configurado em `GMAIL_WEBHOOK_TOKEN`
-- A requisicao vem do Google Pub/Sub, nao de usuarios internos
-
-#### Observacoes
-
-- O watch Gmail e renovado semanalmente pelo cron `/api/v1/cron/gmail-watch`
-- A assinatura Pub/Sub e gerenciada externamente (`gmail-inbox-sub`)
+- Nenhuma (retorno imediato de 410 Gone para qualquer requisição).
 
 ---
 
-### 9. Renovacao Agendada do Watch Gmail
+### 9. Renovacao Agendada do Watch Gmail (Desativado)
 
 **Metodo:** `GET`
 **Rota:** `/api/v1/cron/gmail-watch`
+**Status:** `Desativado`
 
 #### Descricao
 
-Renova a watch subscription da API Gmail para a caixa controller@asof.org.br. O watch expira a cada 7 dias e precisa ser renovado periodicamente. Executado por Vercel Cron.
-
-#### Autorizacao
-
-- `Authorization: Bearer <CRON_SECRET>` para chamadas agendadas
-- sessao humana nao e aceita nesta rota
-
-#### Resposta de sucesso
+Endpoint de renovação de watch subscription do Gmail mantido para compatibilidade histórica, porém **desativado e removido do `vercel.json`**. Quando acionado com token de autorização de cron bearer, retorna HTTP 200 indicando supressão:
 
 ```json
 {
   "ok": true,
   "data": {
-    "watchRenewed": true,
-    "expiration": "2026-06-10T00:00:00.000Z"
+    "mode": "scheduled",
+    "skipped": "gmail_webhook_deactivated"
   }
 }
 ```
+
+#### Autorizacao
+
+- `Authorization: Bearer <CRON_SECRET>` para chamadas autorizadas
+- Sessão humana não é aceita nesta rota
 
 ---
 
@@ -732,6 +729,76 @@ Executa a politica de retencao e anonimizacao de dados conforme ADR 006. Anonimi
 
 ---
 
+### 10.1 Atualizacao de Mensalidades Atrasadas
+
+**Metodo:** `GET`
+**Rota:** `/api/v1/cron/overdue-payments`
+
+#### Descricao
+
+Marca automaticamente mensalidades com vencimento ultrapassado de `pendente` para `atrasado` via `autoMarkOverduePaymentsService()`. Executado diariamente às 03:00 UTC por Vercel Cron.
+
+#### Autorizacao
+
+- `Authorization: Bearer <CRON_SECRET>` para chamadas agendadas
+- Sessao humana nao e aceita nesta rota
+
+#### Resposta de sucesso
+
+```json
+{
+  "ok": true,
+  "data": {
+    "mode": "scheduled",
+    "result": {
+      "transitionedCount": 12
+    }
+  },
+  "meta": {
+    "apiVersion": "v1",
+    "requestId": "req-123",
+    "timestamp": "2026-09-21T03:00:00.000Z"
+  }
+}
+```
+
+---
+
+### 10.2 Limpeza de Nonces Expirados
+
+**Metodo:** `GET`
+**Rota:** `/api/v1/cron/cleanup-nonces`
+
+#### Descricao
+
+Remove registros expirados da tabela `integration_signature_nonces` (prevenção de replay attack em chamadas M2M). Executado diariamente às 01:00 UTC por Vercel Cron.
+
+#### Autorizacao
+
+- `Authorization: Bearer <CRON_SECRET>` para chamadas agendadas
+- Sessao humana nao e aceita nesta rota
+
+#### Resposta de sucesso
+
+```json
+{
+  "ok": true,
+  "data": {
+    "mode": "scheduled",
+    "result": {
+      "deletedCount": 5
+    }
+  },
+  "meta": {
+    "apiVersion": "v1",
+    "requestId": "req-123",
+    "timestamp": "2026-09-21T01:00:00.000Z"
+  }
+}
+```
+
+---
+
 ### 11. Geracao de Etiquetas Pimaco
 
 **Metodo:** `POST`
@@ -779,22 +846,29 @@ Nao cria historico de impressao nesta etapa. A UI orienta impressao em folha A4,
 
 #### Descricao
 
-Recebe callbacks da plataforma Assinafy quando um documento e assinado ou rejeitado. Atualiza o status do oficio na intranet e registra o evento de auditoria.
+Recebe callbacks da plataforma Assinafy quando um documento e assinado, rejeitado ou sofre alteração de estado. Atualiza o status do oficio na intranet e registra evento de auditoria.
 
 #### Autorizacao
 
-- Verifica header de segredo compartilhado (X-Webhook-Secret) conforme configurado na integracao com Assinafy
-- Endpoint publico (nao requer sessao)
+- Valida assinatura / segredo compartilhado (header `X-Webhook-Secret` ou assinatura HMAC conforme configurado na integração)
+- Endpoint publico (nao requer sessao humana)
+- Rate limit: 60 req/min por IP
 
 #### Payload esperado
 
+O handler valida os campos obrigatórios `event.event`, `event.object.id` e `event.created_at` (número inteiro timestamp em segundos Unix). O timestamp deve estar dentro da janela de tolerância de 300 segundos (`WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS`).
+
 ```json
 {
+  "id": 12345,
   "event": "document_signed",
-  "documentId": "assinafy-doc-123",
-  "status": "signed",
-  "signedAt": "2026-06-03T12:00:00Z",
-  "signers": [{ "name": "Nome do Signatario", "email": "signatario@example.com" }]
+  "created_at": 1780000000,
+  "object": {
+    "id": "assinafy-doc-123",
+    "status": "signed",
+    "type": "document"
+  },
+  "account_id": "account-id"
 }
 ```
 
@@ -808,6 +882,94 @@ Recebe callbacks da plataforma Assinafy quando um documento e assinado ou rejeit
 
 ---
 
+### 13. Exportacao de Etiquetas de Mala Direta em CSV
+
+**Metodo:** `POST`
+**Rota:** `/app/mala-direta/[id]/etiquetas/csv`
+
+#### Descricao
+
+Exporta um arquivo CSV contendo os dados de endereçamento formatados dos destinatários de uma campanha de mala direta física. Registra auditoria LGPD de acesso a dados (`logDataAccess`, ação `export`, entidade `associate`).
+
+#### Autorizacao
+
+- Requer sessão autenticada
+- Roles permitidas: `admin`, `diretoria`, `secretaria`
+- Rate limit: 10 req/min por IP e por conta de usuário
+
+#### Path Parameters
+
+| Parametro | Tipo     | Obrigatorio | Descricao                       |
+| --------- | -------- | ----------- | ------------------------------- |
+| `id`      | `number` | Sim         | ID numérico da campanha de mala |
+
+#### Resposta de sucesso
+
+**Status:** `200 OK`
+**Content-Type:** `text/csv; charset=utf-8`
+**Content-Disposition:** `attachment; filename="etiquetas-campanha-{id}.csv"`
+**Cache-Control:** `no-store`
+
+---
+
+### 14. Geracao de PDF de Etiquetas de Mala Direta
+
+**Metodo:** `POST`
+**Rota:** `/app/mala-direta/[id]/etiquetas/gerar`
+
+#### Descricao
+
+Gera e faz download direto do arquivo PDF com etiquetas Pimaco prontas para impressão para todos os destinatários da campanha. Registra auditoria LGPD de acesso a dados (`logDataAccess`, ação `export`, entidade `associate`).
+
+#### Autorizacao
+
+- Requer sessão autenticada
+- Roles permitidas: `admin`, `diretoria`, `secretaria`
+- Rate limit: 10 req/min por IP e por conta de usuário
+
+#### Path Parameters
+
+| Parametro | Tipo     | Obrigatorio | Descricao                       |
+| --------- | -------- | ----------- | ------------------------------- |
+| `id`      | `number` | Sim         | ID numérico da campanha de mala |
+
+#### Resposta de sucesso
+
+**Status:** `200 OK`
+**Content-Type:** `application/pdf`
+**Content-Disposition:** `attachment; filename="etiquetas-campanha-{id}.pdf"`
+**Cache-Control:** `no-store`
+
+---
+
+### 15. Download de Contatos para Gmail (Mala Direta)
+
+**Metodo:** `GET`
+**Rota:** `/app/secretaria/mala-direta/download`
+
+#### Descricao
+
+Gera e exporta arquivo CSV com nomes e e-mails dos associados filtrados, formatado especificamente para importação como grupo de contatos no Google Contacts / Gmail da secretaria da ASOF.
+
+#### Autorizacao
+
+- Requer sessão autenticada
+- Roles permitidas: `admin`, `diretoria`, `secretaria`
+- Rate limit: 10 req/min por IP
+
+#### Query Parameters
+
+Aceita os filtros da tela de mala direta (`parseMalaDiretaFilters`): `associationStatus`, `functionalStatus`, `assignmentType`, `locationCountry`, `locationCity`, etc.
+
+#### Resposta de sucesso
+
+**Status:** `200 OK`
+**Content-Type:** `text/csv; charset=utf-8`
+**Content-Disposition:** `attachment; filename="mala-direta-gmail-{YYYY-MM-DD}.csv"`
+**Cache-Control:** `no-store`
+
+---
+
 ## Formatos de Resposta
 
 ### Arquivo CSV
@@ -815,6 +977,8 @@ Recebe callbacks da plataforma Assinafy quando um documento e assinado ou rejeit
 Usado por:
 
 - `/app/associados/relatorio/download`
+- `/app/mala-direta/[id]/etiquetas/csv`
+- `/app/secretaria/mala-direta/download`
 
 Caracteristicas:
 
@@ -827,6 +991,8 @@ Caracteristicas:
 Usado por:
 
 - `/api/oficios/[id]/download`
+- `/app/etiquetas/gerar`
+- `/app/mala-direta/[id]/etiquetas/gerar`
 
 Caracteristicas:
 

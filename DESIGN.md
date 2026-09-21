@@ -386,7 +386,7 @@ components:
 
 # ASOF Intranet Design System
 
-> **Note:** DaisyUI component classes are being phased out. New and refactored UI uses explicit design tokens from `tokens.ts` and Tailwind arbitrary values. Legacy DaisyUI classes (`input input-bordered`, `drawer-toggle`, `drawer-side`, etc.) remain in `EditarAssociadoForm.tsx`, the sidebar layout, and `LogoutButton.tsx`.
+> **Note:** DaisyUI component classes have been phased out across application forms and buttons in favor of explicit design tokens from `tokens.ts` and Tailwind CSS v4 styling. Legacy component classes like `input input-bordered` have been completely expurgated; only structural drawer utilities (`drawer`, `drawer-toggle`, `drawer-side`, `drawer-content`) remain in the authenticated sidebar layout.
 
 ## Overview
 

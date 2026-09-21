@@ -100,12 +100,18 @@ variáveis de um ambiente Vercel em diagnósticos ou uso controlado com
 
 ### Obrigatórias em produção
 
-| Variável                 | Descrição                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------------ |
-| `DATABASE_URL`           | URL PostgreSQL de runtime. Em produção, prefira pooler/runtime com usuário restrito. |
-| `DATABASE_MIGRATION_URL` | URL PostgreSQL direta/non-pooling para migrations do Drizzle.                        |
-| `SESSION_SECRET`         | Segredo forte para assinar cookies `httpOnly` de sessão.                             |
-| `ASOF_INTRANET_URL`      | URL canônica da intranet. Obrigatória quando `VERCEL_ENV=production`.                |
+| Variável                   | Descrição                                                                            |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| `DATABASE_URL`             | URL PostgreSQL de runtime (pooler em produção).                                      |
+| `DATABASE_MIGRATION_URL`   | URL PostgreSQL direta/non-pooling para migrations do Drizzle.                        |
+| `SESSION_SECRET`           | Segredo forte (mín. 32 chars) para assinar cookies `httpOnly` de sessão.             |
+| `ASOF_INTRANET_URL`        | URL canônica da intranet para links e e-mails (`https://intranet.asof.com.br`).     |
+| `ENCRYPTION_MASTER_KEY`    | Chave de criptografia mestre para PII e blind indexes (mín. 32 chars).                |
+| `CRON_SECRET`              | Segredo Bearer para autenticação dos jobs do Vercel Cron.                            |
+| `MAILJET_API_KEY`          | Chave de API do Mailjet para e-mails transacionais de reset.                         |
+| `MAILJET_SECRET_KEY`       | Segredo da API do Mailjet.                                                           |
+| `MAILJET_SENDER_EMAIL`     | E-mail de remetente validado no Mailjet (ex: `naoresponda@asof.com.br`).              |
+| `MAILJET_SENDER_VALIDATED` | Deve ser `true` para confirmar validação do remetente no Mailjet.                    |
 
 No setup atual de produção no Vercel:
 
@@ -157,7 +163,7 @@ Para todos os ambientes, siga a matriz oficial em [`docs/environments.md`](./doc
 
 O caminho M2M principal usa chaves persistidas em `integration_api_keys`, criadas por admin em `/app/config/integracoes/api-keys`, com escopos como `events:read`, `events:write`, `webhooks:manage` e `admin`. A UI exibe a API key e o segredo HMAC por chave uma unica vez na criacao ou rotacao; clientes devem assinar `x-asof-signature` com esse segredo. A chave global `ASOF_INTEGRATION_API_KEY` existe apenas como compatibilidade de transição, usa `ASOF_INTEGRATION_HMAC_SECRET`, gera log de depreciação e tem acesso irrestrito quando configurada.
 
-As rotas versionadas atuais são `/api/v1/health`, `/api/v1/events`, `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings`. Elas suportam a fundação outbound-only: eventos são gravados em `domain_events`, subscriptions são gerenciadas internamente por admins em `/app/config/integracoes/webhooks`, dispatch manual é feito por `/api/v1/events`, e os jobs agendados são feitos por rotas bearer-only configuradas em `vercel.json`. Como o deploy usa o plano Free/Hobby da Vercel, cada cron roda no máximo uma vez por dia (`0 3 * * *` para eventos e `0 4 * * *` para SLA jurídico). URLs de destino de webhooks devem ser HTTPS públicas; localhost, hostnames locais/internos e redes privadas/reservadas são rejeitados. Ainda não há endpoint inbound público.
+As rotas versionadas de eventos e saúde são `/api/v1/health`, `/api/v1/events`, `/api/v1/events/dispatch` e `/api/v1/juridico/sla-warnings`. Elas suportam a fundação outbound-only: eventos são gravados em `domain_events`, subscriptions são gerenciadas internamente por admins em `/app/config/integracoes/webhooks`, dispatch manual é feito por `/api/v1/events`, e os jobs agendados são feitos por rotas bearer-only configuradas em `vercel.json` (7 jobs diários configurados: eventos, alertas de SLA, retenção LGPD, triagem de e-mail, pagamentos em atraso, limpeza de nonces e mala direta). URLs de destino de webhooks devem ser HTTPS públicas; localhost, hostnames locais/internos e redes privadas/reservadas são rejeitados. Ainda não há endpoint inbound público.
 
 Para o primeiro go-live, integrações/webhooks não são obrigatórios e produção deve manter `ASOF_INTEGRATIONS_ENABLED=false`, salvo decisão separada. Notificações são alertas persistidos e não dependem de entrega em tempo real.
 
@@ -240,6 +246,7 @@ npm run audit         # npm audit
 npm run validate:quick  # lint + typecheck + testes unitários
 npm run validate:full   # quick + test:db + test:integration (pula se sem .env.test.local) + build
 npm run scope:check   # verifica escopo de arquivos alterados
+npm run docs:check    # valida comandos e links relativos da documentação
 npm run pr:check      # verificações de prontidão para PR
 ```
 
@@ -285,12 +292,14 @@ O servidor de desenvolvimento em `3000` usa o banco normal da `.env.local`
 os usuários `e2e-*@asof.local` podem não existir nesse banco; o login retorna
 `/login?error=1` e tentativas repetidas podem acumular em `login_attempts` até
 gerar `/login?error=rate-limit`. Nesse caso, rode novamente pelo comando
-oficial acima, aguarde a expiração do rate limit ou limpe apenas as tentativas
-E2E no banco usado pelo servidor em `3000`:
+oficial acima, aguarde a expiração do rate limit ou limpe a tabela de tentativas
+no banco usado pelo servidor em `3000`:
 
 ```sql
-DELETE FROM login_attempts WHERE email LIKE 'e2e-%@asof.local';
+DELETE FROM login_attempts WHERE email_hash IS NOT NULL;
 ```
+
+> Nota: a coluna `email` é sempre mantida `NULL` no banco para conformidade LGPD, indexando apenas o hash cego (`email_hash`). Se preferir, use `TRUNCATE login_attempts;`.
 
 **Testes de integração (requer PostgreSQL):**
 

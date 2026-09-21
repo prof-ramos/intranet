@@ -4,11 +4,9 @@ Checklist canonica de go-live da intranet ASOF. Itens historicos ja executados
 permanecem aqui apenas quando ainda orientam operacao ou auditoria; evidencias
 pontuais antigas ficam em `docs/operations/archive/`.
 
-Atualizado em 2026-09-08. Última leitura do `main` remoto: 2026-09-08,
-HEAD `67058c07572013ea2e646bd4d77beb9e29285a79`. Último CI completo verde no
-`main`: 2026-09-08, SHA `67058c07572013ea2e646bd4d77beb9e29285a79`
-([CI run 34240612560](https://github.com/prof-ramos/intranet/actions/runs/34240612560)),
-com lint/typecheck/test, contrato de banco, build, E2E e smoke de produção aprovados.
+Atualizado em 2026-09-21. Última leitura do `main` remoto: 2026-09-21,
+HEAD `7a9b8d8` (`fix(auth): encerrar ADR 005 — reset de senha só por e-mail em produção (#490)`). Último CI completo verde no
+`main`: SHA `7a9b8d8`, com lint/docs:check/typecheck/coverage, contrato de banco, build, E2E e smoke de produção aprovados.
 
 Para ambientes, bancos, dados, migrations e CI/CD, a fonte oficial pós-go-live é
 [`docs/environments.md`](./docs/environments.md) (ADR 015). Este checklist
@@ -32,8 +30,9 @@ de staging/dev/preview.
 ## Bloqueantes
 
 - [x] Provisionar PostgreSQL gerenciado novo — Neon (intranet-db, `ep-empty-cake-ac26vl6w`, sa-east-1).
-- [x] Configurar `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `SESSION_SECRET`, `ENCRYPTION_MASTER_KEY`, `CRON_SECRET`, `TRUSTED_PROXY_COUNT=1` e `ASOF_INTEGRATIONS_ENABLED=false` no Vercel (produção). Concluído em 2026-05-26.
-  - [x] `SESSION_SECRET`, `ENCRYPTION_MASTER_KEY`, `CRON_SECRET`, `TRUSTED_PROXY_COUNT=1` e `ASOF_INTEGRATIONS_ENABLED=false` existem em produção.
+- [x] Configurar `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `SESSION_SECRET`, `ENCRYPTION_MASTER_KEY`, `CRON_SECRET`, `ASOF_INTRANET_URL`, `TRUSTED_PROXY_COUNT=1` e `ASOF_INTEGRATIONS_ENABLED=false` no Vercel (produção). Concluído em 2026-05-26.
+  - [x] `SESSION_SECRET`, `ENCRYPTION_MASTER_KEY`, `CRON_SECRET`, `ASOF_INTRANET_URL`, `TRUSTED_PROXY_COUNT=1` e `ASOF_INTEGRATIONS_ENABLED=false` existem em produção.
+  - [x] Para o fluxo de reset de senha e e-mails transacionais (PR #490), configurar `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`, `MAILJET_SENDER_EMAIL` e `MAILJET_SENDER_VALIDATED=true` (exigidos no build de produção por `src/lib/env.ts`).
   - [x] `DATABASE_URL` e `DATABASE_MIGRATION_URL` foram reconfigurados com URLs Neon (`ep-empty-cake-ac26vl6w`). Variáveis injetadas pela Vercel Storage Integration podem coexistir, mas não são o contrato operacional.
 - [x] Confirmar rotação de segredos robustos: `SESSION_SECRET` e `ENCRYPTION_MASTER_KEY` gerados com `openssl rand -hex 32` (64 hex chars = 32 bytes de entropia). `CRON_SECRET` rotacionado no mesmo ciclo.
 - [x] Aplicar baseline em banco vazio:
@@ -67,8 +66,8 @@ confiança operacional no `HEAD` atual.
       workflow protegido [Migrate Production](https://github.com/prof-ramos/intranet/actions/runs/33789046365)
       de 2026-09-03 confirmou zero grupos duplicados em `cpf_hash`,
       `siape_hash` e `primary_email_hash` e terminou com sucesso (`migrations applied successfully`). A migration criou os três índices únicos; o Vercel não
-      migra automaticamente. Schema no repo: 36 SQL em `drizzle/postgres/`
-      (baseline `0000` … `0035`). Consulta direta somente leitura no Neon em
+      migra automaticamente. Schema no repo: 37 SQL em `drizzle/postgres/`
+      (baseline `0000` … `0036_encrypt_secondary_email.sql`). Consulta direta somente leitura no Neon em
       2026-09-08 ([workflow report 34244628940](https://github.com/prof-ramos/intranet/actions/runs/34244628940))
       retornou `groups: []` e `clearedRowCount: 0`.
 - [x] Encerrar [#436](https://github.com/prof-ramos/intranet/issues/436) — o
@@ -276,5 +275,11 @@ continuam pertencendo ao inventario e a limpeza controlada do Plano 057._
   removida após confirmar que seu conteúdo estava absorvido.
 - Branches remotas e locais dos PRs mergeados foram removidas. O remoto contém
   somente `main` e não há PR aberto nesta leitura.
+
+### Hardening e encerramento de débitos (2026-09-08 a 2026-09-21)
+
+- **Assinafy em produção (PR #487):** exigência estrita de `ASSINAFY_BASE_URL` (HTTPS) e bloqueio do host sandbox (`sandbox.assinafy.com.br`) em `VERCEL_ENV=production`.
+- **Criptografia de PII expandida (PR #496):** `secondaryEmail` criptografado via AES-256-GCM (`secondary_email_ciphertext`) com blind index (`secondary_email_hash`) na migration `0036_encrypt_secondary_email.sql`.
+- **Encerramento do ADR 005 (PR #490):** eliminação definitiva da exibição de senhas temporárias no painel administrativo. Redefinição em produção é exclusivamente via e-mail transacional Mailjet (`MAILJET_SENDER_VALIDATED=true`), com suporte a autoatendimento via tokens seguros temporários (`/forgot-password` e `/reset-password`).
 
 Este arquivo substitui as pendencias antigas de smoke de tempo real e reconciliacao de projetos de banco. Elas nao sao mais caminho de go-live.

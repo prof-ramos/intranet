@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-09-04 | Updated: 2026-09-04 -->
+<!-- Generated: 2026-09-04 | Updated: 2026-09-21 -->
 
 # GitHub
 
@@ -13,6 +13,7 @@ Purpose: GitHub workflows and project configuration.
 | `workflows/migrate-staging.yml`                 | Staging migration workflow                             |
 | `workflows/migrate-production.yml`              | Guarded manual production migration workflow           |
 | `workflows/cleanup-neon-branch.yml`             | Deletes preview Neon branches when pull requests close |
+| `workflows/cleanup-smoke-residuals.yml`         | Limpeza segura de dados residuais de smoke em produção |
 | `workflows/reconcile-production-identities.yml` | Controlled production identity reconciliation          |
 | `workflows/clear-duplicate-identity-hashes.yml` | Emergency duplicate-hash cleanup workflow              |
 | `workflows/issue-triage-shadow.yml`             | Read-only/shadow issue triage automation               |

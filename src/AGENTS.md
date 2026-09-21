@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-05-26 | Updated: 2026-09-06 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-09-21 -->
 
 # src
 
@@ -9,14 +9,10 @@ Next.js 16 App Router source directory. Contains all application code: pages, la
 
 ## Key Files
 
-| File          | Description                                                                                                              |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `proxy.ts`    | Route guard de autenticação — verifica cookie de sessão, redireciona para /login (substitui middleware.ts do Next.js 16) |
-| `app/`        | App Router pages, layouts, and API routes (authenticated area under `app/`, login at `app/login`)                        |
-| `components/` | Shared UI components (Button, Modal, Table, Form, etc.)                                                                  |
-| `hooks/`      | Custom React hooks (auth, data fetching, form state)                                                                     |
-| `lib/`        | Domain modules: auth helpers, Drizzle DB, repositories, services, logger, PII sanitizer                                  |
-| `__mocks__/`  | Vitest/Playwright mocks for testing                                                                                      |
+| File                 | Description                                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `proxy.ts`           | Route guard de autenticação — verifica cookie de sessão, redireciona para /login (substitui middleware.ts do Next.js 16) |
+| `instrumentation.ts` | Next.js 16 runtime instrumentation hook (`register()` para telemetria e inicialização do servidor)                      |
 
 ## Subdirectories
 

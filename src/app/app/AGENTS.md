@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-09-04 | Updated: 2026-09-08 -->
+<!-- Generated: 2026-09-04 | Updated: 2026-09-21 -->
 
 # Authenticated Dashboard
 
@@ -30,10 +30,11 @@ Authenticated dashboard — main app area after login. All routes require auth v
 | `financeiro/`    | Financial management — mensalidades/ (código retido; UI oculta na V2, issue #429)                                      |
 | `email-triage/`  | Email triage — list/detail (código e crons retidos; UI oculta na V2, issue #429)                                       |
 | `juridico/`      | Legal consultations — consultas/ ([id]/, nova/)                                                                        |
+| `mala-direta/`   | Mala direta postal — criação de campanhas, geração de etiquetas e exportação em lote (`/app/mala-direta`)             |
 | `notifications/` | Server actions do Bell (listar / marcar lida). A UI vigente é o `NotificationBell` no layout, não uma página de centro |
 | `privacidade/`   | Privacy policy page                                                                                                    |
 | `search/`        | Global search page                                                                                                     |
-| `secretaria/`    | Secretaria — email generation, mala direta and ofícios (`_components`, `[id]/editar`, `novo`)                          |
+| `secretaria/`    | Secretaria — email generation, templates and ofícios (`_components`, `[id]/editar`, `novo`)                            |
 
 ## For AI Agents
 

@@ -26,9 +26,11 @@ const eslintConfig = defineConfig([
     'coverage/**',
     'out/**',
     'build/**',
+    'next-env.d.ts',
+    // Vendored/generated agent tooling and git worktrees (see AGENTS.md)
     '.agents/**',
     '.claude/worktrees/**',
-    'next-env.d.ts',
+    '.worktrees/**',
     // Playwright / test artifacts
     'smoke-report/**',
     'test-results/**',

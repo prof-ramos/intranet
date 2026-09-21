@@ -143,7 +143,7 @@ Os eventos de domínio de atividades (como `activity.completed`) já são persis
 - Guardrail: `scripts/guarded-migrate.ts`.
 - Email triage migrations: `drizzle/postgres/0007_email_triage_mvp.sql`, `drizzle/postgres/0009_email_triage_notifications.sql` e `drizzle/postgres/0010_relax_email_triage_operational_review.sql`.
 - A migration `0010` remove as constraints antigas que obrigavam validacao humana para `juridico`, risco `alto`/`critico` ou confianca diferente de `alta`; permanecem os checks anti-alucinacao de prazo e evidencia.
-- Assinafy migrations: `drizzle/postgres/0006_add_assinafy_signing_url.sql`, `drizzle/postgres/0017_expand_domain_events_and_assinafy.sql` (webhook handling), `drizzle/postgres/0018_add_oficio_notification_types.sql` (notification enums), `drizzle/postgres/0019_add_recipient_address_fields.sql`.
+- Assinafy migrations: `drizzle/postgres/0016_add_assinafy_signing_url.sql`, `drizzle/postgres/0017_expand_domain_events_and_assinafy.sql` (webhook handling), `drizzle/postgres/0018_add_oficio_notification_types.sql` (notification enums), `drizzle/postgres/0019_add_recipient_address_fields.sql`.
 - Notification enums: `notification_type` inclui `oficio.status_changed`, `notification_entity_type` inclui `oficio`.
 
 O baseline nao depende de roles, policies, publications ou recursos de plataforma externa. RLS pode voltar depois como hardening, mas nao bloqueia a estreia.
@@ -168,8 +168,8 @@ O baseline nao depende de roles, policies, publications ou recursos de plataform
 ## Error Boundaries
 
 - Componente base `src/components/ErrorBoundary.tsx` — factory `createErrorBoundary` com logging via `toSafeErrorLog` (PII-safe)
-- 18 boundaries consolidados: `app/error.tsx`, `app/change-password/error.tsx`, `app/app/error.tsx`, `app/app/config/error.tsx`, `app/app/associados/error.tsx`, `app/app/atividades/error.tsx`, `app/app/financeiro/error.tsx`, `app/app/financeiro/mensalidades/error.tsx`, `app/app/juridico/error.tsx`, `app/app/juridico/consultas/error.tsx`, `app/app/juridico/consultas/nova/error.tsx`, `app/app/juridico/consultas/[id]/error.tsx`, `app/app/secretaria/error.tsx`, `app/app/secretaria/oficios/error.tsx`, `app/app/secretaria/mala-direta/error.tsx`, `app/app/email-triage/error.tsx`, `app/app/search/error.tsx`, `app/app/privacidade/error.tsx`, `app/app/etiquetas/error.tsx`
-- `not-found.tsx` em rotas dinâmicas: `app/app/associados/[id]/not-found.tsx`, `app/app/secretaria/oficios/[id]/editar/not-found.tsx`
+- 20 boundaries consolidados: `global-error.tsx`, `app/change-password/error.tsx`, `app/app/error.tsx`, `app/app/config/error.tsx`, `app/app/associados/error.tsx`, `app/app/atividades/error.tsx`, `app/app/financeiro/error.tsx`, `app/app/financeiro/mensalidades/error.tsx`, `app/app/juridico/error.tsx`, `app/app/juridico/consultas/error.tsx`, `app/app/juridico/consultas/nova/error.tsx`, `app/app/juridico/consultas/[id]/error.tsx`, `app/app/secretaria/error.tsx`, `app/app/secretaria/oficios/error.tsx`, `app/app/secretaria/mala-direta/error.tsx`, `app/app/mala-direta/error.tsx`, `app/app/email-triage/error.tsx`, `app/app/search/error.tsx`, `app/app/privacidade/error.tsx`, `app/app/etiquetas/error.tsx`
+- 5 rotas dinâmicas com `not-found.tsx`: `app/app/associados/[id]/not-found.tsx`, `app/app/associados/[id]/editar/not-found.tsx`, `app/app/juridico/consultas/[id]/not-found.tsx`, `app/app/email-triage/[id]/not-found.tsx`, `app/app/secretaria/oficios/[id]/editar/not-found.tsx`
 
 ## Notificacoes
 

@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-05-26 | Updated: 2026-09-06 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-09-21 -->
 
 # lib
 
@@ -36,7 +36,7 @@ Domain library modules for business logic, data access, and DB schema. All modul
 | `cron/`           | Cron utilities                                                                                                   |
 | `crypto/`         | PII encryption — index, pii encryption, safe-compare                                                             |
 | `dashboard/`      | Dashboard queries and view models                                                                                |
-| `db/`             | Database connection, retry/query helpers and 26 schema files (see `db/AGENTS.md`)                                |
+| `db/`             | Database connection, retry/query helpers and 27 schema files (see `db/AGENTS.md`)                                |
 | `email/`          | Email sending and templates                                                                                      |
 | `email-triage/`   | Triagem de e-mail (Gmail + Gemini)                                                                               |
 | `errors/`         | Domain error hierarchy                                                                                           |

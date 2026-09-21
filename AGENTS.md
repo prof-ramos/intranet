@@ -1,4 +1,4 @@
-<!-- Generated: 2026-05-26 | Updated: 2026-09-08 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-09-10 -->
 <!-- Parent: none (root) -->
 
 # ASOF Intranet — AI Agent Directory
@@ -24,18 +24,19 @@ Next.js 16 App Router application for ASOF (associação) internal management �
 | `playwright.config.ts`         | baseURL `http://127.0.0.1:3001`, `expect.timeout: 30_000`, workers=1, retries 2 in CI                                 |
 | `vitest.config.ts`             | Unit config — `src/**/*.test.{ts,tsx}` + `scripts/**/*.test.ts`; mocks `server-only`                                  |
 | `vitest.integration.config.ts` | Integration config — `src/**/*.integration.test.{ts,tsx}`                                                             |
-| `vercel.json`                  | Vercel deployment + cron schedules (8 cron jobs)                                                                      |
+| `vercel.json`                  | Vercel deployment + cron schedules (7 cron jobs)                                                                      |
 
 ## Subdirectories
 
-| Directory  | Purpose                                                                  |
-| ---------- | ------------------------------------------------------------------------ |
-| `src/`     | Application source (pages, components, lib, hooks) — see `src/AGENTS.md` |
-| `docs/`    | ADRs, design docs, runbooks, compliance — see `docs/AGENTS.md`           |
-| `scripts/` | DB scripts, seed, migrations, PII encryption — see `scripts/AGENTS.md`   |
-| `e2e/`     | Playwright end-to-end tests — see `e2e/AGENTS.md`                        |
-| `drizzle/` | SQL migrations and schema snapshots — see `drizzle/AGENTS.md`            |
-| `.github/` | CI/CD workflows, branch rules, PR template — see `.github/AGENTS.md`     |
+| Directory       | Purpose                                                                  |
+| --------------- | ------------------------------------------------------------------------ |
+| `src/`          | Application source (pages, components, lib, hooks) — see `src/AGENTS.md` |
+| `docs/`         | ADRs, design docs, runbooks, compliance — see `docs/AGENTS.md`           |
+| `scripts/`      | DB scripts, seed, migrations, PII encryption — see `scripts/AGENTS.md`   |
+| `e2e/`          | Playwright end-to-end tests — see `e2e/AGENTS.md`                        |
+| `drizzle/`      | SQL migrations and schema snapshots — see `drizzle/AGENTS.md`            |
+| `.github/`      | CI/CD workflows, branch rules, PR template — see `.github/AGENTS.md`     |
+| `.agents/skills/` | Diretório canônico de agent skills (59 skills) — SKILL.md + configs |
 
 ---
 
@@ -56,10 +57,10 @@ A ASOF (Associação Nacional dos Oficiais de Chancelaria do Serviço Exterior B
 | **Situação funcional**  | Status no serviço público: `ativo`, `aposentado`, `cedido`, `em_licenca`              | `functionalStatus`   |
 | **SIAPE**               | Número de matrícula do servidor federal                                               | `siape`              |
 | **Contribuição**        | Status derivado de pagamento da anuidade ASOF: `em_dia`, `inadimplente`               | `contributionStatus` |
-| **Mensalidade**         | Registro mensal de pagamento de associado                                             | `monthly_payments`   |
-| **Ofício**              | Documento oficial gerado pelo sistema                                                 | `oficios`            |
-| **Método de pagamento** | Forma de quitação da mensalidade: `folha`, `boleto`, `pix`, `transferencia`, `outros` | `paymentMethod`      |
-| **Status de pagamento** | Situação da mensalidade: `pago`, `pendente`, `atrasado`, `isento`, `cancelado`        | `paymentStatus`      |
+| **Mensalidade**         | Registro mensal de pagamento de associado (tabela `monthly_payments`)                 | `monthly_payments`   |
+| **Ofício**              | Documento oficial gerado pelo sistema (tabela `oficios`)                              | `oficios`            |
+| **Método de pagamento** | Forma de quitação da mensalidade: `folha`, `boleto`, `pix`, `transferencia`, `outros` | `paymentMethod` (coluna `payment_method`) |
+| **Status de pagamento** | Situação da mensalidade: `pago`, `pendente`, `atrasado`, `isento`, `cancelado`        | `status` (enum `payment_status`) |
 
 ## Roles do sistema
 
@@ -89,14 +90,16 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 
 ### Tooling
 
-- Use `npm` para este projeto; tem `package-lock.json`.
+- Use `npm` para este projeto; tem `package-lock.json`. Node.js 20+ (`engines`).
 - Para Python, use `uv`: `uv run`, `uv add`, `uv sync`.
 - Para GitHub CLI, `gh` está autorizado por default.
 - Worktrees: use `git worktree add .worktrees/<nome> <branch>` e mantenha-os em `.worktrees/` na raiz do repositório. O diretório já é ignorado pelo Git; não adicione seu conteúdo a commits e prefira esse local a pastas irmãs fora do repositório.
 - Sempre que possível, utilizar subagentes com o modelo Luna em esforço de raciocínio XHIGH (`gpt-5.6-luna`, `reasoning_effort=xhigh`) para subtarefas independentes.
 - Para Git, comandos que alteram o repositório (commit, push, branch -d, merge, reset) requerem aprovação explícita.
 - Use Context7 automaticamente para queries sobre bibliotecas/frameworks/APIs externas. Não confie no conhecimento de treinamento.
-- **Validation gates (use exatamente nesta ordem):** `npm run lint` → `npm run typecheck` → `npm run test` → `npm run test:db` → `npm run build`. Os agregadores `validate:quick` (lint+typecheck+test) e `validate:full` (+test:db+build) executam nessa ordem; `pr:check` adiciona `scope:check` e é o melhor gate único antes de abrir PR.
+- Husky: pre-commit roda lint-staged + typecheck; pre-push roda `validate:quick`.
+- `@/*` alias → `src/`. Logging: `createLogger('module-name')`, nunca `console.*`.
+- **Validation gates (use exatamente nesta ordem):** `npm run lint` → `npm run typecheck` → `npm run test` → `npm run test:db` → `npm run build`. Os agregadores `validate:quick` (lint+typecheck+test) e `validate:full` (+test:db+test:integration+build) executam nessa ordem; `pr:check` (scope:check --strict + árvore de trabalho limpa + validate:full) é o melhor gate único antes de abrir PR. CI roda `test:coverage` (thresholds: lines 70%, fn 70%, branch 65%) e `docs:check` — `npm run test` local não detecta falhas de cobertura nem de docs.
 - Rodar um único teste: `npx vitest run src/lib/auth/password.test.ts`. Rodar um spec E2E: `npx playwright test e2e/tests/associados.spec.ts`.
 
 ### Governança do Jules
@@ -134,6 +137,9 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 - Enums para todos os campos de status/tipo; nunca `text`.
 - Indexes: parciais para `WHERE` condicionais, GIN trigram para `LIKE '%term%'`, compostos `(filter, order)`. Prefixo `idx_` nos custom.
 - Migrations: nomear com zero-padding + descrição (e.g. `0009_quality_improvements.sql`). Atualizar `meta/_journal.json`.
+- `npm run db:seed` cria o admin inicial (`INITIAL_ADMIN_EMAIL`/`INITIAL_ADMIN_PASSWORD`); `npm run db:seed:dev` é a massa sintética local e **bloqueia hosts remotos** (override: `ALLOW_REMOTE_DEV_SEED=SEED_SYNTHETIC_DATA` em branch remoto descartável).
+- `npm run db:migrate` bloqueia produção salvo `ALLOW_PRODUCTION_MIGRATIONS=true` (só após backup/snapshot, janela aprovada e plano de rollback); staging exige `DATABASE_MIGRATION_ENV=staging` + `ALLOW_STAGING_MIGRATIONS=true` + `DATABASE_STAGING_HOST` idêntico ao host direto.
+- `npm run scope:check` falha se migrações SQL forem staged sem `meta/_journal.json` e o snapshot correspondente.
 - Não usar `Record<string, unknown>` em funções de update; usar interfaces tipadas.
 - Para referência completa de tabelas, enums, índices e migrações, veja [`DATABASE.md`](./DATABASE.md).
 
@@ -142,7 +148,7 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 - Server-side própria: `SESSION_SECRET`, `admins.password_hash`, cookie `httpOnly` assinado.
 - `requireAuth()` / `requireRole()` para proteção de rotas.
 - Dev local: `SKIP_AUTH=true` + `DEV_USER_ID`, `DEV_USER_ROLE` em `.env.local`. `SKIP_AUTH=true` é **ignorado quando `NODE_ENV=production`**.
-- `src/lib/env.ts` exige `SESSION_SECRET` (mín. 32 chars) quando `SKIP_AUTH` não está ativo, e exige `CRON_SECRET` + `ASOF_INTRANET_URL` quando `VERCEL_ENV=production`. Esquecer qualquer um deles quebra o build em produção.
+- `src/lib/env.ts` exige `SESSION_SECRET` (mín. 32 chars) quando `SKIP_AUTH` não está ativo. Em produção (`VERCEL_ENV=production`), exige `DATABASE_URL` + `DATABASE_MIGRATION_URL` (sem fallbacks), `SESSION_SECRET`, `CRON_SECRET`, `ASOF_INTRANET_URL`, `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`, `MAILJET_SENDER_EMAIL` e `MAILJET_SENDER_VALIDATED=true`. `ENCRYPTION_MASTER_KEY` é obrigatória em production **e preview**. Esquecer qualquer um deles quebra o build.
 
 ### PII e LGPD
 
@@ -154,10 +160,10 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 ### Testing
 
 - Unitários: Vitest, `src/**/*.test.{ts,tsx}` e `scripts/**/*.test.ts`. A contagem varia com a evolução da suíte; use `npm run test` como fonte atual.
-- Integração: `vitest.integration.config.ts` contra PostgreSQL real (banco dedicado, ex: `asof_intranet_test`). Dev local padrão usa `asof_intranet`; clones com PII real são exceção restrita conforme `docs/environments.md`.
+- Integração: `vitest.integration.config.ts` contra PostgreSQL real (banco dedicado, ex: `asof_intranet_test`). Dev local padrão usa `asof_intranet`; clones com PII real são exceção restrita conforme `docs/environments.md`. `npm run test:integration` requer `.env.test.local` apontando para localhost; se o arquivo não existir, pula com exit 0 (não quebra `validate:full`).
 - E2E: Playwright, `http://127.0.0.1:3001` (não 3000), database `asof_test` criado por `e2e/global-setup.ts`.
 - `npm run test:db` — schema contract contra PostgreSQL ao vivo (valida tables, columns, enums, indexes, extensions e alinhamento de migrations). **Importante:** ao mudar qualquer schema Drizzle ou migração SQL, atualizar também `src/lib/db/schema.integration.test.ts` (expectedColumns, expectedEnums, expectedIndexes). Enums do banco usam valores em português (ex: `activity_priority: ['baixa', 'normal', 'alta', 'urgente']`), nunca assumir valores em inglês.
-- `npm run test:e2e` nunca contra `http://localhost:3000`; apontar para `3001` com `NEXT_E2E=1` e `.next-e2e` como `distDir`. Gotchas não-triviais (JIT warmup, órfãos EADDRINUSE, filtros de vínculo ASOF) estão em `e2e/AGENTS.md` — leia antes de tocar em specs.
+- `npm run test:e2e` nunca contra `http://localhost:3000`; apontar para `3001` com `NEXT_E2E=1` e `.next-e2e` como `distDir`. Gotchas não-triviais (JIT warmup, órfãos EADDRINUSE, filtros de vínculo ASOF) estão em `e2e/AGENTS.md` — leia antes de tocar em specs. Antes de diagnosticar flakiness E2E, `rm -rf .next-e2e` (cache frio vs. local quente).
 
 ## Decisão UX / DX / AX
 
@@ -217,7 +223,7 @@ O ambiente Cloud Agent usa Postgres local + seed sintético (`bash .cursor/insta
 - Dev server pesado em 8 GB RAM: usar `scripts/run-dev-60s.sh` para diagnósticos de freeze.
 - Após mudanças em dependências, Next ou Tailwind: rodar `lint` + `typecheck` + `test` + `build`.
 - Migrations PostgreSQL em `drizzle/postgres/` são transacionais; `CREATE INDEX CONCURRENTLY` / `DROP INDEX CONCURRENTLY` e `ALTER TYPE ... ADD VALUE` **não** entram em `npm run db:migrate` — executar via `psql "$DATABASE_MIGRATION_URL"` em janela controlada (ver `docs/runbook.md`) e inserir o hash da migração manualmente em `drizzle.__drizzle_migrations`.
-- Não apontar E2E/Playwright para o dev server em 3000; usuários `e2e-*@asof.local` não existem naquele banco e tentativas falhadas acumulam em `login_attempts` até gerar `?error=rate-limit`. Se isso acontecer, limpar apenas tentativas E2E: `DELETE FROM login_attempts WHERE email LIKE 'e2e-%@asof.local';`.
+- Não apontar E2E/Playwright para o dev server em 3000; usuários `e2e-*@asof.local` não existem naquele banco e tentativas falhadas acumulam em `login_attempts` até gerar `?error=rate-limit`. Se isso acontecer, limpe a tabela de tentativas locais: `DELETE FROM login_attempts WHERE email_hash IS NOT NULL;` ou `TRUNCATE login_attempts;` (o campo `email` é mantido NULL por conformidade LGPD).
 
 ### Documentação
 

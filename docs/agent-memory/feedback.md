@@ -4,6 +4,42 @@
 
 ---
 
+## 2026-09-09 — 19 PRs de uma vez + merge storm (Neon 10 + smoke race)
+
+- **Tipo**: Erro de ritmo operacional / repetição de armadilha conhecida
+- **Escopo**: `/improve` execute → `gh pr create` em massa; merge em `main`
+- **Memória**: Abrir ~19 PRs no mesmo instante estoura o teto de 10 preview branches Neon (integração Vercel nativa). O check **Vercel** fica `fail` com “Create database branch…” — **não** é regressão de código (lint/db/build podem estar verdes). Mergear todos de uma vez recria a race de smoke pós-merge (`deployment-wait` fail-closed, ADR 009/010): o smoke de um SHA corre contra produção que já avançou. Já tinha ocorrido em `3bfb6c8` vs `4ed4727`; repetimos no lote #484–#502. (Ver também `project.md` 2026-09-09 — mesmo evento, visada de plataforma.)
+- **Evidência**: Sessão 2026-09-09; PRs #484–#502; usuário pediu lotes Neon depois; smoke observation em `docs/operations/post-merge-smoke-observation.md`.
+- **Regra preventiva**: Publicar **≤4–6 PRs** por vez. Mergear/fechar o lote, esperar cleanup-neon-branch **e** o deploy/smoke do HEAD, só então o próximo lote. Não abrir o backlog inteiro do `/improve` de uma vez. PRs que tocam o mesmo arquivo (`env.ts`) devem ir empilhados ou num único PR, não paralelos da mesma base.
+- **Confiança**: alta
+
+## 2026-09-09 — `vercel curl -sS` é `--scope`, não silent curl
+
+- **Tipo**: Erro de CLI
+- **Escopo**: `vercel curl` (CLI 59.x)
+- **Memória**: Flags globais da Vercel (`-S` = `--scope`) são parseadas **antes** das flags do curl. `vercel curl URL -sS` / `-o` / `-D` quebra com `option requires argument: -S`. Separador: `vercel curl https://intranet.asof.com.br/login -- -sS -D hdr -o body`. URL vem **antes** de `--`; depois só flags do curl.
+- **Evidência**: Sessão 2026-09-09 — probes de produção.
+- **Regra preventiva**: Nunca passar `-sS`/`-S` ao `vercel` sem `--`. Preferir `vercel curl <url> -- <curl-flags>`.
+- **Confiança**: alta
+
+## 2026-09-09 — Segredos Mailjet colados no chat e reenviados em tool calls
+
+- **Tipo**: Falha de higiene de segredo
+- **Escopo**: chat + `vercel env add --value`
+- **Memória**: Operador colou API Key/Secret no chat para configurar produção. O agente gravou no Vercel (ok operacional) mas **reproduziu os valores no comando** (histórico da sessão). `vercel env pull` / `env run` **não** devolvem Secrets — não dá para “confirmar o From do Vercel” puxando o env.
+- **Evidência**: Sessão 2026-09-09; `env pull` escreve `[SENSITIVE]`.
+- **Regra preventiva**: Não pedir nem aceitar chave no chat. Dashboard, `op run`, ou o operador cola no prompt da CLI local. Nunca `--value` com o secret no transcript. Confirmar remetente via **API Mailjet** (lista de senders), não via pull Vercel. Depois de vazamento em chat: rotacionar no Mailjet e atualizar o Vercel.
+- **Confiança**: alta
+
+## 2026-09-09 — `NEON_API_KEY` no 1Password Dev ≠ org Vercel
+
+- **Tipo**: Ferramenta errada / chave certa no cofre errado
+- **Escopo**: `neonctl` local, item `op://Dev/NEON_API_KEY`
+- **Memória**: O item 1Password `NEON_API_KEY` (vault Dev) autentica a org **pessoal** `org-round-feather-08955841` (Gabriel). `neonctl branches list --api-key … --project-id long-leaf-97822199 --org-id org-red-mode-09715915` → `project not found` / `not an organization member`. A chave que acessa produção é o secret **GitHub** `NEON_API_KEY` (escopo do repo), usada só no GHA.
+- **Evidência**: Sessão 2026-09-09; usuário “use o cli do neon”; migrate 0036 via workflow `Migrate Production` run 34360095852.
+- **Regra preventiva**: Não insistir em `neonctl` local nem reusar o item 1Password Dev. Produção: `gh workflow run migrate-production.yml -f confirm=MIGRATE-PRODUCTION`.
+- **Confiança**: alta
+
 ## 2026-09-04 — Comunicação com usuário/operador em pt-BR (skills em inglês)
 
 - **Tipo**: Ajuste de conduta / UX do agente

@@ -4,6 +4,39 @@
 
 ---
 
+## 2026-09-09 — Mailjet produção: From, DNS e refine do `env.ts`
+
+- **Tipo**: Contrato operacional / e-mail transacional
+- **Escopo**: `MAILJET_*` no Vercel Production; `src/lib/env.ts` pós-#490
+- **Memória**: Após #490 o schema **exige** em `VERCEL_ENV=production`: `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`, `MAILJET_SENDER_EMAIL` e `MAILJET_SENDER_VALIDATED=true`. Ter as chaves no Vercel **não** basta — a flag não existia (só as três secrets antigas) e o primeiro deploy de `7a9b8d8` ficou **ERROR** até setar a flag + redeploy. Remetentes na conta Mailjet (2026-09-09): `naoresponda@asof.com.br` Active SPF=OK DKIM=OK; `*@asof.com.br` idem; `gabriel@asof.org.br` Active SPF=OK **DKIM=Error**; `noreply@asof.org.br` Inactive. From de produção apontado para `naoresponda@asof.com.br`. Secrets Vercel não saem no `env pull`/`env run` (placeholder `[SENSITIVE]`).
+- **Evidência**: Sessão 2026-09-09; deploy `dpl_eRRpNYdNouxYGy9nAMYp9k6zmz2S` READY; alias `intranet.asof.com.br`.
+- **Regra preventiva**: Depois de mudar env, `vercel redeploy <url-do-deploy-falho> --target production` (a subcomando **não** aceita `--yes`). Não usar `gabriel@asof.org.br` como From enquanto DKIM de `asof.org.br` estiver Error.
+- **Confiança**: alta
+
+## 2026-09-09 — Assinafy: URL obrigatória com key; https só em produção
+
+- **Tipo**: Contrato de env / E2E
+- **Escopo**: `ASSINAFY_BASE_URL`, `e2e/global-setup.ts`
+- **Memória**: Com `ASSINAFY_API_KEY` setada, `ASSINAFY_BASE_URL` é obrigatória. **https + host ≠ sandbox** só quando `VERCEL_ENV=production`. E2E injeta `http://127.0.0.1:${ASSINAFY_MOCK_PORT}/v1` — exigir https sempre que houver key **quebra o boot** do Next no Playwright. Cliente Assinafy não pode defaultar para sandbox.
+- **Evidência**: Plano 004 / PR #487; revisão após mock E2E.
+- **Confiança**: alta
+
+## 2026-09-09 — Cap de 10 preview Neon + PRs em lote
+
+- **Tipo**: Restrição de plataforma
+- **Escopo**: PRs, Vercel Native Integration, Free Tier
+- **Memória**: Já documentado o cap de 10 branches e o cleanup no close. Complemento: **abrir** dezenas de PRs no mesmo minuto esgota o cap **antes** do cleanup. Check Vercel vermelho nesse caso = branch Neon, não o app. Ritmo: ≤4–6 PRs abertos; merge/close; esperar `cleanup-neon-branch.yml`; próximo lote. PRs empilhados no mesmo arquivo (`env.ts`) não devem ser paralelos da `main`.
+- **Evidência**: Sessão 2026-09-09 (#484–#502); `cleanup-neon-branch.yml`.
+- **Confiança**: alta
+
+## 2026-09-09 — `vercel curl`: flags do curl depois de `--`
+
+- **Tipo**: Convenção de CLI
+- **Escopo**: Vercel CLI 59.x `curl` (beta)
+- **Memória**: Forma: `vercel curl https://intranet.asof.com.br/login -- -sS -D hdr -o body`. `-S` **antes** de `--` é `--scope` global. SSO Vercel em `asof-intranet`: `all_except_custom_domains` — o alias `intranet.asof.com.br` **não** pede login Vercel; `*.vercel.app` pede.
+- **Evidência**: `get_project_deployment_protection` 2026-09-09; probes de produção.
+- **Confiança**: alta
+
 ## 2026-09-03 — Ops Neon produção via GHA + `NEON_API_KEY` (não OAuth pessoal)
 
 - **Tipo**: Procedimento operacional
