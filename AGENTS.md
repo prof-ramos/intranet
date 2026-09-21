@@ -28,15 +28,15 @@ Next.js 16 App Router application for ASOF (associação) internal management �
 
 ## Subdirectories
 
-| Directory  | Purpose                                                                  |
-| ---------- | ------------------------------------------------------------------------ |
-| `src/`     | Application source (pages, components, lib, hooks) — see `src/AGENTS.md` |
-| `docs/`    | ADRs, design docs, runbooks, compliance — see `docs/AGENTS.md`           |
-| `scripts/` | DB scripts, seed, migrations, PII encryption — see `scripts/AGENTS.md`   |
-| `e2e/`     | Playwright end-to-end tests — see `e2e/AGENTS.md`                        |
-| `drizzle/` | SQL migrations and schema snapshots — see `drizzle/AGENTS.md`            |
-| `.github/` | CI/CD workflows, branch rules, PR template — see `.github/AGENTS.md`     |
-| `agent/skills/` | Agent skills (code-review, implement, tdd) — SKILL.md + agent configs |
+| Directory       | Purpose                                                                  |
+| --------------- | ------------------------------------------------------------------------ |
+| `src/`          | Application source (pages, components, lib, hooks) — see `src/AGENTS.md` |
+| `docs/`         | ADRs, design docs, runbooks, compliance — see `docs/AGENTS.md`           |
+| `scripts/`      | DB scripts, seed, migrations, PII encryption — see `scripts/AGENTS.md`   |
+| `e2e/`          | Playwright end-to-end tests — see `e2e/AGENTS.md`                        |
+| `drizzle/`      | SQL migrations and schema snapshots — see `drizzle/AGENTS.md`            |
+| `.github/`      | CI/CD workflows, branch rules, PR template — see `.github/AGENTS.md`     |
+| `.agents/skills/` | Diretório canônico de agent skills (59 skills) — SKILL.md + configs |
 
 ---
 
@@ -57,10 +57,10 @@ A ASOF (Associação Nacional dos Oficiais de Chancelaria do Serviço Exterior B
 | **Situação funcional**  | Status no serviço público: `ativo`, `aposentado`, `cedido`, `em_licenca`              | `functionalStatus`   |
 | **SIAPE**               | Número de matrícula do servidor federal                                               | `siape`              |
 | **Contribuição**        | Status derivado de pagamento da anuidade ASOF: `em_dia`, `inadimplente`               | `contributionStatus` |
-| **Mensalidade**         | Registro mensal de pagamento de associado                                             | `monthly_payments`   |
-| **Ofício**              | Documento oficial gerado pelo sistema                                                 | `oficios`            |
-| **Método de pagamento** | Forma de quitação da mensalidade: `folha`, `boleto`, `pix`, `transferencia`, `outros` | `paymentMethod`      |
-| **Status de pagamento** | Situação da mensalidade: `pago`, `pendente`, `atrasado`, `isento`, `cancelado`        | `paymentStatus`      |
+| **Mensalidade**         | Registro mensal de pagamento de associado (tabela `monthly_payments`)                 | `monthly_payments`   |
+| **Ofício**              | Documento oficial gerado pelo sistema (tabela `oficios`)                              | `oficios`            |
+| **Método de pagamento** | Forma de quitação da mensalidade: `folha`, `boleto`, `pix`, `transferencia`, `outros` | `paymentMethod` (coluna `payment_method`) |
+| **Status de pagamento** | Situação da mensalidade: `pago`, `pendente`, `atrasado`, `isento`, `cancelado`        | `status` (enum `payment_status`) |
 
 ## Roles do sistema
 
@@ -148,7 +148,7 @@ Os campos `assigneeName`/`associateName` em `BoardActivity` são fallbacks de re
 - Server-side própria: `SESSION_SECRET`, `admins.password_hash`, cookie `httpOnly` assinado.
 - `requireAuth()` / `requireRole()` para proteção de rotas.
 - Dev local: `SKIP_AUTH=true` + `DEV_USER_ID`, `DEV_USER_ROLE` em `.env.local`. `SKIP_AUTH=true` é **ignorado quando `NODE_ENV=production`**.
-- `src/lib/env.ts` exige `SESSION_SECRET` (mín. 32 chars) quando `SKIP_AUTH` não está ativo, e exige `CRON_SECRET` + `ASOF_INTRANET_URL` quando `VERCEL_ENV=production`; `ENCRYPTION_MASTER_KEY` é obrigatória em production **e preview**. Esquecer qualquer um deles quebra o build.
+- `src/lib/env.ts` exige `SESSION_SECRET` (mín. 32 chars) quando `SKIP_AUTH` não está ativo. Em produção (`VERCEL_ENV=production`), exige `DATABASE_URL` + `DATABASE_MIGRATION_URL` (sem fallbacks), `SESSION_SECRET`, `CRON_SECRET`, `ASOF_INTRANET_URL`, `MAILJET_API_KEY`, `MAILJET_SECRET_KEY`, `MAILJET_SENDER_EMAIL` e `MAILJET_SENDER_VALIDATED=true`. `ENCRYPTION_MASTER_KEY` é obrigatória em production **e preview**. Esquecer qualquer um deles quebra o build.
 
 ### PII e LGPD
 
@@ -223,7 +223,7 @@ O ambiente Cloud Agent usa Postgres local + seed sintético (`bash .cursor/insta
 - Dev server pesado em 8 GB RAM: usar `scripts/run-dev-60s.sh` para diagnósticos de freeze.
 - Após mudanças em dependências, Next ou Tailwind: rodar `lint` + `typecheck` + `test` + `build`.
 - Migrations PostgreSQL em `drizzle/postgres/` são transacionais; `CREATE INDEX CONCURRENTLY` / `DROP INDEX CONCURRENTLY` e `ALTER TYPE ... ADD VALUE` **não** entram em `npm run db:migrate` — executar via `psql "$DATABASE_MIGRATION_URL"` em janela controlada (ver `docs/runbook.md`) e inserir o hash da migração manualmente em `drizzle.__drizzle_migrations`.
-- Não apontar E2E/Playwright para o dev server em 3000; usuários `e2e-*@asof.local` não existem naquele banco e tentativas falhadas acumulam em `login_attempts` até gerar `?error=rate-limit`. Se isso acontecer, limpar apenas tentativas E2E: `DELETE FROM login_attempts WHERE email LIKE 'e2e-%@asof.local';`.
+- Não apontar E2E/Playwright para o dev server em 3000; usuários `e2e-*@asof.local` não existem naquele banco e tentativas falhadas acumulam em `login_attempts` até gerar `?error=rate-limit`. Se isso acontecer, limpe a tabela de tentativas locais: `DELETE FROM login_attempts WHERE email_hash IS NOT NULL;` ou `TRUNCATE login_attempts;` (o campo `email` é mantido NULL por conformidade LGPD).
 
 ### Documentação
 

@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-05-26 | Updated: 2026-09-04 -->
+<!-- Generated: 2026-05-26 | Updated: 2026-09-21 -->
 
 # docs
 
@@ -13,6 +13,7 @@ Documentation directory covering architecture decisions, design guidelines, comp
 | --------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `runbook.md`                                  | Operations runbook — deployment, monitoring, troubleshooting, and rollback procedures    |
 | `environments.md`                             | Official source for environments, databases, data classes, migrations, and CI/CD         |
+| `development/DEVELOPER.md`                    | Stub apontando para o guia canônico em `CONTRIBUTING.md` (configuração, estrutura, testes) |
 | `development/performance-audit-2026-09-03.md` | Auditoria de desempenho (gargalos, pool, cache, bundles) e plano de otimização por ondas |
 | `agents/jules-governance.md`                  | Approval, publication, environment, audit, and incident controls for Google Jules        |
 | `agents/coderabbit-governance.md`             | OSS plan, opt-in review, security, quota, labels, and operating controls for CodeRabbit  |

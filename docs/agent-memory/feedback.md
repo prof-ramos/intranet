@@ -8,7 +8,7 @@
 
 - **Tipo**: Erro de ritmo operacional / repetição de armadilha conhecida
 - **Escopo**: `/improve` execute → `gh pr create` em massa; merge em `main`
-- **Memória**: Abrir ~19 PRs no mesmo instante estoura o teto de 10 preview branches Neon (integração Vercel nativa). O check **Vercel** fica `fail` com “Create database branch…” — **não** é regressão de código (lint/db/build podem estar verdes). Mergear todos de uma vez recria a race de smoke pós-merge (`deployment-wait` fail-closed, ADR 009/010): o smoke de um SHA corre contra produção que já avançou. Já tinha ocorrido em `3bfb6c8` vs `4ed4727`; repetimos no lote #484–#502.
+- **Memória**: Abrir ~19 PRs no mesmo instante estoura o teto de 10 preview branches Neon (integração Vercel nativa). O check **Vercel** fica `fail` com “Create database branch…” — **não** é regressão de código (lint/db/build podem estar verdes). Mergear todos de uma vez recria a race de smoke pós-merge (`deployment-wait` fail-closed, ADR 009/010): o smoke de um SHA corre contra produção que já avançou. Já tinha ocorrido em `3bfb6c8` vs `4ed4727`; repetimos no lote #484–#502. (Ver também `project.md` 2026-09-09 — mesmo evento, visada de plataforma.)
 - **Evidência**: Sessão 2026-09-09; PRs #484–#502; usuário pediu lotes Neon depois; smoke observation em `docs/operations/post-merge-smoke-observation.md`.
 - **Regra preventiva**: Publicar **≤4–6 PRs** por vez. Mergear/fechar o lote, esperar cleanup-neon-branch **e** o deploy/smoke do HEAD, só então o próximo lote. Não abrir o backlog inteiro do `/improve` de uma vez. PRs que tocam o mesmo arquivo (`env.ts`) devem ir empilhados ou num único PR, não paralelos da mesma base.
 - **Confiança**: alta
