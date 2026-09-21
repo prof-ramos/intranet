@@ -97,13 +97,9 @@ export function Drawer({
   const [labelError, setLabelError] = useState<string | null>(null);
   const [labelSubmitting, setLabelSubmitting] = useState(false);
 
-  useEffect(() => {
-    setCommentDraft('');
-    setEditingCommentId(null);
-    setEditingContent('');
-    setCommentError(null);
-    setLabelError(null);
-  }, [activity?.id]);
+  // Draft/reset isolation between activities is handled by the `key` on the
+  // consumer side (`AtividadesBoard`), which remounts the drawer when the
+  // selected activity id changes — no setState-in-effect needed here.
 
   useEffect(() => {
     if (!activity) return;

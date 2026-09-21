@@ -458,6 +458,7 @@ export function AtividadesBoard({
       )}
 
       <Drawer
+        key={drawerActivity?.id ?? 'closed'}
         activity={drawerActivity}
         people={people}
         peopleById={peopleById}

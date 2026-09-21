@@ -86,9 +86,11 @@ const comment: ActivityCommentItem = {
 };
 
 function renderDrawer(currentUserId: number, activityOverride?: Partial<BoardActivity>) {
+  const resolved = { ...activity, ...activityOverride };
   return render(
     <Drawer
-      activity={{ ...activity, ...activityOverride }}
+      key={resolved.id}
+      activity={resolved}
       people={[]}
       peopleById={new Map<number, BoardPerson>()}
       timeline={[] as ActivityTimelineItem[]}
@@ -140,6 +142,7 @@ describe('Drawer comment actions', () => {
 
     rerender(
       <Drawer
+        key={13}
         activity={{ ...activity, id: 13 }}
         people={[]}
         peopleById={new Map<number, BoardPerson>()}
@@ -166,5 +169,43 @@ describe('Drawer comment actions', () => {
     expect(
       (screen.getByRole('textbox', { name: 'Novo comentário' }) as HTMLTextAreaElement).value,
     ).toBe('');
+  });
+
+  it('keeps the comment draft when rerendered for the same activity (key unchanged)', () => {
+    const { rerender } = renderDrawer(3);
+    const textarea = screen.getByRole('textbox', {
+      name: 'Novo comentário',
+    }) as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: 'rascunho' } });
+
+    rerender(
+      <Drawer
+        key={activity.id}
+        activity={{ ...activity }}
+        people={[]}
+        peopleById={new Map<number, BoardPerson>()}
+        timeline={[] as ActivityTimelineItem[]}
+        timelineLoading={false}
+        timelineError={null}
+        comments={[comment]}
+        commentsLoading={false}
+        commentsError={null}
+        currentUserId={3}
+        availableLabels={[] as ActivityLabelItem[]}
+        labelsLoading={false}
+        labelsError={null}
+        onClose={vi.fn()}
+        onChange={vi.fn()}
+        onRequestReassign={vi.fn()}
+        onCommentsChange={vi.fn()}
+        onCommentMutation={vi.fn()}
+        onLabelsChange={vi.fn()}
+        onLabelMutation={vi.fn()}
+      />,
+    );
+
+    expect(
+      (screen.getByRole('textbox', { name: 'Novo comentário' }) as HTMLTextAreaElement).value,
+    ).toBe('rascunho');
   });
 });
