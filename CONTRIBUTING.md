@@ -1,8 +1,10 @@
 # Guia do Desenvolvedor — ASOF Intranet
 
+> **Escopo deste guia:** repositório canônico [`prof-ramos/intranet`](https://github.com/prof-ramos/intranet) (ASOF Intranet). O CMS público `asof.org.br/cms` (Laravel/Inertia) é outro sistema; o checkout local `Developer/ASOF/CMS-ASOF` hoje só guarda credenciais de login, sem código-fonte.
+
 Este guia orienta a configuração local, a navegação pelo código, o fluxo de desenvolvimento, a abordagem de testes e os problemas mais comuns da ASOF Intranet.
 
-Última atualização: 2026-06-18 (matriz oficial de ambientes)
+Última atualização: 2026-09-16
 
 Fonte oficial de ambientes, bancos, dados, migrations e CI/CD:
 [`docs/environments.md`](./docs/environments.md). Se este guia divergir da
@@ -114,36 +116,38 @@ O projeto é uma aplicação Next.js 16 App Router full-stack. Server Components
 ```text
 src/
   app/
-    app/                    # área autenticada (/app/*)
-      associados/           # cadastro, perfil, relatórios e exportação
-      atividades/           # kanban administrativo
-      config/               # usuários, lotações, auditoria e integrações
-      financeiro/           # mensalidades e pagamentos
-      juridico/             # consultas jurídicas, SLA e histórico
-      secretaria/oficios/   # geração e gestão de ofícios
-      search/               # busca global
-    login/                  # login com auth server-side e cookie HTTP-only
-    change-password/        # troca de senha obrigatória
-  components/               # componentes compartilhados
+    app/                      # área autenticada (/app/*)
+      associados/             # cadastro, perfil, relatórios e exportação
+      atividades/             # kanban administrativo
+      config/                 # usuários, lotações, auditoria e integrações
+      financeiro/             # mensalidades (UI oculta no ciclo atual, #429)
+      juridico/               # consultas jurídicas, SLA e histórico
+      secretaria/oficios/     # ofícios, PDF e Assinafy
+      email-triage/           # triagem Gmail + Gemini (UI oculta, #429)
+      etiquetas/              # etiquetas
+      mala-direta/            # mala direta
+      notifications/          # alertas
+      privacidade/            # LGPD / exportação
+      search/                 # busca global
+      _dashboard/             # componentes do dashboard
+    api/                      # Route Handlers (/api/v1, webhooks, ofícios)
+    login/                    # cookie HTTP-only
+    change-password/
+    forgot-password/
+    reset-password/
+  components/                 # UI compartilhada (+ webmcp)
   lib/
-    auth/                   # sessão, autorização, rate limit e senha
-    db/                     # cliente Drizzle e schema
-    crypto/                 # contextos de criptografia e master key
-    associates/             # domínio de associados
-    activities/             # domínio de atividades
-    juridico/               # repository, service e queries jurídicas
-    finance/                # repository, service e queries financeiras
-    oficios/                # ofícios, validações e PDF
-    integrations/           # API keys, webhooks e auth M2M
-    notifications/          # notificações e realtime
-    email/                  # Mailjet e templates
-    logger.ts               # logger estruturado com redação de PII
-    sanitize-pii.ts         # sanitização de CPF, SIAPE, email e tokens
-  proxy.ts                  # guarda de autenticação do Next.js 16
+    auth/ db/ crypto/
+    associates/ activities/ juridico/ finance/ oficios/
+    email-triage/ assinafy/ integrations/ notifications/
+    email/ audit/ lgpd/ cron/
+    logger.ts sanitize-pii.ts
+  proxy.ts                    # guarda de autenticação (Next.js 16)
 
-drizzle/postgres/           # migrations Drizzle/PostgreSQL
-scripts/                    # seed, diagnóstico e migrations
-docs/                       # runbooks, ADRs, compliance e notas operacionais
+drizzle/                      # migrations Drizzle/PostgreSQL
+e2e/                          # Playwright (+ smoke produção)
+scripts/                      # seed, migrate guardado, checks de PR
+docs/                         # environments, runbook, ADRs, development/
 ```
 
 Mapa mental para uma feature típica:
@@ -258,6 +262,7 @@ O PR deve ter uma responsabilidade clara. Explique impacto, validação executad
 | Typecheck  | `npm run typecheck` | Sempre antes de PR; pega contratos TypeScript e imports quebrados.                    |
 | Lint       | `npm run lint`      | Sempre antes de PR; mantém padrões Next/React/TS.                                     |
 | Banco real | `npm run test:db`   | Mudanças em schema, migrations, enums, RLS, índices e contrato Drizzle.               |
+| Integração | `npm run test:integration` | DML/fluxos com banco de teste local (`asof_intranet_test`).                          |
 | E2E        | `npm run test:e2e`  | Fluxos de login, navegação e workflows críticos.                                      |
 | Build      | `npm run build`     | Mudanças em Next.js, env, renderização, imports server/client e deploy readiness.     |
 
