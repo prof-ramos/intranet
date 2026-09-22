@@ -3,7 +3,7 @@
 **Status:** em produção no layout autenticado; descoberta nativa depende de Chrome/Edge com WebMCP.
 **Escopo:** tools no `document.modelContext` para um agente no browser, com a sessão da staff já aberta. Não é um servidor MCP e não altera a UI humana.
 
-A decisão está no [ADR 021](./adr/021-webmcp-secretaria.md). O MCP externo de Atividades (API key, issue #432) continua em [mcp.md](./mcp.md) e **não** está implementado.
+A decisão está no [ADR 021](./adr/021-webmcp-secretaria.md). O MCP externo de Atividades (API key) continua em [mcp.md](./mcp.md) e **não** está implementado. O PR #432 era o servidor MCP da intranet (fechado; referência de desenho em mcp.md), não o adaptador externo.
 
 ## 1. O que é e o que não é
 
@@ -183,7 +183,7 @@ Não disparar em massa `complete-activity`, `cancel-official-letter` nem `send-o
 
 ## 8. Fora desta superfície
 
-- Servidor MCP / issue #432 — [mcp.md](./mcp.md).
+- Servidor MCP da intranet — [ADR 022](./adr/022-servidor-mcp-http-bearer.md) e [mcp.md](./mcp.md) (PR #432 fechado é só referência de desenho).
 - Tools `activities_*` — contrato-alvo do adaptador externo, não do `WEBMCP_CATALOG`.
 - Jurídico.
 - Chat embutido na intranet.

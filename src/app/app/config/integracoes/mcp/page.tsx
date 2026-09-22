@@ -29,14 +29,14 @@ export default async function McpTokensPage() {
         backLabel="Voltar para configurações"
       />
 
-      <section className="mt-8 rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white p-6">
+      <section className="mt-8 rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-6">
         <h2 className="mb-4 text-sm font-semibold text-[#040920]">Novo token</h2>
         <McpTokenCreateForm />
       </section>
 
       <section className="mt-6 grid gap-4">
         {tokens.length === 0 ? (
-          <div className="rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white p-8 text-center">
+          <div className="rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-8 text-center">
             <KeyRound size={40} className="mx-auto mb-4 text-[rgba(13,31,60,0.25)]" aria-hidden="true" />
             <h2 className="font-serif text-xl font-bold text-[#040920]">Nenhum token MCP</h2>
             <p className="mt-2 text-sm text-[rgba(13,31,60,0.55)]">
@@ -47,7 +47,7 @@ export default async function McpTokensPage() {
           tokens.map((token) => (
             <article
               key={token.id}
-              className="rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white p-6"
+              className="rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-6"
             >
               <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
                 <div>
@@ -55,10 +55,18 @@ export default async function McpTokensPage() {
                     <h2 className="font-serif text-2xl font-bold text-[#040920]">{token.name}</h2>
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                        token.revokedAt ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'
+                        token.revokedAt
+                          ? 'bg-red-50 text-red-600'
+                          : token.expiresAt.getTime() <= Date.now()
+                            ? 'bg-amber-50 text-amber-700'
+                            : 'bg-green-50 text-green-700'
                       }`}
                     >
-                      {token.revokedAt ? 'Revogado' : 'Ativo'}
+                      {token.revokedAt
+                        ? 'Revogado'
+                        : token.expiresAt.getTime() <= Date.now()
+                          ? 'Expirado'
+                          : 'Ativo'}
                     </span>
                   </div>
                   <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-[rgba(13,31,60,0.55)]">
