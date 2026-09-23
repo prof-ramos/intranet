@@ -16,10 +16,11 @@ WebMCP ([spec](https://github.com/webmachinelearning/webmcp)) expõe funções d
 | Progressive enhancement: sem `document.modelContext`, registro é no-op | UI de chat neste repositório |
 | PII operacional igual à ficha para staff autenticado | Tools em `/login` |
 
-Há duas superfícies no repositório. Não misturar os nomes:
+Há três superfícies no repositório. Não misturar os nomes nem os contratos:
 
-- **WebMCP (este documento):** hífen, client-side, `search-officials`, `complete-activity`.
-- **MCP externo previsto:** underscore, `activities_list`, `activity_complete`. Não adicionar esses nomes em `WEBMCP_CATALOG`.
+- **WebMCP (este documento):** hífen, client-side, cookie de sessão (`search-officials`, `complete-activity`). Catálogo em `src/lib/webmcp/`.
+- **Servidor MCP da intranet:** Streamable HTTP em `/api/mcp`, autenticado por token de operador (`Authorization: Bearer asof_mcp_…`), nomes com underscore (`officials_search`, `official_get`, `global_search`). Decisão em [ADR 022](./adr/022-servidor-mcp-http-bearer.md); admin em `/app/config/integracoes/mcp`. Ver também [mcp.md](./mcp.md).
+- **MCP externo de Atividades previsto:** underscore `activities_*` com API key/scopes — contrato-alvo em [mcp.md](./mcp.md), ainda não implementado. Não adicionar esses nomes em `WEBMCP_CATALOG`.
 
 ## 2. Como registra
 
