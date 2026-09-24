@@ -2,7 +2,11 @@
 
 import { useState, useTransition } from 'react';
 import { Check, Copy, KeyRound } from 'lucide-react';
-import { focusRingClass } from '@/lib/ui/tokens';
+import {
+  desktopDenseControlClass,
+  focusRingClass,
+  mobileTouchTargetClass,
+} from '@/lib/ui/tokens';
 import { createMcpTokenAction } from './actions';
 
 export function McpTokenCreateForm() {
@@ -76,7 +80,7 @@ export function McpTokenCreateForm() {
           <button
             type="submit"
             disabled={isPending || !name.trim() || !acknowledged}
-            className={`inline-flex items-center gap-2 rounded-md bg-[#040920] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 ${focusRingClass}`}
+            className={`inline-flex items-center gap-2 rounded-md bg-[#040920] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 ${mobileTouchTargetClass} ${desktopDenseControlClass} ${focusRingClass}`}
           >
             <KeyRound size={15} aria-hidden="true" />
             {isPending ? 'Criando...' : 'Criar token'}
@@ -100,7 +104,7 @@ export function McpTokenCreateForm() {
                 await navigator.clipboard.writeText(token);
                 setCopied(true);
               }}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border border-amber-300 bg-white px-3 py-2 text-xs font-medium ${focusRingClass}`}
+              className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-amber-300 bg-white px-3 py-2 text-xs font-medium ${mobileTouchTargetClass} ${desktopDenseControlClass} ${focusRingClass}`}
             >
               {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
               {copied ? 'Copiado' : 'Copiar'}
@@ -115,7 +119,7 @@ export function McpTokenCreateForm() {
                 setAcknowledged(false);
                 setCopied(false);
               }}
-              className={`text-xs font-medium text-amber-800 underline ${focusRingClass}`}
+              className={`inline-flex items-center justify-center text-xs font-medium text-amber-800 underline ${mobileTouchTargetClass} ${desktopDenseControlClass} ${focusRingClass}`}
             >
               Entendido, fechar
             </button>

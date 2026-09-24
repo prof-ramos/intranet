@@ -2,7 +2,11 @@
 
 import { useState, useTransition } from 'react';
 import { Ban, Check, Copy, RotateCcw } from 'lucide-react';
-import { focusRingClass } from '@/lib/ui/tokens';
+import {
+  desktopDenseControlClass,
+  focusRingClass,
+  mobileTouchTargetClass,
+} from '@/lib/ui/tokens';
 import { revokeMcpTokenAction, rotateMcpTokenAction } from './actions';
 
 export function McpTokenActionsPanel({ id, revoked }: { id: number; revoked: boolean }) {
@@ -37,7 +41,7 @@ export function McpTokenActionsPanel({ id, revoked }: { id: number; revoked: boo
               setIsRevoked(true);
             });
           }}
-          className={`inline-flex items-center gap-1.5 rounded-md border border-[rgba(4,9,32,0.1)] bg-white px-3 py-1.5 text-xs font-medium ${focusRingClass}`}
+          className={`inline-flex items-center gap-1.5 rounded-md border border-[rgba(4,9,32,0.1)] bg-white px-3 py-1.5 text-xs font-medium ${mobileTouchTargetClass} ${desktopDenseControlClass} ${focusRingClass}`}
         >
           <RotateCcw size={13} aria-hidden="true" />
           {isRotatePending ? 'Renovando...' : 'Renovar'}
@@ -46,7 +50,7 @@ export function McpTokenActionsPanel({ id, revoked }: { id: number; revoked: boo
           <button
             type="button"
             onClick={() => setConfirmRevoke(true)}
-            className={`inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 ${focusRingClass}`}
+            className={`inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 ${mobileTouchTargetClass} ${desktopDenseControlClass} ${focusRingClass}`}
           >
             <Ban size={13} aria-hidden="true" />
             Revogar
@@ -67,14 +71,14 @@ export function McpTokenActionsPanel({ id, revoked }: { id: number; revoked: boo
                   setIsRevoked(true);
                 });
               }}
-              className={`rounded-md bg-red-600 px-2.5 py-1 text-[11px] font-semibold text-white ${focusRingClass}`}
+              className={`inline-flex items-center justify-center rounded-md bg-red-600 px-2.5 py-1 text-[11px] font-semibold text-white ${mobileTouchTargetClass} ${desktopDenseControlClass} ${focusRingClass}`}
             >
               {isRevokePending ? 'Revogando...' : 'Sim, revogar'}
             </button>
             <button
               type="button"
               onClick={() => setConfirmRevoke(false)}
-              className={`rounded-md border px-2.5 py-1 text-[11px] ${focusRingClass}`}
+              className={`inline-flex items-center justify-center rounded-md border px-2.5 py-1 text-[11px] ${mobileTouchTargetClass} ${desktopDenseControlClass} ${focusRingClass}`}
             >
               Cancelar
             </button>
@@ -99,7 +103,7 @@ export function McpTokenActionsPanel({ id, revoked }: { id: number; revoked: boo
                 await navigator.clipboard.writeText(token);
                 setCopied(true);
               }}
-              className={`inline-flex items-center gap-1 text-[11px] ${focusRingClass}`}
+              className={`inline-flex items-center justify-center gap-1 text-[11px] ${mobileTouchTargetClass} ${desktopDenseControlClass} ${focusRingClass}`}
             >
               {copied ? <Check size={12} /> : <Copy size={12} />}
               {copied ? 'Copiado' : 'Copiar'}
