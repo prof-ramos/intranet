@@ -8,6 +8,7 @@ import { isMcpRateLimitResult, isMcpUnavailableResult, verifyMcpAuth } from '@/l
 import { mcpError } from '@/lib/mcp/respond';
 import type { OperatorMcpPrincipal } from '@/lib/mcp/tokens';
 import { toolsForRole } from '@/lib/mcp/tools/registry';
+import { logAuditAction } from '@/lib/audit/service';
 import { sanitizePiiValue } from '@/lib/sanitize-pii';
 
 const authByRequest = new WeakMap<Request, AuthInfo>();
@@ -143,6 +144,21 @@ async function routeEntry(request: Request): Promise<Response> {
   }
   if (auth) {
     authByRequest.set(request, auth);
+    const principal = principalFromAuth(auth);
+    if (principal) {
+      // ADR 022: cada chamada autenticada registra canal MCP + adminId no limite da rota.
+      await logAuditAction({
+        adminId: principal.userId,
+        action: 'mcp_request',
+        entityType: 'admin',
+        entityId: principal.userId,
+        metadata: {
+          channel: 'mcp',
+          method: request.method,
+          tokenId: principal.tokenId,
+        },
+      });
+    }
   }
   return authenticatedHandler(request);
 }

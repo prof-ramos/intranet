@@ -132,7 +132,7 @@ describe('tokens MCP de operador', () => {
           limit: vi.fn().mockImplementation(async () => {
             selectCount++;
             if (selectCount === 1) return [{ role: 'admin', isActive: true }];
-            if (selectCount === 2) return [{ adminId: 4, name: 'Claude' }];
+            if (selectCount === 2) return [{ adminId: 4, name: 'Claude', lgpdAcknowledgedAt: new Date('2026-09-20T10:00:00Z') }];
             return [{ name: 'Operador' }];
           }),
         })),
@@ -171,6 +171,12 @@ describe('tokens MCP de operador', () => {
       expect.objectContaining({
         action: 'mcp_token_rotated',
         metadata: { channel: 'mcp', previousTokenId: 9, tokenId: 15 },
+      }),
+    );
+    const valuesFn = (tx.insert as ReturnType<typeof vi.fn>).mock.results[0].value.values as ReturnType<typeof vi.fn>;
+    expect(valuesFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lgpdAcknowledgedAt: new Date('2026-09-20T10:00:00Z'),
       }),
     );
   });

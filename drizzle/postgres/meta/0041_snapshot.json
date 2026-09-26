@@ -1,6 +1,6 @@
 {
   "id": "a4ca3221-bd7d-48c3-a3d7-0cdd56a8104b",
-  "prevId": "ea8f4e3f-47ed-4f7b-b581-0d7fbb40bd38",
+  "prevId": "41a85f72-9104-464f-aca8-80652d9c91fe",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -868,7 +868,7 @@
           "name": "idx_associates_name_lower_trgm",
           "columns": [
             {
-              "expression": "translate(lower(\"full_name\"), 'ÁÀÂÃÄÅáàâãäåÉÈÊËéèêëÍÌÎÏíìîïÓÒÔÕÖóòôõöÚÙÛÜúùûüÇçÑñ', 'AAAAAAaaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn') gin_trgm_ops",
+              "expression": "translate(lower(\"full_name\"), '\u00c1\u00c0\u00c2\u00c3\u00c4\u00c5\u00e1\u00e0\u00e2\u00e3\u00e4\u00e5\u00c9\u00c8\u00ca\u00cb\u00e9\u00e8\u00ea\u00eb\u00cd\u00cc\u00ce\u00cf\u00ed\u00ec\u00ee\u00ef\u00d3\u00d2\u00d4\u00d5\u00d6\u00f3\u00f2\u00f4\u00f5\u00f6\u00da\u00d9\u00db\u00dc\u00fa\u00f9\u00fb\u00fc\u00c7\u00e7\u00d1\u00f1', 'AAAAAAaaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn') gin_trgm_ops",
               "asc": true,
               "isExpression": true,
               "nulls": "last"

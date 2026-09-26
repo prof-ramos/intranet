@@ -215,6 +215,7 @@ export async function rotateOperatorMcpToken({
       .select({
         adminId: operatorMcpTokens.adminId,
         name: operatorMcpTokens.name,
+        lgpdAcknowledgedAt: operatorMcpTokens.lgpdAcknowledgedAt,
       })
       .from(operatorMcpTokens)
       .where(and(eq(operatorMcpTokens.id, id), isNull(operatorMcpTokens.revokedAt)))
@@ -241,7 +242,7 @@ export async function rotateOperatorMcpToken({
         adminId: token.adminId,
         name: token.name,
         tokenHash: hashMcpToken(rawValue),
-        lgpdAcknowledgedAt: now,
+        lgpdAcknowledgedAt: token.lgpdAcknowledgedAt,
         expiresAt,
       })
       .returning({

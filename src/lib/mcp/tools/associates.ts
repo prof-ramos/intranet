@@ -11,6 +11,7 @@ import {
 import { getAssociatesListPage } from '@/lib/associates/service';
 import { decryptAssociatePii } from '@/lib/associates/pii-mapping';
 import { logDataAccess } from '@/lib/audit/service';
+import { db } from '@/lib/db';
 import { searchActivities, searchAssociates as searchAssociatesGlobal } from '@/lib/search/queries';
 import { canAccessRole } from '@/lib/auth/authorization';
 import type { AuthRole } from '@/lib/auth/config';
@@ -20,6 +21,15 @@ import { toMcpAssociate } from '../pii';
 import { mcpError, mcpRespond } from '../respond';
 
 const SENSITIVE_ALLOWED_ROLES: readonly AuthRole[] = ['admin', 'diretoria', 'secretaria'];
+
+
+/** Auditoria MCP estrita: falha de persistência propaga (fail-closed) sem alterar logDataAccess global. */
+async function logMcpDataAccessStrict(
+  options: Omit<Parameters<typeof logDataAccess>[0], 'executor'>,
+): Promise<void> {
+  await logDataAccess({ ...options, executor: db });
+}
+
 
 export interface SearchAssociatesInput extends AssociatesFilters {
   q?: string;
@@ -56,7 +66,7 @@ export async function searchAssociates(
     input.searchBy,
   );
 
-  await logDataAccess({
+  await logMcpDataAccessStrict({
     adminId: principal.userId,
     action: 'view',
     entityType: 'associate',
@@ -90,7 +100,7 @@ export async function getAssociate(
 
   const decrypted = includeSensitive ? decryptAssociatePii(row) : null;
 
-  await logDataAccess({
+  await logMcpDataAccessStrict({
     adminId: principal.userId,
     action: 'view',
     entityType: 'associate',
@@ -115,13 +125,13 @@ export async function globalSearch(
     searchActivities(input.query, limit),
   ]);
 
-  await logDataAccess({
+  await logMcpDataAccessStrict({
     adminId: principal.userId,
     action: 'view',
     entityType: 'associate',
     metadata: { channel: 'mcp', tool: 'global_search' },
   });
-  await logDataAccess({
+  await logMcpDataAccessStrict({
     adminId: principal.userId,
     action: 'view',
     entityType: 'activity',
@@ -165,7 +175,7 @@ export async function listAssociateDependents(
   const rawItems = await findDependentsByAssociateId(input.associateId);
   const items = rawItems.map((item) => toMcpDependent(item, input.associateId));
 
-  await logDataAccess({
+  await logMcpDataAccessStrict({
     adminId: principal.userId,
     action: 'view',
     entityType: 'associate',
@@ -196,7 +206,7 @@ export async function listAssociateHealthAgreements(
     ? rawItems.map((item) => toMcpHealthAgreement(item, input.associateId))
     : [];
 
-  await logDataAccess({
+  await logMcpDataAccessStrict({
     adminId: principal.userId,
     action: 'view',
     entityType: 'associate',

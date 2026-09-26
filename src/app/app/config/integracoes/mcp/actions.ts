@@ -6,6 +6,7 @@ import {
   defineNoInputServerAction,
   defineServerAction,
 } from '@/lib/server-actions/define-form-action';
+import { logDataAccess } from '@/lib/audit/service';
 import {
   createOperatorMcpToken,
   listOperatorMcpTokens,
@@ -48,6 +49,14 @@ export const listMcpTokensAction = defineNoInputServerAction({
   auth: ['admin'],
   service: async (actor) => {
     const data = await listOperatorMcpTokens({ adminId: actor.userId, includeAll: true });
+    // entityType mcp_token ainda não existe no enum de audit; usa admin + metadados sem PII/token.
+    await logDataAccess({
+      adminId: actor.userId,
+      action: 'view',
+      entityType: 'admin',
+      entityId: null,
+      metadata: { channel: 'ui', view: 'mcp_token_list', count: data.length },
+    });
     return { data };
   },
 });
