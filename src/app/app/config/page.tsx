@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { KeyRound, Settings, Webhook } from 'lucide-react';
+import { Bot, KeyRound, Settings, Webhook } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { focusRingClass, skyBlue, borderFaint, navy, primaryContainerHover } from '@/lib/ui/tokens';
@@ -12,7 +12,7 @@ export default async function ConfigPage() {
       <div className="mt-8 grid gap-4 md:grid-cols-2">
         <Link
           href="/app/config/integracoes/webhooks"
-          className={`rounded-[10px] border bg-white p-6 transition-colors hover:border-[var(--card-hover-border)] hover:bg-[rgba(118,174,234,0.05)] ${focusRingClass}`}
+          className={`rounded-[16px] border bg-white p-6 transition-colors hover:border-[var(--card-hover-border)] hover:bg-[rgba(118,174,234,0.05)] ${focusRingClass}`}
           style={{ borderColor: borderFaint, '--card-hover-border': skyBlue } as CSSProperties}
         >
           <Webhook size={32} className="mb-4 text-[#0d3260]" aria-hidden="true" />
@@ -23,8 +23,20 @@ export default async function ConfigPage() {
         </Link>
 
         <Link
+          href="/app/config/integracoes/mcp"
+          className={`rounded-[16px] border bg-white p-6 transition-colors hover:border-[var(--card-hover-border)] hover:bg-[rgba(118,174,234,0.05)] ${focusRingClass}`}
+          style={{ borderColor: borderFaint, '--card-hover-border': skyBlue } as CSSProperties}
+        >
+          <Bot size={32} className="mb-4 text-[#0d3260]" aria-hidden="true" />
+          <h2 className="font-serif text-xl font-bold text-[#040920]">Tokens MCP</h2>
+          <p className="mt-2 text-sm leading-6 text-[rgba(13,31,60,0.55)]">
+            Crie, renove e revogue tokens Bearer para agentes no Cursor e no Claude.
+          </p>
+        </Link>
+
+        <Link
           href="/app/config/integracoes/api-keys"
-          className={`rounded-[10px] border bg-white p-6 transition-colors hover:border-[var(--card-hover-border)] hover:bg-[rgba(118,174,234,0.05)] ${focusRingClass}`}
+          className={`rounded-[16px] border bg-white p-6 transition-colors hover:border-[var(--card-hover-border)] hover:bg-[rgba(118,174,234,0.05)] ${focusRingClass}`}
           style={{ borderColor: borderFaint, '--card-hover-border': skyBlue } as CSSProperties}
         >
           <KeyRound size={32} className="mb-4 text-[#0d3260]" aria-hidden="true" />
@@ -35,7 +47,7 @@ export default async function ConfigPage() {
         </Link>
       </div>
 
-      <div className="mt-6 rounded-[10px] border border-[rgba(4,9,32,0.05)] bg-white p-8 text-center">
+      <div className="mt-6 rounded-[16px] border border-[rgba(4,9,32,0.05)] bg-white p-8 text-center">
         <Settings
           size={40}
           className="mx-auto mb-4 text-[rgba(13,31,60,0.25)]"

@@ -288,6 +288,13 @@
       "when": 1789022518979,
       "tag": "0040_activity_label_event_types",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1789998564952,
+      "tag": "0041_glossy_cassandra_nova",
+      "breakpoints": true
     }
   ]
 }

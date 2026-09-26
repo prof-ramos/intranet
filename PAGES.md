@@ -117,7 +117,7 @@ Todas as rotas abaixo exigem autenticação. Usuário sem sessão é redireciona
 
 ### WebMCP (agentes no browser)
 
-A área autenticada registra tools WebMCP (`document.modelContext`) para um **agente futuro usado pela Secretaria** — não pelos associados. Progressive enhancement: sem Chrome/Edge com Origin Trial ou `chrome://flags/#enable-webmcp-testing`, a UI humana não muda. Ver [ADR 021](docs/adr/021-webmcp-secretaria.md).
+A área autenticada registra tools WebMCP (`document.modelContext`) para um **agente futuro usado pela Secretaria** — não pelos associados. Progressive enhancement: sem Chrome/Edge com Origin Trial ou `chrome://flags/#enable-webmcp-testing`, a UI humana não muda. Catálogo, roles, overlay da ficha e como testar: [docs/webmcp.md](docs/webmcp.md). Decisão: [ADR 021](docs/adr/021-webmcp-secretaria.md).
 
 ### Mapa de navegação
 
@@ -803,6 +803,23 @@ Cards de navegação para sub-módulos: Usuários, Lotações, Auditoria, Webhoo
 
 - [ ] URL privada (RFC-1918, localhost) é rejeitada na criação
 - [ ] Segredo exibido apenas uma vez após criação/rotação
+
+---
+
+### `/app/config/integracoes/mcp` — Tokens MCP
+
+**Acesso:** `admin`
+
+**Funcionalidades:**
+
+- Criação de token Bearer `asof_mcp_` com ciência LGPD; o valor aparece uma vez
+- Renovação: revoga o token atual e emite outro, exibido uma vez
+- Revogação (o registro permanece; o token deixa de autenticar)
+
+**Funcional quando:**
+
+- [ ] Token novo autentica `POST /api/mcp` com `Authorization: Bearer`
+- [ ] Token revogado ou renovado deixa de autenticar
 
 ---
 

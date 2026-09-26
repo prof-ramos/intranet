@@ -156,6 +156,7 @@ Rodar um arquivo de teste: `npx vitest run src/lib/auth/password.test.ts`
 ## Documentação Relacionada
 
 - `CONTEXT.md` — glossário e regras de negócio; autoridade de vocabulário do domínio
+- `docs/webmcp.md` — catálogo e operação do WebMCP da Secretaria no browser
 - `README.md` — quick start
 - `DATABASE.md` — schema, migrações, índices e convenções de banco
 - `TODO-PROD.md` — checklist de go-live

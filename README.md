@@ -456,6 +456,7 @@ Veja [`docs/runbook.md`](./docs/runbook.md) para procedimentos operacionais.
 | [`DESIGN.md`](./DESIGN.md)             | Design system, tokens, cores, tipografia e padrões visuais.                        |
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Guia do desenvolvedor e padrão de contribuição.                                    |
 | [`docs/runbook.md`](./docs/runbook.md) | Procedimentos operacionais: deploy, backup, rollback, smoke tests e incidentes.    |
+| [`docs/webmcp.md`](./docs/webmcp.md)   | Catálogo e operação do WebMCP da Secretaria no browser.                            |
 | [`TODO-PROD.md`](./TODO-PROD.md)       | Checklist vivo de prontidão de produção e bloqueadores atuais.                     |
 
 ---
